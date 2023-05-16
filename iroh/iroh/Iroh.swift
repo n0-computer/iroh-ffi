@@ -11,11 +11,11 @@
 
 import Foundation
 
-enum IrohError: Error {
+public enum IrohError: Error {
     case unexpected(UInt32)
 }
 
-class Iroh {
+public class Core {
     static func get(hash: String, peer: String, peerAddr:String, outPath:String) throws {
         let status = iroh_get(hash, peer, peerAddr, outPath)
         guard status == errSecSuccess else {
@@ -29,4 +29,8 @@ class Iroh {
             throw IrohError.unexpected(status)
         }
     }
+}
+
+public func apples() {
+    print("i am apples")
 }

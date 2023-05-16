@@ -4,4 +4,7 @@
    <FileRef
       location = "group:iroh/iroh.xcodeproj">
    </FileRef>
+   <FileRef
+      location = "group:IrohDebugger/IrohDebugger.xcodeproj">
+   </FileRef>
 </Workspace>

@@ -8,9 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		42269A952A13063F005B8B95 /* iroh.docc in Sources */ = {isa = PBXBuildFile; fileRef = 42269A942A13063F005B8B95 /* iroh.docc */; };
-		42269A9B2A13063F005B8B95 /* iroh.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 42269A902A13063F005B8B95 /* iroh.framework */; };
+		42269A9B2A13063F005B8B95 /* Iroh.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 42269A902A13063F005B8B95 /* Iroh.framework */; };
 		42269AA02A13063F005B8B95 /* irohTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42269A9F2A13063F005B8B95 /* irohTests.swift */; };
-		42269AA12A13063F005B8B95 /* iroh.h in Headers */ = {isa = PBXBuildFile; fileRef = 42269A932A13063F005B8B95 /* iroh.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		42269AA12A13063F005B8B95 /* Iroh.h in Headers */ = {isa = PBXBuildFile; fileRef = 42269A932A13063F005B8B95 /* Iroh.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		42269AAC2A130652005B8B95 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 42269AAB2A130652005B8B95 /* SystemConfiguration.framework */; };
 		42269AAF2A13118B005B8B95 /* libiroh.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 42269AAE2A13118B005B8B95 /* libiroh.a */; settings = {ATTRIBUTES = (Required, ); }; };
 		42269ABB2A131EBA005B8B95 /* Iroh.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42269ABA2A131EBA005B8B95 /* Iroh.swift */; };
@@ -27,8 +27,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		42269A902A13063F005B8B95 /* iroh.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = iroh.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		42269A932A13063F005B8B95 /* iroh.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = iroh.h; sourceTree = "<group>"; };
+		42269A902A13063F005B8B95 /* Iroh.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Iroh.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		42269A932A13063F005B8B95 /* Iroh.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Iroh.h; sourceTree = "<group>"; };
 		42269A942A13063F005B8B95 /* iroh.docc */ = {isa = PBXFileReference; lastKnownFileType = folder.documentationcatalog; path = iroh.docc; sourceTree = "<group>"; };
 		42269A9A2A13063F005B8B95 /* irohTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = irohTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		42269A9F2A13063F005B8B95 /* irohTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = irohTests.swift; sourceTree = "<group>"; };
@@ -54,7 +54,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				42269A9B2A13063F005B8B95 /* iroh.framework in Frameworks */,
+				42269A9B2A13063F005B8B95 /* Iroh.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -75,7 +75,7 @@
 		42269A912A13063F005B8B95 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				42269A902A13063F005B8B95 /* iroh.framework */,
+				42269A902A13063F005B8B95 /* Iroh.framework */,
 				42269A9A2A13063F005B8B95 /* irohTests.xctest */,
 			);
 			name = Products;
@@ -84,7 +84,7 @@
 		42269A922A13063F005B8B95 /* iroh */ = {
 			isa = PBXGroup;
 			children = (
-				42269A932A13063F005B8B95 /* iroh.h */,
+				42269A932A13063F005B8B95 /* Iroh.h */,
 				42269A942A13063F005B8B95 /* iroh.docc */,
 				42269ABA2A131EBA005B8B95 /* Iroh.swift */,
 				42269ABE2A1327BA005B8B95 /* iroh-Bridging-Header.h */,
@@ -125,30 +125,31 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				42269AA12A13063F005B8B95 /* iroh.h in Headers */,
+				42269AA12A13063F005B8B95 /* Iroh.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
-		42269A8F2A13063F005B8B95 /* iroh */ = {
+		42269A8F2A13063F005B8B95 /* Iroh */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 42269AA42A13063F005B8B95 /* Build configuration list for PBXNativeTarget "iroh" */;
+			buildConfigurationList = 42269AA42A13063F005B8B95 /* Build configuration list for PBXNativeTarget "Iroh" */;
 			buildPhases = (
 				42269AB62A131CAD005B8B95 /* Build Iroh Rust Library */,
 				42269A8B2A13063F005B8B95 /* Headers */,
 				42269A8C2A13063F005B8B95 /* Sources */,
 				42269A8D2A13063F005B8B95 /* Frameworks */,
 				42269A8E2A13063F005B8B95 /* Resources */,
+				42E850282A13AA45005D11FF /* ShellScript */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
-			name = iroh;
+			name = Iroh;
 			productName = iroh;
-			productReference = 42269A902A13063F005B8B95 /* iroh.framework */;
+			productReference = 42269A902A13063F005B8B95 /* Iroh.framework */;
 			productType = "com.apple.product-type.framework";
 		};
 		42269A992A13063F005B8B95 /* irohTests */ = {
@@ -200,7 +201,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				42269A8F2A13063F005B8B95 /* iroh */,
+				42269A8F2A13063F005B8B95 /* Iroh */,
 				42269A992A13063F005B8B95 /* irohTests */,
 			);
 		};
@@ -241,7 +242,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# The $PATH used by XCode likely won't contain Cargo, fix that.\n# This assumes a default `rustup` setup.\nexport PATH=\"$HOME/.cargo/bin:$PATH\"\n\nexport CFLAGS_x86_64_apple_darwin=\"-I /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include\"\n\nexport LIBRARY_PATH=\"/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib\"\n\n# ensure all targets are installed\nrustup target add aarch64-apple-ios x86_64-apple-ios --toolchain `cat ./rust-toolchain`\n\n# --xcode-integ determines --release and --targets from XCode's env vars.\n# Depending your setup, specify the rustup toolchain explicitly.\nRUSTFLAGS=\"-C lto=on -C embed-bitcode=yes\" \\\ncargo +`cat ./rust-toolchain` lipo --release --manifest-path ./iroh-core-rust/iroh-ffi/Cargo.toml\n";
+			shellScript = "source ${PROJECT_DIR}/scripts/create-library.sh\n";
+		};
+		42E850282A13AA45005D11FF /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -268,7 +286,7 @@
 /* Begin PBXTargetDependency section */
 		42269A9D2A13063F005B8B95 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 42269A8F2A13063F005B8B95 /* iroh */;
+			target = 42269A8F2A13063F005B8B95 /* Iroh */;
 			targetProxy = 42269A9C2A13063F005B8B95 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -278,6 +296,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -341,6 +360,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				BUILD_LIBRARY_FOR_DISTRIBUTION = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -420,9 +440,13 @@
 					"$(PROJECT_DIR)/iroh-core-rust/iroh-ffi/target/universal/release",
 					"$(PROJECT_DIR)/iroh-core-rust/iroh-ffi/target/universal/debug",
 				);
+				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*][arch=arm64]" = "$(PROJECT_DIR)/iroh-core-rust/iroh-ffi/target/aarch64-apple-ios/debug";
+				"LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*][arch=arm64]" = "$(PROJECT_DIR)/iroh-core-rust/iroh-ffi/target/aarch64-apple-ios-sim/debug";
+				"LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*][arch=x86_64]" = "$(PROJECT_DIR)/iroh-core-rust/iroh-ffi/target/x86_64-apple-ios/debug";
 				MARKETING_VERSION = 1.0;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu11 gnu++20";
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = computer.iroh.iroh;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;
@@ -458,9 +482,13 @@
 					"$(PROJECT_DIR)/iroh-core-rust/iroh-ffi/target/universal/release",
 					"$(PROJECT_DIR)/iroh-core-rust/iroh-ffi/target/universal/debug",
 				);
+				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*][arch=arm64]" = "$(PROJECT_DIR)/iroh-core-rust/iroh-ffi/target/aarch64-apple-ios/release";
+				"LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*][arch=arm64]" = "$(PROJECT_DIR)/iroh-core-rust/iroh-ffi/target/aarch64-apple-ios-sim/release";
+				"LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*][arch=x86_64]" = "$(PROJECT_DIR)/iroh-core-rust/iroh-ffi/target/x86_64-apple-ios/release";
 				MARKETING_VERSION = 1.0;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu11 gnu++20";
+				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = computer.iroh.iroh;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;
@@ -516,7 +544,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		42269AA42A13063F005B8B95 /* Build configuration list for PBXNativeTarget "iroh" */ = {
+		42269AA42A13063F005B8B95 /* Build configuration list for PBXNativeTarget "Iroh" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				42269AA52A13063F005B8B95 /* Debug */,
