@@ -15,15 +15,15 @@ enum IrohError: Error {
     case unexpected(UInt32)
 }
 
-class Iroh {
-    static func get(hash: String, peer: String, peerAddr:String, outPath:String) throws {
-        let status = iroh_get(hash, peer, peerAddr, outPath)
+public class Iroh {
+    public static func get(cid: String, peer: String, peerAddr:String, outPath:String) throws {
+        let status = iroh_get(cid, peer, peerAddr, outPath)
         guard status == errSecSuccess else {
             throw IrohError.unexpected(status)
         }
     }
 
-    static func getTicket(ticket: String, outPath: String) throws {
+    public static func getTicket(ticket: String, outPath: String) throws {
         let status = iroh_get_ticket(ticket, outPath)
         guard status == errSecSuccess else {
             throw IrohError.unexpected(status)

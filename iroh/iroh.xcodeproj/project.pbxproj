@@ -34,10 +34,8 @@
 		42269A9F2A13063F005B8B95 /* irohTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = irohTests.swift; sourceTree = "<group>"; };
 		42269AAB2A130652005B8B95 /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.3.sdk/System/Library/Frameworks/SystemConfiguration.framework; sourceTree = DEVELOPER_DIR; };
 		42269AAE2A13118B005B8B95 /* libiroh.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libiroh.a; path = "iroh-core-rust/iroh-ffi/target/universal/release/libiroh.a"; sourceTree = "<group>"; };
-		42269AB12A1313F1005B8B95 /* remove-library.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "remove-library.sh"; sourceTree = "<group>"; };
 		42269AB22A1313F1005B8B95 /* create-library.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "create-library.sh"; sourceTree = "<group>"; };
 		42269ABA2A131EBA005B8B95 /* Iroh.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Iroh.swift; sourceTree = "<group>"; };
-		42269ABE2A1327BA005B8B95 /* iroh-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "iroh-Bridging-Header.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -87,7 +85,6 @@
 				42269A932A13063F005B8B95 /* iroh.h */,
 				42269A942A13063F005B8B95 /* iroh.docc */,
 				42269ABA2A131EBA005B8B95 /* Iroh.swift */,
-				42269ABE2A1327BA005B8B95 /* iroh-Bridging-Header.h */,
 			);
 			path = iroh;
 			sourceTree = "<group>";
@@ -112,7 +109,6 @@
 		42269AB02A1313F1005B8B95 /* scripts */ = {
 			isa = PBXGroup;
 			children = (
-				42269AB12A1313F1005B8B95 /* remove-library.sh */,
 				42269AB22A1313F1005B8B95 /* create-library.sh */,
 			);
 			path = scripts;
@@ -241,7 +237,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# The $PATH used by XCode likely won't contain Cargo, fix that.\n# This assumes a default `rustup` setup.\nexport PATH=\"$HOME/.cargo/bin:$PATH\"\n\nexport CFLAGS_x86_64_apple_darwin=\"-I /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include\"\n\nexport LIBRARY_PATH=\"/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib\"\n\n# ensure all targets are installed\nrustup target add aarch64-apple-ios x86_64-apple-ios --toolchain `cat ./rust-toolchain`\n\n# --xcode-integ determines --release and --targets from XCode's env vars.\n# Depending your setup, specify the rustup toolchain explicitly.\nRUSTFLAGS=\"-C lto=on -C embed-bitcode=yes\" \\\ncargo +`cat ./rust-toolchain` lipo --release --manifest-path ./iroh-core-rust/iroh-ffi/Cargo.toml\n";
+			shellScript = "bash $PWD/scripts/create-library.sh iroh_ffi ./iroh-core-rust/iroh-ffi/Cargo.toml\n\n\n# The $PATH used by XCode likely won't contain Cargo, fix that.\n# This assumes a default `rustup` setup.\n# export PATH=\"$HOME/.cargo/bin:$PATH\"\n\n# export CFLAGS_x86_64_apple_darwin=\"-I /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include\"\n\n# export LIBRARY_PATH=\"/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib\"\n\n# ensure all targets are installed\n# rustup target add aarch64-apple-ios x86_64-apple-ios --toolchain `cat ./rust-toolchain`\n\n# --xcode-integ determines --release and --targets from XCode's env vars.\n# Depending your setup, specify the rustup toolchain explicitly.\n# RUSTFLAGS=\"-C lto=on -C embed-bitcode=yes\" \\\n# cargo +`cat ./rust-toolchain` lipo --release --manifest-path ./iroh-core-rust/iroh-ffi/Cargo.toml\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
