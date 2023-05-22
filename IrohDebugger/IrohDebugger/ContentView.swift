@@ -38,7 +38,10 @@ struct ContentView: View {
                 let docs = self.getDocumentDirectoryPath()
 //                    get(cidInput, peerIdInput, "127.0.0.1:4433", docs)
 //                get_ticket(textInput, docs)
-                Iroh
+                let col = irohDescribeCollection(ticket: allInOneInput)
+//                let log = Logger(subsystem: "computer.iroh")
+                print(col)
+//                log.info("Collection: \(col)")
                 let imageURL = URL(fileURLWithPath: docs).appendingPathComponent("dragon.png")
                 if let img = UIImage(contentsOfFile: imageURL.path) {
                     self.img = img

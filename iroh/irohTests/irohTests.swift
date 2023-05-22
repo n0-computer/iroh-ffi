@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import iroh
+@testable import Iroh
 
 final class irohTests: XCTestCase {
 

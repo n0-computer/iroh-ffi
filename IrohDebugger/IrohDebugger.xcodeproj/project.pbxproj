@@ -14,7 +14,8 @@
 		42E8500D2A133150005D11FF /* IrohDebuggerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42E8500C2A133150005D11FF /* IrohDebuggerTests.swift */; };
 		42E850172A133150005D11FF /* IrohDebuggerUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42E850162A133150005D11FF /* IrohDebuggerUITests.swift */; };
 		42E850192A133150005D11FF /* IrohDebuggerUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42E850182A133150005D11FF /* IrohDebuggerUITestsLaunchTests.swift */; };
-		42E8502D2A13CDB6005D11FF /* Iroh.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 42E8502C2A13CDB6005D11FF /* Iroh.framework */; };
+		42F69E332A1B041B006F772D /* Iroh.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 42F69E322A1B041B006F772D /* Iroh.framework */; };
+		42F69E342A1B041B006F772D /* Iroh.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 42F69E322A1B041B006F772D /* Iroh.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -34,6 +35,20 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		42F69E252A1AB910006F772D /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				42F69E342A1B041B006F772D /* Iroh.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		42E84FF82A13314F005D11FF /* IrohDebugger.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = IrohDebugger.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		42E84FFB2A13314F005D11FF /* IrohDebuggerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IrohDebuggerApp.swift; sourceTree = "<group>"; };
@@ -45,9 +60,7 @@
 		42E850122A133150005D11FF /* IrohDebuggerUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = IrohDebuggerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		42E850162A133150005D11FF /* IrohDebuggerUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IrohDebuggerUITests.swift; sourceTree = "<group>"; };
 		42E850182A133150005D11FF /* IrohDebuggerUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IrohDebuggerUITestsLaunchTests.swift; sourceTree = "<group>"; };
-		42E850262A1331B7005D11FF /* iroh.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = iroh.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		42E850292A13C3A5005D11FF /* Iroh.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Iroh.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		42E8502C2A13CDB6005D11FF /* Iroh.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Iroh.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		42F69E322A1B041B006F772D /* Iroh.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = Iroh.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -55,7 +68,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				42E8502D2A13CDB6005D11FF /* Iroh.framework in Frameworks */,
+				42F69E332A1B041B006F772D /* Iroh.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -136,9 +149,7 @@
 		42E850252A1331B6005D11FF /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				42E8502C2A13CDB6005D11FF /* Iroh.framework */,
-				42E850292A13C3A5005D11FF /* Iroh.framework */,
-				42E850262A1331B7005D11FF /* iroh.framework */,
+				42F69E322A1B041B006F772D /* Iroh.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -153,6 +164,7 @@
 				42E84FF42A13314F005D11FF /* Sources */,
 				42E84FF52A13314F005D11FF /* Frameworks */,
 				42E84FF62A13314F005D11FF /* Resources */,
+				42F69E252A1AB910006F772D /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -435,6 +447,7 @@
 				DEVELOPMENT_ASSET_PATHS = "\"IrohDebugger/Preview Content\"";
 				DEVELOPMENT_TEAM = 5A7G78D7YK;
 				ENABLE_PREVIEWS = YES;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = arm64;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -464,6 +477,7 @@
 				DEVELOPMENT_ASSET_PATHS = "\"IrohDebugger/Preview Content\"";
 				DEVELOPMENT_TEAM = 5A7G78D7YK;
 				ENABLE_PREVIEWS = YES;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = arm64;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
