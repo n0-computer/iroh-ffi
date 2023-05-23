@@ -1,0 +1,38 @@
+[package]
+name = "iroh_ffi"
+version = "0.1.0"
+edition = "2021"
+publish = false
+rust-version = "1.64"
+
+[profile.release]
+strip = "symbols"
+
+[lib]
+name="iroh"
+crate-type = ["staticlib"]
+
+[features]
+c-headers = ["safer-ffi/headers"]
+
+# ios build flags:
+# export RUSTFLAGS="-C lto=on -C embed-bitcode=yes"
+# export LIBRARY_PATH="/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib"
+# cargo lipo --release
+
+# needed when building for unreal engine...
+# [target.x86_64-apple-darwin]
+# rustflags=["-C", "link-arg=-mmacosx-version-min=10.7"]
+# strip = "symbols"
+
+[dependencies]
+safer-ffi = { version = "0.0.10", features = ["proc_macros"] }
+anyhow = "1.0.69"
+blake3 = "1.3.3"
+iroh = { path = "../", default-features = false }
+indicatif = { version = "0.17", features = ["tokio"] }
+data-encoding = { version = "2.3.3" }
+multibase = { version = "0.9.1"}
+libc = "0.2.141"
+tempfile = "3.4"
+tokio = "1.25.0"
