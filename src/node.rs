@@ -27,12 +27,12 @@ pub enum LiveEvent {
     ContentReady,
 }
 
-impl From<iroh::sync::LiveEvent> for LiveEvent {
-    fn from(value: iroh::sync::LiveEvent) -> Self {
+impl From<iroh::sync_engine::LiveEvent> for LiveEvent {
+    fn from(value: iroh::sync_engine::LiveEvent) -> Self {
         match value {
-            iroh::sync::LiveEvent::InsertLocal { .. } => Self::InsertLocal,
-            iroh::sync::LiveEvent::InsertRemote { .. } => Self::InsertRemote,
-            iroh::sync::LiveEvent::ContentReady { .. } => Self::ContentReady,
+            iroh::sync_engine::LiveEvent::InsertLocal { .. } => Self::InsertLocal,
+            iroh::sync_engine::LiveEvent::InsertRemote { .. } => Self::InsertRemote,
+            iroh::sync_engine::LiveEvent::ContentReady { .. } => Self::ContentReady,
         }
     }
 }
@@ -178,6 +178,7 @@ pub struct IrohNode {
     node: Node<flat::Store, iroh_sync::store::fs::Store>,
     async_runtime: Handle,
     sync_client: iroh::client::Iroh<FlumeConnection<ProviderResponse, ProviderRequest>>,
+    #[allow(dead_code)]
     tokio_rt: tokio::runtime::Runtime,
 }
 
