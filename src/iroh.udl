@@ -1,0 +1,13 @@
+namespace iroh {
+};
+
+interface IrohNode {
+  [Throws=IrohError]
+  constructor();
+  string peer_id();
+};
+
+[Error]
+enum IrohError {
+  "Runtime", "NodeCreate"
+};

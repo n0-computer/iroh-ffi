@@ -1,4 +1,0 @@
-module Iroh {
-    header "iroh.h"
-    export *
-}
