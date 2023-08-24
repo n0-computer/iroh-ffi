@@ -6,7 +6,9 @@ Running `cargo build --release` will produce a dynamic library and a static libr
 
 For builds targeting older versions of MacOS, build with with:  `MACOSX_DEPLOYMENT_TARGET=10.7 && cargo build --target x86_64-apple-darwin --release`.
 
-## Xcode and IOS 
+## Swift
+
+### Xcode and IOS 
 
 - Run `make.sh`. 
 - Add `IrohLib` as a local package dependency under `Frameworks, Libraries, and Embedded Content` in the `General` settings of your project. 
@@ -15,9 +17,14 @@ For builds targeting older versions of MacOS, build with with:  `MACOSX_DEPLOYME
 - Add `SystemConfiguration` as a Framework.
 - Now you can just import the library in Swift with a standard import statement like `import IrohLib`.
 
+## Python
+
+- Install [`maturin`](https://www.maturin.rs/installation) for python development and packaging.
+- Install `uniffi-bindgen` with `pip`
+- `maturin develop` will build your package
+
 ## Development
 
-- `./make.sh` regenerates all code
 - This uses https://mozilla.github.io/uniffi-rs/ for building the interface
 
 # License
