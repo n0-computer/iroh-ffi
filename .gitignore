@@ -11,11 +11,6 @@ xcuserdata/
 DerivedData/
 .swiftpm/config/registries.json
 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
-.netrc
-LibIroh.xcframework/
-build/
-libiroh-xcframework.zip
-
 /include
 
 /Iroh.xcframework/ios-arm64/Iroh.framework/*
@@ -35,7 +30,6 @@ libiroh-xcframework.zip
 !/Iroh.xcframework/ios-arm64_x86_64-simulator/Iroh.framework/Headers/Export.h
 
 /IrohLib/artifacts/
-
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

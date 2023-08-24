@@ -5,9 +5,70 @@ interface IrohNode {
   [Throws=IrohError]
   constructor();
   string peer_id();
+  [Throws=IrohError]
+  Doc create_doc();
+  [Throws=IrohError]
+  Doc import_doc(DocTicket ticket);
+  [Throws=IrohError]
+  AuthorId create_author();
+  [Throws=IrohError]
+  record<string, CounterStats> stats();
+};
+
+interface Doc {
+  string id();
+  [Throws=IrohError]
+  DocTicket share_write();
+  [Throws=IrohError]
+  DocTicket share_read();
+  [Throws=IrohError]
+  SignedEntry set_bytes(AuthorId author, bytes key, bytes value);
+  [Throws=IrohError]
+  bytes get_content_bytes(SignedEntry entry);
+  [Throws=IrohError]
+  sequence<SignedEntry> latest();
+  [Throws=IrohError]
+  void subscribe(SubscribeCallback cb);
+};
+
+callback interface SubscribeCallback {
+  [Throws=IrohError]
+  void event(LiveEvent event);
+};
+
+interface AuthorId {
+  string to_string();
+};
+
+interface SignedEntry {
+  AuthorId author();
+  bytes key();
+};
+
+interface DocTicket {
+  [Name=from_string, Throws=IrohError]
+  constructor(string content);
+  string to_string();
+};
+
+dictionary CounterStats {
+  u64 value;
+  string description;
+};
+
+[Enum]
+interface LiveEvent {
+  InsertLocal();
+  InsertRemote();
+  ContentReady();
 };
 
 [Error]
-enum IrohError {
-  "Runtime", "NodeCreate"
+interface IrohError {
+  Runtime(string description);
+  NodeCreate(string description);
+  Doc(string description);
+  Author(string description);
+  DocTicket(string description);
+  Uniffi(string description);
 };
