@@ -1,4 +1,14 @@
 namespace iroh {
+  void set_log_level(LogLevel level);
+};
+
+enum LogLevel {
+  "Trace",
+  "Debug",
+  "Info",
+  "Warn",
+  "Error",
+  "Off",
 };
 
 interface IrohNode {

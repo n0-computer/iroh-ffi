@@ -983,6 +983,72 @@ public func FfiConverterTypeLiveEvent_lower(_ value: LiveEvent) -> RustBuffer {
 
 extension LiveEvent: Equatable, Hashable {}
 
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+public enum LogLevel {
+    case trace
+    case debug
+    case info
+    case warn
+    case error
+    case off
+}
+
+public struct FfiConverterTypeLogLevel: FfiConverterRustBuffer {
+    typealias SwiftType = LogLevel
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> LogLevel {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        case 1: return .trace
+
+        case 2: return .debug
+
+        case 3: return .info
+
+        case 4: return .warn
+
+        case 5: return .error
+
+        case 6: return .off
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: LogLevel, into buf: inout [UInt8]) {
+        switch value {
+        case .trace:
+            writeInt(&buf, Int32(1))
+
+        case .debug:
+            writeInt(&buf, Int32(2))
+
+        case .info:
+            writeInt(&buf, Int32(3))
+
+        case .warn:
+            writeInt(&buf, Int32(4))
+
+        case .error:
+            writeInt(&buf, Int32(5))
+
+        case .off:
+            writeInt(&buf, Int32(6))
+        }
+    }
+}
+
+public func FfiConverterTypeLogLevel_lift(_ buf: RustBuffer) throws -> LogLevel {
+    return try FfiConverterTypeLogLevel.lift(buf)
+}
+
+public func FfiConverterTypeLogLevel_lower(_ value: LogLevel) -> RustBuffer {
+    return FfiConverterTypeLogLevel.lower(value)
+}
+
+extension LogLevel: Equatable, Hashable {}
+
 private extension NSLock {
     func withLock<T>(f: () throws -> T) rethrows -> T {
         lock()
@@ -1200,6 +1266,14 @@ private struct FfiConverterDictionaryStringTypeCounterStats: FfiConverterRustBuf
     }
 }
 
+public func setLogLevel(level: LogLevel) {
+    try! rustCall {
+        uniffi_iroh_fn_func_set_log_level(
+            FfiConverterTypeLogLevel.lower(level), $0
+        )
+    }
+}
+
 private enum InitializationResult {
     case ok
     case contractVersionMismatch
@@ -1215,6 +1289,9 @@ private var initializationResult: InitializationResult {
     let scaffolding_contract_version = ffi_iroh_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
+    }
+    if uniffi_iroh_checksum_func_set_log_level() != 20910 {
+        return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_peer_id() != 46487 {
         return InitializationResult.apiChecksumMismatch
