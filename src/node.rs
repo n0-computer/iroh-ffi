@@ -47,9 +47,11 @@ pub fn set_log_level(level: LogLevel) {
     use tracing_subscriber::{fmt, prelude::*, reload};
     let filter: LevelFilter = level.into();
     let (filter, _) = reload::Layer::new(filter);
+    let mut layer = fmt::Layer::default();
+    layer.set_ansi(false);
     tracing_subscriber::registry()
         .with(filter)
-        .with(fmt::Layer::default())
+        .with(layer)
         .init();
 }
 
