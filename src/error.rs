@@ -1,7 +1,5 @@
 use std::fmt::Display;
 
-pub type Result<T> = std::result::Result<T, IrohError>;
-
 /// An Error.
 #[derive(Debug, thiserror::Error)]
 pub enum IrohError {

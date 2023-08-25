@@ -2,6 +2,13 @@ use std::path::PathBuf;
 use std::{env, fs};
 
 fn main() {
+    build_pc();
+
+    // Unifi
+    uniffi::generate_scaffolding("./src/iroh.udl").unwrap();
+}
+
+fn build_pc() {
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap());
     let target_path = out_path.join("../../..");
     let target_triple = env::var("TARGET").unwrap();
@@ -33,6 +40,4 @@ fn main() {
         pkg_config.as_bytes(),
     )
     .unwrap();
-
-    uniffi::generate_scaffolding("./src/iroh.udl").unwrap();
 }

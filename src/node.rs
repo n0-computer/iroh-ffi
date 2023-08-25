@@ -4,6 +4,7 @@ use futures::{
     stream::{StreamExt, TryStreamExt},
     Future,
 };
+use iroh::sync::store::GetFilter;
 use iroh::{
     baomap::flat,
     bytes::util::runtime::Handle,
@@ -12,13 +13,12 @@ use iroh::{
     node::{Node, DEFAULT_BIND_ADDR},
     rpc_protocol::{ProviderRequest, ProviderResponse, ShareMode},
 };
-use iroh_sync::store::GetFilter;
 use quic_rpc::transport::flume::FlumeConnection;
 
-use crate::error::{IrohError as Error, Result};
+use crate::error::IrohError as Error;
 
 pub use iroh::rpc_protocol::CounterStats;
-pub use iroh_sync::Entry;
+pub use iroh::sync::Entry;
 
 #[derive(Debug)]
 pub enum LiveEvent {
@@ -37,7 +37,7 @@ impl From<iroh::sync_engine::LiveEvent> for LiveEvent {
     }
 }
 
-pub struct SignedEntry(iroh_sync::sync::SignedEntry);
+pub struct SignedEntry(iroh::sync::sync::SignedEntry);
 
 impl SignedEntry {
     pub fn author(&self) -> Arc<AuthorId> {
@@ -59,7 +59,7 @@ impl Doc {
         self.inner.id().to_string()
     }
 
-    pub fn latest(&self) -> Result<Vec<Arc<SignedEntry>>> {
+    pub fn latest(&self) -> Result<Vec<Arc<SignedEntry>>, Error> {
         let latest = block_on(&self.rt, async {
             let get_result = self.inner.get(GetFilter::latest()).await?;
             get_result
@@ -71,7 +71,7 @@ impl Doc {
         Ok(latest)
     }
 
-    pub fn share_write(&self) -> Result<Arc<DocTicket>> {
+    pub fn share_write(&self) -> Result<Arc<DocTicket>, Error> {
         block_on(&self.rt, async {
             let ticket = self
                 .inner
@@ -83,7 +83,7 @@ impl Doc {
         })
     }
 
-    pub fn share_read(&self) -> Result<Arc<DocTicket>> {
+    pub fn share_read(&self) -> Result<Arc<DocTicket>, Error> {
         block_on(&self.rt, async {
             let ticket = self
                 .inner
@@ -100,7 +100,7 @@ impl Doc {
         author_id: Arc<AuthorId>,
         key: Vec<u8>,
         value: Vec<u8>,
-    ) -> Result<Arc<SignedEntry>> {
+    ) -> Result<Arc<SignedEntry>, Error> {
         block_on(&self.rt, async {
             let entry = self
                 .inner
@@ -111,7 +111,7 @@ impl Doc {
         })
     }
 
-    pub fn get_content_bytes(&self, entry: Arc<SignedEntry>) -> Result<Vec<u8>> {
+    pub fn get_content_bytes(&self, entry: Arc<SignedEntry>) -> Result<Vec<u8>, Error> {
         block_on(&self.rt, async {
             let content = self
                 .inner
@@ -123,7 +123,7 @@ impl Doc {
         })
     }
 
-    pub fn subscribe(&self, cb: Box<dyn SubscribeCallback>) -> Result<()> {
+    pub fn subscribe(&self, cb: Box<dyn SubscribeCallback>) -> Result<(), Error> {
         let client = self.inner.clone();
         self.rt.main().spawn(async move {
             let mut sub = client.subscribe().await.unwrap();
@@ -147,10 +147,10 @@ impl Doc {
 }
 
 pub trait SubscribeCallback: Send + Sync + 'static {
-    fn event(&self, event: LiveEvent) -> Result<()>;
+    fn event(&self, event: LiveEvent) -> Result<(), Error>;
 }
 
-pub struct AuthorId(iroh_sync::sync::AuthorId);
+pub struct AuthorId(iroh::sync::sync::AuthorId);
 
 impl AuthorId {
     pub fn to_string(&self) -> String {
@@ -162,7 +162,7 @@ impl AuthorId {
 pub struct DocTicket(iroh::rpc_protocol::DocTicket);
 
 impl DocTicket {
-    pub fn from_string(content: String) -> Result<Self> {
+    pub fn from_string(content: String) -> Result<Self, Error> {
         let ticket = content
             .parse::<iroh::rpc_protocol::DocTicket>()
             .map_err(Error::doc_ticket)?;
@@ -175,7 +175,7 @@ impl DocTicket {
 }
 
 pub struct IrohNode {
-    node: Node<flat::Store, iroh_sync::store::fs::Store>,
+    node: Node<flat::Store, iroh::sync::store::fs::Store>,
     async_runtime: Handle,
     sync_client: iroh::client::Iroh<FlumeConnection<ProviderResponse, ProviderRequest>>,
     #[allow(dead_code)]
@@ -183,7 +183,7 @@ pub struct IrohNode {
 }
 
 impl IrohNode {
-    pub fn new() -> Result<Self> {
+    pub fn new() -> Result<Self, Error> {
         let tokio_rt = tokio::runtime::Builder::new_multi_thread()
             .thread_name("main-runtime")
             .worker_threads(2)
@@ -203,7 +203,7 @@ impl IrohNode {
         let rt_inner = rt.clone();
         let node = block_on(&rt, async move {
             let docs_path = path.join("docs.db");
-            let docs = iroh_sync::store::fs::Store::new(&docs_path)?;
+            let docs = iroh::sync::store::fs::Store::new(&docs_path)?;
 
             // create a bao store for the iroh-bytes blobs
             let blob_path = path.join("blobs");
@@ -233,7 +233,7 @@ impl IrohNode {
         self.node.peer_id().to_string()
     }
 
-    pub fn create_doc(&self) -> Result<Arc<Doc>> {
+    pub fn create_doc(&self) -> Result<Arc<Doc>, Error> {
         block_on(&self.async_runtime, async {
             let doc = self.sync_client.create_doc().await.map_err(Error::doc)?;
 
@@ -244,7 +244,7 @@ impl IrohNode {
         })
     }
 
-    pub fn create_author(&self) -> Result<Arc<AuthorId>> {
+    pub fn create_author(&self) -> Result<Arc<AuthorId>, Error> {
         block_on(&self.async_runtime, async {
             let author = self
                 .sync_client
@@ -256,7 +256,7 @@ impl IrohNode {
         })
     }
 
-    pub fn import_doc(&self, ticket: Arc<DocTicket>) -> Result<Arc<Doc>> {
+    pub fn import_doc(&self, ticket: Arc<DocTicket>) -> Result<Arc<Doc>, Error> {
         block_on(&self.async_runtime, async {
             let doc = self
                 .sync_client
@@ -271,7 +271,7 @@ impl IrohNode {
         })
     }
 
-    pub fn stats(&self) -> Result<HashMap<String, CounterStats>> {
+    pub fn stats(&self) -> Result<HashMap<String, CounterStats>, Error> {
         block_on(&self.async_runtime, async {
             let stats = self.sync_client.stats().await.map_err(Error::doc)?;
             Ok(stats)
