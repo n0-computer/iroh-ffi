@@ -19,6 +19,41 @@ use crate::error::IrohError as Error;
 
 pub use iroh::rpc_protocol::CounterStats;
 pub use iroh::sync::Entry;
+use tracing_subscriber::filter::LevelFilter;
+
+pub enum LogLevel {
+    Trace,
+    Debug,
+    Info,
+    Warn,
+    Error,
+    Off,
+}
+
+impl From<LogLevel> for LevelFilter {
+    fn from(level: LogLevel) -> LevelFilter {
+        match level {
+            LogLevel::Trace => LevelFilter::TRACE,
+            LogLevel::Debug => LevelFilter::DEBUG,
+            LogLevel::Info => LevelFilter::INFO,
+            LogLevel::Warn => LevelFilter::WARN,
+            LogLevel::Error => LevelFilter::ERROR,
+            LogLevel::Off => LevelFilter::OFF,
+        }
+    }
+}
+
+pub fn set_log_level(level: LogLevel) {
+    use tracing_subscriber::{fmt, prelude::*, reload};
+    let filter: LevelFilter = level.into();
+    let (filter, _) = reload::Layer::new(filter);
+    let mut layer = fmt::Layer::default();
+    layer.set_ansi(false);
+    tracing_subscriber::registry()
+        .with(filter)
+        .with(layer)
+        .init();
+}
 
 #[derive(Debug)]
 pub enum LiveEvent {

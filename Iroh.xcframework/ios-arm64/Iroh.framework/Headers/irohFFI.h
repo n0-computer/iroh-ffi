@@ -118,6 +118,8 @@ RustBuffer uniffi_iroh_fn_method_docticket_to_string(void*_Nonnull ptr, RustCall
 );
 void uniffi_iroh_fn_init_callback_subscribecallback(ForeignCallback _Nonnull callback_stub, RustCallStatus *_Nonnull out_status
 );
+void uniffi_iroh_fn_func_set_log_level(RustBuffer level, RustCallStatus *_Nonnull out_status
+);
 RustBuffer ffi_iroh_rustbuffer_alloc(int32_t size, RustCallStatus *_Nonnull out_status
 );
 RustBuffer ffi_iroh_rustbuffer_from_bytes(ForeignBytes bytes, RustCallStatus *_Nonnull out_status
@@ -125,6 +127,9 @@ RustBuffer ffi_iroh_rustbuffer_from_bytes(ForeignBytes bytes, RustCallStatus *_N
 void ffi_iroh_rustbuffer_free(RustBuffer buf, RustCallStatus *_Nonnull out_status
 );
 RustBuffer ffi_iroh_rustbuffer_reserve(RustBuffer buf, int32_t additional, RustCallStatus *_Nonnull out_status
+);
+uint16_t uniffi_iroh_checksum_func_set_log_level(void
+    
 );
 uint16_t uniffi_iroh_checksum_method_irohnode_peer_id(void
     
