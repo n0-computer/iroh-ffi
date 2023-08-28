@@ -1,6 +1,22 @@
 # iroh-ffi 
 
-> FFI bindings for Iroh
+> Foreign Function Interface (FFI) bindings for Iroh
+
+This repo defines Python & Swift bindings for [iroh](https://github.com/n0-computer/iroh), which is written in Rust.
+
+### Published Packages:
+[Python](https://pypi.org/project/iroh/)
+[Swift](https://github.com/n0-computer/iroh-ffi)
+
+### Planned Support:
+We're hoping to ship support for the following langauges in the future
+
+- Go
+- Kotlin
+
+
+
+## Library Compilation
 
 Running `cargo build --release` will produce a dynamic library and a static library.
 
