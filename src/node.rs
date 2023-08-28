@@ -18,7 +18,7 @@ use quic_rpc::transport::flume::FlumeConnection;
 use crate::error::IrohError as Error;
 
 pub use iroh::rpc_protocol::CounterStats;
-pub use iroh::sync::Entry;
+pub use iroh::sync_engine::LiveStatus;
 use tracing_subscriber::filter::LevelFilter;
 
 pub enum LogLevel {
@@ -72,15 +72,30 @@ impl From<iroh::sync_engine::LiveEvent> for LiveEvent {
     }
 }
 
-pub struct SignedEntry(iroh::sync::sync::SignedEntry);
+pub struct Hash(iroh::bytes::Hash);
 
-impl SignedEntry {
+impl Hash {
+    pub fn to_string(&self) -> String {
+        self.0.to_string()
+    }
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.0.as_bytes().to_vec()
+    }
+}
+
+pub struct Entry(iroh::sync::sync::Entry);
+
+impl Entry {
     pub fn author(&self) -> Arc<AuthorId> {
-        Arc::new(AuthorId(self.0.author()))
+        Arc::new(AuthorId(self.0.id().author()))
     }
 
     pub fn key(&self) -> Vec<u8> {
-        self.0.key().to_vec()
+        self.0.id().key().to_vec()
+    }
+
+    pub fn namespace(&self) -> Arc<NamespaceId> {
+        Arc::new(NamespaceId(self.0.id().namespace()))
     }
 }
 
@@ -94,11 +109,11 @@ impl Doc {
         self.inner.id().to_string()
     }
 
-    pub fn latest(&self) -> Result<Vec<Arc<SignedEntry>>, Error> {
+    pub fn latest(&self) -> Result<Vec<Arc<Entry>>, Error> {
         let latest = block_on(&self.rt, async {
             let get_result = self.inner.get(GetFilter::latest()).await?;
             get_result
-                .map_ok(|e| Arc::new(SignedEntry(e)))
+                .map_ok(|e| Arc::new(Entry(e)))
                 .try_collect::<Vec<_>>()
                 .await
         })
@@ -135,26 +150,40 @@ impl Doc {
         author_id: Arc<AuthorId>,
         key: Vec<u8>,
         value: Vec<u8>,
-    ) -> Result<Arc<SignedEntry>, Error> {
+    ) -> Result<Arc<Hash>, Error> {
         block_on(&self.rt, async {
-            let entry = self
+            let hash = self
                 .inner
                 .set_bytes(author_id.0.clone(), key, value)
                 .await
                 .map_err(Error::doc)?;
-            Ok(Arc::new(SignedEntry(entry)))
+            Ok(Arc::new(Hash(hash)))
         })
     }
 
-    pub fn get_content_bytes(&self, entry: Arc<SignedEntry>) -> Result<Vec<u8>, Error> {
+    pub fn get_content_bytes(&self, hash: Arc<Hash>) -> Result<Vec<u8>, Error> {
         block_on(&self.rt, async {
             let content = self
                 .inner
-                .get_content_bytes(&entry.0)
+                .get_content_bytes(hash.0)
                 .await
                 .map_err(Error::doc)?;
 
             Ok(content.to_vec())
+        })
+    }
+
+    pub fn stop_sync(&self) -> Result<(), Error> {
+        block_on(&self.rt, async {
+            self.inner.stop_sync().await.map_err(Error::doc)?;
+            Ok(())
+        })
+    }
+
+    pub fn status(&self) -> Result<LiveStatus, Error> {
+        block_on(&self.rt, async {
+            let status = self.inner.status().await.map_err(Error::doc)?;
+            Ok(status)
         })
     }
 
@@ -188,6 +217,14 @@ pub trait SubscribeCallback: Send + Sync + 'static {
 pub struct AuthorId(iroh::sync::sync::AuthorId);
 
 impl AuthorId {
+    pub fn to_string(&self) -> String {
+        self.0.to_string()
+    }
+}
+
+pub struct NamespaceId(iroh::sync::sync::NamespaceId);
+
+impl NamespaceId {
     pub fn to_string(&self) -> String {
         self.0.to_string()
     }

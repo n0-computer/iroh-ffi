@@ -32,13 +32,17 @@ interface Doc {
   [Throws=IrohError]
   DocTicket share_read();
   [Throws=IrohError]
-  SignedEntry set_bytes(AuthorId author, bytes key, bytes value);
+  Hash set_bytes(AuthorId author, bytes key, bytes value);
   [Throws=IrohError]
-  bytes get_content_bytes(SignedEntry entry);
+  bytes get_content_bytes(Hash hash);
   [Throws=IrohError]
-  sequence<SignedEntry> latest();
+  sequence<Entry> latest();
   [Throws=IrohError]
   void subscribe(SubscribeCallback cb);
+  [Throws=IrohError]
+  void stop_sync();
+  [Throws=IrohError]
+  LiveStatus status();
 };
 
 callback interface SubscribeCallback {
@@ -50,15 +54,25 @@ interface AuthorId {
   string to_string();
 };
 
-interface SignedEntry {
+interface Entry {
   AuthorId author();
   bytes key();
+};
+
+interface Hash {
+  string to_string();
+  bytes to_bytes();
 };
 
 interface DocTicket {
   [Name=from_string, Throws=IrohError]
   constructor(string content);
   string to_string();
+};
+
+dictionary LiveStatus {
+  boolean active;
+  u64 subscriptions;
 };
 
 dictionary CounterStats {

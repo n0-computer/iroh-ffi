@@ -1622,7 +1622,7 @@ checksum = "28b29a3cd74f0f4598934efe3aeba42bae0eb4680554128851ebbecb02af14e6"
 [[package]]
 name = "iroh"
 version = "0.5.1"
-source = "git+https://github.com/n0-computer/iroh?branch=main#904342fba341a6c0816147a45bb91b6ebfb50479"
+source = "git+https://github.com/n0-computer/iroh?branch=main#93147ac49a960ef0f4646c41a5c951faf5df2278"
 dependencies = [
  "anyhow",
  "bao-tree",
@@ -1674,7 +1674,7 @@ dependencies = [
 [[package]]
 name = "iroh-bytes"
 version = "0.5.0"
-source = "git+https://github.com/n0-computer/iroh?branch=main#904342fba341a6c0816147a45bb91b6ebfb50479"
+source = "git+https://github.com/n0-computer/iroh?branch=main#93147ac49a960ef0f4646c41a5c951faf5df2278"
 dependencies = [
  "anyhow",
  "bao-tree",
@@ -1732,7 +1732,7 @@ dependencies = [
 [[package]]
 name = "iroh-gossip"
 version = "0.5.1"
-source = "git+https://github.com/n0-computer/iroh?branch=main#904342fba341a6c0816147a45bb91b6ebfb50479"
+source = "git+https://github.com/n0-computer/iroh?branch=main#93147ac49a960ef0f4646c41a5c951faf5df2278"
 dependencies = [
  "anyhow",
  "bytes",
@@ -1772,7 +1772,7 @@ dependencies = [
 [[package]]
 name = "iroh-metrics"
 version = "0.5.0"
-source = "git+https://github.com/n0-computer/iroh?branch=main#904342fba341a6c0816147a45bb91b6ebfb50479"
+source = "git+https://github.com/n0-computer/iroh?branch=main#93147ac49a960ef0f4646c41a5c951faf5df2278"
 dependencies = [
  "erased_set",
  "hyper",
@@ -1786,7 +1786,7 @@ dependencies = [
 [[package]]
 name = "iroh-net"
 version = "0.5.1"
-source = "git+https://github.com/n0-computer/iroh?branch=main#904342fba341a6c0816147a45bb91b6ebfb50479"
+source = "git+https://github.com/n0-computer/iroh?branch=main#93147ac49a960ef0f4646c41a5c951faf5df2278"
 dependencies = [
  "aead",
  "anyhow",
@@ -1852,7 +1852,7 @@ dependencies = [
 [[package]]
 name = "iroh-sync"
 version = "0.5.1"
-source = "git+https://github.com/n0-computer/iroh?branch=main#904342fba341a6c0816147a45bb91b6ebfb50479"
+source = "git+https://github.com/n0-computer/iroh?branch=main#93147ac49a960ef0f4646c41a5c951faf5df2278"
 dependencies = [
  "anyhow",
  "bytes",
@@ -2000,9 +2000,9 @@ checksum = "df39d232f5c40b0891c10216992c2f250c054105cb1e56f0fc9032db6203ecc1"
 
 [[package]]
 name = "memchr"
-version = "2.5.0"
+version = "2.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
+checksum = "76fc44e2588d5b436dbc3c6cf62aef290f90dab6235744a93dfe1cc18f451e2c"
 
 [[package]]
 name = "memoffset"
@@ -2142,14 +2142,13 @@ dependencies = [
 
 [[package]]
 name = "nix"
-version = "0.26.2"
+version = "0.26.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bfdda3d196821d6af13126e40375cdf7da646a96114af134d5f417a9a1dc8e1a"
+checksum = "abbbc55ad7b13aac85f9401c796dcda1b864e07fcad40ad47792eaa8932ea502"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags 2.4.0",
  "cfg-if",
  "libc",
- "static_assertions",
 ]
 
 [[package]]
@@ -2550,9 +2549,9 @@ checksum = "b4596b6d070b27117e987119b4dac604f3c58cfb0b191112e24771b2faeac1a6"
 
 [[package]]
 name = "platforms"
-version = "3.0.2"
+version = "3.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3d7ddaed09e0eb771a79ab0fd64609ba0afb0a8366421957936ad14cbd13630"
+checksum = "4503fa043bf02cee09a9582e9554b4c6403b2ef55e4612e96561d294419429f8"
 
 [[package]]
 name = "pnet_base"
@@ -3750,9 +3749,9 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.3.27"
+version = "0.3.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0bb39ee79a6d8de55f48f2293a830e040392f1c5f16e336bdd1788cd0aadce07"
+checksum = "17f6bb557fd245c28e6411aa56b6403c689ad95061f50e4be16c274e70a17e48"
 dependencies = [
  "deranged",
  "itoa",
@@ -3769,9 +3768,9 @@ checksum = "7300fbefb4dadc1af235a9cef3737cea692a9d97e1b9cbcd4ebdae6f8868e6fb"
 
 [[package]]
 name = "time-macros"
-version = "0.2.13"
+version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "733d258752e9303d392b94b75230d07b0b9c489350c69b851fc6c065fde3e8f9"
+checksum = "1a942f44339478ef67935ab2bbaec2fb0322496cf3cbe84b261e06ac3814c572"
 dependencies = [
  "time-core",
 ]
@@ -4246,9 +4245,9 @@ checksum = "a156c684c91ea7d62626509bce3cb4e1d9ed5c4d978f7b4352658f96a4c26b4a"
 
 [[package]]
 name = "url"
-version = "2.4.0"
+version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "50bff7831e19200a85b17131d085c25d7811bc4e186efdaf54bbd132994a88cb"
+checksum = "143b538f18257fac9cad154828a57c6bf5157e1aa604d4816b5995bf6de87ae5"
 dependencies = [
  "form_urlencoded",
  "idna 0.4.0",
