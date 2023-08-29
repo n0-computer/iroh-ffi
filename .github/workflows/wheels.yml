@@ -23,3 +23,8 @@ jobs:
           PATH=/opt/python/cp311-cp311/bin:$PATH
           export PATH
           /opt/python/cp311-cp311/bin/maturin build --release --manylinux 2014
+      - name: Upload wheel
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheel-manylinux2014
+          path: target/wheels/iroh-*manylinux2014_x86_64.whl
