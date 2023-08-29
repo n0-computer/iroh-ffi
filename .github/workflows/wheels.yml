@@ -8,23 +8,57 @@ on:
 
 jobs:
   manylinux2014:
-    name: Build manylinux2014 wheels
     runs-on: ubuntu-latest
     container: quay.io/pypa/manylinux2014_x86_64
     steps:
       - uses: actions/checkout@v3
-      - name: Install stable rust
-        run: curl --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+      - uses: dtolnay/rust-toolchain@stable
       - name: Install maturin & uniffi-bindgen
         run: /opt/python/cp311-cp311/bin/pip install maturin uniffi-bindgen
       - name: Build wheel
         run: |
-          source $HOME/.cargo/env
           PATH=/opt/python/cp311-cp311/bin:$PATH
           export PATH
-          /opt/python/cp311-cp311/bin/maturin build --release --manylinux 2014
+          maturin build --release --manylinux 2014
       - name: Upload wheel
         uses: actions/upload-artifact@v3
         with:
-          name: wheel-manylinux2014
-          path: target/wheels/iroh-*manylinux2014_x86_64.whl
+          name: wheels-manylinux2014
+          path: target/wheels/*.whl
+
+  osx:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install maturin & uniffi-bindgen
+        run: /opt/python/cp311-cp311/bin/pip install maturin uniffi-bindgen
+      - name: Build wheel
+        run: |
+          PATH=/opt/python/cp311-cp311/bin:$PATH
+          export PATH
+          maturin build --release
+      - name: Upload wheel
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheels-osx
+          path: target/wheels/*.whl
+      
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install maturin & uniffi-bindgen
+        run: /opt/python/cp311-cp311/bin/pip install maturin uniffi-bindgen
+      - name: Build wheel
+        run: |
+          PATH=/opt/python/cp311-cp311/bin:$PATH
+          export PATH
+          maturin build --release
+      - name: Upload wheel
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheels-windows
+          path: target/wheels/*.whl
+      
