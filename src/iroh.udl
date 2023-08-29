@@ -57,6 +57,7 @@ interface AuthorId {
 interface Entry {
   AuthorId author();
   bytes key();
+  Hash hash();
 };
 
 interface Hash {

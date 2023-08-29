@@ -94,6 +94,10 @@ impl Entry {
         self.0.id().key().to_vec()
     }
 
+    pub fn hash(&self) -> Arc<Hash> {
+        Arc::new(Hash(self.0.content_hash()))
+    }
+
     pub fn namespace(&self) -> Arc<NamespaceId> {
         Arc::new(NamespaceId(self.0.id().namespace()))
     }

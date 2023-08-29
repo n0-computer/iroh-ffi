@@ -94,21 +94,33 @@ void*_Nonnull uniffi_iroh_fn_method_doc_share_read(void*_Nonnull ptr, RustCallSt
 );
 void*_Nonnull uniffi_iroh_fn_method_doc_set_bytes(void*_Nonnull ptr, void*_Nonnull author, RustBuffer key, RustBuffer value, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_iroh_fn_method_doc_get_content_bytes(void*_Nonnull ptr, void*_Nonnull entry, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_iroh_fn_method_doc_get_content_bytes(void*_Nonnull ptr, void*_Nonnull hash, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_doc_latest(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void uniffi_iroh_fn_method_doc_subscribe(void*_Nonnull ptr, uint64_t cb, RustCallStatus *_Nonnull out_status
 );
+void uniffi_iroh_fn_method_doc_stop_sync(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_iroh_fn_method_doc_status(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
 void uniffi_iroh_fn_free_authorid(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_authorid_to_string(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void uniffi_iroh_fn_free_signedentry(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+void uniffi_iroh_fn_free_entry(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void*_Nonnull uniffi_iroh_fn_method_signedentry_author(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_iroh_fn_method_entry_author(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_iroh_fn_method_signedentry_key(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_iroh_fn_method_entry_key(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_iroh_fn_method_entry_hash(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void uniffi_iroh_fn_free_hash(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_iroh_fn_method_hash_to_string(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_iroh_fn_method_hash_to_bytes(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void uniffi_iroh_fn_free_docticket(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -167,13 +179,28 @@ uint16_t uniffi_iroh_checksum_method_doc_latest(void
 uint16_t uniffi_iroh_checksum_method_doc_subscribe(void
     
 );
+uint16_t uniffi_iroh_checksum_method_doc_stop_sync(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_doc_status(void
+    
+);
 uint16_t uniffi_iroh_checksum_method_authorid_to_string(void
     
 );
-uint16_t uniffi_iroh_checksum_method_signedentry_author(void
+uint16_t uniffi_iroh_checksum_method_entry_author(void
     
 );
-uint16_t uniffi_iroh_checksum_method_signedentry_key(void
+uint16_t uniffi_iroh_checksum_method_entry_key(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_entry_hash(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_hash_to_string(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_hash_to_bytes(void
     
 );
 uint16_t uniffi_iroh_checksum_method_docticket_to_string(void

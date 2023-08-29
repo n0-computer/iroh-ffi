@@ -307,6 +307,27 @@ private struct FfiConverterUInt64: FfiConverterPrimitive {
     }
 }
 
+private struct FfiConverterBool: FfiConverter {
+    typealias FfiType = Int8
+    typealias SwiftType = Bool
+
+    public static func lift(_ value: Int8) throws -> Bool {
+        return value != 0
+    }
+
+    public static func lower(_ value: Bool) -> Int8 {
+        return value ? 1 : 0
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Bool {
+        return try lift(readInt(&buf))
+    }
+
+    public static func write(_ value: Bool, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(value))
+    }
+}
+
 private struct FfiConverterString: FfiConverter {
     typealias SwiftType = String
     typealias FfiType = RustBuffer
@@ -430,10 +451,12 @@ public protocol DocProtocol {
     func id() -> String
     func shareWrite() throws -> DocTicket
     func shareRead() throws -> DocTicket
-    func setBytes(author: AuthorId, key: Data, value: Data) throws -> SignedEntry
-    func getContentBytes(entry: SignedEntry) throws -> Data
-    func latest() throws -> [SignedEntry]
+    func setBytes(author: AuthorId, key: Data, value: Data) throws -> Hash
+    func getContentBytes(hash: Hash) throws -> Data
+    func latest() throws -> [Entry]
     func subscribe(cb: SubscribeCallback) throws
+    func stopSync() throws
+    func status() throws -> LiveStatus
 }
 
 public class Doc: DocProtocol {
@@ -475,8 +498,8 @@ public class Doc: DocProtocol {
         )
     }
 
-    public func setBytes(author: AuthorId, key: Data, value: Data) throws -> SignedEntry {
-        return try FfiConverterTypeSignedEntry.lift(
+    public func setBytes(author: AuthorId, key: Data, value: Data) throws -> Hash {
+        return try FfiConverterTypeHash.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_doc_set_bytes(self.pointer,
                                                     FfiConverterTypeAuthorId.lower(author),
@@ -486,17 +509,17 @@ public class Doc: DocProtocol {
         )
     }
 
-    public func getContentBytes(entry: SignedEntry) throws -> Data {
+    public func getContentBytes(hash: Hash) throws -> Data {
         return try FfiConverterData.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_doc_get_content_bytes(self.pointer,
-                                                            FfiConverterTypeSignedEntry.lower(entry), $0)
+                                                            FfiConverterTypeHash.lower(hash), $0)
             }
         )
     }
 
-    public func latest() throws -> [SignedEntry] {
-        return try FfiConverterSequenceTypeSignedEntry.lift(
+    public func latest() throws -> [Entry] {
+        return try FfiConverterSequenceTypeEntry.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_doc_latest(self.pointer, $0)
             }
@@ -509,6 +532,21 @@ public class Doc: DocProtocol {
                 uniffi_iroh_fn_method_doc_subscribe(self.pointer,
                                                     FfiConverterCallbackInterfaceSubscribeCallback.lower(cb), $0)
             }
+    }
+
+    public func stopSync() throws {
+        try
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_doc_stop_sync(self.pointer, $0)
+            }
+    }
+
+    public func status() throws -> LiveStatus {
+        return try FfiConverterTypeLiveStatus.lift(
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_doc_status(self.pointer, $0)
+            }
+        )
     }
 }
 
@@ -624,6 +662,168 @@ public func FfiConverterTypeDocTicket_lower(_ value: DocTicket) -> UnsafeMutable
     return FfiConverterTypeDocTicket.lower(value)
 }
 
+public protocol EntryProtocol {
+    func author() -> AuthorId
+    func key() -> Data
+    func hash() -> Hash
+}
+
+public class Entry: EntryProtocol {
+    fileprivate let pointer: UnsafeMutableRawPointer
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    deinit {
+        try! rustCall { uniffi_iroh_fn_free_entry(pointer, $0) }
+    }
+
+    public func author() -> AuthorId {
+        return try! FfiConverterTypeAuthorId.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_entry_author(self.pointer, $0)
+                }
+        )
+    }
+
+    public func key() -> Data {
+        return try! FfiConverterData.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_entry_key(self.pointer, $0)
+                }
+        )
+    }
+
+    public func hash() -> Hash {
+        return try! FfiConverterTypeHash.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_entry_hash(self.pointer, $0)
+                }
+        )
+    }
+}
+
+public struct FfiConverterTypeEntry: FfiConverter {
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = Entry
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Entry {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: Entry, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> Entry {
+        return Entry(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: Entry) -> UnsafeMutableRawPointer {
+        return value.pointer
+    }
+}
+
+public func FfiConverterTypeEntry_lift(_ pointer: UnsafeMutableRawPointer) throws -> Entry {
+    return try FfiConverterTypeEntry.lift(pointer)
+}
+
+public func FfiConverterTypeEntry_lower(_ value: Entry) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeEntry.lower(value)
+}
+
+public protocol HashProtocol {
+    func toString() -> String
+    func toBytes() -> Data
+}
+
+public class Hash: HashProtocol {
+    fileprivate let pointer: UnsafeMutableRawPointer
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    deinit {
+        try! rustCall { uniffi_iroh_fn_free_hash(pointer, $0) }
+    }
+
+    public func toString() -> String {
+        return try! FfiConverterString.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_hash_to_string(self.pointer, $0)
+                }
+        )
+    }
+
+    public func toBytes() -> Data {
+        return try! FfiConverterData.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_hash_to_bytes(self.pointer, $0)
+                }
+        )
+    }
+}
+
+public struct FfiConverterTypeHash: FfiConverter {
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = Hash
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Hash {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: Hash, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> Hash {
+        return Hash(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: Hash) -> UnsafeMutableRawPointer {
+        return value.pointer
+    }
+}
+
+public func FfiConverterTypeHash_lift(_ pointer: UnsafeMutableRawPointer) throws -> Hash {
+    return try FfiConverterTypeHash.lift(pointer)
+}
+
+public func FfiConverterTypeHash_lower(_ value: Hash) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeHash.lower(value)
+}
+
 public protocol IrohNodeProtocol {
     func peerId() -> String
     func createDoc() throws -> Doc
@@ -733,82 +933,6 @@ public func FfiConverterTypeIrohNode_lower(_ value: IrohNode) -> UnsafeMutableRa
     return FfiConverterTypeIrohNode.lower(value)
 }
 
-public protocol SignedEntryProtocol {
-    func author() -> AuthorId
-    func key() -> Data
-}
-
-public class SignedEntry: SignedEntryProtocol {
-    fileprivate let pointer: UnsafeMutableRawPointer
-
-    // TODO: We'd like this to be `private` but for Swifty reasons,
-    // we can't implement `FfiConverter` without making this `required` and we can't
-    // make it `required` without making it `public`.
-    required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
-        self.pointer = pointer
-    }
-
-    deinit {
-        try! rustCall { uniffi_iroh_fn_free_signedentry(pointer, $0) }
-    }
-
-    public func author() -> AuthorId {
-        return try! FfiConverterTypeAuthorId.lift(
-            try!
-                rustCall {
-                    uniffi_iroh_fn_method_signedentry_author(self.pointer, $0)
-                }
-        )
-    }
-
-    public func key() -> Data {
-        return try! FfiConverterData.lift(
-            try!
-                rustCall {
-                    uniffi_iroh_fn_method_signedentry_key(self.pointer, $0)
-                }
-        )
-    }
-}
-
-public struct FfiConverterTypeSignedEntry: FfiConverter {
-    typealias FfiType = UnsafeMutableRawPointer
-    typealias SwiftType = SignedEntry
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SignedEntry {
-        let v: UInt64 = try readInt(&buf)
-        // The Rust code won't compile if a pointer won't fit in a UInt64.
-        // We have to go via `UInt` because that's the thing that's the size of a pointer.
-        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if ptr == nil {
-            throw UniffiInternalError.unexpectedNullPointer
-        }
-        return try lift(ptr!)
-    }
-
-    public static func write(_ value: SignedEntry, into buf: inout [UInt8]) {
-        // This fiddling is because `Int` is the thing that's the same size as a pointer.
-        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
-        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
-    }
-
-    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> SignedEntry {
-        return SignedEntry(unsafeFromRawPointer: pointer)
-    }
-
-    public static func lower(_ value: SignedEntry) -> UnsafeMutableRawPointer {
-        return value.pointer
-    }
-}
-
-public func FfiConverterTypeSignedEntry_lift(_ pointer: UnsafeMutableRawPointer) throws -> SignedEntry {
-    return try FfiConverterTypeSignedEntry.lift(pointer)
-}
-
-public func FfiConverterTypeSignedEntry_lower(_ value: SignedEntry) -> UnsafeMutableRawPointer {
-    return FfiConverterTypeSignedEntry.lower(value)
-}
-
 public struct CounterStats {
     public var value: UInt64
     public var description: String
@@ -858,6 +982,57 @@ public func FfiConverterTypeCounterStats_lift(_ buf: RustBuffer) throws -> Count
 
 public func FfiConverterTypeCounterStats_lower(_ value: CounterStats) -> RustBuffer {
     return FfiConverterTypeCounterStats.lower(value)
+}
+
+public struct LiveStatus {
+    public var active: Bool
+    public var subscriptions: UInt64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(active: Bool, subscriptions: UInt64) {
+        self.active = active
+        self.subscriptions = subscriptions
+    }
+}
+
+extension LiveStatus: Equatable, Hashable {
+    public static func == (lhs: LiveStatus, rhs: LiveStatus) -> Bool {
+        if lhs.active != rhs.active {
+            return false
+        }
+        if lhs.subscriptions != rhs.subscriptions {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(active)
+        hasher.combine(subscriptions)
+    }
+}
+
+public struct FfiConverterTypeLiveStatus: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> LiveStatus {
+        return try LiveStatus(
+            active: FfiConverterBool.read(from: &buf),
+            subscriptions: FfiConverterUInt64.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: LiveStatus, into buf: inout [UInt8]) {
+        FfiConverterBool.write(value.active, into: &buf)
+        FfiConverterUInt64.write(value.subscriptions, into: &buf)
+    }
+}
+
+public func FfiConverterTypeLiveStatus_lift(_ buf: RustBuffer) throws -> LiveStatus {
+    return try FfiConverterTypeLiveStatus.lift(buf)
+}
+
+public func FfiConverterTypeLiveStatus_lower(_ value: LiveStatus) -> RustBuffer {
+    return FfiConverterTypeLiveStatus.lower(value)
 }
 
 public enum IrohError {
@@ -1221,23 +1396,23 @@ extension FfiConverterCallbackInterfaceSubscribeCallback: FfiConverter {
     }
 }
 
-private struct FfiConverterSequenceTypeSignedEntry: FfiConverterRustBuffer {
-    typealias SwiftType = [SignedEntry]
+private struct FfiConverterSequenceTypeEntry: FfiConverterRustBuffer {
+    typealias SwiftType = [Entry]
 
-    public static func write(_ value: [SignedEntry], into buf: inout [UInt8]) {
+    public static func write(_ value: [Entry], into buf: inout [UInt8]) {
         let len = Int32(value.count)
         writeInt(&buf, len)
         for item in value {
-            FfiConverterTypeSignedEntry.write(item, into: &buf)
+            FfiConverterTypeEntry.write(item, into: &buf)
         }
     }
 
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [SignedEntry] {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [Entry] {
         let len: Int32 = try readInt(&buf)
-        var seq = [SignedEntry]()
+        var seq = [Entry]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            try seq.append(FfiConverterTypeSignedEntry.read(from: &buf))
+            try seq.append(FfiConverterTypeEntry.read(from: &buf))
         }
         return seq
     }
@@ -1317,25 +1492,40 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_doc_share_read() != 8947 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_set_bytes() != 3381 {
+    if uniffi_iroh_checksum_method_doc_set_bytes() != 50064 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_get_content_bytes() != 11221 {
+    if uniffi_iroh_checksum_method_doc_get_content_bytes() != 4262 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_latest() != 41807 {
+    if uniffi_iroh_checksum_method_doc_latest() != 34983 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_doc_subscribe() != 17522 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_checksum_method_doc_stop_sync() != 10292 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_doc_status() != 11839 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_checksum_method_authorid_to_string() != 61926 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_signedentry_author() != 26724 {
+    if uniffi_iroh_checksum_method_entry_author() != 7235 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_signedentry_key() != 11515 {
+    if uniffi_iroh_checksum_method_entry_key() != 56754 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_entry_hash() != 38165 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_hash_to_string() != 33037 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_hash_to_bytes() != 55740 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_docticket_to_string() != 32683 {
