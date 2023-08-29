@@ -39,6 +39,16 @@ For builds targeting older versions of MacOS, build with with:  `MACOSX_DEPLOYME
 - Install `uniffi-bindgen` with `pip`
 - `maturin develop` will build your package
 
+### Building wheels
+
+Invoking `maturin build` will build a wheel in `target/wheels`.  This
+will likely only work on your specific platform. To build a portable
+wheel for linux use:
+
+```
+docker run --rm -v $(pwd):/mnt -w /mnt quay.io/pypa/manylinux2014_x86_64 /mnt/build-wheel.sh
+```
+
 ## Development
 
 - This uses https://mozilla.github.io/uniffi-rs/ for building the interface
