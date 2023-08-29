@@ -38,11 +38,9 @@ jobs:
           python-version: '3.11'
       - name: Install maturin & uniffi-bindgen
         run: |
-          /opt/python/cp311-cp311/bin/python -m pip install maturin uniffi-bindgen
+          pip install maturin uniffi-bindgen
       - name: Build wheel
         run: |
-          PATH=/opt/python/cp311-cp311/bin:$PATH
-          export PATH
           maturin build --release
       - name: Upload wheel
         uses: actions/upload-artifact@v3
@@ -60,11 +58,9 @@ jobs:
           python-version: '3.11'
       - name: Install maturin & uniffi-bindgen
         run: |
-          /opt/python/cp311-cp311/bin/python -m pip install maturin uniffi-bindgen
+          pip install maturin uniffi-bindgen
       - name: Build wheel
         run: |
-          PATH=/opt/python/cp311-cp311/bin:$PATH
-          export PATH
           maturin build --release
       - name: Upload wheel
         uses: actions/upload-artifact@v3
