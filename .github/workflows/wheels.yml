@@ -19,6 +19,7 @@ jobs:
           /opt/python/cp311-cp311/bin/pip install maturin uniffi-bindgen
       - name: Build wheel
         run: |
+          source $HOME/.cargo/env
           PATH=/opt/python/cp311-cp311/bin:$PATH
           export PATH
           maturin build --release --manylinux 2014
@@ -67,4 +68,4 @@ jobs:
         with:
           name: wheels-windows
           path: target/wheels/*.whl
-      
+
