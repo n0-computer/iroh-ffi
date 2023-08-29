@@ -9,11 +9,11 @@ SWIFT_INTERFACE="IrohLib"
 
 # Compile the rust
 echo "Building aarch64-apple-ios"
-cargo build --target aarch64-apple-ios
+cargo build --release --target aarch64-apple-ios
 echo "Building aarch64-apple-ios-sim"
-cargo build --target aarch64-apple-ios-sim
+cargo build --release --target aarch64-apple-ios-sim
 echo "Building x86_64-apple-ios"
-cargo build --target x86_64-apple-ios
+cargo build --release --target x86_64-apple-ios
 
 # Remove old files if they exist
 IOS_ARM64_FRAMEWORK="$FRAMEWORK_NAME.xcframework/ios-arm64/$FRAMEWORK_NAME.framework"

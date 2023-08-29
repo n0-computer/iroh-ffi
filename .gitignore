@@ -4,7 +4,7 @@
 # Rust
 target/
 
-# Swfit
+# Swift
 /Packages
 /*.xcodeproj
 xcuserdata/
@@ -12,6 +12,8 @@ DerivedData/
 .swiftpm/config/registries.json
 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 /include
+
+/IrohLib.xcframework.zip
 
 /Iroh.xcframework/ios-arm64/Iroh.framework/*
 /Iroh.xcframework/ios-arm64/Iroh.framework/Headers/*
