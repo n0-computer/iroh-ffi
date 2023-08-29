@@ -35,12 +35,12 @@ cargo run --bin uniffi-bindgen generate "src/$UDL_NAME.udl" --language swift --o
 
 # Make fat lib for sims
 lipo -create \
-    "./target/aarch64-apple-ios-sim/debug/lib${UDL_NAME}.a" \
-    "./target/x86_64-apple-ios/debug/lib${UDL_NAME}.a" \
+    "./target/aarch64-apple-ios-sim/release/lib${UDL_NAME}.a" \
+    "./target/x86_64-apple-ios/release/lib${UDL_NAME}.a" \
     -output ./target/universal.a
 
 # Move binaries
-cp "./target/aarch64-apple-ios/debug/lib${UDL_NAME}.a" \
+cp "./target/aarch64-apple-ios/release/lib${UDL_NAME}.a" \
     "$IOS_ARM64_FRAMEWORK/$FRAMEWORK_NAME"
 cp ./target/universal.a \
     "$IOS_SIM_FRAMEWORK/$FRAMEWORK_NAME"
