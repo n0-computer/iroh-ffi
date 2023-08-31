@@ -49,6 +49,11 @@ wheel for linux use:
 docker run --rm -v $(pwd):/mnt -w /mnt quay.io/pypa/manylinux2014_x86_64 /mnt/build-wheel.sh
 ```
 
+## Kotlin
+
+- `make_kotlin.sh` to (re)generate bindings
+- bindings are located in the `kotlin` folder
+
 ## Development
 
 - This uses https://mozilla.github.io/uniffi-rs/ for building the interface
