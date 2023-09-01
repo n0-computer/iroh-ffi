@@ -51,4 +51,5 @@ uniffi = { version = "0.24.3", features = ["build"] }
 
 [patch.crates-io]
 # https://github.com/mullvad/system-configuration-rs/pull/42
+iroh = { git = "https://github.com/n0-computer/iroh", branch = "feat-netmon" }
 system-configuration = { git = "https://github.com/tmpfs/system-configuration-rs", branch = "ios-hack" }
