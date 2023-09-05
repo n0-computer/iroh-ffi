@@ -15,6 +15,8 @@ pub enum IrohError {
     DocTicket { description: String },
     #[error("uniffi: {description}")]
     Uniffi { description: String },
+    #[error("connection: {description}")]
+    Connection { description: String },
 }
 
 impl IrohError {
@@ -32,6 +34,12 @@ impl IrohError {
 
     pub fn author(error: impl Display) -> Self {
         IrohError::Author {
+            description: error.to_string(),
+        }
+    }
+
+    pub fn connection(error: impl Display) -> Self {
+        IrohError::Connection {
             description: error.to_string(),
         }
     }
