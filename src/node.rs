@@ -4,7 +4,6 @@ use futures::{
     stream::{StreamExt, TryStreamExt},
     Future,
 };
-use iroh::sync::store::GetFilter;
 use iroh::{
     baomap::flat,
     bytes::util::runtime::Handle,
@@ -20,6 +19,86 @@ use crate::error::IrohError as Error;
 pub use iroh::rpc_protocol::CounterStats;
 pub use iroh::sync_engine::LiveStatus;
 use tracing_subscriber::filter::LevelFilter;
+
+#[derive(Debug)]
+pub struct PublicKey(iroh::net::key::PublicKey);
+
+impl PublicKey {
+    pub fn to_string(&self) -> String {
+        self.0.to_string()
+    }
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.0.as_bytes().to_vec()
+    }
+}
+
+#[derive(Debug)]
+pub struct ConnectionInfo {
+    pub id: u64,
+    pub public_key: Arc<PublicKey>,
+    pub derp_region: Option<u16>,
+    pub addrs: Vec<SocketAddr>,
+    pub latencies: Vec<Option<f64>>,
+    pub conn_type: ConnectionType,
+    pub latency: Option<f64>,
+}
+
+impl From<iroh::net::magic_endpoint::ConnectionInfo> for ConnectionInfo {
+    fn from(value: iroh::net::magic_endpoint::ConnectionInfo) -> Self {
+        ConnectionInfo {
+            id: value.id as _,
+            public_key: Arc::new(PublicKey(value.public_key)),
+            derp_region: value.derp_region,
+            addrs: value.addrs.iter().map(|(a, _)| (*a).into()).collect(),
+            latencies: value
+                .addrs
+                .iter()
+                .map(|(_, l)| l.map(|d| d.as_secs_f64()))
+                .collect(),
+            conn_type: value.conn_type.into(),
+            latency: value.latency.map(|l| l.as_secs_f64()),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum ConnectionType {
+    Direct { addr: SocketAddr },
+    Relay { port: u16 },
+    None,
+}
+
+impl From<iroh::net::magicsock::ConnectionType> for ConnectionType {
+    fn from(value: iroh::net::magicsock::ConnectionType) -> Self {
+        match value {
+            iroh::net::magicsock::ConnectionType::Direct(addr) => {
+                ConnectionType::Direct { addr: addr.into() }
+            }
+            iroh::net::magicsock::ConnectionType::Relay(port) => ConnectionType::Relay { port },
+            iroh::net::magicsock::ConnectionType::None => ConnectionType::None,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum SocketAddr {
+    V4 { a: u8, b: u8, c: u8, d: u8 },
+    V6 { addr: Vec<u8> },
+}
+
+impl From<std::net::SocketAddr> for SocketAddr {
+    fn from(value: std::net::SocketAddr) -> Self {
+        match value {
+            std::net::SocketAddr::V4(addr) => {
+                let [a, b, c, d] = addr.ip().octets();
+                SocketAddr::V4 { a, b, c, d }
+            }
+            std::net::SocketAddr::V6(addr) => SocketAddr::V6 {
+                addr: addr.ip().octets().to_vec(),
+            },
+        }
+    }
+}
 
 pub enum LogLevel {
     Trace,
@@ -113,9 +192,12 @@ impl Doc {
         self.inner.id().to_string()
     }
 
-    pub fn latest(&self) -> Result<Vec<Arc<Entry>>, Error> {
+    pub fn all(&self) -> Result<Vec<Arc<Entry>>, Error> {
         let latest = block_on(&self.rt, async {
-            let get_result = self.inner.get(GetFilter::latest()).await?;
+            let get_result = self
+                .inner
+                .get_many(iroh::sync::store::GetFilter::All)
+                .await?;
             get_result
                 .map_ok(|e| Arc::new(Entry(e)))
                 .try_collect::<Vec<_>>()
@@ -332,6 +414,21 @@ impl IrohNode {
         })
     }
 
+    pub fn list_authors(&self) -> Result<Vec<Arc<AuthorId>>, Error> {
+        block_on(&self.async_runtime, async {
+            let authors = self
+                .sync_client
+                .list_authors()
+                .await
+                .map_err(Error::author)?
+                .map_ok(|id| Arc::new(AuthorId(id)))
+                .try_collect::<Vec<_>>()
+                .await
+                .map_err(Error::author)?;
+            Ok(authors)
+        })
+    }
+
     pub fn import_doc(&self, ticket: Arc<DocTicket>) -> Result<Arc<Doc>, Error> {
         block_on(&self.async_runtime, async {
             let doc = self
@@ -351,6 +448,36 @@ impl IrohNode {
         block_on(&self.async_runtime, async {
             let stats = self.sync_client.stats().await.map_err(Error::doc)?;
             Ok(stats)
+        })
+    }
+
+    pub fn connections(&self) -> Result<Vec<ConnectionInfo>, Error> {
+        block_on(&self.async_runtime, async {
+            let infos = self
+                .sync_client
+                .connections()
+                .await
+                .map_err(Error::connection)?
+                .map_ok(|info| info.into())
+                .try_collect::<Vec<_>>()
+                .await
+                .map_err(Error::connection)?;
+            Ok(infos)
+        })
+    }
+
+    pub fn connection_info(
+        &self,
+        node_id: Arc<PublicKey>,
+    ) -> Result<Option<ConnectionInfo>, Error> {
+        block_on(&self.async_runtime, async {
+            let info = self
+                .sync_client
+                .connection_info(node_id.as_ref().0)
+                .await
+                .map(|i| i.map(|i| i.into()))
+                .map_err(Error::connection)?;
+            Ok(info)
         })
     }
 }

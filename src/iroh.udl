@@ -22,7 +22,13 @@ interface IrohNode {
   [Throws=IrohError]
   AuthorId create_author();
   [Throws=IrohError]
+  sequence<AuthorId> list_authors();
+  [Throws=IrohError]
   record<string, CounterStats> stats();
+  [Throws=IrohError]
+  sequence<ConnectionInfo> connections();
+  [Throws=IrohError]
+  ConnectionInfo? connection_info(PublicKey node_id);
 };
 
 interface Doc {
@@ -36,7 +42,7 @@ interface Doc {
   [Throws=IrohError]
   bytes get_content_bytes(Hash hash);
   [Throws=IrohError]
-  sequence<Entry> latest();
+  sequence<Entry> all();
   [Throws=IrohError]
   void subscribe(SubscribeCallback cb);
   [Throws=IrohError]
@@ -88,6 +94,34 @@ interface LiveEvent {
   ContentReady();
 };
 
+dictionary ConnectionInfo {
+  u64 id;
+  PublicKey public_key;
+  u16? derp_region;
+  sequence<SocketAddr> addrs;
+  sequence<double?> latencies;
+  ConnectionType conn_type;
+  double? latency;
+};
+
+[Enum]
+interface ConnectionType{
+  Direct(SocketAddr addr);
+  Relay(u16 port);
+  None();
+};
+
+[Enum]
+interface SocketAddr {
+  V4(u8 a, u8 b, u8 c, u8 d);
+  V6(bytes addr);
+};
+
+interface PublicKey {
+  string to_string();
+  bytes to_bytes();
+};
+
 [Error]
 interface IrohError {
   Runtime(string description);
@@ -96,4 +130,5 @@ interface IrohError {
   Author(string description);
   DocTicket(string description);
   Uniffi(string description);
+  Connection(string description);
 };
