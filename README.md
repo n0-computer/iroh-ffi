@@ -52,6 +52,8 @@ docker run --rm -v $(pwd):/mnt -w /mnt quay.io/pypa/manylinux2014_x86_64 /mnt/bu
 ## Kotlin
 
 - `make_kotlin.sh` to (re)generate bindings
+- you'll need to install the Android NDK
+- run `rustup target add aarch64-linux-android`
 - bindings are located in the `kotlin` folder
 
 ## Development
