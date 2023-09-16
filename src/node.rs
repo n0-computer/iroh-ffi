@@ -8,6 +8,7 @@ use iroh::{
     baomap::flat,
     bytes::util::runtime::Handle,
     client::Doc as ClientDoc,
+    metrics::try_init_metrics_collection,
     net::key::SecretKey,
     node::{Node, DEFAULT_BIND_ADDR},
     rpc_protocol::{ProviderRequest, ProviderResponse, ShareMode},
@@ -19,6 +20,69 @@ use crate::error::IrohError as Error;
 pub use iroh::rpc_protocol::CounterStats;
 pub use iroh::sync_engine::LiveStatus;
 use tracing_subscriber::filter::LevelFilter;
+
+#[derive(Debug)]
+pub enum SocketAddr {
+    V4 { a: u8, b: u8, c: u8, d: u8 },
+    V6 { addr: Vec<u8> },
+}
+
+impl From<std::net::SocketAddr> for SocketAddr {
+    fn from(value: std::net::SocketAddr) -> Self {
+        match value {
+            std::net::SocketAddr::V4(addr) => {
+                let [a, b, c, d] = addr.ip().octets();
+                SocketAddr::V4 { a, b, c, d }
+            }
+            std::net::SocketAddr::V6(addr) => SocketAddr::V6 {
+                addr: addr.ip().octets().to_vec(),
+            },
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum LogLevel {
+    Trace,
+    Debug,
+    Info,
+    Warn,
+    Error,
+    Off,
+}
+
+impl From<LogLevel> for LevelFilter {
+    fn from(level: LogLevel) -> LevelFilter {
+        match level {
+            LogLevel::Trace => LevelFilter::TRACE,
+            LogLevel::Debug => LevelFilter::DEBUG,
+            LogLevel::Info => LevelFilter::INFO,
+            LogLevel::Warn => LevelFilter::WARN,
+            LogLevel::Error => LevelFilter::ERROR,
+            LogLevel::Off => LevelFilter::OFF,
+        }
+    }
+}
+
+pub fn set_log_level(level: LogLevel) {
+    println!("setting log level to {:?}", level);
+    use tracing_subscriber::{fmt, prelude::*, reload};
+    let filter: LevelFilter = level.into();
+    let (filter, _) = reload::Layer::new(filter);
+    let mut layer = fmt::Layer::default();
+    layer.set_ansi(false);
+    tracing_subscriber::registry()
+        .with(filter)
+        .with(layer)
+        .init();
+}
+
+pub fn start_metrics_collection() -> Result<(), Error> {
+    try_init_metrics_collection().map_err(|e| Error::Runtime {
+        description: e.to_string(),
+    })?;
+    Ok(())
+}
 
 #[derive(Debug)]
 pub struct PublicKey(iroh::net::key::PublicKey);
@@ -78,60 +142,6 @@ impl From<iroh::net::magicsock::ConnectionType> for ConnectionType {
             iroh::net::magicsock::ConnectionType::None => ConnectionType::None,
         }
     }
-}
-
-#[derive(Debug)]
-pub enum SocketAddr {
-    V4 { a: u8, b: u8, c: u8, d: u8 },
-    V6 { addr: Vec<u8> },
-}
-
-impl From<std::net::SocketAddr> for SocketAddr {
-    fn from(value: std::net::SocketAddr) -> Self {
-        match value {
-            std::net::SocketAddr::V4(addr) => {
-                let [a, b, c, d] = addr.ip().octets();
-                SocketAddr::V4 { a, b, c, d }
-            }
-            std::net::SocketAddr::V6(addr) => SocketAddr::V6 {
-                addr: addr.ip().octets().to_vec(),
-            },
-        }
-    }
-}
-
-pub enum LogLevel {
-    Trace,
-    Debug,
-    Info,
-    Warn,
-    Error,
-    Off,
-}
-
-impl From<LogLevel> for LevelFilter {
-    fn from(level: LogLevel) -> LevelFilter {
-        match level {
-            LogLevel::Trace => LevelFilter::TRACE,
-            LogLevel::Debug => LevelFilter::DEBUG,
-            LogLevel::Info => LevelFilter::INFO,
-            LogLevel::Warn => LevelFilter::WARN,
-            LogLevel::Error => LevelFilter::ERROR,
-            LogLevel::Off => LevelFilter::OFF,
-        }
-    }
-}
-
-pub fn set_log_level(level: LogLevel) {
-    use tracing_subscriber::{fmt, prelude::*, reload};
-    let filter: LevelFilter = level.into();
-    let (filter, _) = reload::Layer::new(filter);
-    let mut layer = fmt::Layer::default();
-    layer.set_ansi(false);
-    tracing_subscriber::registry()
-        .with(filter)
-        .with(layer)
-        .init();
 }
 
 #[derive(Debug)]
@@ -446,6 +456,7 @@ impl IrohNode {
 
     pub fn stats(&self) -> Result<HashMap<String, CounterStats>, Error> {
         block_on(&self.async_runtime, async {
+            println!("getting stats");
             let stats = self.sync_client.stats().await.map_err(Error::doc)?;
             Ok(stats)
         })

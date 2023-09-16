@@ -1,5 +1,7 @@
 namespace iroh {
   void set_log_level(LogLevel level);
+  [Throws=IrohError]
+  void start_metrics_collection();
 };
 
 enum LogLevel {
