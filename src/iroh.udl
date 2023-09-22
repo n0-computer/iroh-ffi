@@ -42,7 +42,7 @@ interface Doc {
   [Throws=IrohError]
   Hash set_bytes(AuthorId author, bytes key, bytes value);
   [Throws=IrohError]
-  bytes get_content_bytes(Hash hash);
+  bytes get_content_bytes(Entry entry);
   [Throws=IrohError]
   sequence<Entry> all();
   [Throws=IrohError]
@@ -94,6 +94,7 @@ interface LiveEvent {
   InsertLocal();
   InsertRemote();
   ContentReady();
+  SyncFinished();
 };
 
 dictionary ConnectionInfo {

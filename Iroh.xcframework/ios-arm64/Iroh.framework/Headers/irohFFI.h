@@ -100,7 +100,7 @@ void*_Nonnull uniffi_iroh_fn_method_doc_share_read(void*_Nonnull ptr, RustCallSt
 );
 void*_Nonnull uniffi_iroh_fn_method_doc_set_bytes(void*_Nonnull ptr, void*_Nonnull author, RustBuffer key, RustBuffer value, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_iroh_fn_method_doc_get_content_bytes(void*_Nonnull ptr, void*_Nonnull hash, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_iroh_fn_method_doc_get_content_bytes(void*_Nonnull ptr, void*_Nonnull entry, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_doc_all(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );

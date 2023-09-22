@@ -491,7 +491,7 @@ public protocol DocProtocol {
     func shareWrite() throws -> DocTicket
     func shareRead() throws -> DocTicket
     func setBytes(author: AuthorId, key: Data, value: Data) throws -> Hash
-    func getContentBytes(hash: Hash) throws -> Data
+    func getContentBytes(entry: Entry) throws -> Data
     func all() throws -> [Entry]
     func subscribe(cb: SubscribeCallback) throws
     func stopSync() throws
@@ -548,11 +548,11 @@ public class Doc: DocProtocol {
         )
     }
 
-    public func getContentBytes(hash: Hash) throws -> Data {
+    public func getContentBytes(entry: Entry) throws -> Data {
         return try FfiConverterData.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_doc_get_content_bytes(self.pointer,
-                                                            FfiConverterTypeHash.lower(hash), $0)
+                                                            FfiConverterTypeEntry.lower(entry), $0)
             }
         )
     }
@@ -1375,6 +1375,7 @@ public enum LiveEvent {
     case insertLocal
     case insertRemote
     case contentReady
+    case syncFinished
 }
 
 public struct FfiConverterTypeLiveEvent: FfiConverterRustBuffer {
@@ -1388,6 +1389,8 @@ public struct FfiConverterTypeLiveEvent: FfiConverterRustBuffer {
         case 2: return .insertRemote
 
         case 3: return .contentReady
+
+        case 4: return .syncFinished
 
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -1403,6 +1406,9 @@ public struct FfiConverterTypeLiveEvent: FfiConverterRustBuffer {
 
         case .contentReady:
             writeInt(&buf, Int32(3))
+
+        case .syncFinished:
+            writeInt(&buf, Int32(4))
         }
     }
 }
@@ -1977,7 +1983,7 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_doc_set_bytes() != 50064 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_get_content_bytes() != 4262 {
+    if uniffi_iroh_checksum_method_doc_get_content_bytes() != 56096 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_doc_all() != 31223 {

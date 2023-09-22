@@ -65,7 +65,6 @@ impl From<LogLevel> for LevelFilter {
 }
 
 pub fn set_log_level(level: LogLevel) {
-    println!("setting log level to {:?}", level);
     use tracing_subscriber::{fmt, prelude::*, reload};
     let filter: LevelFilter = level.into();
     let (filter, _) = reload::Layer::new(filter);
@@ -149,6 +148,7 @@ pub enum LiveEvent {
     InsertLocal,
     InsertRemote,
     ContentReady,
+    SyncFinished,
 }
 
 impl From<iroh::sync_engine::LiveEvent> for LiveEvent {
@@ -157,6 +157,7 @@ impl From<iroh::sync_engine::LiveEvent> for LiveEvent {
             iroh::sync_engine::LiveEvent::InsertLocal { .. } => Self::InsertLocal,
             iroh::sync_engine::LiveEvent::InsertRemote { .. } => Self::InsertRemote,
             iroh::sync_engine::LiveEvent::ContentReady { .. } => Self::ContentReady,
+            iroh::sync_engine::LiveEvent::SyncFinished { .. } => Self::SyncFinished,
         }
     }
 }
@@ -257,11 +258,13 @@ impl Doc {
         })
     }
 
-    pub fn get_content_bytes(&self, hash: Arc<Hash>) -> Result<Vec<u8>, Error> {
+    pub fn get_content_bytes(&self, entry: Arc<Entry>) -> Result<Vec<u8>, Error> {
         block_on(&self.rt, async {
+            // let mut rng = rand::thread_rng();
+            // iroh::sync::Entry::new(iroh::sync::RecordIdentifier::new(self.inner.id(), iroh::sync::Author::new(&mut rng), key), iroh::sync::Record::new(hash.0, 0, 0))
             let content = self
                 .inner
-                .get_content_bytes(hash.0)
+                .read_to_bytes(&entry.0)
                 .await
                 .map_err(Error::doc)?;
 
@@ -288,7 +291,6 @@ impl Doc {
         self.rt.main().spawn(async move {
             let mut sub = client.subscribe().await.unwrap();
             while let Some(event) = sub.next().await {
-                println!("got event: {:?}", event);
                 match event {
                     Ok(event) => {
                         if let Err(err) = cb.event(event.into()) {
@@ -403,7 +405,7 @@ impl IrohNode {
 
     pub fn create_doc(&self) -> Result<Arc<Doc>, Error> {
         block_on(&self.async_runtime, async {
-            let doc = self.sync_client.create_doc().await.map_err(Error::doc)?;
+            let doc = self.sync_client.docs.create().await.map_err(Error::doc)?;
 
             Ok(Arc::new(Doc {
                 inner: doc,
@@ -416,7 +418,8 @@ impl IrohNode {
         block_on(&self.async_runtime, async {
             let author = self
                 .sync_client
-                .create_author()
+                .authors
+                .create()
                 .await
                 .map_err(Error::author)?;
 
@@ -428,7 +431,8 @@ impl IrohNode {
         block_on(&self.async_runtime, async {
             let authors = self
                 .sync_client
-                .list_authors()
+                .authors
+                .list()
                 .await
                 .map_err(Error::author)?
                 .map_ok(|id| Arc::new(AuthorId(id)))
@@ -443,7 +447,8 @@ impl IrohNode {
         block_on(&self.async_runtime, async {
             let doc = self
                 .sync_client
-                .import_doc(ticket.0.clone())
+                .docs
+                .import(ticket.0.clone())
                 .await
                 .map_err(Error::doc)?;
 
@@ -456,8 +461,7 @@ impl IrohNode {
 
     pub fn stats(&self) -> Result<HashMap<String, CounterStats>, Error> {
         block_on(&self.async_runtime, async {
-            println!("getting stats");
-            let stats = self.sync_client.stats().await.map_err(Error::doc)?;
+            let stats = self.sync_client.node.stats().await.map_err(Error::doc)?;
             Ok(stats)
         })
     }
@@ -466,6 +470,7 @@ impl IrohNode {
         block_on(&self.async_runtime, async {
             let infos = self
                 .sync_client
+                .node
                 .connections()
                 .await
                 .map_err(Error::connection)?
@@ -484,6 +489,7 @@ impl IrohNode {
         block_on(&self.async_runtime, async {
             let info = self
                 .sync_client
+                .node
                 .connection_info(node_id.as_ref().0)
                 .await
                 .map(|i| i.map(|i| i.into()))

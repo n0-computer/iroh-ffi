@@ -50,6 +50,7 @@ tracing-subscriber = { version = "0.3.17" }
 uniffi = { version = "0.24.3", features = ["build"] }
 
 [patch.crates-io]
-iroh = { git = "https://github.com/n0-computer/iroh", branch = "main" }
+iroh = { path = "../iroh/iroh" }
+# iroh = { git = "https://github.com/n0-computer/iroh", branch = "main" }
 # https://github.com/mullvad/system-configuration-rs/pull/42
 system-configuration = { git = "https://github.com/tmpfs/system-configuration-rs", branch = "ios-hack" }
