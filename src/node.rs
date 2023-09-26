@@ -264,8 +264,6 @@ impl Doc {
 
     pub fn get_content_bytes(&self, entry: Arc<Entry>) -> Result<Vec<u8>, Error> {
         block_on(&self.rt, async {
-            // let mut rng = rand::thread_rng();
-            // iroh::sync::Entry::new(iroh::sync::RecordIdentifier::new(self.inner.id(), iroh::sync::Author::new(&mut rng), key), iroh::sync::Record::new(hash.0, 0, 0))
             let content = self
                 .inner
                 .read_to_bytes(&entry.0)
