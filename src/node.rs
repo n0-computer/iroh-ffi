@@ -149,6 +149,8 @@ pub enum LiveEvent {
     InsertRemote,
     ContentReady,
     SyncFinished,
+    NeighborUp,
+    NeighborDown,
 }
 
 impl From<iroh::sync_engine::LiveEvent> for LiveEvent {
@@ -158,6 +160,8 @@ impl From<iroh::sync_engine::LiveEvent> for LiveEvent {
             iroh::sync_engine::LiveEvent::InsertRemote { .. } => Self::InsertRemote,
             iroh::sync_engine::LiveEvent::ContentReady { .. } => Self::ContentReady,
             iroh::sync_engine::LiveEvent::SyncFinished { .. } => Self::SyncFinished,
+            iroh::sync_engine::LiveEvent::NeighborUp { .. } => Self::NeighborUp,
+            iroh::sync_engine::LiveEvent::NeighborDown { .. } => Self::NeighborDown,
         }
     }
 }
@@ -203,7 +207,7 @@ impl Doc {
         self.inner.id().to_string()
     }
 
-    pub fn all(&self) -> Result<Vec<Arc<Entry>>, Error> {
+    pub fn keys(&self) -> Result<Vec<Arc<Entry>>, Error> {
         let latest = block_on(&self.rt, async {
             let get_result = self
                 .inner
@@ -378,7 +382,8 @@ impl IrohNode {
             // create a bao store for the iroh-bytes blobs
             let blob_path = path.join("blobs");
             tokio::fs::create_dir_all(&blob_path).await?;
-            let db = iroh::baomap::flat::Store::load(&blob_path, &blob_path, &rt_inner).await?;
+            let db = iroh::baomap::flat::Store::load(&blob_path, &blob_path, &blob_path, &rt_inner)
+                .await?;
 
             Node::builder(db, docs)
                 .bind_addr(DEFAULT_BIND_ADDR.into())
@@ -399,11 +404,11 @@ impl IrohNode {
         })
     }
 
-    pub fn peer_id(&self) -> String {
+    pub fn node_id(&self) -> String {
         self.node.peer_id().to_string()
     }
 
-    pub fn create_doc(&self) -> Result<Arc<Doc>, Error> {
+    pub fn doc_new(&self) -> Result<Arc<Doc>, Error> {
         block_on(&self.async_runtime, async {
             let doc = self.sync_client.docs.create().await.map_err(Error::doc)?;
 
@@ -414,7 +419,7 @@ impl IrohNode {
         })
     }
 
-    pub fn create_author(&self) -> Result<Arc<AuthorId>, Error> {
+    pub fn author_new(&self) -> Result<Arc<AuthorId>, Error> {
         block_on(&self.async_runtime, async {
             let author = self
                 .sync_client
@@ -427,7 +432,7 @@ impl IrohNode {
         })
     }
 
-    pub fn list_authors(&self) -> Result<Vec<Arc<AuthorId>>, Error> {
+    pub fn author_list(&self) -> Result<Vec<Arc<AuthorId>>, Error> {
         block_on(&self.async_runtime, async {
             let authors = self
                 .sync_client
@@ -443,7 +448,7 @@ impl IrohNode {
         })
     }
 
-    pub fn import_doc(&self, ticket: Arc<DocTicket>) -> Result<Arc<Doc>, Error> {
+    pub fn doc_join(&self, ticket: Arc<DocTicket>) -> Result<Arc<Doc>, Error> {
         block_on(&self.async_runtime, async {
             let doc = self
                 .sync_client
@@ -511,11 +516,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_doc_create() {
+    fn test_doc_new() {
         let node = IrohNode::new().unwrap();
-        let peer_id = node.peer_id();
-        println!("id: {}", peer_id);
-        let doc = node.create_doc().unwrap();
+        let node_id = node.node_id();
+        println!("id: {}", node_id);
+        let doc = node.doc_new().unwrap();
         let doc_id = doc.id();
         println!("doc_id: {}", doc_id);
 
@@ -527,6 +532,6 @@ mod tests {
             dock_ticket_back.0.to_bytes().unwrap()
         );
         println!("doc_ticket: {}", doc_ticket_string);
-        node.import_doc(doc_ticket).unwrap();
+        node.doc_join(doc_ticket).unwrap();
     }
 }

@@ -492,7 +492,7 @@ public protocol DocProtocol {
     func shareRead() throws -> DocTicket
     func setBytes(author: AuthorId, key: Data, value: Data) throws -> Hash
     func getContentBytes(entry: Entry) throws -> Data
-    func all() throws -> [Entry]
+    func keys() throws -> [Entry]
     func subscribe(cb: SubscribeCallback) throws
     func stopSync() throws
     func status() throws -> LiveStatus
@@ -557,10 +557,10 @@ public class Doc: DocProtocol {
         )
     }
 
-    public func all() throws -> [Entry] {
+    public func keys() throws -> [Entry] {
         return try FfiConverterSequenceTypeEntry.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_doc_all(self.pointer, $0)
+                uniffi_iroh_fn_method_doc_keys(self.pointer, $0)
             }
         )
     }
@@ -864,11 +864,11 @@ public func FfiConverterTypeHash_lower(_ value: Hash) -> UnsafeMutableRawPointer
 }
 
 public protocol IrohNodeProtocol {
-    func peerId() -> String
-    func createDoc() throws -> Doc
-    func importDoc(ticket: DocTicket) throws -> Doc
-    func createAuthor() throws -> AuthorId
-    func listAuthors() throws -> [AuthorId]
+    func nodeId() -> String
+    func docNew() throws -> Doc
+    func docJoin(ticket: DocTicket) throws -> Doc
+    func authorNew() throws -> AuthorId
+    func authorList() throws -> [AuthorId]
     func stats() throws -> [String: CounterStats]
     func connections() throws -> [ConnectionInfo]
     func connectionInfo(nodeId: PublicKey) throws -> ConnectionInfo?
@@ -894,44 +894,44 @@ public class IrohNode: IrohNodeProtocol {
         try! rustCall { uniffi_iroh_fn_free_irohnode(pointer, $0) }
     }
 
-    public func peerId() -> String {
+    public func nodeId() -> String {
         return try! FfiConverterString.lift(
             try!
                 rustCall {
-                    uniffi_iroh_fn_method_irohnode_peer_id(self.pointer, $0)
+                    uniffi_iroh_fn_method_irohnode_node_id(self.pointer, $0)
                 }
         )
     }
 
-    public func createDoc() throws -> Doc {
+    public func docNew() throws -> Doc {
         return try FfiConverterTypeDoc.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_irohnode_create_doc(self.pointer, $0)
+                uniffi_iroh_fn_method_irohnode_doc_new(self.pointer, $0)
             }
         )
     }
 
-    public func importDoc(ticket: DocTicket) throws -> Doc {
+    public func docJoin(ticket: DocTicket) throws -> Doc {
         return try FfiConverterTypeDoc.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_irohnode_import_doc(self.pointer,
-                                                          FfiConverterTypeDocTicket.lower(ticket), $0)
+                uniffi_iroh_fn_method_irohnode_doc_join(self.pointer,
+                                                        FfiConverterTypeDocTicket.lower(ticket), $0)
             }
         )
     }
 
-    public func createAuthor() throws -> AuthorId {
+    public func authorNew() throws -> AuthorId {
         return try FfiConverterTypeAuthorId.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_irohnode_create_author(self.pointer, $0)
+                uniffi_iroh_fn_method_irohnode_author_new(self.pointer, $0)
             }
         )
     }
 
-    public func listAuthors() throws -> [AuthorId] {
+    public func authorList() throws -> [AuthorId] {
         return try FfiConverterSequenceTypeAuthorId.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_irohnode_list_authors(self.pointer, $0)
+                uniffi_iroh_fn_method_irohnode_author_list(self.pointer, $0)
             }
         )
     }
@@ -1376,6 +1376,8 @@ public enum LiveEvent {
     case insertRemote
     case contentReady
     case syncFinished
+    case neighborUp
+    case neighborDown
 }
 
 public struct FfiConverterTypeLiveEvent: FfiConverterRustBuffer {
@@ -1391,6 +1393,10 @@ public struct FfiConverterTypeLiveEvent: FfiConverterRustBuffer {
         case 3: return .contentReady
 
         case 4: return .syncFinished
+
+        case 5: return .neighborUp
+
+        case 6: return .neighborDown
 
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -1409,6 +1415,12 @@ public struct FfiConverterTypeLiveEvent: FfiConverterRustBuffer {
 
         case .syncFinished:
             writeInt(&buf, Int32(4))
+
+        case .neighborUp:
+            writeInt(&buf, Int32(5))
+
+        case .neighborDown:
+            writeInt(&buf, Int32(6))
         }
     }
 }
@@ -1947,19 +1959,19 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_func_start_metrics_collection() != 30246 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_peer_id() != 46487 {
+    if uniffi_iroh_checksum_method_irohnode_node_id() != 860 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_create_doc() != 22030 {
+    if uniffi_iroh_checksum_method_irohnode_doc_new() != 10558 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_import_doc() != 37728 {
+    if uniffi_iroh_checksum_method_irohnode_doc_join() != 34149 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_create_author() != 12072 {
+    if uniffi_iroh_checksum_method_irohnode_author_new() != 7219 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_list_authors() != 18452 {
+    if uniffi_iroh_checksum_method_irohnode_author_list() != 10059 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_stats() != 12801 {
@@ -1986,7 +1998,7 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_doc_get_content_bytes() != 56096 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_all() != 31223 {
+    if uniffi_iroh_checksum_method_doc_keys() != 10934 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_doc_subscribe() != 17522 {

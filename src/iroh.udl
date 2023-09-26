@@ -16,15 +16,15 @@ enum LogLevel {
 interface IrohNode {
   [Throws=IrohError]
   constructor();
-  string peer_id();
+  string node_id();
   [Throws=IrohError]
-  Doc create_doc();
+  Doc doc_new();
   [Throws=IrohError]
-  Doc import_doc(DocTicket ticket);
+  Doc doc_join(DocTicket ticket);
   [Throws=IrohError]
-  AuthorId create_author();
+  AuthorId author_new();
   [Throws=IrohError]
-  sequence<AuthorId> list_authors();
+  sequence<AuthorId> author_list();
   [Throws=IrohError]
   record<string, CounterStats> stats();
   [Throws=IrohError]
@@ -44,7 +44,7 @@ interface Doc {
   [Throws=IrohError]
   bytes get_content_bytes(Entry entry);
   [Throws=IrohError]
-  sequence<Entry> all();
+  sequence<Entry> keys();
   [Throws=IrohError]
   void subscribe(SubscribeCallback cb);
   [Throws=IrohError]
@@ -95,6 +95,8 @@ interface LiveEvent {
   InsertRemote();
   ContentReady();
   SyncFinished();
+  NeighborUp();
+  NeighborDown();
 };
 
 dictionary ConnectionInfo {
