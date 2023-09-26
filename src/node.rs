@@ -8,6 +8,7 @@ use iroh::{
     baomap::flat,
     bytes::util::runtime::Handle,
     client::Doc as ClientDoc,
+    metrics::try_init_metrics_collection,
     net::key::SecretKey,
     node::{Node, DEFAULT_BIND_ADDR},
     rpc_protocol::{ProviderRequest, ProviderResponse, ShareMode},
@@ -19,6 +20,68 @@ use crate::error::IrohError as Error;
 pub use iroh::rpc_protocol::CounterStats;
 pub use iroh::sync_engine::LiveStatus;
 use tracing_subscriber::filter::LevelFilter;
+
+#[derive(Debug)]
+pub enum SocketAddr {
+    V4 { a: u8, b: u8, c: u8, d: u8 },
+    V6 { addr: Vec<u8> },
+}
+
+impl From<std::net::SocketAddr> for SocketAddr {
+    fn from(value: std::net::SocketAddr) -> Self {
+        match value {
+            std::net::SocketAddr::V4(addr) => {
+                let [a, b, c, d] = addr.ip().octets();
+                SocketAddr::V4 { a, b, c, d }
+            }
+            std::net::SocketAddr::V6(addr) => SocketAddr::V6 {
+                addr: addr.ip().octets().to_vec(),
+            },
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum LogLevel {
+    Trace,
+    Debug,
+    Info,
+    Warn,
+    Error,
+    Off,
+}
+
+impl From<LogLevel> for LevelFilter {
+    fn from(level: LogLevel) -> LevelFilter {
+        match level {
+            LogLevel::Trace => LevelFilter::TRACE,
+            LogLevel::Debug => LevelFilter::DEBUG,
+            LogLevel::Info => LevelFilter::INFO,
+            LogLevel::Warn => LevelFilter::WARN,
+            LogLevel::Error => LevelFilter::ERROR,
+            LogLevel::Off => LevelFilter::OFF,
+        }
+    }
+}
+
+pub fn set_log_level(level: LogLevel) {
+    use tracing_subscriber::{fmt, prelude::*, reload};
+    let filter: LevelFilter = level.into();
+    let (filter, _) = reload::Layer::new(filter);
+    let mut layer = fmt::Layer::default();
+    layer.set_ansi(false);
+    tracing_subscriber::registry()
+        .with(filter)
+        .with(layer)
+        .init();
+}
+
+pub fn start_metrics_collection() -> Result<(), Error> {
+    try_init_metrics_collection().map_err(|e| Error::Runtime {
+        description: e.to_string(),
+    })?;
+    Ok(())
+}
 
 #[derive(Debug)]
 pub struct PublicKey(iroh::net::key::PublicKey);
@@ -81,64 +144,13 @@ impl From<iroh::net::magicsock::ConnectionType> for ConnectionType {
 }
 
 #[derive(Debug)]
-pub enum SocketAddr {
-    V4 { a: u8, b: u8, c: u8, d: u8 },
-    V6 { addr: Vec<u8> },
-}
-
-impl From<std::net::SocketAddr> for SocketAddr {
-    fn from(value: std::net::SocketAddr) -> Self {
-        match value {
-            std::net::SocketAddr::V4(addr) => {
-                let [a, b, c, d] = addr.ip().octets();
-                SocketAddr::V4 { a, b, c, d }
-            }
-            std::net::SocketAddr::V6(addr) => SocketAddr::V6 {
-                addr: addr.ip().octets().to_vec(),
-            },
-        }
-    }
-}
-
-pub enum LogLevel {
-    Trace,
-    Debug,
-    Info,
-    Warn,
-    Error,
-    Off,
-}
-
-impl From<LogLevel> for LevelFilter {
-    fn from(level: LogLevel) -> LevelFilter {
-        match level {
-            LogLevel::Trace => LevelFilter::TRACE,
-            LogLevel::Debug => LevelFilter::DEBUG,
-            LogLevel::Info => LevelFilter::INFO,
-            LogLevel::Warn => LevelFilter::WARN,
-            LogLevel::Error => LevelFilter::ERROR,
-            LogLevel::Off => LevelFilter::OFF,
-        }
-    }
-}
-
-pub fn set_log_level(level: LogLevel) {
-    use tracing_subscriber::{fmt, prelude::*, reload};
-    let filter: LevelFilter = level.into();
-    let (filter, _) = reload::Layer::new(filter);
-    let mut layer = fmt::Layer::default();
-    layer.set_ansi(false);
-    tracing_subscriber::registry()
-        .with(filter)
-        .with(layer)
-        .init();
-}
-
-#[derive(Debug)]
 pub enum LiveEvent {
     InsertLocal,
     InsertRemote,
     ContentReady,
+    SyncFinished,
+    NeighborUp,
+    NeighborDown,
 }
 
 impl From<iroh::sync_engine::LiveEvent> for LiveEvent {
@@ -147,6 +159,9 @@ impl From<iroh::sync_engine::LiveEvent> for LiveEvent {
             iroh::sync_engine::LiveEvent::InsertLocal { .. } => Self::InsertLocal,
             iroh::sync_engine::LiveEvent::InsertRemote { .. } => Self::InsertRemote,
             iroh::sync_engine::LiveEvent::ContentReady { .. } => Self::ContentReady,
+            iroh::sync_engine::LiveEvent::SyncFinished { .. } => Self::SyncFinished,
+            iroh::sync_engine::LiveEvent::NeighborUp { .. } => Self::NeighborUp,
+            iroh::sync_engine::LiveEvent::NeighborDown { .. } => Self::NeighborDown,
         }
     }
 }
@@ -192,7 +207,7 @@ impl Doc {
         self.inner.id().to_string()
     }
 
-    pub fn all(&self) -> Result<Vec<Arc<Entry>>, Error> {
+    pub fn keys(&self) -> Result<Vec<Arc<Entry>>, Error> {
         let latest = block_on(&self.rt, async {
             let get_result = self
                 .inner
@@ -247,11 +262,11 @@ impl Doc {
         })
     }
 
-    pub fn get_content_bytes(&self, hash: Arc<Hash>) -> Result<Vec<u8>, Error> {
+    pub fn get_content_bytes(&self, entry: Arc<Entry>) -> Result<Vec<u8>, Error> {
         block_on(&self.rt, async {
             let content = self
                 .inner
-                .get_content_bytes(hash.0)
+                .read_to_bytes(&entry.0)
                 .await
                 .map_err(Error::doc)?;
 
@@ -278,7 +293,6 @@ impl Doc {
         self.rt.main().spawn(async move {
             let mut sub = client.subscribe().await.unwrap();
             while let Some(event) = sub.next().await {
-                println!("got event: {:?}", event);
                 match event {
                     Ok(event) => {
                         if let Err(err) = cb.event(event.into()) {
@@ -366,7 +380,8 @@ impl IrohNode {
             // create a bao store for the iroh-bytes blobs
             let blob_path = path.join("blobs");
             tokio::fs::create_dir_all(&blob_path).await?;
-            let db = iroh::baomap::flat::Store::load(&blob_path, &blob_path, &rt_inner).await?;
+            let db = iroh::baomap::flat::Store::load(&blob_path, &blob_path, &blob_path, &rt_inner)
+                .await?;
 
             Node::builder(db, docs)
                 .bind_addr(DEFAULT_BIND_ADDR.into())
@@ -387,13 +402,13 @@ impl IrohNode {
         })
     }
 
-    pub fn peer_id(&self) -> String {
+    pub fn node_id(&self) -> String {
         self.node.peer_id().to_string()
     }
 
-    pub fn create_doc(&self) -> Result<Arc<Doc>, Error> {
+    pub fn doc_new(&self) -> Result<Arc<Doc>, Error> {
         block_on(&self.async_runtime, async {
-            let doc = self.sync_client.create_doc().await.map_err(Error::doc)?;
+            let doc = self.sync_client.docs.create().await.map_err(Error::doc)?;
 
             Ok(Arc::new(Doc {
                 inner: doc,
@@ -402,11 +417,12 @@ impl IrohNode {
         })
     }
 
-    pub fn create_author(&self) -> Result<Arc<AuthorId>, Error> {
+    pub fn author_new(&self) -> Result<Arc<AuthorId>, Error> {
         block_on(&self.async_runtime, async {
             let author = self
                 .sync_client
-                .create_author()
+                .authors
+                .create()
                 .await
                 .map_err(Error::author)?;
 
@@ -414,11 +430,12 @@ impl IrohNode {
         })
     }
 
-    pub fn list_authors(&self) -> Result<Vec<Arc<AuthorId>>, Error> {
+    pub fn author_list(&self) -> Result<Vec<Arc<AuthorId>>, Error> {
         block_on(&self.async_runtime, async {
             let authors = self
                 .sync_client
-                .list_authors()
+                .authors
+                .list()
                 .await
                 .map_err(Error::author)?
                 .map_ok(|id| Arc::new(AuthorId(id)))
@@ -429,11 +446,12 @@ impl IrohNode {
         })
     }
 
-    pub fn import_doc(&self, ticket: Arc<DocTicket>) -> Result<Arc<Doc>, Error> {
+    pub fn doc_join(&self, ticket: Arc<DocTicket>) -> Result<Arc<Doc>, Error> {
         block_on(&self.async_runtime, async {
             let doc = self
                 .sync_client
-                .import_doc(ticket.0.clone())
+                .docs
+                .import(ticket.0.clone())
                 .await
                 .map_err(Error::doc)?;
 
@@ -446,7 +464,7 @@ impl IrohNode {
 
     pub fn stats(&self) -> Result<HashMap<String, CounterStats>, Error> {
         block_on(&self.async_runtime, async {
-            let stats = self.sync_client.stats().await.map_err(Error::doc)?;
+            let stats = self.sync_client.node.stats().await.map_err(Error::doc)?;
             Ok(stats)
         })
     }
@@ -455,6 +473,7 @@ impl IrohNode {
         block_on(&self.async_runtime, async {
             let infos = self
                 .sync_client
+                .node
                 .connections()
                 .await
                 .map_err(Error::connection)?
@@ -473,6 +492,7 @@ impl IrohNode {
         block_on(&self.async_runtime, async {
             let info = self
                 .sync_client
+                .node
                 .connection_info(node_id.as_ref().0)
                 .await
                 .map(|i| i.map(|i| i.into()))
@@ -494,11 +514,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_doc_create() {
+    fn test_doc_new() {
         let node = IrohNode::new().unwrap();
-        let peer_id = node.peer_id();
-        println!("id: {}", peer_id);
-        let doc = node.create_doc().unwrap();
+        let node_id = node.node_id();
+        println!("id: {}", node_id);
+        let doc = node.doc_new().unwrap();
         let doc_id = doc.id();
         println!("doc_id: {}", doc_id);
 
@@ -510,6 +530,6 @@ mod tests {
             dock_ticket_back.0.to_bytes().unwrap()
         );
         println!("doc_ticket: {}", doc_ticket_string);
-        node.import_doc(doc_ticket).unwrap();
+        node.doc_join(doc_ticket).unwrap();
     }
 }
