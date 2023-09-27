@@ -177,6 +177,12 @@ impl Hash {
     }
 }
 
+impl From<Hash> for iroh::bytes::Hash {
+    fn from(value: Hash) -> Self {
+        value.0
+    }
+}
+
 pub struct Entry(iroh::sync::sync::Entry);
 
 impl Entry {
@@ -498,6 +504,50 @@ impl IrohNode {
                 .map(|i| i.map(|i| i.into()))
                 .map_err(Error::connection)?;
             Ok(info)
+        })
+    }
+
+    pub fn blob_list_blobs(&self) -> Result<Vec<Arc<Hash>>, Error> {
+        block_on(&self.async_runtime, async {
+            let mut response = self.sync_client.blobs.list().await.map_err(Error::blob)?;
+
+            let mut hashes: Vec<Arc<Hash>> = Vec::new();
+            while let Some(item) = response.next().await {
+                let item = item.map_err(Error::blob)?;
+                hashes.push(Arc::new(Hash(item.hash)));
+            }
+
+            Ok(hashes)
+        })
+    }
+
+    pub fn blob_new_bytes(&self, _: Vec<u8>) -> Result<Arc<Hash>, Error> {
+        todo!();
+        //     block_on(&self.async_runtime, async {
+        //         // TODO(b5) - need a library method in iroh to set bytes directly:
+        //         let f = tempfile::tempfile().map_err(Error::blob)?;
+        //         f.write_all(&data).map_err(Error::blob)?;
+        //         // let path = tempfile::tempdir().map_err(Error::node_create)?.into_path();
+        //         let mut response = self
+        //             .sync_client
+        //             .blobs
+        //             .add_from_path(f.into_path(), false, iroh::bytes::util::SetTagOption::Auto)
+        //             .await
+        //             .map_err(Error::blob)?;
+
+        //     })
+    }
+
+    pub fn blob_get(&self, hash: Arc<Hash>) -> Result<Vec<u8>, Error> {
+        block_on(&self.async_runtime, async {
+            let mut r = self
+                .sync_client
+                .blobs
+                .read(hash.0)
+                .await
+                .map_err(Error::blob)?;
+            let data = r.read_to_bytes().await.map_err(Error::blob)?;
+            Ok(data.into())
         })
     }
 }

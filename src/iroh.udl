@@ -31,6 +31,13 @@ interface IrohNode {
   sequence<ConnectionInfo> connections();
   [Throws=IrohError]
   ConnectionInfo? connection_info(PublicKey node_id);
+
+  [Throws=IrohError]
+  sequence<Hash> blob_list_blobs();
+  [Throws=IrohError]
+  Hash blob_new_bytes(bytes value);
+  [Throws=IrohError]
+  bytes blob_get(Hash hash);
 };
 
 interface Doc {
@@ -136,4 +143,5 @@ interface IrohError {
   DocTicket(string description);
   Uniffi(string description);
   Connection(string description);
+  Blob(string description);
 };
