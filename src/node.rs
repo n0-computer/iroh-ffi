@@ -177,6 +177,12 @@ impl Hash {
     }
 }
 
+impl From<Hash> for iroh::bytes::Hash {
+    fn from(value: Hash) -> Self {
+        value.0
+    }
+}
+
 pub struct Entry(iroh::sync::sync::Entry);
 
 impl Entry {
@@ -498,6 +504,33 @@ impl IrohNode {
                 .map(|i| i.map(|i| i.into()))
                 .map_err(Error::connection)?;
             Ok(info)
+        })
+    }
+
+    pub fn blob_list_blobs(&self) -> Result<Vec<Arc<Hash>>, Error> {
+        block_on(&self.async_runtime, async {
+            let response = self.sync_client.blobs.list().await.map_err(Error::blob)?;
+
+            let hashes: Vec<Arc<Hash>> = response
+                .map_ok(|i| Arc::new(Hash(i.hash)))
+                .map_err(Error::blob)
+                .try_collect()
+                .await?;
+
+            Ok(hashes)
+        })
+    }
+
+    pub fn blob_get(&self, hash: Arc<Hash>) -> Result<Vec<u8>, Error> {
+        block_on(&self.async_runtime, async {
+            let mut r = self
+                .sync_client
+                .blobs
+                .read(hash.0)
+                .await
+                .map_err(Error::blob)?;
+            let data = r.read_to_bytes().await.map_err(Error::blob)?;
+            Ok(data.into())
         })
     }
 }

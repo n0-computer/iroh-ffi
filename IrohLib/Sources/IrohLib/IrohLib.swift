@@ -872,6 +872,9 @@ public protocol IrohNodeProtocol {
     func stats() throws -> [String: CounterStats]
     func connections() throws -> [ConnectionInfo]
     func connectionInfo(nodeId: PublicKey) throws -> ConnectionInfo?
+    func blobListBlobs() throws -> [Hash]
+    func blobNewBytes(value: Data) throws -> Hash
+    func blobGet(hash: Hash) throws -> Data
 }
 
 public class IrohNode: IrohNodeProtocol {
@@ -957,6 +960,32 @@ public class IrohNode: IrohNodeProtocol {
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_irohnode_connection_info(self.pointer,
                                                                FfiConverterTypePublicKey.lower(nodeId), $0)
+            }
+        )
+    }
+
+    public func blobListBlobs() throws -> [Hash] {
+        return try FfiConverterSequenceTypeHash.lift(
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_irohnode_blob_list_blobs(self.pointer, $0)
+            }
+        )
+    }
+
+    public func blobNewBytes(value: Data) throws -> Hash {
+        return try FfiConverterTypeHash.lift(
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_irohnode_blob_new_bytes(self.pointer,
+                                                              FfiConverterData.lower(value), $0)
+            }
+        )
+    }
+
+    public func blobGet(hash: Hash) throws -> Data {
+        return try FfiConverterData.lift(
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_irohnode_blob_get(self.pointer,
+                                                        FfiConverterTypeHash.lower(hash), $0)
             }
         )
     }
@@ -1294,6 +1323,7 @@ public enum IrohError {
     case DocTicket(description: String)
     case Uniffi(description: String)
     case Connection(description: String)
+    case Blob(description: String)
 
     fileprivate static func uniffiErrorHandler(_ error: RustBuffer) throws -> Error {
         return try FfiConverterTypeIrohError.lift(error)
@@ -1325,6 +1355,9 @@ public struct FfiConverterTypeIrohError: FfiConverterRustBuffer {
                 description: FfiConverterString.read(from: &buf)
             )
         case 7: return try .Connection(
+                description: FfiConverterString.read(from: &buf)
+            )
+        case 8: return try .Blob(
                 description: FfiConverterString.read(from: &buf)
             )
 
@@ -1360,6 +1393,10 @@ public struct FfiConverterTypeIrohError: FfiConverterRustBuffer {
 
         case let .Connection(description):
             writeInt(&buf, Int32(7))
+            FfiConverterString.write(description, into: &buf)
+
+        case let .Blob(description):
+            writeInt(&buf, Int32(8))
             FfiConverterString.write(description, into: &buf)
         }
     }
@@ -1834,6 +1871,28 @@ private struct FfiConverterSequenceTypeEntry: FfiConverterRustBuffer {
     }
 }
 
+private struct FfiConverterSequenceTypeHash: FfiConverterRustBuffer {
+    typealias SwiftType = [Hash]
+
+    public static func write(_ value: [Hash], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeHash.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [Hash] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [Hash]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            try seq.append(FfiConverterTypeHash.read(from: &buf))
+        }
+        return seq
+    }
+}
+
 private struct FfiConverterSequenceTypeConnectionInfo: FfiConverterRustBuffer {
     typealias SwiftType = [ConnectionInfo]
 
@@ -1981,6 +2040,15 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_connection_info() != 27388 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_irohnode_blob_list_blobs() != 53280 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_irohnode_blob_new_bytes() != 47205 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_irohnode_blob_get() != 65293 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_doc_id() != 34918 {
