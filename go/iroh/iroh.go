@@ -1,6 +1,10 @@
 package iroh
 
-// #include <irohFFI.h>
+/*
+#cgo CFLAGS: -I./include/
+#cgo LDFLAGS: -liroh -L./include/
+#include <irohFFI.h>
+*/
 import "C"
 
 import (

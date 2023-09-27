@@ -53,16 +53,36 @@ docker run --rm -v $(pwd):/mnt -w /mnt quay.io/pypa/manylinux2014_x86_64 /mnt/bu
 
 ### Running 
 
-To make sure everything go needs to find is included the following is needed
+As an example, try: the following in an empty directory:
 
 ```
-LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}:<binaries path>" \
-CGO_LDFLAGS="-liroh -L <binaries path>" \
-go <actual go command to build or run>
+$ go mod init my_example_mod
+$ go get github.com/n0-computer/iroh-ffi
+$ touch main.go
 ```
 
-where `<binaries path` needs to be replaced with the absolute path to where the rust build output is. Eg `/<path to repo>/iroh-ffi/target/debug` in debug mode.
+paste in a Hello world to `main.go`:
+```go
+package main
 
+import (
+	"fmt"
+
+	"github.com/n0-computer/iroh-ffi/iroh"
+)
+
+func main() {
+	node, err := iroh.NewIrohNode()
+	if err != nil {
+		panic(err)
+	}
+
+	nodeID := node.NodeId()
+	fmt.Printf("Hello, iroh %s from go!\n", nodeID)
+}
+```
+
+run it with `go run main.go`
 
 ### Updating the bindings
 
@@ -71,6 +91,8 @@ Install `uniffi-bindgen-go`:
 ```
 cargo install uniffi-bindgen-go --git https://github.com/dignifiedquire/uniffi-bindgen-go --branch upgarde-uniffi-24
 ```
+
+run `./make_go.sh` from the root of this repository. This will update bindings and write `libiroh.dylib` into the `/go` directory.
 
 ## Development
 

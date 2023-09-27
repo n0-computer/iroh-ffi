@@ -36,7 +36,7 @@ func main() {
 		panic(err)
 	}
 	fmt.Printf("Created author %s\n", author.ToString())
-	entry, err := doc.SetBytes(author, []byte("go???"), []byte("says hello"))
+	entry, err := doc.SetBytes(author, []byte("go"), []byte("says hello"))
 	if err != nil {
 		panic(err)
 	}
