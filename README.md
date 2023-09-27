@@ -72,8 +72,6 @@ Install `uniffi-bindgen-go`:
 cargo install uniffi-bindgen-go --git https://github.com/dignifiedquire/uniffi-bindgen-go --branch upgarde-uniffi-24
 ```
 
-run `./make_go.sh` from the root directory. This will generate a file at `./go/go/iroh.go` with a large comment block that needs to be cut up into `irohFFI.h`. move the remainder of the code up into `iroh.go` & remove the `iroh/iroh` directory.
-
 ## Development
 
 - This uses https://mozilla.github.io/uniffi-rs/ for building the interface
