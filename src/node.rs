@@ -521,23 +521,6 @@ impl IrohNode {
         })
     }
 
-    pub fn blob_new_bytes(&self, _bytes: Vec<u8>) -> Result<Arc<Hash>, Error> {
-        todo!();
-        //     block_on(&self.async_runtime, async {
-        //         // TODO(b5) - need a library method in iroh to set bytes directly:
-        //         let f = tempfile::tempfile().map_err(Error::blob)?;
-        //         f.write_all(&data).map_err(Error::blob)?;
-        //         // let path = tempfile::tempdir().map_err(Error::node_create)?.into_path();
-        //         let mut response = self
-        //             .sync_client
-        //             .blobs
-        //             .add_from_path(f.into_path(), false, iroh::bytes::util::SetTagOption::Auto)
-        //             .await
-        //             .map_err(Error::blob)?;
-
-        //     })
-    }
-
     pub fn blob_get(&self, hash: Arc<Hash>) -> Result<Vec<u8>, Error> {
         block_on(&self.async_runtime, async {
             let mut r = self

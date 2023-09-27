@@ -35,8 +35,6 @@ interface IrohNode {
   [Throws=IrohError]
   sequence<Hash> blob_list_blobs();
   [Throws=IrohError]
-  Hash blob_new_bytes(bytes value);
-  [Throws=IrohError]
   bytes blob_get(Hash hash);
 };
 
