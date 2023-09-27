@@ -13,8 +13,8 @@ func main() {
 		panic(err)
 	}
 
-	peerID := node.PeerId()
-	fmt.Printf("Hello, iroh %s from go!\n", peerID)
+	nodeID := node.NodeId()
+	fmt.Printf("Hello, iroh %s from go!\n", nodeID)
 
 	conns, err := node.Connections()
 	if err != nil {
@@ -26,12 +26,12 @@ func main() {
 		fmt.Printf("conn: %v\n", conn)
 	}
 
-	doc, err := node.CreateDoc()
+	doc, err := node.DocNew()
 	if err != nil {
 		panic(err)
 	}
 	fmt.Printf("Created document %s\n", doc.Id())
-	author, err := node.CreateAuthor()
+	author, err := node.AuthorNew()
 	if err != nil {
 		panic(err)
 	}
@@ -42,11 +42,11 @@ func main() {
 	}
 	fmt.Printf("Inserted %s\n", hash.ToString())
 
-	content, err := doc.GetContentBytes(hash)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("Got content \"%s\"\n", string(content))
+	// content, err := doc.GetContentBytes(entry)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// fmt.Printf("Got content \"%s\"\n", string(content))
 
 	hash, err = doc.SetBytes(author, []byte("another one"), []byte("says hello"))
 	if err != nil {
@@ -54,13 +54,13 @@ func main() {
 	}
 	fmt.Printf("Inserted %s\n", hash.ToString())
 
-	entries, err := doc.All()
+	entries, err := doc.Keys()
 	if err != nil {
 		panic(err)
 	}
 	fmt.Printf("Got %d entries\n", len(entries))
 	for _, entry := range entries {
-		content, err := doc.GetContentBytes(entry.Hash())
+		content, err := doc.GetContentBytes(entry)
 		if err != nil {
 			panic(err)
 		}

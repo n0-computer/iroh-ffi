@@ -26,7 +26,7 @@ type RustBufferI interface {
 	Capacity() int
 }
 
-func RustBufferFromForeign(b RustBufferI) RustBuffer {
+func RustBufferFromExternal(b RustBufferI) RustBuffer {
 	return RustBuffer{
 		capacity: C.int(b.Capacity()),
 		len:      C.int(b.Len()),
@@ -530,7 +530,7 @@ func (c FfiConverterBytes) Write(writer io.Writer, value []byte) {
 		panic(err)
 	}
 	if write_length != len(value) {
-		panic(fmt.Errorf("bad write length when writing string, expected %d, written %d", len(value), write_length))
+		panic(fmt.Errorf("bad write length when writing []byte, expected %d, written %d", len(value), write_length))
 	}
 }
 
@@ -617,12 +617,10 @@ type AuthorId struct {
 func (_self *AuthorId) ToString() string {
 	_pointer := _self.ffiObject.incrementPointer("*AuthorId")
 	defer _self.ffiObject.decrementPointer()
-
 	return FfiConverterStringINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
 		return C.uniffi_iroh_fn_method_authorid_to_string(
 			_pointer, _uniffiStatus)
 	}))
-
 }
 
 func (object *AuthorId) Destroy() {
@@ -673,12 +671,35 @@ type Doc struct {
 	ffiObject FfiObject
 }
 
-func (_self *Doc) All() ([]*Entry, error) {
+func (_self *Doc) GetContentBytes(entry *Entry) ([]byte, error) {
 	_pointer := _self.ffiObject.incrementPointer("*Doc")
 	defer _self.ffiObject.decrementPointer()
-
 	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) RustBufferI {
-		return C.uniffi_iroh_fn_method_doc_all(
+		return C.uniffi_iroh_fn_method_doc_get_content_bytes(
+			_pointer, FfiConverterEntryINSTANCE.Lower(entry), _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue []byte
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterBytesINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
+
+func (_self *Doc) Id() string {
+	_pointer := _self.ffiObject.incrementPointer("*Doc")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterStringINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_doc_id(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *Doc) Keys() ([]*Entry, error) {
+	_pointer := _self.ffiObject.incrementPointer("*Doc")
+	defer _self.ffiObject.decrementPointer()
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_doc_keys(
 			_pointer, _uniffiStatus)
 	})
 	if _uniffiErr != nil {
@@ -687,45 +708,11 @@ func (_self *Doc) All() ([]*Entry, error) {
 	} else {
 		return FfiConverterSequenceEntryINSTANCE.Lift(_uniffiRV), _uniffiErr
 	}
-
 }
 
-func (_self *Doc) GetContentBytes(
-	hash *Hash) ([]byte, error) {
+func (_self *Doc) SetBytes(author *AuthorId, key []byte, value []byte) (*Hash, error) {
 	_pointer := _self.ffiObject.incrementPointer("*Doc")
 	defer _self.ffiObject.decrementPointer()
-
-	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) RustBufferI {
-		return C.uniffi_iroh_fn_method_doc_get_content_bytes(
-			_pointer, FfiConverterHashINSTANCE.Lower(hash), _uniffiStatus)
-	})
-	if _uniffiErr != nil {
-		var _uniffiDefaultValue []byte
-		return _uniffiDefaultValue, _uniffiErr
-	} else {
-		return FfiConverterBytesINSTANCE.Lift(_uniffiRV), _uniffiErr
-	}
-
-}
-
-func (_self *Doc) Id() string {
-	_pointer := _self.ffiObject.incrementPointer("*Doc")
-	defer _self.ffiObject.decrementPointer()
-
-	return FfiConverterStringINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
-		return C.uniffi_iroh_fn_method_doc_id(
-			_pointer, _uniffiStatus)
-	}))
-
-}
-
-func (_self *Doc) SetBytes(
-	author *AuthorId,
-	key []byte,
-	value []byte) (*Hash, error) {
-	_pointer := _self.ffiObject.incrementPointer("*Doc")
-	defer _self.ffiObject.decrementPointer()
-
 	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
 		return C.uniffi_iroh_fn_method_doc_set_bytes(
 			_pointer, FfiConverterAuthorIdINSTANCE.Lower(author), FfiConverterBytesINSTANCE.Lower(key), FfiConverterBytesINSTANCE.Lower(value), _uniffiStatus)
@@ -736,13 +723,11 @@ func (_self *Doc) SetBytes(
 	} else {
 		return FfiConverterHashINSTANCE.Lift(_uniffiRV), _uniffiErr
 	}
-
 }
 
 func (_self *Doc) ShareRead() (*DocTicket, error) {
 	_pointer := _self.ffiObject.incrementPointer("*Doc")
 	defer _self.ffiObject.decrementPointer()
-
 	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
 		return C.uniffi_iroh_fn_method_doc_share_read(
 			_pointer, _uniffiStatus)
@@ -753,13 +738,11 @@ func (_self *Doc) ShareRead() (*DocTicket, error) {
 	} else {
 		return FfiConverterDocTicketINSTANCE.Lift(_uniffiRV), _uniffiErr
 	}
-
 }
 
 func (_self *Doc) ShareWrite() (*DocTicket, error) {
 	_pointer := _self.ffiObject.incrementPointer("*Doc")
 	defer _self.ffiObject.decrementPointer()
-
 	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
 		return C.uniffi_iroh_fn_method_doc_share_write(
 			_pointer, _uniffiStatus)
@@ -770,13 +753,11 @@ func (_self *Doc) ShareWrite() (*DocTicket, error) {
 	} else {
 		return FfiConverterDocTicketINSTANCE.Lift(_uniffiRV), _uniffiErr
 	}
-
 }
 
 func (_self *Doc) Status() (LiveStatus, error) {
 	_pointer := _self.ffiObject.incrementPointer("*Doc")
 	defer _self.ffiObject.decrementPointer()
-
 	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) RustBufferI {
 		return C.uniffi_iroh_fn_method_doc_status(
 			_pointer, _uniffiStatus)
@@ -787,34 +768,28 @@ func (_self *Doc) Status() (LiveStatus, error) {
 	} else {
 		return FfiConverterTypeLiveStatusINSTANCE.Lift(_uniffiRV), _uniffiErr
 	}
-
 }
 
 func (_self *Doc) StopSync() error {
 	_pointer := _self.ffiObject.incrementPointer("*Doc")
 	defer _self.ffiObject.decrementPointer()
-
 	_, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) bool {
 		C.uniffi_iroh_fn_method_doc_stop_sync(
 			_pointer, _uniffiStatus)
 		return false
 	})
 	return _uniffiErr
-
 }
 
-func (_self *Doc) Subscribe(
-	cb SubscribeCallback) error {
+func (_self *Doc) Subscribe(cb SubscribeCallback) error {
 	_pointer := _self.ffiObject.incrementPointer("*Doc")
 	defer _self.ffiObject.decrementPointer()
-
 	_, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) bool {
 		C.uniffi_iroh_fn_method_doc_subscribe(
 			_pointer, FfiConverterCallbackInterfaceSubscribeCallbackINSTANCE.Lower(cb), _uniffiStatus)
 		return false
 	})
 	return _uniffiErr
-
 }
 
 func (object *Doc) Destroy() {
@@ -865,9 +840,7 @@ type DocTicket struct {
 	ffiObject FfiObject
 }
 
-func DocTicketFromString(
-	content string) (*DocTicket, error) {
-
+func DocTicketFromString(content string) (*DocTicket, error) {
 	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
 		return C.uniffi_iroh_fn_constructor_docticket_from_string(FfiConverterStringINSTANCE.Lower(content), _uniffiStatus)
 	})
@@ -877,18 +850,15 @@ func DocTicketFromString(
 	} else {
 		return FfiConverterDocTicketINSTANCE.Lift(_uniffiRV), _uniffiErr
 	}
-
 }
 
 func (_self *DocTicket) ToString() string {
 	_pointer := _self.ffiObject.incrementPointer("*DocTicket")
 	defer _self.ffiObject.decrementPointer()
-
 	return FfiConverterStringINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
 		return C.uniffi_iroh_fn_method_docticket_to_string(
 			_pointer, _uniffiStatus)
 	}))
-
 }
 
 func (object *DocTicket) Destroy() {
@@ -942,34 +912,28 @@ type Entry struct {
 func (_self *Entry) Author() *AuthorId {
 	_pointer := _self.ffiObject.incrementPointer("*Entry")
 	defer _self.ffiObject.decrementPointer()
-
 	return FfiConverterAuthorIdINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
 		return C.uniffi_iroh_fn_method_entry_author(
 			_pointer, _uniffiStatus)
 	}))
-
 }
 
 func (_self *Entry) Hash() *Hash {
 	_pointer := _self.ffiObject.incrementPointer("*Entry")
 	defer _self.ffiObject.decrementPointer()
-
 	return FfiConverterHashINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
 		return C.uniffi_iroh_fn_method_entry_hash(
 			_pointer, _uniffiStatus)
 	}))
-
 }
 
 func (_self *Entry) Key() []byte {
 	_pointer := _self.ffiObject.incrementPointer("*Entry")
 	defer _self.ffiObject.decrementPointer()
-
 	return FfiConverterBytesINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
 		return C.uniffi_iroh_fn_method_entry_key(
 			_pointer, _uniffiStatus)
 	}))
-
 }
 
 func (object *Entry) Destroy() {
@@ -1023,23 +987,19 @@ type Hash struct {
 func (_self *Hash) ToBytes() []byte {
 	_pointer := _self.ffiObject.incrementPointer("*Hash")
 	defer _self.ffiObject.decrementPointer()
-
 	return FfiConverterBytesINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
 		return C.uniffi_iroh_fn_method_hash_to_bytes(
 			_pointer, _uniffiStatus)
 	}))
-
 }
 
 func (_self *Hash) ToString() string {
 	_pointer := _self.ffiObject.incrementPointer("*Hash")
 	defer _self.ffiObject.decrementPointer()
-
 	return FfiConverterStringINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
 		return C.uniffi_iroh_fn_method_hash_to_string(
 			_pointer, _uniffiStatus)
 	}))
-
 }
 
 func (object *Hash) Destroy() {
@@ -1091,7 +1051,6 @@ type IrohNode struct {
 }
 
 func NewIrohNode() (*IrohNode, error) {
-
 	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
 		return C.uniffi_iroh_fn_constructor_irohnode_new(_uniffiStatus)
 	})
@@ -1101,14 +1060,41 @@ func NewIrohNode() (*IrohNode, error) {
 	} else {
 		return FfiConverterIrohNodeINSTANCE.Lift(_uniffiRV), _uniffiErr
 	}
-
 }
 
-func (_self *IrohNode) ConnectionInfo(
-	nodeId *PublicKey) (*ConnectionInfo, error) {
+func (_self *IrohNode) AuthorList() ([]*AuthorId, error) {
 	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
 	defer _self.ffiObject.decrementPointer()
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_irohnode_author_list(
+			_pointer, _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue []*AuthorId
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterSequenceAuthorIdINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
 
+func (_self *IrohNode) AuthorNew() (*AuthorId, error) {
+	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
+	defer _self.ffiObject.decrementPointer()
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_method_irohnode_author_new(
+			_pointer, _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue *AuthorId
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterAuthorIdINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
+
+func (_self *IrohNode) ConnectionInfo(nodeId *PublicKey) (*ConnectionInfo, error) {
+	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
+	defer _self.ffiObject.decrementPointer()
 	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) RustBufferI {
 		return C.uniffi_iroh_fn_method_irohnode_connection_info(
 			_pointer, FfiConverterPublicKeyINSTANCE.Lower(nodeId), _uniffiStatus)
@@ -1119,13 +1105,11 @@ func (_self *IrohNode) ConnectionInfo(
 	} else {
 		return FfiConverterOptionalTypeConnectionInfoINSTANCE.Lift(_uniffiRV), _uniffiErr
 	}
-
 }
 
 func (_self *IrohNode) Connections() ([]ConnectionInfo, error) {
 	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
 	defer _self.ffiObject.decrementPointer()
-
 	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) RustBufferI {
 		return C.uniffi_iroh_fn_method_irohnode_connections(
 			_pointer, _uniffiStatus)
@@ -1136,50 +1120,13 @@ func (_self *IrohNode) Connections() ([]ConnectionInfo, error) {
 	} else {
 		return FfiConverterSequenceTypeConnectionInfoINSTANCE.Lift(_uniffiRV), _uniffiErr
 	}
-
 }
 
-func (_self *IrohNode) CreateAuthor() (*AuthorId, error) {
+func (_self *IrohNode) DocJoin(ticket *DocTicket) (*Doc, error) {
 	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
 	defer _self.ffiObject.decrementPointer()
-
 	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_method_irohnode_create_author(
-			_pointer, _uniffiStatus)
-	})
-	if _uniffiErr != nil {
-		var _uniffiDefaultValue *AuthorId
-		return _uniffiDefaultValue, _uniffiErr
-	} else {
-		return FfiConverterAuthorIdINSTANCE.Lift(_uniffiRV), _uniffiErr
-	}
-
-}
-
-func (_self *IrohNode) CreateDoc() (*Doc, error) {
-	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
-	defer _self.ffiObject.decrementPointer()
-
-	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_method_irohnode_create_doc(
-			_pointer, _uniffiStatus)
-	})
-	if _uniffiErr != nil {
-		var _uniffiDefaultValue *Doc
-		return _uniffiDefaultValue, _uniffiErr
-	} else {
-		return FfiConverterDocINSTANCE.Lift(_uniffiRV), _uniffiErr
-	}
-
-}
-
-func (_self *IrohNode) ImportDoc(
-	ticket *DocTicket) (*Doc, error) {
-	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
-	defer _self.ffiObject.decrementPointer()
-
-	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_method_irohnode_import_doc(
+		return C.uniffi_iroh_fn_method_irohnode_doc_join(
 			_pointer, FfiConverterDocTicketINSTANCE.Lower(ticket), _uniffiStatus)
 	})
 	if _uniffiErr != nil {
@@ -1188,41 +1135,35 @@ func (_self *IrohNode) ImportDoc(
 	} else {
 		return FfiConverterDocINSTANCE.Lift(_uniffiRV), _uniffiErr
 	}
-
 }
 
-func (_self *IrohNode) ListAuthors() ([]*AuthorId, error) {
+func (_self *IrohNode) DocNew() (*Doc, error) {
 	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
 	defer _self.ffiObject.decrementPointer()
-
-	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) RustBufferI {
-		return C.uniffi_iroh_fn_method_irohnode_list_authors(
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_method_irohnode_doc_new(
 			_pointer, _uniffiStatus)
 	})
 	if _uniffiErr != nil {
-		var _uniffiDefaultValue []*AuthorId
+		var _uniffiDefaultValue *Doc
 		return _uniffiDefaultValue, _uniffiErr
 	} else {
-		return FfiConverterSequenceAuthorIdINSTANCE.Lift(_uniffiRV), _uniffiErr
+		return FfiConverterDocINSTANCE.Lift(_uniffiRV), _uniffiErr
 	}
-
 }
 
-func (_self *IrohNode) PeerId() string {
+func (_self *IrohNode) NodeId() string {
 	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
 	defer _self.ffiObject.decrementPointer()
-
 	return FfiConverterStringINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
-		return C.uniffi_iroh_fn_method_irohnode_peer_id(
+		return C.uniffi_iroh_fn_method_irohnode_node_id(
 			_pointer, _uniffiStatus)
 	}))
-
 }
 
 func (_self *IrohNode) Stats() (map[string]CounterStats, error) {
 	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
 	defer _self.ffiObject.decrementPointer()
-
 	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) RustBufferI {
 		return C.uniffi_iroh_fn_method_irohnode_stats(
 			_pointer, _uniffiStatus)
@@ -1233,7 +1174,6 @@ func (_self *IrohNode) Stats() (map[string]CounterStats, error) {
 	} else {
 		return FfiConverterMapStringTypeCounterStatsINSTANCE.Lift(_uniffiRV), _uniffiErr
 	}
-
 }
 
 func (object *IrohNode) Destroy() {
@@ -1287,23 +1227,19 @@ type PublicKey struct {
 func (_self *PublicKey) ToBytes() []byte {
 	_pointer := _self.ffiObject.incrementPointer("*PublicKey")
 	defer _self.ffiObject.decrementPointer()
-
 	return FfiConverterBytesINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
 		return C.uniffi_iroh_fn_method_publickey_to_bytes(
 			_pointer, _uniffiStatus)
 	}))
-
 }
 
 func (_self *PublicKey) ToString() string {
 	_pointer := _self.ffiObject.incrementPointer("*PublicKey")
 	defer _self.ffiObject.decrementPointer()
-
 	return FfiConverterStringINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
 		return C.uniffi_iroh_fn_method_publickey_to_string(
 			_pointer, _uniffiStatus)
 	}))
-
 }
 
 func (object *PublicKey) Destroy() {
@@ -1861,6 +1797,9 @@ const (
 	LiveEventInsertLocal  LiveEvent = 1
 	LiveEventInsertRemote LiveEvent = 2
 	LiveEventContentReady LiveEvent = 3
+	LiveEventSyncFinished LiveEvent = 4
+	LiveEventNeighborUp   LiveEvent = 5
+	LiveEventNeighborDown LiveEvent = 6
 )
 
 type FfiConverterTypeLiveEvent struct{}
@@ -2083,8 +2022,7 @@ func (c *FfiConverterCallbackInterface[CallbackInterface]) Write(writer io.Write
 
 // Declaration and FfiConverters for SubscribeCallback Callback Interface
 type SubscribeCallback interface {
-	Event(
-		event LiveEvent) *IrohError
+	Event(event LiveEvent) *IrohError
 }
 
 // foreignCallbackCallbackInterfaceSubscribeCallback cannot be callable be a compiled function at a same time
@@ -2524,12 +2462,17 @@ func (_ FfiDestroyerMapStringTypeCounterStats) Destroy(mapValue map[string]Count
 	}
 }
 
-func SetLogLevel(
-	level LogLevel) {
-
+func SetLogLevel(level LogLevel) {
 	rustCall(func(_uniffiStatus *C.RustCallStatus) bool {
 		C.uniffi_iroh_fn_func_set_log_level(FfiConverterTypeLogLevelINSTANCE.Lower(level), _uniffiStatus)
 		return false
 	})
+}
 
+func StartMetricsCollection() error {
+	_, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) bool {
+		C.uniffi_iroh_fn_func_start_metrics_collection(_uniffiStatus)
+		return false
+	})
+	return _uniffiErr
 }
