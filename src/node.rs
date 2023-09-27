@@ -509,19 +509,19 @@ impl IrohNode {
 
     pub fn blob_list_blobs(&self) -> Result<Vec<Arc<Hash>>, Error> {
         block_on(&self.async_runtime, async {
-            let mut response = self.sync_client.blobs.list().await.map_err(Error::blob)?;
+            let response = self.sync_client.blobs.list().await.map_err(Error::blob)?;
 
-            let mut hashes: Vec<Arc<Hash>> = Vec::new();
-            while let Some(item) = response.next().await {
-                let item = item.map_err(Error::blob)?;
-                hashes.push(Arc::new(Hash(item.hash)));
-            }
+            let hashes: Vec<Arc<Hash>> = response
+                .map_ok(|i| Arc::new(Hash(i.hash)))
+                .map_err(Error::blob)
+                .try_collect()
+                .await?;
 
             Ok(hashes)
         })
     }
 
-    pub fn blob_new_bytes(&self, _: Vec<u8>) -> Result<Arc<Hash>, Error> {
+    pub fn blob_new_bytes(&self, _bytes: Vec<u8>) -> Result<Arc<Hash>, Error> {
         todo!();
         //     block_on(&self.async_runtime, async {
         //         // TODO(b5) - need a library method in iroh to set bytes directly:
