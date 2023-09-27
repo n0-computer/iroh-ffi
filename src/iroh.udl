@@ -45,7 +45,7 @@ interface Doc {
   [Throws=IrohError]
   DocTicket share_read();
   [Throws=IrohError]
-  Hash set_bytes(AuthorId author, bytes key, bytes value);
+  Entry set_bytes(AuthorId author, bytes key, bytes value);
   [Throws=IrohError]
   bytes get_content_bytes(Entry entry);
   [Throws=IrohError]

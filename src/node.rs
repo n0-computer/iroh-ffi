@@ -257,14 +257,20 @@ impl Doc {
         author_id: Arc<AuthorId>,
         key: Vec<u8>,
         value: Vec<u8>,
-    ) -> Result<Arc<Hash>, Error> {
+    ) -> Result<Arc<Entry>, Error> {
         block_on(&self.rt, async {
-            let hash = self
-                .inner
-                .set_bytes(author_id.0.clone(), key, value)
+            // TODO - set_bytes should return an entry? probably.
+            self.inner
+                .set_bytes(author_id.0, key.clone(), value)
                 .await
                 .map_err(Error::doc)?;
-            Ok(Arc::new(Hash(hash)))
+            let entry = self
+                .inner
+                .get_one(author_id.0, key)
+                .await
+                .map_err(Error::doc)?
+                .expect("key should not be empty");
+            Ok(Arc::new(Entry(entry)))
         })
     }
 
