@@ -5,13 +5,13 @@
 This repo defines Python & Swift bindings for [iroh](https://github.com/n0-computer/iroh), which is written in Rust.
 
 ### Published Packages:
+
 [Python](https://pypi.org/project/iroh/)
 [Swift](https://github.com/n0-computer/iroh-ffi)
 
 ### Planned Support:
 We're hoping to ship support for the following langauges in the future
 
-- Go
 - Kotlin
 
 
@@ -47,6 +47,29 @@ wheel for linux use:
 
 ```
 docker run --rm -v $(pwd):/mnt -w /mnt quay.io/pypa/manylinux2014_x86_64 /mnt/build-wheel.sh
+```
+
+## Go
+
+### Running 
+
+To make sure everything go needs to find is included the following is needed
+
+```
+LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}:<binaries path>" \
+CGO_LDFLAGS="-liroh -L <binaries path>" \
+go <actual go command to build or run>
+```
+
+where `<binaries path` needs to be replaced with the absolute path to where the rust build output is. Eg `/<path to repo>/iroh-ffi/target/debug` in debug mode.
+
+
+### Updating the bindings
+
+Install `uniffi-bindgen-go`: 
+
+```
+cargo install uniffi-bindgen-go --git https://github.com/dignifiedquire/uniffi-bindgen-go --branch upgarde-uniffi-24
 ```
 
 ## Development
