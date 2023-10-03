@@ -15,7 +15,7 @@ enum LogLevel {
 
 interface IrohNode {
   [Throws=IrohError]
-  constructor();
+  constructor(string path);
   string node_id();
   [Throws=IrohError]
   Doc doc_new();
@@ -94,14 +94,61 @@ dictionary CounterStats {
   string description;
 };
 
-[Enum]
 interface LiveEvent {
+  LiveEventType type();
+  Entry as_insert_local();
+  InsertRemoteEvent as_insert_remote();
+  Hash as_content_ready();
+  PublicKey as_neighbor_up();
+  PublicKey as_neighbor_down();
+  SyncEvent as_sync_finished();
+};
+
+dictionary InsertRemoteEvent {
+  PublicKey from;
+  Entry entry;
+  ContentStatus content_status;
+};
+
+[Enum]
+interface LiveEventType {
   InsertLocal();
   InsertRemote();
   ContentReady();
-  SyncFinished();
   NeighborUp();
   NeighborDown();
+  SyncFinished();
+};
+
+[Enum]
+interface ContentStatus {
+  Complete();
+  Incomplete();
+  Missing();
+};
+
+interface NamespaceId {
+  string to_string();
+};
+
+dictionary SyncEvent {
+  NamespaceId namespace;
+  PublicKey peer;
+  Origin origin;
+  f64 finished;
+  string? result;
+};
+
+[Enum]
+interface SyncReason {
+  DirectJoin();
+  NewNeighbor();
+};
+
+[Enum]
+interface Origin {
+  Connect(SyncReason reason);
+  Accept();
 };
 
 dictionary ConnectionInfo {

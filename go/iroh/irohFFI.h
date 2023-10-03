@@ -70,6 +70,8 @@ typedef void (*UniFfiFutureCallbackRustArcPtr)(const void *, void*, RustCallStat
 typedef void (*UniFfiFutureCallbackRustArcPtr)(const void *, void*, RustCallStatus);
 typedef void (*UniFfiFutureCallbackRustArcPtr)(const void *, void*, RustCallStatus);
 typedef void (*UniFfiFutureCallbackRustArcPtr)(const void *, void*, RustCallStatus);
+typedef void (*UniFfiFutureCallbackRustArcPtr)(const void *, void*, RustCallStatus);
+typedef void (*UniFfiFutureCallbackRustArcPtr)(const void *, void*, RustCallStatus);
 typedef void (*UniFfiFutureCallbackRustBuffer)(const void *, RustBuffer, RustCallStatus);
 
 
@@ -194,6 +196,7 @@ void uniffi_iroh_fn_free_irohnode(
 );
 
 void* uniffi_iroh_fn_constructor_irohnode_new(
+	RustBuffer path,
 	RustCallStatus* out_status
 );
 
@@ -203,6 +206,17 @@ RustBuffer uniffi_iroh_fn_method_irohnode_author_list(
 );
 
 void* uniffi_iroh_fn_method_irohnode_author_new(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+RustBuffer uniffi_iroh_fn_method_irohnode_blob_get(
+	void* ptr,
+	void* hash,
+	RustCallStatus* out_status
+);
+
+RustBuffer uniffi_iroh_fn_method_irohnode_blob_list_blobs(
 	void* ptr,
 	RustCallStatus* out_status
 );
@@ -235,6 +249,56 @@ RustBuffer uniffi_iroh_fn_method_irohnode_node_id(
 );
 
 RustBuffer uniffi_iroh_fn_method_irohnode_stats(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+void uniffi_iroh_fn_free_liveevent(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+void* uniffi_iroh_fn_method_liveevent_as_content_ready(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+void* uniffi_iroh_fn_method_liveevent_as_insert_local(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+RustBuffer uniffi_iroh_fn_method_liveevent_as_insert_remote(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+void* uniffi_iroh_fn_method_liveevent_as_neighbor_down(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+void* uniffi_iroh_fn_method_liveevent_as_neighbor_up(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+RustBuffer uniffi_iroh_fn_method_liveevent_as_sync_finished(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+RustBuffer uniffi_iroh_fn_method_liveevent_type(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+void uniffi_iroh_fn_free_namespaceid(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+RustBuffer uniffi_iroh_fn_method_namespaceid_to_string(
 	void* ptr,
 	RustCallStatus* out_status
 );
@@ -369,6 +433,14 @@ uint16_t uniffi_iroh_checksum_method_irohnode_author_new(
 	RustCallStatus* out_status
 );
 
+uint16_t uniffi_iroh_checksum_method_irohnode_blob_get(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_irohnode_blob_list_blobs(
+	RustCallStatus* out_status
+);
+
 uint16_t uniffi_iroh_checksum_method_irohnode_connection_info(
 	RustCallStatus* out_status
 );
@@ -390,6 +462,38 @@ uint16_t uniffi_iroh_checksum_method_irohnode_node_id(
 );
 
 uint16_t uniffi_iroh_checksum_method_irohnode_stats(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_liveevent_as_content_ready(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_liveevent_as_insert_local(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_liveevent_as_insert_remote(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_liveevent_as_neighbor_down(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_liveevent_as_neighbor_up(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_liveevent_as_sync_finished(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_liveevent_type(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_namespaceid_to_string(
 	RustCallStatus* out_status
 );
 
@@ -428,12 +532,18 @@ void uniffiFutureCallbackHandlerAuthorId(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerAuthorIdTypeIrohError(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerDocTypeIrohError(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerDocTicketTypeIrohError(void *, void*, RustCallStatus);
+void uniffiFutureCallbackHandlerEntry(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerHash(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerHashTypeIrohError(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerIrohNodeTypeIrohError(void *, void*, RustCallStatus);
+void uniffiFutureCallbackHandlerPublicKey(void *, void*, RustCallStatus);
+void uniffiFutureCallbackHandlerTypeInsertRemoteEvent(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerTypeLiveStatusTypeIrohError(void *, RustBuffer, RustCallStatus);
+void uniffiFutureCallbackHandlerTypeSyncEvent(void *, RustBuffer, RustCallStatus);
+void uniffiFutureCallbackHandlerTypeLiveEventType(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerOptionalTypeConnectionInfoTypeIrohError(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerSequenceAuthorIdTypeIrohError(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerSequenceEntryTypeIrohError(void *, RustBuffer, RustCallStatus);
+void uniffiFutureCallbackHandlerSequenceHashTypeIrohError(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerSequenceTypeConnectionInfoTypeIrohError(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerMapStringTypeCounterStatsTypeIrohError(void *, RustBuffer, RustCallStatus);

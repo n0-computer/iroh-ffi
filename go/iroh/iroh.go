@@ -1050,9 +1050,9 @@ type IrohNode struct {
 	ffiObject FfiObject
 }
 
-func NewIrohNode() (*IrohNode, error) {
+func NewIrohNode(path string) (*IrohNode, error) {
 	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_constructor_irohnode_new(_uniffiStatus)
+		return C.uniffi_iroh_fn_constructor_irohnode_new(FfiConverterStringINSTANCE.Lower(path), _uniffiStatus)
 	})
 	if _uniffiErr != nil {
 		var _uniffiDefaultValue *IrohNode
@@ -1089,6 +1089,36 @@ func (_self *IrohNode) AuthorNew() (*AuthorId, error) {
 		return _uniffiDefaultValue, _uniffiErr
 	} else {
 		return FfiConverterAuthorIdINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
+
+func (_self *IrohNode) BlobGet(hash *Hash) ([]byte, error) {
+	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
+	defer _self.ffiObject.decrementPointer()
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_irohnode_blob_get(
+			_pointer, FfiConverterHashINSTANCE.Lower(hash), _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue []byte
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterBytesINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
+
+func (_self *IrohNode) BlobListBlobs() ([]*Hash, error) {
+	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
+	defer _self.ffiObject.decrementPointer()
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_irohnode_blob_list_blobs(
+			_pointer, _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue []*Hash
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterSequenceHashINSTANCE.Lift(_uniffiRV), _uniffiErr
 	}
 }
 
@@ -1217,6 +1247,174 @@ func (c FfiConverterIrohNode) Write(writer io.Writer, value *IrohNode) {
 type FfiDestroyerIrohNode struct{}
 
 func (_ FfiDestroyerIrohNode) Destroy(value *IrohNode) {
+	value.Destroy()
+}
+
+type LiveEvent struct {
+	ffiObject FfiObject
+}
+
+func (_self *LiveEvent) AsContentReady() *Hash {
+	_pointer := _self.ffiObject.incrementPointer("*LiveEvent")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterHashINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_method_liveevent_as_content_ready(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *LiveEvent) AsInsertLocal() *Entry {
+	_pointer := _self.ffiObject.incrementPointer("*LiveEvent")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterEntryINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_method_liveevent_as_insert_local(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *LiveEvent) AsInsertRemote() InsertRemoteEvent {
+	_pointer := _self.ffiObject.incrementPointer("*LiveEvent")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterTypeInsertRemoteEventINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_liveevent_as_insert_remote(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *LiveEvent) AsNeighborDown() *PublicKey {
+	_pointer := _self.ffiObject.incrementPointer("*LiveEvent")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterPublicKeyINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_method_liveevent_as_neighbor_down(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *LiveEvent) AsNeighborUp() *PublicKey {
+	_pointer := _self.ffiObject.incrementPointer("*LiveEvent")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterPublicKeyINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_method_liveevent_as_neighbor_up(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *LiveEvent) AsSyncFinished() SyncEvent {
+	_pointer := _self.ffiObject.incrementPointer("*LiveEvent")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterTypeSyncEventINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_liveevent_as_sync_finished(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *LiveEvent) Type() LiveEventType {
+	_pointer := _self.ffiObject.incrementPointer("*LiveEvent")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterTypeLiveEventTypeINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_liveevent_type(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (object *LiveEvent) Destroy() {
+	runtime.SetFinalizer(object, nil)
+	object.ffiObject.destroy()
+}
+
+type FfiConverterLiveEvent struct{}
+
+var FfiConverterLiveEventINSTANCE = FfiConverterLiveEvent{}
+
+func (c FfiConverterLiveEvent) Lift(pointer unsafe.Pointer) *LiveEvent {
+	result := &LiveEvent{
+		newFfiObject(
+			pointer,
+			func(pointer unsafe.Pointer, status *C.RustCallStatus) {
+				C.uniffi_iroh_fn_free_liveevent(pointer, status)
+			}),
+	}
+	runtime.SetFinalizer(result, (*LiveEvent).Destroy)
+	return result
+}
+
+func (c FfiConverterLiveEvent) Read(reader io.Reader) *LiveEvent {
+	return c.Lift(unsafe.Pointer(uintptr(readUint64(reader))))
+}
+
+func (c FfiConverterLiveEvent) Lower(value *LiveEvent) unsafe.Pointer {
+	// TODO: this is bad - all synchronization from ObjectRuntime.go is discarded here,
+	// because the pointer will be decremented immediately after this function returns,
+	// and someone will be left holding onto a non-locked pointer.
+	pointer := value.ffiObject.incrementPointer("*LiveEvent")
+	defer value.ffiObject.decrementPointer()
+	return pointer
+}
+
+func (c FfiConverterLiveEvent) Write(writer io.Writer, value *LiveEvent) {
+	writeUint64(writer, uint64(uintptr(c.Lower(value))))
+}
+
+type FfiDestroyerLiveEvent struct{}
+
+func (_ FfiDestroyerLiveEvent) Destroy(value *LiveEvent) {
+	value.Destroy()
+}
+
+type NamespaceId struct {
+	ffiObject FfiObject
+}
+
+func (_self *NamespaceId) ToString() string {
+	_pointer := _self.ffiObject.incrementPointer("*NamespaceId")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterStringINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_namespaceid_to_string(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (object *NamespaceId) Destroy() {
+	runtime.SetFinalizer(object, nil)
+	object.ffiObject.destroy()
+}
+
+type FfiConverterNamespaceId struct{}
+
+var FfiConverterNamespaceIdINSTANCE = FfiConverterNamespaceId{}
+
+func (c FfiConverterNamespaceId) Lift(pointer unsafe.Pointer) *NamespaceId {
+	result := &NamespaceId{
+		newFfiObject(
+			pointer,
+			func(pointer unsafe.Pointer, status *C.RustCallStatus) {
+				C.uniffi_iroh_fn_free_namespaceid(pointer, status)
+			}),
+	}
+	runtime.SetFinalizer(result, (*NamespaceId).Destroy)
+	return result
+}
+
+func (c FfiConverterNamespaceId) Read(reader io.Reader) *NamespaceId {
+	return c.Lift(unsafe.Pointer(uintptr(readUint64(reader))))
+}
+
+func (c FfiConverterNamespaceId) Lower(value *NamespaceId) unsafe.Pointer {
+	// TODO: this is bad - all synchronization from ObjectRuntime.go is discarded here,
+	// because the pointer will be decremented immediately after this function returns,
+	// and someone will be left holding onto a non-locked pointer.
+	pointer := value.ffiObject.incrementPointer("*NamespaceId")
+	defer value.ffiObject.decrementPointer()
+	return pointer
+}
+
+func (c FfiConverterNamespaceId) Write(writer io.Writer, value *NamespaceId) {
+	writeUint64(writer, uint64(uintptr(c.Lower(value))))
+}
+
+type FfiDestroyerNamespaceId struct{}
+
+func (_ FfiDestroyerNamespaceId) Destroy(value *NamespaceId) {
 	value.Destroy()
 }
 
@@ -1386,6 +1584,50 @@ func (_ FfiDestroyerTypeCounterStats) Destroy(value CounterStats) {
 	value.Destroy()
 }
 
+type InsertRemoteEvent struct {
+	From          *PublicKey
+	Entry         *Entry
+	ContentStatus ContentStatus
+}
+
+func (r *InsertRemoteEvent) Destroy() {
+	FfiDestroyerPublicKey{}.Destroy(r.From)
+	FfiDestroyerEntry{}.Destroy(r.Entry)
+	FfiDestroyerTypeContentStatus{}.Destroy(r.ContentStatus)
+}
+
+type FfiConverterTypeInsertRemoteEvent struct{}
+
+var FfiConverterTypeInsertRemoteEventINSTANCE = FfiConverterTypeInsertRemoteEvent{}
+
+func (c FfiConverterTypeInsertRemoteEvent) Lift(rb RustBufferI) InsertRemoteEvent {
+	return LiftFromRustBuffer[InsertRemoteEvent](c, rb)
+}
+
+func (c FfiConverterTypeInsertRemoteEvent) Read(reader io.Reader) InsertRemoteEvent {
+	return InsertRemoteEvent{
+		FfiConverterPublicKeyINSTANCE.Read(reader),
+		FfiConverterEntryINSTANCE.Read(reader),
+		FfiConverterTypeContentStatusINSTANCE.Read(reader),
+	}
+}
+
+func (c FfiConverterTypeInsertRemoteEvent) Lower(value InsertRemoteEvent) RustBuffer {
+	return LowerIntoRustBuffer[InsertRemoteEvent](c, value)
+}
+
+func (c FfiConverterTypeInsertRemoteEvent) Write(writer io.Writer, value InsertRemoteEvent) {
+	FfiConverterPublicKeyINSTANCE.Write(writer, value.From)
+	FfiConverterEntryINSTANCE.Write(writer, value.Entry)
+	FfiConverterTypeContentStatusINSTANCE.Write(writer, value.ContentStatus)
+}
+
+type FfiDestroyerTypeInsertRemoteEvent struct{}
+
+func (_ FfiDestroyerTypeInsertRemoteEvent) Destroy(value InsertRemoteEvent) {
+	value.Destroy()
+}
+
 type LiveStatus struct {
 	Active        bool
 	Subscriptions uint64
@@ -1423,6 +1665,58 @@ func (c FfiConverterTypeLiveStatus) Write(writer io.Writer, value LiveStatus) {
 type FfiDestroyerTypeLiveStatus struct{}
 
 func (_ FfiDestroyerTypeLiveStatus) Destroy(value LiveStatus) {
+	value.Destroy()
+}
+
+type SyncEvent struct {
+	Namespace *NamespaceId
+	Peer      *PublicKey
+	Origin    Origin
+	Finished  float64
+	Result    *string
+}
+
+func (r *SyncEvent) Destroy() {
+	FfiDestroyerNamespaceId{}.Destroy(r.Namespace)
+	FfiDestroyerPublicKey{}.Destroy(r.Peer)
+	FfiDestroyerTypeOrigin{}.Destroy(r.Origin)
+	FfiDestroyerFloat64{}.Destroy(r.Finished)
+	FfiDestroyerOptionalString{}.Destroy(r.Result)
+}
+
+type FfiConverterTypeSyncEvent struct{}
+
+var FfiConverterTypeSyncEventINSTANCE = FfiConverterTypeSyncEvent{}
+
+func (c FfiConverterTypeSyncEvent) Lift(rb RustBufferI) SyncEvent {
+	return LiftFromRustBuffer[SyncEvent](c, rb)
+}
+
+func (c FfiConverterTypeSyncEvent) Read(reader io.Reader) SyncEvent {
+	return SyncEvent{
+		FfiConverterNamespaceIdINSTANCE.Read(reader),
+		FfiConverterPublicKeyINSTANCE.Read(reader),
+		FfiConverterTypeOriginINSTANCE.Read(reader),
+		FfiConverterFloat64INSTANCE.Read(reader),
+		FfiConverterOptionalStringINSTANCE.Read(reader),
+	}
+}
+
+func (c FfiConverterTypeSyncEvent) Lower(value SyncEvent) RustBuffer {
+	return LowerIntoRustBuffer[SyncEvent](c, value)
+}
+
+func (c FfiConverterTypeSyncEvent) Write(writer io.Writer, value SyncEvent) {
+	FfiConverterNamespaceIdINSTANCE.Write(writer, value.Namespace)
+	FfiConverterPublicKeyINSTANCE.Write(writer, value.Peer)
+	FfiConverterTypeOriginINSTANCE.Write(writer, value.Origin)
+	FfiConverterFloat64INSTANCE.Write(writer, value.Finished)
+	FfiConverterOptionalStringINSTANCE.Write(writer, value.Result)
+}
+
+type FfiDestroyerTypeSyncEvent struct{}
+
+func (_ FfiDestroyerTypeSyncEvent) Destroy(value SyncEvent) {
 	value.Destroy()
 }
 
@@ -1502,6 +1796,39 @@ func (_ FfiDestroyerTypeConnectionType) Destroy(value ConnectionType) {
 	value.Destroy()
 }
 
+type ContentStatus uint
+
+const (
+	ContentStatusComplete   ContentStatus = 1
+	ContentStatusIncomplete ContentStatus = 2
+	ContentStatusMissing    ContentStatus = 3
+)
+
+type FfiConverterTypeContentStatus struct{}
+
+var FfiConverterTypeContentStatusINSTANCE = FfiConverterTypeContentStatus{}
+
+func (c FfiConverterTypeContentStatus) Lift(rb RustBufferI) ContentStatus {
+	return LiftFromRustBuffer[ContentStatus](c, rb)
+}
+
+func (c FfiConverterTypeContentStatus) Lower(value ContentStatus) RustBuffer {
+	return LowerIntoRustBuffer[ContentStatus](c, value)
+}
+func (FfiConverterTypeContentStatus) Read(reader io.Reader) ContentStatus {
+	id := readInt32(reader)
+	return ContentStatus(id)
+}
+
+func (FfiConverterTypeContentStatus) Write(writer io.Writer, value ContentStatus) {
+	writeInt32(writer, int32(value))
+}
+
+type FfiDestroyerTypeContentStatus struct{}
+
+func (_ FfiDestroyerTypeContentStatus) Destroy(value ContentStatus) {
+}
+
 type IrohError struct {
 	err error
 }
@@ -1522,6 +1849,7 @@ var ErrIrohErrorAuthor = fmt.Errorf("IrohErrorAuthor")
 var ErrIrohErrorDocTicket = fmt.Errorf("IrohErrorDocTicket")
 var ErrIrohErrorUniffi = fmt.Errorf("IrohErrorUniffi")
 var ErrIrohErrorConnection = fmt.Errorf("IrohErrorConnection")
+var ErrIrohErrorBlob = fmt.Errorf("IrohErrorBlob")
 
 // Variant structs
 type IrohErrorRuntime struct {
@@ -1713,6 +2041,33 @@ func (self IrohErrorConnection) Is(target error) bool {
 	return target == ErrIrohErrorConnection
 }
 
+type IrohErrorBlob struct {
+	Description string
+}
+
+func NewIrohErrorBlob(
+	description string,
+) *IrohError {
+	return &IrohError{
+		err: &IrohErrorBlob{
+			Description: description,
+		},
+	}
+}
+
+func (err IrohErrorBlob) Error() string {
+	return fmt.Sprint("Blob",
+		": ",
+
+		"Description=",
+		err.Description,
+	)
+}
+
+func (self IrohErrorBlob) Is(target error) bool {
+	return target == ErrIrohErrorBlob
+}
+
 type FfiConverterTypeIrohError struct{}
 
 var FfiConverterTypeIrohErrorINSTANCE = FfiConverterTypeIrohError{}
@@ -1757,6 +2112,10 @@ func (c FfiConverterTypeIrohError) Read(reader io.Reader) error {
 		return &IrohError{&IrohErrorConnection{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
+	case 8:
+		return &IrohError{&IrohErrorBlob{
+			Description: FfiConverterStringINSTANCE.Read(reader),
+		}}
 	default:
 		panic(fmt.Sprintf("Unknown error code %d in FfiConverterTypeIrohError.Read()", errorID))
 	}
@@ -1785,46 +2144,49 @@ func (c FfiConverterTypeIrohError) Write(writer io.Writer, value *IrohError) {
 	case *IrohErrorConnection:
 		writeInt32(writer, 7)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
+	case *IrohErrorBlob:
+		writeInt32(writer, 8)
+		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
 	default:
 		_ = variantValue
 		panic(fmt.Sprintf("invalid error value `%v` in FfiConverterTypeIrohError.Write", value))
 	}
 }
 
-type LiveEvent uint
+type LiveEventType uint
 
 const (
-	LiveEventInsertLocal  LiveEvent = 1
-	LiveEventInsertRemote LiveEvent = 2
-	LiveEventContentReady LiveEvent = 3
-	LiveEventSyncFinished LiveEvent = 4
-	LiveEventNeighborUp   LiveEvent = 5
-	LiveEventNeighborDown LiveEvent = 6
+	LiveEventTypeInsertLocal  LiveEventType = 1
+	LiveEventTypeInsertRemote LiveEventType = 2
+	LiveEventTypeContentReady LiveEventType = 3
+	LiveEventTypeNeighborUp   LiveEventType = 4
+	LiveEventTypeNeighborDown LiveEventType = 5
+	LiveEventTypeSyncFinished LiveEventType = 6
 )
 
-type FfiConverterTypeLiveEvent struct{}
+type FfiConverterTypeLiveEventType struct{}
 
-var FfiConverterTypeLiveEventINSTANCE = FfiConverterTypeLiveEvent{}
+var FfiConverterTypeLiveEventTypeINSTANCE = FfiConverterTypeLiveEventType{}
 
-func (c FfiConverterTypeLiveEvent) Lift(rb RustBufferI) LiveEvent {
-	return LiftFromRustBuffer[LiveEvent](c, rb)
+func (c FfiConverterTypeLiveEventType) Lift(rb RustBufferI) LiveEventType {
+	return LiftFromRustBuffer[LiveEventType](c, rb)
 }
 
-func (c FfiConverterTypeLiveEvent) Lower(value LiveEvent) RustBuffer {
-	return LowerIntoRustBuffer[LiveEvent](c, value)
+func (c FfiConverterTypeLiveEventType) Lower(value LiveEventType) RustBuffer {
+	return LowerIntoRustBuffer[LiveEventType](c, value)
 }
-func (FfiConverterTypeLiveEvent) Read(reader io.Reader) LiveEvent {
+func (FfiConverterTypeLiveEventType) Read(reader io.Reader) LiveEventType {
 	id := readInt32(reader)
-	return LiveEvent(id)
+	return LiveEventType(id)
 }
 
-func (FfiConverterTypeLiveEvent) Write(writer io.Writer, value LiveEvent) {
+func (FfiConverterTypeLiveEventType) Write(writer io.Writer, value LiveEventType) {
 	writeInt32(writer, int32(value))
 }
 
-type FfiDestroyerTypeLiveEvent struct{}
+type FfiDestroyerTypeLiveEventType struct{}
 
-func (_ FfiDestroyerTypeLiveEvent) Destroy(value LiveEvent) {
+func (_ FfiDestroyerTypeLiveEventType) Destroy(value LiveEventType) {
 }
 
 type LogLevel uint
@@ -1861,6 +2223,67 @@ func (FfiConverterTypeLogLevel) Write(writer io.Writer, value LogLevel) {
 type FfiDestroyerTypeLogLevel struct{}
 
 func (_ FfiDestroyerTypeLogLevel) Destroy(value LogLevel) {
+}
+
+type Origin interface {
+	Destroy()
+}
+type OriginConnect struct {
+	Reason SyncReason
+}
+
+func (e OriginConnect) Destroy() {
+	FfiDestroyerTypeSyncReason{}.Destroy(e.Reason)
+}
+
+type OriginAccept struct {
+}
+
+func (e OriginAccept) Destroy() {
+}
+
+type FfiConverterTypeOrigin struct{}
+
+var FfiConverterTypeOriginINSTANCE = FfiConverterTypeOrigin{}
+
+func (c FfiConverterTypeOrigin) Lift(rb RustBufferI) Origin {
+	return LiftFromRustBuffer[Origin](c, rb)
+}
+
+func (c FfiConverterTypeOrigin) Lower(value Origin) RustBuffer {
+	return LowerIntoRustBuffer[Origin](c, value)
+}
+func (FfiConverterTypeOrigin) Read(reader io.Reader) Origin {
+	id := readInt32(reader)
+	switch id {
+	case 1:
+		return OriginConnect{
+			FfiConverterTypeSyncReasonINSTANCE.Read(reader),
+		}
+	case 2:
+		return OriginAccept{}
+	default:
+		panic(fmt.Sprintf("invalid enum value %v in FfiConverterTypeOrigin.Read()", id))
+	}
+}
+
+func (FfiConverterTypeOrigin) Write(writer io.Writer, value Origin) {
+	switch variant_value := value.(type) {
+	case OriginConnect:
+		writeInt32(writer, 1)
+		FfiConverterTypeSyncReasonINSTANCE.Write(writer, variant_value.Reason)
+	case OriginAccept:
+		writeInt32(writer, 2)
+	default:
+		_ = variant_value
+		panic(fmt.Sprintf("invalid enum value `%v` in FfiConverterTypeOrigin.Write", value))
+	}
+}
+
+type FfiDestroyerTypeOrigin struct{}
+
+func (_ FfiDestroyerTypeOrigin) Destroy(value Origin) {
+	value.Destroy()
 }
 
 type SocketAddr interface {
@@ -1939,6 +2362,38 @@ type FfiDestroyerTypeSocketAddr struct{}
 
 func (_ FfiDestroyerTypeSocketAddr) Destroy(value SocketAddr) {
 	value.Destroy()
+}
+
+type SyncReason uint
+
+const (
+	SyncReasonDirectJoin  SyncReason = 1
+	SyncReasonNewNeighbor SyncReason = 2
+)
+
+type FfiConverterTypeSyncReason struct{}
+
+var FfiConverterTypeSyncReasonINSTANCE = FfiConverterTypeSyncReason{}
+
+func (c FfiConverterTypeSyncReason) Lift(rb RustBufferI) SyncReason {
+	return LiftFromRustBuffer[SyncReason](c, rb)
+}
+
+func (c FfiConverterTypeSyncReason) Lower(value SyncReason) RustBuffer {
+	return LowerIntoRustBuffer[SyncReason](c, value)
+}
+func (FfiConverterTypeSyncReason) Read(reader io.Reader) SyncReason {
+	id := readInt32(reader)
+	return SyncReason(id)
+}
+
+func (FfiConverterTypeSyncReason) Write(writer io.Writer, value SyncReason) {
+	writeInt32(writer, int32(value))
+}
+
+type FfiDestroyerTypeSyncReason struct{}
+
+func (_ FfiDestroyerTypeSyncReason) Destroy(value SyncReason) {
 }
 
 type uniffiCallbackResult C.int32_t
@@ -2022,7 +2477,7 @@ func (c *FfiConverterCallbackInterface[CallbackInterface]) Write(writer io.Write
 
 // Declaration and FfiConverters for SubscribeCallback Callback Interface
 type SubscribeCallback interface {
-	Event(event LiveEvent) *IrohError
+	Event(event *LiveEvent) *IrohError
 }
 
 // foreignCallbackCallbackInterfaceSubscribeCallback cannot be callable be a compiled function at a same time
@@ -2055,7 +2510,7 @@ func iroh_cgo_SubscribeCallback(handle C.uint64_t, method C.int32_t, argsPtr *C.
 
 func (foreignCallbackCallbackInterfaceSubscribeCallback) InvokeEvent(callback SubscribeCallback, args []byte, outBuf *C.RustBuffer) uniffiCallbackResult {
 	reader := bytes.NewReader(args)
-	err := callback.Event(FfiConverterTypeLiveEventINSTANCE.Read(reader))
+	err := callback.Event(FfiConverterLiveEventINSTANCE.Read(reader))
 
 	if err != nil {
 		// The only way to bypass an unexpected error is to bypass pointer to an empty
@@ -2163,6 +2618,43 @@ type FfiDestroyerOptionalFloat64 struct{}
 func (_ FfiDestroyerOptionalFloat64) Destroy(value *float64) {
 	if value != nil {
 		FfiDestroyerFloat64{}.Destroy(*value)
+	}
+}
+
+type FfiConverterOptionalString struct{}
+
+var FfiConverterOptionalStringINSTANCE = FfiConverterOptionalString{}
+
+func (c FfiConverterOptionalString) Lift(rb RustBufferI) *string {
+	return LiftFromRustBuffer[*string](c, rb)
+}
+
+func (_ FfiConverterOptionalString) Read(reader io.Reader) *string {
+	if readInt8(reader) == 0 {
+		return nil
+	}
+	temp := FfiConverterStringINSTANCE.Read(reader)
+	return &temp
+}
+
+func (c FfiConverterOptionalString) Lower(value *string) RustBuffer {
+	return LowerIntoRustBuffer[*string](c, value)
+}
+
+func (_ FfiConverterOptionalString) Write(writer io.Writer, value *string) {
+	if value == nil {
+		writeInt8(writer, 0)
+	} else {
+		writeInt8(writer, 1)
+		FfiConverterStringINSTANCE.Write(writer, *value)
+	}
+}
+
+type FfiDestroyerOptionalString struct{}
+
+func (_ FfiDestroyerOptionalString) Destroy(value *string) {
+	if value != nil {
+		FfiDestroyerString{}.Destroy(*value)
 	}
 }
 
@@ -2286,6 +2778,49 @@ type FfiDestroyerSequenceEntry struct{}
 func (FfiDestroyerSequenceEntry) Destroy(sequence []*Entry) {
 	for _, value := range sequence {
 		FfiDestroyerEntry{}.Destroy(value)
+	}
+}
+
+type FfiConverterSequenceHash struct{}
+
+var FfiConverterSequenceHashINSTANCE = FfiConverterSequenceHash{}
+
+func (c FfiConverterSequenceHash) Lift(rb RustBufferI) []*Hash {
+	return LiftFromRustBuffer[[]*Hash](c, rb)
+}
+
+func (c FfiConverterSequenceHash) Read(reader io.Reader) []*Hash {
+	length := readInt32(reader)
+	if length == 0 {
+		return nil
+	}
+	result := make([]*Hash, 0, length)
+	for i := int32(0); i < length; i++ {
+		result = append(result, FfiConverterHashINSTANCE.Read(reader))
+	}
+	return result
+}
+
+func (c FfiConverterSequenceHash) Lower(value []*Hash) RustBuffer {
+	return LowerIntoRustBuffer[[]*Hash](c, value)
+}
+
+func (c FfiConverterSequenceHash) Write(writer io.Writer, value []*Hash) {
+	if len(value) > math.MaxInt32 {
+		panic("[]*Hash is too large to fit into Int32")
+	}
+
+	writeInt32(writer, int32(len(value)))
+	for _, item := range value {
+		FfiConverterHashINSTANCE.Write(writer, item)
+	}
+}
+
+type FfiDestroyerSequenceHash struct{}
+
+func (FfiDestroyerSequenceHash) Destroy(sequence []*Hash) {
+	for _, value := range sequence {
+		FfiDestroyerHash{}.Destroy(value)
 	}
 }
 

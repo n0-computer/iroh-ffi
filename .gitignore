@@ -103,3 +103,7 @@ docs/_build/
 
 # Pyenv
 .python-version
+
+# Go
+
+go/iroh-node-go

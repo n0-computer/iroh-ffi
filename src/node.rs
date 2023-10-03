@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, path::PathBuf, sync::Arc, time::SystemTime};
 
 use futures::{
     stream::{StreamExt, TryStreamExt},
@@ -83,8 +83,14 @@ pub fn start_metrics_collection() -> Result<(), Error> {
     Ok(())
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PublicKey(iroh::net::key::PublicKey);
+
+impl From<iroh::net::key::PublicKey> for PublicKey {
+    fn from(key: iroh::net::key::PublicKey) -> Self {
+        PublicKey(key)
+    }
+}
 
 impl PublicKey {
     pub fn to_string(&self) -> String {
@@ -144,29 +150,251 @@ impl From<iroh::net::magicsock::ConnectionType> for ConnectionType {
 }
 
 #[derive(Debug)]
+#[allow(clippy::large_enum_variant)]
 pub enum LiveEvent {
+    /// A local insertion.
+    InsertLocal {
+        /// The inserted entry.
+        entry: Entry,
+    },
+    /// Received a remote insert.
+    InsertRemote {
+        /// The peer that sent us the entry.
+        from: PublicKey,
+        /// The inserted entry.
+        entry: Entry,
+        /// If the content is available at the local node
+        content_status: ContentStatus,
+    },
+    /// The content of an entry was downloaded and is now available at the local node
+    ContentReady {
+        /// The content hash of the newly available entry content
+        hash: Hash,
+    },
+    /// We have a new neighbor in the swarm.
+    NeighborUp(PublicKey),
+    /// We lost a neighbor in the swarm.
+    NeighborDown(PublicKey),
+    /// A set-reconciliation sync finished.
+    SyncFinished(SyncEvent),
+}
+
+pub enum LiveEventType {
     InsertLocal,
     InsertRemote,
     ContentReady,
-    SyncFinished,
     NeighborUp,
     NeighborDown,
+    SyncFinished,
+}
+
+impl LiveEvent {
+    pub fn r#type(&self) -> LiveEventType {
+        match self {
+            Self::InsertLocal { .. } => LiveEventType::InsertLocal,
+            Self::InsertRemote { .. } => LiveEventType::InsertRemote,
+            Self::ContentReady { .. } => LiveEventType::ContentReady,
+            Self::NeighborUp(_) => LiveEventType::NeighborUp,
+            Self::NeighborDown(_) => LiveEventType::NeighborDown,
+            Self::SyncFinished(_) => LiveEventType::SyncFinished,
+        }
+    }
+
+    pub fn as_insert_local(&self) -> Arc<Entry> {
+        if let Self::InsertLocal { entry } = self {
+            Arc::new(entry.clone())
+        } else {
+            panic!("not an insert local event");
+        }
+    }
+
+    pub fn as_insert_remote(&self) -> InsertRemoteEvent {
+        if let Self::InsertRemote {
+            from,
+            entry,
+            content_status,
+        } = self
+        {
+            InsertRemoteEvent {
+                from: Arc::new(from.clone()),
+                entry: Arc::new(entry.clone()),
+                content_status: content_status.clone(),
+            }
+        } else {
+            panic!("not an insert remote event");
+        }
+    }
+
+    pub fn as_content_ready(&self) -> Arc<Hash> {
+        if let Self::ContentReady { hash } = self {
+            Arc::new(hash.clone())
+        } else {
+            panic!("not an content ready event");
+        }
+    }
+
+    pub fn as_neighbor_up(&self) -> Arc<PublicKey> {
+        if let Self::NeighborUp(key) = self {
+            Arc::new(key.clone())
+        } else {
+            panic!("not an neighbor up event");
+        }
+    }
+
+    pub fn as_neighbor_down(&self) -> Arc<PublicKey> {
+        if let Self::NeighborDown(key) = self {
+            Arc::new(key.clone())
+        } else {
+            panic!("not an neighbor down event");
+        }
+    }
+
+    pub fn as_sync_finished(&self) -> SyncEvent {
+        if let Self::SyncFinished(event) = self {
+            event.clone()
+        } else {
+            panic!("not an sync event event");
+        }
+    }
+}
+
+/// Whether the content status is available on a node.
+#[derive(Debug, Clone)]
+pub enum ContentStatus {
+    /// The content is completely available.
+    Complete,
+    /// The content is partially available.
+    Incomplete,
+    /// The content is missing.
+    Missing,
+}
+
+impl From<iroh::sync_engine::ContentStatus> for ContentStatus {
+    fn from(value: iroh::sync_engine::ContentStatus) -> Self {
+        match value {
+            iroh::sync_engine::ContentStatus::Complete => Self::Complete,
+            iroh::sync_engine::ContentStatus::Incomplete => Self::Incomplete,
+            iroh::sync_engine::ContentStatus::Missing => Self::Missing,
+        }
+    }
 }
 
 impl From<iroh::sync_engine::LiveEvent> for LiveEvent {
     fn from(value: iroh::sync_engine::LiveEvent) -> Self {
         match value {
-            iroh::sync_engine::LiveEvent::InsertLocal { .. } => Self::InsertLocal,
-            iroh::sync_engine::LiveEvent::InsertRemote { .. } => Self::InsertRemote,
-            iroh::sync_engine::LiveEvent::ContentReady { .. } => Self::ContentReady,
-            iroh::sync_engine::LiveEvent::SyncFinished { .. } => Self::SyncFinished,
-            iroh::sync_engine::LiveEvent::NeighborUp { .. } => Self::NeighborUp,
-            iroh::sync_engine::LiveEvent::NeighborDown { .. } => Self::NeighborDown,
+            iroh::sync_engine::LiveEvent::InsertLocal { entry } => LiveEvent::InsertLocal {
+                entry: entry.into(),
+            },
+            iroh::sync_engine::LiveEvent::InsertRemote {
+                from,
+                entry,
+                content_status,
+            } => LiveEvent::InsertRemote {
+                from: from.into(),
+                entry: entry.into(),
+                content_status: content_status.into(),
+            },
+            iroh::sync_engine::LiveEvent::ContentReady { hash } => {
+                LiveEvent::ContentReady { hash: hash.into() }
+            }
+            iroh::sync_engine::LiveEvent::NeighborUp(key) => LiveEvent::NeighborUp(key.into()),
+            iroh::sync_engine::LiveEvent::NeighborDown(key) => LiveEvent::NeighborDown(key.into()),
+            iroh::sync_engine::LiveEvent::SyncFinished(e) => LiveEvent::SyncFinished(e.into()),
         }
     }
 }
 
+/// Outcome of a sync operation
+#[derive(Debug, Clone)]
+pub struct SyncEvent {
+    /// Namespace that was synced
+    pub namespace: Arc<NamespaceId>,
+    /// Peer we synced with
+    pub peer: Arc<PublicKey>,
+    /// Origin of the sync exchange
+    pub origin: Origin,
+    /// Timestamp when the sync finished (since unix epoch in seconds)
+    pub finished: f64,
+    /// Result of the sync operation. `None` if successfull.
+    pub result: Option<String>,
+}
+
+impl From<iroh::sync_engine::SyncEvent> for SyncEvent {
+    fn from(value: iroh::sync_engine::SyncEvent) -> Self {
+        SyncEvent {
+            namespace: Arc::new(value.namespace.into()),
+            peer: Arc::new(value.peer.into()),
+            origin: value.origin.into(),
+            finished: value
+                .finished
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .map(|v| v.as_secs_f64())
+                .unwrap_or_default(),
+            result: match value.result {
+                Ok(_) => None,
+                Err(err) => Some(err),
+            },
+        }
+    }
+}
+
+/// Why we started a sync request
+#[derive(Debug, Clone, Copy)]
+pub enum SyncReason {
+    /// Direct join request via API
+    DirectJoin,
+    /// Peer showed up as new neighbor in the gossip swarm
+    NewNeighbor,
+}
+
+impl From<iroh::sync_engine::SyncReason> for SyncReason {
+    fn from(value: iroh::sync_engine::SyncReason) -> Self {
+        match value {
+            iroh::sync_engine::SyncReason::DirectJoin => Self::DirectJoin,
+            iroh::sync_engine::SyncReason::NewNeighbor => Self::NewNeighbor,
+        }
+    }
+}
+
+/// Why we performed a sync exchange
+#[derive(Debug, Clone)]
+pub enum Origin {
+    Connect {
+        reason: SyncReason,
+    },
+    /// A peer connected to us and we accepted the exchange
+    Accept,
+}
+
+impl From<iroh::sync_engine::Origin> for Origin {
+    fn from(value: iroh::sync_engine::Origin) -> Self {
+        match value {
+            iroh::sync_engine::Origin::Connect(reason) => Self::Connect {
+                reason: reason.into(),
+            },
+            iroh::sync_engine::Origin::Accept => Self::Accept,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct InsertRemoteEvent {
+    /// The peer that sent us the entry.
+    pub from: Arc<PublicKey>,
+    /// The inserted entry.
+    pub entry: Arc<Entry>,
+    /// If the content is available at the local node
+    pub content_status: ContentStatus,
+}
+
+#[derive(Debug, Clone)]
 pub struct Hash(iroh::bytes::Hash);
+
+impl From<iroh::bytes::Hash> for Hash {
+    fn from(h: iroh::bytes::Hash) -> Self {
+        Hash(h)
+    }
+}
 
 impl Hash {
     pub fn to_string(&self) -> String {
@@ -183,7 +411,14 @@ impl From<Hash> for iroh::bytes::Hash {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Entry(iroh::sync::sync::Entry);
+
+impl From<iroh::sync::sync::Entry> for Entry {
+    fn from(e: iroh::sync::sync::Entry) -> Self {
+        Entry(e)
+    }
+}
 
 impl Entry {
     pub fn author(&self) -> Arc<AuthorId> {
@@ -301,7 +536,7 @@ impl Doc {
             while let Some(event) = sub.next().await {
                 match event {
                     Ok(event) => {
-                        if let Err(err) = cb.event(event.into()) {
+                        if let Err(err) = cb.event(Arc::new(event.into())) {
                             println!("cb error: {:?}", err);
                         }
                     }
@@ -317,7 +552,7 @@ impl Doc {
 }
 
 pub trait SubscribeCallback: Send + Sync + 'static {
-    fn event(&self, event: LiveEvent) -> Result<(), Error>;
+    fn event(&self, event: Arc<LiveEvent>) -> Result<(), Error>;
 }
 
 pub struct AuthorId(iroh::sync::sync::AuthorId);
@@ -328,7 +563,14 @@ impl AuthorId {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct NamespaceId(iroh::sync::sync::NamespaceId);
+
+impl From<iroh::sync::sync::NamespaceId> for NamespaceId {
+    fn from(id: iroh::sync::sync::NamespaceId) -> Self {
+        NamespaceId(id)
+    }
+}
 
 impl NamespaceId {
     pub fn to_string(&self) -> String {
@@ -361,7 +603,8 @@ pub struct IrohNode {
 }
 
 impl IrohNode {
-    pub fn new() -> Result<Self, Error> {
+    pub fn new(path: String) -> Result<Self, Error> {
+        let path = PathBuf::from(path);
         let tokio_rt = tokio::runtime::Builder::new_multi_thread()
             .thread_name("main-runtime")
             .worker_threads(2)
@@ -372,14 +615,11 @@ impl IrohNode {
         let tpc = tokio_util::task::LocalPoolHandle::new(num_cpus::get());
         let rt = iroh::bytes::util::runtime::Handle::new(tokio_rt.handle().clone(), tpc);
 
-        // TODO: pass in path
-        let path = tempfile::tempdir().map_err(Error::node_create)?.into_path();
-
-        // TODO: store and load keypair
-        let secret_key = SecretKey::generate();
-
         let rt_inner = rt.clone();
         let node = block_on(&rt, async move {
+            // TODO: store and load keypair
+            let secret_key = SecretKey::generate();
+
             let docs_path = path.join("docs.db");
             let docs = iroh::sync::store::fs::Store::new(&docs_path)?;
 
@@ -548,7 +788,8 @@ mod tests {
 
     #[test]
     fn test_doc_new() {
-        let node = IrohNode::new().unwrap();
+        let path = tempfile::tempdir().unwrap();
+        let node = IrohNode::new(path.path().to_string_lossy().into_owned()).unwrap();
         let node_id = node.node_id();
         println!("id: {}", node_id);
         let doc = node.doc_new().unwrap();
