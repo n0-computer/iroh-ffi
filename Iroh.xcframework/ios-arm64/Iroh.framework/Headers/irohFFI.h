@@ -66,13 +66,14 @@ typedef void (*UniFfiFutureCallbackUnsafeMutableRawPointer)(const void * _Nonnul
 typedef void (*UniFfiFutureCallbackUnsafeMutableRawPointer)(const void * _Nonnull, void*_Nonnull, RustCallStatus);
 typedef void (*UniFfiFutureCallbackUnsafeMutableRawPointer)(const void * _Nonnull, void*_Nonnull, RustCallStatus);
 typedef void (*UniFfiFutureCallbackUnsafeMutableRawPointer)(const void * _Nonnull, void*_Nonnull, RustCallStatus);
+typedef void (*UniFfiFutureCallbackUnsafeMutableRawPointer)(const void * _Nonnull, void*_Nonnull, RustCallStatus);
+typedef void (*UniFfiFutureCallbackUnsafeMutableRawPointer)(const void * _Nonnull, void*_Nonnull, RustCallStatus);
 typedef void (*UniFfiFutureCallbackRustBuffer)(const void * _Nonnull, RustBuffer, RustCallStatus);
 
 // Scaffolding functions
 void uniffi_iroh_fn_free_irohnode(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void*_Nonnull uniffi_iroh_fn_constructor_irohnode_new(RustCallStatus *_Nonnull out_status
-    
+void*_Nonnull uniffi_iroh_fn_constructor_irohnode_new(RustBuffer path, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_irohnode_node_id(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -91,8 +92,6 @@ RustBuffer uniffi_iroh_fn_method_irohnode_connections(void*_Nonnull ptr, RustCal
 RustBuffer uniffi_iroh_fn_method_irohnode_connection_info(void*_Nonnull ptr, void*_Nonnull node_id, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_irohnode_blob_list_blobs(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void*_Nonnull uniffi_iroh_fn_method_irohnode_blob_new_bytes(void*_Nonnull ptr, RustBuffer value, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_irohnode_blob_get(void*_Nonnull ptr, void*_Nonnull hash, RustCallStatus *_Nonnull out_status
 );
@@ -139,6 +138,26 @@ void uniffi_iroh_fn_free_docticket(void*_Nonnull ptr, RustCallStatus *_Nonnull o
 void*_Nonnull uniffi_iroh_fn_constructor_docticket_from_string(RustBuffer content, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_docticket_to_string(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void uniffi_iroh_fn_free_liveevent(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_iroh_fn_method_liveevent_type(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_iroh_fn_method_liveevent_as_insert_local(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_iroh_fn_method_liveevent_as_insert_remote(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_iroh_fn_method_liveevent_as_content_ready(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_iroh_fn_method_liveevent_as_neighbor_up(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_iroh_fn_method_liveevent_as_neighbor_down(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_iroh_fn_method_liveevent_as_sync_finished(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void uniffi_iroh_fn_free_namespaceid(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_iroh_fn_method_namespaceid_to_string(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void uniffi_iroh_fn_free_publickey(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -194,9 +213,6 @@ uint16_t uniffi_iroh_checksum_method_irohnode_connection_info(void
 uint16_t uniffi_iroh_checksum_method_irohnode_blob_list_blobs(void
     
 );
-uint16_t uniffi_iroh_checksum_method_irohnode_blob_new_bytes(void
-    
-);
 uint16_t uniffi_iroh_checksum_method_irohnode_blob_get(void
     
 );
@@ -246,6 +262,30 @@ uint16_t uniffi_iroh_checksum_method_hash_to_bytes(void
     
 );
 uint16_t uniffi_iroh_checksum_method_docticket_to_string(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_liveevent_type(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_liveevent_as_insert_local(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_liveevent_as_insert_remote(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_liveevent_as_content_ready(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_liveevent_as_neighbor_up(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_liveevent_as_neighbor_down(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_liveevent_as_sync_finished(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_namespaceid_to_string(void
     
 );
 uint16_t uniffi_iroh_checksum_method_publickey_to_string(void

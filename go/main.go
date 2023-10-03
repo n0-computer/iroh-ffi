@@ -2,13 +2,18 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/n0-computer/iroh-ffi/iroh"
 )
 
 func main() {
 	fmt.Printf("Booting...\n")
-	node, err := iroh.NewIrohNode()
+	nodeDir := "./iroh-node-go"
+	if err := os.Mkdir(nodeDir, os.ModePerm); err != nil {
+		panic(err)
+	}
+	node, err := iroh.NewIrohNode(nodeDir)
 	if err != nil {
 		panic(err)
 	}
