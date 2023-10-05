@@ -17,14 +17,14 @@ jobs:
           - name: ubuntu-latest
             python: 3.11
             os: ubuntu-latest
-            release-os: linux
-            release-arch: amd64
+            release-os: manylinux2014
+            release-arch: x86_64
             container: quay.io/pypa/manylinux2014_x86_64
             runner: [ubuntu-latest]
           - name: ubuntu-arm-latest
             python: 3.11
             os: ubuntu-latest
-            release-os: linux
+            release-os: manylinux2014
             release-arch: aarch64
             container: quay.io/pypa/manylinux2014_aarch64
             runner: [self-hosted, linux, ARM64]
@@ -44,7 +44,7 @@ jobs:
       - name: Upload wheel
         uses: actions/upload-artifact@v3
         with:
-          name: wheels-manylinux2014
+          name: wheels-${{ matrix.release-os }}-${{ matrix.release-arch }}
           path: target/wheels/*.whl
 
   osx:
@@ -80,7 +80,7 @@ jobs:
       - name: Upload wheel
         uses: actions/upload-artifact@v3
         with:
-          name: wheels-osx
+          name: wheels-${{ matrix.release-os }}-${{ matrix.release-arch }}
           path: target/wheels/*.whl
       
   windows:
@@ -100,6 +100,6 @@ jobs:
       - name: Upload wheel
         uses: actions/upload-artifact@v3
         with:
-          name: wheels-windows
+          name: wheels-windows-x86_64
           path: target/wheels/*.whl
 
