@@ -8,8 +8,26 @@ on:
 
 jobs:
   manylinux2014:
-    runs-on: ubuntu-latest
-    container: quay.io/pypa/manylinux2014_x86_64
+    runs-on: ${{ matrix.runner }}
+    container: ${{ matrix.container }}
+    strategy:
+      matrix:
+        name: [ubuntu-latest, ubuntu-arm-latest]
+        include:
+          - name: ubuntu-latest
+            python: 3.11
+            os: ubuntu-latest
+            release-os: linux
+            release-arch: amd64
+            container: quay.io/pypa/manylinux2014_x86_64
+            runner: [ubuntu-latest]
+          - name: ubuntu-arm-latest
+            python: 3.11
+            os: ubuntu-latest
+            release-os: linux
+            release-arch: aarch64
+            container: quay.io/pypa/manylinux2014_aarch64
+            runner: [self-hosted, linux, ARM64]
     steps:
       - uses: actions/checkout@v3
       - name: Install stable rust
@@ -30,13 +48,29 @@ jobs:
           path: target/wheels/*.whl
 
   osx:
-    runs-on: macos-latest
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        name: [macOS-latest, macOS-arm-latest]
+        include:
+          - name: macOS-latest
+            python: 3.11
+            os: macOS-latest
+            release-os: darwin
+            release-arch: x86_64
+            runner: [macOS-latest]
+          - name: macOS-arm-latest
+            python: 3.11
+            os: macOS-latest
+            release-os: darwin
+            release-arch: aarch64
+            runner: [self-hosted, macOS, ARM64]
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
       - uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: ${{ matrix.python }}
       - name: Install maturin & uniffi-bindgen
         run: |
           pip install maturin uniffi-bindgen
