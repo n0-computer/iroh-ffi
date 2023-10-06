@@ -1,8 +1,10 @@
-import time
+import iroh
+
 import argparse
+import os
+import time
 
-from node_manager import NodeManager
-
+IROH_DATA_DIR = "./iroh-data"
 
 if __name__ == "__main__":
 
@@ -16,13 +18,27 @@ if __name__ == "__main__":
         print("Please provide a ticket to join a document")
         exit()
 
-    node_manager = NodeManager()
-    print("Iroh node id: {}".format(node_manager.node_id))
-    node_manager.doc_join(args.ticket)
-    print("Iroh document id: {}".format(node_manager.doc.id()))
+    # create iroh data dir if it does not exists
+    if not os.path.exists(IROH_DATA_DIR):
+        os.mkdir(IROH_DATA_DIR)
 
+    # create iroh node
+    node = iroh.IrohNode(IROH_DATA_DIR)
+    print("Started Iroh node: {}".format(node.node_id()))
+
+    # join doc
+    doc_ticket = iroh.DocTicket.from_string(args.ticket)
+    doc = node.doc_join(doc_ticket)
+    print("Joined doc: {}".format(doc.id()))
+
+    # sync & print
+    print("Waiting 5 seconds to let stuff sync...")
     time.sleep(5)
-    print("Iroh document keys: {}".format(node_manager.keys()))
+    keys = doc.keys()
+    print("Data:")
+    for key in keys:
+        content = doc.get_content_bytes(key)
+        print("{} : {} (hash: {})".format(key.key(), content.decode("utf8"), key.hash().to_string()))
 
     
     
