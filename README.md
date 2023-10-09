@@ -49,6 +49,11 @@ wheel for linux use:
 docker run --rm -v $(pwd):/mnt -w /mnt quay.io/pypa/manylinux2014_x86_64 /mnt/build-wheel.sh
 ```
 
+### Example
+
+- Make sure the `iroh` is installed `pip install iroh`
+- Run with `python3 main.py --help`
+
 ## Go
 
 ### Running 

@@ -105,5 +105,7 @@ docs/_build/
 .python-version
 
 # Go
-
 go/iroh-node-go
+
+# Python
+python/iroh-data
