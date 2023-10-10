@@ -52,3 +52,5 @@ uniffi = { version = "0.24.3", features = ["build"] }
 [patch.crates-io]
 # https://github.com/mullvad/system-configuration-rs/pull/42
 system-configuration = { git = "https://github.com/tmpfs/system-configuration-rs", branch = "ios-hack" }
+
+uniffi = { git = "https://github.com/mozilla/uniffi-rs" , rev = "86c2e26272cfd5054d78d9e8c8ed225d20ab89bc" } # needs to match the version being used uniffi-bindgen-go

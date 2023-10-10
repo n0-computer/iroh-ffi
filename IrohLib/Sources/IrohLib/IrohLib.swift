@@ -410,7 +410,7 @@ private struct FfiConverterData: FfiConverterRustBuffer {
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Data {
         let len: Int32 = try readInt(&buf)
-        return try Data(bytes: readBytes(&buf, count: Int(len)))
+        return try Data(readBytes(&buf, count: Int(len)))
     }
 
     public static func write(_ value: Data, into buf: inout [UInt8]) {
@@ -487,15 +487,15 @@ public func FfiConverterTypeAuthorId_lower(_ value: AuthorId) -> UnsafeMutableRa
 }
 
 public protocol DocProtocol {
-    func id() -> String
-    func shareWrite() throws -> DocTicket
-    func shareRead() throws -> DocTicket
-    func setBytes(author: AuthorId, key: Data, value: Data) throws -> Hash
     func getContentBytes(entry: Entry) throws -> Data
+    func id() -> String
     func keys() throws -> [Entry]
-    func subscribe(cb: SubscribeCallback) throws
-    func stopSync() throws
+    func setBytes(author: AuthorId, key: Data, value: Data) throws -> Hash
+    func shareRead() throws -> DocTicket
+    func shareWrite() throws -> DocTicket
     func status() throws -> LiveStatus
+    func stopSync() throws
+    func subscribe(cb: SubscribeCallback) throws
 }
 
 public class Doc: DocProtocol {
@@ -512,6 +512,15 @@ public class Doc: DocProtocol {
         try! rustCall { uniffi_iroh_fn_free_doc(pointer, $0) }
     }
 
+    public func getContentBytes(entry: Entry) throws -> Data {
+        return try FfiConverterData.lift(
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_doc_get_content_bytes(self.pointer,
+                                                            FfiConverterTypeEntry.lower(entry), $0)
+            }
+        )
+    }
+
     public func id() -> String {
         return try! FfiConverterString.lift(
             try!
@@ -521,18 +530,10 @@ public class Doc: DocProtocol {
         )
     }
 
-    public func shareWrite() throws -> DocTicket {
-        return try FfiConverterTypeDocTicket.lift(
+    public func keys() throws -> [Entry] {
+        return try FfiConverterSequenceTypeEntry.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_doc_share_write(self.pointer, $0)
-            }
-        )
-    }
-
-    public func shareRead() throws -> DocTicket {
-        return try FfiConverterTypeDocTicket.lift(
-            rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_doc_share_read(self.pointer, $0)
+                uniffi_iroh_fn_method_doc_keys(self.pointer, $0)
             }
         )
     }
@@ -548,29 +549,28 @@ public class Doc: DocProtocol {
         )
     }
 
-    public func getContentBytes(entry: Entry) throws -> Data {
-        return try FfiConverterData.lift(
+    public func shareRead() throws -> DocTicket {
+        return try FfiConverterTypeDocTicket.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_doc_get_content_bytes(self.pointer,
-                                                            FfiConverterTypeEntry.lower(entry), $0)
+                uniffi_iroh_fn_method_doc_share_read(self.pointer, $0)
             }
         )
     }
 
-    public func keys() throws -> [Entry] {
-        return try FfiConverterSequenceTypeEntry.lift(
+    public func shareWrite() throws -> DocTicket {
+        return try FfiConverterTypeDocTicket.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_doc_keys(self.pointer, $0)
+                uniffi_iroh_fn_method_doc_share_write(self.pointer, $0)
             }
         )
     }
 
-    public func subscribe(cb: SubscribeCallback) throws {
-        try
+    public func status() throws -> LiveStatus {
+        return try FfiConverterTypeLiveStatus.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_doc_subscribe(self.pointer,
-                                                    FfiConverterCallbackInterfaceSubscribeCallback.lower(cb), $0)
+                uniffi_iroh_fn_method_doc_status(self.pointer, $0)
             }
+        )
     }
 
     public func stopSync() throws {
@@ -580,12 +580,12 @@ public class Doc: DocProtocol {
             }
     }
 
-    public func status() throws -> LiveStatus {
-        return try FfiConverterTypeLiveStatus.lift(
+    public func subscribe(cb: SubscribeCallback) throws {
+        try
             rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_doc_status(self.pointer, $0)
+                uniffi_iroh_fn_method_doc_subscribe(self.pointer,
+                                                    FfiConverterCallbackInterfaceSubscribeCallback.lower(cb), $0)
             }
-        )
     }
 }
 
@@ -703,8 +703,8 @@ public func FfiConverterTypeDocTicket_lower(_ value: DocTicket) -> UnsafeMutable
 
 public protocol EntryProtocol {
     func author() -> AuthorId
-    func key() -> Data
     func hash() -> Hash
+    func key() -> Data
 }
 
 public class Entry: EntryProtocol {
@@ -730,20 +730,20 @@ public class Entry: EntryProtocol {
         )
     }
 
-    public func key() -> Data {
-        return try! FfiConverterData.lift(
-            try!
-                rustCall {
-                    uniffi_iroh_fn_method_entry_key(self.pointer, $0)
-                }
-        )
-    }
-
     public func hash() -> Hash {
         return try! FfiConverterTypeHash.lift(
             try!
                 rustCall {
                     uniffi_iroh_fn_method_entry_hash(self.pointer, $0)
+                }
+        )
+    }
+
+    public func key() -> Data {
+        return try! FfiConverterData.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_entry_key(self.pointer, $0)
                 }
         )
     }
@@ -788,8 +788,8 @@ public func FfiConverterTypeEntry_lower(_ value: Entry) -> UnsafeMutableRawPoint
 }
 
 public protocol HashProtocol {
-    func toString() -> String
     func toBytes() -> Data
+    func toString() -> String
 }
 
 public class Hash: HashProtocol {
@@ -806,20 +806,20 @@ public class Hash: HashProtocol {
         try! rustCall { uniffi_iroh_fn_free_hash(pointer, $0) }
     }
 
-    public func toString() -> String {
-        return try! FfiConverterString.lift(
-            try!
-                rustCall {
-                    uniffi_iroh_fn_method_hash_to_string(self.pointer, $0)
-                }
-        )
-    }
-
     public func toBytes() -> Data {
         return try! FfiConverterData.lift(
             try!
                 rustCall {
                     uniffi_iroh_fn_method_hash_to_bytes(self.pointer, $0)
+                }
+        )
+    }
+
+    public func toString() -> String {
+        return try! FfiConverterString.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_hash_to_string(self.pointer, $0)
                 }
         )
     }
@@ -864,16 +864,16 @@ public func FfiConverterTypeHash_lower(_ value: Hash) -> UnsafeMutableRawPointer
 }
 
 public protocol IrohNodeProtocol {
-    func nodeId() -> String
-    func docNew() throws -> Doc
-    func docJoin(ticket: DocTicket) throws -> Doc
-    func authorNew() throws -> AuthorId
     func authorList() throws -> [AuthorId]
-    func stats() throws -> [String: CounterStats]
-    func connections() throws -> [ConnectionInfo]
-    func connectionInfo(nodeId: PublicKey) throws -> ConnectionInfo?
-    func blobListBlobs() throws -> [Hash]
+    func authorNew() throws -> AuthorId
     func blobGet(hash: Hash) throws -> Data
+    func blobListBlobs() throws -> [Hash]
+    func connectionInfo(nodeId: PublicKey) throws -> ConnectionInfo?
+    func connections() throws -> [ConnectionInfo]
+    func docJoin(ticket: DocTicket) throws -> Doc
+    func docNew() throws -> Doc
+    func nodeId() -> String
+    func stats() throws -> [String: CounterStats]
 }
 
 public class IrohNode: IrohNodeProtocol {
@@ -898,28 +898,10 @@ public class IrohNode: IrohNodeProtocol {
         try! rustCall { uniffi_iroh_fn_free_irohnode(pointer, $0) }
     }
 
-    public func nodeId() -> String {
-        return try! FfiConverterString.lift(
-            try!
-                rustCall {
-                    uniffi_iroh_fn_method_irohnode_node_id(self.pointer, $0)
-                }
-        )
-    }
-
-    public func docNew() throws -> Doc {
-        return try FfiConverterTypeDoc.lift(
+    public func authorList() throws -> [AuthorId] {
+        return try FfiConverterSequenceTypeAuthorId.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_irohnode_doc_new(self.pointer, $0)
-            }
-        )
-    }
-
-    public func docJoin(ticket: DocTicket) throws -> Doc {
-        return try FfiConverterTypeDoc.lift(
-            rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_irohnode_doc_join(self.pointer,
-                                                        FfiConverterTypeDocTicket.lower(ticket), $0)
+                uniffi_iroh_fn_method_irohnode_author_list(self.pointer, $0)
             }
         )
     }
@@ -932,26 +914,19 @@ public class IrohNode: IrohNodeProtocol {
         )
     }
 
-    public func authorList() throws -> [AuthorId] {
-        return try FfiConverterSequenceTypeAuthorId.lift(
+    public func blobGet(hash: Hash) throws -> Data {
+        return try FfiConverterData.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_irohnode_author_list(self.pointer, $0)
+                uniffi_iroh_fn_method_irohnode_blob_get(self.pointer,
+                                                        FfiConverterTypeHash.lower(hash), $0)
             }
         )
     }
 
-    public func stats() throws -> [String: CounterStats] {
-        return try FfiConverterDictionaryStringTypeCounterStats.lift(
+    public func blobListBlobs() throws -> [Hash] {
+        return try FfiConverterSequenceTypeHash.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_irohnode_stats(self.pointer, $0)
-            }
-        )
-    }
-
-    public func connections() throws -> [ConnectionInfo] {
-        return try FfiConverterSequenceTypeConnectionInfo.lift(
-            rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_irohnode_connections(self.pointer, $0)
+                uniffi_iroh_fn_method_irohnode_blob_list_blobs(self.pointer, $0)
             }
         )
     }
@@ -965,19 +940,44 @@ public class IrohNode: IrohNodeProtocol {
         )
     }
 
-    public func blobListBlobs() throws -> [Hash] {
-        return try FfiConverterSequenceTypeHash.lift(
+    public func connections() throws -> [ConnectionInfo] {
+        return try FfiConverterSequenceTypeConnectionInfo.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_irohnode_blob_list_blobs(self.pointer, $0)
+                uniffi_iroh_fn_method_irohnode_connections(self.pointer, $0)
             }
         )
     }
 
-    public func blobGet(hash: Hash) throws -> Data {
-        return try FfiConverterData.lift(
+    public func docJoin(ticket: DocTicket) throws -> Doc {
+        return try FfiConverterTypeDoc.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_irohnode_blob_get(self.pointer,
-                                                        FfiConverterTypeHash.lower(hash), $0)
+                uniffi_iroh_fn_method_irohnode_doc_join(self.pointer,
+                                                        FfiConverterTypeDocTicket.lower(ticket), $0)
+            }
+        )
+    }
+
+    public func docNew() throws -> Doc {
+        return try FfiConverterTypeDoc.lift(
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_irohnode_doc_new(self.pointer, $0)
+            }
+        )
+    }
+
+    public func nodeId() -> String {
+        return try! FfiConverterString.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_irohnode_node_id(self.pointer, $0)
+                }
+        )
+    }
+
+    public func stats() throws -> [String: CounterStats] {
+        return try FfiConverterDictionaryStringTypeCounterStats.lift(
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_irohnode_stats(self.pointer, $0)
             }
         )
     }
@@ -1022,13 +1022,13 @@ public func FfiConverterTypeIrohNode_lower(_ value: IrohNode) -> UnsafeMutableRa
 }
 
 public protocol LiveEventProtocol {
-    func type() -> LiveEventType
+    func asContentReady() -> Hash
     func asInsertLocal() -> Entry
     func asInsertRemote() -> InsertRemoteEvent
-    func asContentReady() -> Hash
-    func asNeighborUp() -> PublicKey
     func asNeighborDown() -> PublicKey
+    func asNeighborUp() -> PublicKey
     func asSyncFinished() -> SyncEvent
+    func type() -> LiveEventType
 }
 
 public class LiveEvent: LiveEventProtocol {
@@ -1045,11 +1045,11 @@ public class LiveEvent: LiveEventProtocol {
         try! rustCall { uniffi_iroh_fn_free_liveevent(pointer, $0) }
     }
 
-    public func type() -> LiveEventType {
-        return try! FfiConverterTypeLiveEventType.lift(
+    public func asContentReady() -> Hash {
+        return try! FfiConverterTypeHash.lift(
             try!
                 rustCall {
-                    uniffi_iroh_fn_method_liveevent_type(self.pointer, $0)
+                    uniffi_iroh_fn_method_liveevent_as_content_ready(self.pointer, $0)
                 }
         )
     }
@@ -1072,11 +1072,11 @@ public class LiveEvent: LiveEventProtocol {
         )
     }
 
-    public func asContentReady() -> Hash {
-        return try! FfiConverterTypeHash.lift(
+    public func asNeighborDown() -> PublicKey {
+        return try! FfiConverterTypePublicKey.lift(
             try!
                 rustCall {
-                    uniffi_iroh_fn_method_liveevent_as_content_ready(self.pointer, $0)
+                    uniffi_iroh_fn_method_liveevent_as_neighbor_down(self.pointer, $0)
                 }
         )
     }
@@ -1090,20 +1090,20 @@ public class LiveEvent: LiveEventProtocol {
         )
     }
 
-    public func asNeighborDown() -> PublicKey {
-        return try! FfiConverterTypePublicKey.lift(
-            try!
-                rustCall {
-                    uniffi_iroh_fn_method_liveevent_as_neighbor_down(self.pointer, $0)
-                }
-        )
-    }
-
     public func asSyncFinished() -> SyncEvent {
         return try! FfiConverterTypeSyncEvent.lift(
             try!
                 rustCall {
                     uniffi_iroh_fn_method_liveevent_as_sync_finished(self.pointer, $0)
+                }
+        )
+    }
+
+    public func type() -> LiveEventType {
+        return try! FfiConverterTypeLiveEventType.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_liveevent_type(self.pointer, $0)
                 }
         )
     }
@@ -1214,8 +1214,8 @@ public func FfiConverterTypeNamespaceId_lower(_ value: NamespaceId) -> UnsafeMut
 }
 
 public protocol PublicKeyProtocol {
-    func toString() -> String
     func toBytes() -> Data
+    func toString() -> String
 }
 
 public class PublicKey: PublicKeyProtocol {
@@ -1232,20 +1232,20 @@ public class PublicKey: PublicKeyProtocol {
         try! rustCall { uniffi_iroh_fn_free_publickey(pointer, $0) }
     }
 
-    public func toString() -> String {
-        return try! FfiConverterString.lift(
-            try!
-                rustCall {
-                    uniffi_iroh_fn_method_publickey_to_string(self.pointer, $0)
-                }
-        )
-    }
-
     public func toBytes() -> Data {
         return try! FfiConverterData.lift(
             try!
                 rustCall {
                     uniffi_iroh_fn_method_publickey_to_bytes(self.pointer, $0)
+                }
+        )
+    }
+
+    public func toString() -> String {
+        return try! FfiConverterString.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_publickey_to_string(self.pointer, $0)
                 }
         )
     }
@@ -2430,130 +2430,133 @@ private enum InitializationResult {
 // the code inside is only computed once.
 private var initializationResult: InitializationResult {
     // Get the bindings contract version from our ComponentInterface
-    let bindings_contract_version = 22
+    let bindings_contract_version = 23
     // Get the scaffolding contract version by calling the into the dylib
     let scaffolding_contract_version = ffi_iroh_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if uniffi_iroh_checksum_func_set_log_level() != 20910 {
+    if uniffi_iroh_checksum_func_set_log_level() != 52296 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_func_start_metrics_collection() != 30246 {
+    if uniffi_iroh_checksum_func_start_metrics_collection() != 17691 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_node_id() != 860 {
+    if uniffi_iroh_checksum_method_authorid_to_string() != 42389 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_doc_new() != 10558 {
+    if uniffi_iroh_checksum_method_doc_get_content_bytes() != 64325 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_doc_join() != 34149 {
+    if uniffi_iroh_checksum_method_doc_id() != 32607 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_author_new() != 7219 {
+    if uniffi_iroh_checksum_method_doc_keys() != 28741 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_author_list() != 10059 {
+    if uniffi_iroh_checksum_method_doc_set_bytes() != 15024 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_stats() != 12801 {
+    if uniffi_iroh_checksum_method_doc_share_read() != 40263 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_connections() != 64165 {
+    if uniffi_iroh_checksum_method_doc_share_write() != 46412 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_connection_info() != 27388 {
+    if uniffi_iroh_checksum_method_doc_status() != 54437 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_blob_list_blobs() != 53280 {
+    if uniffi_iroh_checksum_method_doc_stop_sync() != 49858 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_blob_get() != 65293 {
+    if uniffi_iroh_checksum_method_doc_subscribe() != 2866 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_id() != 34918 {
+    if uniffi_iroh_checksum_method_docticket_to_string() != 22814 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_share_write() != 64425 {
+    if uniffi_iroh_checksum_method_entry_author() != 26124 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_share_read() != 8947 {
+    if uniffi_iroh_checksum_method_entry_hash() != 19784 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_set_bytes() != 50064 {
+    if uniffi_iroh_checksum_method_entry_key() != 19122 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_get_content_bytes() != 56096 {
+    if uniffi_iroh_checksum_method_hash_to_bytes() != 29465 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_keys() != 10934 {
+    if uniffi_iroh_checksum_method_hash_to_string() != 61408 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_subscribe() != 17522 {
+    if uniffi_iroh_checksum_method_irohnode_author_list() != 12499 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_stop_sync() != 10292 {
+    if uniffi_iroh_checksum_method_irohnode_author_new() != 61553 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_status() != 11839 {
+    if uniffi_iroh_checksum_method_irohnode_blob_get() != 2655 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_authorid_to_string() != 61926 {
+    if uniffi_iroh_checksum_method_irohnode_blob_list_blobs() != 22311 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_entry_author() != 7235 {
+    if uniffi_iroh_checksum_method_irohnode_connection_info() != 39895 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_entry_key() != 56754 {
+    if uniffi_iroh_checksum_method_irohnode_connections() != 37352 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_entry_hash() != 38165 {
+    if uniffi_iroh_checksum_method_irohnode_doc_join() != 30773 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_hash_to_string() != 33037 {
+    if uniffi_iroh_checksum_method_irohnode_doc_new() != 34009 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_hash_to_bytes() != 55740 {
+    if uniffi_iroh_checksum_method_irohnode_node_id() != 31962 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_docticket_to_string() != 32683 {
+    if uniffi_iroh_checksum_method_irohnode_stats() != 16158 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_liveevent_type() != 20373 {
+    if uniffi_iroh_checksum_method_liveevent_as_content_ready() != 15237 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_liveevent_as_insert_local() != 50454 {
+    if uniffi_iroh_checksum_method_liveevent_as_insert_local() != 431 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_liveevent_as_insert_remote() != 18845 {
+    if uniffi_iroh_checksum_method_liveevent_as_insert_remote() != 17302 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_liveevent_as_content_ready() != 42964 {
+    if uniffi_iroh_checksum_method_liveevent_as_neighbor_down() != 154 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_liveevent_as_neighbor_up() != 46965 {
+    if uniffi_iroh_checksum_method_liveevent_as_neighbor_up() != 25727 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_liveevent_as_neighbor_down() != 23815 {
+    if uniffi_iroh_checksum_method_liveevent_as_sync_finished() != 14329 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_liveevent_as_sync_finished() != 25654 {
+    if uniffi_iroh_checksum_method_liveevent_type() != 35533 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_namespaceid_to_string() != 63677 {
+    if uniffi_iroh_checksum_method_namespaceid_to_string() != 63715 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_publickey_to_string() != 54071 {
+    if uniffi_iroh_checksum_method_publickey_to_bytes() != 54334 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_publickey_to_bytes() != 22866 {
+    if uniffi_iroh_checksum_method_publickey_to_string() != 48998 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_irohnode_new() != 26269 {
+    if uniffi_iroh_checksum_constructor_docticket_from_string() != 40262 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_docticket_from_string() != 12688 {
+    if uniffi_iroh_checksum_constructor_irohnode_new() != 22562 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_subscribecallback_event() != 18725 {
         return InitializationResult.apiChecksumMismatch
     }
 

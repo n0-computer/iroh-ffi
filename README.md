@@ -26,7 +26,7 @@ For builds targeting older versions of MacOS, build with with:  `MACOSX_DEPLOYME
 
 ### Xcode and IOS 
 
-- Run `make.sh`. 
+- Run `make_swift.sh`. 
 - Add `IrohLib` as a local package dependency under `Frameworks, Libraries, and Embedded Content` in the `General` settings of your project. 
 - Run `Build`
 - Check that it is now listed under `Frameworks, Libraries, and Embedded Content`, if not click `+` again and add it from the list.
