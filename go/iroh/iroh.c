@@ -1,4 +1,4 @@
-#include <irohFFI.h>
+#include <iroh.h>
 
 // This file exists beacause of
 // https://github.com/golang/go/issues/11263
