@@ -40,6 +40,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "ahash"
+version = "0.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2c99f64d1e06488f620f932677e24bc6e2897582980441ae90a671415bd7ec2f"
+dependencies = [
+ "cfg-if",
+ "once_cell",
+ "version_check",
+]
+
+[[package]]
 name = "aho-corasick"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -53,6 +64,12 @@ name = "aliasable"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "250f629c0161ad8107cf89319e990051fae62832fd343083bea452d93e2205fd"
+
+[[package]]
+name = "allocator-api2"
+version = "0.2.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0942ffc6dcaadf03badf6e6a2d0228460359d5e34b57ccdc720b7382dfbd5ec5"
 
 [[package]]
 name = "android-tzdata"
@@ -281,14 +298,14 @@ dependencies = [
 
 [[package]]
 name = "bao-tree"
-version = "0.8.0"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9282899b0068a806644365e8416beb676203c471ade24b711c825817a2968e9f"
+checksum = "155e7e0c896695a9049badd7bf2b915d29230e24dc82a7c7ef065eded072404f"
 dependencies = [
  "bytes",
  "futures",
  "iroh-blake3",
- "iroh-io",
+ "iroh-io 0.3.0",
  "positioned-io",
  "range-collections",
  "self_cell",
@@ -1383,7 +1400,7 @@ version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888"
 dependencies = [
- "ahash",
+ "ahash 0.7.6",
 ]
 
 [[package]]
@@ -1391,6 +1408,10 @@ name = "hashbrown"
 version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7dfda62a12f55daeae5015f81b0baea145391cb4520f86c248fc615d72640d12"
+dependencies = [
+ "ahash 0.8.3",
+ "allocator-api2",
+]
 
 [[package]]
 name = "heck"
@@ -1633,6 +1654,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "ioctl-sys"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8bd11f3a29434026f5ff98c730b668ba74b1033637b8817940b54d040696133c"
+
+[[package]]
 name = "ipconfig"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1652,9 +1679,9 @@ checksum = "28b29a3cd74f0f4598934efe3aeba42bae0eb4680554128851ebbecb02af14e6"
 
 [[package]]
 name = "iroh"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "398a5657403e4a9cf574ed8aaded224aae9a2dfe205b48fa1391e2d193ffc2d3"
+checksum = "16725bedbc5180b2d9d9c1629b6832545f6c8c22db5fbabf5996bb73b538cd22"
 dependencies = [
  "anyhow",
  "bao-tree",
@@ -1667,7 +1694,7 @@ dependencies = [
  "hex",
  "iroh-bytes",
  "iroh-gossip",
- "iroh-io",
+ "iroh-io 0.3.0",
  "iroh-metrics",
  "iroh-net",
  "iroh-sync",
@@ -1681,8 +1708,10 @@ dependencies = [
  "quinn",
  "rand",
  "range-collections",
+ "reflink-copy",
  "serde",
  "strum",
+ "tempfile",
  "thiserror",
  "tokio",
  "tokio-stream",
@@ -1707,9 +1736,9 @@ dependencies = [
 
 [[package]]
 name = "iroh-bytes"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e14a828f3b2f73e9d2f46e1e8f2a85ab88e563c997cddfcb0a143b0cb5139077"
+checksum = "97e363fbc76f92e3489fd4afc74db23067f12ec409fe669bde651431a491751d"
 dependencies = [
  "anyhow",
  "bao-tree",
@@ -1721,7 +1750,7 @@ dependencies = [
  "futures",
  "genawaiter",
  "hex",
- "iroh-io",
+ "iroh-io 0.3.0",
  "multibase",
  "num_cpus",
  "once_cell",
@@ -1751,7 +1780,7 @@ dependencies = [
  "data-encoding",
  "futures",
  "iroh",
- "iroh-io",
+ "iroh-io 0.2.2",
  "libc",
  "multibase",
  "num_cpus",
@@ -1768,9 +1797,9 @@ dependencies = [
 
 [[package]]
 name = "iroh-gossip"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3550f6f64355e2d97b76deeffa95c1604c1881d04b9b0a8edf567d90dec739a2"
+checksum = "3da7f26bdb6e8a62120b8e9b56d385409daf9205ceb5929bd606c035455a4f4d"
 dependencies = [
  "anyhow",
  "bytes",
@@ -1808,10 +1837,23 @@ dependencies = [
 ]
 
 [[package]]
-name = "iroh-metrics"
-version = "0.6.0"
+name = "iroh-io"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b893edc8ebc59500fe989564f5901f9cfd697a838e5c55b4b4dea032a493f94"
+checksum = "19ace4f69567bfeb726672bab901d3e81be0c01119d860b2a10b7efb1553b880"
+dependencies = [
+ "bytes",
+ "futures",
+ "pin-project",
+ "smallvec",
+ "tokio",
+]
+
+[[package]]
+name = "iroh-metrics"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a66be2e9075727691cccda8c267ba9f770067d8727bb006f3bcec0de15d9c865"
 dependencies = [
  "erased_set",
  "hyper",
@@ -1824,9 +1866,9 @@ dependencies = [
 
 [[package]]
 name = "iroh-net"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c59a3f2081f26158ff3748893c2f14bb45c0499b596bb8e3642b7fac35caf8d"
+checksum = "251d9518e342624724852282603dd6151901845a4d8653992a853a216e5bb56e"
 dependencies = [
  "aead",
  "anyhow",
@@ -1896,9 +1938,9 @@ dependencies = [
 
 [[package]]
 name = "iroh-sync"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "86c34d2f8e35ad0ca89ee2de31bd5516a2c69a384eb2cca584162f6514ba54c3"
+checksum = "d92ca5257e51ec7b937e8d47fcd22add30a2652c144dd307206bef2739468cc8"
 dependencies = [
  "anyhow",
  "bytes",
@@ -1913,6 +1955,7 @@ dependencies = [
  "iroh-bytes",
  "iroh-metrics",
  "iroh-net",
+ "lru",
  "once_cell",
  "ouroboros",
  "parking_lot",
@@ -2015,6 +2058,15 @@ dependencies = [
  "scoped-tls",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "lru"
+version = "0.11.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a4a83fb7698b3643a0e34f9ae6f2e8f0178c0fd42f8b59d493aa271ff3a5bf21"
+dependencies = [
+ "hashbrown 0.14.1",
 ]
 
 [[package]]
@@ -3100,6 +3152,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "reflink-copy"
+version = "0.1.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d7e3e017e993f86feeddf8a7fb609ca49f89082309e328e27aefd4a25bb317a4"
+dependencies = [
+ "cfg-if",
+ "ioctl-sys",
+ "windows 0.51.1",
+]
+
+[[package]]
 name = "regex"
 version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3108,7 +3171,7 @@ dependencies = [
  "aho-corasick",
  "memchr",
  "regex-automata 0.4.1",
- "regex-syntax 0.8.0",
+ "regex-syntax 0.8.1",
 ]
 
 [[package]]
@@ -3128,7 +3191,7 @@ checksum = "465c6fc0621e4abc4187a2bda0937bfd4f722c2730b29562e19689ea796c9a4b"
 dependencies = [
  "aho-corasick",
  "memchr",
- "regex-syntax 0.8.0",
+ "regex-syntax 0.8.1",
 ]
 
 [[package]]
@@ -3139,9 +3202,9 @@ checksum = "f162c6dd7b008981e4d40210aca20b4bd0f9b60ca9271061b07f78537722f2e1"
 
 [[package]]
 name = "regex-syntax"
-version = "0.8.0"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c3cbb081b9784b07cceb8824c8583f86db4814d172ab043f3c23f7dc600bf83d"
+checksum = "56d84fdd47036b038fc80dd333d10b6aab10d5d31f4a366e20014def75328d33"
 
 [[package]]
 name = "reqwest"
