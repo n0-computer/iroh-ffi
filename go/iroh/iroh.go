@@ -2545,6 +2545,7 @@ const (
 	LiveEventTypeNeighborUp   LiveEventType = 4
 	LiveEventTypeNeighborDown LiveEventType = 5
 	LiveEventTypeSyncFinished LiveEventType = 6
+	LiveEventTypeClosed       LiveEventType = 7
 )
 
 type FfiConverterTypeLiveEventType struct{}

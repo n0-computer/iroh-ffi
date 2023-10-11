@@ -177,6 +177,8 @@ pub enum LiveEvent {
     NeighborDown(PublicKey),
     /// A set-reconciliation sync finished.
     SyncFinished(SyncEvent),
+    /// The document was closed. No further events will be emitted.
+    Closed,
 }
 
 pub enum LiveEventType {
@@ -186,6 +188,7 @@ pub enum LiveEventType {
     NeighborUp,
     NeighborDown,
     SyncFinished,
+    Closed,
 }
 
 impl LiveEvent {
@@ -197,6 +200,7 @@ impl LiveEvent {
             Self::NeighborUp(_) => LiveEventType::NeighborUp,
             Self::NeighborDown(_) => LiveEventType::NeighborDown,
             Self::SyncFinished(_) => LiveEventType::SyncFinished,
+            Self::Closed => LiveEventType::Closed,
         }
     }
 
@@ -300,6 +304,7 @@ impl From<iroh::sync_engine::LiveEvent> for LiveEvent {
             iroh::sync_engine::LiveEvent::NeighborUp(key) => LiveEvent::NeighborUp(key.into()),
             iroh::sync_engine::LiveEvent::NeighborDown(key) => LiveEvent::NeighborDown(key.into()),
             iroh::sync_engine::LiveEvent::SyncFinished(e) => LiveEvent::SyncFinished(e.into()),
+            iroh::sync_engine::LiveEvent::Closed => LiveEvent::Closed,
         }
     }
 }
@@ -517,7 +522,7 @@ impl Doc {
 
     pub fn stop_sync(&self) -> Result<(), Error> {
         block_on(&self.rt, async {
-            self.inner.stop_sync().await.map_err(Error::doc)?;
+            self.inner.leave().await.map_err(Error::doc)?;
             Ok(())
         })
     }

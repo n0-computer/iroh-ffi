@@ -118,6 +118,7 @@ interface LiveEventType {
   NeighborUp();
   NeighborDown();
   SyncFinished();
+  Closed();
 };
 
 [Enum]

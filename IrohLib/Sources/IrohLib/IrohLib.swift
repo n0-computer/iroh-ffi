@@ -1731,6 +1731,7 @@ public enum LiveEventType {
     case neighborUp
     case neighborDown
     case syncFinished
+    case closed
 }
 
 public struct FfiConverterTypeLiveEventType: FfiConverterRustBuffer {
@@ -1750,6 +1751,8 @@ public struct FfiConverterTypeLiveEventType: FfiConverterRustBuffer {
         case 5: return .neighborDown
 
         case 6: return .syncFinished
+
+        case 7: return .closed
 
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -1774,6 +1777,9 @@ public struct FfiConverterTypeLiveEventType: FfiConverterRustBuffer {
 
         case .syncFinished:
             writeInt(&buf, Int32(6))
+
+        case .closed:
+            writeInt(&buf, Int32(7))
         }
     }
 }
