@@ -238,6 +238,11 @@ void* uniffi_iroh_fn_method_irohnode_doc_join(
 	RustCallStatus* out_status
 );
 
+RustBuffer uniffi_iroh_fn_method_irohnode_doc_list(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
 void* uniffi_iroh_fn_method_irohnode_doc_new(
 	void* ptr,
 	RustCallStatus* out_status
@@ -453,6 +458,10 @@ uint16_t uniffi_iroh_checksum_method_irohnode_doc_join(
 	RustCallStatus* out_status
 );
 
+uint16_t uniffi_iroh_checksum_method_irohnode_doc_list(
+	RustCallStatus* out_status
+);
+
 uint16_t uniffi_iroh_checksum_method_irohnode_doc_new(
 	RustCallStatus* out_status
 );
@@ -545,5 +554,6 @@ void uniffiFutureCallbackHandlerOptionalTypeConnectionInfoTypeIrohError(void *, 
 void uniffiFutureCallbackHandlerSequenceAuthorIdTypeIrohError(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerSequenceEntryTypeIrohError(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerSequenceHashTypeIrohError(void *, RustBuffer, RustCallStatus);
+void uniffiFutureCallbackHandlerSequenceNamespaceIdTypeIrohError(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerSequenceTypeConnectionInfoTypeIrohError(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerMapStringTypeCounterStatsTypeIrohError(void *, RustBuffer, RustCallStatus);

@@ -133,6 +133,8 @@ RustBuffer uniffi_iroh_fn_method_irohnode_connections(void*_Nonnull ptr, RustCal
 );
 void*_Nonnull uniffi_iroh_fn_method_irohnode_doc_join(void*_Nonnull ptr, void*_Nonnull ticket, RustCallStatus *_Nonnull out_status
 );
+RustBuffer uniffi_iroh_fn_method_irohnode_doc_list(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
 void*_Nonnull uniffi_iroh_fn_method_irohnode_doc_new(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_irohnode_node_id(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -253,6 +255,9 @@ uint16_t uniffi_iroh_checksum_method_irohnode_connections(void
     
 );
 uint16_t uniffi_iroh_checksum_method_irohnode_doc_join(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_irohnode_doc_list(void
     
 );
 uint16_t uniffi_iroh_checksum_method_irohnode_doc_new(void
