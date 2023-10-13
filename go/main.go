@@ -89,6 +89,19 @@ func main() {
 	fmt.Printf("Listing all %d documents:\n", len(docs))
 	for _, doc_id := range docs {
 		fmt.Printf("\t%s\n", doc_id.ToString())
+	}
+
+	incomplete_blobs, err := node.BlobListIncomplete()
+	if err != nil {
+		panic(err)
+	}
+
+	if len(incomplete_blobs) != 0 {
+		fmt.Printf("Unexpected incomplete blobs:\n")
+		for _, blob := range incomplete_blobs {
+			fmt.Printf("\thash: %s expected size: %d size: %d", blob.Hash.ToString(), blob.ExpectedSize, blob.Size)
+		}
+	}
 
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Printf("\nSupply a path to add files to the blob store: ")
