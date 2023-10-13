@@ -40,6 +40,8 @@ interface IrohNode {
   bytes blob_get(Hash hash);
   [Throws=IrohError]
   sequence<BlobEntry> blob_add(string path, boolean in_place, string? tag, boolean wrap, string? filename);
+  [Throws=IrohError]
+  sequence<BlobEntryIncomplete> blob_list_incomplete();  
 };
 
 interface Doc {
@@ -75,6 +77,12 @@ interface Entry {
   AuthorId author();
   bytes key();
   Hash hash();
+};
+
+dictionary BlobEntryIncomplete {
+  u64 size;
+  u64 expected_size;
+  Hash hash;
 };
 
 dictionary BlobEntry {

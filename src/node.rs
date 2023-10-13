@@ -792,6 +792,27 @@ impl IrohNode {
         })
     }
 
+    pub fn blob_list_incomplete(&self) -> Result<Vec<BlobEntryIncomplete>, Error> {
+        block_on(&self.async_runtime, async {
+            let stream = self
+                .sync_client
+                .blobs
+                .list_incomplete()
+                .await
+                .map_err(Error::blob)?;
+
+            Ok(stream
+                .map_ok(|i| BlobEntryIncomplete {
+                    size: i.size,
+                    expected_size: i.expected_size,
+                    hash: Arc::new(Hash(i.hash)),
+                })
+                .map_err(Error::blob)
+                .try_collect::<Vec<_>>()
+                .await?)
+        })
+    }
+
     pub fn blob_get(&self, hash: Arc<Hash>) -> Result<Vec<u8>, Error> {
         block_on(&self.async_runtime, async {
             let mut r = self
@@ -883,6 +904,13 @@ async fn collect_entries(
 pub struct BlobEntry {
     pub name: String,
     pub size: u64,
+    pub hash: Arc<Hash>,
+}
+
+#[derive(Debug)]
+pub struct BlobEntryIncomplete {
+    pub size: u64,
+    pub expected_size: u64,
     pub hash: Arc<Hash>,
 }
 

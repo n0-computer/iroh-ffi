@@ -129,6 +129,8 @@ RustBuffer uniffi_iroh_fn_method_irohnode_blob_get(void*_Nonnull ptr, void*_Nonn
 );
 RustBuffer uniffi_iroh_fn_method_irohnode_blob_list_blobs(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+RustBuffer uniffi_iroh_fn_method_irohnode_blob_list_incomplete(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
 RustBuffer uniffi_iroh_fn_method_irohnode_connection_info(void*_Nonnull ptr, void*_Nonnull node_id, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_irohnode_connections(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -251,6 +253,9 @@ uint16_t uniffi_iroh_checksum_method_irohnode_blob_get(void
     
 );
 uint16_t uniffi_iroh_checksum_method_irohnode_blob_list_blobs(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_irohnode_blob_list_incomplete(void
     
 );
 uint16_t uniffi_iroh_checksum_method_irohnode_connection_info(void

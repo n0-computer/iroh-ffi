@@ -869,6 +869,7 @@ public protocol IrohNodeProtocol {
     func blobAdd(path: String, inPlace: Bool, tag: String?, wrap: Bool, filename: String?) throws -> [BlobEntry]
     func blobGet(hash: Hash) throws -> Data
     func blobListBlobs() throws -> [Hash]
+    func blobListIncomplete() throws -> [BlobEntryIncomplete]
     func connectionInfo(nodeId: PublicKey) throws -> ConnectionInfo?
     func connections() throws -> [ConnectionInfo]
     func docJoin(ticket: DocTicket) throws -> Doc
@@ -942,6 +943,14 @@ public class IrohNode: IrohNodeProtocol {
         return try FfiConverterSequenceTypeHash.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_irohnode_blob_list_blobs(self.pointer, $0)
+            }
+        )
+    }
+
+    public func blobListIncomplete() throws -> [BlobEntryIncomplete] {
+        return try FfiConverterSequenceTypeBlobEntryIncomplete.lift(
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_irohnode_blob_list_incomplete(self.pointer, $0)
             }
         )
     }
@@ -1348,6 +1357,44 @@ public func FfiConverterTypeBlobEntry_lift(_ buf: RustBuffer) throws -> BlobEntr
 
 public func FfiConverterTypeBlobEntry_lower(_ value: BlobEntry) -> RustBuffer {
     return FfiConverterTypeBlobEntry.lower(value)
+}
+
+public struct BlobEntryIncomplete {
+    public var size: UInt64
+    public var expectedSize: UInt64
+    public var hash: Hash
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(size: UInt64, expectedSize: UInt64, hash: Hash) {
+        self.size = size
+        self.expectedSize = expectedSize
+        self.hash = hash
+    }
+}
+
+public struct FfiConverterTypeBlobEntryIncomplete: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BlobEntryIncomplete {
+        return try BlobEntryIncomplete(
+            size: FfiConverterUInt64.read(from: &buf),
+            expectedSize: FfiConverterUInt64.read(from: &buf),
+            hash: FfiConverterTypeHash.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: BlobEntryIncomplete, into buf: inout [UInt8]) {
+        FfiConverterUInt64.write(value.size, into: &buf)
+        FfiConverterUInt64.write(value.expectedSize, into: &buf)
+        FfiConverterTypeHash.write(value.hash, into: &buf)
+    }
+}
+
+public func FfiConverterTypeBlobEntryIncomplete_lift(_ buf: RustBuffer) throws -> BlobEntryIncomplete {
+    return try FfiConverterTypeBlobEntryIncomplete.lift(buf)
+}
+
+public func FfiConverterTypeBlobEntryIncomplete_lower(_ value: BlobEntryIncomplete) -> RustBuffer {
+    return FfiConverterTypeBlobEntryIncomplete.lower(value)
 }
 
 public struct ConnectionInfo {
@@ -2427,6 +2474,28 @@ private struct FfiConverterSequenceTypeBlobEntry: FfiConverterRustBuffer {
     }
 }
 
+private struct FfiConverterSequenceTypeBlobEntryIncomplete: FfiConverterRustBuffer {
+    typealias SwiftType = [BlobEntryIncomplete]
+
+    public static func write(_ value: [BlobEntryIncomplete], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeBlobEntryIncomplete.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [BlobEntryIncomplete] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [BlobEntryIncomplete]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            try seq.append(FfiConverterTypeBlobEntryIncomplete.read(from: &buf))
+        }
+        return seq
+    }
+}
+
 private struct FfiConverterSequenceTypeConnectionInfo: FfiConverterRustBuffer {
     typealias SwiftType = [ConnectionInfo]
 
@@ -2613,6 +2682,9 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_blob_list_blobs() != 22311 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_irohnode_blob_list_incomplete() != 37688 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_connection_info() != 39895 {

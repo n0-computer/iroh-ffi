@@ -56,6 +56,13 @@ if __name__ == "__main__":
         for doc in docs:
             print("\t{}".format(doc.to_string()))
 
+        # ensure blob_list_incomplete executes
+        blobs = node.blob_list_incomplete()
+        if len(blobs) != 0:
+            print("Unexpected incomplete blobs:")
+            for blob in blobs:
+                print("\thash: {} expected_size: {} size: {}".format(blob.hash.to_string(), blob.expected_size, blob.size))
+
         exit()
 
     # create iroh data dir if it does not exists
