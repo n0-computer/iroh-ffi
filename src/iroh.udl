@@ -38,6 +38,8 @@ interface IrohNode {
   sequence<Hash> blob_list_blobs();
   [Throws=IrohError]
   bytes blob_get(Hash hash);
+  [Throws=IrohError]
+  sequence<BlobEntry> blob_add(string path, boolean in_place, string? tag, boolean wrap, string? filename);
 };
 
 interface Doc {
@@ -73,6 +75,12 @@ interface Entry {
   AuthorId author();
   bytes key();
   Hash hash();
+};
+
+dictionary BlobEntry {
+  string name;
+  u64 size;
+  Hash hash;
 };
 
 interface Hash {

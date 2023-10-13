@@ -11,8 +11,22 @@ if __name__ == "__main__":
     # parse arguments
     parser = argparse.ArgumentParser(description='Python Iroh Node Demo')
     parser.add_argument('--ticket', type=str, help='ticket to join a document')
+    parser.add_argument('--path', type=str, help='path to add to the blob store')
 
     args = parser.parse_args()
+
+    if args.path:
+        # create iroh node
+        node = iroh.IrohNode(IROH_DATA_DIR)
+        print("Started Iroh node: {}".format(node.node_id()))
+
+        print("Adding {} to the blob store...".format(args.path))
+        blobs = node.blob_add(args.path, False, None, False, None)
+        
+        for blob in blobs:
+            print("blob {}, hash {}, size {}".format(blob.name, blob.hash.to_string(), blob.size))
+
+        exit()
 
     if not args.ticket:
         print("In example mode")

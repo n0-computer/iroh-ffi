@@ -123,6 +123,8 @@ RustBuffer uniffi_iroh_fn_method_irohnode_author_list(void*_Nonnull ptr, RustCal
 );
 void*_Nonnull uniffi_iroh_fn_method_irohnode_author_new(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+RustBuffer uniffi_iroh_fn_method_irohnode_blob_add(void*_Nonnull ptr, RustBuffer path, int8_t in_place, RustBuffer tag, int8_t wrap, RustBuffer filename, RustCallStatus *_Nonnull out_status
+);
 RustBuffer uniffi_iroh_fn_method_irohnode_blob_get(void*_Nonnull ptr, void*_Nonnull hash, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_irohnode_blob_list_blobs(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -240,6 +242,9 @@ uint16_t uniffi_iroh_checksum_method_irohnode_author_list(void
     
 );
 uint16_t uniffi_iroh_checksum_method_irohnode_author_new(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_irohnode_blob_add(void
     
 );
 uint16_t uniffi_iroh_checksum_method_irohnode_blob_get(void

@@ -1,17 +1,26 @@
-use std::{collections::HashMap, path::PathBuf, sync::Arc, time::SystemTime};
+use std::{
+    collections::{BTreeMap, HashMap},
+    path::PathBuf,
+    sync::Arc,
+    time::SystemTime,
+};
 
+use anyhow::Context;
 use futures::{
-    stream::{StreamExt, TryStreamExt},
+    stream::{Stream, StreamExt, TryStreamExt},
     Future,
 };
 use iroh::{
     baomap::flat,
-    bytes::util::runtime::Handle,
+    bytes::{
+        provider::AddProgress,
+        util::{runtime::Handle, SetTagOption, Tag},
+    },
     client::Doc as ClientDoc,
     metrics::try_init_metrics_collection,
     net::key::SecretKey,
     node::{Node, DEFAULT_BIND_ADDR},
-    rpc_protocol::{ProviderRequest, ProviderResponse, ShareMode},
+    rpc_protocol::{ProviderRequest, ProviderResponse, ShareMode, WrapOption},
 };
 use quic_rpc::transport::flume::FlumeConnection;
 
@@ -795,6 +804,86 @@ impl IrohNode {
             Ok(data.into())
         })
     }
+
+    pub fn blob_add(
+        &self,
+        path: String,
+        in_place: bool,
+        tag: Option<String>,
+        wrap: bool,
+        filename: Option<String>,
+    ) -> Result<Vec<BlobEntry>, Error> {
+        block_on(&self.async_runtime, async {
+            let path: PathBuf = PathBuf::from(path);
+            let tag = match tag {
+                Some(tag) => SetTagOption::Named(Tag::from(tag)),
+                None => SetTagOption::Auto,
+            };
+            let wrap = match (wrap, filename) {
+                (true, None) => WrapOption::Wrap { name: None },
+                (true, Some(filename)) => WrapOption::Wrap {
+                    name: Some(filename),
+                },
+                (false, None) => WrapOption::NoWrap,
+                (false, Some(_)) => {
+                    return Err(Error::Blob {
+                        description: String::from("`filename` may not be used without `wrap`"),
+                    })
+                }
+            };
+            let stream = self
+                .sync_client
+                .blobs
+                .add_from_path(path, in_place, tag, wrap)
+                .await
+                .map_err(Error::blob)?;
+            collect_entries(stream).await.map_err(|e| Error::Blob {
+                description: e.to_string(),
+            })
+        })
+    }
+}
+
+async fn collect_entries(
+    mut stream: impl Stream<Item = anyhow::Result<AddProgress>> + Unpin,
+) -> anyhow::Result<Vec<BlobEntry>> {
+    let mut entries = BTreeMap::<u64, (String, u64, Option<iroh::bytes::Hash>)>::new();
+    while let Some(item) = stream.next().await {
+        match item.map_err(Error::blob)? {
+            AddProgress::Found { name, id, size } => {
+                entries.insert(id, (name.clone(), size, None));
+            }
+            AddProgress::Done { hash, id } => match entries.get_mut(&id) {
+                Some((_, _, ref mut h)) => {
+                    *h = Some(hash);
+                }
+                None => anyhow::bail!("Got Done for unknown collection id {id}"),
+            },
+            AddProgress::Progress { .. } => {}
+            AddProgress::AllDone { .. } => {
+                break;
+            }
+            AddProgress::Abort(e) => anyhow::bail!("Error while adding data:{e}"),
+        }
+    }
+    entries
+        .into_iter()
+        .map(|(_, (name, size, hash))| {
+            let hash = hash.context("Missing hash for {name}")?;
+            Ok(BlobEntry {
+                name,
+                size,
+                hash: Arc::new(Hash(hash)),
+            })
+        })
+        .collect::<anyhow::Result<Vec<_>>>()
+}
+
+#[derive(Debug)]
+pub struct BlobEntry {
+    pub name: String,
+    pub size: u64,
+    pub hash: Arc<Hash>,
 }
 
 fn block_on<F: Future<Output = T>, T>(rt: &Handle, fut: F) -> T {

@@ -866,6 +866,7 @@ public func FfiConverterTypeHash_lower(_ value: Hash) -> UnsafeMutableRawPointer
 public protocol IrohNodeProtocol {
     func authorList() throws -> [AuthorId]
     func authorNew() throws -> AuthorId
+    func blobAdd(path: String, inPlace: Bool, tag: String?, wrap: Bool, filename: String?) throws -> [BlobEntry]
     func blobGet(hash: Hash) throws -> Data
     func blobListBlobs() throws -> [Hash]
     func connectionInfo(nodeId: PublicKey) throws -> ConnectionInfo?
@@ -911,6 +912,19 @@ public class IrohNode: IrohNodeProtocol {
         return try FfiConverterTypeAuthorId.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_irohnode_author_new(self.pointer, $0)
+            }
+        )
+    }
+
+    public func blobAdd(path: String, inPlace: Bool, tag: String?, wrap: Bool, filename: String?) throws -> [BlobEntry] {
+        return try FfiConverterSequenceTypeBlobEntry.lift(
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_irohnode_blob_add(self.pointer,
+                                                        FfiConverterString.lower(path),
+                                                        FfiConverterBool.lower(inPlace),
+                                                        FfiConverterOptionString.lower(tag),
+                                                        FfiConverterBool.lower(wrap),
+                                                        FfiConverterOptionString.lower(filename), $0)
             }
         )
     }
@@ -1296,6 +1310,44 @@ public func FfiConverterTypePublicKey_lift(_ pointer: UnsafeMutableRawPointer) t
 
 public func FfiConverterTypePublicKey_lower(_ value: PublicKey) -> UnsafeMutableRawPointer {
     return FfiConverterTypePublicKey.lower(value)
+}
+
+public struct BlobEntry {
+    public var name: String
+    public var size: UInt64
+    public var hash: Hash
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(name: String, size: UInt64, hash: Hash) {
+        self.name = name
+        self.size = size
+        self.hash = hash
+    }
+}
+
+public struct FfiConverterTypeBlobEntry: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BlobEntry {
+        return try BlobEntry(
+            name: FfiConverterString.read(from: &buf),
+            size: FfiConverterUInt64.read(from: &buf),
+            hash: FfiConverterTypeHash.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: BlobEntry, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.name, into: &buf)
+        FfiConverterUInt64.write(value.size, into: &buf)
+        FfiConverterTypeHash.write(value.hash, into: &buf)
+    }
+}
+
+public func FfiConverterTypeBlobEntry_lift(_ buf: RustBuffer) throws -> BlobEntry {
+    return try FfiConverterTypeBlobEntry.lift(buf)
+}
+
+public func FfiConverterTypeBlobEntry_lower(_ value: BlobEntry) -> RustBuffer {
+    return FfiConverterTypeBlobEntry.lower(value)
 }
 
 public struct ConnectionInfo {
@@ -2353,6 +2405,28 @@ private struct FfiConverterSequenceTypeNamespaceId: FfiConverterRustBuffer {
     }
 }
 
+private struct FfiConverterSequenceTypeBlobEntry: FfiConverterRustBuffer {
+    typealias SwiftType = [BlobEntry]
+
+    public static func write(_ value: [BlobEntry], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeBlobEntry.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [BlobEntry] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [BlobEntry]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            try seq.append(FfiConverterTypeBlobEntry.read(from: &buf))
+        }
+        return seq
+    }
+}
+
 private struct FfiConverterSequenceTypeConnectionInfo: FfiConverterRustBuffer {
     typealias SwiftType = [ConnectionInfo]
 
@@ -2530,6 +2604,9 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_author_new() != 61553 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_irohnode_blob_add() != 27487 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_blob_get() != 2655 {

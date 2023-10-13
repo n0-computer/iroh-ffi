@@ -528,6 +528,15 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_irohnode_blob_add(uniffiStatus)
+		})
+		if checksum != 27487 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_irohnode_blob_add: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_irohnode_blob_get(uniffiStatus)
 		})
 		if checksum != 2655 {
@@ -1484,6 +1493,21 @@ func (_self *IrohNode) AuthorNew() (*AuthorId, error) {
 	}
 }
 
+func (_self *IrohNode) BlobAdd(path string, inPlace bool, tag *string, wrap bool, filename *string) ([]BlobEntry, error) {
+	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
+	defer _self.ffiObject.decrementPointer()
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_irohnode_blob_add(
+			_pointer, FfiConverterStringINSTANCE.Lower(path), FfiConverterBoolINSTANCE.Lower(inPlace), FfiConverterOptionalStringINSTANCE.Lower(tag), FfiConverterBoolINSTANCE.Lower(wrap), FfiConverterOptionalStringINSTANCE.Lower(filename), _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue []BlobEntry
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterSequenceTypeBlobEntryINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
+
 func (_self *IrohNode) BlobGet(hash *Hash) ([]byte, error) {
 	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
 	defer _self.ffiObject.decrementPointer()
@@ -1888,6 +1912,50 @@ func (c FfiConverterPublicKey) Write(writer io.Writer, value *PublicKey) {
 type FfiDestroyerPublicKey struct{}
 
 func (_ FfiDestroyerPublicKey) Destroy(value *PublicKey) {
+	value.Destroy()
+}
+
+type BlobEntry struct {
+	Name string
+	Size uint64
+	Hash *Hash
+}
+
+func (r *BlobEntry) Destroy() {
+	FfiDestroyerString{}.Destroy(r.Name)
+	FfiDestroyerUint64{}.Destroy(r.Size)
+	FfiDestroyerHash{}.Destroy(r.Hash)
+}
+
+type FfiConverterTypeBlobEntry struct{}
+
+var FfiConverterTypeBlobEntryINSTANCE = FfiConverterTypeBlobEntry{}
+
+func (c FfiConverterTypeBlobEntry) Lift(rb RustBufferI) BlobEntry {
+	return LiftFromRustBuffer[BlobEntry](c, rb)
+}
+
+func (c FfiConverterTypeBlobEntry) Read(reader io.Reader) BlobEntry {
+	return BlobEntry{
+		FfiConverterStringINSTANCE.Read(reader),
+		FfiConverterUint64INSTANCE.Read(reader),
+		FfiConverterHashINSTANCE.Read(reader),
+	}
+}
+
+func (c FfiConverterTypeBlobEntry) Lower(value BlobEntry) RustBuffer {
+	return LowerIntoRustBuffer[BlobEntry](c, value)
+}
+
+func (c FfiConverterTypeBlobEntry) Write(writer io.Writer, value BlobEntry) {
+	FfiConverterStringINSTANCE.Write(writer, value.Name)
+	FfiConverterUint64INSTANCE.Write(writer, value.Size)
+	FfiConverterHashINSTANCE.Write(writer, value.Hash)
+}
+
+type FfiDestroyerTypeBlobEntry struct{}
+
+func (_ FfiDestroyerTypeBlobEntry) Destroy(value BlobEntry) {
 	value.Destroy()
 }
 
@@ -3272,6 +3340,49 @@ type FfiDestroyerSequenceNamespaceId struct{}
 func (FfiDestroyerSequenceNamespaceId) Destroy(sequence []*NamespaceId) {
 	for _, value := range sequence {
 		FfiDestroyerNamespaceId{}.Destroy(value)
+	}
+}
+
+type FfiConverterSequenceTypeBlobEntry struct{}
+
+var FfiConverterSequenceTypeBlobEntryINSTANCE = FfiConverterSequenceTypeBlobEntry{}
+
+func (c FfiConverterSequenceTypeBlobEntry) Lift(rb RustBufferI) []BlobEntry {
+	return LiftFromRustBuffer[[]BlobEntry](c, rb)
+}
+
+func (c FfiConverterSequenceTypeBlobEntry) Read(reader io.Reader) []BlobEntry {
+	length := readInt32(reader)
+	if length == 0 {
+		return nil
+	}
+	result := make([]BlobEntry, 0, length)
+	for i := int32(0); i < length; i++ {
+		result = append(result, FfiConverterTypeBlobEntryINSTANCE.Read(reader))
+	}
+	return result
+}
+
+func (c FfiConverterSequenceTypeBlobEntry) Lower(value []BlobEntry) RustBuffer {
+	return LowerIntoRustBuffer[[]BlobEntry](c, value)
+}
+
+func (c FfiConverterSequenceTypeBlobEntry) Write(writer io.Writer, value []BlobEntry) {
+	if len(value) > math.MaxInt32 {
+		panic("[]BlobEntry is too large to fit into Int32")
+	}
+
+	writeInt32(writer, int32(len(value)))
+	for _, item := range value {
+		FfiConverterTypeBlobEntryINSTANCE.Write(writer, item)
+	}
+}
+
+type FfiDestroyerSequenceTypeBlobEntry struct{}
+
+func (FfiDestroyerSequenceTypeBlobEntry) Destroy(sequence []BlobEntry) {
+	for _, value := range sequence {
+		FfiDestroyerTypeBlobEntry{}.Destroy(value)
 	}
 }
 

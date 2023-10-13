@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/n0-computer/iroh-ffi/iroh"
 )
@@ -87,6 +89,22 @@ func main() {
 	fmt.Printf("Listing all %d documents:\n", len(docs))
 	for _, doc_id := range docs {
 		fmt.Printf("\t%s\n", doc_id.ToString())
+	}
+
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Printf("\nSupply a path to add files to the blob store: ")
+	text, err := reader.ReadString('\n')
+	if err != nil {
+		panic(err)
+	}
+	text = strings.TrimSpace(text)
+	fmt.Printf("\nAdding %s to the blob store...\n", text)
+	blobs, err := node.BlobAdd(text, false, nil, false, nil)
+	if err != nil {
+		panic(err)
+	}
+	for _, blob := range blobs {
+		fmt.Printf("\tblob %s, hash %s, size %d\n", blob.Name, blob.Hash.ToString(), blob.Size)
 	}
 
 	fmt.Printf("Goodbye!\n")
