@@ -24,7 +24,12 @@ if __name__ == "__main__":
         blobs = node.blob_add(args.path, False, None, False, None)
         
         for blob in blobs:
-            print("blob {}, hash {}, size {}".format(blob.name, blob.hash.to_string(), blob.size))
+            print("hash {}, name {}, size {}".format(blob.hash.to_string(), blob.name, blob.size))
+
+        print("\nCollection information:")
+        collections = node.blob_list_collections()
+        for collection in collections:
+            print("hash: {}, tag: {}, count: {}, size: {}".format(collection.hash.to_string(), collection.tag, collection.total_blobs_count, collection.total_blobs_size))
 
         exit()
 

@@ -130,24 +130,17 @@ func main() {
 		panic(err)
 	}
 	for _, blob := range blobs {
-		fmt.Printf("\tblob %s, hash %s, size %d\n", blob.Name, blob.Hash.ToString(), blob.Size)
+		fmt.Printf("\thash %s, blob %s, size %d\n", blob.Hash.ToString(), blob.Name, blob.Size)
 	}
 
-	reader = bufio.NewReader(os.Stdin)
-	fmt.Printf("\nSupply a path to add files to the blob store: ")
-	text, err = reader.ReadString('\n')
+	fmt.Printf("\nCollection information:\n")
+	collections, err := node.BlobListCollections()
 	if err != nil {
 		panic(err)
 	}
-	text = strings.TrimSpace(text)
-	fmt.Printf("\nAdding %s to the blob store...\n", text)
-	blobs, err = node.BlobAdd(text, false, nil, false, nil)
-	if err != nil {
-		panic(err)
-	}
-	for _, blob := range blobs {
-		fmt.Printf("\tblob %s, hash %s, size %d\n", blob.Name, blob.Hash.ToString(), blob.Size)
+	for _, collection := range collections {
+		fmt.Printf("hash %s, tag %s, count: %d, size %d\n", collection.Hash.ToString(), collection.Tag, collection.TotalBlobsCount, collection.TotalBlobsSize)
 	}
 
-	fmt.Printf("Goodbye!\n")
+	fmt.Printf("\nGoodbye!\n")
 }

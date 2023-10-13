@@ -869,6 +869,7 @@ public protocol IrohNodeProtocol {
     func blobAdd(path: String, inPlace: Bool, tag: String?, wrap: Bool, filename: String?) throws -> [BlobEntry]
     func blobGet(hash: Hash) throws -> Data
     func blobListBlobs() throws -> [Hash]
+    func blobListCollections() throws -> [CollectionInfo]
     func blobListIncomplete() throws -> [BlobEntryIncomplete]
     func blobValidate(repair: Bool) throws -> [BlobEntry]
     func connectionInfo(nodeId: PublicKey) throws -> ConnectionInfo?
@@ -944,6 +945,14 @@ public class IrohNode: IrohNodeProtocol {
         return try FfiConverterSequenceTypeHash.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_irohnode_blob_list_blobs(self.pointer, $0)
+            }
+        )
+    }
+
+    public func blobListCollections() throws -> [CollectionInfo] {
+        return try FfiConverterSequenceTypeCollectionInfo.lift(
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_irohnode_blob_list_collections(self.pointer, $0)
             }
         )
     }
@@ -1405,6 +1414,48 @@ public func FfiConverterTypeBlobEntryIncomplete_lift(_ buf: RustBuffer) throws -
 
 public func FfiConverterTypeBlobEntryIncomplete_lower(_ value: BlobEntryIncomplete) -> RustBuffer {
     return FfiConverterTypeBlobEntryIncomplete.lower(value)
+}
+
+public struct CollectionInfo {
+    public var tag: String
+    public var hash: Hash
+    public var totalBlobsCount: UInt64?
+    public var totalBlobsSize: UInt64?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(tag: String, hash: Hash, totalBlobsCount: UInt64?, totalBlobsSize: UInt64?) {
+        self.tag = tag
+        self.hash = hash
+        self.totalBlobsCount = totalBlobsCount
+        self.totalBlobsSize = totalBlobsSize
+    }
+}
+
+public struct FfiConverterTypeCollectionInfo: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CollectionInfo {
+        return try CollectionInfo(
+            tag: FfiConverterString.read(from: &buf),
+            hash: FfiConverterTypeHash.read(from: &buf),
+            totalBlobsCount: FfiConverterOptionUInt64.read(from: &buf),
+            totalBlobsSize: FfiConverterOptionUInt64.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: CollectionInfo, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.tag, into: &buf)
+        FfiConverterTypeHash.write(value.hash, into: &buf)
+        FfiConverterOptionUInt64.write(value.totalBlobsCount, into: &buf)
+        FfiConverterOptionUInt64.write(value.totalBlobsSize, into: &buf)
+    }
+}
+
+public func FfiConverterTypeCollectionInfo_lift(_ buf: RustBuffer) throws -> CollectionInfo {
+    return try FfiConverterTypeCollectionInfo.lift(buf)
+}
+
+public func FfiConverterTypeCollectionInfo_lower(_ value: CollectionInfo) -> RustBuffer {
+    return FfiConverterTypeCollectionInfo.lower(value)
 }
 
 public struct ConnectionInfo {
@@ -2311,6 +2362,27 @@ private struct FfiConverterOptionUInt16: FfiConverterRustBuffer {
     }
 }
 
+private struct FfiConverterOptionUInt64: FfiConverterRustBuffer {
+    typealias SwiftType = UInt64?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterUInt64.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterUInt64.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
 private struct FfiConverterOptionDouble: FfiConverterRustBuffer {
     typealias SwiftType = Double?
 
@@ -2506,6 +2578,28 @@ private struct FfiConverterSequenceTypeBlobEntryIncomplete: FfiConverterRustBuff
     }
 }
 
+private struct FfiConverterSequenceTypeCollectionInfo: FfiConverterRustBuffer {
+    typealias SwiftType = [CollectionInfo]
+
+    public static func write(_ value: [CollectionInfo], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeCollectionInfo.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [CollectionInfo] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [CollectionInfo]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            try seq.append(FfiConverterTypeCollectionInfo.read(from: &buf))
+        }
+        return seq
+    }
+}
+
 private struct FfiConverterSequenceTypeConnectionInfo: FfiConverterRustBuffer {
     typealias SwiftType = [ConnectionInfo]
 
@@ -2692,6 +2786,9 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_blob_list_blobs() != 22311 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_irohnode_blob_list_collections() != 1175 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_blob_list_incomplete() != 37688 {

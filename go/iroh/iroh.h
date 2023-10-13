@@ -231,6 +231,11 @@ RustBuffer uniffi_iroh_fn_method_irohnode_blob_list_blobs(
 	RustCallStatus* out_status
 );
 
+RustBuffer uniffi_iroh_fn_method_irohnode_blob_list_collections(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
 RustBuffer uniffi_iroh_fn_method_irohnode_blob_list_incomplete(
 	void* ptr,
 	RustCallStatus* out_status
@@ -471,6 +476,10 @@ uint16_t uniffi_iroh_checksum_method_irohnode_blob_list_blobs(
 	RustCallStatus* out_status
 );
 
+uint16_t uniffi_iroh_checksum_method_irohnode_blob_list_collections(
+	RustCallStatus* out_status
+);
+
 uint16_t uniffi_iroh_checksum_method_irohnode_blob_list_incomplete(
 	RustCallStatus* out_status
 );
@@ -590,5 +599,6 @@ void uniffiFutureCallbackHandlerSequenceHashTypeIrohError(void *, RustBuffer, Ru
 void uniffiFutureCallbackHandlerSequenceNamespaceIdTypeIrohError(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerSequenceTypeBlobEntryTypeIrohError(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerSequenceTypeBlobEntryIncompleteTypeIrohError(void *, RustBuffer, RustCallStatus);
+void uniffiFutureCallbackHandlerSequenceTypeCollectionInfoTypeIrohError(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerSequenceTypeConnectionInfoTypeIrohError(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerMapStringTypeCounterStatsTypeIrohError(void *, RustBuffer, RustCallStatus);

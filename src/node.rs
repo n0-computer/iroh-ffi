@@ -814,6 +814,27 @@ impl IrohNode {
         })
     }
 
+    pub fn blob_list_collections(&self) -> Result<Vec<CollectionInfo>, Error> {
+        block_on(&self.async_runtime, async {
+            let stream = self
+                .sync_client
+                .blobs
+                .list_collections()
+                .await
+                .map_err(Error::blob)?;
+            Ok(stream
+                .map_ok(|c| CollectionInfo {
+                    tag: c.tag.to_string(),
+                    hash: Arc::new(Hash(c.hash)),
+                    total_blobs_count: c.total_blobs_count,
+                    total_blobs_size: c.total_blobs_size,
+                })
+                .map_err(Error::blob)
+                .try_collect::<Vec<_>>()
+                .await?)
+        })
+    }
+
     pub fn blob_validate(&self, repair: bool) -> Result<Vec<BlobEntry>, Error> {
         block_on(&self.async_runtime, async {
             let stream = self
@@ -950,6 +971,14 @@ pub struct BlobEntryIncomplete {
     pub size: u64,
     pub expected_size: u64,
     pub hash: Arc<Hash>,
+}
+
+#[derive(Debug)]
+pub struct CollectionInfo {
+    pub tag: String,
+    pub hash: Arc<Hash>,
+    pub total_blobs_count: Option<u64>,
+    pub total_blobs_size: Option<u64>,
 }
 
 fn block_on<F: Future<Output = T>, T>(rt: &Handle, fut: F) -> T {

@@ -555,6 +555,15 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_irohnode_blob_list_collections(uniffiStatus)
+		})
+		if checksum != 1175 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_irohnode_blob_list_collections: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_irohnode_blob_list_incomplete(uniffiStatus)
 		})
 		if checksum != 37688 {
@@ -1556,6 +1565,21 @@ func (_self *IrohNode) BlobListBlobs() ([]*Hash, error) {
 	}
 }
 
+func (_self *IrohNode) BlobListCollections() ([]CollectionInfo, error) {
+	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
+	defer _self.ffiObject.decrementPointer()
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_irohnode_blob_list_collections(
+			_pointer, _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue []CollectionInfo
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterSequenceTypeCollectionInfoINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
+
 func (_self *IrohNode) BlobListIncomplete() ([]BlobEntryIncomplete, error) {
 	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
 	defer _self.ffiObject.decrementPointer()
@@ -2048,6 +2072,54 @@ func (c FfiConverterTypeBlobEntryIncomplete) Write(writer io.Writer, value BlobE
 type FfiDestroyerTypeBlobEntryIncomplete struct{}
 
 func (_ FfiDestroyerTypeBlobEntryIncomplete) Destroy(value BlobEntryIncomplete) {
+	value.Destroy()
+}
+
+type CollectionInfo struct {
+	Tag             string
+	Hash            *Hash
+	TotalBlobsCount *uint64
+	TotalBlobsSize  *uint64
+}
+
+func (r *CollectionInfo) Destroy() {
+	FfiDestroyerString{}.Destroy(r.Tag)
+	FfiDestroyerHash{}.Destroy(r.Hash)
+	FfiDestroyerOptionalUint64{}.Destroy(r.TotalBlobsCount)
+	FfiDestroyerOptionalUint64{}.Destroy(r.TotalBlobsSize)
+}
+
+type FfiConverterTypeCollectionInfo struct{}
+
+var FfiConverterTypeCollectionInfoINSTANCE = FfiConverterTypeCollectionInfo{}
+
+func (c FfiConverterTypeCollectionInfo) Lift(rb RustBufferI) CollectionInfo {
+	return LiftFromRustBuffer[CollectionInfo](c, rb)
+}
+
+func (c FfiConverterTypeCollectionInfo) Read(reader io.Reader) CollectionInfo {
+	return CollectionInfo{
+		FfiConverterStringINSTANCE.Read(reader),
+		FfiConverterHashINSTANCE.Read(reader),
+		FfiConverterOptionalUint64INSTANCE.Read(reader),
+		FfiConverterOptionalUint64INSTANCE.Read(reader),
+	}
+}
+
+func (c FfiConverterTypeCollectionInfo) Lower(value CollectionInfo) RustBuffer {
+	return LowerIntoRustBuffer[CollectionInfo](c, value)
+}
+
+func (c FfiConverterTypeCollectionInfo) Write(writer io.Writer, value CollectionInfo) {
+	FfiConverterStringINSTANCE.Write(writer, value.Tag)
+	FfiConverterHashINSTANCE.Write(writer, value.Hash)
+	FfiConverterOptionalUint64INSTANCE.Write(writer, value.TotalBlobsCount)
+	FfiConverterOptionalUint64INSTANCE.Write(writer, value.TotalBlobsSize)
+}
+
+type FfiDestroyerTypeCollectionInfo struct{}
+
+func (_ FfiDestroyerTypeCollectionInfo) Destroy(value CollectionInfo) {
 	value.Destroy()
 }
 
@@ -3152,6 +3224,43 @@ func (_ FfiDestroyerOptionalUint16) Destroy(value *uint16) {
 	}
 }
 
+type FfiConverterOptionalUint64 struct{}
+
+var FfiConverterOptionalUint64INSTANCE = FfiConverterOptionalUint64{}
+
+func (c FfiConverterOptionalUint64) Lift(rb RustBufferI) *uint64 {
+	return LiftFromRustBuffer[*uint64](c, rb)
+}
+
+func (_ FfiConverterOptionalUint64) Read(reader io.Reader) *uint64 {
+	if readInt8(reader) == 0 {
+		return nil
+	}
+	temp := FfiConverterUint64INSTANCE.Read(reader)
+	return &temp
+}
+
+func (c FfiConverterOptionalUint64) Lower(value *uint64) RustBuffer {
+	return LowerIntoRustBuffer[*uint64](c, value)
+}
+
+func (_ FfiConverterOptionalUint64) Write(writer io.Writer, value *uint64) {
+	if value == nil {
+		writeInt8(writer, 0)
+	} else {
+		writeInt8(writer, 1)
+		FfiConverterUint64INSTANCE.Write(writer, *value)
+	}
+}
+
+type FfiDestroyerOptionalUint64 struct{}
+
+func (_ FfiDestroyerOptionalUint64) Destroy(value *uint64) {
+	if value != nil {
+		FfiDestroyerUint64{}.Destroy(*value)
+	}
+}
+
 type FfiConverterOptionalFloat64 struct{}
 
 var FfiConverterOptionalFloat64INSTANCE = FfiConverterOptionalFloat64{}
@@ -3518,6 +3627,49 @@ type FfiDestroyerSequenceTypeBlobEntryIncomplete struct{}
 func (FfiDestroyerSequenceTypeBlobEntryIncomplete) Destroy(sequence []BlobEntryIncomplete) {
 	for _, value := range sequence {
 		FfiDestroyerTypeBlobEntryIncomplete{}.Destroy(value)
+	}
+}
+
+type FfiConverterSequenceTypeCollectionInfo struct{}
+
+var FfiConverterSequenceTypeCollectionInfoINSTANCE = FfiConverterSequenceTypeCollectionInfo{}
+
+func (c FfiConverterSequenceTypeCollectionInfo) Lift(rb RustBufferI) []CollectionInfo {
+	return LiftFromRustBuffer[[]CollectionInfo](c, rb)
+}
+
+func (c FfiConverterSequenceTypeCollectionInfo) Read(reader io.Reader) []CollectionInfo {
+	length := readInt32(reader)
+	if length == 0 {
+		return nil
+	}
+	result := make([]CollectionInfo, 0, length)
+	for i := int32(0); i < length; i++ {
+		result = append(result, FfiConverterTypeCollectionInfoINSTANCE.Read(reader))
+	}
+	return result
+}
+
+func (c FfiConverterSequenceTypeCollectionInfo) Lower(value []CollectionInfo) RustBuffer {
+	return LowerIntoRustBuffer[[]CollectionInfo](c, value)
+}
+
+func (c FfiConverterSequenceTypeCollectionInfo) Write(writer io.Writer, value []CollectionInfo) {
+	if len(value) > math.MaxInt32 {
+		panic("[]CollectionInfo is too large to fit into Int32")
+	}
+
+	writeInt32(writer, int32(len(value)))
+	for _, item := range value {
+		FfiConverterTypeCollectionInfoINSTANCE.Write(writer, item)
+	}
+}
+
+type FfiDestroyerSequenceTypeCollectionInfo struct{}
+
+func (FfiDestroyerSequenceTypeCollectionInfo) Destroy(sequence []CollectionInfo) {
+	for _, value := range sequence {
+		FfiDestroyerTypeCollectionInfo{}.Destroy(value)
 	}
 }
 

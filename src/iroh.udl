@@ -44,6 +44,8 @@ interface IrohNode {
   sequence<BlobEntryIncomplete> blob_list_incomplete();  
   [Throws=IrohError]
   sequence<BlobEntry> blob_validate(boolean repair);
+  [Throws=IrohError]
+  sequence<CollectionInfo> blob_list_collections();
 };
 
 interface Doc {
@@ -91,6 +93,13 @@ dictionary BlobEntry {
   string name;
   u64 size;
   Hash hash;
+};
+
+dictionary CollectionInfo {
+  string tag;
+  Hash hash;
+  u64? total_blobs_count;
+  u64? total_blobs_size;
 };
 
 interface Hash {
