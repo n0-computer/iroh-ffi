@@ -63,6 +63,14 @@ if __name__ == "__main__":
             for blob in blobs:
                 print("\thash: {} expected_size: {} size: {}".format(blob.hash.to_string(), blob.expected_size, blob.size))
 
+        # ensure blob_validate executes
+        # TODO: unimplemented in v0.7.0
+        # blobs = node.blob_validate(False)
+        # if len(blobs) != 0:
+        #     print("Unexpected invalid blobs:")
+        #     for blob in blobs:
+        #         print("\tname: {} hash: {} size: {}".format(blob.name, blob.hash.to_string(), blob.size))
+
         exit()
 
     # create iroh data dir if it does not exists

@@ -236,6 +236,12 @@ RustBuffer uniffi_iroh_fn_method_irohnode_blob_list_incomplete(
 	RustCallStatus* out_status
 );
 
+RustBuffer uniffi_iroh_fn_method_irohnode_blob_validate(
+	void* ptr,
+	int8_t repair,
+	RustCallStatus* out_status
+);
+
 RustBuffer uniffi_iroh_fn_method_irohnode_connection_info(
 	void* ptr,
 	void* node_id,
@@ -466,6 +472,10 @@ uint16_t uniffi_iroh_checksum_method_irohnode_blob_list_blobs(
 );
 
 uint16_t uniffi_iroh_checksum_method_irohnode_blob_list_incomplete(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_irohnode_blob_validate(
 	RustCallStatus* out_status
 );
 

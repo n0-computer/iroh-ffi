@@ -13,6 +13,7 @@ use futures::{
 use iroh::{
     baomap::flat,
     bytes::{
+        baomap::ValidateProgress,
         provider::AddProgress,
         util::{runtime::Handle, SetTagOption, Tag},
     },
@@ -813,6 +814,23 @@ impl IrohNode {
         })
     }
 
+    pub fn blob_validate(&self, repair: bool) -> Result<Vec<BlobEntry>, Error> {
+        block_on(&self.async_runtime, async {
+            let stream = self
+                .sync_client
+                .blobs
+                .validate(repair)
+                .await
+                .map_err(Error::blob)?;
+
+            collect_repaired_entries(stream)
+                .await
+                .map_err(|e| Error::Blob {
+                    description: e.to_string(),
+                })
+        })
+    }
+
     pub fn blob_get(&self, hash: Arc<Hash>) -> Result<Vec<u8>, Error> {
         block_on(&self.async_runtime, async {
             let mut r = self
@@ -898,6 +916,26 @@ async fn collect_entries(
             })
         })
         .collect::<anyhow::Result<Vec<_>>>()
+}
+
+async fn collect_repaired_entries(
+    mut stream: impl Stream<Item = anyhow::Result<ValidateProgress>> + Unpin,
+) -> anyhow::Result<Vec<BlobEntry>> {
+    let mut entries = Vec::new();
+    while let Some(item) = stream.next().await {
+        match item.map_err(Error::blob)? {
+            ValidateProgress::Entry {
+                hash, path, size, ..
+            } => entries.push(BlobEntry {
+                hash: Arc::new(Hash(hash)),
+                size,
+                name: path.unwrap_or_default(),
+            }),
+            ValidateProgress::Abort(e) => anyhow::bail!("Error while adding data:{e}"),
+            _ => {}
+        }
+    }
+    Ok(entries)
 }
 
 #[derive(Debug)]

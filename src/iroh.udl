@@ -42,6 +42,8 @@ interface IrohNode {
   sequence<BlobEntry> blob_add(string path, boolean in_place, string? tag, boolean wrap, string? filename);
   [Throws=IrohError]
   sequence<BlobEntryIncomplete> blob_list_incomplete();  
+  [Throws=IrohError]
+  sequence<BlobEntry> blob_validate(boolean repair);
 };
 
 interface Doc {

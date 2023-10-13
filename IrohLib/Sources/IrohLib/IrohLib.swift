@@ -870,6 +870,7 @@ public protocol IrohNodeProtocol {
     func blobGet(hash: Hash) throws -> Data
     func blobListBlobs() throws -> [Hash]
     func blobListIncomplete() throws -> [BlobEntryIncomplete]
+    func blobValidate(repair: Bool) throws -> [BlobEntry]
     func connectionInfo(nodeId: PublicKey) throws -> ConnectionInfo?
     func connections() throws -> [ConnectionInfo]
     func docJoin(ticket: DocTicket) throws -> Doc
@@ -951,6 +952,15 @@ public class IrohNode: IrohNodeProtocol {
         return try FfiConverterSequenceTypeBlobEntryIncomplete.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_irohnode_blob_list_incomplete(self.pointer, $0)
+            }
+        )
+    }
+
+    public func blobValidate(repair: Bool) throws -> [BlobEntry] {
+        return try FfiConverterSequenceTypeBlobEntry.lift(
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_irohnode_blob_validate(self.pointer,
+                                                             FfiConverterBool.lower(repair), $0)
             }
         )
     }
@@ -2685,6 +2695,9 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_blob_list_incomplete() != 37688 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_irohnode_blob_validate() != 5297 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_connection_info() != 39895 {

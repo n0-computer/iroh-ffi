@@ -103,6 +103,20 @@ func main() {
 		}
 	}
 
+	// ensure BlobValidate executes
+	// TODO: unimplemented in v0.7.0
+	// invalid_blobs, err := node.BlobValidate(false)
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// if len(invalid_blobs) != 0 {
+	// 	fmt.Printf("Unexpected invalid blobs:\n")
+	// 	for _, blob := range invalid_blobs {
+	// 		fmt.Printf("\thash: %s name: %d size: %d", blob.Hash.ToString(), blob.Name, blob.Size)
+	// 	}
+	// }
+
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Printf("\nSupply a path to add files to the blob store: ")
 	text, err := reader.ReadString('\n')
@@ -119,15 +133,15 @@ func main() {
 		fmt.Printf("\tblob %s, hash %s, size %d\n", blob.Name, blob.Hash.ToString(), blob.Size)
 	}
 
-	reader := bufio.NewReader(os.Stdin)
+	reader = bufio.NewReader(os.Stdin)
 	fmt.Printf("\nSupply a path to add files to the blob store: ")
-	text, err := reader.ReadString('\n')
+	text, err = reader.ReadString('\n')
 	if err != nil {
 		panic(err)
 	}
 	text = strings.TrimSpace(text)
 	fmt.Printf("\nAdding %s to the blob store...\n", text)
-	blobs, err := node.BlobAdd(text, false, nil, false, nil)
+	blobs, err = node.BlobAdd(text, false, nil, false, nil)
 	if err != nil {
 		panic(err)
 	}
