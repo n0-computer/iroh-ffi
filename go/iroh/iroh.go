@@ -459,6 +459,15 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_doc_get_content_bytes(uniffiStatus)
+		})
+		if checksum != 64325 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_doc_get_content_bytes: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_doc_get_many(uniffiStatus)
 		})
 		if checksum != 58857 {
@@ -509,6 +518,15 @@ func uniffiCheckChecksums() {
 		if checksum != 15024 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_doc_set_bytes: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_doc_set_file_bytes(uniffiStatus)
+		})
+		if checksum != 19282 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_doc_set_file_bytes: UniFFI API checksum mismatch")
 		}
 	}
 	{
@@ -2360,6 +2378,21 @@ func (_self *Doc) SetBytes(author *AuthorId, key []byte, value []byte) (*Hash, e
 	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
 		return C.uniffi_iroh_fn_method_doc_set_bytes(
 			_pointer, FfiConverterAuthorIdINSTANCE.Lower(author), FfiConverterBytesINSTANCE.Lower(key), FfiConverterBytesINSTANCE.Lower(value), _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue *Hash
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterHashINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
+
+func (_self *Doc) SetFileBytes(author *AuthorId, key []byte, path string) (*Hash, error) {
+	_pointer := _self.ffiObject.incrementPointer("*Doc")
+	defer _self.ffiObject.decrementPointer()
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_method_doc_set_file_bytes(
+			_pointer, FfiConverterAuthorIdINSTANCE.Lower(author), FfiConverterBytesINSTANCE.Lower(key), FfiConverterStringINSTANCE.Lower(path), _uniffiStatus)
 	})
 	if _uniffiErr != nil {
 		var _uniffiDefaultValue *Hash

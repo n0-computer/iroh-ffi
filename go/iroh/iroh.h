@@ -185,6 +185,12 @@ uint64_t uniffi_iroh_fn_method_doc_del(
 	RustCallStatus* out_status
 );
 
+RustBuffer uniffi_iroh_fn_method_doc_get_content_bytes(
+	void* ptr,
+	void* entry,
+	RustCallStatus* out_status
+);
+
 RustBuffer uniffi_iroh_fn_method_doc_get_many(
 	void* ptr,
 	void* query,
@@ -218,6 +224,14 @@ void* uniffi_iroh_fn_method_doc_set_bytes(
 	void* author,
 	RustBuffer key,
 	RustBuffer value,
+	RustCallStatus* out_status
+);
+
+void* uniffi_iroh_fn_method_doc_set_file_bytes(
+	void* ptr,
+	void* author,
+	RustBuffer key,
+	RustBuffer path,
 	RustCallStatus* out_status
 );
 
@@ -1085,6 +1099,10 @@ uint16_t uniffi_iroh_checksum_method_doc_del(
 	RustCallStatus* out_status
 );
 
+uint16_t uniffi_iroh_checksum_method_doc_get_content_bytes(
+	RustCallStatus* out_status
+);
+
 uint16_t uniffi_iroh_checksum_method_doc_get_many(
 	RustCallStatus* out_status
 );
@@ -1106,6 +1124,10 @@ uint16_t uniffi_iroh_checksum_method_doc_read_to_bytes(
 );
 
 uint16_t uniffi_iroh_checksum_method_doc_set_bytes(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_doc_set_file_bytes(
 	RustCallStatus* out_status
 );
 
