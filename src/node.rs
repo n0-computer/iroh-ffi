@@ -508,6 +508,40 @@ impl Doc {
         })
     }
 
+    pub fn set_file_bytes(
+        &self,
+        author_id: Arc<AuthorId>,
+        key: Vec<u8>,
+        path: String,
+    ) -> Result<Arc<Hash>, Error> {
+        block_on(&self.rt, async {
+            // read file from path
+            let value = tokio::fs::read(path).await.map_err(Error::doc)?;
+            let hash = self
+                .inner
+                .set_bytes(author_id.0.clone(), key, value)
+                .await
+                .map_err(Error::doc)?;
+            Ok(Arc::new(Hash(hash)))
+        })
+    }
+
+    pub fn set_hash(
+        &self,
+        author_id: Arc<AuthorId>,
+        key: Vec<u8>,
+        hash: Arc<Hash>,
+        size: u64,
+    ) -> Result<(), Error> {
+        block_on(&self.rt, async {
+            self.inner
+                .set_hash(author_id.0.clone(), key, hash.0.clone(), size)
+                .await
+                .map_err(Error::doc)?;
+            Ok(())
+        })
+    }
+
     pub fn get_content_bytes(&self, entry: Arc<Entry>) -> Result<Vec<u8>, Error> {
         block_on(&self.rt, async {
             let content = self

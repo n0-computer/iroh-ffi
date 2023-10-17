@@ -47,6 +47,10 @@ interface Doc {
   [Throws=IrohError]
   Hash set_bytes(AuthorId author, bytes key, bytes value);
   [Throws=IrohError]
+  Hash set_file_bytes(AuthorId author, bytes key, string path);
+  [Throws=IrohError]
+  void set_hash(AuthorId author, bytes key, Hash hash, u64 size);
+  [Throws=IrohError]
   bytes get_content_bytes(Entry entry);
   [Throws=IrohError]
   sequence<Entry> keys();
