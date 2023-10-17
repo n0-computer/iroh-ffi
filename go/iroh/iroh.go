@@ -573,6 +573,15 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_irohnode_doc_list(uniffiStatus)
+		})
+		if checksum != 38395 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_irohnode_doc_list: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_irohnode_doc_new(uniffiStatus)
 		})
 		if checksum != 34009 {
@@ -1547,6 +1556,21 @@ func (_self *IrohNode) DocJoin(ticket *DocTicket) (*Doc, error) {
 		return _uniffiDefaultValue, _uniffiErr
 	} else {
 		return FfiConverterDocINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
+
+func (_self *IrohNode) DocList() ([]*NamespaceId, error) {
+	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
+	defer _self.ffiObject.decrementPointer()
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_irohnode_doc_list(
+			_pointer, _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue []*NamespaceId
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterSequenceNamespaceIdINSTANCE.Lift(_uniffiRV), _uniffiErr
 	}
 }
 
@@ -3205,6 +3229,49 @@ type FfiDestroyerSequenceHash struct{}
 func (FfiDestroyerSequenceHash) Destroy(sequence []*Hash) {
 	for _, value := range sequence {
 		FfiDestroyerHash{}.Destroy(value)
+	}
+}
+
+type FfiConverterSequenceNamespaceId struct{}
+
+var FfiConverterSequenceNamespaceIdINSTANCE = FfiConverterSequenceNamespaceId{}
+
+func (c FfiConverterSequenceNamespaceId) Lift(rb RustBufferI) []*NamespaceId {
+	return LiftFromRustBuffer[[]*NamespaceId](c, rb)
+}
+
+func (c FfiConverterSequenceNamespaceId) Read(reader io.Reader) []*NamespaceId {
+	length := readInt32(reader)
+	if length == 0 {
+		return nil
+	}
+	result := make([]*NamespaceId, 0, length)
+	for i := int32(0); i < length; i++ {
+		result = append(result, FfiConverterNamespaceIdINSTANCE.Read(reader))
+	}
+	return result
+}
+
+func (c FfiConverterSequenceNamespaceId) Lower(value []*NamespaceId) RustBuffer {
+	return LowerIntoRustBuffer[[]*NamespaceId](c, value)
+}
+
+func (c FfiConverterSequenceNamespaceId) Write(writer io.Writer, value []*NamespaceId) {
+	if len(value) > math.MaxInt32 {
+		panic("[]*NamespaceId is too large to fit into Int32")
+	}
+
+	writeInt32(writer, int32(len(value)))
+	for _, item := range value {
+		FfiConverterNamespaceIdINSTANCE.Write(writer, item)
+	}
+}
+
+type FfiDestroyerSequenceNamespaceId struct{}
+
+func (FfiDestroyerSequenceNamespaceId) Destroy(sequence []*NamespaceId) {
+	for _, value := range sequence {
+		FfiDestroyerNamespaceId{}.Destroy(value)
 	}
 }
 

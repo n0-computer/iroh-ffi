@@ -871,6 +871,7 @@ public protocol IrohNodeProtocol {
     func connectionInfo(nodeId: PublicKey) throws -> ConnectionInfo?
     func connections() throws -> [ConnectionInfo]
     func docJoin(ticket: DocTicket) throws -> Doc
+    func docList() throws -> [NamespaceId]
     func docNew() throws -> Doc
     func nodeId() -> String
     func stats() throws -> [String: CounterStats]
@@ -953,6 +954,14 @@ public class IrohNode: IrohNodeProtocol {
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_irohnode_doc_join(self.pointer,
                                                         FfiConverterTypeDocTicket.lower(ticket), $0)
+            }
+        )
+    }
+
+    public func docList() throws -> [NamespaceId] {
+        return try FfiConverterSequenceTypeNamespaceId.lift(
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_irohnode_doc_list(self.pointer, $0)
             }
         )
     }
@@ -2073,55 +2082,54 @@ public protocol SubscribeCallback: AnyObject {
 }
 
 // The ForeignCallback that is passed to Rust.
-private let foreignCallbackCallbackInterfaceSubscribeCallback: ForeignCallback =
-    { (handle: UniFFICallbackHandle, method: Int32, argsData: UnsafePointer<UInt8>, argsLen: Int32, out_buf: UnsafeMutablePointer<RustBuffer>) -> Int32 in
+private let foreignCallbackCallbackInterfaceSubscribeCallback: ForeignCallback = { (handle: UniFFICallbackHandle, method: Int32, argsData: UnsafePointer<UInt8>, argsLen: Int32, out_buf: UnsafeMutablePointer<RustBuffer>) -> Int32 in
 
-        func invokeEvent(_ swiftCallbackInterface: SubscribeCallback, _ argsData: UnsafePointer<UInt8>, _ argsLen: Int32, _ out_buf: UnsafeMutablePointer<RustBuffer>) throws -> Int32 {
-            var reader = createReader(data: Data(bytes: argsData, count: Int(argsLen)))
-            func makeCall() throws -> Int32 {
-                try swiftCallbackInterface.event(
-                    event: FfiConverterTypeLiveEvent.read(from: &reader)
-                )
-                return UNIFFI_CALLBACK_SUCCESS
-            }
-            do {
-                return try makeCall()
-            } catch let error as IrohError {
-                out_buf.pointee = FfiConverterTypeIrohError.lower(error)
-                return UNIFFI_CALLBACK_ERROR
-            }
-        }
-
-        switch method {
-        case IDX_CALLBACK_FREE:
-            FfiConverterCallbackInterfaceSubscribeCallback.drop(handle: handle)
-            // Sucessful return
-            // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
+    func invokeEvent(_ swiftCallbackInterface: SubscribeCallback, _ argsData: UnsafePointer<UInt8>, _ argsLen: Int32, _ out_buf: UnsafeMutablePointer<RustBuffer>) throws -> Int32 {
+        var reader = createReader(data: Data(bytes: argsData, count: Int(argsLen)))
+        func makeCall() throws -> Int32 {
+            try swiftCallbackInterface.event(
+                event: FfiConverterTypeLiveEvent.read(from: &reader)
+            )
             return UNIFFI_CALLBACK_SUCCESS
-        case 1:
-            let cb: SubscribeCallback
-            do {
-                cb = try FfiConverterCallbackInterfaceSubscribeCallback.lift(handle)
-            } catch {
-                out_buf.pointee = FfiConverterString.lower("SubscribeCallback: Invalid handle")
-                return UNIFFI_CALLBACK_UNEXPECTED_ERROR
-            }
-            do {
-                return try invokeEvent(cb, argsData, argsLen, out_buf)
-            } catch {
-                out_buf.pointee = FfiConverterString.lower(String(describing: error))
-                return UNIFFI_CALLBACK_UNEXPECTED_ERROR
-            }
-
-        // This should never happen, because an out of bounds method index won't
-        // ever be used. Once we can catch errors, we should return an InternalError.
-        // https://github.com/mozilla/uniffi-rs/issues/351
-        default:
-            // An unexpected error happened.
-            // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
-            return UNIFFI_CALLBACK_UNEXPECTED_ERROR
+        }
+        do {
+            return try makeCall()
+        } catch let error as IrohError {
+            out_buf.pointee = FfiConverterTypeIrohError.lower(error)
+            return UNIFFI_CALLBACK_ERROR
         }
     }
+
+    switch method {
+    case IDX_CALLBACK_FREE:
+        FfiConverterCallbackInterfaceSubscribeCallback.drop(handle: handle)
+        // Sucessful return
+        // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
+        return UNIFFI_CALLBACK_SUCCESS
+    case 1:
+        let cb: SubscribeCallback
+        do {
+            cb = try FfiConverterCallbackInterfaceSubscribeCallback.lift(handle)
+        } catch {
+            out_buf.pointee = FfiConverterString.lower("SubscribeCallback: Invalid handle")
+            return UNIFFI_CALLBACK_UNEXPECTED_ERROR
+        }
+        do {
+            return try invokeEvent(cb, argsData, argsLen, out_buf)
+        } catch {
+            out_buf.pointee = FfiConverterString.lower(String(describing: error))
+            return UNIFFI_CALLBACK_UNEXPECTED_ERROR
+        }
+
+    // This should never happen, because an out of bounds method index won't
+    // ever be used. Once we can catch errors, we should return an InternalError.
+    // https://github.com/mozilla/uniffi-rs/issues/351
+    default:
+        // An unexpected error happened.
+        // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
+        return UNIFFI_CALLBACK_UNEXPECTED_ERROR
+    }
+}
 
 // FfiConverter protocol for callback interfaces
 private enum FfiConverterCallbackInterfaceSubscribeCallback {
@@ -2323,6 +2331,28 @@ private struct FfiConverterSequenceTypeHash: FfiConverterRustBuffer {
     }
 }
 
+private struct FfiConverterSequenceTypeNamespaceId: FfiConverterRustBuffer {
+    typealias SwiftType = [NamespaceId]
+
+    public static func write(_ value: [NamespaceId], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeNamespaceId.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [NamespaceId] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [NamespaceId]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            try seq.append(FfiConverterTypeNamespaceId.read(from: &buf))
+        }
+        return seq
+    }
+}
+
 private struct FfiConverterSequenceTypeConnectionInfo: FfiConverterRustBuffer {
     typealias SwiftType = [ConnectionInfo]
 
@@ -2515,6 +2545,9 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_doc_join() != 30773 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_irohnode_doc_list() != 38395 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_doc_new() != 34009 {

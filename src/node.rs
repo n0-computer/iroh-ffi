@@ -713,6 +713,23 @@ impl IrohNode {
         })
     }
 
+    pub fn doc_list(&self) -> Result<Vec<Arc<NamespaceId>>, Error> {
+        block_on(&self.async_runtime, async {
+            let docs = self
+                .sync_client
+                .docs
+                .list()
+                .await
+                .map_err(Error::doc)?
+                .map_ok(|n| Arc::new(n.into()))
+                .try_collect::<Vec<_>>()
+                .await
+                .map_err(Error::doc)?;
+
+            Ok(docs)
+        })
+    }
+
     pub fn stats(&self) -> Result<HashMap<String, CounterStats>, Error> {
         block_on(&self.async_runtime, async {
             let stats = self.sync_client.node.stats().await.map_err(Error::doc)?;

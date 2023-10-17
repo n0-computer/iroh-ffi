@@ -72,5 +72,22 @@ func main() {
 		fmt.Printf("Entry: %s: \"%s\"\n", string(entry.Key()), string(content))
 	}
 
+	doc, err = node.DocNew()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("Created second document %s\n", doc.Id())
+
+	docs, err := node.DocList()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("Listing all %d documents:\n", len(docs))
+	for _, doc_id := range docs {
+		fmt.Printf("\t%s\n", doc_id.ToString())
+	}
+
 	fmt.Printf("Goodbye!\n")
 }

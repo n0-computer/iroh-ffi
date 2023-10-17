@@ -22,6 +22,8 @@ interface IrohNode {
   [Throws=IrohError]
   Doc doc_join(DocTicket ticket);
   [Throws=IrohError]
+  sequence<NamespaceId> doc_list();
+  [Throws=IrohError]
   AuthorId author_new();
   [Throws=IrohError]
   sequence<AuthorId> author_list();
