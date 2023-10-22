@@ -19,6 +19,16 @@ pub enum IrohError {
     Connection { description: String },
     #[error("blob: {description}")]
     Blob { description: String },
+    #[error("Ipv4Addr error: {description}")]
+    Ipv4Addr { description: String },
+    #[error("SocketAddrV4 error: {description}")]
+    SocketAddrV4 { description: String },
+    #[error("Ipv6Addr error: {description}")]
+    Ipv6Addr { description: String },
+    #[error("SocketAddrV6 error: {description}")]
+    SocketAddrV6 { description: String },
+    #[error("SocketAddr error: {description}")]
+    SocketAddr { description: String },
 }
 
 impl IrohError {
@@ -60,6 +70,36 @@ impl IrohError {
 
     pub fn blob(error: impl Display) -> Self {
         IrohError::Blob {
+            description: error.to_string(),
+        }
+    }
+
+    pub fn ipv4_addr(error: impl Display) -> Self {
+        IrohError::Ipv4Addr {
+            description: error.to_string(),
+        }
+    }
+
+    pub fn ipv6_addr(error: impl Display) -> Self {
+        IrohError::Ipv6Addr {
+            description: error.to_string(),
+        }
+    }
+
+    pub fn socket_addr_v4(error: impl Display) -> Self {
+        IrohError::SocketAddrV4 {
+            description: error.to_string(),
+        }
+    }
+
+    pub fn socket_addr_v6(error: impl Display) -> Self {
+        IrohError::SocketAddrV6 {
+            description: error.to_string(),
+        }
+    }
+
+    pub fn socket_addr(error: impl Display) -> Self {
+        IrohError::SocketAddr {
             description: error.to_string(),
         }
     }

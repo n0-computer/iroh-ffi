@@ -166,15 +166,60 @@ dictionary ConnectionInfo {
 
 [Enum]
 interface ConnectionType{
-  Direct(SocketAddr addr);
+  Direct(string addr, u16 port);
   Relay(u16 port);
   None();
 };
 
-[Enum]
+enum SocketAddrType {
+  "V4",
+  "V6",
+};
+
+interface Ipv4Addr {
+  constructor(u8 a, u8 b, u8 c, u8 d);
+  [Name=from_string, Throws=IrohError]
+  constructor(string str);
+  string to_string();
+  sequence<u8> octets(); 
+};
+
+interface SocketAddrV4 {
+  constructor(Ipv4Addr ipv4, u16 port);
+  [Name=from_string, Throws=IrohError]
+  constructor(string str);
+  string to_string();
+  Ipv4Addr ip(); 
+  u16 port();
+};
+
+interface Ipv6Addr {
+  constructor(u16 a, u16 b, u16 c, u16 d, u16 e, u16 f, u16 g, u16 h);
+  [Name=from_string, Throws=IrohError]
+  constructor(string str);
+  string to_string();
+  sequence<u16> segments(); 
+};
+
+interface SocketAddrV6 {
+  constructor(Ipv6Addr ipv6, u16 port);
+  [Name=from_string, Throws=IrohError]
+  constructor(string str);
+  string to_string();
+  Ipv6Addr ip(); 
+  u16 port();
+};
+
 interface SocketAddr {
-  V4(u8 a, u8 b, u8 c, u8 d);
-  V6(bytes addr);
+  [Name=from_v4]
+  constructor(Ipv4Addr ipv4, u16 port);
+  [Name=from_v6]
+  constructor(Ipv6Addr ipv6, u16 port);
+  SocketAddrType type();
+  [Throws=IrohError]
+  SocketAddrV4 v4();
+  [Throws=IrohError]
+  SocketAddrV6 v6();
 };
 
 interface PublicKey {
@@ -192,4 +237,9 @@ interface IrohError {
   Uniffi(string description);
   Connection(string description);
   Blob(string description);
+  Ipv4Addr(string description);
+  Ipv6Addr(string description);
+  SocketAddrV4(string description);
+  SocketAddrV6(string description);
+  SocketAddr(string description);
 };
