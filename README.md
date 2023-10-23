@@ -38,6 +38,7 @@ For builds targeting older versions of MacOS, build with with:  `MACOSX_DEPLOYME
 - Install [`maturin`](https://www.maturin.rs/installation) for python development and packaging.
 - Install `uniffi-bindgen` with `pip`
 - `maturin develop` will build your package
+- maturin expects you to use `virtualenv` to manage your virtual environment
 
 ### Building wheels
 
@@ -76,6 +77,23 @@ Install `uniffi-bindgen-go`:
 ```
 cargo install uniffi-bindgen-go --git https://github.com/dignifiedquire/uniffi-bindgen-go --branch upgarde-uniffi-24
 ```
+
+## Development
+
+- This uses https://mozilla.github.io/uniffi-rs/ for building the interface
+
+### translating the iroh API into iroh ffi bindings
+Use these general guidelines when translating the rust API featured in the rust
+`iroh` library with the API we detail in this crate:
+- `PathBuf` -> `String`
+- `Bytes`, `[u8]`, etc -> Vec<u8>
+- Any methods that stream files or have `Reader` inputs or outputs should instead expect to read from or write to a file. Also, see if it's logical for any structs or enums that have a method to return a `Reader` to instead have `size` method, so that the user can investigate the size of the data before attempting to save it or load it in memory.
+- Any methods that return a `Stream` of structs (such as a `list` method), should return a `Vec` instead. You should also add a comment that warns the user that this method will load all the entries into memory.
+- Any methods that return progress or events should instead take a call back. Check out the `Doc::subscribe` method and the `SubscribeCallback` trait for how this should be implemented
+- Most methods that return a `Result` should likely get their own unique `IrohError`s, follow the pattern layed out in `error.rs`.
+- Except for unit enums, every struct and enum should be represented in the `udl` file as an interface. It should be expected that the foreign language use constructor methods in order to create structs, and use setters and getters to manipulate the struct, rather than having access to the internal fields themselves.
+- Anything that can be represented as a string, should have a `to_string` and `from_string` method, eg `NamespaceId`, `DocTicket`
+- Enums that have enum variants which contain data should look at the `SocketAddr` or `LiveEvent` enums for the expected translation.
 
 ## Testing
 Please include tests when you add new pieces of the API to the ffi bindings
@@ -135,9 +153,7 @@ Uniffi translates the rust to go in a systematic way. The biggest discrepency be
 #### test file
 Create a test file for each rust module that you create, and test all pieces of the API in that module in the go test file. The file should be named "[MODULENAME]\_test.go". For example, the `iroh::net` ffi bindings crate should have a corresponding "net\_test.go" file. 
 
-## Development
 
-- This uses https://mozilla.github.io/uniffi-rs/ for building the interface
 
 # License
 
