@@ -735,29 +735,29 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_socketaddr_as_ipv4(uniffiStatus)
+		})
+		if checksum != 903 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_socketaddr_as_ipv4: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_socketaddr_as_ipv6(uniffiStatus)
+		})
+		if checksum != 23303 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_socketaddr_as_ipv6: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_socketaddr_type(uniffiStatus)
 		})
 		if checksum != 50972 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_socketaddr_type: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_method_socketaddr_v4(uniffiStatus)
-		})
-		if checksum != 62655 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_method_socketaddr_v4: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_method_socketaddr_v6(uniffiStatus)
-		})
-		if checksum != 50034 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_method_socketaddr_v6: UniFFI API checksum mismatch")
 		}
 	}
 	{
@@ -870,20 +870,20 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_constructor_socketaddr_from_v4(uniffiStatus)
+			return C.uniffi_iroh_checksum_constructor_socketaddr_from_ipv4(uniffiStatus)
 		})
-		if checksum != 55134 {
+		if checksum != 48670 {
 			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_constructor_socketaddr_from_v4: UniFFI API checksum mismatch")
+			panic("iroh: uniffi_iroh_checksum_constructor_socketaddr_from_ipv4: UniFFI API checksum mismatch")
 		}
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_constructor_socketaddr_from_v6(uniffiStatus)
+			return C.uniffi_iroh_checksum_constructor_socketaddr_from_ipv6(uniffiStatus)
 		})
-		if checksum != 51100 {
+		if checksum != 45955 {
 			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_constructor_socketaddr_from_v6: UniFFI API checksum mismatch")
+			panic("iroh: uniffi_iroh_checksum_constructor_socketaddr_from_ipv6: UniFFI API checksum mismatch")
 		}
 	}
 	{
@@ -2270,31 +2270,22 @@ type SocketAddr struct {
 	ffiObject FfiObject
 }
 
-func SocketAddrFromV4(ipv4 *Ipv4Addr, port uint16) *SocketAddr {
+func SocketAddrFromIpv4(ipv4 *Ipv4Addr, port uint16) *SocketAddr {
 	return FfiConverterSocketAddrINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_constructor_socketaddr_from_v4(FfiConverterIpv4AddrINSTANCE.Lower(ipv4), FfiConverterUint16INSTANCE.Lower(port), _uniffiStatus)
+		return C.uniffi_iroh_fn_constructor_socketaddr_from_ipv4(FfiConverterIpv4AddrINSTANCE.Lower(ipv4), FfiConverterUint16INSTANCE.Lower(port), _uniffiStatus)
 	}))
 }
-func SocketAddrFromV6(ipv6 *Ipv6Addr, port uint16) *SocketAddr {
+func SocketAddrFromIpv6(ipv6 *Ipv6Addr, port uint16) *SocketAddr {
 	return FfiConverterSocketAddrINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_constructor_socketaddr_from_v6(FfiConverterIpv6AddrINSTANCE.Lower(ipv6), FfiConverterUint16INSTANCE.Lower(port), _uniffiStatus)
+		return C.uniffi_iroh_fn_constructor_socketaddr_from_ipv6(FfiConverterIpv6AddrINSTANCE.Lower(ipv6), FfiConverterUint16INSTANCE.Lower(port), _uniffiStatus)
 	}))
 }
 
-func (_self *SocketAddr) Type() SocketAddrType {
-	_pointer := _self.ffiObject.incrementPointer("*SocketAddr")
-	defer _self.ffiObject.decrementPointer()
-	return FfiConverterTypeSocketAddrTypeINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
-		return C.uniffi_iroh_fn_method_socketaddr_type(
-			_pointer, _uniffiStatus)
-	}))
-}
-
-func (_self *SocketAddr) V4() (*SocketAddrV4, error) {
+func (_self *SocketAddr) AsIpv4() (*SocketAddrV4, error) {
 	_pointer := _self.ffiObject.incrementPointer("*SocketAddr")
 	defer _self.ffiObject.decrementPointer()
 	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_method_socketaddr_v4(
+		return C.uniffi_iroh_fn_method_socketaddr_as_ipv4(
 			_pointer, _uniffiStatus)
 	})
 	if _uniffiErr != nil {
@@ -2305,11 +2296,11 @@ func (_self *SocketAddr) V4() (*SocketAddrV4, error) {
 	}
 }
 
-func (_self *SocketAddr) V6() (*SocketAddrV6, error) {
+func (_self *SocketAddr) AsIpv6() (*SocketAddrV6, error) {
 	_pointer := _self.ffiObject.incrementPointer("*SocketAddr")
 	defer _self.ffiObject.decrementPointer()
 	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_method_socketaddr_v6(
+		return C.uniffi_iroh_fn_method_socketaddr_as_ipv6(
 			_pointer, _uniffiStatus)
 	})
 	if _uniffiErr != nil {
@@ -2318,6 +2309,15 @@ func (_self *SocketAddr) V6() (*SocketAddrV6, error) {
 	} else {
 		return FfiConverterSocketAddrV6INSTANCE.Lift(_uniffiRV), _uniffiErr
 	}
+}
+
+func (_self *SocketAddr) Type() SocketAddrType {
+	_pointer := _self.ffiObject.incrementPointer("*SocketAddr")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterTypeSocketAddrTypeINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_socketaddr_type(
+			_pointer, _uniffiStatus)
+	}))
 }
 
 func (object *SocketAddr) Destroy() {
