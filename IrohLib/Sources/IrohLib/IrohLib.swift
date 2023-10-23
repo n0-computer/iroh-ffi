@@ -863,6 +863,200 @@ public func FfiConverterTypeHash_lower(_ value: Hash) -> UnsafeMutableRawPointer
     return FfiConverterTypeHash.lower(value)
 }
 
+public protocol Ipv4AddrProtocol {
+    func octets() -> [UInt8]
+    func toString() -> String
+}
+
+public class Ipv4Addr: Ipv4AddrProtocol {
+    fileprivate let pointer: UnsafeMutableRawPointer
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    public convenience init(a: UInt8, b: UInt8, c: UInt8, d: UInt8) {
+        self.init(unsafeFromRawPointer: try! rustCall {
+            uniffi_iroh_fn_constructor_ipv4addr_new(
+                FfiConverterUInt8.lower(a),
+                FfiConverterUInt8.lower(b),
+                FfiConverterUInt8.lower(c),
+                FfiConverterUInt8.lower(d), $0
+            )
+        })
+    }
+
+    deinit {
+        try! rustCall { uniffi_iroh_fn_free_ipv4addr(pointer, $0) }
+    }
+
+    public static func fromString(str: String) throws -> Ipv4Addr {
+        return try Ipv4Addr(unsafeFromRawPointer: rustCallWithError(FfiConverterTypeIrohError.lift) {
+            uniffi_iroh_fn_constructor_ipv4addr_from_string(
+                FfiConverterString.lower(str), $0
+            )
+        })
+    }
+
+    public func octets() -> [UInt8] {
+        return try! FfiConverterSequenceUInt8.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_ipv4addr_octets(self.pointer, $0)
+                }
+        )
+    }
+
+    public func toString() -> String {
+        return try! FfiConverterString.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_ipv4addr_to_string(self.pointer, $0)
+                }
+        )
+    }
+}
+
+public struct FfiConverterTypeIpv4Addr: FfiConverter {
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = Ipv4Addr
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Ipv4Addr {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: Ipv4Addr, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> Ipv4Addr {
+        return Ipv4Addr(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: Ipv4Addr) -> UnsafeMutableRawPointer {
+        return value.pointer
+    }
+}
+
+public func FfiConverterTypeIpv4Addr_lift(_ pointer: UnsafeMutableRawPointer) throws -> Ipv4Addr {
+    return try FfiConverterTypeIpv4Addr.lift(pointer)
+}
+
+public func FfiConverterTypeIpv4Addr_lower(_ value: Ipv4Addr) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeIpv4Addr.lower(value)
+}
+
+public protocol Ipv6AddrProtocol {
+    func segments() -> [UInt16]
+    func toString() -> String
+}
+
+public class Ipv6Addr: Ipv6AddrProtocol {
+    fileprivate let pointer: UnsafeMutableRawPointer
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    public convenience init(a: UInt16, b: UInt16, c: UInt16, d: UInt16, e: UInt16, f: UInt16, g: UInt16, h: UInt16) {
+        self.init(unsafeFromRawPointer: try! rustCall {
+            uniffi_iroh_fn_constructor_ipv6addr_new(
+                FfiConverterUInt16.lower(a),
+                FfiConverterUInt16.lower(b),
+                FfiConverterUInt16.lower(c),
+                FfiConverterUInt16.lower(d),
+                FfiConverterUInt16.lower(e),
+                FfiConverterUInt16.lower(f),
+                FfiConverterUInt16.lower(g),
+                FfiConverterUInt16.lower(h), $0
+            )
+        })
+    }
+
+    deinit {
+        try! rustCall { uniffi_iroh_fn_free_ipv6addr(pointer, $0) }
+    }
+
+    public static func fromString(str: String) throws -> Ipv6Addr {
+        return try Ipv6Addr(unsafeFromRawPointer: rustCallWithError(FfiConverterTypeIrohError.lift) {
+            uniffi_iroh_fn_constructor_ipv6addr_from_string(
+                FfiConverterString.lower(str), $0
+            )
+        })
+    }
+
+    public func segments() -> [UInt16] {
+        return try! FfiConverterSequenceUInt16.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_ipv6addr_segments(self.pointer, $0)
+                }
+        )
+    }
+
+    public func toString() -> String {
+        return try! FfiConverterString.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_ipv6addr_to_string(self.pointer, $0)
+                }
+        )
+    }
+}
+
+public struct FfiConverterTypeIpv6Addr: FfiConverter {
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = Ipv6Addr
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Ipv6Addr {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: Ipv6Addr, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> Ipv6Addr {
+        return Ipv6Addr(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: Ipv6Addr) -> UnsafeMutableRawPointer {
+        return value.pointer
+    }
+}
+
+public func FfiConverterTypeIpv6Addr_lift(_ pointer: UnsafeMutableRawPointer) throws -> Ipv6Addr {
+    return try FfiConverterTypeIpv6Addr.lift(pointer)
+}
+
+public func FfiConverterTypeIpv6Addr_lower(_ value: Ipv6Addr) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeIpv6Addr.lower(value)
+}
+
 public protocol IrohNodeProtocol {
     func authorList() throws -> [AuthorId]
     func authorNew() throws -> AuthorId
@@ -1298,6 +1492,314 @@ public func FfiConverterTypePublicKey_lower(_ value: PublicKey) -> UnsafeMutable
     return FfiConverterTypePublicKey.lower(value)
 }
 
+public protocol SocketAddrProtocol {
+    func type() -> SocketAddrType
+    func v4() throws -> SocketAddrV4
+    func v6() throws -> SocketAddrV6
+}
+
+public class SocketAddr: SocketAddrProtocol {
+    fileprivate let pointer: UnsafeMutableRawPointer
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    deinit {
+        try! rustCall { uniffi_iroh_fn_free_socketaddr(pointer, $0) }
+    }
+
+    public static func fromV4(ipv4: Ipv4Addr, port: UInt16) -> SocketAddr {
+        return SocketAddr(unsafeFromRawPointer: try! rustCall {
+            uniffi_iroh_fn_constructor_socketaddr_from_v4(
+                FfiConverterTypeIpv4Addr.lower(ipv4),
+                FfiConverterUInt16.lower(port), $0
+            )
+        })
+    }
+
+    public static func fromV6(ipv6: Ipv6Addr, port: UInt16) -> SocketAddr {
+        return SocketAddr(unsafeFromRawPointer: try! rustCall {
+            uniffi_iroh_fn_constructor_socketaddr_from_v6(
+                FfiConverterTypeIpv6Addr.lower(ipv6),
+                FfiConverterUInt16.lower(port), $0
+            )
+        })
+    }
+
+    public func type() -> SocketAddrType {
+        return try! FfiConverterTypeSocketAddrType.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_socketaddr_type(self.pointer, $0)
+                }
+        )
+    }
+
+    public func v4() throws -> SocketAddrV4 {
+        return try FfiConverterTypeSocketAddrV4.lift(
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_socketaddr_v4(self.pointer, $0)
+            }
+        )
+    }
+
+    public func v6() throws -> SocketAddrV6 {
+        return try FfiConverterTypeSocketAddrV6.lift(
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_socketaddr_v6(self.pointer, $0)
+            }
+        )
+    }
+}
+
+public struct FfiConverterTypeSocketAddr: FfiConverter {
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = SocketAddr
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SocketAddr {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: SocketAddr, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> SocketAddr {
+        return SocketAddr(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: SocketAddr) -> UnsafeMutableRawPointer {
+        return value.pointer
+    }
+}
+
+public func FfiConverterTypeSocketAddr_lift(_ pointer: UnsafeMutableRawPointer) throws -> SocketAddr {
+    return try FfiConverterTypeSocketAddr.lift(pointer)
+}
+
+public func FfiConverterTypeSocketAddr_lower(_ value: SocketAddr) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeSocketAddr.lower(value)
+}
+
+public protocol SocketAddrV4Protocol {
+    func ip() -> Ipv4Addr
+    func port() -> UInt16
+    func toString() -> String
+}
+
+public class SocketAddrV4: SocketAddrV4Protocol {
+    fileprivate let pointer: UnsafeMutableRawPointer
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    public convenience init(ipv4: Ipv4Addr, port: UInt16) {
+        self.init(unsafeFromRawPointer: try! rustCall {
+            uniffi_iroh_fn_constructor_socketaddrv4_new(
+                FfiConverterTypeIpv4Addr.lower(ipv4),
+                FfiConverterUInt16.lower(port), $0
+            )
+        })
+    }
+
+    deinit {
+        try! rustCall { uniffi_iroh_fn_free_socketaddrv4(pointer, $0) }
+    }
+
+    public static func fromString(str: String) throws -> SocketAddrV4 {
+        return try SocketAddrV4(unsafeFromRawPointer: rustCallWithError(FfiConverterTypeIrohError.lift) {
+            uniffi_iroh_fn_constructor_socketaddrv4_from_string(
+                FfiConverterString.lower(str), $0
+            )
+        })
+    }
+
+    public func ip() -> Ipv4Addr {
+        return try! FfiConverterTypeIpv4Addr.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_socketaddrv4_ip(self.pointer, $0)
+                }
+        )
+    }
+
+    public func port() -> UInt16 {
+        return try! FfiConverterUInt16.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_socketaddrv4_port(self.pointer, $0)
+                }
+        )
+    }
+
+    public func toString() -> String {
+        return try! FfiConverterString.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_socketaddrv4_to_string(self.pointer, $0)
+                }
+        )
+    }
+}
+
+public struct FfiConverterTypeSocketAddrV4: FfiConverter {
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = SocketAddrV4
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SocketAddrV4 {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: SocketAddrV4, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> SocketAddrV4 {
+        return SocketAddrV4(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: SocketAddrV4) -> UnsafeMutableRawPointer {
+        return value.pointer
+    }
+}
+
+public func FfiConverterTypeSocketAddrV4_lift(_ pointer: UnsafeMutableRawPointer) throws -> SocketAddrV4 {
+    return try FfiConverterTypeSocketAddrV4.lift(pointer)
+}
+
+public func FfiConverterTypeSocketAddrV4_lower(_ value: SocketAddrV4) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeSocketAddrV4.lower(value)
+}
+
+public protocol SocketAddrV6Protocol {
+    func ip() -> Ipv6Addr
+    func port() -> UInt16
+    func toString() -> String
+}
+
+public class SocketAddrV6: SocketAddrV6Protocol {
+    fileprivate let pointer: UnsafeMutableRawPointer
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    public convenience init(ipv6: Ipv6Addr, port: UInt16) {
+        self.init(unsafeFromRawPointer: try! rustCall {
+            uniffi_iroh_fn_constructor_socketaddrv6_new(
+                FfiConverterTypeIpv6Addr.lower(ipv6),
+                FfiConverterUInt16.lower(port), $0
+            )
+        })
+    }
+
+    deinit {
+        try! rustCall { uniffi_iroh_fn_free_socketaddrv6(pointer, $0) }
+    }
+
+    public static func fromString(str: String) throws -> SocketAddrV6 {
+        return try SocketAddrV6(unsafeFromRawPointer: rustCallWithError(FfiConverterTypeIrohError.lift) {
+            uniffi_iroh_fn_constructor_socketaddrv6_from_string(
+                FfiConverterString.lower(str), $0
+            )
+        })
+    }
+
+    public func ip() -> Ipv6Addr {
+        return try! FfiConverterTypeIpv6Addr.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_socketaddrv6_ip(self.pointer, $0)
+                }
+        )
+    }
+
+    public func port() -> UInt16 {
+        return try! FfiConverterUInt16.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_socketaddrv6_port(self.pointer, $0)
+                }
+        )
+    }
+
+    public func toString() -> String {
+        return try! FfiConverterString.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_socketaddrv6_to_string(self.pointer, $0)
+                }
+        )
+    }
+}
+
+public struct FfiConverterTypeSocketAddrV6: FfiConverter {
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = SocketAddrV6
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SocketAddrV6 {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: SocketAddrV6, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> SocketAddrV6 {
+        return SocketAddrV6(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: SocketAddrV6) -> UnsafeMutableRawPointer {
+        return value.pointer
+    }
+}
+
+public func FfiConverterTypeSocketAddrV6_lift(_ pointer: UnsafeMutableRawPointer) throws -> SocketAddrV6 {
+    return try FfiConverterTypeSocketAddrV6.lift(pointer)
+}
+
+public func FfiConverterTypeSocketAddrV6_lower(_ value: SocketAddrV6) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeSocketAddrV6.lower(value)
+}
+
 public struct ConnectionInfo {
     public var id: UInt64
     public var publicKey: PublicKey
@@ -1541,7 +2043,7 @@ public func FfiConverterTypeSyncEvent_lower(_ value: SyncEvent) -> RustBuffer {
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 public enum ConnectionType {
-    case direct(addr: SocketAddr)
+    case direct(addr: String, port: UInt16)
     case relay(port: UInt16)
     case none
 }
@@ -1553,7 +2055,8 @@ public struct FfiConverterTypeConnectionType: FfiConverterRustBuffer {
         let variant: Int32 = try readInt(&buf)
         switch variant {
         case 1: return try .direct(
-                addr: FfiConverterTypeSocketAddr.read(from: &buf)
+                addr: FfiConverterString.read(from: &buf),
+                port: FfiConverterUInt16.read(from: &buf)
             )
 
         case 2: return try .relay(
@@ -1568,9 +2071,10 @@ public struct FfiConverterTypeConnectionType: FfiConverterRustBuffer {
 
     public static func write(_ value: ConnectionType, into buf: inout [UInt8]) {
         switch value {
-        case let .direct(addr):
+        case let .direct(addr, port):
             writeInt(&buf, Int32(1))
-            FfiConverterTypeSocketAddr.write(addr, into: &buf)
+            FfiConverterString.write(addr, into: &buf)
+            FfiConverterUInt16.write(port, into: &buf)
 
         case let .relay(port):
             writeInt(&buf, Int32(2))
@@ -1649,6 +2153,11 @@ public enum IrohError {
     case Uniffi(description: String)
     case Connection(description: String)
     case Blob(description: String)
+    case Ipv4Addr(description: String)
+    case Ipv6Addr(description: String)
+    case SocketAddrV4(description: String)
+    case SocketAddrV6(description: String)
+    case SocketAddr(description: String)
 
     fileprivate static func uniffiErrorHandler(_ error: RustBuffer) throws -> Error {
         return try FfiConverterTypeIrohError.lift(error)
@@ -1683,6 +2192,21 @@ public struct FfiConverterTypeIrohError: FfiConverterRustBuffer {
                 description: FfiConverterString.read(from: &buf)
             )
         case 8: return try .Blob(
+                description: FfiConverterString.read(from: &buf)
+            )
+        case 9: return try .Ipv4Addr(
+                description: FfiConverterString.read(from: &buf)
+            )
+        case 10: return try .Ipv6Addr(
+                description: FfiConverterString.read(from: &buf)
+            )
+        case 11: return try .SocketAddrV4(
+                description: FfiConverterString.read(from: &buf)
+            )
+        case 12: return try .SocketAddrV6(
+                description: FfiConverterString.read(from: &buf)
+            )
+        case 13: return try .SocketAddr(
                 description: FfiConverterString.read(from: &buf)
             )
 
@@ -1722,6 +2246,26 @@ public struct FfiConverterTypeIrohError: FfiConverterRustBuffer {
 
         case let .Blob(description):
             writeInt(&buf, Int32(8))
+            FfiConverterString.write(description, into: &buf)
+
+        case let .Ipv4Addr(description):
+            writeInt(&buf, Int32(9))
+            FfiConverterString.write(description, into: &buf)
+
+        case let .Ipv6Addr(description):
+            writeInt(&buf, Int32(10))
+            FfiConverterString.write(description, into: &buf)
+
+        case let .SocketAddrV4(description):
+            writeInt(&buf, Int32(11))
+            FfiConverterString.write(description, into: &buf)
+
+        case let .SocketAddrV6(description):
+            writeInt(&buf, Int32(12))
+            FfiConverterString.write(description, into: &buf)
+
+        case let .SocketAddr(description):
+            writeInt(&buf, Int32(13))
             FfiConverterString.write(description, into: &buf)
         }
     }
@@ -1916,57 +2460,45 @@ extension Origin: Equatable, Hashable {}
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
-public enum SocketAddr {
-    case v4(a: UInt8, b: UInt8, c: UInt8, d: UInt8)
-    case v6(addr: Data)
+public enum SocketAddrType {
+    case v4
+    case v6
 }
 
-public struct FfiConverterTypeSocketAddr: FfiConverterRustBuffer {
-    typealias SwiftType = SocketAddr
+public struct FfiConverterTypeSocketAddrType: FfiConverterRustBuffer {
+    typealias SwiftType = SocketAddrType
 
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SocketAddr {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SocketAddrType {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return try .v4(
-                a: FfiConverterUInt8.read(from: &buf),
-                b: FfiConverterUInt8.read(from: &buf),
-                c: FfiConverterUInt8.read(from: &buf),
-                d: FfiConverterUInt8.read(from: &buf)
-            )
+        case 1: return .v4
 
-        case 2: return try .v6(
-                addr: FfiConverterData.read(from: &buf)
-            )
+        case 2: return .v6
 
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
-    public static func write(_ value: SocketAddr, into buf: inout [UInt8]) {
+    public static func write(_ value: SocketAddrType, into buf: inout [UInt8]) {
         switch value {
-        case let .v4(a, b, c, d):
+        case .v4:
             writeInt(&buf, Int32(1))
-            FfiConverterUInt8.write(a, into: &buf)
-            FfiConverterUInt8.write(b, into: &buf)
-            FfiConverterUInt8.write(c, into: &buf)
-            FfiConverterUInt8.write(d, into: &buf)
 
-        case let .v6(addr):
+        case .v6:
             writeInt(&buf, Int32(2))
-            FfiConverterData.write(addr, into: &buf)
         }
     }
 }
 
-public func FfiConverterTypeSocketAddr_lift(_ buf: RustBuffer) throws -> SocketAddr {
-    return try FfiConverterTypeSocketAddr.lift(buf)
+public func FfiConverterTypeSocketAddrType_lift(_ buf: RustBuffer) throws -> SocketAddrType {
+    return try FfiConverterTypeSocketAddrType.lift(buf)
 }
 
-public func FfiConverterTypeSocketAddr_lower(_ value: SocketAddr) -> RustBuffer {
-    return FfiConverterTypeSocketAddr.lower(value)
+public func FfiConverterTypeSocketAddrType_lower(_ value: SocketAddrType) -> RustBuffer {
+    return FfiConverterTypeSocketAddrType.lower(value)
 }
 
-extension SocketAddr: Equatable, Hashable {}
+extension SocketAddrType: Equatable, Hashable {}
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
@@ -2265,6 +2797,50 @@ private struct FfiConverterOptionTypeConnectionInfo: FfiConverterRustBuffer {
     }
 }
 
+private struct FfiConverterSequenceUInt8: FfiConverterRustBuffer {
+    typealias SwiftType = [UInt8]
+
+    public static func write(_ value: [UInt8], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterUInt8.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [UInt8] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [UInt8]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            try seq.append(FfiConverterUInt8.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+private struct FfiConverterSequenceUInt16: FfiConverterRustBuffer {
+    typealias SwiftType = [UInt16]
+
+    public static func write(_ value: [UInt16], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterUInt16.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [UInt16] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [UInt16]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            try seq.append(FfiConverterUInt16.read(from: &buf))
+        }
+        return seq
+    }
+}
+
 private struct FfiConverterSequenceTypeAuthorId: FfiConverterRustBuffer {
     typealias SwiftType = [AuthorId]
 
@@ -2353,28 +2929,6 @@ private struct FfiConverterSequenceTypeNamespaceId: FfiConverterRustBuffer {
     }
 }
 
-private struct FfiConverterSequenceTypeConnectionInfo: FfiConverterRustBuffer {
-    typealias SwiftType = [ConnectionInfo]
-
-    public static func write(_ value: [ConnectionInfo], into buf: inout [UInt8]) {
-        let len = Int32(value.count)
-        writeInt(&buf, len)
-        for item in value {
-            FfiConverterTypeConnectionInfo.write(item, into: &buf)
-        }
-    }
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [ConnectionInfo] {
-        let len: Int32 = try readInt(&buf)
-        var seq = [ConnectionInfo]()
-        seq.reserveCapacity(Int(len))
-        for _ in 0 ..< len {
-            try seq.append(FfiConverterTypeConnectionInfo.read(from: &buf))
-        }
-        return seq
-    }
-}
-
 private struct FfiConverterSequenceTypeSocketAddr: FfiConverterRustBuffer {
     typealias SwiftType = [SocketAddr]
 
@@ -2392,6 +2946,28 @@ private struct FfiConverterSequenceTypeSocketAddr: FfiConverterRustBuffer {
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
             try seq.append(FfiConverterTypeSocketAddr.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+private struct FfiConverterSequenceTypeConnectionInfo: FfiConverterRustBuffer {
+    typealias SwiftType = [ConnectionInfo]
+
+    public static func write(_ value: [ConnectionInfo], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeConnectionInfo.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [ConnectionInfo] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [ConnectionInfo]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            try seq.append(FfiConverterTypeConnectionInfo.read(from: &buf))
         }
         return seq
     }
@@ -2526,6 +3102,18 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_hash_to_string() != 61408 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_checksum_method_ipv4addr_octets() != 17752 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_ipv4addr_to_string() != 5658 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_ipv6addr_segments() != 41182 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_ipv6addr_to_string() != 46637 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_checksum_method_irohnode_author_list() != 12499 {
         return InitializationResult.apiChecksumMismatch
     }
@@ -2589,10 +3177,67 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_publickey_to_string() != 48998 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_checksum_method_socketaddr_type() != 50972 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_socketaddr_v4() != 62655 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_socketaddr_v6() != 50034 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_socketaddrv4_ip() != 54004 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_socketaddrv4_port() != 34504 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_socketaddrv4_to_string() != 43672 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_socketaddrv6_ip() != 49803 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_socketaddrv6_port() != 39562 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_socketaddrv6_to_string() != 14154 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_checksum_constructor_docticket_from_string() != 40262 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_checksum_constructor_ipv4addr_from_string() != 60777 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_constructor_ipv4addr_new() != 51336 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_constructor_ipv6addr_from_string() != 24533 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_constructor_ipv6addr_new() != 18364 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_checksum_constructor_irohnode_new() != 22562 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_constructor_socketaddr_from_v4() != 55134 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_constructor_socketaddr_from_v6() != 51100 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_constructor_socketaddrv4_from_string() != 16157 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_constructor_socketaddrv4_new() != 12651 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_constructor_socketaddrv6_from_string() != 22443 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_constructor_socketaddrv6_new() != 46347 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_subscribecallback_event() != 18725 {

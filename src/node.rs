@@ -21,25 +21,7 @@ pub use iroh::rpc_protocol::CounterStats;
 pub use iroh::sync_engine::LiveStatus;
 use tracing_subscriber::filter::LevelFilter;
 
-#[derive(Debug)]
-pub enum SocketAddr {
-    V4 { a: u8, b: u8, c: u8, d: u8 },
-    V6 { addr: Vec<u8> },
-}
-
-impl From<std::net::SocketAddr> for SocketAddr {
-    fn from(value: std::net::SocketAddr) -> Self {
-        match value {
-            std::net::SocketAddr::V4(addr) => {
-                let [a, b, c, d] = addr.ip().octets();
-                SocketAddr::V4 { a, b, c, d }
-            }
-            std::net::SocketAddr::V6(addr) => SocketAddr::V6 {
-                addr: addr.ip().octets().to_vec(),
-            },
-        }
-    }
-}
+use crate::net::SocketAddr;
 
 #[derive(Debug)]
 pub enum LogLevel {
@@ -106,7 +88,7 @@ pub struct ConnectionInfo {
     pub id: u64,
     pub public_key: Arc<PublicKey>,
     pub derp_region: Option<u16>,
-    pub addrs: Vec<SocketAddr>,
+    pub addrs: Vec<Arc<SocketAddr>>,
     pub latencies: Vec<Option<f64>>,
     pub conn_type: ConnectionType,
     pub latency: Option<f64>,
@@ -118,7 +100,11 @@ impl From<iroh::net::magic_endpoint::ConnectionInfo> for ConnectionInfo {
             id: value.id as _,
             public_key: Arc::new(PublicKey(value.public_key)),
             derp_region: value.derp_region,
-            addrs: value.addrs.iter().map(|(a, _)| (*a).into()).collect(),
+            addrs: value
+                .addrs
+                .iter()
+                .map(|(a, _)| Arc::new((*a).into()))
+                .collect(),
             latencies: value
                 .addrs
                 .iter()
@@ -132,7 +118,7 @@ impl From<iroh::net::magic_endpoint::ConnectionInfo> for ConnectionInfo {
 
 #[derive(Debug)]
 pub enum ConnectionType {
-    Direct { addr: SocketAddr },
+    Direct { addr: String, port: u16 },
     Relay { port: u16 },
     None,
 }
@@ -140,9 +126,10 @@ pub enum ConnectionType {
 impl From<iroh::net::magicsock::ConnectionType> for ConnectionType {
     fn from(value: iroh::net::magicsock::ConnectionType) -> Self {
         match value {
-            iroh::net::magicsock::ConnectionType::Direct(addr) => {
-                ConnectionType::Direct { addr: addr.into() }
-            }
+            iroh::net::magicsock::ConnectionType::Direct(addr) => ConnectionType::Direct {
+                addr: addr.ip().to_string(),
+                port: addr.port(),
+            },
             iroh::net::magicsock::ConnectionType::Relay(port) => ConnectionType::Relay { port },
             iroh::net::magicsock::ConnectionType::None => ConnectionType::None,
         }

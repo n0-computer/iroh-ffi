@@ -38,6 +38,7 @@ For builds targeting older versions of MacOS, build with with:  `MACOSX_DEPLOYME
 - Install [`maturin`](https://www.maturin.rs/installation) for python development and packaging.
 - Install `uniffi-bindgen` with `pip`
 - `maturin develop` will build your package
+- maturin expects you to use `virtualenv` to manage your virtual environment
 
 ### Building wheels
 
@@ -77,9 +78,8 @@ Install `uniffi-bindgen-go`:
 cargo install uniffi-bindgen-go --git https://github.com/dignifiedquire/uniffi-bindgen-go --branch upgarde-uniffi-24
 ```
 
-## Development
-
-- This uses https://mozilla.github.io/uniffi-rs/ for building the interface
+# Developers
+Check our our [DEVELOPERS.md](DEVELOPERS.md) for guides on how to translate from the iroh rust API to the iroh FFI API, as well as how to set up testing for golang and python.
 
 # License
 
