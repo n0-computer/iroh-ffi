@@ -25,14 +25,14 @@ impl From<std::net::SocketAddr> for SocketAddr {
 
 impl SocketAddr {
     /// Create an Ipv4 SocketAddr
-    pub fn from_v4(ipv4: Arc<Ipv4Addr>, port: u16) -> Self {
+    pub fn from_ipv4(ipv4: Arc<Ipv4Addr>, port: u16) -> Self {
         SocketAddr::V4 {
             addr: SocketAddrV4::new(ipv4, port),
         }
     }
 
     /// Create an Ipv6 SocketAddr
-    pub fn from_v6(ipv6: Arc<Ipv6Addr>, port: u16) -> Self {
+    pub fn from_ipv6(ipv6: Arc<Ipv6Addr>, port: u16) -> Self {
         SocketAddr::V6 {
             addr: SocketAddrV6::new(ipv6, port),
         }
@@ -47,7 +47,7 @@ impl SocketAddr {
     }
 
     /// Get the IPv4 SocketAddr representation
-    pub fn v4(&self) -> Result<Arc<SocketAddrV4>, IrohError> {
+    pub fn as_ipv4(&self) -> Result<Arc<SocketAddrV4>, IrohError> {
         match self {
             SocketAddr::V4 { addr } => Ok(Arc::new(addr.clone())),
             SocketAddr::V6 { .. } => Err(IrohError::SocketAddr {
@@ -57,7 +57,7 @@ impl SocketAddr {
     }
 
     /// Get the IPv6 SocketAddr representation
-    pub fn v6(&self) -> Result<Arc<SocketAddrV6>, IrohError> {
+    pub fn as_ipv6(&self) -> Result<Arc<SocketAddrV6>, IrohError> {
         match self {
             SocketAddr::V4 { .. } => Err(IrohError::SocketAddr {
                 description: "Called SocketAddr:v6() on an Ipv4 socket addr".to_string(),

@@ -211,15 +211,15 @@ interface SocketAddrV6 {
 };
 
 interface SocketAddr {
-  [Name=from_v4]
+  [Name=from_ipv4]
   constructor(Ipv4Addr ipv4, u16 port);
-  [Name=from_v6]
+  [Name=from_ipv6]
   constructor(Ipv6Addr ipv6, u16 port);
   SocketAddrType type();
   [Throws=IrohError]
-  SocketAddrV4 v4();
+  SocketAddrV4 as_ipv4();
   [Throws=IrohError]
-  SocketAddrV6 v6();
+  SocketAddrV6 as_ipv6();
 };
 
 interface PublicKey {
