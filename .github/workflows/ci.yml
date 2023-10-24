@@ -1,0 +1,121 @@
+name: CI
+
+on:
+  pull_request:
+  merge_group:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+
+jobs:
+  build_and_test_rust:
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    name: Rust - Build and test 
+    strategy:
+      fail-fast: false
+      matrix:
+        name: [ubuntu-latest, macOS-arm-latest, windows-latest]
+        rust: [stable]
+        include:
+          - name: ubuntu-latest
+            os: ubuntu-latest
+            release-os: linux
+            release-arch: amd64
+            runner: [linux, X64]
+          - name: macOS-arm-latest
+            os: macOS-latest
+            release-os: darwin
+            release-arch: aarch64
+            runner: [macOS, ARM64]
+          - name: windows-latest
+            os: windows
+            runner: [windows-latest]
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@master
+      with:
+        submodules: recursive
+
+    - name: Install ${{ matrix.rust }}
+      uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: ${{ matrix.rust }}
+
+    - name: cargo test
+      run: cargo test
+
+  check_fmt_and_docs:
+    timeout-minutes: 30
+    name: Checking fmt and docs
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt
+    - name: fmt
+      run: cargo fmt -- --check
+    - name: Docs
+      run: cargo doc --all-features --no-deps --document-private-items
+
+  clippy_check:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+          components: clippy
+
+    - name: clippy check
+      run: cargo clippy --all-targets --bins --tests --benches
+
+  build_and_test_go:
+    name: Go - Build and test 
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    # runs-on: [linux, x64] switch to self hosted once they have go
+    steps:
+    - uses: actions/checkout@master
+    - uses: dtolnay/rust-toolchain@stable
+    - uses: actions/setup-go@v4
+      with:
+          go-version: 'stable'
+    - name: Build rust
+      run: cargo build
+    - name: Go test
+      run: |
+        cd ./go && \
+        LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}:/home/runner/work/iroh-ffi/iroh-ffi/target/debug/" \
+        CGO_LDFLAGS="-liroh -L /home/runner/work/iroh-ffi/iroh-ffi/target/debug" \
+        go test ./...
+
+  build_and_test_python:
+    name: Python - Build and test 
+    timeout-minutes: 30
+    runs-on: [linux, x64]
+    steps:
+    - uses: actions/checkout@master
+    - uses: dtolnay/rust-toolchain@stable
+    - uses: actions/setup-python@v4
+      with:
+          python-version: 3.11
+    - name: Install Deps
+      run: pip install virtualenv maturin uniffi-bindgen
+    - name: Python tests
+      run: |
+        virtualenv venv && \
+        source venv/bin/activate && \
+        pip install pytest 
+        maturin develop && \
+        python -m pytest
+
+
+                    
