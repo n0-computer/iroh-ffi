@@ -78,12 +78,12 @@ jobs:
       run: cargo clippy --all-targets --bins --tests --benches
 
   build_and_test_go:
+    name: Go - Build and test 
     timeout-minutes: 30
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
     - uses: dtolnay/rust-toolchain@stable
-    - uses: actions/checkout@v4
     - uses: actions/setup-go@v4
       with:
           go-version: 'stable'
@@ -92,6 +92,26 @@ jobs:
     - name: Go test
       run: |
         cd ./go && \
-        LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}:<binaries path>" \
-        CGO_LDFLAGS="-liroh -L <binaries path>" \
+        LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}:/home/runner/work/iroh-ffi/iroh-ffi/target/debug/" \
+        CGO_LDFLAGS="-liroh -L /home/runner/work/iroh-ffi/iroh-ffi/target/debug" \
         go test ./...
+
+  build_and_test_python:
+    name: Python - Build and test 
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - uses: dtolnay/rust-toolchain@stable
+    - uses: actions/setup-python@v4
+      with:
+          python-version: 3.11
+    - name: Build rust
+      run: cargo build
+    - name: Install dependencies 
+      run: pip install maturin uniffi-bindgen pytest
+    - name: Python test
+      run: python -m pytest
+
+
+                    
