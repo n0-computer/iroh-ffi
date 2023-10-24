@@ -107,7 +107,9 @@ jobs:
       with:
           python-version: 3.11
     - name: Install dependencies 
-      run: pip install maturin uniffi-bindgen pytest
+      run: pip install maturin uniffi-bindgen pytest virtualenv
+    - name: Setup virtualenv
+    - run: virtualenv venv && source venv/bin/activate
     - name: Maturin Develop
       run: maturin develop
     - name: Python test
