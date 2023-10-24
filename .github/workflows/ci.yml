@@ -109,7 +109,7 @@ jobs:
     - name: Install dependencies 
       run: pip install maturin uniffi-bindgen pytest virtualenv
     - name: Setup virtualenv
-    - run: virtualenv venv && source venv/bin/activate
+      run: virtualenv venv && source venv/bin/activate
     - name: Maturin Develop
       run: maturin develop
     - name: Python test
