@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  pull_request:
+  merge_group:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+
+jobs:
+  build_and_test:
+    timeout-minutes: 30
+    name: Rust - Build and test 
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        name: [ubuntu-latest, macOS-arm-latest, windows-latest]
+        rust: [stable]
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@master
+      with:
+        submodules: recursive
+
+    - name: Install ${{ matrix.rust }}
+      uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: ${{ matrix.rust }}
+
+    - name: cargo test
+      run: cargo test
+
+  check_fmt_and_docs:
+    timeout-minutes: 30
+    name: Checking fmt and docs
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt
+    - name: fmt
+      run: cargo fmt -- --check
+    - name: Docs
+      run: cargo doc --all-features --no-deps --document-private-items
+
+  clippy_check:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+          components: clippy
+
+    - name: clippy check
+      run: cargo clippy --all-targets --bins --tests --benches
