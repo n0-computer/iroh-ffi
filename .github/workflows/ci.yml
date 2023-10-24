@@ -80,7 +80,8 @@ jobs:
   build_and_test_go:
     name: Go - Build and test 
     timeout-minutes: 30
-    runs-on: [linux, x64]
+    runs-on: ubuntu-latest
+    # runs-on: [linux, x64] switch to self hosted once they have go
     steps:
     - uses: actions/checkout@master
     - uses: dtolnay/rust-toolchain@stable
