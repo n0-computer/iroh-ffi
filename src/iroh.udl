@@ -225,6 +225,11 @@ interface SocketAddr {
 interface PublicKey {
   string to_string();
   bytes to_bytes();
+  [Name=from_string, Throws=IrohError]
+  constructor(string s); 
+  [Name=from_bytes, Throws=IrohError]
+  constructor(bytes bytes);
+  string fmt_short();
 };
 
 [Error]
@@ -242,4 +247,5 @@ interface IrohError {
   SocketAddrV4(string description);
   SocketAddrV6(string description);
   SocketAddr(string description);
+  PublicKey(string description);
 };

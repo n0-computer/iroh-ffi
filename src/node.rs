@@ -8,7 +8,6 @@ use iroh::{
     baomap::flat,
     bytes::util::runtime::Handle,
     client::Doc as ClientDoc,
-    metrics::try_init_metrics_collection,
     net::key::SecretKey,
     node::{Node, DEFAULT_BIND_ADDR},
     rpc_protocol::{ProviderRequest, ProviderResponse, ShareMode},
@@ -16,72 +15,11 @@ use iroh::{
 use quic_rpc::transport::flume::FlumeConnection;
 
 use crate::error::IrohError as Error;
+use crate::key::PublicKey;
+use crate::net::SocketAddr;
 
 pub use iroh::rpc_protocol::CounterStats;
 pub use iroh::sync_engine::LiveStatus;
-use tracing_subscriber::filter::LevelFilter;
-
-use crate::net::SocketAddr;
-
-#[derive(Debug)]
-pub enum LogLevel {
-    Trace,
-    Debug,
-    Info,
-    Warn,
-    Error,
-    Off,
-}
-
-impl From<LogLevel> for LevelFilter {
-    fn from(level: LogLevel) -> LevelFilter {
-        match level {
-            LogLevel::Trace => LevelFilter::TRACE,
-            LogLevel::Debug => LevelFilter::DEBUG,
-            LogLevel::Info => LevelFilter::INFO,
-            LogLevel::Warn => LevelFilter::WARN,
-            LogLevel::Error => LevelFilter::ERROR,
-            LogLevel::Off => LevelFilter::OFF,
-        }
-    }
-}
-
-pub fn set_log_level(level: LogLevel) {
-    use tracing_subscriber::{fmt, prelude::*, reload};
-    let filter: LevelFilter = level.into();
-    let (filter, _) = reload::Layer::new(filter);
-    let mut layer = fmt::Layer::default();
-    layer.set_ansi(false);
-    tracing_subscriber::registry()
-        .with(filter)
-        .with(layer)
-        .init();
-}
-
-pub fn start_metrics_collection() -> Result<(), Error> {
-    try_init_metrics_collection().map_err(|e| Error::Runtime {
-        description: e.to_string(),
-    })?;
-    Ok(())
-}
-
-#[derive(Debug, Clone)]
-pub struct PublicKey(iroh::net::key::PublicKey);
-
-impl From<iroh::net::key::PublicKey> for PublicKey {
-    fn from(key: iroh::net::key::PublicKey) -> Self {
-        PublicKey(key)
-    }
-}
-
-impl PublicKey {
-    pub fn to_string(&self) -> String {
-        self.0.to_string()
-    }
-    pub fn to_bytes(&self) -> Vec<u8> {
-        self.0.as_bytes().to_vec()
-    }
-}
 
 #[derive(Debug)]
 pub struct ConnectionInfo {
