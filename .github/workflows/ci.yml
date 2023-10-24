@@ -110,6 +110,8 @@ jobs:
       run: cargo build
     - name: Install dependencies 
       run: pip install maturin uniffi-bindgen pytest
+    - name: Maturin Develop
+      run: maturin develop
     - name: Python test
       run: python -m pytest
 
