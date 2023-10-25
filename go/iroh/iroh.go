@@ -717,6 +717,15 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_publickey_fmt_short(uniffiStatus)
+		})
+		if checksum != 33947 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_publickey_fmt_short: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_publickey_to_bytes(uniffiStatus)
 		})
 		if checksum != 54334 {
@@ -866,6 +875,24 @@ func uniffiCheckChecksums() {
 		if checksum != 22562 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_constructor_irohnode_new: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_constructor_publickey_from_bytes(uniffiStatus)
+		})
+		if checksum != 65104 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_constructor_publickey_from_bytes: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_constructor_publickey_from_string(uniffiStatus)
+		})
+		if checksum != 18975 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_constructor_publickey_from_string: UniFFI API checksum mismatch")
 		}
 	}
 	{
@@ -2204,6 +2231,38 @@ type PublicKey struct {
 	ffiObject FfiObject
 }
 
+func PublicKeyFromBytes(bytes []byte) (*PublicKey, error) {
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_constructor_publickey_from_bytes(FfiConverterBytesINSTANCE.Lower(bytes), _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue *PublicKey
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterPublicKeyINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
+func PublicKeyFromString(s string) (*PublicKey, error) {
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_constructor_publickey_from_string(FfiConverterStringINSTANCE.Lower(s), _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue *PublicKey
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterPublicKeyINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
+
+func (_self *PublicKey) FmtShort() string {
+	_pointer := _self.ffiObject.incrementPointer("*PublicKey")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterStringINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_publickey_fmt_short(
+			_pointer, _uniffiStatus)
+	}))
+}
+
 func (_self *PublicKey) ToBytes() []byte {
 	_pointer := _self.ffiObject.incrementPointer("*PublicKey")
 	defer _self.ffiObject.decrementPointer()
@@ -2925,6 +2984,7 @@ var ErrIrohErrorIpv6Addr = fmt.Errorf("IrohErrorIpv6Addr")
 var ErrIrohErrorSocketAddrV4 = fmt.Errorf("IrohErrorSocketAddrV4")
 var ErrIrohErrorSocketAddrV6 = fmt.Errorf("IrohErrorSocketAddrV6")
 var ErrIrohErrorSocketAddr = fmt.Errorf("IrohErrorSocketAddr")
+var ErrIrohErrorPublicKey = fmt.Errorf("IrohErrorPublicKey")
 
 // Variant structs
 type IrohErrorRuntime struct {
@@ -3278,6 +3338,33 @@ func (self IrohErrorSocketAddr) Is(target error) bool {
 	return target == ErrIrohErrorSocketAddr
 }
 
+type IrohErrorPublicKey struct {
+	Description string
+}
+
+func NewIrohErrorPublicKey(
+	description string,
+) *IrohError {
+	return &IrohError{
+		err: &IrohErrorPublicKey{
+			Description: description,
+		},
+	}
+}
+
+func (err IrohErrorPublicKey) Error() string {
+	return fmt.Sprint("PublicKey",
+		": ",
+
+		"Description=",
+		err.Description,
+	)
+}
+
+func (self IrohErrorPublicKey) Is(target error) bool {
+	return target == ErrIrohErrorPublicKey
+}
+
 type FfiConverterTypeIrohError struct{}
 
 var FfiConverterTypeIrohErrorINSTANCE = FfiConverterTypeIrohError{}
@@ -3346,6 +3433,10 @@ func (c FfiConverterTypeIrohError) Read(reader io.Reader) error {
 		return &IrohError{&IrohErrorSocketAddr{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
+	case 14:
+		return &IrohError{&IrohErrorPublicKey{
+			Description: FfiConverterStringINSTANCE.Read(reader),
+		}}
 	default:
 		panic(fmt.Sprintf("Unknown error code %d in FfiConverterTypeIrohError.Read()", errorID))
 	}
@@ -3391,6 +3482,9 @@ func (c FfiConverterTypeIrohError) Write(writer io.Writer, value *IrohError) {
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
 	case *IrohErrorSocketAddr:
 		writeInt32(writer, 13)
+		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
+	case *IrohErrorPublicKey:
+		writeInt32(writer, 14)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
 	default:
 		_ = variantValue

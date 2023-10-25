@@ -189,21 +189,27 @@ RustBuffer uniffi_iroh_fn_method_namespaceid_to_string(void*_Nonnull ptr, RustCa
 );
 void uniffi_iroh_fn_free_publickey(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+void*_Nonnull uniffi_iroh_fn_constructor_publickey_from_bytes(RustBuffer bytes, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_iroh_fn_constructor_publickey_from_string(RustBuffer str, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_iroh_fn_method_publickey_fmt_short(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
 RustBuffer uniffi_iroh_fn_method_publickey_to_bytes(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_publickey_to_string(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void uniffi_iroh_fn_free_socketaddr(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void*_Nonnull uniffi_iroh_fn_constructor_socketaddr_from_v4(void*_Nonnull ipv4, uint16_t port, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_iroh_fn_constructor_socketaddr_from_ipv4(void*_Nonnull ipv4, uint16_t port, RustCallStatus *_Nonnull out_status
 );
-void*_Nonnull uniffi_iroh_fn_constructor_socketaddr_from_v6(void*_Nonnull ipv6, uint16_t port, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_iroh_fn_constructor_socketaddr_from_ipv6(void*_Nonnull ipv6, uint16_t port, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_iroh_fn_method_socketaddr_as_ipv4(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_iroh_fn_method_socketaddr_as_ipv6(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_socketaddr_type(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void*_Nonnull uniffi_iroh_fn_method_socketaddr_v4(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void*_Nonnull uniffi_iroh_fn_method_socketaddr_v6(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void uniffi_iroh_fn_free_socketaddrv4(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -367,19 +373,22 @@ uint16_t uniffi_iroh_checksum_method_liveevent_type(void
 uint16_t uniffi_iroh_checksum_method_namespaceid_to_string(void
     
 );
+uint16_t uniffi_iroh_checksum_method_publickey_fmt_short(void
+    
+);
 uint16_t uniffi_iroh_checksum_method_publickey_to_bytes(void
     
 );
 uint16_t uniffi_iroh_checksum_method_publickey_to_string(void
     
 );
+uint16_t uniffi_iroh_checksum_method_socketaddr_as_ipv4(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_socketaddr_as_ipv6(void
+    
+);
 uint16_t uniffi_iroh_checksum_method_socketaddr_type(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_socketaddr_v4(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_socketaddr_v6(void
     
 );
 uint16_t uniffi_iroh_checksum_method_socketaddrv4_ip(void
@@ -418,10 +427,16 @@ uint16_t uniffi_iroh_checksum_constructor_ipv6addr_new(void
 uint16_t uniffi_iroh_checksum_constructor_irohnode_new(void
     
 );
-uint16_t uniffi_iroh_checksum_constructor_socketaddr_from_v4(void
+uint16_t uniffi_iroh_checksum_constructor_publickey_from_bytes(void
     
 );
-uint16_t uniffi_iroh_checksum_constructor_socketaddr_from_v6(void
+uint16_t uniffi_iroh_checksum_constructor_publickey_from_string(void
+    
+);
+uint16_t uniffi_iroh_checksum_constructor_socketaddr_from_ipv4(void
+    
+);
+uint16_t uniffi_iroh_checksum_constructor_socketaddr_from_ipv6(void
     
 );
 uint16_t uniffi_iroh_checksum_constructor_socketaddrv4_from_string(void

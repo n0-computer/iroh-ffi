@@ -29,6 +29,8 @@ pub enum IrohError {
     SocketAddrV6 { description: String },
     #[error("SocketAddr error: {description}")]
     SocketAddr { description: String },
+    #[error("PublicKey error: {description}")]
+    PublicKey { description: String },
 }
 
 impl IrohError {
@@ -100,6 +102,12 @@ impl IrohError {
 
     pub fn socket_addr(error: impl Display) -> Self {
         IrohError::SocketAddr {
+            description: error.to_string(),
+        }
+    }
+
+    pub fn public_key(error: impl Display) -> Self {
+        IrohError::PublicKey {
             description: error.to_string(),
         }
     }

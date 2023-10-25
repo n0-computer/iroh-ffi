@@ -379,6 +379,21 @@ void uniffi_iroh_fn_free_publickey(
 	RustCallStatus* out_status
 );
 
+void* uniffi_iroh_fn_constructor_publickey_from_bytes(
+	RustBuffer bytes,
+	RustCallStatus* out_status
+);
+
+void* uniffi_iroh_fn_constructor_publickey_from_string(
+	RustBuffer s,
+	RustCallStatus* out_status
+);
+
+RustBuffer uniffi_iroh_fn_method_publickey_fmt_short(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
 RustBuffer uniffi_iroh_fn_method_publickey_to_bytes(
 	void* ptr,
 	RustCallStatus* out_status
@@ -682,6 +697,10 @@ uint16_t uniffi_iroh_checksum_method_namespaceid_to_string(
 	RustCallStatus* out_status
 );
 
+uint16_t uniffi_iroh_checksum_method_publickey_fmt_short(
+	RustCallStatus* out_status
+);
+
 uint16_t uniffi_iroh_checksum_method_publickey_to_bytes(
 	RustCallStatus* out_status
 );
@@ -750,6 +769,14 @@ uint16_t uniffi_iroh_checksum_constructor_irohnode_new(
 	RustCallStatus* out_status
 );
 
+uint16_t uniffi_iroh_checksum_constructor_publickey_from_bytes(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_constructor_publickey_from_string(
+	RustCallStatus* out_status
+);
+
 uint16_t uniffi_iroh_checksum_constructor_socketaddr_from_ipv4(
 	RustCallStatus* out_status
 );
@@ -803,6 +830,7 @@ void uniffiFutureCallbackHandlerIpv6Addr(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerIpv6AddrTypeIrohError(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerIrohNodeTypeIrohError(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerPublicKey(void *, void*, RustCallStatus);
+void uniffiFutureCallbackHandlerPublicKeyTypeIrohError(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerSocketAddr(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerSocketAddrV4(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerSocketAddrV4TypeIrohError(void *, void*, RustCallStatus);

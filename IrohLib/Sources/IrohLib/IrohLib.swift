@@ -1417,6 +1417,7 @@ public func FfiConverterTypeNamespaceId_lower(_ value: NamespaceId) -> UnsafeMut
 }
 
 public protocol PublicKeyProtocol {
+    func fmtShort() -> String
     func toBytes() -> Data
     func toString() -> String
 }
@@ -1433,6 +1434,31 @@ public class PublicKey: PublicKeyProtocol {
 
     deinit {
         try! rustCall { uniffi_iroh_fn_free_publickey(pointer, $0) }
+    }
+
+    public static func fromBytes(bytes: Data) throws -> PublicKey {
+        return try PublicKey(unsafeFromRawPointer: rustCallWithError(FfiConverterTypeIrohError.lift) {
+            uniffi_iroh_fn_constructor_publickey_from_bytes(
+                FfiConverterData.lower(bytes), $0
+            )
+        })
+    }
+
+    public static func fromString(str: String) throws -> PublicKey {
+        return try PublicKey(unsafeFromRawPointer: rustCallWithError(FfiConverterTypeIrohError.lift) {
+            uniffi_iroh_fn_constructor_publickey_from_string(
+                FfiConverterString.lower(str), $0
+            )
+        })
+    }
+
+    public func fmtShort() -> String {
+        return try! FfiConverterString.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_publickey_fmt_short(self.pointer, $0)
+                }
+        )
     }
 
     public func toBytes() -> Data {
@@ -1493,9 +1519,9 @@ public func FfiConverterTypePublicKey_lower(_ value: PublicKey) -> UnsafeMutable
 }
 
 public protocol SocketAddrProtocol {
+    func asIpv4() throws -> SocketAddrV4
+    func asIpv6() throws -> SocketAddrV6
     func type() -> SocketAddrType
-    func v4() throws -> SocketAddrV4
-    func v6() throws -> SocketAddrV6
 }
 
 public class SocketAddr: SocketAddrProtocol {
@@ -1512,22 +1538,38 @@ public class SocketAddr: SocketAddrProtocol {
         try! rustCall { uniffi_iroh_fn_free_socketaddr(pointer, $0) }
     }
 
-    public static func fromV4(ipv4: Ipv4Addr, port: UInt16) -> SocketAddr {
+    public static func fromIpv4(ipv4: Ipv4Addr, port: UInt16) -> SocketAddr {
         return SocketAddr(unsafeFromRawPointer: try! rustCall {
-            uniffi_iroh_fn_constructor_socketaddr_from_v4(
+            uniffi_iroh_fn_constructor_socketaddr_from_ipv4(
                 FfiConverterTypeIpv4Addr.lower(ipv4),
                 FfiConverterUInt16.lower(port), $0
             )
         })
     }
 
-    public static func fromV6(ipv6: Ipv6Addr, port: UInt16) -> SocketAddr {
+    public static func fromIpv6(ipv6: Ipv6Addr, port: UInt16) -> SocketAddr {
         return SocketAddr(unsafeFromRawPointer: try! rustCall {
-            uniffi_iroh_fn_constructor_socketaddr_from_v6(
+            uniffi_iroh_fn_constructor_socketaddr_from_ipv6(
                 FfiConverterTypeIpv6Addr.lower(ipv6),
                 FfiConverterUInt16.lower(port), $0
             )
         })
+    }
+
+    public func asIpv4() throws -> SocketAddrV4 {
+        return try FfiConverterTypeSocketAddrV4.lift(
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_socketaddr_as_ipv4(self.pointer, $0)
+            }
+        )
+    }
+
+    public func asIpv6() throws -> SocketAddrV6 {
+        return try FfiConverterTypeSocketAddrV6.lift(
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_socketaddr_as_ipv6(self.pointer, $0)
+            }
+        )
     }
 
     public func type() -> SocketAddrType {
@@ -1536,22 +1578,6 @@ public class SocketAddr: SocketAddrProtocol {
                 rustCall {
                     uniffi_iroh_fn_method_socketaddr_type(self.pointer, $0)
                 }
-        )
-    }
-
-    public func v4() throws -> SocketAddrV4 {
-        return try FfiConverterTypeSocketAddrV4.lift(
-            rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_socketaddr_v4(self.pointer, $0)
-            }
-        )
-    }
-
-    public func v6() throws -> SocketAddrV6 {
-        return try FfiConverterTypeSocketAddrV6.lift(
-            rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_socketaddr_v6(self.pointer, $0)
-            }
         )
     }
 }
@@ -2158,6 +2184,7 @@ public enum IrohError {
     case SocketAddrV4(description: String)
     case SocketAddrV6(description: String)
     case SocketAddr(description: String)
+    case PublicKey(description: String)
 
     fileprivate static func uniffiErrorHandler(_ error: RustBuffer) throws -> Error {
         return try FfiConverterTypeIrohError.lift(error)
@@ -2207,6 +2234,9 @@ public struct FfiConverterTypeIrohError: FfiConverterRustBuffer {
                 description: FfiConverterString.read(from: &buf)
             )
         case 13: return try .SocketAddr(
+                description: FfiConverterString.read(from: &buf)
+            )
+        case 14: return try .PublicKey(
                 description: FfiConverterString.read(from: &buf)
             )
 
@@ -2266,6 +2296,10 @@ public struct FfiConverterTypeIrohError: FfiConverterRustBuffer {
 
         case let .SocketAddr(description):
             writeInt(&buf, Int32(13))
+            FfiConverterString.write(description, into: &buf)
+
+        case let .PublicKey(description):
+            writeInt(&buf, Int32(14))
             FfiConverterString.write(description, into: &buf)
         }
     }
@@ -3171,19 +3205,22 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_namespaceid_to_string() != 63715 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_checksum_method_publickey_fmt_short() != 33947 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_checksum_method_publickey_to_bytes() != 54334 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_publickey_to_string() != 48998 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_checksum_method_socketaddr_as_ipv4() != 903 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_socketaddr_as_ipv6() != 23303 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_checksum_method_socketaddr_type() != 50972 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_checksum_method_socketaddr_v4() != 62655 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_checksum_method_socketaddr_v6() != 50034 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_socketaddrv4_ip() != 54004 {
@@ -3222,10 +3259,16 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_constructor_irohnode_new() != 22562 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_socketaddr_from_v4() != 55134 {
+    if uniffi_iroh_checksum_constructor_publickey_from_bytes() != 65104 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_socketaddr_from_v6() != 51100 {
+    if uniffi_iroh_checksum_constructor_publickey_from_string() != 17217 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_constructor_socketaddr_from_ipv4() != 48670 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_constructor_socketaddr_from_ipv6() != 45955 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_constructor_socketaddrv4_from_string() != 16157 {
