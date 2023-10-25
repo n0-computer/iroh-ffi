@@ -43,13 +43,25 @@ interface IrohNode {
 interface Doc {
   NamespaceId id();
   [Throws=IrohError]
-  DocTicket share_write();
-  [Throws=IrohError]
-  DocTicket share_read();
+  void close(); 
   [Throws=IrohError]
   Hash set_bytes(AuthorId author, bytes key, bytes value);
   [Throws=IrohError]
-  bytes get_content_bytes(Entry entry);
+  void set_hash(AuthorId author, bytes key, Hash hash, u64 size);
+  [Throws=IrohError]
+  u64 size(Entry entry);
+  [Throws=IrohError]
+  bytes read_to_bytes(Entry entry);
+  [Throws=IrohError]
+  u64 del(AuthorId author_id, bytes prefix);
+  [Throws=IrohError]
+  Entry? get_one(AuthorId author_id, bytes key);
+  [Throws=IrohError]
+  sequence<Entry> get_many(GetFilter filter);
+  [Throws=IrohError]
+  DocTicket share_write();
+  [Throws=IrohError]
+  DocTicket share_read();
   [Throws=IrohError]
   sequence<Entry> keys();
   [Throws=IrohError]
@@ -58,6 +70,19 @@ interface Doc {
   void stop_sync();
   [Throws=IrohError]
   OpenState status();
+};
+
+interface GetFilter {
+  [Name=author_prefix]
+  constructor(AuthorId author, bytes prefix);
+  [Name=all]
+  constructor();
+  [Name=author]
+  constructor(AuthorId author);
+  [Name=key]
+  constructor(bytes key);
+  [Name=prefix]
+  constructor(bytes prefix);
 };
 
 callback interface SubscribeCallback {
