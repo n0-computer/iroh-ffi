@@ -1,6 +1,4 @@
 # tests that correspond to the `src/net.rs` rust api
-# install pytest in your virtualenv by using pip install pytest
-# run the tests using `python -m pytest`
 from iroh import Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6, SocketAddr, SocketAddrType
 
 def test_ipv4_addr():

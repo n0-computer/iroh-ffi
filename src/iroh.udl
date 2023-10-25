@@ -41,7 +41,7 @@ interface IrohNode {
 };
 
 interface Doc {
-  string id();
+  NamespaceId id();
   [Throws=IrohError]
   DocTicket share_write();
   [Throws=IrohError]
@@ -57,7 +57,7 @@ interface Doc {
   [Throws=IrohError]
   void stop_sync();
   [Throws=IrohError]
-  LiveStatus status();
+  OpenState status();
 };
 
 callback interface SubscribeCallback {
@@ -86,10 +86,7 @@ interface DocTicket {
   string to_string();
 };
 
-dictionary LiveStatus {
-  boolean active;
-  u64 subscriptions;
-};
+interface OpenState {};
 
 dictionary CounterStats {
   u64 value;
@@ -120,7 +117,6 @@ interface LiveEventType {
   NeighborUp();
   NeighborDown();
   SyncFinished();
-  Closed();
 };
 
 [Enum]
@@ -135,41 +131,37 @@ interface NamespaceId {
 };
 
 dictionary SyncEvent {
-  NamespaceId namespace;
   PublicKey peer;
   Origin origin;
-  f64 finished;
+  timestamp started;
+  timestamp finished;
   string? result;
 };
 
 [Enum]
-interface SyncReason {
-  DirectJoin();
-  NewNeighbor();
-};
-
-[Enum]
 interface Origin {
-  Connect(SyncReason reason);
+  Connect();
   Accept();
 };
 
 dictionary ConnectionInfo {
-  u64 id;
   PublicKey public_key;
   u16? derp_region;
-  sequence<SocketAddr> addrs;
-  sequence<double?> latencies;
+  sequence<DirectAddrInfo> addrs;
   ConnectionType conn_type;
-  double? latency;
+  duration? latency;
+  duration? last_used;
 };
 
 [Enum]
 interface ConnectionType{
   Direct(string addr, u16 port);
   Relay(u16 port);
+  Mixed(string addr, u16 port);
   None();
 };
+
+interface DirectAddrInfo {};
 
 enum SocketAddrType {
   "V4",
