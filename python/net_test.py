@@ -18,6 +18,10 @@ def test_ipv4_addr():
     octets = [10,10,10,10]
     assert from_cons.octets() == [10,10,10,10]
     assert from_str.octets() == [10,10,10,10]
+    #
+    # ensure equal method works
+    assert from_cons.equal(from_str)
+    assert from_str.equal(from_cons)
 
 def test_ipv6_addr():
     #
@@ -36,6 +40,10 @@ def test_ipv6_addr():
     segments = [10000,10000,10000,10000,10000,10000,10000,10000]
     assert from_cons.segments() == segments
     assert from_str.segments() ==  segments
+    #
+    # ensure equal method works
+    assert from_cons.equal(from_str)
+    assert from_str.equal(from_cons)
 
 def test_socket_addr_v4():
     #
@@ -59,6 +67,10 @@ def test_socket_addr_v4():
     # test that the to_string works as expected
     assert from_cons.to_string() == socket_addr_str
     assert from_str.to_string() == socket_addr_str
+    #
+    # ensure equal method works
+    assert from_cons.equal(from_str)
+    assert from_str.equal(from_cons)
 
 def test_socket_addr_v6():
     #
@@ -82,6 +94,10 @@ def test_socket_addr_v6():
     # test that the to_string works as expected
     assert from_cons.to_string() == socket_addr_str
     assert from_str.to_string() == socket_addr_str
+    #
+    # ensure equal method works
+    assert from_cons.equal(from_str)
+    assert from_str.equal(from_cons)
 
 def test_socket_addr():
     #
@@ -107,4 +123,11 @@ def test_socket_addr():
     assert ipv6_addr.ip().to_string() == ipv6_ip.to_string()
     assert ipv4_addr.port() == port 
     assert ipv6_addr.port() == port
-
+    #
+    # ensure equal method works
+    ipv4_other = SocketAddr.from_ipv4(ipv4_ip, port)
+    ipv6_other = SocketAddr.from_ipv6(ipv6_ip, port)
+    assert ipv4.equal(ipv4_other)
+    assert ipv4_other.equal(ipv4)
+    assert ipv6.equal(ipv6_other)
+    assert ipv6_other.equal(ipv6)

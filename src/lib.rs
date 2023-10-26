@@ -51,10 +51,7 @@ pub fn set_log_level(level: LogLevel) {
 }
 
 pub fn start_metrics_collection() -> Result<(), IrohError> {
-    try_init_metrics_collection().map_err(|e| IrohError::Runtime {
-        description: e.to_string(),
-    })?;
-    Ok(())
+    try_init_metrics_collection().map_err(IrohError::runtime)
 }
 
 fn block_on<F: Future<Output = T>, T>(rt: &Handle, fut: F) -> T {

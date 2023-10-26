@@ -4,7 +4,7 @@ use std::sync::Arc;
 use crate::IrohError;
 
 /// An internet socket address, either Ipv4 or Ipv6
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SocketAddr {
     V4 { addr: SocketAddrV4 },
     V6 { addr: SocketAddrV6 },
@@ -44,6 +44,7 @@ impl SocketAddr {
         }
     }
 
+    /// Express the SocketAddr as a string
     pub fn to_string(&self) -> String {
         match self {
             SocketAddr::V4 { addr } => addr.0.to_string(),
@@ -85,10 +86,15 @@ impl SocketAddr {
             SocketAddr::V6 { addr } => Ok(Arc::new(addr.clone())),
         }
     }
+
+    /// Returns true if the two SocketAddrs have the same value
+    pub fn equal(&self, other: Arc<SocketAddr>) -> bool {
+        *self == *other
+    }
 }
 
 /// Ipv4 address
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Ipv4Addr(pub(crate) std::net::Ipv4Addr);
 
 impl From<std::net::Ipv4Addr> for Ipv4Addr {
@@ -120,10 +126,15 @@ impl Ipv4Addr {
     pub fn octets(&self) -> Vec<u8> {
         self.0.octets().to_vec()
     }
+
+    /// Returns true if both Ipv4Addrs have the same value
+    pub fn equal(&self, other: Arc<Ipv4Addr>) -> bool {
+        *self == *other
+    }
 }
 
 /// An Ipv4 socket address
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SocketAddrV4(pub(crate) std::net::SocketAddrV4);
 
 impl From<std::net::SocketAddrV4> for SocketAddrV4 {
@@ -160,10 +171,15 @@ impl SocketAddrV4 {
     pub fn port(&self) -> u16 {
         self.0.port()
     }
+
+    /// Returns true if both SocketAddrV4's have the same value
+    pub fn equal(&self, other: Arc<SocketAddrV4>) -> bool {
+        *self == *other
+    }
 }
 
 /// Ipv6 address
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Ipv6Addr(pub(crate) std::net::Ipv6Addr);
 
 impl Ipv6Addr {
@@ -188,10 +204,15 @@ impl Ipv6Addr {
     pub fn segments(&self) -> Vec<u16> {
         self.0.segments().to_vec()
     }
+
+    /// Returns true if both Ipv6Addr's have the same value
+    pub fn equal(&self, other: Arc<Ipv6Addr>) -> bool {
+        *self == *other
+    }
 }
 
 /// An Ipv6 socket address
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SocketAddrV6(pub(crate) std::net::SocketAddrV6);
 
 impl From<std::net::SocketAddrV6> for SocketAddrV6 {
@@ -228,10 +249,15 @@ impl SocketAddrV6 {
     pub fn port(&self) -> u16 {
         self.0.port()
     }
+
+    /// Returns true if both SocketAddrV6's have the same value
+    pub fn equal(&self, other: Arc<SocketAddrV6>) -> bool {
+        *self == *other
+    }
 }
 
 /// Type of SocketAddr
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SocketAddrType {
     V4,
     V6,

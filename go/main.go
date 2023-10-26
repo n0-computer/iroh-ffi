@@ -35,7 +35,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("Created document %s\n", doc.Id())
+	fmt.Printf("Created document %s\n", doc.Id().ToString())
 	author, err := node.AuthorNew()
 	if err != nil {
 		panic(err)
@@ -59,13 +59,13 @@ func main() {
 	}
 	fmt.Printf("Inserted %s\n", hash.ToString())
 
-	entries, err := doc.Keys()
+	entries, err := doc.GetMany(iroh.GetFilterAll())
 	if err != nil {
 		panic(err)
 	}
 	fmt.Printf("Got %d entries\n", len(entries))
 	for _, entry := range entries {
-		content, err := doc.GetContentBytes(entry)
+		content, err := doc.ReadToBytes(entry)
 		if err != nil {
 			panic(err)
 		}
@@ -77,7 +77,7 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Printf("Created second document %s\n", doc.Id())
+	fmt.Printf("Created second document %s\n", doc.Id().ToString())
 
 	docs, err := node.DocList()
 	if err != nil {

@@ -1,4 +1,5 @@
 use std::str::FromStr;
+use std::sync::Arc;
 
 use crate::IrohError;
 
@@ -6,7 +7,7 @@ use crate::IrohError;
 ///
 /// The key itself is just a 32 byte array, but a key has associated crypto
 /// information that is cached for performance reasons.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq)]
 pub struct PublicKey(pub(crate) iroh::net::key::PublicKey);
 
 impl From<iroh::net::key::PublicKey> for PublicKey {
@@ -19,6 +20,11 @@ impl PublicKey {
     /// Express the PublicKey as a base32 string
     pub fn to_string(&self) -> String {
         self.0.to_string()
+    }
+
+    /// Returns true if the PublicKeys are equal
+    pub fn equal(&self, other: Arc<PublicKey>) -> bool {
+        *self == *other
     }
 
     /// Express the PublicKey as a byte array
@@ -52,5 +58,11 @@ impl PublicKey {
     /// representation of the key.
     pub fn fmt_short(&self) -> String {
         self.0.fmt_short()
+    }
+}
+
+impl PartialEq for PublicKey {
+    fn eq(&self, other: &PublicKey) -> bool {
+        self.0 == other.0
     }
 }

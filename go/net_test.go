@@ -20,31 +20,39 @@ func TestIpv4Addr(t *testing.T) {
 	// ensure the strings are what we expect,
 	assert.Equal(t, fromCons.ToString(), ipStr)
 	assert.Equal(t, fromStr.ToString(), ipStr)
-	//
+
 	// ensure octets are what we expect
 	octets := []byte{10, 10, 10, 10}
 	assert.Equal(t, fromCons.Octets(), octets)
 	assert.Equal(t, fromStr.Octets(), octets)
+
+	// ensure equal works as expected
+	assert.True(t, fromCons.Equal(fromStr))
+	assert.True(t, fromStr.Equal(fromCons))
 }
 
 // TestIpv6Addr tests all IPv6Addr constructors and methods
 func TestIpv6Addr(t *testing.T) {
 	// create ipv6 addr from the constructor
 	fromCons := iroh.NewIpv6Addr(10000, 10000, 10000, 10000, 10000, 10000, 10000, 10000)
-	//
+
 	// create ipv6 addr from a string
 	ipStr := "2710:2710:2710:2710:2710:2710:2710:2710"
 	fromStr, err := iroh.Ipv6AddrFromString(ipStr)
 	assert.Nil(t, err)
-	//
+
 	// ensure strings are what we expect,
 	assert.Equal(t, fromCons.ToString(), ipStr)
 	assert.Equal(t, fromStr.ToString(), ipStr)
-	//
+
 	// ensure segments are what we expect
 	segments := []uint16{10000, 10000, 10000, 10000, 10000, 10000, 10000, 10000}
 	assert.Equal(t, fromCons.Segments(), segments)
 	assert.Equal(t, fromStr.Segments(), segments)
+
+	// ensure equal works as expected
+	assert.True(t, fromCons.Equal(fromStr))
+	assert.True(t, fromStr.Equal(fromCons))
 }
 
 // TestSocketAddrV4 tests all SocketAddrV4 constructors and methods
@@ -71,6 +79,10 @@ func TestSocketAddrV4(t *testing.T) {
 	// test that the ToString works as expected
 	assert.Equal(t, fromCons.ToString(), socketAddrStr)
 	assert.Equal(t, fromStr.ToString(), socketAddrStr)
+
+	// ensure equal works as expected
+	assert.True(t, fromCons.Equal(fromStr))
+	assert.True(t, fromStr.Equal(fromCons))
 }
 
 // TestSocketAddrV6 tests all SocketAddrV6 constructors and methods
@@ -97,6 +109,10 @@ func TestSocketAddrV6(t *testing.T) {
 	// test that the ToString works as expected
 	assert.Equal(t, fromCons.ToString(), socketAddrStr)
 	assert.Equal(t, fromStr.ToString(), socketAddrStr)
+
+	// ensure equal works as expected
+	assert.True(t, fromCons.Equal(fromStr))
+	assert.True(t, fromStr.Equal(fromCons))
 }
 
 // TestSocketAddr tests all SocketAddr constructors and methods
@@ -128,4 +144,12 @@ func TestSocketAddr(t *testing.T) {
 	assert.Equal(t, ipv6Addr.Ip().ToString(), ipv6Ip.ToString())
 	assert.Equal(t, ipv4Addr.Port(), port)
 	assert.Equal(t, ipv6Addr.Port(), port)
+
+	// ensure equal works as expected
+	ipv4Other := iroh.SocketAddrFromIpv4(ipv4Ip, port)
+	ipv6Other := iroh.SocketAddrFromIpv6(ipv6Ip, port)
+	assert.True(t, ipv4.Equal(ipv4Other))
+	assert.True(t, ipv6.Equal(ipv6Other))
+	assert.True(t, ipv4Other.Equal(ipv4))
+	assert.True(t, ipv6Other.Equal(ipv6))
 }

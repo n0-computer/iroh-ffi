@@ -24,12 +24,16 @@ func TestPublicKey(t *testing.T) {
 	assert.Equal(t, key.FmtShort(), fmtStr)
 
 	//create key from bytes
-	key, err = iroh.PublicKeyFromBytes(bytes)
+	key0, err := iroh.PublicKeyFromBytes(bytes)
 	assert.Nil(t, err)
 
 	// test methods are as expected
-	assert.Equal(t, key.ToString(), keyStr)
-	assert.Equal(t, key.ToBytes(), bytes)
-	assert.Equal(t, key.FmtShort(), fmtStr)
+	assert.Equal(t, key0.ToString(), keyStr)
+	assert.Equal(t, key0.ToBytes(), bytes)
+	assert.Equal(t, key0.FmtShort(), fmtStr)
+
+	// test eq method works
+	assert.True(t, key.Equal(key0))
+	assert.True(t, key0.Equal(key))
 
 }

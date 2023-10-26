@@ -76,7 +76,7 @@ enum ShareMode {
 };
 
 interface PeerAddr {
-  constructor(PublicKey peer_id, u16? region_id, sequence<SocketAddr> addresses);
+  constructor(PublicKey node_id, u16? region_id, sequence<SocketAddr> addresses);
   sequence<SocketAddr> direct_addresses();
   u16? derp_region();
 };
@@ -106,7 +106,7 @@ interface AuthorId {
 interface Entry {
   AuthorId author();
   bytes key();
-  Hash hash();
+  NamespaceId namespace();
 };
 
 interface Hash {
@@ -212,6 +212,7 @@ interface Ipv4Addr {
   constructor(string str);
   string to_string();
   sequence<u8> octets(); 
+  boolean equal(Ipv4Addr other);
 };
 
 interface SocketAddrV4 {
@@ -221,6 +222,7 @@ interface SocketAddrV4 {
   string to_string();
   Ipv4Addr ip(); 
   u16 port();
+  boolean equal(SocketAddrV4 other);
 };
 
 interface Ipv6Addr {
@@ -229,6 +231,7 @@ interface Ipv6Addr {
   constructor(string str);
   string to_string();
   sequence<u16> segments(); 
+  boolean equal(Ipv6Addr other);
 };
 
 interface SocketAddrV6 {
@@ -238,6 +241,7 @@ interface SocketAddrV6 {
   string to_string();
   Ipv6Addr ip(); 
   u16 port();
+  boolean equal(SocketAddrV6 other);
 };
 
 interface SocketAddr {
@@ -250,10 +254,12 @@ interface SocketAddr {
   SocketAddrV4 as_ipv4();
   [Throws=IrohError]
   SocketAddrV6 as_ipv6();
+  boolean equal(SocketAddr other);
 };
 
 interface PublicKey {
   string to_string();
+  boolean equal(PublicKey other);
   bytes to_bytes();
   [Name=from_string, Throws=IrohError]
   constructor(string s); 

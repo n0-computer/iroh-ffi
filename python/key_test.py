@@ -16,10 +16,14 @@ def test_public_key():
     assert key.fmt_short() == fmt_str
     #
     # create key from bytes
-    key = PublicKey.from_bytes(bytes)
+    key_0 = PublicKey.from_bytes(bytes)
     #
     # test methods are as expected
-    assert key.to_string() == key_str
-    assert key.to_bytes() == bytes
-    assert key.fmt_short() == fmt_str
+    assert key_0.to_string() == key_str
+    assert key_0.to_bytes() == bytes
+    assert key_0.fmt_short() == fmt_str
+    #
+    # test that the eq function works
+    assert key.equal(key_0)
+    assert key_0.equal(key)
  
