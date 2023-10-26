@@ -23,11 +23,31 @@ impl From<std::net::SocketAddr> for SocketAddr {
     }
 }
 
+impl From<SocketAddr> for std::net::SocketAddr {
+    fn from(value: SocketAddr) -> Self {
+        match value {
+            SocketAddr::V4 { addr } => {
+                std::net::SocketAddr::new(std::net::IpAddr::V4(*addr.0.ip()), addr.0.port())
+            }
+            SocketAddr::V6 { addr } => {
+                std::net::SocketAddr::new(std::net::IpAddr::V6(*addr.0.ip()), addr.0.port())
+            }
+        }
+    }
+}
+
 impl SocketAddr {
     /// Create an Ipv4 SocketAddr
     pub fn from_ipv4(ipv4: Arc<Ipv4Addr>, port: u16) -> Self {
         SocketAddr::V4 {
             addr: SocketAddrV4::new(ipv4, port),
+        }
+    }
+
+    pub fn to_string(&self) -> String {
+        match self {
+            SocketAddr::V4 { addr } => addr.0.to_string(),
+            SocketAddr::V6 { addr } => addr.0.to_string(),
         }
     }
 
@@ -69,7 +89,7 @@ impl SocketAddr {
 
 /// Ipv4 address
 #[derive(Debug, Clone)]
-pub struct Ipv4Addr(std::net::Ipv4Addr);
+pub struct Ipv4Addr(pub(crate) std::net::Ipv4Addr);
 
 impl From<std::net::Ipv4Addr> for Ipv4Addr {
     fn from(value: std::net::Ipv4Addr) -> Self {
@@ -104,7 +124,7 @@ impl Ipv4Addr {
 
 /// An Ipv4 socket address
 #[derive(Debug, Clone)]
-pub struct SocketAddrV4(std::net::SocketAddrV4);
+pub struct SocketAddrV4(pub(crate) std::net::SocketAddrV4);
 
 impl From<std::net::SocketAddrV4> for SocketAddrV4 {
     fn from(value: std::net::SocketAddrV4) -> Self {
@@ -144,7 +164,7 @@ impl SocketAddrV4 {
 
 /// Ipv6 address
 #[derive(Debug, Clone)]
-pub struct Ipv6Addr(std::net::Ipv6Addr);
+pub struct Ipv6Addr(pub(crate) std::net::Ipv6Addr);
 
 impl Ipv6Addr {
     /// Create a new Ipv6 addr from 8 16-bit segments
@@ -172,7 +192,7 @@ impl Ipv6Addr {
 
 /// An Ipv6 socket address
 #[derive(Debug, Clone)]
-pub struct SocketAddrV6(std::net::SocketAddrV6);
+pub struct SocketAddrV6(pub(crate) std::net::SocketAddrV6);
 
 impl From<std::net::SocketAddrV6> for SocketAddrV6 {
     fn from(value: std::net::SocketAddrV6) -> Self {

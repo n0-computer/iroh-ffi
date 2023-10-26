@@ -59,17 +59,26 @@ interface Doc {
   [Throws=IrohError]
   sequence<Entry> get_many(GetFilter filter);
   [Throws=IrohError]
-  DocTicket share_write();
+  DocTicket share(ShareMode mode);
   [Throws=IrohError]
-  DocTicket share_read();
+  void start_sync(sequence<PeerAddr> peers);
   [Throws=IrohError]
-  sequence<Entry> keys();
+  void leave();
   [Throws=IrohError]
   void subscribe(SubscribeCallback cb);
   [Throws=IrohError]
-  void stop_sync();
-  [Throws=IrohError]
   OpenState status();
+};
+
+enum ShareMode {
+  "Read",
+  "Write",
+};
+
+interface PeerAddr {
+  constructor(PublicKey peer_id, u16? region_id, sequence<SocketAddr> addresses);
+  sequence<SocketAddr> direct_addresses();
+  u16? derp_region();
 };
 
 interface GetFilter {
@@ -111,7 +120,11 @@ interface DocTicket {
   string to_string();
 };
 
-interface OpenState {};
+dictionary OpenState {
+  boolean sync;
+  u64 subscribers;
+  u64 handles;
+};
 
 dictionary CounterStats {
   u64 value;
@@ -265,4 +278,5 @@ interface IrohError {
   SocketAddrV6(string description);
   SocketAddr(string description);
   PublicKey(string description);
+  PeerAddr(string description);
 };

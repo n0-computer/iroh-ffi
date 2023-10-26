@@ -1,15 +1,16 @@
+use std::str::FromStr;
 use std::sync::Arc;
 
 use futures::{StreamExt, TryStreamExt};
 use iroh::{
     bytes::util::runtime::Handle,
     client::Doc as ClientDoc,
-    rpc_protocol::{ProviderRequest, ProviderResponse, ShareMode},
+    rpc_protocol::{ProviderRequest, ProviderResponse},
 };
 
 use quic_rpc::transport::flume::FlumeConnection;
 
-use crate::{block_on, Hash, IrohError, SubscribeCallback};
+use crate::{block_on, Hash, IrohError, PublicKey, SocketAddr, SocketAddrType, SubscribeCallback};
 
 /// A representation of a mutable, synchronizable key-value store.
 pub struct Doc {
@@ -137,61 +138,42 @@ impl Doc {
         })
     }
 
-    pub fn keys(&self) -> Result<Vec<Arc<Entry>>, IrohError> {
-        let latest = block_on(&self.rt, async {
-            let get_result = self
-                .inner
-                .get_many(iroh::sync::store::GetFilter::All)
-                .await?;
-            get_result
-                .map_ok(|e| Arc::new(Entry(e)))
-                .try_collect::<Vec<_>>()
+    /// Share this document with peers over a ticket.
+    pub fn share(&self, mode: ShareMode) -> anyhow::Result<Arc<DocTicket>, IrohError> {
+        block_on(&self.rt, async {
+            self.inner
+                .share(mode.into())
                 .await
+                .map(|ticket| Arc::new(DocTicket(ticket)))
+                .map_err(IrohError::doc)
         })
-        .map_err(IrohError::doc)?;
-        Ok(latest)
     }
 
-    pub fn share_write(&self) -> Result<Arc<DocTicket>, IrohError> {
+    /// Start to sync this document with a list of peers.
+    pub fn start_sync(&self, peers: Vec<Arc<PeerAddr>>) -> Result<(), IrohError> {
         block_on(&self.rt, async {
-            let ticket = self
-                .inner
-                .share(ShareMode::Write)
+            self.inner
+                .start_sync(peers.into_iter().map(|p| (*p).clone().into()).collect())
                 .await
-                .map_err(IrohError::doc)?;
-
-            Ok(Arc::new(DocTicket(ticket)))
+                .map_err(IrohError::doc)
         })
     }
 
-    pub fn share_read(&self) -> Result<Arc<DocTicket>, IrohError> {
+    /// Stop the live sync for this document.
+    pub fn leave(&self) -> Result<(), IrohError> {
         block_on(&self.rt, async {
-            let ticket = self
-                .inner
-                .share(ShareMode::Read)
-                .await
-                .map_err(IrohError::doc)?;
-
-            Ok(Arc::new(DocTicket(ticket)))
+            self.inner.leave().await.map_err(IrohError::doc)
         })
     }
 
-    pub fn stop_sync(&self) -> Result<(), IrohError> {
+    /// Get status info for this document
+    pub fn status(&self) -> Result<OpenState, IrohError> {
         block_on(&self.rt, async {
-            self.inner.leave().await.map_err(IrohError::doc)?;
-            Ok(())
-        })
-    }
-
-    pub fn status(&self) -> Result<Arc<OpenState>, IrohError> {
-        block_on(&self.rt, async {
-            let status = self
-                .inner
+            self.inner
                 .status()
                 .await
-                .map(|s| Arc::new(OpenState(s)))
-                .map_err(IrohError::doc)?;
-            Ok(status)
+                .map(|o| o.into())
+                .map_err(IrohError::doc)
         })
     }
 
@@ -217,9 +199,105 @@ impl Doc {
     }
 }
 
+/// The state for an open replica.
+#[derive(Debug, Clone, Copy)]
+pub struct OpenState {
+    /// Whether to accept sync requests for this replica.
+    pub sync: bool,
+    /// How many event subscriptions are open
+    pub subscribers: u64,
+    /// By how many handles the replica is currently held open
+    pub handles: u64,
+}
+
+impl From<iroh::sync::actor::OpenState> for OpenState {
+    fn from(value: iroh::sync::actor::OpenState) -> Self {
+        OpenState {
+            sync: value.sync,
+            subscribers: value.subscribers as u64,
+            handles: value.handles as u64,
+        }
+    }
+}
+
+/// A peer and it's addressing information.
 #[derive(Debug, Clone)]
-pub struct OpenState(pub(crate) iroh::sync::actor::OpenState);
-impl OpenState {}
+pub struct PeerAddr {
+    peer_id: Arc<PublicKey>,
+    derp_region: Option<u16>,
+    addresses: Vec<Arc<SocketAddr>>,
+}
+
+impl PeerAddr {
+    /// Create a new [`PeerAddr`] with empty [`AddrInfo`].
+    pub fn new(
+        peer_id: Arc<PublicKey>,
+        derp_region: Option<u16>,
+        addresses: Vec<Arc<SocketAddr>>,
+    ) -> Self {
+        Self {
+            peer_id,
+            derp_region,
+            addresses,
+        }
+    }
+
+    /// Get the direct addresses of this peer.
+    pub fn direct_addresses(&self) -> Vec<Arc<SocketAddr>> {
+        self.addresses.clone()
+    }
+
+    /// Get the derp region of this peer.
+    pub fn derp_region(&self) -> Option<u16> {
+        self.derp_region
+    }
+}
+
+impl From<PeerAddr> for iroh::net::magic_endpoint::PeerAddr {
+    fn from(value: PeerAddr) -> Self {
+        let mut peer_addr = iroh::net::magic_endpoint::PeerAddr::new(value.peer_id.0);
+        let addresses = value.direct_addresses().into_iter().map(|addr| {
+            let typ = addr.r#type();
+            match typ {
+                SocketAddrType::V4 => {
+                    let addr_str = addr.to_string();
+                    std::net::SocketAddrV4::from_str(&addr_str)
+                        .expect("checked")
+                        .into()
+                }
+                SocketAddrType::V6 => {
+                    let addr_str = addr.to_string();
+                    std::net::SocketAddrV6::from_str(&addr_str)
+                        .expect("checked")
+                        .into()
+                }
+            }
+        });
+        if let Some(derp_region) = value.derp_region() {
+            peer_addr = peer_addr.with_derp_region(derp_region);
+        }
+        peer_addr = peer_addr.with_direct_addresses(addresses);
+        peer_addr
+    }
+}
+
+/// Intended capability for document share tickets
+#[derive(Debug)]
+pub enum ShareMode {
+    /// Read-only access
+    Read,
+    /// Write access
+    Write,
+}
+
+impl From<ShareMode> for iroh::rpc_protocol::ShareMode {
+    fn from(mode: ShareMode) -> Self {
+        match mode {
+            ShareMode::Read => iroh::rpc_protocol::ShareMode::Read,
+            ShareMode::Write => iroh::rpc_protocol::ShareMode::Write,
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct Entry(pub(crate) iroh::sync::sync::Entry);
