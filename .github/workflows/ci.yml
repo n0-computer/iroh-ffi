@@ -93,8 +93,8 @@ jobs:
     - name: Go test
       run: |
         cd ./go && \
-        LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}:/home/runner/work/iroh-ffi/iroh-ffi/target/debug/" \
-        CGO_LDFLAGS="-l iroh -L /home/runner/work/iroh-ffi/iroh-ffi/target/debug" \
+        LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}:/root/actions-runner/_work/iroh-ffi/iroh-ffi/target/debug/" \
+        CGO_LDFLAGS="-liroh -L /root/actions-runner/_work/iroh-ffi/iroh-ffi/target/debug" \
         go test ./...
 
   build_and_test_python:
