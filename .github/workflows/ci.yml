@@ -92,6 +92,8 @@ jobs:
     - name: Build rust
       run: cargo build
     - name: Go test
+      env:
+        XDG_CACHE_HOME: /root/.cache
       run: |
         cd ./go && \
         LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}:/root/actions-runner/_work/iroh-ffi/iroh-ffi/target/debug/" \
