@@ -87,6 +87,8 @@ jobs:
     - uses: actions/setup-go@v4
       with:
           go-version: 'stable'
+      env:
+        XDG_CACHE_HOME: /root/.cache
     - name: Build rust
       run: cargo build
     - name: Go test
