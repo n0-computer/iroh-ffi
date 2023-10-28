@@ -468,6 +468,7 @@ private struct FfiConverterDuration: FfiConverterRustBuffer {
 }
 
 public protocol AuthorIdProtocol {
+    func equal(other: AuthorId) -> Bool
     func toString() -> String
 }
 
@@ -483,6 +484,24 @@ public class AuthorId: AuthorIdProtocol {
 
     deinit {
         try! rustCall { uniffi_iroh_fn_free_authorid(pointer, $0) }
+    }
+
+    public static func fromString(str: String) throws -> AuthorId {
+        return try AuthorId(unsafeFromRawPointer: rustCallWithError(FfiConverterTypeIrohError.lift) {
+            uniffi_iroh_fn_constructor_authorid_from_string(
+                FfiConverterString.lower(str), $0
+            )
+        })
+    }
+
+    public func equal(other: AuthorId) -> Bool {
+        return try! FfiConverterBool.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_authorid_equal(self.pointer,
+                                                         FfiConverterTypeAuthorId.lower(other), $0)
+                }
+        )
     }
 
     public func toString() -> String {
@@ -784,6 +803,7 @@ public func FfiConverterTypeDoc_lower(_ value: Doc) -> UnsafeMutableRawPointer {
 }
 
 public protocol DocTicketProtocol {
+    func equal(other: DocTicket) -> Bool
     func toString() -> String
 }
 
@@ -807,6 +827,16 @@ public class DocTicket: DocTicketProtocol {
                 FfiConverterString.lower(content), $0
             )
         })
+    }
+
+    public func equal(other: DocTicket) -> Bool {
+        return try! FfiConverterBool.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_docticket_equal(self.pointer,
+                                                          FfiConverterTypeDocTicket.lower(other), $0)
+                }
+        )
     }
 
     public func toString() -> String {
@@ -943,7 +973,9 @@ public func FfiConverterTypeEntry_lower(_ value: Entry) -> UnsafeMutableRawPoint
     return FfiConverterTypeEntry.lower(value)
 }
 
-public protocol GetFilterProtocol {}
+public protocol GetFilterProtocol {
+    func equal(other: GetFilter) -> Bool
+}
 
 public class GetFilter: GetFilterProtocol {
     fileprivate let pointer: UnsafeMutableRawPointer
@@ -996,6 +1028,16 @@ public class GetFilter: GetFilterProtocol {
                 FfiConverterData.lower(prefix), $0
             )
         })
+    }
+
+    public func equal(other: GetFilter) -> Bool {
+        return try! FfiConverterBool.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_getfilter_equal(self.pointer,
+                                                          FfiConverterTypeGetFilter.lower(other), $0)
+                }
+        )
     }
 }
 
@@ -1623,6 +1665,7 @@ public func FfiConverterTypeLiveEvent_lower(_ value: LiveEvent) -> UnsafeMutable
 }
 
 public protocol NamespaceIdProtocol {
+    func equal(other: NamespaceId) -> Bool
     func toString() -> String
 }
 
@@ -1638,6 +1681,24 @@ public class NamespaceId: NamespaceIdProtocol {
 
     deinit {
         try! rustCall { uniffi_iroh_fn_free_namespaceid(pointer, $0) }
+    }
+
+    public static func fromString(str: String) throws -> NamespaceId {
+        return try NamespaceId(unsafeFromRawPointer: rustCallWithError(FfiConverterTypeIrohError.lift) {
+            uniffi_iroh_fn_constructor_namespaceid_from_string(
+                FfiConverterString.lower(str), $0
+            )
+        })
+    }
+
+    public func equal(other: NamespaceId) -> Bool {
+        return try! FfiConverterBool.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_namespaceid_equal(self.pointer,
+                                                            FfiConverterTypeNamespaceId.lower(other), $0)
+                }
+        )
     }
 
     public func toString() -> String {
@@ -1691,6 +1752,7 @@ public func FfiConverterTypeNamespaceId_lower(_ value: NamespaceId) -> UnsafeMut
 public protocol PeerAddrProtocol {
     func derpRegion() -> UInt16?
     func directAddresses() -> [SocketAddr]
+    func equal(other: PeerAddr) -> Bool
 }
 
 public class PeerAddr: PeerAddrProtocol {
@@ -1731,6 +1793,16 @@ public class PeerAddr: PeerAddrProtocol {
             try!
                 rustCall {
                     uniffi_iroh_fn_method_peeraddr_direct_addresses(self.pointer, $0)
+                }
+        )
+    }
+
+    public func equal(other: PeerAddr) -> Bool {
+        return try! FfiConverterBool.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_peeraddr_equal(self.pointer,
+                                                         FfiConverterTypePeerAddr.lower(other), $0)
                 }
         )
     }
@@ -2592,6 +2664,7 @@ public enum IrohError {
     case NodeCreate(description: String)
     case Doc(description: String)
     case Author(description: String)
+    case Namespace(description: String)
     case DocTicket(description: String)
     case Uniffi(description: String)
     case Connection(description: String)
@@ -2627,37 +2700,40 @@ public struct FfiConverterTypeIrohError: FfiConverterRustBuffer {
         case 4: return try .Author(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 5: return try .DocTicket(
+        case 5: return try .Namespace(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 6: return try .Uniffi(
+        case 6: return try .DocTicket(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 7: return try .Connection(
+        case 7: return try .Uniffi(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 8: return try .Blob(
+        case 8: return try .Connection(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 9: return try .Ipv4Addr(
+        case 9: return try .Blob(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 10: return try .Ipv6Addr(
+        case 10: return try .Ipv4Addr(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 11: return try .SocketAddrV4(
+        case 11: return try .Ipv6Addr(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 12: return try .SocketAddrV6(
+        case 12: return try .SocketAddrV4(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 13: return try .SocketAddr(
+        case 13: return try .SocketAddrV6(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 14: return try .PublicKey(
+        case 14: return try .SocketAddr(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 15: return try .PeerAddr(
+        case 15: return try .PublicKey(
+                description: FfiConverterString.read(from: &buf)
+            )
+        case 16: return try .PeerAddr(
                 description: FfiConverterString.read(from: &buf)
             )
 
@@ -2683,48 +2759,52 @@ public struct FfiConverterTypeIrohError: FfiConverterRustBuffer {
             writeInt(&buf, Int32(4))
             FfiConverterString.write(description, into: &buf)
 
-        case let .DocTicket(description):
+        case let .Namespace(description):
             writeInt(&buf, Int32(5))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Uniffi(description):
+        case let .DocTicket(description):
             writeInt(&buf, Int32(6))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Connection(description):
+        case let .Uniffi(description):
             writeInt(&buf, Int32(7))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Blob(description):
+        case let .Connection(description):
             writeInt(&buf, Int32(8))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Ipv4Addr(description):
+        case let .Blob(description):
             writeInt(&buf, Int32(9))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Ipv6Addr(description):
+        case let .Ipv4Addr(description):
             writeInt(&buf, Int32(10))
             FfiConverterString.write(description, into: &buf)
 
-        case let .SocketAddrV4(description):
+        case let .Ipv6Addr(description):
             writeInt(&buf, Int32(11))
             FfiConverterString.write(description, into: &buf)
 
-        case let .SocketAddrV6(description):
+        case let .SocketAddrV4(description):
             writeInt(&buf, Int32(12))
             FfiConverterString.write(description, into: &buf)
 
-        case let .SocketAddr(description):
+        case let .SocketAddrV6(description):
             writeInt(&buf, Int32(13))
             FfiConverterString.write(description, into: &buf)
 
-        case let .PublicKey(description):
+        case let .SocketAddr(description):
             writeInt(&buf, Int32(14))
             FfiConverterString.write(description, into: &buf)
 
-        case let .PeerAddr(description):
+        case let .PublicKey(description):
             writeInt(&buf, Int32(15))
+            FfiConverterString.write(description, into: &buf)
+
+        case let .PeerAddr(description):
+            writeInt(&buf, Int32(16))
             FfiConverterString.write(description, into: &buf)
         }
     }
@@ -3547,6 +3627,9 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_func_start_metrics_collection() != 17691 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_checksum_method_authorid_equal() != 33867 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_checksum_method_authorid_to_string() != 42389 {
         return InitializationResult.apiChecksumMismatch
     }
@@ -3592,6 +3675,9 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_doc_subscribe() != 2866 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_checksum_method_docticket_equal() != 14909 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_checksum_method_docticket_to_string() != 22814 {
         return InitializationResult.apiChecksumMismatch
     }
@@ -3602,6 +3688,9 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_entry_namespace() != 41306 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_getfilter_equal() != 31562 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_hash_to_bytes() != 29465 {
@@ -3682,6 +3771,9 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_liveevent_type() != 35533 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_checksum_method_namespaceid_equal() != 18805 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_checksum_method_namespaceid_to_string() != 63715 {
         return InitializationResult.apiChecksumMismatch
     }
@@ -3689,6 +3781,9 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_peeraddr_direct_addresses() != 36736 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_peeraddr_equal() != 21646 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_publickey_equal() != 10645 {
@@ -3739,6 +3834,9 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_socketaddrv6_to_string() != 14154 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_checksum_constructor_authorid_from_string() != 14210 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_checksum_constructor_docticket_from_string() != 40262 {
         return InitializationResult.apiChecksumMismatch
     }
@@ -3770,6 +3868,9 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_constructor_irohnode_new() != 22562 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_constructor_namespaceid_from_string() != 47535 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_constructor_peeraddr_new() != 7518 {

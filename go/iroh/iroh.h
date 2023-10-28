@@ -91,6 +91,17 @@ void uniffi_iroh_fn_free_authorid(
 	RustCallStatus* out_status
 );
 
+void* uniffi_iroh_fn_constructor_authorid_from_string(
+	RustBuffer str,
+	RustCallStatus* out_status
+);
+
+int8_t uniffi_iroh_fn_method_authorid_equal(
+	void* ptr,
+	void* other,
+	RustCallStatus* out_status
+);
+
 RustBuffer uniffi_iroh_fn_method_authorid_to_string(
 	void* ptr,
 	RustCallStatus* out_status
@@ -203,6 +214,12 @@ void* uniffi_iroh_fn_constructor_docticket_from_string(
 	RustCallStatus* out_status
 );
 
+int8_t uniffi_iroh_fn_method_docticket_equal(
+	void* ptr,
+	void* other,
+	RustCallStatus* out_status
+);
+
 RustBuffer uniffi_iroh_fn_method_docticket_to_string(
 	void* ptr,
 	RustCallStatus* out_status
@@ -255,6 +272,12 @@ void* uniffi_iroh_fn_constructor_getfilter_key(
 
 void* uniffi_iroh_fn_constructor_getfilter_prefix(
 	RustBuffer prefix,
+	RustCallStatus* out_status
+);
+
+int8_t uniffi_iroh_fn_method_getfilter_equal(
+	void* ptr,
+	void* other,
 	RustCallStatus* out_status
 );
 
@@ -458,6 +481,17 @@ void uniffi_iroh_fn_free_namespaceid(
 	RustCallStatus* out_status
 );
 
+void* uniffi_iroh_fn_constructor_namespaceid_from_string(
+	RustBuffer str,
+	RustCallStatus* out_status
+);
+
+int8_t uniffi_iroh_fn_method_namespaceid_equal(
+	void* ptr,
+	void* other,
+	RustCallStatus* out_status
+);
+
 RustBuffer uniffi_iroh_fn_method_namespaceid_to_string(
 	void* ptr,
 	RustCallStatus* out_status
@@ -482,6 +516,12 @@ RustBuffer uniffi_iroh_fn_method_peeraddr_derp_region(
 
 RustBuffer uniffi_iroh_fn_method_peeraddr_direct_addresses(
 	void* ptr,
+	RustCallStatus* out_status
+);
+
+int8_t uniffi_iroh_fn_method_peeraddr_equal(
+	void* ptr,
+	void* other,
 	RustCallStatus* out_status
 );
 
@@ -676,6 +716,10 @@ uint16_t uniffi_iroh_checksum_func_start_metrics_collection(
 	RustCallStatus* out_status
 );
 
+uint16_t uniffi_iroh_checksum_method_authorid_equal(
+	RustCallStatus* out_status
+);
+
 uint16_t uniffi_iroh_checksum_method_authorid_to_string(
 	RustCallStatus* out_status
 );
@@ -736,6 +780,10 @@ uint16_t uniffi_iroh_checksum_method_doc_subscribe(
 	RustCallStatus* out_status
 );
 
+uint16_t uniffi_iroh_checksum_method_docticket_equal(
+	RustCallStatus* out_status
+);
+
 uint16_t uniffi_iroh_checksum_method_docticket_to_string(
 	RustCallStatus* out_status
 );
@@ -749,6 +797,10 @@ uint16_t uniffi_iroh_checksum_method_entry_key(
 );
 
 uint16_t uniffi_iroh_checksum_method_entry_namespace(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_getfilter_equal(
 	RustCallStatus* out_status
 );
 
@@ -856,6 +908,10 @@ uint16_t uniffi_iroh_checksum_method_liveevent_type(
 	RustCallStatus* out_status
 );
 
+uint16_t uniffi_iroh_checksum_method_namespaceid_equal(
+	RustCallStatus* out_status
+);
+
 uint16_t uniffi_iroh_checksum_method_namespaceid_to_string(
 	RustCallStatus* out_status
 );
@@ -865,6 +921,10 @@ uint16_t uniffi_iroh_checksum_method_peeraddr_derp_region(
 );
 
 uint16_t uniffi_iroh_checksum_method_peeraddr_direct_addresses(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_peeraddr_equal(
 	RustCallStatus* out_status
 );
 
@@ -932,6 +992,10 @@ uint16_t uniffi_iroh_checksum_method_socketaddrv6_to_string(
 	RustCallStatus* out_status
 );
 
+uint16_t uniffi_iroh_checksum_constructor_authorid_from_string(
+	RustCallStatus* out_status
+);
+
 uint16_t uniffi_iroh_checksum_constructor_docticket_from_string(
 	RustCallStatus* out_status
 );
@@ -973,6 +1037,10 @@ uint16_t uniffi_iroh_checksum_constructor_ipv6addr_new(
 );
 
 uint16_t uniffi_iroh_checksum_constructor_irohnode_new(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_constructor_namespaceid_from_string(
 	RustCallStatus* out_status
 );
 
@@ -1044,6 +1112,7 @@ void uniffiFutureCallbackHandlerIpv6Addr(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerIpv6AddrTypeIrohError(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerIrohNodeTypeIrohError(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerNamespaceId(void *, void*, RustCallStatus);
+void uniffiFutureCallbackHandlerNamespaceIdTypeIrohError(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerPeerAddr(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerPublicKey(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerPublicKeyTypeIrohError(void *, void*, RustCallStatus);

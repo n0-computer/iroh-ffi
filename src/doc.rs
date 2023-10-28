@@ -222,7 +222,7 @@ impl From<iroh::sync::actor::OpenState> for OpenState {
 }
 
 /// A peer and it's addressing information.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PeerAddr {
     node_id: Arc<PublicKey>,
     derp_region: Option<u16>,
@@ -251,6 +251,11 @@ impl PeerAddr {
     /// Get the derp region of this peer.
     pub fn derp_region(&self) -> Option<u16> {
         self.derp_region
+    }
+
+    /// Returns true if both PeerAddr's have the same values
+    pub fn equal(&self, other: Arc<PeerAddr>) -> bool {
+        *self == *other
     }
 }
 
@@ -299,6 +304,7 @@ impl From<ShareMode> for iroh::rpc_protocol::ShareMode {
         }
     }
 }
+
 /// A single entry in a [`Doc`]
 ///
 /// An entry is identified by a key, its [`AuthorId`], and the [`Doc`]'s
@@ -330,7 +336,7 @@ impl Entry {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AuthorId(pub(crate) iroh::sync::sync::AuthorId);
 
 impl std::fmt::Display for AuthorId {
@@ -339,12 +345,38 @@ impl std::fmt::Display for AuthorId {
     }
 }
 
-#[derive(Debug, Clone)]
+impl AuthorId {
+    /// Get an [`AuthorId`] from a String
+    pub fn from_string(str: String) -> Result<Self, IrohError> {
+        let author = iroh::sync::sync::AuthorId::from_str(&str).map_err(IrohError::author)?;
+        Ok(AuthorId(author))
+    }
+
+    /// Returns true when both AuthorId's have the same value
+    pub fn equal(&self, other: Arc<AuthorId>) -> bool {
+        *self == *other
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NamespaceId(pub(crate) iroh::sync::sync::NamespaceId);
 
 impl From<iroh::sync::sync::NamespaceId> for NamespaceId {
     fn from(id: iroh::sync::sync::NamespaceId) -> Self {
         NamespaceId(id)
+    }
+}
+
+impl NamespaceId {
+    /// Get an [`NamespaceId`] from a String
+    pub fn from_string(str: String) -> Result<Self, IrohError> {
+        let author = iroh::sync::sync::NamespaceId::from_str(&str).map_err(IrohError::namespace)?;
+        Ok(NamespaceId(author))
+    }
+
+    /// Returns true when both NamespaceId's have the same value
+    pub fn equal(&self, other: Arc<NamespaceId>) -> bool {
+        *self == *other
     }
 }
 
@@ -355,7 +387,7 @@ impl std::fmt::Display for NamespaceId {
 }
 
 /// Filter a get query onto a namespace
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GetFilter {
     /// No filter, list all entries
     All,
@@ -410,17 +442,30 @@ impl GetFilter {
     pub fn key(key: Vec<u8>) -> Self {
         GetFilter::Key(key)
     }
+
+    /// Returns true if both GetFilter's have the same values
+    pub fn equal(&self, other: Arc<GetFilter>) -> bool {
+        *self == *other
+    }
 }
 
-#[derive(Debug)]
+/// Contains both a key (either secret or public) to a document, and a list of peers to join.
+#[derive(Debug, Clone)]
 pub struct DocTicket(pub(crate) iroh::rpc_protocol::DocTicket);
 
 impl DocTicket {
+    /// Create a `DocTicket` from a string
     pub fn from_string(content: String) -> Result<Self, IrohError> {
         let ticket = content
             .parse::<iroh::rpc_protocol::DocTicket>()
             .map_err(IrohError::doc_ticket)?;
         Ok(DocTicket(ticket))
+    }
+
+    /// Returns true if both `DocTicket`'s have the same value
+    pub fn equal(&self, other: Arc<DocTicket>) -> bool {
+        // TODO: implement partialeq and eq on DocTicket
+        self.to_string() == *other.to_string()
     }
 }
 

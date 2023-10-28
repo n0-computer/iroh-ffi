@@ -79,6 +79,7 @@ interface PeerAddr {
   constructor(PublicKey node_id, u16? region_id, sequence<SocketAddr> addresses);
   sequence<SocketAddr> direct_addresses();
   u16? derp_region();
+  boolean equal(PeerAddr other);
 };
 
 interface GetFilter {
@@ -92,6 +93,7 @@ interface GetFilter {
   constructor(bytes key);
   [Name=prefix]
   constructor(bytes prefix);
+  boolean equal(GetFilter other);
 };
 
 callback interface SubscribeCallback {
@@ -100,7 +102,10 @@ callback interface SubscribeCallback {
 };
 
 interface AuthorId {
+  [Name=from_string, Throws=IrohError]
+  constructor(string str);
   string to_string();
+  boolean equal(AuthorId other);
 };
 
 interface Entry {
@@ -118,6 +123,7 @@ interface DocTicket {
   [Name=from_string, Throws=IrohError]
   constructor(string content);
   string to_string();
+  boolean equal(DocTicket other);
 };
 
 dictionary OpenState {
@@ -165,7 +171,10 @@ interface ContentStatus {
 };
 
 interface NamespaceId {
+  [Name=from_string, Throws=IrohError]
+  constructor(string str);
   string to_string();
+  boolean equal(NamespaceId other);
 };
 
 dictionary SyncEvent {
@@ -274,6 +283,7 @@ interface IrohError {
   NodeCreate(string description);
   Doc(string description);
   Author(string description);
+  Namespace(string description);
   DocTicket(string description);
   Uniffi(string description);
   Connection(string description);

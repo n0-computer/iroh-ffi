@@ -367,6 +367,15 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_authorid_equal(uniffiStatus)
+		})
+		if checksum != 33867 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_authorid_equal: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_authorid_to_string(uniffiStatus)
 		})
 		if checksum != 42389 {
@@ -502,6 +511,15 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_docticket_equal(uniffiStatus)
+		})
+		if checksum != 14909 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_docticket_equal: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_docticket_to_string(uniffiStatus)
 		})
 		if checksum != 22814 {
@@ -534,6 +552,15 @@ func uniffiCheckChecksums() {
 		if checksum != 41306 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_entry_namespace: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_getfilter_equal(uniffiStatus)
+		})
+		if checksum != 31562 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_getfilter_equal: UniFFI API checksum mismatch")
 		}
 	}
 	{
@@ -772,6 +799,15 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_namespaceid_equal(uniffiStatus)
+		})
+		if checksum != 18805 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_namespaceid_equal: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_namespaceid_to_string(uniffiStatus)
 		})
 		if checksum != 63715 {
@@ -795,6 +831,15 @@ func uniffiCheckChecksums() {
 		if checksum != 36736 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_peeraddr_direct_addresses: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_peeraddr_equal(uniffiStatus)
+		})
+		if checksum != 21646 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_peeraddr_equal: UniFFI API checksum mismatch")
 		}
 	}
 	{
@@ -943,6 +988,15 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_constructor_authorid_from_string(uniffiStatus)
+		})
+		if checksum != 14210 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_constructor_authorid_from_string: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_constructor_docticket_from_string(uniffiStatus)
 		})
 		if checksum != 40262 {
@@ -1038,6 +1092,15 @@ func uniffiCheckChecksums() {
 		if checksum != 22562 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_constructor_irohnode_new: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_constructor_namespaceid_from_string(uniffiStatus)
+		})
+		if checksum != 47535 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_constructor_namespaceid_from_string: UniFFI API checksum mismatch")
 		}
 	}
 	{
@@ -1466,6 +1529,27 @@ type AuthorId struct {
 	ffiObject FfiObject
 }
 
+func AuthorIdFromString(str string) (*AuthorId, error) {
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_constructor_authorid_from_string(FfiConverterStringINSTANCE.Lower(str), _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue *AuthorId
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterAuthorIdINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
+
+func (_self *AuthorId) Equal(other *AuthorId) bool {
+	_pointer := _self.ffiObject.incrementPointer("*AuthorId")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterBoolINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) C.int8_t {
+		return C.uniffi_iroh_fn_method_authorid_equal(
+			_pointer, FfiConverterAuthorIdINSTANCE.Lower(other), _uniffiStatus)
+	}))
+}
+
 func (_self *AuthorId) ToString() string {
 	_pointer := _self.ffiObject.incrementPointer("*AuthorId")
 	defer _self.ffiObject.decrementPointer()
@@ -1815,6 +1899,15 @@ func DocTicketFromString(content string) (*DocTicket, error) {
 	}
 }
 
+func (_self *DocTicket) Equal(other *DocTicket) bool {
+	_pointer := _self.ffiObject.incrementPointer("*DocTicket")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterBoolINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) C.int8_t {
+		return C.uniffi_iroh_fn_method_docticket_equal(
+			_pointer, FfiConverterDocTicketINSTANCE.Lower(other), _uniffiStatus)
+	}))
+}
+
 func (_self *DocTicket) ToString() string {
 	_pointer := _self.ffiObject.incrementPointer("*DocTicket")
 	defer _self.ffiObject.decrementPointer()
@@ -1970,6 +2063,15 @@ func GetFilterKey(key []byte) *GetFilter {
 func GetFilterPrefix(prefix []byte) *GetFilter {
 	return FfiConverterGetFilterINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
 		return C.uniffi_iroh_fn_constructor_getfilter_prefix(FfiConverterBytesINSTANCE.Lower(prefix), _uniffiStatus)
+	}))
+}
+
+func (_self *GetFilter) Equal(other *GetFilter) bool {
+	_pointer := _self.ffiObject.incrementPointer("*GetFilter")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterBoolINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) C.int8_t {
+		return C.uniffi_iroh_fn_method_getfilter_equal(
+			_pointer, FfiConverterGetFilterINSTANCE.Lower(other), _uniffiStatus)
 	}))
 }
 
@@ -2603,6 +2705,27 @@ type NamespaceId struct {
 	ffiObject FfiObject
 }
 
+func NamespaceIdFromString(str string) (*NamespaceId, error) {
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_constructor_namespaceid_from_string(FfiConverterStringINSTANCE.Lower(str), _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue *NamespaceId
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterNamespaceIdINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
+
+func (_self *NamespaceId) Equal(other *NamespaceId) bool {
+	_pointer := _self.ffiObject.incrementPointer("*NamespaceId")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterBoolINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) C.int8_t {
+		return C.uniffi_iroh_fn_method_namespaceid_equal(
+			_pointer, FfiConverterNamespaceIdINSTANCE.Lower(other), _uniffiStatus)
+	}))
+}
+
 func (_self *NamespaceId) ToString() string {
 	_pointer := _self.ffiObject.incrementPointer("*NamespaceId")
 	defer _self.ffiObject.decrementPointer()
@@ -2681,6 +2804,15 @@ func (_self *PeerAddr) DirectAddresses() []*SocketAddr {
 	return FfiConverterSequenceSocketAddrINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
 		return C.uniffi_iroh_fn_method_peeraddr_direct_addresses(
 			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *PeerAddr) Equal(other *PeerAddr) bool {
+	_pointer := _self.ffiObject.incrementPointer("*PeerAddr")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterBoolINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) C.int8_t {
+		return C.uniffi_iroh_fn_method_peeraddr_equal(
+			_pointer, FfiConverterPeerAddrINSTANCE.Lower(other), _uniffiStatus)
 	}))
 }
 
@@ -3531,6 +3663,7 @@ var ErrIrohErrorRuntime = fmt.Errorf("IrohErrorRuntime")
 var ErrIrohErrorNodeCreate = fmt.Errorf("IrohErrorNodeCreate")
 var ErrIrohErrorDoc = fmt.Errorf("IrohErrorDoc")
 var ErrIrohErrorAuthor = fmt.Errorf("IrohErrorAuthor")
+var ErrIrohErrorNamespace = fmt.Errorf("IrohErrorNamespace")
 var ErrIrohErrorDocTicket = fmt.Errorf("IrohErrorDocTicket")
 var ErrIrohErrorUniffi = fmt.Errorf("IrohErrorUniffi")
 var ErrIrohErrorConnection = fmt.Errorf("IrohErrorConnection")
@@ -3650,6 +3783,33 @@ func (err IrohErrorAuthor) Error() string {
 
 func (self IrohErrorAuthor) Is(target error) bool {
 	return target == ErrIrohErrorAuthor
+}
+
+type IrohErrorNamespace struct {
+	Description string
+}
+
+func NewIrohErrorNamespace(
+	description string,
+) *IrohError {
+	return &IrohError{
+		err: &IrohErrorNamespace{
+			Description: description,
+		},
+	}
+}
+
+func (err IrohErrorNamespace) Error() string {
+	return fmt.Sprint("Namespace",
+		": ",
+
+		"Description=",
+		err.Description,
+	)
+}
+
+func (self IrohErrorNamespace) Is(target error) bool {
+	return target == ErrIrohErrorNamespace
 }
 
 type IrohErrorDocTicket struct {
@@ -3982,46 +4142,50 @@ func (c FfiConverterTypeIrohError) Read(reader io.Reader) error {
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 5:
-		return &IrohError{&IrohErrorDocTicket{
+		return &IrohError{&IrohErrorNamespace{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 6:
-		return &IrohError{&IrohErrorUniffi{
+		return &IrohError{&IrohErrorDocTicket{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 7:
-		return &IrohError{&IrohErrorConnection{
+		return &IrohError{&IrohErrorUniffi{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 8:
-		return &IrohError{&IrohErrorBlob{
+		return &IrohError{&IrohErrorConnection{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 9:
-		return &IrohError{&IrohErrorIpv4Addr{
+		return &IrohError{&IrohErrorBlob{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 10:
-		return &IrohError{&IrohErrorIpv6Addr{
+		return &IrohError{&IrohErrorIpv4Addr{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 11:
-		return &IrohError{&IrohErrorSocketAddrV4{
+		return &IrohError{&IrohErrorIpv6Addr{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 12:
-		return &IrohError{&IrohErrorSocketAddrV6{
+		return &IrohError{&IrohErrorSocketAddrV4{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 13:
-		return &IrohError{&IrohErrorSocketAddr{
+		return &IrohError{&IrohErrorSocketAddrV6{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 14:
-		return &IrohError{&IrohErrorPublicKey{
+		return &IrohError{&IrohErrorSocketAddr{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 15:
+		return &IrohError{&IrohErrorPublicKey{
+			Description: FfiConverterStringINSTANCE.Read(reader),
+		}}
+	case 16:
 		return &IrohError{&IrohErrorPeerAddr{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
@@ -4044,38 +4208,41 @@ func (c FfiConverterTypeIrohError) Write(writer io.Writer, value *IrohError) {
 	case *IrohErrorAuthor:
 		writeInt32(writer, 4)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorDocTicket:
+	case *IrohErrorNamespace:
 		writeInt32(writer, 5)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorUniffi:
+	case *IrohErrorDocTicket:
 		writeInt32(writer, 6)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorConnection:
+	case *IrohErrorUniffi:
 		writeInt32(writer, 7)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorBlob:
+	case *IrohErrorConnection:
 		writeInt32(writer, 8)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorIpv4Addr:
+	case *IrohErrorBlob:
 		writeInt32(writer, 9)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorIpv6Addr:
+	case *IrohErrorIpv4Addr:
 		writeInt32(writer, 10)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorSocketAddrV4:
+	case *IrohErrorIpv6Addr:
 		writeInt32(writer, 11)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorSocketAddrV6:
+	case *IrohErrorSocketAddrV4:
 		writeInt32(writer, 12)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorSocketAddr:
+	case *IrohErrorSocketAddrV6:
 		writeInt32(writer, 13)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorPublicKey:
+	case *IrohErrorSocketAddr:
 		writeInt32(writer, 14)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorPeerAddr:
+	case *IrohErrorPublicKey:
 		writeInt32(writer, 15)
+		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
+	case *IrohErrorPeerAddr:
+		writeInt32(writer, 16)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
 	default:
 		_ = variantValue

@@ -11,6 +11,8 @@ pub enum IrohError {
     Doc { description: String },
     #[error("author error: {description}")]
     Author { description: String },
+    #[error("namespace error: {description}")]
+    Namespace { description: String },
     #[error("doc ticket error: {description}")]
     DocTicket { description: String },
     #[error("uniffi: {description}")]
@@ -50,6 +52,12 @@ impl IrohError {
 
     pub fn author(error: impl Display) -> Self {
         IrohError::Author {
+            description: error.to_string(),
+        }
+    }
+
+    pub fn namespace(error: impl Display) -> Self {
+        IrohError::Namespace {
             description: error.to_string(),
         }
     }
