@@ -33,6 +33,8 @@ pub enum IrohError {
     PublicKey { description: String },
     #[error("NodeAddr error: {description}")]
     NodeAddr { description: String },
+    #[error("Hash error: {description}")]
+    Hash { description: String },
 }
 
 impl IrohError {
@@ -116,6 +118,12 @@ impl IrohError {
 
     pub fn node_addr(error: impl Display) -> Self {
         IrohError::NodeAddr {
+            description: error.to_string(),
+        }
+    }
+
+    pub fn hash(error: impl Display) -> Self {
+        IrohError::Hash {
             description: error.to_string(),
         }
     }

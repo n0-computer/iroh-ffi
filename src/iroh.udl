@@ -136,8 +136,15 @@ interface Entry {
 };
 
 interface Hash {
+  constructor(bytes buf);
   string to_string();
   bytes to_bytes();
+  [Name=from_bytes, Throws=IrohError]
+  constructor(bytes bytes);
+  bytes as_cid_bytes();
+  [Name=from_cid_bytes, Throws=IrohError]
+  constructor(bytes bytes);
+  string to_hex();
 };
 
 interface DocTicket {
@@ -313,4 +320,5 @@ interface IrohError {
   SocketAddrV6(string description);
   PublicKey(string description);
   NodeAddr(string description);
+  Hash(string description);
 };

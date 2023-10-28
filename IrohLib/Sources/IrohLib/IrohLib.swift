@@ -973,7 +973,9 @@ public func FfiConverterTypeEntry_lower(_ value: Entry) -> UnsafeMutableRawPoint
 }
 
 public protocol HashProtocol {
+    func asCidBytes() -> Data
     func toBytes() -> Data
+    func toHex() -> String
     func toString() -> String
 }
 
@@ -987,8 +989,41 @@ public class Hash: HashProtocol {
         self.pointer = pointer
     }
 
+    public convenience init(buf: Data) {
+        self.init(unsafeFromRawPointer: try! rustCall {
+            uniffi_iroh_fn_constructor_hash_new(
+                FfiConverterData.lower(buf), $0
+            )
+        })
+    }
+
     deinit {
         try! rustCall { uniffi_iroh_fn_free_hash(pointer, $0) }
+    }
+
+    public static func fromBytes(bytes: Data) throws -> Hash {
+        return try Hash(unsafeFromRawPointer: rustCallWithError(FfiConverterTypeIrohError.lift) {
+            uniffi_iroh_fn_constructor_hash_from_bytes(
+                FfiConverterData.lower(bytes), $0
+            )
+        })
+    }
+
+    public static func fromCidBytes(bytes: Data) throws -> Hash {
+        return try Hash(unsafeFromRawPointer: rustCallWithError(FfiConverterTypeIrohError.lift) {
+            uniffi_iroh_fn_constructor_hash_from_cid_bytes(
+                FfiConverterData.lower(bytes), $0
+            )
+        })
+    }
+
+    public func asCidBytes() -> Data {
+        return try! FfiConverterData.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_hash_as_cid_bytes(self.pointer, $0)
+                }
+        )
     }
 
     public func toBytes() -> Data {
@@ -996,6 +1031,15 @@ public class Hash: HashProtocol {
             try!
                 rustCall {
                     uniffi_iroh_fn_method_hash_to_bytes(self.pointer, $0)
+                }
+        )
+    }
+
+    public func toHex() -> String {
+        return try! FfiConverterString.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_hash_to_hex(self.pointer, $0)
                 }
         )
     }
@@ -2779,6 +2823,7 @@ public enum IrohError {
     case SocketAddrV6(description: String)
     case PublicKey(description: String)
     case NodeAddr(description: String)
+    case Hash(description: String)
 
     fileprivate static func uniffiErrorHandler(_ error: RustBuffer) throws -> Error {
         return try FfiConverterTypeIrohError.lift(error)
@@ -2834,6 +2879,9 @@ public struct FfiConverterTypeIrohError: FfiConverterRustBuffer {
                 description: FfiConverterString.read(from: &buf)
             )
         case 15: return try .NodeAddr(
+                description: FfiConverterString.read(from: &buf)
+            )
+        case 16: return try .Hash(
                 description: FfiConverterString.read(from: &buf)
             )
 
@@ -2901,6 +2949,10 @@ public struct FfiConverterTypeIrohError: FfiConverterRustBuffer {
 
         case let .NodeAddr(description):
             writeInt(&buf, Int32(15))
+            FfiConverterString.write(description, into: &buf)
+
+        case let .Hash(description):
+            writeInt(&buf, Int32(16))
             FfiConverterString.write(description, into: &buf)
         }
     }
@@ -3891,7 +3943,13 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_entry_namespace() != 41306 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_checksum_method_hash_as_cid_bytes() != 25019 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_checksum_method_hash_to_bytes() != 29465 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_hash_to_hex() != 27622 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_hash_to_string() != 61408 {
@@ -4042,6 +4100,15 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_constructor_docticket_from_string() != 40262 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_constructor_hash_from_bytes() != 19134 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_constructor_hash_from_cid_bytes() != 58235 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_constructor_hash_new() != 22809 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_constructor_ipv4addr_from_string() != 60777 {

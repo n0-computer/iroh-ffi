@@ -556,11 +556,29 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_hash_as_cid_bytes(uniffiStatus)
+		})
+		if checksum != 25019 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_hash_as_cid_bytes: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_hash_to_bytes(uniffiStatus)
 		})
 		if checksum != 29465 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_hash_to_bytes: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_hash_to_hex(uniffiStatus)
+		})
+		if checksum != 27622 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_hash_to_hex: UniFFI API checksum mismatch")
 		}
 	}
 	{
@@ -1011,6 +1029,33 @@ func uniffiCheckChecksums() {
 		if checksum != 40262 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_constructor_docticket_from_string: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_constructor_hash_from_bytes(uniffiStatus)
+		})
+		if checksum != 19134 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_constructor_hash_from_bytes: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_constructor_hash_from_cid_bytes(uniffiStatus)
+		})
+		if checksum != 58235 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_constructor_hash_from_cid_bytes: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_constructor_hash_new(uniffiStatus)
+		})
+		if checksum != 22809 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_constructor_hash_new: UniFFI API checksum mismatch")
 		}
 	}
 	{
@@ -2049,11 +2094,58 @@ type Hash struct {
 	ffiObject FfiObject
 }
 
+func NewHash(buf []byte) *Hash {
+	return FfiConverterHashINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_constructor_hash_new(FfiConverterBytesINSTANCE.Lower(buf), _uniffiStatus)
+	}))
+}
+
+func HashFromBytes(bytes []byte) (*Hash, error) {
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_constructor_hash_from_bytes(FfiConverterBytesINSTANCE.Lower(bytes), _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue *Hash
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterHashINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
+func HashFromCidBytes(bytes []byte) (*Hash, error) {
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_constructor_hash_from_cid_bytes(FfiConverterBytesINSTANCE.Lower(bytes), _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue *Hash
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterHashINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
+
+func (_self *Hash) AsCidBytes() []byte {
+	_pointer := _self.ffiObject.incrementPointer("*Hash")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterBytesINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_hash_as_cid_bytes(
+			_pointer, _uniffiStatus)
+	}))
+}
+
 func (_self *Hash) ToBytes() []byte {
 	_pointer := _self.ffiObject.incrementPointer("*Hash")
 	defer _self.ffiObject.decrementPointer()
 	return FfiConverterBytesINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
 		return C.uniffi_iroh_fn_method_hash_to_bytes(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *Hash) ToHex() string {
+	_pointer := _self.ffiObject.incrementPointer("*Hash")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterStringINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_hash_to_hex(
 			_pointer, _uniffiStatus)
 	}))
 }
@@ -3752,6 +3844,7 @@ var ErrIrohErrorSocketAddrV4 = fmt.Errorf("IrohErrorSocketAddrV4")
 var ErrIrohErrorSocketAddrV6 = fmt.Errorf("IrohErrorSocketAddrV6")
 var ErrIrohErrorPublicKey = fmt.Errorf("IrohErrorPublicKey")
 var ErrIrohErrorNodeAddr = fmt.Errorf("IrohErrorNodeAddr")
+var ErrIrohErrorHash = fmt.Errorf("IrohErrorHash")
 
 // Variant structs
 type IrohErrorRuntime struct {
@@ -4159,6 +4252,33 @@ func (self IrohErrorNodeAddr) Is(target error) bool {
 	return target == ErrIrohErrorNodeAddr
 }
 
+type IrohErrorHash struct {
+	Description string
+}
+
+func NewIrohErrorHash(
+	description string,
+) *IrohError {
+	return &IrohError{
+		err: &IrohErrorHash{
+			Description: description,
+		},
+	}
+}
+
+func (err IrohErrorHash) Error() string {
+	return fmt.Sprint("Hash",
+		": ",
+
+		"Description=",
+		err.Description,
+	)
+}
+
+func (self IrohErrorHash) Is(target error) bool {
+	return target == ErrIrohErrorHash
+}
+
 type FfiConverterTypeIrohError struct{}
 
 var FfiConverterTypeIrohErrorINSTANCE = FfiConverterTypeIrohError{}
@@ -4235,6 +4355,10 @@ func (c FfiConverterTypeIrohError) Read(reader io.Reader) error {
 		return &IrohError{&IrohErrorNodeAddr{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
+	case 16:
+		return &IrohError{&IrohErrorHash{
+			Description: FfiConverterStringINSTANCE.Read(reader),
+		}}
 	default:
 		panic(fmt.Sprintf("Unknown error code %d in FfiConverterTypeIrohError.Read()", errorID))
 	}
@@ -4286,6 +4410,9 @@ func (c FfiConverterTypeIrohError) Write(writer io.Writer, value *IrohError) {
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
 	case *IrohErrorNodeAddr:
 		writeInt32(writer, 15)
+		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
+	case *IrohErrorHash:
+		writeInt32(writer, 16)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
 	default:
 		_ = variantValue

@@ -1,9 +1,11 @@
+mod blob;
 mod doc;
 mod error;
 mod key;
 mod net;
 mod node;
 
+pub use self::blob::*;
 pub use self::doc::*;
 pub use self::error::IrohError;
 pub use self::key::*;

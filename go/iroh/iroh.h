@@ -249,7 +249,32 @@ void uniffi_iroh_fn_free_hash(
 	RustCallStatus* out_status
 );
 
+void* uniffi_iroh_fn_constructor_hash_from_bytes(
+	RustBuffer bytes,
+	RustCallStatus* out_status
+);
+
+void* uniffi_iroh_fn_constructor_hash_from_cid_bytes(
+	RustBuffer bytes,
+	RustCallStatus* out_status
+);
+
+void* uniffi_iroh_fn_constructor_hash_new(
+	RustBuffer buf,
+	RustCallStatus* out_status
+);
+
+RustBuffer uniffi_iroh_fn_method_hash_as_cid_bytes(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
 RustBuffer uniffi_iroh_fn_method_hash_to_bytes(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+RustBuffer uniffi_iroh_fn_method_hash_to_hex(
 	void* ptr,
 	RustCallStatus* out_status
 );
@@ -820,7 +845,15 @@ uint16_t uniffi_iroh_checksum_method_entry_namespace(
 	RustCallStatus* out_status
 );
 
+uint16_t uniffi_iroh_checksum_method_hash_as_cid_bytes(
+	RustCallStatus* out_status
+);
+
 uint16_t uniffi_iroh_checksum_method_hash_to_bytes(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_hash_to_hex(
 	RustCallStatus* out_status
 );
 
@@ -1021,6 +1054,18 @@ uint16_t uniffi_iroh_checksum_constructor_authorid_from_string(
 );
 
 uint16_t uniffi_iroh_checksum_constructor_docticket_from_string(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_constructor_hash_from_bytes(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_constructor_hash_from_cid_bytes(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_constructor_hash_new(
 	RustCallStatus* out_status
 );
 

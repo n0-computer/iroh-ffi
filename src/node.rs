@@ -80,39 +80,12 @@ impl From<iroh::net::magicsock::ConnectionType> for ConnectionType {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct Hash(pub(crate) iroh::bytes::Hash);
-
-impl From<iroh::bytes::Hash> for Hash {
-    fn from(h: iroh::bytes::Hash) -> Self {
-        Hash(h)
-    }
-}
-
-impl Hash {
-    pub fn to_bytes(&self) -> Vec<u8> {
-        self.0.as_bytes().to_vec()
-    }
-}
-
-impl std::fmt::Display for Hash {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl From<Hash> for iroh::bytes::Hash {
-    fn from(value: Hash) -> Self {
-        value.0
-    }
-}
-
 pub struct IrohNode {
-    node: Node<iroh::bytes::store::flat::Store>,
-    async_runtime: Handle,
-    sync_client: iroh::client::Iroh<FlumeConnection<ProviderResponse, ProviderRequest>>,
+    pub(crate) node: Node<iroh::bytes::store::flat::Store>,
+    pub(crate) async_runtime: Handle,
+    pub(crate) sync_client: iroh::client::Iroh<FlumeConnection<ProviderResponse, ProviderRequest>>,
     #[allow(dead_code)]
-    tokio_rt: tokio::runtime::Runtime,
+    pub(crate) tokio_rt: tokio::runtime::Runtime,
 }
 
 impl IrohNode {
@@ -279,33 +252,6 @@ impl IrohNode {
                 .map(|i| i.map(|i| i.into()))
                 .map_err(Error::connection)?;
             Ok(info)
-        })
-    }
-
-    pub fn blob_list_blobs(&self) -> Result<Vec<Arc<Hash>>, Error> {
-        block_on(&self.async_runtime, async {
-            let response = self.sync_client.blobs.list().await.map_err(Error::blob)?;
-
-            let hashes: Vec<Arc<Hash>> = response
-                .map_ok(|i| Arc::new(Hash(i.hash)))
-                .map_err(Error::blob)
-                .try_collect()
-                .await?;
-
-            Ok(hashes)
-        })
-    }
-
-    pub fn blob_get(&self, hash: Arc<Hash>) -> Result<Vec<u8>, Error> {
-        block_on(&self.async_runtime, async {
-            let mut r = self
-                .sync_client
-                .blobs
-                .read(hash.0)
-                .await
-                .map_err(Error::blob)?;
-            let data = r.read_to_bytes().await.map_err(Error::blob)?;
-            Ok(data.into())
         })
     }
 }
