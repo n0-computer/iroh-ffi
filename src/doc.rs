@@ -530,60 +530,60 @@ impl LiveEvent {
         }
     }
 
-    pub fn as_insert_local(&self) -> Arc<Entry> {
+    pub fn as_insert_local(&self) -> Result<Arc<Entry>, IrohError> {
         if let Self::InsertLocal { entry } = self {
-            Arc::new(entry.clone())
+            Ok(Arc::new(entry.clone()))
         } else {
-            panic!("not an insert local event");
+            Err(IrohError::live_event("not an insert local event"))
         }
     }
 
-    pub fn as_insert_remote(&self) -> InsertRemoteEvent {
+    pub fn as_insert_remote(&self) -> Result<InsertRemoteEvent, IrohError> {
         if let Self::InsertRemote {
             from,
             entry,
             content_status,
         } = self
         {
-            InsertRemoteEvent {
+            Ok(InsertRemoteEvent {
                 from: Arc::new(from.clone()),
                 entry: Arc::new(entry.clone()),
                 content_status: content_status.clone(),
-            }
+            })
         } else {
-            panic!("not an insert remote event");
+            Err(IrohError::live_event("not an insert remote event"))
         }
     }
 
-    pub fn as_content_ready(&self) -> Arc<Hash> {
+    pub fn as_content_ready(&self) -> Result<Arc<Hash>, IrohError> {
         if let Self::ContentReady { hash } = self {
-            Arc::new(hash.clone())
+            Ok(Arc::new(hash.clone()))
         } else {
-            panic!("not an content ready event");
+            Err(IrohError::live_event("not an content ready event"))
         }
     }
 
-    pub fn as_neighbor_up(&self) -> Arc<PublicKey> {
+    pub fn as_neighbor_up(&self) -> Result<Arc<PublicKey>, IrohError> {
         if let Self::NeighborUp(key) = self {
-            Arc::new(key.clone())
+            Ok(Arc::new(key.clone()))
         } else {
-            panic!("not an neighbor up event");
+            Err(IrohError::live_event("not an neighbor up event"))
         }
     }
 
-    pub fn as_neighbor_down(&self) -> Arc<PublicKey> {
+    pub fn as_neighbor_down(&self) -> Result<Arc<PublicKey>, IrohError> {
         if let Self::NeighborDown(key) = self {
-            Arc::new(key.clone())
+            Ok(Arc::new(key.clone()))
         } else {
-            panic!("not an neighbor down event");
+            Err(IrohError::live_event("not an neighbor down event"))
         }
     }
 
-    pub fn as_sync_finished(&self) -> SyncEvent {
+    pub fn as_sync_finished(&self) -> Result<SyncEvent, IrohError> {
         if let Self::SyncFinished(event) = self {
-            event.clone()
+            Ok(event.clone())
         } else {
-            panic!("not an sync event event");
+            Err(IrohError::live_event("not an sync event event"))
         }
     }
 }

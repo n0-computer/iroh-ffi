@@ -139,11 +139,17 @@ dictionary CounterStats {
 
 interface LiveEvent {
   LiveEventType type();
+  [Throws=IrohError]
   Entry as_insert_local();
+  [Throws=IrohError]
   InsertRemoteEvent as_insert_remote();
+  [Throws=IrohError]
   Hash as_content_ready();
+  [Throws=IrohError]
   PublicKey as_neighbor_up();
+  [Throws=IrohError]
   PublicKey as_neighbor_down();
+  [Throws=IrohError]
   SyncEvent as_sync_finished();
 };
 
@@ -295,4 +301,5 @@ interface IrohError {
   SocketAddr(string description);
   PublicKey(string description);
   PeerAddr(string description);
+  LiveEvent(string description);
 };

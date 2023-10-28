@@ -738,7 +738,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_liveevent_as_content_ready(uniffiStatus)
 		})
-		if checksum != 15237 {
+		if checksum != 21697 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_liveevent_as_content_ready: UniFFI API checksum mismatch")
 		}
@@ -747,7 +747,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_liveevent_as_insert_local(uniffiStatus)
 		})
-		if checksum != 431 {
+		if checksum != 53568 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_liveevent_as_insert_local: UniFFI API checksum mismatch")
 		}
@@ -756,7 +756,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_liveevent_as_insert_remote(uniffiStatus)
 		})
-		if checksum != 17302 {
+		if checksum != 46026 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_liveevent_as_insert_remote: UniFFI API checksum mismatch")
 		}
@@ -765,7 +765,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_liveevent_as_neighbor_down(uniffiStatus)
 		})
-		if checksum != 154 {
+		if checksum != 54900 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_liveevent_as_neighbor_down: UniFFI API checksum mismatch")
 		}
@@ -774,7 +774,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_liveevent_as_neighbor_up(uniffiStatus)
 		})
-		if checksum != 25727 {
+		if checksum != 45381 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_liveevent_as_neighbor_up: UniFFI API checksum mismatch")
 		}
@@ -783,7 +783,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_liveevent_as_sync_finished(uniffiStatus)
 		})
-		if checksum != 14329 {
+		if checksum != 18488 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_liveevent_as_sync_finished: UniFFI API checksum mismatch")
 		}
@@ -2594,58 +2594,94 @@ type LiveEvent struct {
 	ffiObject FfiObject
 }
 
-func (_self *LiveEvent) AsContentReady() *Hash {
+func (_self *LiveEvent) AsContentReady() (*Hash, error) {
 	_pointer := _self.ffiObject.incrementPointer("*LiveEvent")
 	defer _self.ffiObject.decrementPointer()
-	return FfiConverterHashINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
 		return C.uniffi_iroh_fn_method_liveevent_as_content_ready(
 			_pointer, _uniffiStatus)
-	}))
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue *Hash
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterHashINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
 }
 
-func (_self *LiveEvent) AsInsertLocal() *Entry {
+func (_self *LiveEvent) AsInsertLocal() (*Entry, error) {
 	_pointer := _self.ffiObject.incrementPointer("*LiveEvent")
 	defer _self.ffiObject.decrementPointer()
-	return FfiConverterEntryINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
 		return C.uniffi_iroh_fn_method_liveevent_as_insert_local(
 			_pointer, _uniffiStatus)
-	}))
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue *Entry
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterEntryINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
 }
 
-func (_self *LiveEvent) AsInsertRemote() InsertRemoteEvent {
+func (_self *LiveEvent) AsInsertRemote() (InsertRemoteEvent, error) {
 	_pointer := _self.ffiObject.incrementPointer("*LiveEvent")
 	defer _self.ffiObject.decrementPointer()
-	return FfiConverterTypeInsertRemoteEventINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) RustBufferI {
 		return C.uniffi_iroh_fn_method_liveevent_as_insert_remote(
 			_pointer, _uniffiStatus)
-	}))
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue InsertRemoteEvent
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterTypeInsertRemoteEventINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
 }
 
-func (_self *LiveEvent) AsNeighborDown() *PublicKey {
+func (_self *LiveEvent) AsNeighborDown() (*PublicKey, error) {
 	_pointer := _self.ffiObject.incrementPointer("*LiveEvent")
 	defer _self.ffiObject.decrementPointer()
-	return FfiConverterPublicKeyINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
 		return C.uniffi_iroh_fn_method_liveevent_as_neighbor_down(
 			_pointer, _uniffiStatus)
-	}))
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue *PublicKey
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterPublicKeyINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
 }
 
-func (_self *LiveEvent) AsNeighborUp() *PublicKey {
+func (_self *LiveEvent) AsNeighborUp() (*PublicKey, error) {
 	_pointer := _self.ffiObject.incrementPointer("*LiveEvent")
 	defer _self.ffiObject.decrementPointer()
-	return FfiConverterPublicKeyINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
 		return C.uniffi_iroh_fn_method_liveevent_as_neighbor_up(
 			_pointer, _uniffiStatus)
-	}))
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue *PublicKey
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterPublicKeyINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
 }
 
-func (_self *LiveEvent) AsSyncFinished() SyncEvent {
+func (_self *LiveEvent) AsSyncFinished() (SyncEvent, error) {
 	_pointer := _self.ffiObject.incrementPointer("*LiveEvent")
 	defer _self.ffiObject.decrementPointer()
-	return FfiConverterTypeSyncEventINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) RustBufferI {
 		return C.uniffi_iroh_fn_method_liveevent_as_sync_finished(
 			_pointer, _uniffiStatus)
-	}))
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue SyncEvent
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterTypeSyncEventINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
 }
 
 func (_self *LiveEvent) Type() LiveEventType {
@@ -3675,6 +3711,7 @@ var ErrIrohErrorSocketAddrV6 = fmt.Errorf("IrohErrorSocketAddrV6")
 var ErrIrohErrorSocketAddr = fmt.Errorf("IrohErrorSocketAddr")
 var ErrIrohErrorPublicKey = fmt.Errorf("IrohErrorPublicKey")
 var ErrIrohErrorPeerAddr = fmt.Errorf("IrohErrorPeerAddr")
+var ErrIrohErrorLiveEvent = fmt.Errorf("IrohErrorLiveEvent")
 
 // Variant structs
 type IrohErrorRuntime struct {
@@ -4109,6 +4146,33 @@ func (self IrohErrorPeerAddr) Is(target error) bool {
 	return target == ErrIrohErrorPeerAddr
 }
 
+type IrohErrorLiveEvent struct {
+	Description string
+}
+
+func NewIrohErrorLiveEvent(
+	description string,
+) *IrohError {
+	return &IrohError{
+		err: &IrohErrorLiveEvent{
+			Description: description,
+		},
+	}
+}
+
+func (err IrohErrorLiveEvent) Error() string {
+	return fmt.Sprint("LiveEvent",
+		": ",
+
+		"Description=",
+		err.Description,
+	)
+}
+
+func (self IrohErrorLiveEvent) Is(target error) bool {
+	return target == ErrIrohErrorLiveEvent
+}
+
 type FfiConverterTypeIrohError struct{}
 
 var FfiConverterTypeIrohErrorINSTANCE = FfiConverterTypeIrohError{}
@@ -4189,6 +4253,10 @@ func (c FfiConverterTypeIrohError) Read(reader io.Reader) error {
 		return &IrohError{&IrohErrorPeerAddr{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
+	case 17:
+		return &IrohError{&IrohErrorLiveEvent{
+			Description: FfiConverterStringINSTANCE.Read(reader),
+		}}
 	default:
 		panic(fmt.Sprintf("Unknown error code %d in FfiConverterTypeIrohError.Read()", errorID))
 	}
@@ -4243,6 +4311,9 @@ func (c FfiConverterTypeIrohError) Write(writer io.Writer, value *IrohError) {
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
 	case *IrohErrorPeerAddr:
 		writeInt32(writer, 16)
+		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
+	case *IrohErrorLiveEvent:
+		writeInt32(writer, 17)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
 	default:
 		_ = variantValue

@@ -35,6 +35,8 @@ pub enum IrohError {
     PublicKey { description: String },
     #[error("PeerAddr error: {description}")]
     PeerAddr { description: String },
+    #[error("LiveEvent error: {description}")]
+    LiveEvent { description: String },
 }
 
 impl IrohError {
@@ -124,6 +126,12 @@ impl IrohError {
 
     pub fn peer_adddr(error: impl Display) -> Self {
         IrohError::PeerAddr {
+            description: error.to_string(),
+        }
+    }
+
+    pub fn live_event(error: impl Display) -> Self {
+        IrohError::LiveEvent {
             description: error.to_string(),
         }
     }
