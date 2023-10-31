@@ -79,6 +79,7 @@ typedef void (*UniFfiFutureCallbackUnsafeMutableRawPointer)(const void * _Nonnul
 typedef void (*UniFfiFutureCallbackUnsafeMutableRawPointer)(const void * _Nonnull, void*_Nonnull, RustCallStatus);
 typedef void (*UniFfiFutureCallbackUnsafeMutableRawPointer)(const void * _Nonnull, void*_Nonnull, RustCallStatus);
 typedef void (*UniFfiFutureCallbackUnsafeMutableRawPointer)(const void * _Nonnull, void*_Nonnull, RustCallStatus);
+typedef void (*UniFfiFutureCallbackUnsafeMutableRawPointer)(const void * _Nonnull, void*_Nonnull, RustCallStatus);
 typedef void (*UniFfiFutureCallbackRustBuffer)(const void * _Nonnull, RustBuffer, RustCallStatus);
 
 // Scaffolding functions
@@ -144,9 +145,13 @@ void*_Nonnull uniffi_iroh_fn_constructor_hash_from_bytes(RustBuffer bytes, RustC
 );
 void*_Nonnull uniffi_iroh_fn_constructor_hash_from_cid_bytes(RustBuffer bytes, RustCallStatus *_Nonnull out_status
 );
+void*_Nonnull uniffi_iroh_fn_constructor_hash_from_string(RustBuffer str, RustCallStatus *_Nonnull out_status
+);
 void*_Nonnull uniffi_iroh_fn_constructor_hash_new(RustBuffer buf, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_hash_as_cid_bytes(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+int8_t uniffi_iroh_fn_method_hash_equal(void*_Nonnull ptr, void*_Nonnull other, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_hash_to_bytes(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -310,6 +315,18 @@ uint16_t uniffi_iroh_fn_method_socketaddrv6_port(void*_Nonnull ptr, RustCallStat
 );
 RustBuffer uniffi_iroh_fn_method_socketaddrv6_to_string(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+void uniffi_iroh_fn_free_tag(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_iroh_fn_constructor_tag_from_bytes(RustBuffer bytes, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_iroh_fn_constructor_tag_from_string(RustBuffer s, RustCallStatus *_Nonnull out_status
+);
+int8_t uniffi_iroh_fn_method_tag_equal(void*_Nonnull ptr, void*_Nonnull other, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_iroh_fn_method_tag_to_bytes(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_iroh_fn_method_tag_to_string(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
 void uniffi_iroh_fn_init_callback_subscribecallback(ForeignCallback _Nonnull callback_stub, RustCallStatus *_Nonnull out_status
 );
 void uniffi_iroh_fn_func_set_log_level(RustBuffer level, RustCallStatus *_Nonnull out_status
@@ -395,6 +412,9 @@ uint16_t uniffi_iroh_checksum_method_entry_namespace(void
     
 );
 uint16_t uniffi_iroh_checksum_method_hash_as_cid_bytes(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_hash_equal(void
     
 );
 uint16_t uniffi_iroh_checksum_method_hash_to_bytes(void
@@ -547,6 +567,15 @@ uint16_t uniffi_iroh_checksum_method_socketaddrv6_port(void
 uint16_t uniffi_iroh_checksum_method_socketaddrv6_to_string(void
     
 );
+uint16_t uniffi_iroh_checksum_method_tag_equal(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_tag_to_bytes(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_tag_to_string(void
+    
+);
 uint16_t uniffi_iroh_checksum_constructor_authorid_from_string(void
     
 );
@@ -557,6 +586,9 @@ uint16_t uniffi_iroh_checksum_constructor_hash_from_bytes(void
     
 );
 uint16_t uniffi_iroh_checksum_constructor_hash_from_cid_bytes(void
+    
+);
+uint16_t uniffi_iroh_checksum_constructor_hash_from_string(void
     
 );
 uint16_t uniffi_iroh_checksum_constructor_hash_new(void
@@ -620,6 +652,12 @@ uint16_t uniffi_iroh_checksum_constructor_socketaddrv6_from_string(void
     
 );
 uint16_t uniffi_iroh_checksum_constructor_socketaddrv6_new(void
+    
+);
+uint16_t uniffi_iroh_checksum_constructor_tag_from_bytes(void
+    
+);
+uint16_t uniffi_iroh_checksum_constructor_tag_from_string(void
     
 );
 uint16_t uniffi_iroh_checksum_method_subscribecallback_event(void

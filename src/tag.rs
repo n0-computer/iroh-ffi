@@ -36,7 +36,7 @@ impl From<iroh::bytes::Tag> for Tag {
 
 impl std::fmt::Display for Tag {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.0.)
+        write!(f, "{}", self.0)
     }
 }
 

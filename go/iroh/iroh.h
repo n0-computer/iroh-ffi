@@ -83,6 +83,7 @@ typedef void (*UniFfiFutureCallbackRustArcPtr)(const void *, void*, RustCallStat
 typedef void (*UniFfiFutureCallbackRustArcPtr)(const void *, void*, RustCallStatus);
 typedef void (*UniFfiFutureCallbackRustArcPtr)(const void *, void*, RustCallStatus);
 typedef void (*UniFfiFutureCallbackRustArcPtr)(const void *, void*, RustCallStatus);
+typedef void (*UniFfiFutureCallbackRustArcPtr)(const void *, void*, RustCallStatus);
 typedef void (*UniFfiFutureCallbackRustBuffer)(const void *, RustBuffer, RustCallStatus);
 
 
@@ -259,6 +260,11 @@ void* uniffi_iroh_fn_constructor_hash_from_cid_bytes(
 	RustCallStatus* out_status
 );
 
+void* uniffi_iroh_fn_constructor_hash_from_string(
+	RustBuffer str,
+	RustCallStatus* out_status
+);
+
 void* uniffi_iroh_fn_constructor_hash_new(
 	RustBuffer buf,
 	RustCallStatus* out_status
@@ -266,6 +272,12 @@ void* uniffi_iroh_fn_constructor_hash_new(
 
 RustBuffer uniffi_iroh_fn_method_hash_as_cid_bytes(
 	void* ptr,
+	RustCallStatus* out_status
+);
+
+int8_t uniffi_iroh_fn_method_hash_equal(
+	void* ptr,
+	void* other,
 	RustCallStatus* out_status
 );
 
@@ -718,6 +730,37 @@ RustBuffer uniffi_iroh_fn_method_socketaddrv6_to_string(
 	RustCallStatus* out_status
 );
 
+void uniffi_iroh_fn_free_tag(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+void* uniffi_iroh_fn_constructor_tag_from_bytes(
+	RustBuffer bytes,
+	RustCallStatus* out_status
+);
+
+void* uniffi_iroh_fn_constructor_tag_from_string(
+	RustBuffer s,
+	RustCallStatus* out_status
+);
+
+int8_t uniffi_iroh_fn_method_tag_equal(
+	void* ptr,
+	void* other,
+	RustCallStatus* out_status
+);
+
+RustBuffer uniffi_iroh_fn_method_tag_to_bytes(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+RustBuffer uniffi_iroh_fn_method_tag_to_string(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
 void uniffi_iroh_fn_init_callback_subscribecallback(
 	ForeignCallback callback_stub,
 	RustCallStatus* out_status
@@ -846,6 +889,10 @@ uint16_t uniffi_iroh_checksum_method_entry_namespace(
 );
 
 uint16_t uniffi_iroh_checksum_method_hash_as_cid_bytes(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_hash_equal(
 	RustCallStatus* out_status
 );
 
@@ -1049,6 +1096,18 @@ uint16_t uniffi_iroh_checksum_method_socketaddrv6_to_string(
 	RustCallStatus* out_status
 );
 
+uint16_t uniffi_iroh_checksum_method_tag_equal(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_tag_to_bytes(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_tag_to_string(
+	RustCallStatus* out_status
+);
+
 uint16_t uniffi_iroh_checksum_constructor_authorid_from_string(
 	RustCallStatus* out_status
 );
@@ -1062,6 +1121,10 @@ uint16_t uniffi_iroh_checksum_constructor_hash_from_bytes(
 );
 
 uint16_t uniffi_iroh_checksum_constructor_hash_from_cid_bytes(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_constructor_hash_from_string(
 	RustCallStatus* out_status
 );
 
@@ -1149,6 +1212,14 @@ uint16_t uniffi_iroh_checksum_constructor_socketaddrv6_new(
 	RustCallStatus* out_status
 );
 
+uint16_t uniffi_iroh_checksum_constructor_tag_from_bytes(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_constructor_tag_from_string(
+	RustCallStatus* out_status
+);
+
 uint16_t uniffi_iroh_checksum_method_subscribecallback_event(
 	RustCallStatus* out_status
 );
@@ -1191,6 +1262,7 @@ void uniffiFutureCallbackHandlerSocketAddrV4(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerSocketAddrV4TypeIrohError(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerSocketAddrV6(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerSocketAddrV6TypeIrohError(void *, void*, RustCallStatus);
+void uniffiFutureCallbackHandlerTag(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerTypeInsertRemoteEvent(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerTypeOpenStateTypeIrohError(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerTypeSyncEvent(void *, RustBuffer, RustCallStatus);

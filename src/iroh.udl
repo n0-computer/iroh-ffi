@@ -138,9 +138,12 @@ interface Entry {
 interface Hash {
   constructor(bytes buf);
   string to_string();
+  boolean equal(Hash other);
   bytes to_bytes();
   [Name=from_bytes, Throws=IrohError]
   constructor(bytes bytes);
+  [Name=from_string, Throws=IrohError]
+  constructor(string str);
   bytes as_cid_bytes();
   [Name=from_cid_bytes, Throws=IrohError]
   constructor(bytes bytes);
@@ -312,6 +315,13 @@ interface Tag {
   [Name=from_bytes]
   constructor(bytes bytes);
 };
+
+interface SetTagOption {
+  [Name=auto]
+  constructor();
+  [Name=named]
+  constructor(Tag tag);
+}
 
 [Error]
 interface IrohError {

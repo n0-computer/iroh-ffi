@@ -974,6 +974,7 @@ public func FfiConverterTypeEntry_lower(_ value: Entry) -> UnsafeMutableRawPoint
 
 public protocol HashProtocol {
     func asCidBytes() -> Data
+    func equal(other: Hash) -> Bool
     func toBytes() -> Data
     func toHex() -> String
     func toString() -> String
@@ -1017,11 +1018,29 @@ public class Hash: HashProtocol {
         })
     }
 
+    public static func fromString(str: String) throws -> Hash {
+        return try Hash(unsafeFromRawPointer: rustCallWithError(FfiConverterTypeIrohError.lift) {
+            uniffi_iroh_fn_constructor_hash_from_string(
+                FfiConverterString.lower(str), $0
+            )
+        })
+    }
+
     public func asCidBytes() -> Data {
         return try! FfiConverterData.lift(
             try!
                 rustCall {
                     uniffi_iroh_fn_method_hash_as_cid_bytes(self.pointer, $0)
+                }
+        )
+    }
+
+    public func equal(other: Hash) -> Bool {
+        return try! FfiConverterBool.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_hash_equal(self.pointer,
+                                                     FfiConverterTypeHash.lower(other), $0)
                 }
         )
     }
@@ -2370,6 +2389,109 @@ public func FfiConverterTypeSocketAddrV6_lift(_ pointer: UnsafeMutableRawPointer
 
 public func FfiConverterTypeSocketAddrV6_lower(_ value: SocketAddrV6) -> UnsafeMutableRawPointer {
     return FfiConverterTypeSocketAddrV6.lower(value)
+}
+
+public protocol TagProtocol {
+    func equal(other: Tag) -> Bool
+    func toBytes() -> Data
+    func toString() -> String
+}
+
+public class Tag: TagProtocol {
+    fileprivate let pointer: UnsafeMutableRawPointer
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    deinit {
+        try! rustCall { uniffi_iroh_fn_free_tag(pointer, $0) }
+    }
+
+    public static func fromBytes(bytes: Data) -> Tag {
+        return Tag(unsafeFromRawPointer: try! rustCall {
+            uniffi_iroh_fn_constructor_tag_from_bytes(
+                FfiConverterData.lower(bytes), $0
+            )
+        })
+    }
+
+    public static func fromString(s: String) -> Tag {
+        return Tag(unsafeFromRawPointer: try! rustCall {
+            uniffi_iroh_fn_constructor_tag_from_string(
+                FfiConverterString.lower(s), $0
+            )
+        })
+    }
+
+    public func equal(other: Tag) -> Bool {
+        return try! FfiConverterBool.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_tag_equal(self.pointer,
+                                                    FfiConverterTypeTag.lower(other), $0)
+                }
+        )
+    }
+
+    public func toBytes() -> Data {
+        return try! FfiConverterData.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_tag_to_bytes(self.pointer, $0)
+                }
+        )
+    }
+
+    public func toString() -> String {
+        return try! FfiConverterString.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_tag_to_string(self.pointer, $0)
+                }
+        )
+    }
+}
+
+public struct FfiConverterTypeTag: FfiConverter {
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = Tag
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Tag {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: Tag, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> Tag {
+        return Tag(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: Tag) -> UnsafeMutableRawPointer {
+        return value.pointer
+    }
+}
+
+public func FfiConverterTypeTag_lift(_ pointer: UnsafeMutableRawPointer) throws -> Tag {
+    return try FfiConverterTypeTag.lift(pointer)
+}
+
+public func FfiConverterTypeTag_lower(_ value: Tag) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeTag.lower(value)
 }
 
 public struct ConnectionInfo {
@@ -3946,6 +4068,9 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_hash_as_cid_bytes() != 25019 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_checksum_method_hash_equal() != 65301 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_checksum_method_hash_to_bytes() != 29465 {
         return InitializationResult.apiChecksumMismatch
     }
@@ -4096,6 +4221,15 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_socketaddrv6_to_string() != 14154 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_checksum_method_tag_equal() != 62383 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_tag_to_bytes() != 33917 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_tag_to_string() != 65488 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_checksum_constructor_authorid_from_string() != 14210 {
         return InitializationResult.apiChecksumMismatch
     }
@@ -4106,6 +4240,9 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_constructor_hash_from_cid_bytes() != 58235 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_constructor_hash_from_string() != 41770 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_constructor_hash_new() != 22809 {
@@ -4169,6 +4306,12 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_constructor_socketaddrv6_new() != 46347 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_constructor_tag_from_bytes() != 48807 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_constructor_tag_from_string() != 40751 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_subscribecallback_event() != 18725 {

@@ -565,6 +565,15 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_hash_equal(uniffiStatus)
+		})
+		if checksum != 65301 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_hash_equal: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_hash_to_bytes(uniffiStatus)
 		})
 		if checksum != 29465 {
@@ -1015,6 +1024,33 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_tag_equal(uniffiStatus)
+		})
+		if checksum != 62383 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_tag_equal: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_tag_to_bytes(uniffiStatus)
+		})
+		if checksum != 33917 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_tag_to_bytes: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_tag_to_string(uniffiStatus)
+		})
+		if checksum != 65488 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_tag_to_string: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_constructor_authorid_from_string(uniffiStatus)
 		})
 		if checksum != 14210 {
@@ -1047,6 +1083,15 @@ func uniffiCheckChecksums() {
 		if checksum != 58235 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_constructor_hash_from_cid_bytes: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_constructor_hash_from_string(uniffiStatus)
+		})
+		if checksum != 41770 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_constructor_hash_from_string: UniFFI API checksum mismatch")
 		}
 	}
 	{
@@ -1236,6 +1281,24 @@ func uniffiCheckChecksums() {
 		if checksum != 46347 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_constructor_socketaddrv6_new: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_constructor_tag_from_bytes(uniffiStatus)
+		})
+		if checksum != 48807 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_constructor_tag_from_bytes: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_constructor_tag_from_string(uniffiStatus)
+		})
+		if checksum != 40751 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_constructor_tag_from_string: UniFFI API checksum mismatch")
 		}
 	}
 	{
@@ -2122,6 +2185,17 @@ func HashFromCidBytes(bytes []byte) (*Hash, error) {
 		return FfiConverterHashINSTANCE.Lift(_uniffiRV), _uniffiErr
 	}
 }
+func HashFromString(str string) (*Hash, error) {
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_constructor_hash_from_string(FfiConverterStringINSTANCE.Lower(str), _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue *Hash
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterHashINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
 
 func (_self *Hash) AsCidBytes() []byte {
 	_pointer := _self.ffiObject.incrementPointer("*Hash")
@@ -2129,6 +2203,15 @@ func (_self *Hash) AsCidBytes() []byte {
 	return FfiConverterBytesINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
 		return C.uniffi_iroh_fn_method_hash_as_cid_bytes(
 			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *Hash) Equal(other *Hash) bool {
+	_pointer := _self.ffiObject.incrementPointer("*Hash")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterBoolINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) C.int8_t {
+		return C.uniffi_iroh_fn_method_hash_equal(
+			_pointer, FfiConverterHashINSTANCE.Lower(other), _uniffiStatus)
 	}))
 }
 
@@ -3373,6 +3456,92 @@ func (c FfiConverterSocketAddrV6) Write(writer io.Writer, value *SocketAddrV6) {
 type FfiDestroyerSocketAddrV6 struct{}
 
 func (_ FfiDestroyerSocketAddrV6) Destroy(value *SocketAddrV6) {
+	value.Destroy()
+}
+
+type Tag struct {
+	ffiObject FfiObject
+}
+
+func TagFromBytes(bytes []byte) *Tag {
+	return FfiConverterTagINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_constructor_tag_from_bytes(FfiConverterBytesINSTANCE.Lower(bytes), _uniffiStatus)
+	}))
+}
+func TagFromString(s string) *Tag {
+	return FfiConverterTagINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_constructor_tag_from_string(FfiConverterStringINSTANCE.Lower(s), _uniffiStatus)
+	}))
+}
+
+func (_self *Tag) Equal(other *Tag) bool {
+	_pointer := _self.ffiObject.incrementPointer("*Tag")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterBoolINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) C.int8_t {
+		return C.uniffi_iroh_fn_method_tag_equal(
+			_pointer, FfiConverterTagINSTANCE.Lower(other), _uniffiStatus)
+	}))
+}
+
+func (_self *Tag) ToBytes() []byte {
+	_pointer := _self.ffiObject.incrementPointer("*Tag")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterBytesINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_tag_to_bytes(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *Tag) ToString() string {
+	_pointer := _self.ffiObject.incrementPointer("*Tag")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterStringINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_tag_to_string(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (object *Tag) Destroy() {
+	runtime.SetFinalizer(object, nil)
+	object.ffiObject.destroy()
+}
+
+type FfiConverterTag struct{}
+
+var FfiConverterTagINSTANCE = FfiConverterTag{}
+
+func (c FfiConverterTag) Lift(pointer unsafe.Pointer) *Tag {
+	result := &Tag{
+		newFfiObject(
+			pointer,
+			func(pointer unsafe.Pointer, status *C.RustCallStatus) {
+				C.uniffi_iroh_fn_free_tag(pointer, status)
+			}),
+	}
+	runtime.SetFinalizer(result, (*Tag).Destroy)
+	return result
+}
+
+func (c FfiConverterTag) Read(reader io.Reader) *Tag {
+	return c.Lift(unsafe.Pointer(uintptr(readUint64(reader))))
+}
+
+func (c FfiConverterTag) Lower(value *Tag) unsafe.Pointer {
+	// TODO: this is bad - all synchronization from ObjectRuntime.go is discarded here,
+	// because the pointer will be decremented immediately after this function returns,
+	// and someone will be left holding onto a non-locked pointer.
+	pointer := value.ffiObject.incrementPointer("*Tag")
+	defer value.ffiObject.decrementPointer()
+	return pointer
+}
+
+func (c FfiConverterTag) Write(writer io.Writer, value *Tag) {
+	writeUint64(writer, uint64(uintptr(c.Lower(value))))
+}
+
+type FfiDestroyerTag struct{}
+
+func (_ FfiDestroyerTag) Destroy(value *Tag) {
 	value.Destroy()
 }
 

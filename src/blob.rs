@@ -1,9 +1,10 @@
+use std::str::FromStr;
 use std::sync::Arc;
 
 use futures::TryStreamExt;
 
 use crate::node::IrohNode;
-use crate::{block_on, IrohError};
+use crate::{block_on, IrohError, Tag};
 
 impl IrohNode {
     pub fn blob_list_blobs(&self) -> Result<Vec<Arc<Hash>>, IrohError> {
@@ -87,6 +88,26 @@ impl IrohNode {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SetTagOption {
+    /// A tag will be automatically generated
+    Auto,
+    /// The tag is explicitly named
+    Named(Arc<Tag>),
+}
+
+impl SetTagOption {
+    /// Indicate you want an automatically generated tag
+    pub fn auto() -> Self {
+        SetTagOption::Auto
+    }
+
+    /// Indicate you want a named tag
+    pub fn named(tag: Arc<Tag>) -> Self {
+        SetTagOption::Named(tag)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Hash(pub(crate) iroh::bytes::Hash);
 
 impl From<iroh::bytes::Hash> for Hash {
@@ -114,6 +135,14 @@ impl Hash {
         Ok(Hash(iroh::bytes::Hash::from_bytes(bytes)))
     }
 
+    /// Make a Hash from hex or base 64 encoded cid string
+    pub fn from_string(s: String) -> Result<Self, IrohError> {
+        match iroh::bytes::Hash::from_str(&s) {
+            Ok(key) => Ok(key.into()),
+            Err(err) => Err(IrohError::hash(err)),
+        }
+    }
+
     /// Get the cid as bytes.
     pub fn as_cid_bytes(&self) -> Vec<u8> {
         self.0.as_cid_bytes().to_vec()
@@ -135,6 +164,11 @@ impl Hash {
     /// Convert the hash to a hex string.
     pub fn to_hex(&self) -> String {
         self.0.to_hex()
+    }
+
+    /// Returns true if the Hash's have the same value
+    pub fn equal(&self, other: Arc<Hash>) -> bool {
+        *self == *other
     }
 }
 
