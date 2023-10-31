@@ -1,55 +1,56 @@
-use std::{collections::HashMap, path::PathBuf, sync::Arc, time::SystemTime};
+use std::{collections::HashMap, path::PathBuf, sync::Arc, time::Duration};
 
-use futures::{
-    stream::{StreamExt, TryStreamExt},
-    Future,
-};
+use futures::stream::TryStreamExt;
 use iroh::{
-    baomap::flat,
     bytes::util::runtime::Handle,
-    client::Doc as ClientDoc,
     net::key::SecretKey,
     node::{Node, DEFAULT_BIND_ADDR},
-    rpc_protocol::{ProviderRequest, ProviderResponse, ShareMode},
+    rpc_protocol::{ProviderRequest, ProviderResponse},
 };
 use quic_rpc::transport::flume::FlumeConnection;
 
+use crate::block_on;
+use crate::doc::{AuthorId, Doc, DocTicket, NamespaceId};
 use crate::error::IrohError as Error;
 use crate::key::PublicKey;
-use crate::net::SocketAddr;
 
 pub use iroh::rpc_protocol::CounterStats;
-pub use iroh::sync_engine::LiveStatus;
+
+/// Information about a direct address.
+/// TODO: when refactoring the iroh.node API, give this an impl
+#[derive(Debug)]
+pub struct DirectAddrInfo(iroh::net::magicsock::DirectAddrInfo);
 
 #[derive(Debug)]
 pub struct ConnectionInfo {
-    pub id: u64,
+    /// The public key of the endpoint.
     pub public_key: Arc<PublicKey>,
+    /// Derp region, if available.
     pub derp_region: Option<u16>,
-    pub addrs: Vec<Arc<SocketAddr>>,
-    pub latencies: Vec<Option<f64>>,
+    /// List of addresses at which this node might be reachable, plus any latency information we
+    /// have about that address and the last time the address was used.
+    pub addrs: Vec<Arc<DirectAddrInfo>>,
+    /// The type of connection we have to the peer, either direct or over relay.
     pub conn_type: ConnectionType,
-    pub latency: Option<f64>,
+    /// The latency of the `conn_type`.
+    pub latency: Option<Duration>,
+    /// Duration since the last time this peer was used.
+    pub last_used: Option<Duration>,
 }
 
 impl From<iroh::net::magic_endpoint::ConnectionInfo> for ConnectionInfo {
     fn from(value: iroh::net::magic_endpoint::ConnectionInfo) -> Self {
         ConnectionInfo {
-            id: value.id as _,
             public_key: Arc::new(PublicKey(value.public_key)),
             derp_region: value.derp_region,
             addrs: value
                 .addrs
                 .iter()
-                .map(|(a, _)| Arc::new((*a).into()))
-                .collect(),
-            latencies: value
-                .addrs
-                .iter()
-                .map(|(_, l)| l.map(|d| d.as_secs_f64()))
+                .map(|a| Arc::new(DirectAddrInfo(a.clone())))
                 .collect(),
             conn_type: value.conn_type.into(),
-            latency: value.latency.map(|l| l.as_secs_f64()),
+            latency: value.latency,
+            last_used: value.last_used,
         }
     }
 }
@@ -58,6 +59,7 @@ impl From<iroh::net::magic_endpoint::ConnectionInfo> for ConnectionInfo {
 pub enum ConnectionType {
     Direct { addr: String, port: u16 },
     Relay { port: u16 },
+    Mixed { addr: String, port: u16 },
     None,
 }
 
@@ -68,257 +70,18 @@ impl From<iroh::net::magicsock::ConnectionType> for ConnectionType {
                 addr: addr.ip().to_string(),
                 port: addr.port(),
             },
+            iroh::net::magicsock::ConnectionType::Mixed(addr, port) => ConnectionType::Mixed {
+                addr: addr.ip().to_string(),
+                port,
+            },
             iroh::net::magicsock::ConnectionType::Relay(port) => ConnectionType::Relay { port },
             iroh::net::magicsock::ConnectionType::None => ConnectionType::None,
         }
     }
 }
 
-#[derive(Debug)]
-#[allow(clippy::large_enum_variant)]
-pub enum LiveEvent {
-    /// A local insertion.
-    InsertLocal {
-        /// The inserted entry.
-        entry: Entry,
-    },
-    /// Received a remote insert.
-    InsertRemote {
-        /// The peer that sent us the entry.
-        from: PublicKey,
-        /// The inserted entry.
-        entry: Entry,
-        /// If the content is available at the local node
-        content_status: ContentStatus,
-    },
-    /// The content of an entry was downloaded and is now available at the local node
-    ContentReady {
-        /// The content hash of the newly available entry content
-        hash: Hash,
-    },
-    /// We have a new neighbor in the swarm.
-    NeighborUp(PublicKey),
-    /// We lost a neighbor in the swarm.
-    NeighborDown(PublicKey),
-    /// A set-reconciliation sync finished.
-    SyncFinished(SyncEvent),
-    /// The document was closed. No further events will be emitted.
-    Closed,
-}
-
-pub enum LiveEventType {
-    InsertLocal,
-    InsertRemote,
-    ContentReady,
-    NeighborUp,
-    NeighborDown,
-    SyncFinished,
-    Closed,
-}
-
-impl LiveEvent {
-    pub fn r#type(&self) -> LiveEventType {
-        match self {
-            Self::InsertLocal { .. } => LiveEventType::InsertLocal,
-            Self::InsertRemote { .. } => LiveEventType::InsertRemote,
-            Self::ContentReady { .. } => LiveEventType::ContentReady,
-            Self::NeighborUp(_) => LiveEventType::NeighborUp,
-            Self::NeighborDown(_) => LiveEventType::NeighborDown,
-            Self::SyncFinished(_) => LiveEventType::SyncFinished,
-            Self::Closed => LiveEventType::Closed,
-        }
-    }
-
-    pub fn as_insert_local(&self) -> Arc<Entry> {
-        if let Self::InsertLocal { entry } = self {
-            Arc::new(entry.clone())
-        } else {
-            panic!("not an insert local event");
-        }
-    }
-
-    pub fn as_insert_remote(&self) -> InsertRemoteEvent {
-        if let Self::InsertRemote {
-            from,
-            entry,
-            content_status,
-        } = self
-        {
-            InsertRemoteEvent {
-                from: Arc::new(from.clone()),
-                entry: Arc::new(entry.clone()),
-                content_status: content_status.clone(),
-            }
-        } else {
-            panic!("not an insert remote event");
-        }
-    }
-
-    pub fn as_content_ready(&self) -> Arc<Hash> {
-        if let Self::ContentReady { hash } = self {
-            Arc::new(hash.clone())
-        } else {
-            panic!("not an content ready event");
-        }
-    }
-
-    pub fn as_neighbor_up(&self) -> Arc<PublicKey> {
-        if let Self::NeighborUp(key) = self {
-            Arc::new(key.clone())
-        } else {
-            panic!("not an neighbor up event");
-        }
-    }
-
-    pub fn as_neighbor_down(&self) -> Arc<PublicKey> {
-        if let Self::NeighborDown(key) = self {
-            Arc::new(key.clone())
-        } else {
-            panic!("not an neighbor down event");
-        }
-    }
-
-    pub fn as_sync_finished(&self) -> SyncEvent {
-        if let Self::SyncFinished(event) = self {
-            event.clone()
-        } else {
-            panic!("not an sync event event");
-        }
-    }
-}
-
-/// Whether the content status is available on a node.
 #[derive(Debug, Clone)]
-pub enum ContentStatus {
-    /// The content is completely available.
-    Complete,
-    /// The content is partially available.
-    Incomplete,
-    /// The content is missing.
-    Missing,
-}
-
-impl From<iroh::sync_engine::ContentStatus> for ContentStatus {
-    fn from(value: iroh::sync_engine::ContentStatus) -> Self {
-        match value {
-            iroh::sync_engine::ContentStatus::Complete => Self::Complete,
-            iroh::sync_engine::ContentStatus::Incomplete => Self::Incomplete,
-            iroh::sync_engine::ContentStatus::Missing => Self::Missing,
-        }
-    }
-}
-
-impl From<iroh::sync_engine::LiveEvent> for LiveEvent {
-    fn from(value: iroh::sync_engine::LiveEvent) -> Self {
-        match value {
-            iroh::sync_engine::LiveEvent::InsertLocal { entry } => LiveEvent::InsertLocal {
-                entry: entry.into(),
-            },
-            iroh::sync_engine::LiveEvent::InsertRemote {
-                from,
-                entry,
-                content_status,
-            } => LiveEvent::InsertRemote {
-                from: from.into(),
-                entry: entry.into(),
-                content_status: content_status.into(),
-            },
-            iroh::sync_engine::LiveEvent::ContentReady { hash } => {
-                LiveEvent::ContentReady { hash: hash.into() }
-            }
-            iroh::sync_engine::LiveEvent::NeighborUp(key) => LiveEvent::NeighborUp(key.into()),
-            iroh::sync_engine::LiveEvent::NeighborDown(key) => LiveEvent::NeighborDown(key.into()),
-            iroh::sync_engine::LiveEvent::SyncFinished(e) => LiveEvent::SyncFinished(e.into()),
-            iroh::sync_engine::LiveEvent::Closed => LiveEvent::Closed,
-        }
-    }
-}
-
-/// Outcome of a sync operation
-#[derive(Debug, Clone)]
-pub struct SyncEvent {
-    /// Namespace that was synced
-    pub namespace: Arc<NamespaceId>,
-    /// Peer we synced with
-    pub peer: Arc<PublicKey>,
-    /// Origin of the sync exchange
-    pub origin: Origin,
-    /// Timestamp when the sync finished (since unix epoch in seconds)
-    pub finished: f64,
-    /// Result of the sync operation. `None` if successfull.
-    pub result: Option<String>,
-}
-
-impl From<iroh::sync_engine::SyncEvent> for SyncEvent {
-    fn from(value: iroh::sync_engine::SyncEvent) -> Self {
-        SyncEvent {
-            namespace: Arc::new(value.namespace.into()),
-            peer: Arc::new(value.peer.into()),
-            origin: value.origin.into(),
-            finished: value
-                .finished
-                .duration_since(SystemTime::UNIX_EPOCH)
-                .map(|v| v.as_secs_f64())
-                .unwrap_or_default(),
-            result: match value.result {
-                Ok(_) => None,
-                Err(err) => Some(err),
-            },
-        }
-    }
-}
-
-/// Why we started a sync request
-#[derive(Debug, Clone, Copy)]
-pub enum SyncReason {
-    /// Direct join request via API
-    DirectJoin,
-    /// Peer showed up as new neighbor in the gossip swarm
-    NewNeighbor,
-}
-
-impl From<iroh::sync_engine::SyncReason> for SyncReason {
-    fn from(value: iroh::sync_engine::SyncReason) -> Self {
-        match value {
-            iroh::sync_engine::SyncReason::DirectJoin => Self::DirectJoin,
-            iroh::sync_engine::SyncReason::NewNeighbor => Self::NewNeighbor,
-        }
-    }
-}
-
-/// Why we performed a sync exchange
-#[derive(Debug, Clone)]
-pub enum Origin {
-    Connect {
-        reason: SyncReason,
-    },
-    /// A peer connected to us and we accepted the exchange
-    Accept,
-}
-
-impl From<iroh::sync_engine::Origin> for Origin {
-    fn from(value: iroh::sync_engine::Origin) -> Self {
-        match value {
-            iroh::sync_engine::Origin::Connect(reason) => Self::Connect {
-                reason: reason.into(),
-            },
-            iroh::sync_engine::Origin::Accept => Self::Accept,
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct InsertRemoteEvent {
-    /// The peer that sent us the entry.
-    pub from: Arc<PublicKey>,
-    /// The inserted entry.
-    pub entry: Arc<Entry>,
-    /// If the content is available at the local node
-    pub content_status: ContentStatus,
-}
-
-#[derive(Debug, Clone)]
-pub struct Hash(iroh::bytes::Hash);
+pub struct Hash(pub(crate) iroh::bytes::Hash);
 
 impl From<iroh::bytes::Hash> for Hash {
     fn from(h: iroh::bytes::Hash) -> Self {
@@ -327,11 +90,14 @@ impl From<iroh::bytes::Hash> for Hash {
 }
 
 impl Hash {
-    pub fn to_string(&self) -> String {
-        self.0.to_string()
-    }
     pub fn to_bytes(&self) -> Vec<u8> {
         self.0.as_bytes().to_vec()
+    }
+}
+
+impl std::fmt::Display for Hash {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
@@ -341,191 +107,8 @@ impl From<Hash> for iroh::bytes::Hash {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct Entry(iroh::sync::sync::Entry);
-
-impl From<iroh::sync::sync::Entry> for Entry {
-    fn from(e: iroh::sync::sync::Entry) -> Self {
-        Entry(e)
-    }
-}
-
-impl Entry {
-    pub fn author(&self) -> Arc<AuthorId> {
-        Arc::new(AuthorId(self.0.id().author()))
-    }
-
-    pub fn key(&self) -> Vec<u8> {
-        self.0.id().key().to_vec()
-    }
-
-    pub fn hash(&self) -> Arc<Hash> {
-        Arc::new(Hash(self.0.content_hash()))
-    }
-
-    pub fn namespace(&self) -> Arc<NamespaceId> {
-        Arc::new(NamespaceId(self.0.id().namespace()))
-    }
-}
-
-pub struct Doc {
-    inner: ClientDoc<FlumeConnection<ProviderResponse, ProviderRequest>>,
-    rt: Handle,
-}
-
-impl Doc {
-    pub fn id(&self) -> String {
-        self.inner.id().to_string()
-    }
-
-    pub fn keys(&self) -> Result<Vec<Arc<Entry>>, Error> {
-        let latest = block_on(&self.rt, async {
-            let get_result = self
-                .inner
-                .get_many(iroh::sync::store::GetFilter::All)
-                .await?;
-            get_result
-                .map_ok(|e| Arc::new(Entry(e)))
-                .try_collect::<Vec<_>>()
-                .await
-        })
-        .map_err(Error::doc)?;
-        Ok(latest)
-    }
-
-    pub fn share_write(&self) -> Result<Arc<DocTicket>, Error> {
-        block_on(&self.rt, async {
-            let ticket = self
-                .inner
-                .share(ShareMode::Write)
-                .await
-                .map_err(Error::doc)?;
-
-            Ok(Arc::new(DocTicket(ticket)))
-        })
-    }
-
-    pub fn share_read(&self) -> Result<Arc<DocTicket>, Error> {
-        block_on(&self.rt, async {
-            let ticket = self
-                .inner
-                .share(ShareMode::Read)
-                .await
-                .map_err(Error::doc)?;
-
-            Ok(Arc::new(DocTicket(ticket)))
-        })
-    }
-
-    pub fn set_bytes(
-        &self,
-        author_id: Arc<AuthorId>,
-        key: Vec<u8>,
-        value: Vec<u8>,
-    ) -> Result<Arc<Hash>, Error> {
-        block_on(&self.rt, async {
-            let hash = self
-                .inner
-                .set_bytes(author_id.0.clone(), key, value)
-                .await
-                .map_err(Error::doc)?;
-            Ok(Arc::new(Hash(hash)))
-        })
-    }
-
-    pub fn get_content_bytes(&self, entry: Arc<Entry>) -> Result<Vec<u8>, Error> {
-        block_on(&self.rt, async {
-            let content = self
-                .inner
-                .read_to_bytes(&entry.0)
-                .await
-                .map_err(Error::doc)?;
-
-            Ok(content.to_vec())
-        })
-    }
-
-    pub fn stop_sync(&self) -> Result<(), Error> {
-        block_on(&self.rt, async {
-            self.inner.leave().await.map_err(Error::doc)?;
-            Ok(())
-        })
-    }
-
-    pub fn status(&self) -> Result<LiveStatus, Error> {
-        block_on(&self.rt, async {
-            let status = self.inner.status().await.map_err(Error::doc)?;
-            Ok(status)
-        })
-    }
-
-    pub fn subscribe(&self, cb: Box<dyn SubscribeCallback>) -> Result<(), Error> {
-        let client = self.inner.clone();
-        self.rt.main().spawn(async move {
-            let mut sub = client.subscribe().await.unwrap();
-            while let Some(event) = sub.next().await {
-                match event {
-                    Ok(event) => {
-                        if let Err(err) = cb.event(Arc::new(event.into())) {
-                            println!("cb error: {:?}", err);
-                        }
-                    }
-                    Err(err) => {
-                        println!("rpc error: {:?}", err);
-                    }
-                }
-            }
-        });
-
-        Ok(())
-    }
-}
-
-pub trait SubscribeCallback: Send + Sync + 'static {
-    fn event(&self, event: Arc<LiveEvent>) -> Result<(), Error>;
-}
-
-pub struct AuthorId(iroh::sync::sync::AuthorId);
-
-impl AuthorId {
-    pub fn to_string(&self) -> String {
-        self.0.to_string()
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct NamespaceId(iroh::sync::sync::NamespaceId);
-
-impl From<iroh::sync::sync::NamespaceId> for NamespaceId {
-    fn from(id: iroh::sync::sync::NamespaceId) -> Self {
-        NamespaceId(id)
-    }
-}
-
-impl NamespaceId {
-    pub fn to_string(&self) -> String {
-        self.0.to_string()
-    }
-}
-
-#[derive(Debug)]
-pub struct DocTicket(iroh::rpc_protocol::DocTicket);
-
-impl DocTicket {
-    pub fn from_string(content: String) -> Result<Self, Error> {
-        let ticket = content
-            .parse::<iroh::rpc_protocol::DocTicket>()
-            .map_err(Error::doc_ticket)?;
-        Ok(DocTicket(ticket))
-    }
-
-    pub fn to_string(&self) -> String {
-        self.0.to_string()
-    }
-}
-
 pub struct IrohNode {
-    node: Node<flat::Store, iroh::sync::store::fs::Store>,
+    node: Node<iroh::bytes::store::flat::Store>,
     async_runtime: Handle,
     sync_client: iroh::client::Iroh<FlumeConnection<ProviderResponse, ProviderRequest>>,
     #[allow(dead_code)]
@@ -556,8 +139,10 @@ impl IrohNode {
             // create a bao store for the iroh-bytes blobs
             let blob_path = path.join("blobs");
             tokio::fs::create_dir_all(&blob_path).await?;
-            let db = iroh::baomap::flat::Store::load(&blob_path, &blob_path, &blob_path, &rt_inner)
-                .await?;
+            let db = iroh::bytes::store::flat::Store::load(
+                &blob_path, &blob_path, &blob_path, &rt_inner,
+            )
+            .await?;
 
             Node::builder(db, docs)
                 .bind_addr(DEFAULT_BIND_ADDR.into())
@@ -722,18 +307,13 @@ impl IrohNode {
     }
 }
 
-fn block_on<F: Future<Output = T>, T>(rt: &Handle, fut: F) -> T {
-    tokio::task::block_in_place(move || match tokio::runtime::Handle::try_current() {
-        Ok(handle) => handle.block_on(fut),
-        Err(_) => rt.main().block_on(fut),
-    })
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
+    #[ignore]
+    // TODO: when doc drop is fixed on iroh, re-enable
     fn test_doc_new() {
         let path = tempfile::tempdir().unwrap();
         let node = IrohNode::new(path.path().to_string_lossy().into_owned()).unwrap();
@@ -743,7 +323,7 @@ mod tests {
         let doc_id = doc.id();
         println!("doc_id: {}", doc_id);
 
-        let doc_ticket = doc.share_write().unwrap();
+        let doc_ticket = doc.share(crate::doc::ShareMode::Write).unwrap();
         let doc_ticket_string = doc_ticket.to_string();
         let dock_ticket_back = DocTicket::from_string(doc_ticket_string.clone()).unwrap();
         assert_eq!(

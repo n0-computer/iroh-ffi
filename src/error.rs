@@ -11,6 +11,8 @@ pub enum IrohError {
     Doc { description: String },
     #[error("author error: {description}")]
     Author { description: String },
+    #[error("namespace error: {description}")]
+    Namespace { description: String },
     #[error("doc ticket error: {description}")]
     DocTicket { description: String },
     #[error("uniffi: {description}")]
@@ -27,10 +29,10 @@ pub enum IrohError {
     Ipv6Addr { description: String },
     #[error("SocketAddrV6 error: {description}")]
     SocketAddrV6 { description: String },
-    #[error("SocketAddr error: {description}")]
-    SocketAddr { description: String },
     #[error("PublicKey error: {description}")]
     PublicKey { description: String },
+    #[error("PeerAddr error: {description}")]
+    PeerAddr { description: String },
 }
 
 impl IrohError {
@@ -48,6 +50,12 @@ impl IrohError {
 
     pub fn author(error: impl Display) -> Self {
         IrohError::Author {
+            description: error.to_string(),
+        }
+    }
+
+    pub fn namespace(error: impl Display) -> Self {
+        IrohError::Namespace {
             description: error.to_string(),
         }
     }
@@ -100,14 +108,14 @@ impl IrohError {
         }
     }
 
-    pub fn socket_addr(error: impl Display) -> Self {
-        IrohError::SocketAddr {
+    pub fn public_key(error: impl Display) -> Self {
+        IrohError::PublicKey {
             description: error.to_string(),
         }
     }
 
-    pub fn public_key(error: impl Display) -> Self {
-        IrohError::PublicKey {
+    pub fn peer_adddr(error: impl Display) -> Self {
+        IrohError::PeerAddr {
             description: error.to_string(),
         }
     }

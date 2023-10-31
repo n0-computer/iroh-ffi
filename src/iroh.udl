@@ -41,23 +41,59 @@ interface IrohNode {
 };
 
 interface Doc {
-  string id();
+  NamespaceId id();
   [Throws=IrohError]
-  DocTicket share_write();
-  [Throws=IrohError]
-  DocTicket share_read();
+  void close(); 
   [Throws=IrohError]
   Hash set_bytes(AuthorId author, bytes key, bytes value);
   [Throws=IrohError]
-  bytes get_content_bytes(Entry entry);
+  void set_hash(AuthorId author, bytes key, Hash hash, u64 size);
   [Throws=IrohError]
-  sequence<Entry> keys();
+  u64 size(Entry entry);
+  [Throws=IrohError]
+  bytes read_to_bytes(Entry entry);
+  [Throws=IrohError]
+  u64 del(AuthorId author_id, bytes prefix);
+  [Throws=IrohError]
+  Entry? get_one(AuthorId author_id, bytes key);
+  [Throws=IrohError]
+  sequence<Entry> get_many(GetFilter filter);
+  [Throws=IrohError]
+  DocTicket share(ShareMode mode);
+  [Throws=IrohError]
+  void start_sync(sequence<PeerAddr> peers);
+  [Throws=IrohError]
+  void leave();
   [Throws=IrohError]
   void subscribe(SubscribeCallback cb);
   [Throws=IrohError]
-  void stop_sync();
-  [Throws=IrohError]
-  LiveStatus status();
+  OpenState status();
+};
+
+enum ShareMode {
+  "Read",
+  "Write",
+};
+
+interface PeerAddr {
+  constructor(PublicKey node_id, u16? region_id, sequence<SocketAddr> addresses);
+  sequence<SocketAddr> direct_addresses();
+  u16? derp_region();
+  boolean equal(PeerAddr other);
+};
+
+interface GetFilter {
+  [Name=author_prefix]
+  constructor(AuthorId author, bytes prefix);
+  [Name=all]
+  constructor();
+  [Name=author]
+  constructor(AuthorId author);
+  [Name=key]
+  constructor(bytes key);
+  [Name=prefix]
+  constructor(bytes prefix);
+  boolean equal(GetFilter other);
 };
 
 callback interface SubscribeCallback {
@@ -66,13 +102,16 @@ callback interface SubscribeCallback {
 };
 
 interface AuthorId {
+  [Name=from_string, Throws=IrohError]
+  constructor(string str);
   string to_string();
+  boolean equal(AuthorId other);
 };
 
 interface Entry {
   AuthorId author();
   bytes key();
-  Hash hash();
+  NamespaceId namespace();
 };
 
 interface Hash {
@@ -84,11 +123,13 @@ interface DocTicket {
   [Name=from_string, Throws=IrohError]
   constructor(string content);
   string to_string();
+  boolean equal(DocTicket other);
 };
 
-dictionary LiveStatus {
-  boolean active;
-  u64 subscriptions;
+dictionary OpenState {
+  boolean sync;
+  u64 subscribers;
+  u64 handles;
 };
 
 dictionary CounterStats {
@@ -120,7 +161,6 @@ interface LiveEventType {
   NeighborUp();
   NeighborDown();
   SyncFinished();
-  Closed();
 };
 
 [Enum]
@@ -131,45 +171,44 @@ interface ContentStatus {
 };
 
 interface NamespaceId {
+  [Name=from_string, Throws=IrohError]
+  constructor(string str);
   string to_string();
+  boolean equal(NamespaceId other);
 };
 
 dictionary SyncEvent {
-  NamespaceId namespace;
   PublicKey peer;
   Origin origin;
-  f64 finished;
+  timestamp started;
+  timestamp finished;
   string? result;
 };
 
 [Enum]
-interface SyncReason {
-  DirectJoin();
-  NewNeighbor();
-};
-
-[Enum]
 interface Origin {
-  Connect(SyncReason reason);
+  Connect();
   Accept();
 };
 
 dictionary ConnectionInfo {
-  u64 id;
   PublicKey public_key;
   u16? derp_region;
-  sequence<SocketAddr> addrs;
-  sequence<double?> latencies;
+  sequence<DirectAddrInfo> addrs;
   ConnectionType conn_type;
-  double? latency;
+  duration? latency;
+  duration? last_used;
 };
 
 [Enum]
 interface ConnectionType{
   Direct(string addr, u16 port);
   Relay(u16 port);
+  Mixed(string addr, u16 port);
   None();
 };
+
+interface DirectAddrInfo {};
 
 enum SocketAddrType {
   "V4",
@@ -182,6 +221,7 @@ interface Ipv4Addr {
   constructor(string str);
   string to_string();
   sequence<u8> octets(); 
+  boolean equal(Ipv4Addr other);
 };
 
 interface SocketAddrV4 {
@@ -191,6 +231,7 @@ interface SocketAddrV4 {
   string to_string();
   Ipv4Addr ip(); 
   u16 port();
+  boolean equal(SocketAddrV4 other);
 };
 
 interface Ipv6Addr {
@@ -199,6 +240,7 @@ interface Ipv6Addr {
   constructor(string str);
   string to_string();
   sequence<u16> segments(); 
+  boolean equal(Ipv6Addr other);
 };
 
 interface SocketAddrV6 {
@@ -208,6 +250,7 @@ interface SocketAddrV6 {
   string to_string();
   Ipv6Addr ip(); 
   u16 port();
+  boolean equal(SocketAddrV6 other);
 };
 
 interface SocketAddr {
@@ -216,14 +259,14 @@ interface SocketAddr {
   [Name=from_ipv6]
   constructor(Ipv6Addr ipv6, u16 port);
   SocketAddrType type();
-  [Throws=IrohError]
   SocketAddrV4 as_ipv4();
-  [Throws=IrohError]
   SocketAddrV6 as_ipv6();
+  boolean equal(SocketAddr other);
 };
 
 interface PublicKey {
   string to_string();
+  boolean equal(PublicKey other);
   bytes to_bytes();
   [Name=from_string, Throws=IrohError]
   constructor(string s); 
@@ -238,6 +281,7 @@ interface IrohError {
   NodeCreate(string description);
   Doc(string description);
   Author(string description);
+  Namespace(string description);
   DocTicket(string description);
   Uniffi(string description);
   Connection(string description);
@@ -246,6 +290,6 @@ interface IrohError {
   Ipv6Addr(string description);
   SocketAddrV4(string description);
   SocketAddrV6(string description);
-  SocketAddr(string description);
   PublicKey(string description);
+  PeerAddr(string description);
 };

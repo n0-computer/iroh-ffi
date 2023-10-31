@@ -65,7 +65,12 @@ int8_t uniffiForeignExecutorCallbackiroh(uint64_t, uint32_t, RustTaskCallback, v
 
 // Callbacks for UniFFI Futures
 typedef void (*UniFfiFutureCallbackuint8_t)(const void *, uint8_t, RustCallStatus);
+typedef void (*UniFfiFutureCallbackint8_t)(const void *, int8_t, RustCallStatus);
 typedef void (*UniFfiFutureCallbackuint16_t)(const void *, uint16_t, RustCallStatus);
+typedef void (*UniFfiFutureCallbackuint64_t)(const void *, uint64_t, RustCallStatus);
+typedef void (*UniFfiFutureCallbackRustArcPtr)(const void *, void*, RustCallStatus);
+typedef void (*UniFfiFutureCallbackRustArcPtr)(const void *, void*, RustCallStatus);
+typedef void (*UniFfiFutureCallbackRustArcPtr)(const void *, void*, RustCallStatus);
 typedef void (*UniFfiFutureCallbackRustArcPtr)(const void *, void*, RustCallStatus);
 typedef void (*UniFfiFutureCallbackRustArcPtr)(const void *, void*, RustCallStatus);
 typedef void (*UniFfiFutureCallbackRustArcPtr)(const void *, void*, RustCallStatus);
@@ -86,7 +91,23 @@ void uniffi_iroh_fn_free_authorid(
 	RustCallStatus* out_status
 );
 
+void* uniffi_iroh_fn_constructor_authorid_from_string(
+	RustBuffer str,
+	RustCallStatus* out_status
+);
+
+int8_t uniffi_iroh_fn_method_authorid_equal(
+	void* ptr,
+	void* other,
+	RustCallStatus* out_status
+);
+
 RustBuffer uniffi_iroh_fn_method_authorid_to_string(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+void uniffi_iroh_fn_free_directaddrinfo(
 	void* ptr,
 	RustCallStatus* out_status
 );
@@ -96,19 +117,44 @@ void uniffi_iroh_fn_free_doc(
 	RustCallStatus* out_status
 );
 
-RustBuffer uniffi_iroh_fn_method_doc_get_content_bytes(
+void uniffi_iroh_fn_method_doc_close(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+uint64_t uniffi_iroh_fn_method_doc_del(
+	void* ptr,
+	void* author_id,
+	RustBuffer prefix,
+	RustCallStatus* out_status
+);
+
+RustBuffer uniffi_iroh_fn_method_doc_get_many(
+	void* ptr,
+	void* filter,
+	RustCallStatus* out_status
+);
+
+RustBuffer uniffi_iroh_fn_method_doc_get_one(
+	void* ptr,
+	void* author_id,
+	RustBuffer key,
+	RustCallStatus* out_status
+);
+
+void* uniffi_iroh_fn_method_doc_id(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+void uniffi_iroh_fn_method_doc_leave(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+RustBuffer uniffi_iroh_fn_method_doc_read_to_bytes(
 	void* ptr,
 	void* entry,
-	RustCallStatus* out_status
-);
-
-RustBuffer uniffi_iroh_fn_method_doc_id(
-	void* ptr,
-	RustCallStatus* out_status
-);
-
-RustBuffer uniffi_iroh_fn_method_doc_keys(
-	void* ptr,
 	RustCallStatus* out_status
 );
 
@@ -120,22 +166,34 @@ void* uniffi_iroh_fn_method_doc_set_bytes(
 	RustCallStatus* out_status
 );
 
-void* uniffi_iroh_fn_method_doc_share_read(
+void uniffi_iroh_fn_method_doc_set_hash(
 	void* ptr,
+	void* author,
+	RustBuffer key,
+	void* hash,
+	uint64_t size,
 	RustCallStatus* out_status
 );
 
-void* uniffi_iroh_fn_method_doc_share_write(
+void* uniffi_iroh_fn_method_doc_share(
 	void* ptr,
+	RustBuffer mode,
+	RustCallStatus* out_status
+);
+
+uint64_t uniffi_iroh_fn_method_doc_size(
+	void* ptr,
+	void* entry,
+	RustCallStatus* out_status
+);
+
+void uniffi_iroh_fn_method_doc_start_sync(
+	void* ptr,
+	RustBuffer peers,
 	RustCallStatus* out_status
 );
 
 RustBuffer uniffi_iroh_fn_method_doc_status(
-	void* ptr,
-	RustCallStatus* out_status
-);
-
-void uniffi_iroh_fn_method_doc_stop_sync(
 	void* ptr,
 	RustCallStatus* out_status
 );
@@ -156,6 +214,12 @@ void* uniffi_iroh_fn_constructor_docticket_from_string(
 	RustCallStatus* out_status
 );
 
+int8_t uniffi_iroh_fn_method_docticket_equal(
+	void* ptr,
+	void* other,
+	RustCallStatus* out_status
+);
+
 RustBuffer uniffi_iroh_fn_method_docticket_to_string(
 	void* ptr,
 	RustCallStatus* out_status
@@ -171,13 +235,49 @@ void* uniffi_iroh_fn_method_entry_author(
 	RustCallStatus* out_status
 );
 
-void* uniffi_iroh_fn_method_entry_hash(
+RustBuffer uniffi_iroh_fn_method_entry_key(
 	void* ptr,
 	RustCallStatus* out_status
 );
 
-RustBuffer uniffi_iroh_fn_method_entry_key(
+void* uniffi_iroh_fn_method_entry_namespace(
 	void* ptr,
+	RustCallStatus* out_status
+);
+
+void uniffi_iroh_fn_free_getfilter(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+void* uniffi_iroh_fn_constructor_getfilter_all(
+	RustCallStatus* out_status
+);
+
+void* uniffi_iroh_fn_constructor_getfilter_author(
+	void* author,
+	RustCallStatus* out_status
+);
+
+void* uniffi_iroh_fn_constructor_getfilter_author_prefix(
+	void* author,
+	RustBuffer prefix,
+	RustCallStatus* out_status
+);
+
+void* uniffi_iroh_fn_constructor_getfilter_key(
+	RustBuffer key,
+	RustCallStatus* out_status
+);
+
+void* uniffi_iroh_fn_constructor_getfilter_prefix(
+	RustBuffer prefix,
+	RustCallStatus* out_status
+);
+
+int8_t uniffi_iroh_fn_method_getfilter_equal(
+	void* ptr,
+	void* other,
 	RustCallStatus* out_status
 );
 
@@ -214,6 +314,12 @@ void* uniffi_iroh_fn_constructor_ipv4addr_new(
 	RustCallStatus* out_status
 );
 
+int8_t uniffi_iroh_fn_method_ipv4addr_equal(
+	void* ptr,
+	void* other,
+	RustCallStatus* out_status
+);
+
 RustBuffer uniffi_iroh_fn_method_ipv4addr_octets(
 	void* ptr,
 	RustCallStatus* out_status
@@ -243,6 +349,12 @@ void* uniffi_iroh_fn_constructor_ipv6addr_new(
 	uint16_t f,
 	uint16_t g,
 	uint16_t h,
+	RustCallStatus* out_status
+);
+
+int8_t uniffi_iroh_fn_method_ipv6addr_equal(
+	void* ptr,
+	void* other,
 	RustCallStatus* out_status
 );
 
@@ -369,8 +481,47 @@ void uniffi_iroh_fn_free_namespaceid(
 	RustCallStatus* out_status
 );
 
+void* uniffi_iroh_fn_constructor_namespaceid_from_string(
+	RustBuffer str,
+	RustCallStatus* out_status
+);
+
+int8_t uniffi_iroh_fn_method_namespaceid_equal(
+	void* ptr,
+	void* other,
+	RustCallStatus* out_status
+);
+
 RustBuffer uniffi_iroh_fn_method_namespaceid_to_string(
 	void* ptr,
+	RustCallStatus* out_status
+);
+
+void uniffi_iroh_fn_free_peeraddr(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+void* uniffi_iroh_fn_constructor_peeraddr_new(
+	void* node_id,
+	RustBuffer region_id,
+	RustBuffer addresses,
+	RustCallStatus* out_status
+);
+
+RustBuffer uniffi_iroh_fn_method_peeraddr_derp_region(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+RustBuffer uniffi_iroh_fn_method_peeraddr_direct_addresses(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+int8_t uniffi_iroh_fn_method_peeraddr_equal(
+	void* ptr,
+	void* other,
 	RustCallStatus* out_status
 );
 
@@ -386,6 +537,12 @@ void* uniffi_iroh_fn_constructor_publickey_from_bytes(
 
 void* uniffi_iroh_fn_constructor_publickey_from_string(
 	RustBuffer s,
+	RustCallStatus* out_status
+);
+
+int8_t uniffi_iroh_fn_method_publickey_equal(
+	void* ptr,
+	void* other,
 	RustCallStatus* out_status
 );
 
@@ -431,6 +588,12 @@ void* uniffi_iroh_fn_method_socketaddr_as_ipv6(
 	RustCallStatus* out_status
 );
 
+int8_t uniffi_iroh_fn_method_socketaddr_equal(
+	void* ptr,
+	void* other,
+	RustCallStatus* out_status
+);
+
 RustBuffer uniffi_iroh_fn_method_socketaddr_type(
 	void* ptr,
 	RustCallStatus* out_status
@@ -449,6 +612,12 @@ void* uniffi_iroh_fn_constructor_socketaddrv4_from_string(
 void* uniffi_iroh_fn_constructor_socketaddrv4_new(
 	void* ipv4,
 	uint16_t port,
+	RustCallStatus* out_status
+);
+
+int8_t uniffi_iroh_fn_method_socketaddrv4_equal(
+	void* ptr,
+	void* other,
 	RustCallStatus* out_status
 );
 
@@ -480,6 +649,12 @@ void* uniffi_iroh_fn_constructor_socketaddrv6_from_string(
 void* uniffi_iroh_fn_constructor_socketaddrv6_new(
 	void* ipv6,
 	uint16_t port,
+	RustCallStatus* out_status
+);
+
+int8_t uniffi_iroh_fn_method_socketaddrv6_equal(
+	void* ptr,
+	void* other,
 	RustCallStatus* out_status
 );
 
@@ -541,11 +716,27 @@ uint16_t uniffi_iroh_checksum_func_start_metrics_collection(
 	RustCallStatus* out_status
 );
 
+uint16_t uniffi_iroh_checksum_method_authorid_equal(
+	RustCallStatus* out_status
+);
+
 uint16_t uniffi_iroh_checksum_method_authorid_to_string(
 	RustCallStatus* out_status
 );
 
-uint16_t uniffi_iroh_checksum_method_doc_get_content_bytes(
+uint16_t uniffi_iroh_checksum_method_doc_close(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_doc_del(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_doc_get_many(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_doc_get_one(
 	RustCallStatus* out_status
 );
 
@@ -553,7 +744,11 @@ uint16_t uniffi_iroh_checksum_method_doc_id(
 	RustCallStatus* out_status
 );
 
-uint16_t uniffi_iroh_checksum_method_doc_keys(
+uint16_t uniffi_iroh_checksum_method_doc_leave(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_doc_read_to_bytes(
 	RustCallStatus* out_status
 );
 
@@ -561,11 +756,19 @@ uint16_t uniffi_iroh_checksum_method_doc_set_bytes(
 	RustCallStatus* out_status
 );
 
-uint16_t uniffi_iroh_checksum_method_doc_share_read(
+uint16_t uniffi_iroh_checksum_method_doc_set_hash(
 	RustCallStatus* out_status
 );
 
-uint16_t uniffi_iroh_checksum_method_doc_share_write(
+uint16_t uniffi_iroh_checksum_method_doc_share(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_doc_size(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_doc_start_sync(
 	RustCallStatus* out_status
 );
 
@@ -573,11 +776,11 @@ uint16_t uniffi_iroh_checksum_method_doc_status(
 	RustCallStatus* out_status
 );
 
-uint16_t uniffi_iroh_checksum_method_doc_stop_sync(
+uint16_t uniffi_iroh_checksum_method_doc_subscribe(
 	RustCallStatus* out_status
 );
 
-uint16_t uniffi_iroh_checksum_method_doc_subscribe(
+uint16_t uniffi_iroh_checksum_method_docticket_equal(
 	RustCallStatus* out_status
 );
 
@@ -589,11 +792,15 @@ uint16_t uniffi_iroh_checksum_method_entry_author(
 	RustCallStatus* out_status
 );
 
-uint16_t uniffi_iroh_checksum_method_entry_hash(
+uint16_t uniffi_iroh_checksum_method_entry_key(
 	RustCallStatus* out_status
 );
 
-uint16_t uniffi_iroh_checksum_method_entry_key(
+uint16_t uniffi_iroh_checksum_method_entry_namespace(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_getfilter_equal(
 	RustCallStatus* out_status
 );
 
@@ -605,11 +812,19 @@ uint16_t uniffi_iroh_checksum_method_hash_to_string(
 	RustCallStatus* out_status
 );
 
+uint16_t uniffi_iroh_checksum_method_ipv4addr_equal(
+	RustCallStatus* out_status
+);
+
 uint16_t uniffi_iroh_checksum_method_ipv4addr_octets(
 	RustCallStatus* out_status
 );
 
 uint16_t uniffi_iroh_checksum_method_ipv4addr_to_string(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_ipv6addr_equal(
 	RustCallStatus* out_status
 );
 
@@ -693,7 +908,27 @@ uint16_t uniffi_iroh_checksum_method_liveevent_type(
 	RustCallStatus* out_status
 );
 
+uint16_t uniffi_iroh_checksum_method_namespaceid_equal(
+	RustCallStatus* out_status
+);
+
 uint16_t uniffi_iroh_checksum_method_namespaceid_to_string(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_peeraddr_derp_region(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_peeraddr_direct_addresses(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_peeraddr_equal(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_publickey_equal(
 	RustCallStatus* out_status
 );
 
@@ -717,7 +952,15 @@ uint16_t uniffi_iroh_checksum_method_socketaddr_as_ipv6(
 	RustCallStatus* out_status
 );
 
+uint16_t uniffi_iroh_checksum_method_socketaddr_equal(
+	RustCallStatus* out_status
+);
+
 uint16_t uniffi_iroh_checksum_method_socketaddr_type(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_socketaddrv4_equal(
 	RustCallStatus* out_status
 );
 
@@ -733,6 +976,10 @@ uint16_t uniffi_iroh_checksum_method_socketaddrv4_to_string(
 	RustCallStatus* out_status
 );
 
+uint16_t uniffi_iroh_checksum_method_socketaddrv6_equal(
+	RustCallStatus* out_status
+);
+
 uint16_t uniffi_iroh_checksum_method_socketaddrv6_ip(
 	RustCallStatus* out_status
 );
@@ -745,7 +992,31 @@ uint16_t uniffi_iroh_checksum_method_socketaddrv6_to_string(
 	RustCallStatus* out_status
 );
 
+uint16_t uniffi_iroh_checksum_constructor_authorid_from_string(
+	RustCallStatus* out_status
+);
+
 uint16_t uniffi_iroh_checksum_constructor_docticket_from_string(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_constructor_getfilter_all(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_constructor_getfilter_author(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_constructor_getfilter_author_prefix(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_constructor_getfilter_key(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_constructor_getfilter_prefix(
 	RustCallStatus* out_status
 );
 
@@ -766,6 +1037,14 @@ uint16_t uniffi_iroh_checksum_constructor_ipv6addr_new(
 );
 
 uint16_t uniffi_iroh_checksum_constructor_irohnode_new(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_constructor_namespaceid_from_string(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_constructor_peeraddr_new(
 	RustCallStatus* out_status
 );
 
@@ -814,6 +1093,8 @@ int32_t iroh_cgo_SubscribeCallback(uint64_t, int32_t, uint8_t *, int32_t, RustBu
 void uniffiFutureCallbackHandlerVoid(void *, uint8_t, RustCallStatus);
 void uniffiFutureCallbackHandlerVoidTypeIrohError(void *, uint8_t, RustCallStatus);
 void uniffiFutureCallbackHandlerUint16(void *, uint16_t, RustCallStatus);
+void uniffiFutureCallbackHandlerUint64TypeIrohError(void *, uint64_t, RustCallStatus);
+void uniffiFutureCallbackHandlerBool(void *, int8_t, RustCallStatus);
 void uniffiFutureCallbackHandlerString(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerBytes(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerBytesTypeIrohError(void *, RustBuffer, RustCallStatus);
@@ -822,6 +1103,7 @@ void uniffiFutureCallbackHandlerAuthorIdTypeIrohError(void *, void*, RustCallSta
 void uniffiFutureCallbackHandlerDocTypeIrohError(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerDocTicketTypeIrohError(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerEntry(void *, void*, RustCallStatus);
+void uniffiFutureCallbackHandlerGetFilter(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerHash(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerHashTypeIrohError(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerIpv4Addr(void *, void*, RustCallStatus);
@@ -829,6 +1111,9 @@ void uniffiFutureCallbackHandlerIpv4AddrTypeIrohError(void *, void*, RustCallSta
 void uniffiFutureCallbackHandlerIpv6Addr(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerIpv6AddrTypeIrohError(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerIrohNodeTypeIrohError(void *, void*, RustCallStatus);
+void uniffiFutureCallbackHandlerNamespaceId(void *, void*, RustCallStatus);
+void uniffiFutureCallbackHandlerNamespaceIdTypeIrohError(void *, void*, RustCallStatus);
+void uniffiFutureCallbackHandlerPeerAddr(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerPublicKey(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerPublicKeyTypeIrohError(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerSocketAddr(void *, void*, RustCallStatus);
@@ -837,10 +1122,12 @@ void uniffiFutureCallbackHandlerSocketAddrV4TypeIrohError(void *, void*, RustCal
 void uniffiFutureCallbackHandlerSocketAddrV6(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerSocketAddrV6TypeIrohError(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerTypeInsertRemoteEvent(void *, RustBuffer, RustCallStatus);
-void uniffiFutureCallbackHandlerTypeLiveStatusTypeIrohError(void *, RustBuffer, RustCallStatus);
+void uniffiFutureCallbackHandlerTypeOpenStateTypeIrohError(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerTypeSyncEvent(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerTypeLiveEventType(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerTypeSocketAddrType(void *, RustBuffer, RustCallStatus);
+void uniffiFutureCallbackHandlerOptionalUint16(void *, RustBuffer, RustCallStatus);
+void uniffiFutureCallbackHandlerOptionalEntryTypeIrohError(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerOptionalTypeConnectionInfoTypeIrohError(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerSequenceUint8(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerSequenceUint16(void *, RustBuffer, RustCallStatus);
@@ -848,5 +1135,6 @@ void uniffiFutureCallbackHandlerSequenceAuthorIdTypeIrohError(void *, RustBuffer
 void uniffiFutureCallbackHandlerSequenceEntryTypeIrohError(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerSequenceHashTypeIrohError(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerSequenceNamespaceIdTypeIrohError(void *, RustBuffer, RustCallStatus);
+void uniffiFutureCallbackHandlerSequenceSocketAddr(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerSequenceTypeConnectionInfoTypeIrohError(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerMapStringTypeCounterStatsTypeIrohError(void *, RustBuffer, RustCallStatus);

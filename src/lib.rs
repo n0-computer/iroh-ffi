@@ -1,18 +1,19 @@
+mod doc;
 mod error;
 mod key;
 mod net;
 mod node;
 
+pub use self::doc::*;
 pub use self::error::IrohError;
 pub use self::key::*;
 pub use self::net::*;
 pub use self::node::*;
 
+use futures::Future;
+use iroh::{bytes::util::runtime::Handle, metrics::try_init_metrics_collection};
+
 use tracing_subscriber::filter::LevelFilter;
-
-uniffi::include_scaffolding!("iroh");
-
-use iroh::metrics::try_init_metrics_collection;
 
 #[derive(Debug)]
 pub enum LogLevel {
@@ -50,8 +51,14 @@ pub fn set_log_level(level: LogLevel) {
 }
 
 pub fn start_metrics_collection() -> Result<(), IrohError> {
-    try_init_metrics_collection().map_err(|e| IrohError::Runtime {
-        description: e.to_string(),
-    })?;
-    Ok(())
+    try_init_metrics_collection().map_err(IrohError::runtime)
 }
+
+fn block_on<F: Future<Output = T>, T>(rt: &Handle, fut: F) -> T {
+    tokio::task::block_in_place(move || match tokio::runtime::Handle::try_current() {
+        Ok(handle) => handle.block_on(fut),
+        Err(_) => rt.main().block_on(fut),
+    })
+}
+
+uniffi::include_scaffolding!("iroh");
