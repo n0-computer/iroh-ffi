@@ -51,6 +51,39 @@ impl IrohNode {
             Ok(r.size())
         })
     }
+
+    /// Read all bytes of single blob.
+    ///
+    /// This allocates a buffer for the full blob. Use only if you know that the blob you're
+    /// reading is small. If not sure, use [`Self::blobs_size`] and check the size with
+    /// before calling [`Self::blobs_read_to_bytes`].
+    pub fn blobs_read_to_bytes(&self, hash: Hash) -> Result<Vec<u8>, IrohError> {
+        block_on(&self.async_runtime, async {
+            self.sync_client
+                .blobs
+                .read_to_bytes(hash.0)
+                .await
+                .map(|b| b.to_vec())
+                .map_err(IrohError::blob)
+        })
+    }
+
+    ///// Import a blob from a filesystem path.
+    /////
+    ///// `path` should be an absolute path valid for the file system on which
+    ///// the node runs.
+    ///// If `in_place` is true, Iroh will assume that the data will not change and will share it in
+    ///// place without copying to the Iroh data directory.
+    // pub fn blobs_add_from_path(
+    //     &self,
+    //     path: PathBuf,
+    //     in_place: bool,
+    //     tag: SetTagOption,
+    //     wrap: WrapOption,
+    //     cb: Box<dyn AddCallback>,
+    // ) -> Result<(), IrohError> {
+    //     todo!();
+    // }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

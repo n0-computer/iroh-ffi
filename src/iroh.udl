@@ -303,6 +303,16 @@ interface PublicKey {
   string fmt_short();
 };
 
+interface Tag {
+  string to_string();
+  boolean equal(Tag other);
+  bytes to_bytes();
+  [Name=from_string]
+  constructor(string s); 
+  [Name=from_bytes]
+  constructor(bytes bytes);
+};
+
 [Error]
 interface IrohError {
   Runtime(string description);
