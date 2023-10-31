@@ -29,14 +29,10 @@ pub enum IrohError {
     Ipv6Addr { description: String },
     #[error("SocketAddrV6 error: {description}")]
     SocketAddrV6 { description: String },
-    #[error("SocketAddr error: {description}")]
-    SocketAddr { description: String },
     #[error("PublicKey error: {description}")]
     PublicKey { description: String },
     #[error("PeerAddr error: {description}")]
     PeerAddr { description: String },
-    #[error("LiveEvent error: {description}")]
-    LiveEvent { description: String },
 }
 
 impl IrohError {
@@ -112,12 +108,6 @@ impl IrohError {
         }
     }
 
-    pub fn socket_addr(error: impl Display) -> Self {
-        IrohError::SocketAddr {
-            description: error.to_string(),
-        }
-    }
-
     pub fn public_key(error: impl Display) -> Self {
         IrohError::PublicKey {
             description: error.to_string(),
@@ -126,12 +116,6 @@ impl IrohError {
 
     pub fn peer_adddr(error: impl Display) -> Self {
         IrohError::PeerAddr {
-            description: error.to_string(),
-        }
-    }
-
-    pub fn live_event(error: impl Display) -> Self {
-        IrohError::LiveEvent {
             description: error.to_string(),
         }
     }

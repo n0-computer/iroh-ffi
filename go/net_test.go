@@ -133,11 +133,9 @@ func TestSocketAddr(t *testing.T) {
 	assert.Equal(t, ipv6.Type(), iroh.SocketAddrTypeV6)
 
 	// ensure we can get the addrs out properly
-	ipv4Addr, err := ipv4.AsIpv4()
-	assert.Nil(t, err)
+	ipv4Addr := ipv4.AsIpv4()
 
-	ipv6Addr, err := ipv6.AsIpv6()
-	assert.Nil(t, err)
+	ipv6Addr := ipv6.AsIpv6()
 
 	// ensure they are as expected
 	assert.Equal(t, ipv4Addr.Ip().ToString(), ipv4Ip.ToString())

@@ -139,17 +139,11 @@ dictionary CounterStats {
 
 interface LiveEvent {
   LiveEventType type();
-  [Throws=IrohError]
   Entry as_insert_local();
-  [Throws=IrohError]
   InsertRemoteEvent as_insert_remote();
-  [Throws=IrohError]
   Hash as_content_ready();
-  [Throws=IrohError]
   PublicKey as_neighbor_up();
-  [Throws=IrohError]
   PublicKey as_neighbor_down();
-  [Throws=IrohError]
   SyncEvent as_sync_finished();
 };
 
@@ -265,9 +259,7 @@ interface SocketAddr {
   [Name=from_ipv6]
   constructor(Ipv6Addr ipv6, u16 port);
   SocketAddrType type();
-  [Throws=IrohError]
   SocketAddrV4 as_ipv4();
-  [Throws=IrohError]
   SocketAddrV6 as_ipv6();
   boolean equal(SocketAddr other);
 };
@@ -298,8 +290,6 @@ interface IrohError {
   Ipv6Addr(string description);
   SocketAddrV4(string description);
   SocketAddrV6(string description);
-  SocketAddr(string description);
   PublicKey(string description);
   PeerAddr(string description);
-  LiveEvent(string description);
 };

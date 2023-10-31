@@ -68,22 +68,18 @@ impl SocketAddr {
     }
 
     /// Get the IPv4 SocketAddr representation
-    pub fn as_ipv4(&self) -> Result<Arc<SocketAddrV4>, IrohError> {
+    pub fn as_ipv4(&self) -> Arc<SocketAddrV4> {
         match self {
-            SocketAddr::V4 { addr } => Ok(Arc::new(addr.clone())),
-            SocketAddr::V6 { .. } => Err(IrohError::SocketAddr {
-                description: "Called SocketAddr:v4() on an Ipv6 socket addr".to_string(),
-            }),
+            SocketAddr::V4 { addr } => Arc::new(addr.clone()),
+            SocketAddr::V6 { .. } => panic!("Called SocketAddr:v4() on an Ipv6 socket addr"),
         }
     }
 
     /// Get the IPv6 SocketAddr representation
-    pub fn as_ipv6(&self) -> Result<Arc<SocketAddrV6>, IrohError> {
+    pub fn as_ipv6(&self) -> Arc<SocketAddrV6> {
         match self {
-            SocketAddr::V4 { .. } => Err(IrohError::SocketAddr {
-                description: "Called SocketAddr:v6() on an Ipv4 socket addr".to_string(),
-            }),
-            SocketAddr::V6 { addr } => Ok(Arc::new(addr.clone())),
+            SocketAddr::V4 { .. } => panic!("Called SocketAddr:v6() on an Ipv4 socket addr"),
+            SocketAddr::V6 { addr } => Arc::new(addr.clone()),
         }
     }
 

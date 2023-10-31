@@ -1539,12 +1539,12 @@ public func FfiConverterTypeIrohNode_lower(_ value: IrohNode) -> UnsafeMutableRa
 }
 
 public protocol LiveEventProtocol {
-    func asContentReady() throws -> Hash
-    func asInsertLocal() throws -> Entry
-    func asInsertRemote() throws -> InsertRemoteEvent
-    func asNeighborDown() throws -> PublicKey
-    func asNeighborUp() throws -> PublicKey
-    func asSyncFinished() throws -> SyncEvent
+    func asContentReady() -> Hash
+    func asInsertLocal() -> Entry
+    func asInsertRemote() -> InsertRemoteEvent
+    func asNeighborDown() -> PublicKey
+    func asNeighborUp() -> PublicKey
+    func asSyncFinished() -> SyncEvent
     func type() -> LiveEventType
 }
 
@@ -1562,51 +1562,57 @@ public class LiveEvent: LiveEventProtocol {
         try! rustCall { uniffi_iroh_fn_free_liveevent(pointer, $0) }
     }
 
-    public func asContentReady() throws -> Hash {
-        return try FfiConverterTypeHash.lift(
-            rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_liveevent_as_content_ready(self.pointer, $0)
-            }
+    public func asContentReady() -> Hash {
+        return try! FfiConverterTypeHash.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_liveevent_as_content_ready(self.pointer, $0)
+                }
         )
     }
 
-    public func asInsertLocal() throws -> Entry {
-        return try FfiConverterTypeEntry.lift(
-            rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_liveevent_as_insert_local(self.pointer, $0)
-            }
+    public func asInsertLocal() -> Entry {
+        return try! FfiConverterTypeEntry.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_liveevent_as_insert_local(self.pointer, $0)
+                }
         )
     }
 
-    public func asInsertRemote() throws -> InsertRemoteEvent {
-        return try FfiConverterTypeInsertRemoteEvent.lift(
-            rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_liveevent_as_insert_remote(self.pointer, $0)
-            }
+    public func asInsertRemote() -> InsertRemoteEvent {
+        return try! FfiConverterTypeInsertRemoteEvent.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_liveevent_as_insert_remote(self.pointer, $0)
+                }
         )
     }
 
-    public func asNeighborDown() throws -> PublicKey {
-        return try FfiConverterTypePublicKey.lift(
-            rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_liveevent_as_neighbor_down(self.pointer, $0)
-            }
+    public func asNeighborDown() -> PublicKey {
+        return try! FfiConverterTypePublicKey.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_liveevent_as_neighbor_down(self.pointer, $0)
+                }
         )
     }
 
-    public func asNeighborUp() throws -> PublicKey {
-        return try FfiConverterTypePublicKey.lift(
-            rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_liveevent_as_neighbor_up(self.pointer, $0)
-            }
+    public func asNeighborUp() -> PublicKey {
+        return try! FfiConverterTypePublicKey.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_liveevent_as_neighbor_up(self.pointer, $0)
+                }
         )
     }
 
-    public func asSyncFinished() throws -> SyncEvent {
-        return try FfiConverterTypeSyncEvent.lift(
-            rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_liveevent_as_sync_finished(self.pointer, $0)
-            }
+    public func asSyncFinished() -> SyncEvent {
+        return try! FfiConverterTypeSyncEvent.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_liveevent_as_sync_finished(self.pointer, $0)
+                }
         )
     }
 
@@ -1954,8 +1960,8 @@ public func FfiConverterTypePublicKey_lower(_ value: PublicKey) -> UnsafeMutable
 }
 
 public protocol SocketAddrProtocol {
-    func asIpv4() throws -> SocketAddrV4
-    func asIpv6() throws -> SocketAddrV6
+    func asIpv4() -> SocketAddrV4
+    func asIpv6() -> SocketAddrV6
     func equal(other: SocketAddr) -> Bool
     func type() -> SocketAddrType
 }
@@ -1992,19 +1998,21 @@ public class SocketAddr: SocketAddrProtocol {
         })
     }
 
-    public func asIpv4() throws -> SocketAddrV4 {
-        return try FfiConverterTypeSocketAddrV4.lift(
-            rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_socketaddr_as_ipv4(self.pointer, $0)
-            }
+    public func asIpv4() -> SocketAddrV4 {
+        return try! FfiConverterTypeSocketAddrV4.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_socketaddr_as_ipv4(self.pointer, $0)
+                }
         )
     }
 
-    public func asIpv6() throws -> SocketAddrV6 {
-        return try FfiConverterTypeSocketAddrV6.lift(
-            rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_socketaddr_as_ipv6(self.pointer, $0)
-            }
+    public func asIpv6() -> SocketAddrV6 {
+        return try! FfiConverterTypeSocketAddrV6.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_socketaddr_as_ipv6(self.pointer, $0)
+                }
         )
     }
 
@@ -2667,10 +2675,8 @@ public enum IrohError {
     case Ipv6Addr(description: String)
     case SocketAddrV4(description: String)
     case SocketAddrV6(description: String)
-    case SocketAddr(description: String)
     case PublicKey(description: String)
     case PeerAddr(description: String)
-    case LiveEvent(description: String)
 
     fileprivate static func uniffiErrorHandler(_ error: RustBuffer) throws -> Error {
         return try FfiConverterTypeIrohError.lift(error)
@@ -2722,16 +2728,10 @@ public struct FfiConverterTypeIrohError: FfiConverterRustBuffer {
         case 13: return try .SocketAddrV6(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 14: return try .SocketAddr(
+        case 14: return try .PublicKey(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 15: return try .PublicKey(
-                description: FfiConverterString.read(from: &buf)
-            )
-        case 16: return try .PeerAddr(
-                description: FfiConverterString.read(from: &buf)
-            )
-        case 17: return try .LiveEvent(
+        case 15: return try .PeerAddr(
                 description: FfiConverterString.read(from: &buf)
             )
 
@@ -2793,20 +2793,12 @@ public struct FfiConverterTypeIrohError: FfiConverterRustBuffer {
             writeInt(&buf, Int32(13))
             FfiConverterString.write(description, into: &buf)
 
-        case let .SocketAddr(description):
+        case let .PublicKey(description):
             writeInt(&buf, Int32(14))
             FfiConverterString.write(description, into: &buf)
 
-        case let .PublicKey(description):
-            writeInt(&buf, Int32(15))
-            FfiConverterString.write(description, into: &buf)
-
         case let .PeerAddr(description):
-            writeInt(&buf, Int32(16))
-            FfiConverterString.write(description, into: &buf)
-
-        case let .LiveEvent(description):
-            writeInt(&buf, Int32(17))
+            writeInt(&buf, Int32(15))
             FfiConverterString.write(description, into: &buf)
         }
     }
@@ -3752,22 +3744,22 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_irohnode_stats() != 16158 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_liveevent_as_content_ready() != 21697 {
+    if uniffi_iroh_checksum_method_liveevent_as_content_ready() != 15237 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_liveevent_as_insert_local() != 53568 {
+    if uniffi_iroh_checksum_method_liveevent_as_insert_local() != 431 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_liveevent_as_insert_remote() != 46026 {
+    if uniffi_iroh_checksum_method_liveevent_as_insert_remote() != 17302 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_liveevent_as_neighbor_down() != 54900 {
+    if uniffi_iroh_checksum_method_liveevent_as_neighbor_down() != 154 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_liveevent_as_neighbor_up() != 45381 {
+    if uniffi_iroh_checksum_method_liveevent_as_neighbor_up() != 25727 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_liveevent_as_sync_finished() != 18488 {
+    if uniffi_iroh_checksum_method_liveevent_as_sync_finished() != 14329 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_liveevent_type() != 35533 {
@@ -3800,10 +3792,10 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_publickey_to_string() != 48998 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_socketaddr_as_ipv4() != 903 {
+    if uniffi_iroh_checksum_method_socketaddr_as_ipv4() != 50860 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_socketaddr_as_ipv6() != 23303 {
+    if uniffi_iroh_checksum_method_socketaddr_as_ipv6() != 40970 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_socketaddr_equal() != 1891 {
