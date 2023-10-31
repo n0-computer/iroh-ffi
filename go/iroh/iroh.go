@@ -332,6 +332,7 @@ func readFloat64(reader io.Reader) float64 {
 
 func init() {
 
+	(&FfiConverterCallbackInterfaceAddCallback{}).register()
 	(&FfiConverterCallbackInterfaceSubscribeCallback{}).register()
 	uniffiCheckChecksums()
 }
@@ -363,6 +364,60 @@ func uniffiCheckChecksums() {
 		if checksum != 17691 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_func_start_metrics_collection: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_addprogress_as_abort(uniffiStatus)
+		})
+		if checksum != 64540 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_addprogress_as_abort: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_addprogress_as_all_done(uniffiStatus)
+		})
+		if checksum != 24629 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_addprogress_as_all_done: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_addprogress_as_done(uniffiStatus)
+		})
+		if checksum != 65369 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_addprogress_as_done: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_addprogress_as_found(uniffiStatus)
+		})
+		if checksum != 14508 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_addprogress_as_found: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_addprogress_as_progress(uniffiStatus)
+		})
+		if checksum != 54075 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_addprogress_as_progress: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_addprogress_type(uniffiStatus)
+		})
+		if checksum != 63416 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_addprogress_type: UniFFI API checksum mismatch")
 		}
 	}
 	{
@@ -673,6 +728,15 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_irohnode_blob_add_from_path(uniffiStatus)
+		})
+		if checksum != 63377 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_irohnode_blob_add_from_path: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_irohnode_blob_get(uniffiStatus)
 		})
 		if checksum != 2655 {
@@ -687,6 +751,24 @@ func uniffiCheckChecksums() {
 		if checksum != 22311 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_irohnode_blob_list_blobs: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_irohnode_blob_read_to_bytes(uniffiStatus)
+		})
+		if checksum != 12124 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_irohnode_blob_read_to_bytes: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_irohnode_blob_size(uniffiStatus)
+		})
+		if checksum != 17162 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_irohnode_blob_size: UniFFI API checksum mismatch")
 		}
 	}
 	{
@@ -1231,6 +1313,24 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_constructor_settagoption_auto(uniffiStatus)
+		})
+		if checksum != 13040 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_constructor_settagoption_auto: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_constructor_settagoption_named(uniffiStatus)
+		})
+		if checksum != 24631 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_constructor_settagoption_named: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_constructor_socketaddr_from_ipv4(uniffiStatus)
 		})
 		if checksum != 48670 {
@@ -1299,6 +1399,33 @@ func uniffiCheckChecksums() {
 		if checksum != 40751 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_constructor_tag_from_string: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_constructor_wrapoption_no_wrap(uniffiStatus)
+		})
+		if checksum != 60952 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_constructor_wrapoption_no_wrap: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_constructor_wrapoption_wrap(uniffiStatus)
+		})
+		if checksum != 59295 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_constructor_wrapoption_wrap: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_addcallback_progress(uniffiStatus)
+		})
+		if checksum != 42266 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_addcallback_progress: UniFFI API checksum mismatch")
 		}
 	}
 	{
@@ -1640,6 +1767,108 @@ func (ffiObject *FfiObject) freeRustArcPtr() {
 		ffiObject.freeFunction(ffiObject.pointer, status)
 		return 0
 	})
+}
+
+type AddProgress struct {
+	ffiObject FfiObject
+}
+
+func (_self *AddProgress) AsAbort() AddProgressAbort {
+	_pointer := _self.ffiObject.incrementPointer("*AddProgress")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterTypeAddProgressAbortINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_addprogress_as_abort(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *AddProgress) AsAllDone() AddProgressAllDone {
+	_pointer := _self.ffiObject.incrementPointer("*AddProgress")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterTypeAddProgressAllDoneINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_addprogress_as_all_done(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *AddProgress) AsDone() AddProgressDone {
+	_pointer := _self.ffiObject.incrementPointer("*AddProgress")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterTypeAddProgressDoneINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_addprogress_as_done(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *AddProgress) AsFound() AddProgressFound {
+	_pointer := _self.ffiObject.incrementPointer("*AddProgress")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterTypeAddProgressFoundINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_addprogress_as_found(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *AddProgress) AsProgress() AddProgressProgress {
+	_pointer := _self.ffiObject.incrementPointer("*AddProgress")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterTypeAddProgressProgressINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_addprogress_as_progress(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *AddProgress) Type() AddProgressType {
+	_pointer := _self.ffiObject.incrementPointer("*AddProgress")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterTypeAddProgressTypeINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_addprogress_type(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (object *AddProgress) Destroy() {
+	runtime.SetFinalizer(object, nil)
+	object.ffiObject.destroy()
+}
+
+type FfiConverterAddProgress struct{}
+
+var FfiConverterAddProgressINSTANCE = FfiConverterAddProgress{}
+
+func (c FfiConverterAddProgress) Lift(pointer unsafe.Pointer) *AddProgress {
+	result := &AddProgress{
+		newFfiObject(
+			pointer,
+			func(pointer unsafe.Pointer, status *C.RustCallStatus) {
+				C.uniffi_iroh_fn_free_addprogress(pointer, status)
+			}),
+	}
+	runtime.SetFinalizer(result, (*AddProgress).Destroy)
+	return result
+}
+
+func (c FfiConverterAddProgress) Read(reader io.Reader) *AddProgress {
+	return c.Lift(unsafe.Pointer(uintptr(readUint64(reader))))
+}
+
+func (c FfiConverterAddProgress) Lower(value *AddProgress) unsafe.Pointer {
+	// TODO: this is bad - all synchronization from ObjectRuntime.go is discarded here,
+	// because the pointer will be decremented immediately after this function returns,
+	// and someone will be left holding onto a non-locked pointer.
+	pointer := value.ffiObject.incrementPointer("*AddProgress")
+	defer value.ffiObject.decrementPointer()
+	return pointer
+}
+
+func (c FfiConverterAddProgress) Write(writer io.Writer, value *AddProgress) {
+	writeUint64(writer, uint64(uintptr(c.Lower(value))))
+}
+
+type FfiDestroyerAddProgress struct{}
+
+func (_ FfiDestroyerAddProgress) Destroy(value *AddProgress) {
+	value.Destroy()
 }
 
 type AuthorId struct {
@@ -2518,6 +2747,17 @@ func (_self *IrohNode) AuthorNew() (*AuthorId, error) {
 	}
 }
 
+func (_self *IrohNode) BlobAddFromPath(path string, inPlace bool, tag *SetTagOption, wrap *WrapOption, cb AddCallback) error {
+	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
+	defer _self.ffiObject.decrementPointer()
+	_, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) bool {
+		C.uniffi_iroh_fn_method_irohnode_blob_add_from_path(
+			_pointer, FfiConverterStringINSTANCE.Lower(path), FfiConverterBoolINSTANCE.Lower(inPlace), FfiConverterSetTagOptionINSTANCE.Lower(tag), FfiConverterWrapOptionINSTANCE.Lower(wrap), FfiConverterCallbackInterfaceAddCallbackINSTANCE.Lower(cb), _uniffiStatus)
+		return false
+	})
+	return _uniffiErr
+}
+
 func (_self *IrohNode) BlobGet(hash *Hash) ([]byte, error) {
 	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
 	defer _self.ffiObject.decrementPointer()
@@ -2545,6 +2785,36 @@ func (_self *IrohNode) BlobListBlobs() ([]*Hash, error) {
 		return _uniffiDefaultValue, _uniffiErr
 	} else {
 		return FfiConverterSequenceHashINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
+
+func (_self *IrohNode) BlobReadToBytes(hash *Hash) ([]byte, error) {
+	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
+	defer _self.ffiObject.decrementPointer()
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_irohnode_blob_read_to_bytes(
+			_pointer, FfiConverterHashINSTANCE.Lower(hash), _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue []byte
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterBytesINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
+
+func (_self *IrohNode) BlobSize(hash *Hash) (uint64, error) {
+	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
+	defer _self.ffiObject.decrementPointer()
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) C.uint64_t {
+		return C.uniffi_iroh_fn_method_irohnode_blob_size(
+			_pointer, FfiConverterHashINSTANCE.Lower(hash), _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue uint64
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterUint64INSTANCE.Lift(_uniffiRV), _uniffiErr
 	}
 }
 
@@ -3160,6 +3430,65 @@ func (_ FfiDestroyerQuery) Destroy(value *Query) {
 	value.Destroy()
 }
 
+type SetTagOption struct {
+	ffiObject FfiObject
+}
+
+func SetTagOptionAuto() *SetTagOption {
+	return FfiConverterSetTagOptionINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_constructor_settagoption_auto(_uniffiStatus)
+	}))
+}
+func SetTagOptionNamed(tag *Tag) *SetTagOption {
+	return FfiConverterSetTagOptionINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_constructor_settagoption_named(FfiConverterTagINSTANCE.Lower(tag), _uniffiStatus)
+	}))
+}
+
+func (object *SetTagOption) Destroy() {
+	runtime.SetFinalizer(object, nil)
+	object.ffiObject.destroy()
+}
+
+type FfiConverterSetTagOption struct{}
+
+var FfiConverterSetTagOptionINSTANCE = FfiConverterSetTagOption{}
+
+func (c FfiConverterSetTagOption) Lift(pointer unsafe.Pointer) *SetTagOption {
+	result := &SetTagOption{
+		newFfiObject(
+			pointer,
+			func(pointer unsafe.Pointer, status *C.RustCallStatus) {
+				C.uniffi_iroh_fn_free_settagoption(pointer, status)
+			}),
+	}
+	runtime.SetFinalizer(result, (*SetTagOption).Destroy)
+	return result
+}
+
+func (c FfiConverterSetTagOption) Read(reader io.Reader) *SetTagOption {
+	return c.Lift(unsafe.Pointer(uintptr(readUint64(reader))))
+}
+
+func (c FfiConverterSetTagOption) Lower(value *SetTagOption) unsafe.Pointer {
+	// TODO: this is bad - all synchronization from ObjectRuntime.go is discarded here,
+	// because the pointer will be decremented immediately after this function returns,
+	// and someone will be left holding onto a non-locked pointer.
+	pointer := value.ffiObject.incrementPointer("*SetTagOption")
+	defer value.ffiObject.decrementPointer()
+	return pointer
+}
+
+func (c FfiConverterSetTagOption) Write(writer io.Writer, value *SetTagOption) {
+	writeUint64(writer, uint64(uintptr(c.Lower(value))))
+}
+
+type FfiDestroyerSetTagOption struct{}
+
+func (_ FfiDestroyerSetTagOption) Destroy(value *SetTagOption) {
+	value.Destroy()
+}
+
 type SocketAddr struct {
 	ffiObject FfiObject
 }
@@ -3545,6 +3874,269 @@ func (_ FfiDestroyerTag) Destroy(value *Tag) {
 	value.Destroy()
 }
 
+type WrapOption struct {
+	ffiObject FfiObject
+}
+
+func WrapOptionNoWrap() *WrapOption {
+	return FfiConverterWrapOptionINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_constructor_wrapoption_no_wrap(_uniffiStatus)
+	}))
+}
+func WrapOptionWrap(name *string) *WrapOption {
+	return FfiConverterWrapOptionINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_constructor_wrapoption_wrap(FfiConverterOptionalStringINSTANCE.Lower(name), _uniffiStatus)
+	}))
+}
+
+func (object *WrapOption) Destroy() {
+	runtime.SetFinalizer(object, nil)
+	object.ffiObject.destroy()
+}
+
+type FfiConverterWrapOption struct{}
+
+var FfiConverterWrapOptionINSTANCE = FfiConverterWrapOption{}
+
+func (c FfiConverterWrapOption) Lift(pointer unsafe.Pointer) *WrapOption {
+	result := &WrapOption{
+		newFfiObject(
+			pointer,
+			func(pointer unsafe.Pointer, status *C.RustCallStatus) {
+				C.uniffi_iroh_fn_free_wrapoption(pointer, status)
+			}),
+	}
+	runtime.SetFinalizer(result, (*WrapOption).Destroy)
+	return result
+}
+
+func (c FfiConverterWrapOption) Read(reader io.Reader) *WrapOption {
+	return c.Lift(unsafe.Pointer(uintptr(readUint64(reader))))
+}
+
+func (c FfiConverterWrapOption) Lower(value *WrapOption) unsafe.Pointer {
+	// TODO: this is bad - all synchronization from ObjectRuntime.go is discarded here,
+	// because the pointer will be decremented immediately after this function returns,
+	// and someone will be left holding onto a non-locked pointer.
+	pointer := value.ffiObject.incrementPointer("*WrapOption")
+	defer value.ffiObject.decrementPointer()
+	return pointer
+}
+
+func (c FfiConverterWrapOption) Write(writer io.Writer, value *WrapOption) {
+	writeUint64(writer, uint64(uintptr(c.Lower(value))))
+}
+
+type FfiDestroyerWrapOption struct{}
+
+func (_ FfiDestroyerWrapOption) Destroy(value *WrapOption) {
+	value.Destroy()
+}
+
+type AddProgressAbort struct {
+	Error string
+}
+
+func (r *AddProgressAbort) Destroy() {
+	FfiDestroyerString{}.Destroy(r.Error)
+}
+
+type FfiConverterTypeAddProgressAbort struct{}
+
+var FfiConverterTypeAddProgressAbortINSTANCE = FfiConverterTypeAddProgressAbort{}
+
+func (c FfiConverterTypeAddProgressAbort) Lift(rb RustBufferI) AddProgressAbort {
+	return LiftFromRustBuffer[AddProgressAbort](c, rb)
+}
+
+func (c FfiConverterTypeAddProgressAbort) Read(reader io.Reader) AddProgressAbort {
+	return AddProgressAbort{
+		FfiConverterStringINSTANCE.Read(reader),
+	}
+}
+
+func (c FfiConverterTypeAddProgressAbort) Lower(value AddProgressAbort) RustBuffer {
+	return LowerIntoRustBuffer[AddProgressAbort](c, value)
+}
+
+func (c FfiConverterTypeAddProgressAbort) Write(writer io.Writer, value AddProgressAbort) {
+	FfiConverterStringINSTANCE.Write(writer, value.Error)
+}
+
+type FfiDestroyerTypeAddProgressAbort struct{}
+
+func (_ FfiDestroyerTypeAddProgressAbort) Destroy(value AddProgressAbort) {
+	value.Destroy()
+}
+
+type AddProgressAllDone struct {
+	Hash   *Hash
+	Format BlobFormat
+	Tag    *Tag
+}
+
+func (r *AddProgressAllDone) Destroy() {
+	FfiDestroyerHash{}.Destroy(r.Hash)
+	FfiDestroyerTypeBlobFormat{}.Destroy(r.Format)
+	FfiDestroyerTag{}.Destroy(r.Tag)
+}
+
+type FfiConverterTypeAddProgressAllDone struct{}
+
+var FfiConverterTypeAddProgressAllDoneINSTANCE = FfiConverterTypeAddProgressAllDone{}
+
+func (c FfiConverterTypeAddProgressAllDone) Lift(rb RustBufferI) AddProgressAllDone {
+	return LiftFromRustBuffer[AddProgressAllDone](c, rb)
+}
+
+func (c FfiConverterTypeAddProgressAllDone) Read(reader io.Reader) AddProgressAllDone {
+	return AddProgressAllDone{
+		FfiConverterHashINSTANCE.Read(reader),
+		FfiConverterTypeBlobFormatINSTANCE.Read(reader),
+		FfiConverterTagINSTANCE.Read(reader),
+	}
+}
+
+func (c FfiConverterTypeAddProgressAllDone) Lower(value AddProgressAllDone) RustBuffer {
+	return LowerIntoRustBuffer[AddProgressAllDone](c, value)
+}
+
+func (c FfiConverterTypeAddProgressAllDone) Write(writer io.Writer, value AddProgressAllDone) {
+	FfiConverterHashINSTANCE.Write(writer, value.Hash)
+	FfiConverterTypeBlobFormatINSTANCE.Write(writer, value.Format)
+	FfiConverterTagINSTANCE.Write(writer, value.Tag)
+}
+
+type FfiDestroyerTypeAddProgressAllDone struct{}
+
+func (_ FfiDestroyerTypeAddProgressAllDone) Destroy(value AddProgressAllDone) {
+	value.Destroy()
+}
+
+type AddProgressDone struct {
+	Id   uint64
+	Hash *Hash
+}
+
+func (r *AddProgressDone) Destroy() {
+	FfiDestroyerUint64{}.Destroy(r.Id)
+	FfiDestroyerHash{}.Destroy(r.Hash)
+}
+
+type FfiConverterTypeAddProgressDone struct{}
+
+var FfiConverterTypeAddProgressDoneINSTANCE = FfiConverterTypeAddProgressDone{}
+
+func (c FfiConverterTypeAddProgressDone) Lift(rb RustBufferI) AddProgressDone {
+	return LiftFromRustBuffer[AddProgressDone](c, rb)
+}
+
+func (c FfiConverterTypeAddProgressDone) Read(reader io.Reader) AddProgressDone {
+	return AddProgressDone{
+		FfiConverterUint64INSTANCE.Read(reader),
+		FfiConverterHashINSTANCE.Read(reader),
+	}
+}
+
+func (c FfiConverterTypeAddProgressDone) Lower(value AddProgressDone) RustBuffer {
+	return LowerIntoRustBuffer[AddProgressDone](c, value)
+}
+
+func (c FfiConverterTypeAddProgressDone) Write(writer io.Writer, value AddProgressDone) {
+	FfiConverterUint64INSTANCE.Write(writer, value.Id)
+	FfiConverterHashINSTANCE.Write(writer, value.Hash)
+}
+
+type FfiDestroyerTypeAddProgressDone struct{}
+
+func (_ FfiDestroyerTypeAddProgressDone) Destroy(value AddProgressDone) {
+	value.Destroy()
+}
+
+type AddProgressFound struct {
+	Id   uint64
+	Name string
+	Size uint64
+}
+
+func (r *AddProgressFound) Destroy() {
+	FfiDestroyerUint64{}.Destroy(r.Id)
+	FfiDestroyerString{}.Destroy(r.Name)
+	FfiDestroyerUint64{}.Destroy(r.Size)
+}
+
+type FfiConverterTypeAddProgressFound struct{}
+
+var FfiConverterTypeAddProgressFoundINSTANCE = FfiConverterTypeAddProgressFound{}
+
+func (c FfiConverterTypeAddProgressFound) Lift(rb RustBufferI) AddProgressFound {
+	return LiftFromRustBuffer[AddProgressFound](c, rb)
+}
+
+func (c FfiConverterTypeAddProgressFound) Read(reader io.Reader) AddProgressFound {
+	return AddProgressFound{
+		FfiConverterUint64INSTANCE.Read(reader),
+		FfiConverterStringINSTANCE.Read(reader),
+		FfiConverterUint64INSTANCE.Read(reader),
+	}
+}
+
+func (c FfiConverterTypeAddProgressFound) Lower(value AddProgressFound) RustBuffer {
+	return LowerIntoRustBuffer[AddProgressFound](c, value)
+}
+
+func (c FfiConverterTypeAddProgressFound) Write(writer io.Writer, value AddProgressFound) {
+	FfiConverterUint64INSTANCE.Write(writer, value.Id)
+	FfiConverterStringINSTANCE.Write(writer, value.Name)
+	FfiConverterUint64INSTANCE.Write(writer, value.Size)
+}
+
+type FfiDestroyerTypeAddProgressFound struct{}
+
+func (_ FfiDestroyerTypeAddProgressFound) Destroy(value AddProgressFound) {
+	value.Destroy()
+}
+
+type AddProgressProgress struct {
+	Id     uint64
+	Offset uint64
+}
+
+func (r *AddProgressProgress) Destroy() {
+	FfiDestroyerUint64{}.Destroy(r.Id)
+	FfiDestroyerUint64{}.Destroy(r.Offset)
+}
+
+type FfiConverterTypeAddProgressProgress struct{}
+
+var FfiConverterTypeAddProgressProgressINSTANCE = FfiConverterTypeAddProgressProgress{}
+
+func (c FfiConverterTypeAddProgressProgress) Lift(rb RustBufferI) AddProgressProgress {
+	return LiftFromRustBuffer[AddProgressProgress](c, rb)
+}
+
+func (c FfiConverterTypeAddProgressProgress) Read(reader io.Reader) AddProgressProgress {
+	return AddProgressProgress{
+		FfiConverterUint64INSTANCE.Read(reader),
+		FfiConverterUint64INSTANCE.Read(reader),
+	}
+}
+
+func (c FfiConverterTypeAddProgressProgress) Lower(value AddProgressProgress) RustBuffer {
+	return LowerIntoRustBuffer[AddProgressProgress](c, value)
+}
+
+func (c FfiConverterTypeAddProgressProgress) Write(writer io.Writer, value AddProgressProgress) {
+	FfiConverterUint64INSTANCE.Write(writer, value.Id)
+	FfiConverterUint64INSTANCE.Write(writer, value.Offset)
+}
+
+type FfiDestroyerTypeAddProgressProgress struct{}
+
+func (_ FfiDestroyerTypeAddProgressProgress) Destroy(value AddProgressProgress) {
+	value.Destroy()
+}
+
 type ConnectionInfo struct {
 	PublicKey  *PublicKey
 	DerpRegion *uint16
@@ -3819,6 +4411,73 @@ type FfiDestroyerTypeSyncEvent struct{}
 
 func (_ FfiDestroyerTypeSyncEvent) Destroy(value SyncEvent) {
 	value.Destroy()
+}
+
+type AddProgressType uint
+
+const (
+	AddProgressTypeFound    AddProgressType = 1
+	AddProgressTypeProgress AddProgressType = 2
+	AddProgressTypeDone     AddProgressType = 3
+	AddProgressTypeAllDone  AddProgressType = 4
+	AddProgressTypeAbort    AddProgressType = 5
+)
+
+type FfiConverterTypeAddProgressType struct{}
+
+var FfiConverterTypeAddProgressTypeINSTANCE = FfiConverterTypeAddProgressType{}
+
+func (c FfiConverterTypeAddProgressType) Lift(rb RustBufferI) AddProgressType {
+	return LiftFromRustBuffer[AddProgressType](c, rb)
+}
+
+func (c FfiConverterTypeAddProgressType) Lower(value AddProgressType) RustBuffer {
+	return LowerIntoRustBuffer[AddProgressType](c, value)
+}
+func (FfiConverterTypeAddProgressType) Read(reader io.Reader) AddProgressType {
+	id := readInt32(reader)
+	return AddProgressType(id)
+}
+
+func (FfiConverterTypeAddProgressType) Write(writer io.Writer, value AddProgressType) {
+	writeInt32(writer, int32(value))
+}
+
+type FfiDestroyerTypeAddProgressType struct{}
+
+func (_ FfiDestroyerTypeAddProgressType) Destroy(value AddProgressType) {
+}
+
+type BlobFormat uint
+
+const (
+	BlobFormatRaw     BlobFormat = 1
+	BlobFormatHashSeq BlobFormat = 2
+)
+
+type FfiConverterTypeBlobFormat struct{}
+
+var FfiConverterTypeBlobFormatINSTANCE = FfiConverterTypeBlobFormat{}
+
+func (c FfiConverterTypeBlobFormat) Lift(rb RustBufferI) BlobFormat {
+	return LiftFromRustBuffer[BlobFormat](c, rb)
+}
+
+func (c FfiConverterTypeBlobFormat) Lower(value BlobFormat) RustBuffer {
+	return LowerIntoRustBuffer[BlobFormat](c, value)
+}
+func (FfiConverterTypeBlobFormat) Read(reader io.Reader) BlobFormat {
+	id := readInt32(reader)
+	return BlobFormat(id)
+}
+
+func (FfiConverterTypeBlobFormat) Write(writer io.Writer, value BlobFormat) {
+	writeInt32(writer, int32(value))
+}
+
+type FfiDestroyerTypeBlobFormat struct{}
+
+func (_ FfiDestroyerTypeBlobFormat) Destroy(value BlobFormat) {
 }
 
 type CapabilityKind uint
@@ -4898,6 +5557,78 @@ func (c *FfiConverterCallbackInterface[CallbackInterface]) Lower(value CallbackI
 
 func (c *FfiConverterCallbackInterface[CallbackInterface]) Write(writer io.Writer, value CallbackInterface) {
 	writeUint64(writer, uint64(c.Lower(value)))
+}
+
+// Declaration and FfiConverters for AddCallback Callback Interface
+type AddCallback interface {
+	Progress(progress *AddProgress) *IrohError
+}
+
+// foreignCallbackCallbackInterfaceAddCallback cannot be callable be a compiled function at a same time
+type foreignCallbackCallbackInterfaceAddCallback struct{}
+
+//export iroh_cgo_AddCallback
+func iroh_cgo_AddCallback(handle C.uint64_t, method C.int32_t, argsPtr *C.uint8_t, argsLen C.int32_t, outBuf *C.RustBuffer) C.int32_t {
+	cb := FfiConverterCallbackInterfaceAddCallbackINSTANCE.Lift(uint64(handle))
+	switch method {
+	case 0:
+		// 0 means Rust is done with the callback, and the callback
+		// can be dropped by the foreign language.
+		*outBuf = FfiConverterCallbackInterfaceAddCallbackINSTANCE.drop(uint64(handle))
+		// See docs of ForeignCallback in `uniffi/src/ffi/foreigncallbacks.rs`
+		return C.int32_t(idxCallbackFree)
+
+	case 1:
+		var result uniffiCallbackResult
+		args := unsafe.Slice((*byte)(argsPtr), argsLen)
+		result = foreignCallbackCallbackInterfaceAddCallback{}.InvokeProgress(cb, args, outBuf)
+		return C.int32_t(result)
+
+	default:
+		// This should never happen, because an out of bounds method index won't
+		// ever be used. Once we can catch errors, we should return an InternalException.
+		// https://github.com/mozilla/uniffi-rs/issues/351
+		return C.int32_t(uniffiCallbackUnexpectedResultError)
+	}
+}
+
+func (foreignCallbackCallbackInterfaceAddCallback) InvokeProgress(callback AddCallback, args []byte, outBuf *C.RustBuffer) uniffiCallbackResult {
+	reader := bytes.NewReader(args)
+	err := callback.Progress(FfiConverterAddProgressINSTANCE.Read(reader))
+
+	if err != nil {
+		// The only way to bypass an unexpected error is to bypass pointer to an empty
+		// instance of the error
+		if err.err == nil {
+			return uniffiCallbackUnexpectedResultError
+		}
+		*outBuf = LowerIntoRustBuffer[*IrohError](FfiConverterTypeIrohErrorINSTANCE, err)
+		return uniffiCallbackResultError
+	}
+	return uniffiCallbackResultSuccess
+}
+
+type FfiConverterCallbackInterfaceAddCallback struct {
+	FfiConverterCallbackInterface[AddCallback]
+}
+
+var FfiConverterCallbackInterfaceAddCallbackINSTANCE = &FfiConverterCallbackInterfaceAddCallback{
+	FfiConverterCallbackInterface: FfiConverterCallbackInterface[AddCallback]{
+		handleMap: newConcurrentHandleMap[AddCallback](),
+	},
+}
+
+// This is a static function because only 1 instance is supported for registering
+func (c *FfiConverterCallbackInterfaceAddCallback) register() {
+	rustCall(func(status *C.RustCallStatus) int32 {
+		C.uniffi_iroh_fn_init_callback_addcallback(C.ForeignCallback(C.iroh_cgo_AddCallback), status)
+		return 0
+	})
+}
+
+type FfiDestroyerCallbackInterfaceAddCallback struct{}
+
+func (FfiDestroyerCallbackInterfaceAddCallback) Destroy(value AddCallback) {
 }
 
 // Declaration and FfiConverters for SubscribeCallback Callback Interface

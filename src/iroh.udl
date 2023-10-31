@@ -38,6 +38,12 @@ interface IrohNode {
   sequence<Hash> blob_list_blobs();
   [Throws=IrohError]
   bytes blob_get(Hash hash);
+  [Throws=IrohError]
+  u64 blob_size(Hash hash);
+  [Throws=IrohError]
+  bytes blob_read_to_bytes(Hash hash);
+  [Throws=IrohError]
+  void blob_add_from_path(string path, boolean in_place, SetTagOption tag, WrapOption wrap, AddCallback cb);
 };
 
 interface Doc {
@@ -321,7 +327,68 @@ interface SetTagOption {
   constructor();
   [Name=named]
   constructor(Tag tag);
-}
+};
+
+interface WrapOption {
+  [Name=no_wrap]
+  constructor();
+  [Name=wrap]
+  constructor(string? name);
+};
+
+enum BlobFormat {
+  "Raw",
+  "HashSeq"
+};
+
+enum AddProgressType {
+  "Found",
+  "Progress",
+  "Done",
+  "AllDone",
+  "Abort"
+};
+
+dictionary AddProgressFound {
+  u64 id;
+  string name;
+  u64 size;
+};
+
+dictionary AddProgressProgress {
+  u64 id;
+  u64 offset;
+};
+
+dictionary AddProgressDone {
+  u64 id;
+  Hash hash;
+};
+
+dictionary AddProgressAllDone {
+  Hash hash;
+  BlobFormat format;
+  Tag tag;
+};
+
+dictionary AddProgressAbort {
+  string error;
+};
+
+interface AddProgress {
+  AddProgressType type();
+  AddProgressFound as_found();
+  AddProgressProgress as_progress();
+  AddProgressDone as_done();
+  AddProgressAllDone as_all_done();
+  AddProgressAbort as_abort();
+};
+
+callback interface AddCallback {
+  [Throws=IrohError]
+  void progress(AddProgress progress);
+};
+
 
 [Error]
 interface IrohError {

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 /// A tag
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Tag(iroh::bytes::Tag);
+pub struct Tag(pub(crate) iroh::bytes::Tag);
 
 impl Tag {
     /// Create a tag from a String
