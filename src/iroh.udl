@@ -35,15 +35,25 @@ interface IrohNode {
   ConnectionInfo? connection_info(PublicKey node_id);
 
   [Throws=IrohError]
-  sequence<Hash> blob_list_blobs();
+  sequence<Hash> blobs_list();
   [Throws=IrohError]
-  bytes blob_get(Hash hash);
+  u64 blobs_size(Hash hash);
   [Throws=IrohError]
-  u64 blob_size(Hash hash);
+  bytes blobs_read_to_bytes(Hash hash);
   [Throws=IrohError]
-  bytes blob_read_to_bytes(Hash hash);
+  void blobs_add_from_path(string path, boolean in_place, SetTagOption tag, WrapOption wrap, AddCallback cb);
   [Throws=IrohError]
-  void blob_add_from_path(string path, boolean in_place, SetTagOption tag, WrapOption wrap, AddCallback cb);
+  void blobs_write_to_path(Hash hash, string path);
+  [Throws=IrohError]
+  BlobAddOutcome blobs_add_bytes(bytes bytes, SetTagOption tag);
+  [Throws=IrohError]
+  void blobs_download(BlobDownloadRequest req, DownloadCallback cb);
+  [Throws=IrohError]
+  sequence<BlobListIncompleteResponse> blobs_list_incomplete();
+  [Throws=IrohError]
+  sequence<BlobListCollectionsResponse> blobs_list_collections();
+  [Throws=IrohError]
+  void blobs_delete_blob(Hash hash);
 };
 
 interface Doc {
@@ -389,6 +399,126 @@ callback interface AddCallback {
   void progress(AddProgress progress);
 };
 
+dictionary BlobAddOutcome {
+  Hash hash;
+  BlobFormat format;
+  u64 size;
+  Tag tag;
+};
+
+interface RequestToken {
+  [Throws=IrohError]
+  constructor(bytes bytes); 
+  [Name=generate]
+  constructor();
+  bytes as_bytes();
+  [Name=from_string, Throws=IrohError]
+  constructor(string str);
+  boolean equal(RequestToken other);
+};
+
+interface DownloadLocation {
+  [Name=internal]
+  constructor();
+  [Name=external]
+  constructor(string path, boolean in_place);
+};
+
+interface BlobDownloadRequest {
+  constructor(Hash hash, BlobFormat format, PeerAddr peer, SetTagOption tag, DownloadLocation out, RequestToken? token);
+};
+
+callback interface DownloadCallback {
+  [Throws=IrohError]
+  void progress(DownloadProgress progress);
+};
+
+interface DownloadProgress {
+  DownloadProgressType type();
+  DownloadProgressFound as_found();
+  DownloadProgressFoundHashSeq as_found_hash_seq();
+  DownloadProgressProgress as_progress();
+  DownloadProgressDone as_done();
+  DownloadProgressNetworkDone as_network_done();
+  DownloadProgressExport as_export();
+  DownloadProgressExportProgress as_export_progress();
+  DownloadProgressAbort as_abort();
+};
+
+dictionary DownloadProgressFound {
+  u64 id;
+  u64 child;
+  Hash hash;
+  u64 size;
+};
+
+dictionary DownloadProgressFoundHashSeq {
+  u64 children;
+  Hash hash;
+};
+
+dictionary DownloadProgressProgress {
+  u64 id;
+  u64 offset;
+};
+
+dictionary DownloadProgressDone {
+  u64 id;
+};
+
+dictionary DownloadProgressNetworkDone {
+  u64 bytes_written;
+  u64 bytes_read;
+  duration elapsed;
+};
+
+dictionary DownloadProgressExport {
+  u64 id;
+  Hash hash;
+  u64 size;
+  string target;
+};
+
+dictionary DownloadProgressExportProgress {
+  u64 id;
+  u64 offset;
+};
+
+dictionary DownloadProgressAbort {
+  string error;
+};
+
+enum DownloadProgressType {
+  "Connected",
+  "Found",
+  "FoundHashSeq",
+  "Progress",
+  "Done",
+  "NetworkDone",
+  "Export",
+  "ExportProgress",
+  "AllDone",
+  "Abort",
+};
+
+dictionary BlobListResponse {
+  string path;
+  Hash hash;
+  u64 size;
+};
+
+dictionary BlobListIncompleteResponse {
+  u64 size;
+  u64 expected_size;
+  Hash hash;
+};
+
+dictionary BlobListCollectionsResponse {
+  Tag tag;
+  Hash hash;
+  u64? total_blobs_count;
+  u64? total_blobs_size;
+};
 
 [Error]
 interface IrohError {
@@ -408,4 +538,5 @@ interface IrohError {
   PublicKey(string description);
   NodeAddr(string description);
   Hash(string description);
+  RequestToken(string description);
 };
