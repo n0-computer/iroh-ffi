@@ -1017,3 +1017,116 @@ impl From<iroh::rpc_protocol::BlobListCollectionsResponse> for BlobListCollectio
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::node::IrohNode;
+    use rand::RngCore;
+
+    #[test]
+    fn blobs_add_get_bytes() {
+        // temp dir
+        let dir = tempfile::tempdir().unwrap();
+        let node = IrohNode::new(dir.into_path().display().to_string()).unwrap();
+        let sizes = [1, 10, 100, 1000, 10000, 100000];
+        // let sizes = [100000];
+        let mut hashes = Vec::new();
+        for size in sizes.iter() {
+            let hash = blobs_add_get_bytes_size(&node, *size);
+            hashes.push(hash)
+        }
+    }
+
+    fn blobs_add_get_bytes_size(node: &IrohNode, size: usize) -> Arc<Hash> {
+        // create bytes
+        let mut bytes = vec![0; size];
+        rand::thread_rng().fill_bytes(&mut bytes);
+        // add blob
+        let tag = SetTagOption::auto();
+        let add_outcome = node.blobs_add_bytes(bytes.to_vec(), tag.into()).unwrap();
+        // check outcome
+        assert_eq!(add_outcome.format, BlobFormat::Raw);
+        assert_eq!(add_outcome.size, size as u64);
+        // check size
+        let hash = add_outcome.hash;
+        let got_size = node.blobs_size(hash.clone()).unwrap();
+        assert_eq!(got_size, size as u64);
+        //
+        // get blob
+        let got_bytes = node.blobs_read_to_bytes(hash.clone()).unwrap();
+        assert_eq!(got_bytes.len(), size);
+        assert_eq!(got_bytes, bytes);
+        hash
+    }
+
+    async fn build_iroh_core(
+        path: &std::path::Path,
+        rt: &iroh::bytes::util::runtime::Handle,
+    ) -> iroh::node::Node<iroh::bytes::store::flat::Store> {
+        // TODO: store and load keypair
+        let secret_key = iroh::net::key::SecretKey::generate();
+
+        let docs_path = path.join("docs.db");
+        let docs = iroh::sync::store::fs::Store::new(&docs_path).unwrap();
+
+        // create a bao store for the iroh-bytes blobs
+        let blob_path = path.join("blobs");
+        tokio::fs::create_dir_all(&blob_path).await.unwrap();
+        let db = iroh::bytes::store::flat::Store::load(&blob_path, &blob_path, &blob_path, &rt)
+            .await
+            .unwrap();
+
+        iroh::node::Node::builder(db, docs)
+            .bind_addr(iroh::node::DEFAULT_BIND_ADDR.into())
+            .secret_key(secret_key)
+            .runtime(rt)
+            .spawn()
+            .await
+            .unwrap()
+    }
+
+    #[tokio::test]
+    async fn iroh_core_blobs_add_get_bytes() {
+        let tokio = tokio::runtime::Handle::current();
+        let tpc = tokio_util::task::LocalPoolHandle::new(num_cpus::get());
+        let rt = iroh::bytes::util::runtime::Handle::new(tokio, tpc);
+        // temp dir
+        let dir = tempfile::tempdir().unwrap();
+        let node = build_iroh_core(dir.path(), &rt).await;
+        let sizes = [1, 10, 100, 1000, 10000, 100000];
+        let mut hashes = Vec::new();
+        for size in sizes.iter() {
+            let hash = iroh_core_blobs_add_get_bytes_size(&node, *size);
+            hashes.push(hash)
+        }
+    }
+
+    async fn iroh_core_blobs_add_get_bytes_size(
+        node: &iroh::node::Node<iroh::bytes::store::flat::Store>,
+        size: usize,
+    ) -> iroh::bytes::Hash {
+        let client = node.client();
+        // create bytes
+        let mut bytes = vec![0; size];
+        rand::thread_rng().fill_bytes(&mut bytes);
+        let bytes: bytes::Bytes = bytes.into();
+        // add blob
+        let tag = iroh::rpc_protocol::SetTagOption::Auto;
+        let add_outcome = client.blobs.add_bytes(bytes.clone(), tag).await.unwrap();
+        // check outcome
+        assert_eq!(add_outcome.format, iroh::bytes::BlobFormat::Raw);
+        assert_eq!(add_outcome.size, size as u64);
+        // check size
+        let hash = add_outcome.hash;
+        let reader = client.blobs.read(hash).await.unwrap();
+        let got_size = reader.size();
+        assert_eq!(got_size, size as u64);
+        //
+        // get blob
+        let got_bytes = client.blobs.read_to_bytes(hash).await.unwrap();
+        assert_eq!(got_bytes.len(), size);
+        assert_eq!(got_bytes, bytes);
+        hash
+    }
+}

@@ -1,6 +1,8 @@
 # tests that correspond to the `src/doc.rs` rust api
-from iroh import Hash
+from iroh import Hash, IrohNode, SetTagOption, BlobFormat
 import pytest
+import tempfile
+import random
 
 def test_hash():
     hash_str = "bafkr4ih6qxpyfyrgxbcrvmiqbm7hb5fdpn4yezj7ayh6gwto4hm2573glu"
@@ -43,33 +45,35 @@ def test_hash():
     assert hash_1.equal(hash)
     assert hash_1.equal(hash_0)
  
-#def test_peer_addr():
-#    #
-#    # create a node_id
-#    key_str = "ki6htfv2252cj2lhq3hxu4qfcfjtpjnukzonevigudzjpmmruxva"
-#    node_id = PublicKey.from_string(key_str)
-#    #
-#    # create socketaddrs
-#    ipv4_ip = Ipv4Addr.from_string("127.0.0.1")
-#    ipv6_ip = Ipv6Addr.from_string("::1")
-#    port = 3000
-#    #
-#    # create socket addrs
-#    ipv4 = SocketAddr.from_ipv4(ipv4_ip, port)
-#    ipv6 = SocketAddr.from_ipv6(ipv6_ip, port)
-#    #
-#    # derp region
-#    derp_region = 1
-#    #
-#    # create a PeerAddr
-#    expect_addrs = [ipv4, ipv6]
-#    peer_addr = PeerAddr(node_id, derp_region, expect_addrs)
-#    #
-#    # test we have returned the expected addresses
-#    got_addrs = peer_addr.direct_addresses()
-#    for (got, expect) in zip(got_addrs, expect_addrs):
-#        assert got.equal(expect)
-#        assert expect.equal(got)
-    
-#    assert peer_addr.derp_region() == derp_region
+# test functionality between adding as bytes and reading to bytes
+def test_blob_add_get_bytes():
+    #
+    # create node
+    dir = tempfile.mkdtemp()
+    node = IrohNode(dir)
+    tag = SetTagOption.auto()
+    #
+    # create bytes
+    blob_size = 100
+    bytes = bytearray(map(random.getrandbits,(8,)*blob_size))
+    #
+    # add blob
+    tag = SetTagOption.auto()
+    add_outcome = node.blobs_add_bytes(bytes, tag)
+    #
+    # check outcome info is as expected
+    assert add_outcome.format == BlobFormat.RAW
+    # assert add_outcome.size == blob_size
+    #
+    # check we get the expected size from the hash
+    hash = add_outcome.hash
+    got_size = node.blobs_size(hash)
+    # assert got_size == blob_size
+    #
+    # get bytes
+    got_bytes = node.blobs_read_to_bytes(hash)
+    assert len(got_bytes) == blob_size
+    assert got_bytes == bytes
 
+# test functionality between reading bytes from a path and writing bytes to
+# a path
