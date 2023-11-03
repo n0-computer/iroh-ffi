@@ -1,8 +1,10 @@
 # tests that correspond to the `src/doc.rs` rust api
-from iroh import Hash, IrohNode, SetTagOption, BlobFormat
 import pytest
 import tempfile
 import random
+import os
+
+from iroh import Hash, IrohNode, SetTagOption, BlobFormat, WrapOption, AddProgressType
 
 def test_hash():
     hash_str = "bafkr4ih6qxpyfyrgxbcrvmiqbm7hb5fdpn4yezj7ayh6gwto4hm2573glu"
@@ -49,9 +51,8 @@ def test_hash():
 def test_blob_add_get_bytes():
     #
     # create node
-    dir = tempfile.mkdtemp()
-    node = IrohNode(dir)
-    tag = SetTagOption.auto()
+    dir = tempfile.TemporaryDirectory()
+    node = IrohNode(dir.name)
     #
     # create bytes
     blob_size = 100
@@ -77,3 +78,121 @@ def test_blob_add_get_bytes():
 
 # test functionality between reading bytes from a path and writing bytes to
 # a path
+def test_blob_read_write_path():
+    iroh_dir = tempfile.TemporaryDirectory()
+    node = IrohNode(iroh_dir.name)
+    #
+    # create bytes
+    blob_size = 100
+    bytes = bytearray(map(random.getrandbits,(8,)*blob_size))
+    # 
+    # write to file
+    dir = tempfile.TemporaryDirectory()
+    path = os.path.join(dir.name, "in")
+    file = open(path, "wb")
+    file.write(bytes)
+    file.close()
+    #
+    # add blob
+    tag = SetTagOption.auto()
+    wrap = WrapOption.no_wrap()
+
+    class AddCallback:
+        hash = None
+        format = None
+
+        def progress(x, progress_event):
+            print(progress_event.type())
+            if progress_event.type() == AddProgressType.ALL_DONE:
+                all_done_event = progress_event.as_all_done()
+                x.hash = all_done_event.hash
+                print(all_done_event.hash)
+                print(all_done_event.format)
+                x.format = all_done_event.format
+            if progress_event.type() == AddProgressType.ABORT:
+                abort_event = progress_event.as_abort()
+                raise Exception(abort_event.error)
+
+    cb = AddCallback()
+    node.blobs_add_from_path(path, False, tag, wrap, cb)
+    #
+    # check outcome info is as expected
+    assert cb.format == BlobFormat.RAW
+    assert cb.hash != None
+    #
+    # check we get the expected size from the hash
+    got_size = node.blobs_size(cb.hash)
+    assert got_size == blob_size
+    #
+    # get bytes
+    got_bytes = node.blobs_read_to_bytes(cb.hash)
+    print("read_to_bytes {}", got_bytes)
+    assert len(got_bytes) == blob_size
+    assert got_bytes == bytes
+    #
+    # write to file
+    out_path = os.path.join(dir.name, "out")
+    node.blobs_write_to_path(cb.hash, out_path)
+    # open file
+    got_file = open(out_path, "rb")
+    got_bytes = got_file.read()
+    got_file.close()
+    print("write_to_path {}", got_bytes)
+    assert len(got_bytes) == blob_size
+    assert got_bytes == bytes
+
+# def test_blob_collections():
+        # make folder structure
+    # add from path
+    # get hash
+    # list collections
+    # ensure it's in there
+
+def test_list_and_delete():
+    iroh_dir = tempfile.TemporaryDirectory()
+    node = IrohNode(iroh_dir.name)
+    #
+    # create bytes
+    blob_size = 100
+    blobs = []
+    num_blobs = 3;
+
+    for x in range(num_blobs):
+        print(x)
+        bytes = bytearray(map(random.getrandbits,(8,)*blob_size))
+        blobs.append(bytes)
+
+    hashes = []
+    for blob in blobs:
+        output = node.blobs_add_bytes(blob, SetTagOption.auto())
+        hashes.append(output.hash)
+
+    list = node.blobs_list()
+    assert len(list) == num_blobs 
+    hashes_exist(hashes, list)
+
+    remove_hash = hashes.pop(0)
+    node.blobs_delete_blob(remove_hash)
+
+    list = node.blobs_list();
+    assert len(list) == num_blobs - 1
+    hashes_exist(hashes, list)
+
+    for hash in list:
+        if remove_hash.equal(hash):
+            raise Exception("blob {} should have been removed", remove_hash)
+
+def hashes_exist(expect, got):
+    for hash in expect:
+        exists = False
+        for h in got:
+            if h.equal(hash):
+                exists = True
+        if not exists:
+            raise Exception("could not find {} in list", hash)
+
+
+
+# def test_download():
+    # can't test this until can adjust ports
+
