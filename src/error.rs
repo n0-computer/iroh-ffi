@@ -31,8 +31,8 @@ pub enum IrohError {
     SocketAddrV6 { description: String },
     #[error("PublicKey error: {description}")]
     PublicKey { description: String },
-    #[error("PeerAddr error: {description}")]
-    PeerAddr { description: String },
+    #[error("NodeAddr error: {description}")]
+    NodeAddr { description: String },
 }
 
 impl IrohError {
@@ -115,7 +115,7 @@ impl IrohError {
     }
 
     pub fn peer_adddr(error: impl Display) -> Self {
-        IrohError::PeerAddr {
+        IrohError::NodeAddr {
             description: error.to_string(),
         }
     }

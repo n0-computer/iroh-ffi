@@ -619,7 +619,7 @@ public protocol DocProtocol {
     func setHash(author: AuthorId, key: Data, hash: Hash, size: UInt64) throws
     func share(mode: ShareMode) throws -> DocTicket
     func size(entry: Entry) throws -> UInt64
-    func startSync(peers: [PeerAddr]) throws
+    func startSync(peers: [NodeAddr]) throws
     func status() throws -> OpenState
     func subscribe(cb: SubscribeCallback) throws
 }
@@ -739,11 +739,11 @@ public class Doc: DocProtocol {
         )
     }
 
-    public func startSync(peers: [PeerAddr]) throws {
+    public func startSync(peers: [NodeAddr]) throws {
         try
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_doc_start_sync(self.pointer,
-                                                     FfiConverterSequenceTypePeerAddr.lower(peers), $0)
+                                                     FfiConverterSequenceTypeNodeAddr.lower(peers), $0)
             }
     }
 
@@ -889,6 +889,7 @@ public func FfiConverterTypeDocTicket_lower(_ value: DocTicket) -> UnsafeMutable
 
 public protocol EntryProtocol {
     func author() -> AuthorId
+    func contentHash() -> Hash
     func key() -> Data
     func namespace() -> NamespaceId
 }
@@ -912,6 +913,15 @@ public class Entry: EntryProtocol {
             try!
                 rustCall {
                     uniffi_iroh_fn_method_entry_author(self.pointer, $0)
+                }
+        )
+    }
+
+    public func contentHash() -> Hash {
+        return try! FfiConverterTypeHash.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_entry_content_hash(self.pointer, $0)
                 }
         )
     }
@@ -1749,13 +1759,13 @@ public func FfiConverterTypeNamespaceId_lower(_ value: NamespaceId) -> UnsafeMut
     return FfiConverterTypeNamespaceId.lower(value)
 }
 
-public protocol PeerAddrProtocol {
+public protocol NodeAddrProtocol {
     func derpRegion() -> UInt16?
     func directAddresses() -> [SocketAddr]
-    func equal(other: PeerAddr) -> Bool
+    func equal(other: NodeAddr) -> Bool
 }
 
-public class PeerAddr: PeerAddrProtocol {
+public class NodeAddr: NodeAddrProtocol {
     fileprivate let pointer: UnsafeMutableRawPointer
 
     // TODO: We'd like this to be `private` but for Swifty reasons,
@@ -1767,7 +1777,7 @@ public class PeerAddr: PeerAddrProtocol {
 
     public convenience init(nodeId: PublicKey, regionId: UInt16?, addresses: [SocketAddr]) {
         self.init(unsafeFromRawPointer: try! rustCall {
-            uniffi_iroh_fn_constructor_peeraddr_new(
+            uniffi_iroh_fn_constructor_nodeaddr_new(
                 FfiConverterTypePublicKey.lower(nodeId),
                 FfiConverterOptionUInt16.lower(regionId),
                 FfiConverterSequenceTypeSocketAddr.lower(addresses), $0
@@ -1776,14 +1786,14 @@ public class PeerAddr: PeerAddrProtocol {
     }
 
     deinit {
-        try! rustCall { uniffi_iroh_fn_free_peeraddr(pointer, $0) }
+        try! rustCall { uniffi_iroh_fn_free_nodeaddr(pointer, $0) }
     }
 
     public func derpRegion() -> UInt16? {
         return try! FfiConverterOptionUInt16.lift(
             try!
                 rustCall {
-                    uniffi_iroh_fn_method_peeraddr_derp_region(self.pointer, $0)
+                    uniffi_iroh_fn_method_nodeaddr_derp_region(self.pointer, $0)
                 }
         )
     }
@@ -1792,27 +1802,27 @@ public class PeerAddr: PeerAddrProtocol {
         return try! FfiConverterSequenceTypeSocketAddr.lift(
             try!
                 rustCall {
-                    uniffi_iroh_fn_method_peeraddr_direct_addresses(self.pointer, $0)
+                    uniffi_iroh_fn_method_nodeaddr_direct_addresses(self.pointer, $0)
                 }
         )
     }
 
-    public func equal(other: PeerAddr) -> Bool {
+    public func equal(other: NodeAddr) -> Bool {
         return try! FfiConverterBool.lift(
             try!
                 rustCall {
-                    uniffi_iroh_fn_method_peeraddr_equal(self.pointer,
-                                                         FfiConverterTypePeerAddr.lower(other), $0)
+                    uniffi_iroh_fn_method_nodeaddr_equal(self.pointer,
+                                                         FfiConverterTypeNodeAddr.lower(other), $0)
                 }
         )
     }
 }
 
-public struct FfiConverterTypePeerAddr: FfiConverter {
+public struct FfiConverterTypeNodeAddr: FfiConverter {
     typealias FfiType = UnsafeMutableRawPointer
-    typealias SwiftType = PeerAddr
+    typealias SwiftType = NodeAddr
 
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PeerAddr {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> NodeAddr {
         let v: UInt64 = try readInt(&buf)
         // The Rust code won't compile if a pointer won't fit in a UInt64.
         // We have to go via `UInt` because that's the thing that's the size of a pointer.
@@ -1823,27 +1833,27 @@ public struct FfiConverterTypePeerAddr: FfiConverter {
         return try lift(ptr!)
     }
 
-    public static func write(_ value: PeerAddr, into buf: inout [UInt8]) {
+    public static func write(_ value: NodeAddr, into buf: inout [UInt8]) {
         // This fiddling is because `Int` is the thing that's the same size as a pointer.
         // The Rust code won't compile if a pointer won't fit in a `UInt64`.
         writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
     }
 
-    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> PeerAddr {
-        return PeerAddr(unsafeFromRawPointer: pointer)
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> NodeAddr {
+        return NodeAddr(unsafeFromRawPointer: pointer)
     }
 
-    public static func lower(_ value: PeerAddr) -> UnsafeMutableRawPointer {
+    public static func lower(_ value: NodeAddr) -> UnsafeMutableRawPointer {
         return value.pointer
     }
 }
 
-public func FfiConverterTypePeerAddr_lift(_ pointer: UnsafeMutableRawPointer) throws -> PeerAddr {
-    return try FfiConverterTypePeerAddr.lift(pointer)
+public func FfiConverterTypeNodeAddr_lift(_ pointer: UnsafeMutableRawPointer) throws -> NodeAddr {
+    return try FfiConverterTypeNodeAddr.lift(pointer)
 }
 
-public func FfiConverterTypePeerAddr_lower(_ value: PeerAddr) -> UnsafeMutableRawPointer {
-    return FfiConverterTypePeerAddr.lower(value)
+public func FfiConverterTypeNodeAddr_lower(_ value: NodeAddr) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeNodeAddr.lower(value)
 }
 
 public protocol PublicKeyProtocol {
@@ -2676,7 +2686,7 @@ public enum IrohError {
     case SocketAddrV4(description: String)
     case SocketAddrV6(description: String)
     case PublicKey(description: String)
-    case PeerAddr(description: String)
+    case NodeAddr(description: String)
 
     fileprivate static func uniffiErrorHandler(_ error: RustBuffer) throws -> Error {
         return try FfiConverterTypeIrohError.lift(error)
@@ -2731,7 +2741,7 @@ public struct FfiConverterTypeIrohError: FfiConverterRustBuffer {
         case 14: return try .PublicKey(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 15: return try .PeerAddr(
+        case 15: return try .NodeAddr(
                 description: FfiConverterString.read(from: &buf)
             )
 
@@ -2797,7 +2807,7 @@ public struct FfiConverterTypeIrohError: FfiConverterRustBuffer {
             writeInt(&buf, Int32(14))
             FfiConverterString.write(description, into: &buf)
 
-        case let .PeerAddr(description):
+        case let .NodeAddr(description):
             writeInt(&buf, Int32(15))
             FfiConverterString.write(description, into: &buf)
         }
@@ -3138,54 +3148,55 @@ public protocol SubscribeCallback: AnyObject {
 }
 
 // The ForeignCallback that is passed to Rust.
-private let foreignCallbackCallbackInterfaceSubscribeCallback: ForeignCallback = { (handle: UniFFICallbackHandle, method: Int32, argsData: UnsafePointer<UInt8>, argsLen: Int32, out_buf: UnsafeMutablePointer<RustBuffer>) -> Int32 in
+private let foreignCallbackCallbackInterfaceSubscribeCallback: ForeignCallback =
+    { (handle: UniFFICallbackHandle, method: Int32, argsData: UnsafePointer<UInt8>, argsLen: Int32, out_buf: UnsafeMutablePointer<RustBuffer>) -> Int32 in
 
-    func invokeEvent(_ swiftCallbackInterface: SubscribeCallback, _ argsData: UnsafePointer<UInt8>, _ argsLen: Int32, _ out_buf: UnsafeMutablePointer<RustBuffer>) throws -> Int32 {
-        var reader = createReader(data: Data(bytes: argsData, count: Int(argsLen)))
-        func makeCall() throws -> Int32 {
-            try swiftCallbackInterface.event(
-                event: FfiConverterTypeLiveEvent.read(from: &reader)
-            )
+        func invokeEvent(_ swiftCallbackInterface: SubscribeCallback, _ argsData: UnsafePointer<UInt8>, _ argsLen: Int32, _ out_buf: UnsafeMutablePointer<RustBuffer>) throws -> Int32 {
+            var reader = createReader(data: Data(bytes: argsData, count: Int(argsLen)))
+            func makeCall() throws -> Int32 {
+                try swiftCallbackInterface.event(
+                    event: FfiConverterTypeLiveEvent.read(from: &reader)
+                )
+                return UNIFFI_CALLBACK_SUCCESS
+            }
+            do {
+                return try makeCall()
+            } catch let error as IrohError {
+                out_buf.pointee = FfiConverterTypeIrohError.lower(error)
+                return UNIFFI_CALLBACK_ERROR
+            }
+        }
+
+        switch method {
+        case IDX_CALLBACK_FREE:
+            FfiConverterCallbackInterfaceSubscribeCallback.drop(handle: handle)
+            // Sucessful return
+            // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
             return UNIFFI_CALLBACK_SUCCESS
-        }
-        do {
-            return try makeCall()
-        } catch let error as IrohError {
-            out_buf.pointee = FfiConverterTypeIrohError.lower(error)
-            return UNIFFI_CALLBACK_ERROR
-        }
-    }
+        case 1:
+            let cb: SubscribeCallback
+            do {
+                cb = try FfiConverterCallbackInterfaceSubscribeCallback.lift(handle)
+            } catch {
+                out_buf.pointee = FfiConverterString.lower("SubscribeCallback: Invalid handle")
+                return UNIFFI_CALLBACK_UNEXPECTED_ERROR
+            }
+            do {
+                return try invokeEvent(cb, argsData, argsLen, out_buf)
+            } catch {
+                out_buf.pointee = FfiConverterString.lower(String(describing: error))
+                return UNIFFI_CALLBACK_UNEXPECTED_ERROR
+            }
 
-    switch method {
-    case IDX_CALLBACK_FREE:
-        FfiConverterCallbackInterfaceSubscribeCallback.drop(handle: handle)
-        // Sucessful return
-        // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
-        return UNIFFI_CALLBACK_SUCCESS
-    case 1:
-        let cb: SubscribeCallback
-        do {
-            cb = try FfiConverterCallbackInterfaceSubscribeCallback.lift(handle)
-        } catch {
-            out_buf.pointee = FfiConverterString.lower("SubscribeCallback: Invalid handle")
+        // This should never happen, because an out of bounds method index won't
+        // ever be used. Once we can catch errors, we should return an InternalError.
+        // https://github.com/mozilla/uniffi-rs/issues/351
+        default:
+            // An unexpected error happened.
+            // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
             return UNIFFI_CALLBACK_UNEXPECTED_ERROR
         }
-        do {
-            return try invokeEvent(cb, argsData, argsLen, out_buf)
-        } catch {
-            out_buf.pointee = FfiConverterString.lower(String(describing: error))
-            return UNIFFI_CALLBACK_UNEXPECTED_ERROR
-        }
-
-    // This should never happen, because an out of bounds method index won't
-    // ever be used. Once we can catch errors, we should return an InternalError.
-    // https://github.com/mozilla/uniffi-rs/issues/351
-    default:
-        // An unexpected error happened.
-        // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
-        return UNIFFI_CALLBACK_UNEXPECTED_ERROR
     }
-}
 
 // FfiConverter protocol for callback interfaces
 private enum FfiConverterCallbackInterfaceSubscribeCallback {
@@ -3496,23 +3507,23 @@ private struct FfiConverterSequenceTypeNamespaceId: FfiConverterRustBuffer {
     }
 }
 
-private struct FfiConverterSequenceTypePeerAddr: FfiConverterRustBuffer {
-    typealias SwiftType = [PeerAddr]
+private struct FfiConverterSequenceTypeNodeAddr: FfiConverterRustBuffer {
+    typealias SwiftType = [NodeAddr]
 
-    public static func write(_ value: [PeerAddr], into buf: inout [UInt8]) {
+    public static func write(_ value: [NodeAddr], into buf: inout [UInt8]) {
         let len = Int32(value.count)
         writeInt(&buf, len)
         for item in value {
-            FfiConverterTypePeerAddr.write(item, into: &buf)
+            FfiConverterTypeNodeAddr.write(item, into: &buf)
         }
     }
 
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [PeerAddr] {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [NodeAddr] {
         let len: Int32 = try readInt(&buf)
-        var seq = [PeerAddr]()
+        var seq = [NodeAddr]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            try seq.append(FfiConverterTypePeerAddr.read(from: &buf))
+            try seq.append(FfiConverterTypeNodeAddr.read(from: &buf))
         }
         return seq
     }
@@ -3660,7 +3671,7 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_doc_size() != 27875 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_start_sync() != 46050 {
+    if uniffi_iroh_checksum_method_doc_start_sync() != 54158 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_doc_status() != 59550 {
@@ -3676,6 +3687,9 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_entry_author() != 26124 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_entry_content_hash() != 39306 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_entry_key() != 19122 {
@@ -3771,13 +3785,13 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_namespaceid_to_string() != 63715 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_peeraddr_derp_region() != 55885 {
+    if uniffi_iroh_checksum_method_nodeaddr_derp_region() != 62080 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_peeraddr_direct_addresses() != 36736 {
+    if uniffi_iroh_checksum_method_nodeaddr_direct_addresses() != 20857 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_peeraddr_equal() != 21646 {
+    if uniffi_iroh_checksum_method_nodeaddr_equal() != 45841 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_publickey_equal() != 10645 {
@@ -3867,7 +3881,7 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_constructor_namespaceid_from_string() != 47535 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_peeraddr_new() != 7518 {
+    if uniffi_iroh_checksum_constructor_nodeaddr_new() != 42954 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_constructor_publickey_from_bytes() != 65104 {

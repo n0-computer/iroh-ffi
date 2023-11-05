@@ -61,7 +61,7 @@ interface Doc {
   [Throws=IrohError]
   DocTicket share(ShareMode mode);
   [Throws=IrohError]
-  void start_sync(sequence<PeerAddr> peers);
+  void start_sync(sequence<NodeAddr> peers);
   [Throws=IrohError]
   void leave();
   [Throws=IrohError]
@@ -75,11 +75,11 @@ enum ShareMode {
   "Write",
 };
 
-interface PeerAddr {
+interface NodeAddr {
   constructor(PublicKey node_id, u16? region_id, sequence<SocketAddr> addresses);
   sequence<SocketAddr> direct_addresses();
   u16? derp_region();
-  boolean equal(PeerAddr other);
+  boolean equal(NodeAddr other);
 };
 
 interface GetFilter {
@@ -111,6 +111,7 @@ interface AuthorId {
 interface Entry {
   AuthorId author();
   bytes key();
+  Hash content_hash();
   NamespaceId namespace();
 };
 
@@ -291,5 +292,5 @@ interface IrohError {
   SocketAddrV4(string description);
   SocketAddrV6(string description);
   PublicKey(string description);
-  PeerAddr(string description);
+  NodeAddr(string description);
 };

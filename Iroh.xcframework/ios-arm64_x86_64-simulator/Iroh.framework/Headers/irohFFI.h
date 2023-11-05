@@ -134,6 +134,8 @@ void uniffi_iroh_fn_free_entry(void*_Nonnull ptr, RustCallStatus *_Nonnull out_s
 );
 void*_Nonnull uniffi_iroh_fn_method_entry_author(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+void*_Nonnull uniffi_iroh_fn_method_entry_content_hash(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
 RustBuffer uniffi_iroh_fn_method_entry_key(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void*_Nonnull uniffi_iroh_fn_method_entry_namespace(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -233,15 +235,15 @@ int8_t uniffi_iroh_fn_method_namespaceid_equal(void*_Nonnull ptr, void*_Nonnull 
 );
 RustBuffer uniffi_iroh_fn_method_namespaceid_to_string(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void uniffi_iroh_fn_free_peeraddr(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+void uniffi_iroh_fn_free_nodeaddr(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void*_Nonnull uniffi_iroh_fn_constructor_peeraddr_new(void*_Nonnull node_id, RustBuffer region_id, RustBuffer addresses, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_iroh_fn_constructor_nodeaddr_new(void*_Nonnull node_id, RustBuffer region_id, RustBuffer addresses, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_iroh_fn_method_peeraddr_derp_region(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_iroh_fn_method_nodeaddr_derp_region(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_iroh_fn_method_peeraddr_direct_addresses(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_iroh_fn_method_nodeaddr_direct_addresses(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-int8_t uniffi_iroh_fn_method_peeraddr_equal(void*_Nonnull ptr, void*_Nonnull other, RustCallStatus *_Nonnull out_status
+int8_t uniffi_iroh_fn_method_nodeaddr_equal(void*_Nonnull ptr, void*_Nonnull other, RustCallStatus *_Nonnull out_status
 );
 void uniffi_iroh_fn_free_publickey(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -377,6 +379,9 @@ uint16_t uniffi_iroh_checksum_method_docticket_to_string(void
 uint16_t uniffi_iroh_checksum_method_entry_author(void
     
 );
+uint16_t uniffi_iroh_checksum_method_entry_content_hash(void
+    
+);
 uint16_t uniffi_iroh_checksum_method_entry_key(void
     
 );
@@ -470,13 +475,13 @@ uint16_t uniffi_iroh_checksum_method_namespaceid_equal(void
 uint16_t uniffi_iroh_checksum_method_namespaceid_to_string(void
     
 );
-uint16_t uniffi_iroh_checksum_method_peeraddr_derp_region(void
+uint16_t uniffi_iroh_checksum_method_nodeaddr_derp_region(void
     
 );
-uint16_t uniffi_iroh_checksum_method_peeraddr_direct_addresses(void
+uint16_t uniffi_iroh_checksum_method_nodeaddr_direct_addresses(void
     
 );
-uint16_t uniffi_iroh_checksum_method_peeraddr_equal(void
+uint16_t uniffi_iroh_checksum_method_nodeaddr_equal(void
     
 );
 uint16_t uniffi_iroh_checksum_method_publickey_equal(void
@@ -566,7 +571,7 @@ uint16_t uniffi_iroh_checksum_constructor_irohnode_new(void
 uint16_t uniffi_iroh_checksum_constructor_namespaceid_from_string(void
     
 );
-uint16_t uniffi_iroh_checksum_constructor_peeraddr_new(void
+uint16_t uniffi_iroh_checksum_constructor_nodeaddr_new(void
     
 );
 uint16_t uniffi_iroh_checksum_constructor_publickey_from_bytes(void

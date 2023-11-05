@@ -151,7 +151,7 @@ impl Doc {
     }
 
     /// Start to sync this document with a list of peers.
-    pub fn start_sync(&self, peers: Vec<Arc<PeerAddr>>) -> Result<(), IrohError> {
+    pub fn start_sync(&self, peers: Vec<Arc<NodeAddr>>) -> Result<(), IrohError> {
         block_on(&self.rt, async {
             self.inner
                 .start_sync(peers.into_iter().map(|p| (*p).clone().into()).collect())
@@ -223,14 +223,14 @@ impl From<iroh::sync::actor::OpenState> for OpenState {
 
 /// A peer and it's addressing information.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PeerAddr {
+pub struct NodeAddr {
     node_id: Arc<PublicKey>,
     derp_region: Option<u16>,
     addresses: Vec<Arc<SocketAddr>>,
 }
 
-impl PeerAddr {
-    /// Create a new [`PeerAddr`] with empty [`AddrInfo`].
+impl NodeAddr {
+    /// Create a new [`NodeAddr`] with empty [`AddrInfo`].
     pub fn new(
         node_id: Arc<PublicKey>,
         derp_region: Option<u16>,
@@ -253,15 +253,15 @@ impl PeerAddr {
         self.derp_region
     }
 
-    /// Returns true if both PeerAddr's have the same values
-    pub fn equal(&self, other: Arc<PeerAddr>) -> bool {
+    /// Returns true if both NodeAddr's have the same values
+    pub fn equal(&self, other: Arc<NodeAddr>) -> bool {
         *self == *other
     }
 }
 
-impl From<PeerAddr> for iroh::net::magic_endpoint::PeerAddr {
-    fn from(value: PeerAddr) -> Self {
-        let mut peer_addr = iroh::net::magic_endpoint::PeerAddr::new(value.node_id.0);
+impl From<NodeAddr> for iroh::net::magic_endpoint::NodeAddr {
+    fn from(value: NodeAddr) -> Self {
+        let mut peer_addr = iroh::net::magic_endpoint::NodeAddr::new(value.node_id.0);
         let addresses = value.direct_addresses().into_iter().map(|addr| {
             let typ = addr.r#type();
             match typ {
@@ -330,6 +330,11 @@ impl Entry {
         self.0.id().key().to_vec()
     }
 
+    // Get the value of this entry.
+    pub fn content_hash(&self) -> Arc<Hash> {
+        Arc::new(Hash(self.0.record().content_hash()))
+    }
+
     /// Get the [`NamespaceId`] of this entry.
     pub fn namespace(&self) -> Arc<NamespaceId> {
         Arc::new(NamespaceId(self.0.id().namespace()))
@@ -337,7 +342,7 @@ impl Entry {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AuthorId(pub(crate) iroh::sync::sync::AuthorId);
+pub struct AuthorId(pub(crate) iroh::sync::AuthorId);
 
 impl std::fmt::Display for AuthorId {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -348,7 +353,7 @@ impl std::fmt::Display for AuthorId {
 impl AuthorId {
     /// Get an [`AuthorId`] from a String
     pub fn from_string(str: String) -> Result<Self, IrohError> {
-        let author = iroh::sync::sync::AuthorId::from_str(&str).map_err(IrohError::author)?;
+        let author = iroh::sync::AuthorId::from_str(&str).map_err(IrohError::author)?;
         Ok(AuthorId(author))
     }
 
@@ -359,10 +364,10 @@ impl AuthorId {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct NamespaceId(pub(crate) iroh::sync::sync::NamespaceId);
+pub struct NamespaceId(pub(crate) iroh::sync::NamespaceId);
 
-impl From<iroh::sync::sync::NamespaceId> for NamespaceId {
-    fn from(id: iroh::sync::sync::NamespaceId) -> Self {
+impl From<iroh::sync::NamespaceId> for NamespaceId {
+    fn from(id: iroh::sync::NamespaceId) -> Self {
         NamespaceId(id)
     }
 }
@@ -370,7 +375,7 @@ impl From<iroh::sync::sync::NamespaceId> for NamespaceId {
 impl NamespaceId {
     /// Get an [`NamespaceId`] from a String
     pub fn from_string(str: String) -> Result<Self, IrohError> {
-        let author = iroh::sync::sync::NamespaceId::from_str(&str).map_err(IrohError::namespace)?;
+        let author = iroh::sync::NamespaceId::from_str(&str).map_err(IrohError::namespace)?;
         Ok(NamespaceId(author))
     }
 
