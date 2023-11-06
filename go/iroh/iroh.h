@@ -538,12 +538,6 @@ void uniffi_iroh_fn_method_irohnode_blobs_download(
 	RustCallStatus* out_status
 );
 
-RustBuffer uniffi_iroh_fn_method_irohnode_blobs_get(
-	void* ptr,
-	void* hash,
-	RustCallStatus* out_status
-);
-
 RustBuffer uniffi_iroh_fn_method_irohnode_blobs_list(
 	void* ptr,
 	RustCallStatus* out_status
@@ -1258,10 +1252,6 @@ uint16_t uniffi_iroh_checksum_method_irohnode_blobs_delete_blob(
 );
 
 uint16_t uniffi_iroh_checksum_method_irohnode_blobs_download(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_method_irohnode_blobs_get(
 	RustCallStatus* out_status
 );
 

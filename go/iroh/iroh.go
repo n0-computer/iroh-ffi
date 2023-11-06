@@ -846,15 +846,6 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_method_irohnode_blobs_get(uniffiStatus)
-		})
-		if checksum != 45164 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_method_irohnode_blobs_get: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_irohnode_blobs_list(uniffiStatus)
 		})
 		if checksum != 49039 {
@@ -3295,21 +3286,6 @@ func (_self *IrohNode) BlobsDownload(req *BlobDownloadRequest, cb DownloadCallba
 		return false
 	})
 	return _uniffiErr
-}
-
-func (_self *IrohNode) BlobsGet(hash *Hash) ([]byte, error) {
-	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
-	defer _self.ffiObject.decrementPointer()
-	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) RustBufferI {
-		return C.uniffi_iroh_fn_method_irohnode_blobs_get(
-			_pointer, FfiConverterHashINSTANCE.Lower(hash), _uniffiStatus)
-	})
-	if _uniffiErr != nil {
-		var _uniffiDefaultValue []byte
-		return _uniffiDefaultValue, _uniffiErr
-	} else {
-		return FfiConverterBytesINSTANCE.Lift(_uniffiRV), _uniffiErr
-	}
 }
 
 func (_self *IrohNode) BlobsList() ([]*Hash, error) {
@@ -5893,7 +5869,7 @@ var ErrIrohErrorNamespace = fmt.Errorf("IrohErrorNamespace")
 var ErrIrohErrorDocTicket = fmt.Errorf("IrohErrorDocTicket")
 var ErrIrohErrorUniffi = fmt.Errorf("IrohErrorUniffi")
 var ErrIrohErrorConnection = fmt.Errorf("IrohErrorConnection")
-var ErrIrohErrorBlob = fmt.Errorf("IrohErrorBlob")
+var ErrIrohErrorBlobs = fmt.Errorf("IrohErrorBlobs")
 var ErrIrohErrorIpv4Addr = fmt.Errorf("IrohErrorIpv4Addr")
 var ErrIrohErrorIpv6Addr = fmt.Errorf("IrohErrorIpv6Addr")
 var ErrIrohErrorSocketAddrV4 = fmt.Errorf("IrohErrorSocketAddrV4")
@@ -6120,22 +6096,22 @@ func (self IrohErrorConnection) Is(target error) bool {
 	return target == ErrIrohErrorConnection
 }
 
-type IrohErrorBlob struct {
+type IrohErrorBlobs struct {
 	Description string
 }
 
-func NewIrohErrorBlob(
+func NewIrohErrorBlobs(
 	description string,
 ) *IrohError {
 	return &IrohError{
-		err: &IrohErrorBlob{
+		err: &IrohErrorBlobs{
 			Description: description,
 		},
 	}
 }
 
-func (err IrohErrorBlob) Error() string {
-	return fmt.Sprint("Blob",
+func (err IrohErrorBlobs) Error() string {
+	return fmt.Sprint("Blobs",
 		": ",
 
 		"Description=",
@@ -6143,8 +6119,8 @@ func (err IrohErrorBlob) Error() string {
 	)
 }
 
-func (self IrohErrorBlob) Is(target error) bool {
-	return target == ErrIrohErrorBlob
+func (self IrohErrorBlobs) Is(target error) bool {
+	return target == ErrIrohErrorBlobs
 }
 
 type IrohErrorIpv4Addr struct {
@@ -6412,7 +6388,7 @@ func (c FfiConverterTypeIrohError) Read(reader io.Reader) error {
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 9:
-		return &IrohError{&IrohErrorBlob{
+		return &IrohError{&IrohErrorBlobs{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 10:
@@ -6478,7 +6454,7 @@ func (c FfiConverterTypeIrohError) Write(writer io.Writer, value *IrohError) {
 	case *IrohErrorConnection:
 		writeInt32(writer, 8)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorBlob:
+	case *IrohErrorBlobs:
 		writeInt32(writer, 9)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
 	case *IrohErrorIpv4Addr:

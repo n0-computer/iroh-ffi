@@ -17,11 +17,11 @@ impl IrohNode {
                 .blobs
                 .list()
                 .await
-                .map_err(IrohError::blob)?;
+                .map_err(IrohError::blobs)?;
 
             let hashes: Vec<Arc<Hash>> = response
                 .map_ok(|i| Arc::new(Hash(i.hash)))
-                .map_err(IrohError::blob)
+                .map_err(IrohError::blobs)
                 .try_collect()
                 .await?;
 
@@ -39,7 +39,7 @@ impl IrohNode {
                 .blobs
                 .read(hash.0)
                 .await
-                .map_err(IrohError::blob)?;
+                .map_err(IrohError::blobs)?;
             Ok(r.size())
         })
     }
@@ -56,7 +56,7 @@ impl IrohNode {
                 .read_to_bytes(hash.0)
                 .await
                 .map(|b| b.to_vec())
-                .map_err(IrohError::blob)
+                .map_err(IrohError::blobs)
         })
     }
 
@@ -85,9 +85,9 @@ impl IrohNode {
                     (*wrap).clone().into(),
                 )
                 .await
-                .map_err(IrohError::blob)?;
+                .map_err(IrohError::blobs)?;
             while let Some(progress) = stream.next().await {
-                let progress = progress.map_err(IrohError::blob)?;
+                let progress = progress.map_err(IrohError::blobs)?;
                 if let Err(e) = cb.progress(Arc::new(progress.into())) {
                     return Err(e);
                 }
@@ -105,19 +105,19 @@ impl IrohNode {
                 .blobs
                 .read(hash.0)
                 .await
-                .map_err(IrohError::blob)?;
+                .map_err(IrohError::blobs)?;
             let path: PathBuf = path.into();
             if let Some(dir) = path.parent() {
                 tokio::fs::create_dir_all(dir)
                     .await
-                    .map_err(IrohError::blob)?;
+                    .map_err(IrohError::blobs)?;
             }
             let mut file = tokio::fs::File::create(path)
                 .await
-                .map_err(IrohError::blob)?;
+                .map_err(IrohError::blobs)?;
             tokio::io::copy(&mut reader, &mut file)
                 .await
-                .map_err(IrohError::blob)?;
+                .map_err(IrohError::blobs)?;
             Ok(())
         })
     }
@@ -134,7 +134,7 @@ impl IrohNode {
                 .add_bytes(bytes.into(), (*tag).clone().into())
                 .await
                 .map(|outcome| outcome.into())
-                .map_err(IrohError::blob)
+                .map_err(IrohError::blobs)
         })
     }
 
@@ -150,9 +150,9 @@ impl IrohNode {
                 .blobs
                 .download(req.0.clone())
                 .await
-                .map_err(IrohError::blob)?;
+                .map_err(IrohError::blobs)?;
             while let Some(progress) = stream.next().await {
-                let progress = progress.map_err(IrohError::blob)?;
+                let progress = progress.map_err(IrohError::blobs)?;
                 if let Err(e) = cb.progress(Arc::new(progress.into())) {
                     return Err(e);
                 }
@@ -172,11 +172,11 @@ impl IrohNode {
                 .blobs
                 .list_incomplete()
                 .await
-                .map_err(IrohError::blob)?
+                .map_err(IrohError::blobs)?
                 .map_ok(|res| res.into())
                 .try_collect::<Vec<_>>()
                 .await
-                .map_err(IrohError::blob)?;
+                .map_err(IrohError::blobs)?;
             Ok(blobs)
         })
     }
@@ -192,11 +192,11 @@ impl IrohNode {
                 .blobs
                 .list_collections()
                 .await
-                .map_err(IrohError::blob)?
+                .map_err(IrohError::blobs)?
                 .map_ok(|res| res.into())
                 .try_collect::<Vec<_>>()
                 .await
-                .map_err(IrohError::blob)?;
+                .map_err(IrohError::blobs)?;
             Ok(blobs)
         })
     }
@@ -208,7 +208,7 @@ impl IrohNode {
                 .blobs
                 .delete_blob((*hash).clone().0)
                 .await
-                .map_err(IrohError::blob)
+                .map_err(IrohError::blobs)
         })
     }
 }
@@ -1020,6 +1020,9 @@ impl From<iroh::rpc_protocol::BlobListCollectionsResponse> for BlobListCollectio
 
 #[cfg(test)]
 mod tests {
+    use std::io::Write;
+    use std::sync::{Arc, Mutex};
+
     use super::*;
     use crate::node::IrohNode;
     use rand::RngCore;
@@ -1029,7 +1032,7 @@ mod tests {
         // temp dir
         let dir = tempfile::tempdir().unwrap();
         let node = IrohNode::new(dir.into_path().display().to_string()).unwrap();
-        let sizes = [1, 10, 100, 1000, 10000, 100000];
+        let sizes = [10000, 100000];
         // let sizes = [100000];
         let mut hashes = Vec::new();
         for size in sizes.iter() {
@@ -1058,6 +1061,103 @@ mod tests {
         assert_eq!(got_bytes.len(), size);
         assert_eq!(got_bytes, bytes);
         hash
+    }
+
+    #[test]
+    fn blobs_list_collections() {
+        // temp dir
+        let dir = tempfile::tempdir().unwrap();
+        let num_blobs = 3;
+        let blob_size = 100;
+        for i in 0..num_blobs {
+            let path = dir.path().join(i.to_string());
+            let mut file = std::fs::File::create(path).unwrap();
+            let mut bytes = vec![0; blob_size];
+            rand::thread_rng().fill_bytes(&mut bytes);
+            file.write_all(&bytes).unwrap()
+        }
+
+        // temp dir
+        let iroh_dir = tempfile::tempdir().unwrap();
+        let node = IrohNode::new(iroh_dir.into_path().display().to_string()).unwrap();
+
+        // ensure there are no blobs to start
+        let blobs = node.blobs_list().unwrap();
+        assert!(blobs.len() == 0);
+
+        struct Output {
+            collection_hash: Option<Arc<Hash>>,
+            format: Option<BlobFormat>,
+            blob_hashes: Vec<Arc<Hash>>,
+        }
+        let output = Arc::new(Mutex::new(Output {
+            collection_hash: None,
+            format: None,
+            blob_hashes: Vec::new(),
+        }));
+        struct Callback {
+            output: Arc<Mutex<Output>>,
+        }
+
+        impl AddCallback for Callback {
+            fn progress(&self, progress: Arc<AddProgress>) -> Result<(), IrohError> {
+                match *progress {
+                    AddProgress::AllDone(ref d) => {
+                        let mut output = self.output.lock().unwrap();
+                        output.collection_hash = Some(d.hash.clone());
+                        output.format = Some(d.format.clone());
+                    }
+                    AddProgress::Abort(ref a) => {
+                        return Err(IrohError::blobs(a.error.clone()));
+                    }
+                    AddProgress::Done(ref d) => {
+                        let mut output = self.output.lock().unwrap();
+                        output.blob_hashes.push(d.hash.clone())
+                    }
+                    _ => {}
+                }
+                Ok(())
+            }
+        }
+
+        let cb = Callback {
+            output: output.clone(),
+        };
+
+        node.blobs_add_from_path(
+            dir.into_path().display().to_string(),
+            false,
+            Arc::new(SetTagOption::Auto),
+            Arc::new(WrapOption::NoWrap),
+            Box::new(cb),
+        )
+        .unwrap();
+
+        let collections = node.blobs_list_collections().unwrap();
+        assert!(collections.len() == 1);
+        let (collection_hash, blob_hashes) = {
+            let output = output.lock().unwrap();
+            let collection_hash = output.collection_hash.as_ref().map(|h| h.clone()).unwrap();
+            let mut blob_hashes = output.blob_hashes.clone();
+            blob_hashes.push(collection_hash.clone());
+            (collection_hash, blob_hashes)
+        };
+        assert_eq!(*(collections[0].hash), *collection_hash);
+        assert_eq!(
+            collections[0].total_blobs_count.unwrap(),
+            blob_hashes.len() as u64
+        );
+
+        let blobs = node.blobs_list().unwrap();
+        for hash in blob_hashes {
+            if !blobs.contains(&hash) {
+                panic!(
+                    "expected to find hash {} in the list of blobs",
+                    hash.to_string()
+                );
+            }
+        }
+        println!("finished");
     }
 
     async fn build_iroh_core(

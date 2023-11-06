@@ -530,7 +530,7 @@ interface IrohError {
   DocTicket(string description);
   Uniffi(string description);
   Connection(string description);
-  Blob(string description);
+  Blobs(string description);
   Ipv4Addr(string description);
   Ipv6Addr(string description);
   SocketAddrV4(string description);

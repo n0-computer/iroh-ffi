@@ -19,8 +19,8 @@ pub enum IrohError {
     Uniffi { description: String },
     #[error("connection: {description}")]
     Connection { description: String },
-    #[error("blob: {description}")]
-    Blob { description: String },
+    #[error("blobs: {description}")]
+    Blobs { description: String },
     #[error("Ipv4Addr error: {description}")]
     Ipv4Addr { description: String },
     #[error("SocketAddrV4 error: {description}")]
@@ -82,8 +82,8 @@ impl IrohError {
         }
     }
 
-    pub fn blob(error: impl Display) -> Self {
-        IrohError::Blob {
+    pub fn blobs(error: impl Display) -> Self {
+        IrohError::Blobs {
             description: error.to_string(),
         }
     }
