@@ -311,10 +311,10 @@ impl From<ShareMode> for iroh::rpc_protocol::ShareMode {
 /// [`NamespaceId`]. Its value is the 32-byte BLAKE3 [`hash`]
 /// of the entry's content data, the size of this content data, and a timestamp.
 #[derive(Debug, Clone)]
-pub struct Entry(pub(crate) iroh::sync::sync::Entry);
+pub struct Entry(pub(crate) iroh::sync::Entry);
 
-impl From<iroh::sync::sync::Entry> for Entry {
-    fn from(e: iroh::sync::sync::Entry) -> Self {
+impl From<iroh::sync::Entry> for Entry {
+    fn from(e: iroh::sync::Entry) -> Self {
         Entry(e)
     }
 }
@@ -337,7 +337,7 @@ impl Entry {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AuthorId(pub(crate) iroh::sync::sync::AuthorId);
+pub struct AuthorId(pub(crate) iroh::sync::AuthorId);
 
 impl std::fmt::Display for AuthorId {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -348,7 +348,7 @@ impl std::fmt::Display for AuthorId {
 impl AuthorId {
     /// Get an [`AuthorId`] from a String
     pub fn from_string(str: String) -> Result<Self, IrohError> {
-        let author = iroh::sync::sync::AuthorId::from_str(&str).map_err(IrohError::author)?;
+        let author = iroh::sync::AuthorId::from_str(&str).map_err(IrohError::author)?;
         Ok(AuthorId(author))
     }
 
@@ -359,10 +359,10 @@ impl AuthorId {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct NamespaceId(pub(crate) iroh::sync::sync::NamespaceId);
+pub struct NamespaceId(pub(crate) iroh::sync::NamespaceId);
 
-impl From<iroh::sync::sync::NamespaceId> for NamespaceId {
-    fn from(id: iroh::sync::sync::NamespaceId) -> Self {
+impl From<iroh::sync::NamespaceId> for NamespaceId {
+    fn from(id: iroh::sync::NamespaceId) -> Self {
         NamespaceId(id)
     }
 }
@@ -370,7 +370,7 @@ impl From<iroh::sync::sync::NamespaceId> for NamespaceId {
 impl NamespaceId {
     /// Get an [`NamespaceId`] from a String
     pub fn from_string(str: String) -> Result<Self, IrohError> {
-        let author = iroh::sync::sync::NamespaceId::from_str(&str).map_err(IrohError::namespace)?;
+        let author = iroh::sync::NamespaceId::from_str(&str).map_err(IrohError::namespace)?;
         Ok(NamespaceId(author))
     }
 
@@ -705,12 +705,12 @@ pub enum ContentStatus {
     Missing,
 }
 
-impl From<iroh::sync::sync::ContentStatus> for ContentStatus {
-    fn from(value: iroh::sync::sync::ContentStatus) -> Self {
+impl From<iroh::sync::ContentStatus> for ContentStatus {
+    fn from(value: iroh::sync::ContentStatus) -> Self {
         match value {
-            iroh::sync::sync::ContentStatus::Complete => Self::Complete,
-            iroh::sync::sync::ContentStatus::Incomplete => Self::Incomplete,
-            iroh::sync::sync::ContentStatus::Missing => Self::Missing,
+            iroh::sync::ContentStatus::Complete => Self::Complete,
+            iroh::sync::ContentStatus::Incomplete => Self::Incomplete,
+            iroh::sync::ContentStatus::Missing => Self::Missing,
         }
     }
 }
