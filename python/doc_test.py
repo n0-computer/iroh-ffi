@@ -30,7 +30,7 @@ def test_peer_addr():
         assert got.equal(expect)
         assert expect.equal(got)
     
-    assert peer_addr.derp_region() == derp_region
+    assert derp_region == peer_addr.derp_region()
 
 def test_namespace_id():
     #
@@ -67,7 +67,7 @@ def test_author_id():
 def test_doc_ticket():
     #
     # create id from string
-    doc_ticket_str = "ljapn77ljjzwrtxh4b35xg57gfvcrvey6ofrulgzuddnohwc2qnqcicshr4znowxoqsosz4gz55hebirkm32lncwltjfkbva6kl3denf5iaqcbiajjeteswek4ambkabzpcfoajganyabbz2zplaaaaaaaaaagrjyvlqcjqdoaaioowl2ygi2likyov62rofk4asma3qacdtvs6wrg7f7hkxlg3mlrkx"
+    doc_ticket_str = "docljapn77ljjzwrtxh4b35xg57gfvcrvey6ofrulgzuddnohwc2qnqcicshr4znowxoqsosz4gz55hebirkm32lncwltjfkbva6kl3denf5iaqcbiajjeteswek4ambkabzpcfoajganyabbz2zplaaaaaaaaaagrjyvlqcjqdoaaioowl2ygi2likyov62rofk4asma3qacdtvs6wrg7f7hkxlg3mlrkx"
     doc_ticket = DocTicket.from_string(doc_ticket_str)
     #
     # call to_string, ensure equal

@@ -44,14 +44,6 @@ impl SocketAddr {
         }
     }
 
-    /// Express the SocketAddr as a string
-    pub fn to_string(&self) -> String {
-        match self {
-            SocketAddr::V4 { addr } => addr.0.to_string(),
-            SocketAddr::V6 { addr } => addr.0.to_string(),
-        }
-    }
-
     /// Create an Ipv6 SocketAddr
     pub fn from_ipv6(ipv6: Arc<Ipv6Addr>, port: u16) -> Self {
         SocketAddr::V6 {
@@ -89,6 +81,15 @@ impl SocketAddr {
     }
 }
 
+impl std::fmt::Display for SocketAddr {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            SocketAddr::V4 { addr } => write!(f, "{}", addr),
+            SocketAddr::V6 { addr } => write!(f, "{}", addr),
+        }
+    }
+}
+
 /// Ipv4 address
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Ipv4Addr(pub(crate) std::net::Ipv4Addr);
@@ -113,11 +114,6 @@ impl Ipv4Addr {
         Ok(Ipv4Addr(addr))
     }
 
-    /// A string representation of an Ipv4Addr
-    pub fn to_string(&self) -> String {
-        self.0.to_string()
-    }
-
     /// Get the 4 octets as bytes
     pub fn octets(&self) -> Vec<u8> {
         self.0.octets().to_vec()
@@ -126,6 +122,12 @@ impl Ipv4Addr {
     /// Returns true if both Ipv4Addrs have the same value
     pub fn equal(&self, other: Arc<Ipv4Addr>) -> bool {
         *self == *other
+    }
+}
+
+impl std::fmt::Display for Ipv4Addr {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
@@ -153,11 +155,6 @@ impl SocketAddrV4 {
         Ok(SocketAddrV4(addr))
     }
 
-    /// A string representation of an Ipv4Addr
-    pub fn to_string(&self) -> String {
-        self.0.to_string()
-    }
-
     /// Returns the IP address associated with this socket address
     pub fn ip(&self) -> Arc<Ipv4Addr> {
         Arc::new(Ipv4Addr(*self.0.ip()))
@@ -174,12 +171,18 @@ impl SocketAddrV4 {
     }
 }
 
+impl std::fmt::Display for SocketAddrV4 {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 /// Ipv6 address
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Ipv6Addr(pub(crate) std::net::Ipv6Addr);
 
 impl Ipv6Addr {
-    /// Create a new Ipv6 addr from 8 16-bit segments
+    #[allow(clippy::too_many_arguments)]
     pub fn new(a: u16, b: u16, c: u16, d: u16, e: u16, f: u16, g: u16, h: u16) -> Self {
         Ipv6Addr(std::net::Ipv6Addr::new(a, b, c, d, e, f, g, h))
     }
@@ -191,10 +194,6 @@ impl Ipv6Addr {
         })?;
         Ok(Ipv6Addr(addr))
     }
-    /// A string representation of an Ipv6Addr
-    pub fn to_string(&self) -> String {
-        self.0.to_string()
-    }
 
     /// Get the 8 sixteen-bit segments as an array
     pub fn segments(&self) -> Vec<u16> {
@@ -204,6 +203,12 @@ impl Ipv6Addr {
     /// Returns true if both Ipv6Addr's have the same value
     pub fn equal(&self, other: Arc<Ipv6Addr>) -> bool {
         *self == *other
+    }
+}
+
+impl std::fmt::Display for Ipv6Addr {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
@@ -231,11 +236,6 @@ impl SocketAddrV6 {
         Ok(SocketAddrV6(addr))
     }
 
-    /// A string representation of an Ipv6Addr
-    pub fn to_string(&self) -> String {
-        self.0.to_string()
-    }
-
     /// Returns the IP address associated with this socket address
     pub fn ip(&self) -> Arc<Ipv6Addr> {
         Arc::new(Ipv6Addr(*self.0.ip()))
@@ -249,6 +249,12 @@ impl SocketAddrV6 {
     /// Returns true if both SocketAddrV6's have the same value
     pub fn equal(&self, other: Arc<SocketAddrV6>) -> bool {
         *self == *other
+    }
+}
+
+impl std::fmt::Display for SocketAddrV6 {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 

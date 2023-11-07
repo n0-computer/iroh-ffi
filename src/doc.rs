@@ -311,10 +311,10 @@ impl From<ShareMode> for iroh::rpc_protocol::ShareMode {
 /// [`NamespaceId`]. Its value is the 32-byte BLAKE3 [`hash`]
 /// of the entry's content data, the size of this content data, and a timestamp.
 #[derive(Debug, Clone)]
-pub struct Entry(pub(crate) iroh::sync::sync::Entry);
+pub struct Entry(pub(crate) iroh::sync::Entry);
 
-impl From<iroh::sync::sync::Entry> for Entry {
-    fn from(e: iroh::sync::sync::Entry) -> Self {
+impl From<iroh::sync::Entry> for Entry {
+    fn from(e: iroh::sync::Entry) -> Self {
         Entry(e)
     }
 }
@@ -337,7 +337,7 @@ impl Entry {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AuthorId(pub(crate) iroh::sync::sync::AuthorId);
+pub struct AuthorId(pub(crate) iroh::sync::AuthorId);
 
 impl std::fmt::Display for AuthorId {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -348,7 +348,7 @@ impl std::fmt::Display for AuthorId {
 impl AuthorId {
     /// Get an [`AuthorId`] from a String
     pub fn from_string(str: String) -> Result<Self, IrohError> {
-        let author = iroh::sync::sync::AuthorId::from_str(&str).map_err(IrohError::author)?;
+        let author = iroh::sync::AuthorId::from_str(&str).map_err(IrohError::author)?;
         Ok(AuthorId(author))
     }
 
@@ -359,10 +359,10 @@ impl AuthorId {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct NamespaceId(pub(crate) iroh::sync::sync::NamespaceId);
+pub struct NamespaceId(pub(crate) iroh::sync::NamespaceId);
 
-impl From<iroh::sync::sync::NamespaceId> for NamespaceId {
-    fn from(id: iroh::sync::sync::NamespaceId) -> Self {
+impl From<iroh::sync::NamespaceId> for NamespaceId {
+    fn from(id: iroh::sync::NamespaceId) -> Self {
         NamespaceId(id)
     }
 }
@@ -370,7 +370,7 @@ impl From<iroh::sync::sync::NamespaceId> for NamespaceId {
 impl NamespaceId {
     /// Get an [`NamespaceId`] from a String
     pub fn from_string(str: String) -> Result<Self, IrohError> {
-        let author = iroh::sync::sync::NamespaceId::from_str(&str).map_err(IrohError::namespace)?;
+        let author = iroh::sync::NamespaceId::from_str(&str).map_err(IrohError::namespace)?;
         Ok(NamespaceId(author))
     }
 
@@ -705,12 +705,147 @@ pub enum ContentStatus {
     Missing,
 }
 
-impl From<iroh::sync::sync::ContentStatus> for ContentStatus {
-    fn from(value: iroh::sync::sync::ContentStatus) -> Self {
+impl From<iroh::sync::ContentStatus> for ContentStatus {
+    fn from(value: iroh::sync::ContentStatus) -> Self {
         match value {
-            iroh::sync::sync::ContentStatus::Complete => Self::Complete,
-            iroh::sync::sync::ContentStatus::Incomplete => Self::Incomplete,
-            iroh::sync::sync::ContentStatus::Missing => Self::Missing,
+            iroh::sync::ContentStatus::Complete => Self::Complete,
+            iroh::sync::ContentStatus::Incomplete => Self::Incomplete,
+            iroh::sync::ContentStatus::Missing => Self::Missing,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{Ipv4Addr, Ipv6Addr, PublicKey, SocketAddr};
+
+    #[test]
+    fn test_peer_addr() {
+        //
+        // create a node_id
+        let key_str = "ki6htfv2252cj2lhq3hxu4qfcfjtpjnukzonevigudzjpmmruxva";
+        let node_id = PublicKey::from_string(key_str.into()).unwrap();
+        //
+        // create socketaddrs
+        let ipv4_ip = Ipv4Addr::from_string("127.0.0.1".into()).unwrap();
+        let ipv6_ip = Ipv6Addr::from_string("::1".into()).unwrap();
+        let port = 3000;
+        //
+        // create socket addrs
+        let ipv4 = SocketAddr::from_ipv4(ipv4_ip.into(), port);
+        let ipv6 = SocketAddr::from_ipv6(ipv6_ip.into(), port);
+        //
+        // derp region
+        let derp_region = Some(1);
+        //
+        // create a PeerAddr
+        let addrs = vec![Arc::new(ipv4), Arc::new(ipv6)];
+        let expect_addrs = addrs.clone();
+        let peer_addr = PeerAddr::new(node_id.into(), derp_region, addrs);
+        //
+        // test we have returned the expected addresses
+        let got_addrs = peer_addr.direct_addresses();
+        let addrs = expect_addrs.iter().zip(got_addrs.iter());
+        for (expect, got) in addrs {
+            assert!(got.equal(expect.clone()));
+            assert!(expect.equal(got.clone()));
+        }
+
+        assert_eq!(derp_region, peer_addr.derp_region());
+    }
+    #[test]
+    fn test_namespace_id() {
+        //
+        // create id from string
+        let namespace_str = "mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q";
+        let namespace = NamespaceId::from_string(namespace_str.into()).unwrap();
+        //
+        // call to_string, ensure equal
+        assert_eq!(namespace.to_string(), namespace_str);
+        //
+        // create another id, same string
+        let namespace_0 = NamespaceId::from_string(namespace_str.into()).unwrap();
+        //
+        // ensure equal
+        let namespace_0 = Arc::new(namespace_0);
+        assert!(namespace.equal(namespace_0.clone()));
+        assert!(namespace_0.equal(namespace.into()));
+    }
+    #[test]
+    fn test_author_id() {
+        //
+        // create id from string
+        let author_str = "mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q";
+        let author = AuthorId::from_string(author_str.into()).unwrap();
+        //
+        // call to_string, ensure equal
+        assert_eq!(author_str, author.to_string());
+        //
+        // create another id, same string
+        let author_0 = AuthorId::from_string(author_str.into()).unwrap();
+        //
+        // ensure equal
+        let author_0 = Arc::new(author_0);
+        assert!(author.equal(author_0.clone()));
+        assert!(author_0.equal(author.into()));
+    }
+    #[test]
+    fn test_doc_ticket() {
+        //
+        // create id from string
+        let doc_ticket_str = "docljapn77ljjzwrtxh4b35xg57gfvcrvey6ofrulgzuddnohwc2qnqcicshr4znowxoqsosz4gz55hebirkm32lncwltjfkbva6kl3denf5iaqcbiajjeteswek4ambkabzpcfoajganyabbz2zplaaaaaaaaaagrjyvlqcjqdoaaioowl2ygi2likyov62rofk4asma3qacdtvs6wrg7f7hkxlg3mlrkx";
+        let doc_ticket = DocTicket::from_string(doc_ticket_str.into()).unwrap();
+        //
+        // call to_string, ensure equal
+        assert_eq!(doc_ticket_str, doc_ticket.to_string());
+        //
+        // create another id, same string
+        let doc_ticket_0 = DocTicket::from_string(doc_ticket_str.into()).unwrap();
+        //
+        // ensure equal
+        let doc_ticket_0 = Arc::new(doc_ticket_0);
+        assert!(doc_ticket.equal(doc_ticket_0.clone()));
+        assert!(doc_ticket_0.equal(doc_ticket.into()));
+    }
+
+    #[test]
+    fn test_get_filter() {
+        // all
+        let all = GetFilter::all();
+
+        // key
+        let key = Arc::new(GetFilter::key(b"key".to_vec()));
+        let key_0 = GetFilter::key(b"key".to_vec());
+        assert!(!all.equal(key.clone()));
+        assert!(key_0.equal(key.clone()));
+
+        // prefix
+        let prefix = Arc::new(GetFilter::prefix(b"prefix".to_vec()));
+        let prefix_0 = GetFilter::prefix(b"prefix".to_vec());
+        assert!(!key.equal(prefix.clone()));
+        assert!(prefix.equal(prefix_0.into()));
+        //
+        // author
+        let author_str = "mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q";
+        let author = Arc::new(GetFilter::author(Arc::new(
+            AuthorId::from_string(author_str.into()).unwrap(),
+        )));
+        let author_0 =
+            GetFilter::author(Arc::new(AuthorId::from_string(author_str.into()).unwrap()));
+        assert!(!prefix.equal(author.clone()));
+        assert!(author.equal(author_0.into()));
+        //
+        // author&prefix
+        let author_prefix = Arc::new(GetFilter::author_prefix(
+            Arc::new(AuthorId::from_string(author_str.into()).unwrap()),
+            b"prefix".to_vec(),
+        ));
+        let author_prefix_0 = GetFilter::author_prefix(
+            Arc::new(AuthorId::from_string(author_str.into()).unwrap()),
+            b"prefix".to_vec(),
+        );
+        assert!(!author.equal(author_prefix.clone()));
+        assert!(author_prefix.equal(author_prefix_0.into()));
     }
 }

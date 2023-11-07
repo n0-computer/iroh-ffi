@@ -30,10 +30,13 @@ anyhow = "1.0.69"
 blake3 = "1.3.3"
 bytes = "1"
 data-encoding = { version = "2.3.3" }
-iroh = { version = "0.8.0", default-features = false, features = ["flat-db", "metrics"] }
+iroh = { version = "0.9.0", default-features = false, features = [
+    "flat-db",
+    "metrics",
+] }
 iroh-io = { version = "0.2.1" }
 libc = "0.2.141"
-multibase = { version = "0.9.1"}
+multibase = { version = "0.9.1" }
 num_cpus = { version = "1.15.0" }
 quinn = "0.10"
 range-collections = "0.4.0"
@@ -53,4 +56,4 @@ uniffi = { version = "0.24.3", features = ["build"] }
 # https://github.com/mullvad/system-configuration-rs/pull/42
 system-configuration = { git = "https://github.com/tmpfs/system-configuration-rs", branch = "ios-hack" }
 
-uniffi = { git = "https://github.com/mozilla/uniffi-rs" , rev = "86c2e26272cfd5054d78d9e8c8ed225d20ab89bc" } # needs to match the version being used uniffi-bindgen-go
+uniffi = { git = "https://github.com/mozilla/uniffi-rs", rev = "86c2e26272cfd5054d78d9e8c8ed225d20ab89bc" } # needs to match the version being used uniffi-bindgen-go
