@@ -3,7 +3,7 @@ use std::{path::PathBuf, str::FromStr, sync::Arc, time::Duration};
 use futures::{StreamExt, TryStreamExt};
 
 use crate::node::IrohNode;
-use crate::{block_on, IrohError, PeerAddr, Tag};
+use crate::{block_on, IrohError, NodeAddr, Tag};
 
 impl IrohNode {
     /// List all complete blobs.
@@ -662,7 +662,7 @@ impl BlobDownloadRequest {
     pub fn new(
         hash: Arc<Hash>,
         format: BlobFormat,
-        peer: Arc<PeerAddr>,
+        node: Arc<NodeAddr>,
         tag: Arc<SetTagOption>,
         out: Arc<DownloadLocation>,
         token: Option<Arc<RequestToken>>,
@@ -670,7 +670,7 @@ impl BlobDownloadRequest {
         BlobDownloadRequest(iroh::rpc_protocol::BlobDownloadRequest {
             hash: (*hash).0.clone(),
             format: format.into(),
-            peer: (*peer).clone().into(),
+            peer: (*node).clone().into(),
             token: token.map(|token| (*token).clone().0),
             tag: (*tag).clone().into(),
             out: (*out).clone().into(),
@@ -1028,7 +1028,58 @@ mod tests {
     use rand::RngCore;
 
     #[test]
-    fn blobs_add_get_bytes() {
+    fn test_hash() {
+        let hash_str = "bafkr4ih6qxpyfyrgxbcrvmiqbm7hb5fdpn4yezj7ayh6gwto4hm2573glu";
+        let hex_str = "fe85df82e226b8451ab1100b3e70f4a37b7982653f060fe35a6ee1d9aeff665d";
+        let bytes = b"\xfe\x85\xdf\x82\xe2\x26\xb8\x45\x1a\xb1\x10\x0b\x3e\x70\xf4\xa3\x7b\x79\x82\x65\x3f\x06\x0f\xe3\x5a\x6e\xe1\xd9\xae\xff\x66\x5d".to_vec();
+        let cid_prefix = b"\x01\x55\x1e\x20".to_vec();
+
+        let cid_bytes = {
+            let mut b = cid_prefix.clone();
+            b.append(&mut bytes.clone());
+            b
+        };
+        // create hash from string
+        let hash = Hash::from_string(hash_str.into()).unwrap();
+
+        // test methods are as expected
+        assert_eq!(hash_str.to_string(), hash.to_string());
+        assert_eq!(bytes.to_vec(), hash.to_bytes());
+        assert_eq!(hex_str.to_string(), hash.to_hex());
+        assert_eq!(cid_bytes, hash.as_cid_bytes());
+
+        // create hash from bytes
+        let hash_0 = Hash::from_bytes(bytes.clone()).unwrap();
+
+        // test methods are as expected
+        assert_eq!(hash_str.to_string(), hash_0.to_string());
+        assert_eq!(bytes, hash_0.to_bytes());
+        assert_eq!(hex_str.to_string(), hash_0.to_hex());
+        assert_eq!(cid_bytes, hash_0.as_cid_bytes());
+
+        // create hash from cid bytes
+        let hash_1 = Hash::from_cid_bytes(cid_bytes.clone()).unwrap();
+
+        // test methods are as expected
+        assert_eq!(hash_str.to_string(), hash_1.to_string());
+        assert_eq!(bytes, hash_1.to_bytes());
+        assert_eq!(hex_str.to_string(), hash_1.to_hex());
+        assert_eq!(cid_bytes, hash_1.as_cid_bytes());
+
+        // test that the eq function works
+        let hash = Arc::new(hash);
+        let hash_0 = Arc::new(hash_0);
+        let hash_1 = Arc::new(hash_1);
+        assert!(hash.equal(hash_0.clone()));
+        assert!(hash.equal(hash_1.clone()));
+        assert!(hash_0.equal(hash.clone()));
+        assert!(hash_0.equal(hash_1.clone()));
+        assert!(hash_1.equal(hash));
+        assert!(hash_1.equal(hash_0));
+    }
+
+    #[test]
+    fn test_blobs_add_get_bytes() {
         // temp dir
         let dir = tempfile::tempdir().unwrap();
         let node = IrohNode::new(dir.into_path().display().to_string()).unwrap();
@@ -1064,7 +1115,98 @@ mod tests {
     }
 
     #[test]
-    fn blobs_list_collections() {
+    fn test_blob_read_write_path() {
+        let iroh_dir = tempfile::tempdir().unwrap();
+        let node = IrohNode::new(iroh_dir.into_path().display().to_string()).unwrap();
+
+        // create bytes
+        let blob_size = 100;
+        let mut bytes = vec![0; blob_size];
+        rand::thread_rng().fill_bytes(&mut bytes);
+
+        // write to file
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("in");
+        let mut file = std::fs::File::create(path.clone()).unwrap();
+        file.write_all(&bytes).unwrap();
+
+        // add blob
+        let tag = SetTagOption::auto();
+        let wrap = WrapOption::no_wrap();
+
+        struct Output {
+            hash: Option<Arc<Hash>>,
+            format: Option<BlobFormat>,
+        }
+        let output = Arc::new(Mutex::new(Output {
+            hash: None,
+            format: None,
+        }));
+        struct Callback {
+            output: Arc<Mutex<Output>>,
+        }
+
+        impl AddCallback for Callback {
+            fn progress(&self, progress: Arc<AddProgress>) -> Result<(), IrohError> {
+                match *progress {
+                    AddProgress::AllDone(ref d) => {
+                        let mut output = self.output.lock().unwrap();
+                        output.hash = Some(d.hash.clone());
+                        output.format = Some(d.format.clone());
+                    }
+                    AddProgress::Abort(ref a) => {
+                        return Err(IrohError::blobs(a.error.clone()));
+                    }
+                    _ => {}
+                }
+                Ok(())
+            }
+        }
+        let cb = Callback {
+            output: output.clone(),
+        };
+
+        node.blobs_add_from_path(
+            path.display().to_string(),
+            false,
+            Arc::new(tag),
+            Arc::new(wrap),
+            Box::new(cb),
+        )
+        .unwrap();
+
+        let (hash, format) = {
+            let output = output.lock().unwrap();
+            let hash = output.hash.as_ref().map(|h| h.clone()).unwrap();
+            let format = output.format.as_ref().map(|h| h.clone()).unwrap();
+            (hash, format)
+        };
+
+        // check outcome info is as expected
+        assert_eq!(BlobFormat::Raw, format);
+
+        // check we get the expected size from the hash
+        let got_size = node.blobs_size(hash.clone()).unwrap();
+        assert_eq!(blob_size as u64, got_size);
+
+        // get bytes
+        let got_bytes = node.blobs_read_to_bytes(hash.clone()).unwrap();
+        assert_eq!(blob_size, got_bytes.len());
+        assert_eq!(bytes, got_bytes);
+
+        // write to file
+        let out_path = dir.path().join("out");
+        node.blobs_write_to_path(hash, out_path.display().to_string())
+            .unwrap();
+
+        // open file
+        let got_bytes = std::fs::read(out_path).unwrap();
+        assert_eq!(blob_size, got_bytes.len());
+        assert_eq!(bytes, got_bytes);
+    }
+
+    #[test]
+    fn test_blobs_list_collections() {
         // temp dir
         let dir = tempfile::tempdir().unwrap();
         let num_blobs = 3;
@@ -1149,15 +1291,62 @@ mod tests {
         );
 
         let blobs = node.blobs_list().unwrap();
-        for hash in blob_hashes {
-            if !blobs.contains(&hash) {
+        hashes_exist(&blob_hashes, &blobs);
+        println!("finished");
+    }
+
+    fn hashes_exist(expect: &Vec<Arc<Hash>>, got: &Vec<Arc<Hash>>) {
+        for hash in expect {
+            if !got.contains(&hash) {
                 panic!(
-                    "expected to find hash {} in the list of blobs",
+                    "expected to find hash {} in the list of hashes",
                     hash.to_string()
                 );
             }
         }
-        println!("finished");
+    }
+
+    #[test]
+    fn test_list_and_delete() {
+        // temp dir
+        let iroh_dir = tempfile::tempdir().unwrap();
+        let node = IrohNode::new(iroh_dir.into_path().display().to_string()).unwrap();
+
+        // create bytes
+        let blob_size = 100;
+        let mut blobs = vec![];
+        let num_blobs = 3;
+
+        for _i in 0..num_blobs {
+            let mut bytes = vec![0; blob_size];
+            rand::thread_rng().fill_bytes(&mut bytes);
+            blobs.push(bytes);
+        }
+
+        let mut hashes = vec![];
+        for blob in blobs {
+            let output = node
+                .blobs_add_bytes(blob, Arc::new(SetTagOption::auto()))
+                .unwrap();
+            hashes.push(output.hash);
+        }
+
+        let got_hashes = node.blobs_list().unwrap();
+        assert_eq!(num_blobs, got_hashes.len());
+        hashes_exist(&hashes, &got_hashes);
+
+        let remove_hash = hashes.pop().unwrap();
+        node.blobs_delete_blob(remove_hash.clone()).unwrap();
+
+        let got_hashes = node.blobs_list().unwrap();
+        assert_eq!(num_blobs - 1, got_hashes.len());
+        hashes_exist(&hashes, &got_hashes);
+
+        for hash in got_hashes {
+            if remove_hash.equal(hash) {
+                panic!("blob {} should have been removed", remove_hash);
+            }
+        }
     }
 
     async fn build_iroh_core(

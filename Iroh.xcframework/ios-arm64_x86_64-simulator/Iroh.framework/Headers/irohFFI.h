@@ -112,7 +112,7 @@ RustBuffer uniffi_iroh_fn_method_authorid_to_string(void*_Nonnull ptr, RustCallS
 );
 void uniffi_iroh_fn_free_blobdownloadrequest(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void*_Nonnull uniffi_iroh_fn_constructor_blobdownloadrequest_new(void*_Nonnull hash, RustBuffer format, void*_Nonnull peer, void*_Nonnull tag, void*_Nonnull out, RustBuffer token, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_iroh_fn_constructor_blobdownloadrequest_new(void*_Nonnull hash, RustBuffer format, void*_Nonnull node, void*_Nonnull tag, void*_Nonnull out, RustBuffer token, RustCallStatus *_Nonnull out_status
 );
 void uniffi_iroh_fn_free_directaddrinfo(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -249,8 +249,6 @@ void uniffi_iroh_fn_method_irohnode_blobs_delete_blob(void*_Nonnull ptr, void*_N
 );
 void uniffi_iroh_fn_method_irohnode_blobs_download(void*_Nonnull ptr, void*_Nonnull req, uint64_t cb, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_iroh_fn_method_irohnode_blobs_get(void*_Nonnull ptr, void*_Nonnull hash, RustCallStatus *_Nonnull out_status
-);
 RustBuffer uniffi_iroh_fn_method_irohnode_blobs_list(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_irohnode_blobs_list_collections(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -325,7 +323,6 @@ RustBuffer uniffi_iroh_fn_method_publickey_to_bytes(void*_Nonnull ptr, RustCallS
 );
 RustBuffer uniffi_iroh_fn_method_publickey_to_string(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-<<<<<<< HEAD
 void uniffi_iroh_fn_free_query(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void*_Nonnull uniffi_iroh_fn_constructor_query_all(RustBuffer sort_by, RustBuffer direction, RustBuffer offset, RustBuffer limit, RustCallStatus *_Nonnull out_status
@@ -341,7 +338,7 @@ void*_Nonnull uniffi_iroh_fn_constructor_query_single_latest_per_key(RustBuffer 
 RustBuffer uniffi_iroh_fn_method_query_limit(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 uint64_t uniffi_iroh_fn_method_query_offset(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-=======
+);
 void uniffi_iroh_fn_free_requesttoken(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void*_Nonnull uniffi_iroh_fn_constructor_requesttoken_from_string(RustBuffer str, RustCallStatus *_Nonnull out_status
@@ -354,7 +351,6 @@ void*_Nonnull uniffi_iroh_fn_constructor_requesttoken_new(RustBuffer bytes, Rust
 RustBuffer uniffi_iroh_fn_method_requesttoken_as_bytes(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 int8_t uniffi_iroh_fn_method_requesttoken_equal(void*_Nonnull ptr, void*_Nonnull other, RustCallStatus *_Nonnull out_status
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
 );
 void uniffi_iroh_fn_free_settagoption(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -608,9 +604,6 @@ uint16_t uniffi_iroh_checksum_method_irohnode_blobs_delete_blob(void
 uint16_t uniffi_iroh_checksum_method_irohnode_blobs_download(void
     
 );
-uint16_t uniffi_iroh_checksum_method_irohnode_blobs_get(void
-    
-);
 uint16_t uniffi_iroh_checksum_method_irohnode_blobs_list(void
     
 );
@@ -698,17 +691,16 @@ uint16_t uniffi_iroh_checksum_method_publickey_to_bytes(void
 uint16_t uniffi_iroh_checksum_method_publickey_to_string(void
     
 );
-<<<<<<< HEAD
 uint16_t uniffi_iroh_checksum_method_query_limit(void
     
 );
 uint16_t uniffi_iroh_checksum_method_query_offset(void
-=======
+    
+);
 uint16_t uniffi_iroh_checksum_method_requesttoken_as_bytes(void
     
 );
 uint16_t uniffi_iroh_checksum_method_requesttoken_equal(void
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
     
 );
 uint16_t uniffi_iroh_checksum_method_socketaddr_as_ipv4(void
@@ -765,30 +757,12 @@ uint16_t uniffi_iroh_checksum_constructor_blobdownloadrequest_new(void
 uint16_t uniffi_iroh_checksum_constructor_docticket_from_string(void
     
 );
-<<<<<<< HEAD
-=======
 uint16_t uniffi_iroh_checksum_constructor_downloadlocation_external(void
     
 );
 uint16_t uniffi_iroh_checksum_constructor_downloadlocation_internal(void
     
 );
-uint16_t uniffi_iroh_checksum_constructor_getfilter_all(void
-    
-);
-uint16_t uniffi_iroh_checksum_constructor_getfilter_author(void
-    
-);
-uint16_t uniffi_iroh_checksum_constructor_getfilter_author_prefix(void
-    
-);
-uint16_t uniffi_iroh_checksum_constructor_getfilter_key(void
-    
-);
-uint16_t uniffi_iroh_checksum_constructor_getfilter_prefix(void
-    
-);
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
 uint16_t uniffi_iroh_checksum_constructor_hash_from_bytes(void
     
 );
@@ -828,7 +802,6 @@ uint16_t uniffi_iroh_checksum_constructor_publickey_from_bytes(void
 uint16_t uniffi_iroh_checksum_constructor_publickey_from_string(void
     
 );
-<<<<<<< HEAD
 uint16_t uniffi_iroh_checksum_constructor_query_all(void
     
 );
@@ -842,7 +815,8 @@ uint16_t uniffi_iroh_checksum_constructor_query_key_prefix(void
     
 );
 uint16_t uniffi_iroh_checksum_constructor_query_single_latest_per_key(void
-=======
+    
+);
 uint16_t uniffi_iroh_checksum_constructor_requesttoken_from_string(void
     
 );
@@ -850,7 +824,6 @@ uint16_t uniffi_iroh_checksum_constructor_requesttoken_generate(void
     
 );
 uint16_t uniffi_iroh_checksum_constructor_requesttoken_new(void
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
     
 );
 uint16_t uniffi_iroh_checksum_constructor_settagoption_auto(void

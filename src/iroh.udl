@@ -425,7 +425,7 @@ interface DownloadLocation {
 };
 
 interface BlobDownloadRequest {
-  constructor(Hash hash, BlobFormat format, PeerAddr peer, SetTagOption tag, DownloadLocation out, RequestToken? token);
+  constructor(Hash hash, BlobFormat format, NodeAddr node, SetTagOption tag, DownloadLocation out, RequestToken? token);
 };
 
 callback interface DownloadCallback {

@@ -680,12 +680,12 @@ public class BlobDownloadRequest: BlobDownloadRequestProtocol {
         self.pointer = pointer
     }
 
-    public convenience init(hash: Hash, format: BlobFormat, peer: PeerAddr, tag: SetTagOption, out: DownloadLocation, token: RequestToken?) {
+    public convenience init(hash: Hash, format: BlobFormat, node: NodeAddr, tag: SetTagOption, out: DownloadLocation, token: RequestToken?) {
         self.init(unsafeFromRawPointer: try! rustCall {
             uniffi_iroh_fn_constructor_blobdownloadrequest_new(
                 FfiConverterTypeHash.lower(hash),
                 FfiConverterTypeBlobFormat.lower(format),
-                FfiConverterTypePeerAddr.lower(peer),
+                FfiConverterTypeNodeAddr.lower(node),
                 FfiConverterTypeSetTagOption.lower(tag),
                 FfiConverterTypeDownloadLocation.lower(out),
                 FfiConverterOptionTypeRequestToken.lower(token), $0
@@ -1734,7 +1734,6 @@ public protocol IrohNodeProtocol {
     func blobsAddFromPath(path: String, inPlace: Bool, tag: SetTagOption, wrap: WrapOption, cb: AddCallback) throws
     func blobsDeleteBlob(hash: Hash) throws
     func blobsDownload(req: BlobDownloadRequest, cb: DownloadCallback) throws
-    func blobsGet(hash: Hash) throws -> Data
     func blobsList() throws -> [Hash]
     func blobsListCollections() throws -> [BlobListCollectionsResponse]
     func blobsListIncomplete() throws -> [BlobListIncompleteResponse]
@@ -1825,15 +1824,6 @@ public class IrohNode: IrohNodeProtocol {
                                                               FfiConverterTypeBlobDownloadRequest.lower(req),
                                                               FfiConverterCallbackInterfaceDownloadCallback.lower(cb), $0)
             }
-    }
-
-    public func blobsGet(hash: Hash) throws -> Data {
-        return try FfiConverterData.lift(
-            rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_irohnode_blobs_get(self.pointer,
-                                                         FfiConverterTypeHash.lower(hash), $0)
-            }
-        )
     }
 
     public func blobsList() throws -> [Hash] {
@@ -2406,21 +2396,12 @@ public func FfiConverterTypePublicKey_lower(_ value: PublicKey) -> UnsafeMutable
     return FfiConverterTypePublicKey.lower(value)
 }
 
-<<<<<<< HEAD
 public protocol QueryProtocol {
     func limit() -> UInt64?
     func offset() -> UInt64
 }
 
 public class Query: QueryProtocol {
-=======
-public protocol RequestTokenProtocol {
-    func asBytes() -> Data
-    func equal(other: RequestToken) -> Bool
-}
-
-public class RequestToken: RequestTokenProtocol {
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
     fileprivate let pointer: UnsafeMutableRawPointer
 
     // TODO: We'd like this to be `private` but for Swifty reasons,
@@ -2430,7 +2411,6 @@ public class RequestToken: RequestTokenProtocol {
         self.pointer = pointer
     }
 
-<<<<<<< HEAD
     deinit {
         try! rustCall { uniffi_iroh_fn_free_query(pointer, $0) }
     }
@@ -2442,29 +2422,10 @@ public class RequestToken: RequestTokenProtocol {
                 FfiConverterTypeSortDirection.lower(direction),
                 FfiConverterOptionUInt64.lower(offset),
                 FfiConverterOptionUInt64.lower(limit), $0
-=======
-    public convenience init(bytes: Data) throws {
-        try self.init(unsafeFromRawPointer: rustCallWithError(FfiConverterTypeIrohError.lift) {
-            uniffi_iroh_fn_constructor_requesttoken_new(
-                FfiConverterData.lower(bytes), $0
             )
         })
     }
 
-    deinit {
-        try! rustCall { uniffi_iroh_fn_free_requesttoken(pointer, $0) }
-    }
-
-    public static func fromString(str: String) throws -> RequestToken {
-        return try RequestToken(unsafeFromRawPointer: rustCallWithError(FfiConverterTypeIrohError.lift) {
-            uniffi_iroh_fn_constructor_requesttoken_from_string(
-                FfiConverterString.lower(str), $0
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
-            )
-        })
-    }
-
-<<<<<<< HEAD
     public static func author(author: AuthorId, sortBy: SortBy, direction: SortDirection, offset: UInt64?, limit: UInt64?) -> Query {
         return Query(unsafeFromRawPointer: try! rustCall {
             uniffi_iroh_fn_constructor_query_author(
@@ -2516,7 +2477,93 @@ public class RequestToken: RequestTokenProtocol {
             try!
                 rustCall {
                     uniffi_iroh_fn_method_query_limit(self.pointer, $0)
-=======
+                }
+        )
+    }
+
+    public func offset() -> UInt64 {
+        return try! FfiConverterUInt64.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_query_offset(self.pointer, $0)
+                }
+        )
+    }
+}
+
+public struct FfiConverterTypeQuery: FfiConverter {
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = Query
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Query {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: Query, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> Query {
+        return Query(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: Query) -> UnsafeMutableRawPointer {
+        return value.pointer
+    }
+}
+
+public func FfiConverterTypeQuery_lift(_ pointer: UnsafeMutableRawPointer) throws -> Query {
+    return try FfiConverterTypeQuery.lift(pointer)
+}
+
+public func FfiConverterTypeQuery_lower(_ value: Query) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeQuery.lower(value)
+}
+
+public protocol RequestTokenProtocol {
+    func asBytes() -> Data
+    func equal(other: RequestToken) -> Bool
+}
+
+public class RequestToken: RequestTokenProtocol {
+    fileprivate let pointer: UnsafeMutableRawPointer
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    public convenience init(bytes: Data) throws {
+        try self.init(unsafeFromRawPointer: rustCallWithError(FfiConverterTypeIrohError.lift) {
+            uniffi_iroh_fn_constructor_requesttoken_new(
+                FfiConverterData.lower(bytes), $0
+            )
+        })
+    }
+
+    deinit {
+        try! rustCall { uniffi_iroh_fn_free_requesttoken(pointer, $0) }
+    }
+
+    public static func fromString(str: String) throws -> RequestToken {
+        return try RequestToken(unsafeFromRawPointer: rustCallWithError(FfiConverterTypeIrohError.lift) {
+            uniffi_iroh_fn_constructor_requesttoken_from_string(
+                FfiConverterString.lower(str), $0
+            )
+        })
+    }
+
     public static func generate() -> RequestToken {
         return RequestToken(unsafeFromRawPointer: try! rustCall {
             uniffi_iroh_fn_constructor_requesttoken_generate($0)
@@ -2528,43 +2575,26 @@ public class RequestToken: RequestTokenProtocol {
             try!
                 rustCall {
                     uniffi_iroh_fn_method_requesttoken_as_bytes(self.pointer, $0)
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
                 }
         )
     }
 
-<<<<<<< HEAD
-    public func offset() -> UInt64 {
-        return try! FfiConverterUInt64.lift(
-            try!
-                rustCall {
-                    uniffi_iroh_fn_method_query_offset(self.pointer, $0)
-=======
     public func equal(other: RequestToken) -> Bool {
         return try! FfiConverterBool.lift(
             try!
                 rustCall {
                     uniffi_iroh_fn_method_requesttoken_equal(self.pointer,
                                                              FfiConverterTypeRequestToken.lower(other), $0)
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
                 }
         )
     }
 }
 
-<<<<<<< HEAD
-public struct FfiConverterTypeQuery: FfiConverter {
-    typealias FfiType = UnsafeMutableRawPointer
-    typealias SwiftType = Query
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Query {
-=======
 public struct FfiConverterTypeRequestToken: FfiConverter {
     typealias FfiType = UnsafeMutableRawPointer
     typealias SwiftType = RequestToken
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RequestToken {
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
         let v: UInt64 = try readInt(&buf)
         // The Rust code won't compile if a pointer won't fit in a UInt64.
         // We have to go via `UInt` because that's the thing that's the size of a pointer.
@@ -2575,48 +2605,27 @@ public struct FfiConverterTypeRequestToken: FfiConverter {
         return try lift(ptr!)
     }
 
-<<<<<<< HEAD
-    public static func write(_ value: Query, into buf: inout [UInt8]) {
-=======
     public static func write(_ value: RequestToken, into buf: inout [UInt8]) {
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
         // This fiddling is because `Int` is the thing that's the same size as a pointer.
         // The Rust code won't compile if a pointer won't fit in a `UInt64`.
         writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
     }
 
-<<<<<<< HEAD
-    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> Query {
-        return Query(unsafeFromRawPointer: pointer)
-    }
-
-    public static func lower(_ value: Query) -> UnsafeMutableRawPointer {
-=======
     public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> RequestToken {
         return RequestToken(unsafeFromRawPointer: pointer)
     }
 
     public static func lower(_ value: RequestToken) -> UnsafeMutableRawPointer {
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
         return value.pointer
     }
 }
 
-<<<<<<< HEAD
-public func FfiConverterTypeQuery_lift(_ pointer: UnsafeMutableRawPointer) throws -> Query {
-    return try FfiConverterTypeQuery.lift(pointer)
-}
-
-public func FfiConverterTypeQuery_lower(_ value: Query) -> UnsafeMutableRawPointer {
-    return FfiConverterTypeQuery.lower(value)
-=======
 public func FfiConverterTypeRequestToken_lift(_ pointer: UnsafeMutableRawPointer) throws -> RequestToken {
     return try FfiConverterTypeRequestToken.lift(pointer)
 }
 
 public func FfiConverterTypeRequestToken_lower(_ value: RequestToken) -> UnsafeMutableRawPointer {
     return FfiConverterTypeRequestToken.lower(value)
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
 }
 
 public protocol SetTagOptionProtocol {}
@@ -4589,7 +4598,7 @@ public enum IrohError {
     case DocTicket(description: String)
     case Uniffi(description: String)
     case Connection(description: String)
-    case Blob(description: String)
+    case Blobs(description: String)
     case Ipv4Addr(description: String)
     case Ipv6Addr(description: String)
     case SocketAddrV4(description: String)
@@ -4634,7 +4643,7 @@ public struct FfiConverterTypeIrohError: FfiConverterRustBuffer {
         case 8: return try .Connection(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 9: return try .Blob(
+        case 9: return try .Blobs(
                 description: FfiConverterString.read(from: &buf)
             )
         case 10: return try .Ipv4Addr(
@@ -4700,7 +4709,7 @@ public struct FfiConverterTypeIrohError: FfiConverterRustBuffer {
             writeInt(&buf, Int32(8))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Blob(description):
+        case let .Blobs(description):
             writeInt(&buf, Int32(9))
             FfiConverterString.write(description, into: &buf)
 
@@ -6097,9 +6106,6 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_irohnode_blobs_download() != 50921 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_blobs_get() != 45164 {
-        return InitializationResult.apiChecksumMismatch
-    }
     if uniffi_iroh_checksum_method_irohnode_blobs_list() != 49039 {
         return InitializationResult.apiChecksumMismatch
     }
@@ -6187,17 +6193,16 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_publickey_to_string() != 48998 {
         return InitializationResult.apiChecksumMismatch
     }
-<<<<<<< HEAD
     if uniffi_iroh_checksum_method_query_limit() != 6405 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_query_offset() != 5309 {
-=======
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_checksum_method_requesttoken_as_bytes() != 10828 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_requesttoken_equal() != 58929 {
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_socketaddr_as_ipv4() != 50860 {
@@ -6248,36 +6253,18 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_constructor_authorid_from_string() != 14210 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_blobdownloadrequest_new() != 19433 {
+    if uniffi_iroh_checksum_constructor_blobdownloadrequest_new() != 24971 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_constructor_docticket_from_string() != 40262 {
         return InitializationResult.apiChecksumMismatch
     }
-<<<<<<< HEAD
-=======
     if uniffi_iroh_checksum_constructor_downloadlocation_external() != 45372 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_constructor_downloadlocation_internal() != 751 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_getfilter_all() != 21151 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_checksum_constructor_getfilter_author() != 58104 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_checksum_constructor_getfilter_author_prefix() != 65233 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_checksum_constructor_getfilter_key() != 4606 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_checksum_constructor_getfilter_prefix() != 44619 {
-        return InitializationResult.apiChecksumMismatch
-    }
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
     if uniffi_iroh_checksum_constructor_hash_from_bytes() != 19134 {
         return InitializationResult.apiChecksumMismatch
     }
@@ -6317,7 +6304,6 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_constructor_publickey_from_string() != 18975 {
         return InitializationResult.apiChecksumMismatch
     }
-<<<<<<< HEAD
     if uniffi_iroh_checksum_constructor_query_all() != 7812 {
         return InitializationResult.apiChecksumMismatch
     }
@@ -6331,7 +6317,8 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_constructor_query_single_latest_per_key() != 35940 {
-=======
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_checksum_constructor_requesttoken_from_string() != 49791 {
         return InitializationResult.apiChecksumMismatch
     }
@@ -6339,7 +6326,6 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_constructor_requesttoken_new() != 37150 {
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_constructor_settagoption_auto() != 13040 {

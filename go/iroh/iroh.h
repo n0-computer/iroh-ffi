@@ -156,7 +156,7 @@ void uniffi_iroh_fn_free_blobdownloadrequest(
 void* uniffi_iroh_fn_constructor_blobdownloadrequest_new(
 	void* hash,
 	RustBuffer format,
-	void* peer,
+	void* node,
 	void* tag,
 	void* out,
 	RustBuffer token,
@@ -734,16 +734,11 @@ RustBuffer uniffi_iroh_fn_method_publickey_to_string(
 	RustCallStatus* out_status
 );
 
-<<<<<<< HEAD
 void uniffi_iroh_fn_free_query(
-=======
-void uniffi_iroh_fn_free_requesttoken(
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
 	void* ptr,
 	RustCallStatus* out_status
 );
 
-<<<<<<< HEAD
 void* uniffi_iroh_fn_constructor_query_all(
 	RustBuffer sort_by,
 	RustBuffer direction,
@@ -787,7 +782,20 @@ void* uniffi_iroh_fn_constructor_query_single_latest_per_key(
 );
 
 RustBuffer uniffi_iroh_fn_method_query_limit(
-=======
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+uint64_t uniffi_iroh_fn_method_query_offset(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+void uniffi_iroh_fn_free_requesttoken(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
 void* uniffi_iroh_fn_constructor_requesttoken_from_string(
 	RustBuffer str,
 	RustCallStatus* out_status
@@ -803,19 +811,13 @@ void* uniffi_iroh_fn_constructor_requesttoken_new(
 );
 
 RustBuffer uniffi_iroh_fn_method_requesttoken_as_bytes(
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
 	void* ptr,
 	RustCallStatus* out_status
 );
 
-<<<<<<< HEAD
-uint64_t uniffi_iroh_fn_method_query_offset(
-	void* ptr,
-=======
 int8_t uniffi_iroh_fn_method_requesttoken_equal(
 	void* ptr,
 	void* other,
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
 	RustCallStatus* out_status
 );
 
@@ -1371,19 +1373,19 @@ uint16_t uniffi_iroh_checksum_method_publickey_to_string(
 	RustCallStatus* out_status
 );
 
-<<<<<<< HEAD
 uint16_t uniffi_iroh_checksum_method_query_limit(
 	RustCallStatus* out_status
 );
 
 uint16_t uniffi_iroh_checksum_method_query_offset(
-=======
+	RustCallStatus* out_status
+);
+
 uint16_t uniffi_iroh_checksum_method_requesttoken_as_bytes(
 	RustCallStatus* out_status
 );
 
 uint16_t uniffi_iroh_checksum_method_requesttoken_equal(
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
 	RustCallStatus* out_status
 );
 
@@ -1459,8 +1461,6 @@ uint16_t uniffi_iroh_checksum_constructor_docticket_from_string(
 	RustCallStatus* out_status
 );
 
-<<<<<<< HEAD
-=======
 uint16_t uniffi_iroh_checksum_constructor_downloadlocation_external(
 	RustCallStatus* out_status
 );
@@ -1469,27 +1469,6 @@ uint16_t uniffi_iroh_checksum_constructor_downloadlocation_internal(
 	RustCallStatus* out_status
 );
 
-uint16_t uniffi_iroh_checksum_constructor_getfilter_all(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_constructor_getfilter_author(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_constructor_getfilter_author_prefix(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_constructor_getfilter_key(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_constructor_getfilter_prefix(
-	RustCallStatus* out_status
-);
-
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
 uint16_t uniffi_iroh_checksum_constructor_hash_from_bytes(
 	RustCallStatus* out_status
 );
@@ -1542,7 +1521,6 @@ uint16_t uniffi_iroh_checksum_constructor_publickey_from_string(
 	RustCallStatus* out_status
 );
 
-<<<<<<< HEAD
 uint16_t uniffi_iroh_checksum_constructor_query_all(
 	RustCallStatus* out_status
 );
@@ -1560,7 +1538,9 @@ uint16_t uniffi_iroh_checksum_constructor_query_key_prefix(
 );
 
 uint16_t uniffi_iroh_checksum_constructor_query_single_latest_per_key(
-=======
+	RustCallStatus* out_status
+);
+
 uint16_t uniffi_iroh_checksum_constructor_requesttoken_from_string(
 	RustCallStatus* out_status
 );
@@ -1570,7 +1550,6 @@ uint16_t uniffi_iroh_checksum_constructor_requesttoken_generate(
 );
 
 uint16_t uniffi_iroh_checksum_constructor_requesttoken_new(
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
 	RustCallStatus* out_status
 );
 
@@ -1670,12 +1649,9 @@ void uniffiFutureCallbackHandlerNamespaceIdTypeIrohError(void *, void*, RustCall
 void uniffiFutureCallbackHandlerNodeAddr(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerPublicKey(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerPublicKeyTypeIrohError(void *, void*, RustCallStatus);
-<<<<<<< HEAD
 void uniffiFutureCallbackHandlerQuery(void *, void*, RustCallStatus);
-=======
 void uniffiFutureCallbackHandlerRequestToken(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerRequestTokenTypeIrohError(void *, void*, RustCallStatus);
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
 void uniffiFutureCallbackHandlerSetTagOption(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerSocketAddr(void *, void*, RustCallStatus);
 void uniffiFutureCallbackHandlerSocketAddrV4(void *, void*, RustCallStatus);

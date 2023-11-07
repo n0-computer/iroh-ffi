@@ -1107,36 +1107,38 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-<<<<<<< HEAD
 			return C.uniffi_iroh_checksum_method_query_limit(uniffiStatus)
 		})
 		if checksum != 6405 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_query_limit: UniFFI API checksum mismatch")
-=======
-			return C.uniffi_iroh_checksum_method_requesttoken_as_bytes(uniffiStatus)
-		})
-		if checksum != 10828 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_method_requesttoken_as_bytes: UniFFI API checksum mismatch")
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
 		}
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-<<<<<<< HEAD
 			return C.uniffi_iroh_checksum_method_query_offset(uniffiStatus)
 		})
 		if checksum != 5309 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_query_offset: UniFFI API checksum mismatch")
-=======
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_requesttoken_as_bytes(uniffiStatus)
+		})
+		if checksum != 10828 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_requesttoken_as_bytes: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_requesttoken_equal(uniffiStatus)
 		})
 		if checksum != 58929 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_requesttoken_equal: UniFFI API checksum mismatch")
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
 		}
 	}
 	{
@@ -1287,7 +1289,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_constructor_blobdownloadrequest_new(uniffiStatus)
 		})
-		if checksum != 19433 {
+		if checksum != 24971 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_constructor_blobdownloadrequest_new: UniFFI API checksum mismatch")
 		}
@@ -1303,8 +1305,6 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-<<<<<<< HEAD
-=======
 			return C.uniffi_iroh_checksum_constructor_downloadlocation_external(uniffiStatus)
 		})
 		if checksum != 45372 {
@@ -1323,52 +1323,6 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_constructor_getfilter_all(uniffiStatus)
-		})
-		if checksum != 21151 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_constructor_getfilter_all: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_constructor_getfilter_author(uniffiStatus)
-		})
-		if checksum != 58104 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_constructor_getfilter_author: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_constructor_getfilter_author_prefix(uniffiStatus)
-		})
-		if checksum != 65233 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_constructor_getfilter_author_prefix: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_constructor_getfilter_key(uniffiStatus)
-		})
-		if checksum != 4606 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_constructor_getfilter_key: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_constructor_getfilter_prefix(uniffiStatus)
-		})
-		if checksum != 44619 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_constructor_getfilter_prefix: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
 			return C.uniffi_iroh_checksum_constructor_hash_from_bytes(uniffiStatus)
 		})
 		if checksum != 19134 {
@@ -1486,41 +1440,24 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-<<<<<<< HEAD
 			return C.uniffi_iroh_checksum_constructor_query_all(uniffiStatus)
 		})
 		if checksum != 7812 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_constructor_query_all: UniFFI API checksum mismatch")
-=======
-			return C.uniffi_iroh_checksum_constructor_requesttoken_from_string(uniffiStatus)
-		})
-		if checksum != 49791 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_constructor_requesttoken_from_string: UniFFI API checksum mismatch")
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
 		}
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-<<<<<<< HEAD
 			return C.uniffi_iroh_checksum_constructor_query_author(uniffiStatus)
 		})
 		if checksum != 3352 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_constructor_query_author: UniFFI API checksum mismatch")
-=======
-			return C.uniffi_iroh_checksum_constructor_requesttoken_generate(uniffiStatus)
-		})
-		if checksum != 37061 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_constructor_requesttoken_generate: UniFFI API checksum mismatch")
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
 		}
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-<<<<<<< HEAD
 			return C.uniffi_iroh_checksum_constructor_query_key_exact(uniffiStatus)
 		})
 		if checksum != 23311 {
@@ -1544,13 +1481,33 @@ func uniffiCheckChecksums() {
 		if checksum != 35940 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_constructor_query_single_latest_per_key: UniFFI API checksum mismatch")
-=======
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_constructor_requesttoken_from_string(uniffiStatus)
+		})
+		if checksum != 49791 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_constructor_requesttoken_from_string: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_constructor_requesttoken_generate(uniffiStatus)
+		})
+		if checksum != 37061 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_constructor_requesttoken_generate: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_constructor_requesttoken_new(uniffiStatus)
 		})
 		if checksum != 37150 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_constructor_requesttoken_new: UniFFI API checksum mismatch")
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
 		}
 	}
 	{
@@ -2204,9 +2161,9 @@ type BlobDownloadRequest struct {
 	ffiObject FfiObject
 }
 
-func NewBlobDownloadRequest(hash *Hash, format BlobFormat, peer *PeerAddr, tag *SetTagOption, out *DownloadLocation, token **RequestToken) *BlobDownloadRequest {
+func NewBlobDownloadRequest(hash *Hash, format BlobFormat, node *NodeAddr, tag *SetTagOption, out *DownloadLocation, token **RequestToken) *BlobDownloadRequest {
 	return FfiConverterBlobDownloadRequestINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_constructor_blobdownloadrequest_new(FfiConverterHashINSTANCE.Lower(hash), FfiConverterTypeBlobFormatINSTANCE.Lower(format), FfiConverterPeerAddrINSTANCE.Lower(peer), FfiConverterSetTagOptionINSTANCE.Lower(tag), FfiConverterDownloadLocationINSTANCE.Lower(out), FfiConverterOptionalRequestTokenINSTANCE.Lower(token), _uniffiStatus)
+		return C.uniffi_iroh_fn_constructor_blobdownloadrequest_new(FfiConverterHashINSTANCE.Lower(hash), FfiConverterTypeBlobFormatINSTANCE.Lower(format), FfiConverterNodeAddrINSTANCE.Lower(node), FfiConverterSetTagOptionINSTANCE.Lower(tag), FfiConverterDownloadLocationINSTANCE.Lower(out), FfiConverterOptionalRequestTokenINSTANCE.Lower(token), _uniffiStatus)
 	}))
 }
 
@@ -3894,7 +3851,6 @@ func (_ FfiDestroyerPublicKey) Destroy(value *PublicKey) {
 	value.Destroy()
 }
 
-<<<<<<< HEAD
 type Query struct {
 	ffiObject FfiObject
 }
@@ -3930,7 +3886,63 @@ func (_self *Query) Limit() *uint64 {
 	defer _self.ffiObject.decrementPointer()
 	return FfiConverterOptionalUint64INSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
 		return C.uniffi_iroh_fn_method_query_limit(
-=======
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *Query) Offset() uint64 {
+	_pointer := _self.ffiObject.incrementPointer("*Query")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterUint64INSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) C.uint64_t {
+		return C.uniffi_iroh_fn_method_query_offset(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (object *Query) Destroy() {
+	runtime.SetFinalizer(object, nil)
+	object.ffiObject.destroy()
+}
+
+type FfiConverterQuery struct{}
+
+var FfiConverterQueryINSTANCE = FfiConverterQuery{}
+
+func (c FfiConverterQuery) Lift(pointer unsafe.Pointer) *Query {
+	result := &Query{
+		newFfiObject(
+			pointer,
+			func(pointer unsafe.Pointer, status *C.RustCallStatus) {
+				C.uniffi_iroh_fn_free_query(pointer, status)
+			}),
+	}
+	runtime.SetFinalizer(result, (*Query).Destroy)
+	return result
+}
+
+func (c FfiConverterQuery) Read(reader io.Reader) *Query {
+	return c.Lift(unsafe.Pointer(uintptr(readUint64(reader))))
+}
+
+func (c FfiConverterQuery) Lower(value *Query) unsafe.Pointer {
+	// TODO: this is bad - all synchronization from ObjectRuntime.go is discarded here,
+	// because the pointer will be decremented immediately after this function returns,
+	// and someone will be left holding onto a non-locked pointer.
+	pointer := value.ffiObject.incrementPointer("*Query")
+	defer value.ffiObject.decrementPointer()
+	return pointer
+}
+
+func (c FfiConverterQuery) Write(writer io.Writer, value *Query) {
+	writeUint64(writer, uint64(uintptr(c.Lower(value))))
+}
+
+type FfiDestroyerQuery struct{}
+
+func (_ FfiDestroyerQuery) Destroy(value *Query) {
+	value.Destroy()
+}
+
 type RequestToken struct {
 	ffiObject FfiObject
 }
@@ -3969,23 +3981,10 @@ func (_self *RequestToken) AsBytes() []byte {
 	defer _self.ffiObject.decrementPointer()
 	return FfiConverterBytesINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
 		return C.uniffi_iroh_fn_method_requesttoken_as_bytes(
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
 			_pointer, _uniffiStatus)
 	}))
 }
 
-<<<<<<< HEAD
-func (_self *Query) Offset() uint64 {
-	_pointer := _self.ffiObject.incrementPointer("*Query")
-	defer _self.ffiObject.decrementPointer()
-	return FfiConverterUint64INSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) C.uint64_t {
-		return C.uniffi_iroh_fn_method_query_offset(
-			_pointer, _uniffiStatus)
-	}))
-}
-
-func (object *Query) Destroy() {
-=======
 func (_self *RequestToken) Equal(other *RequestToken) bool {
 	_pointer := _self.ffiObject.incrementPointer("*RequestToken")
 	defer _self.ffiObject.decrementPointer()
@@ -3996,38 +3995,10 @@ func (_self *RequestToken) Equal(other *RequestToken) bool {
 }
 
 func (object *RequestToken) Destroy() {
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
 	runtime.SetFinalizer(object, nil)
 	object.ffiObject.destroy()
 }
 
-<<<<<<< HEAD
-type FfiConverterQuery struct{}
-
-var FfiConverterQueryINSTANCE = FfiConverterQuery{}
-
-func (c FfiConverterQuery) Lift(pointer unsafe.Pointer) *Query {
-	result := &Query{
-		newFfiObject(
-			pointer,
-			func(pointer unsafe.Pointer, status *C.RustCallStatus) {
-				C.uniffi_iroh_fn_free_query(pointer, status)
-			}),
-	}
-	runtime.SetFinalizer(result, (*Query).Destroy)
-	return result
-}
-
-func (c FfiConverterQuery) Read(reader io.Reader) *Query {
-	return c.Lift(unsafe.Pointer(uintptr(readUint64(reader))))
-}
-
-func (c FfiConverterQuery) Lower(value *Query) unsafe.Pointer {
-	// TODO: this is bad - all synchronization from ObjectRuntime.go is discarded here,
-	// because the pointer will be decremented immediately after this function returns,
-	// and someone will be left holding onto a non-locked pointer.
-	pointer := value.ffiObject.incrementPointer("*Query")
-=======
 type FfiConverterRequestToken struct{}
 
 var FfiConverterRequestTokenINSTANCE = FfiConverterRequestToken{}
@@ -4053,20 +4024,10 @@ func (c FfiConverterRequestToken) Lower(value *RequestToken) unsafe.Pointer {
 	// because the pointer will be decremented immediately after this function returns,
 	// and someone will be left holding onto a non-locked pointer.
 	pointer := value.ffiObject.incrementPointer("*RequestToken")
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
 	defer value.ffiObject.decrementPointer()
 	return pointer
 }
 
-<<<<<<< HEAD
-func (c FfiConverterQuery) Write(writer io.Writer, value *Query) {
-	writeUint64(writer, uint64(uintptr(c.Lower(value))))
-}
-
-type FfiDestroyerQuery struct{}
-
-func (_ FfiDestroyerQuery) Destroy(value *Query) {
-=======
 func (c FfiConverterRequestToken) Write(writer io.Writer, value *RequestToken) {
 	writeUint64(writer, uint64(uintptr(c.Lower(value))))
 }
@@ -4074,7 +4035,6 @@ func (c FfiConverterRequestToken) Write(writer io.Writer, value *RequestToken) {
 type FfiDestroyerRequestToken struct{}
 
 func (_ FfiDestroyerRequestToken) Destroy(value *RequestToken) {
->>>>>>> 155224d (add all `BlobsClient` methods to `IrohNode`)
 	value.Destroy()
 }
 
