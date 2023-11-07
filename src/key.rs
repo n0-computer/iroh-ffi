@@ -66,3 +66,34 @@ impl PartialEq for PublicKey {
         self.0 == other.0
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_public_key() {
+        let key_str = String::from("ki6htfv2252cj2lhq3hxu4qfcfjtpjnukzonevigudzjpmmruxva");
+        let fmt_str = String::from("ki6htfv2252cj2lh");
+        let bytes = b"\x52\x3c\x79\x96\xba\xd7\x74\x24\xe9\x67\x86\xcf\x7a\x72\x05\x11\x53\x37\xa5\xb4\x56\x5c\xd2\x55\x06\xa0\xf2\x97\xb1\x91\xa5\xea";
+        //
+        // create key from string
+        let key = PublicKey::from_string(key_str.clone()).unwrap();
+        //
+        // test methods are as expected
+        assert_eq!(key_str, key.to_string());
+        assert_eq!(bytes.to_vec(), key.to_bytes());
+        assert_eq!(fmt_str, key.fmt_short());
+        //
+        // create key from bytes
+        let key_0 = Arc::new(PublicKey::from_bytes(bytes.to_vec()).unwrap());
+        //
+        // test methods are as expected
+        assert_eq!(key_str, key_0.to_string());
+        assert_eq!(bytes.to_vec(), key_0.to_bytes());
+        assert_eq!(fmt_str, key_0.fmt_short());
+        //
+        // test that the eq function works
+        assert!(key.equal(key_0.clone()));
+        assert!(key_0.equal(key.into()));
+    }
+}
