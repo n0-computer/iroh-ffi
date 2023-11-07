@@ -17,11 +17,6 @@ impl From<iroh::net::key::PublicKey> for PublicKey {
 }
 
 impl PublicKey {
-    /// Express the PublicKey as a base32 string
-    pub fn to_string(&self) -> String {
-        self.0.to_string()
-    }
-
     /// Returns true if the PublicKeys are equal
     pub fn equal(&self, other: Arc<PublicKey>) -> bool {
         *self == *other
@@ -64,6 +59,12 @@ impl PublicKey {
 impl PartialEq for PublicKey {
     fn eq(&self, other: &PublicKey) -> bool {
         self.0 == other.0
+    }
+}
+
+impl std::fmt::Display for PublicKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
