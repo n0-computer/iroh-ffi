@@ -1,8 +1,8 @@
 # tests that correspond to the `src/doc.rs` rust api
-from iroh import PublicKey, SocketAddr, PeerAddr, Ipv4Addr, Ipv6Addr, iroh, AuthorId, NamespaceId, DocTicket, GetFilter
+from iroh import PublicKey, SocketAddr, NodeAddr, Ipv4Addr, Ipv6Addr, iroh, AuthorId, NamespaceId, DocTicket, Query, SortBy, SortDirection
 import pytest
 
-def test_peer_addr():
+def test_node_addr():
     #
     # create a node_id
     key_str = "ki6htfv2252cj2lhq3hxu4qfcfjtpjnukzonevigudzjpmmruxva"
@@ -20,17 +20,17 @@ def test_peer_addr():
     # derp region
     derp_region = 1
     #
-    # create a PeerAddr
+    # create a NodeAddr
     expect_addrs = [ipv4, ipv6]
-    peer_addr = PeerAddr(node_id, derp_region, expect_addrs)
+    node_addr = NodeAddr(node_id, derp_region, expect_addrs)
     #
     # test we have returned the expected addresses
-    got_addrs = peer_addr.direct_addresses()
+    got_addrs = node_addr.direct_addresses()
     for (got, expect) in zip(got_addrs, expect_addrs):
         assert got.equal(expect)
         assert expect.equal(got)
     
-    assert derp_region == peer_addr.derp_region()
+    assert derp_region == node_addr.derp_region()
 
 def test_namespace_id():
     #
@@ -67,7 +67,7 @@ def test_author_id():
 def test_doc_ticket():
     #
     # create id from string
-    doc_ticket_str = "docljapn77ljjzwrtxh4b35xg57gfvcrvey6ofrulgzuddnohwc2qnqcicshr4znowxoqsosz4gz55hebirkm32lncwltjfkbva6kl3denf5iaqcbiajjeteswek4ambkabzpcfoajganyabbz2zplaaaaaaaaaagrjyvlqcjqdoaaioowl2ygi2likyov62rofk4asma3qacdtvs6wrg7f7hkxlg3mlrkx"
+    doc_ticket_str = "docaaqjjfgbzx2ry4zpaoujdppvqktgvfvpxgqubkghiialqovv7z4wosqbebpvjjp2tywajvg6unjza6dnugkalg4srmwkcucmhka7mgy4r3aa4aibayaeusjsjlcfoagavaa4xrcxaetag4aaq45mxvqaaaaaaaaadiu4kvybeybxaaehhlf5mdenfufmhk7nixcvoajganyabbz2zplgbno2vsnuvtkpyvlqcjqdoaaioowl22k3fc26qjx4ot6fk4"
     doc_ticket = DocTicket.from_string(doc_ticket_str)
     #
     # call to_string, ensure equal
@@ -80,32 +80,44 @@ def test_doc_ticket():
     assert doc_ticket.equal(doc_ticket_0)
     assert doc_ticket_0.equal(doc_ticket)
 
-def test_get_filter():
-    #
+def test_query():
     # all
-    all = GetFilter.all()
-    #
-    # key
-    key = GetFilter.key(b'key')
-    key_0 = GetFilter.key(b'key')
-    assert not all.equal(key)
-    assert key_0.equal(key)
-    #
-    # prefix
-    prefix = GetFilter.prefix(b'prefix')
-    prefix_0 = GetFilter.prefix(b'prefix')
-    assert not key.equal(prefix)
-    assert prefix.equal(prefix_0)
-    #
+    all = Query.all(SortBy.KEY_AUTHOR, SortDirection.ASC, 10, 10)
+    assert 10 == all.offset()
+    assert 10 == all.limit()
+
+    # single_latest_per_key
+    single_latest_per_key = Query.single_latest_per_key(SortDirection.DESC, None, None);
+    assert 0 == single_latest_per_key.offset()
+    assert None == single_latest_per_key.limit()
+
     # author
-    author_str = "mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q"
-    author = GetFilter.author(AuthorId.from_string(author_str))
-    author_0 = GetFilter.author(AuthorId.from_string(author_str))
-    assert not prefix.equal(author)
-    assert author.equal(author_0)
-    #
-    # author&prefix
-    author_prefix = GetFilter.author_prefix(AuthorId.from_string(author_str), b'prefix')
-    author_prefix_0 = GetFilter.author_prefix(AuthorId.from_string(author_str), b'prefix')
-    assert not author.equal(author_prefix)
-    assert author_prefix.equal(author_prefix_0)
+    author = Query.author(AuthorId.from_string("mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q"), SortBy.AUTHOR_KEY,
+        SortDirection.ASC,
+        100,
+        None,
+    )
+    assert 100 == author.offset()
+    assert None == author.limit()
+
+    # key_exact
+    key_exact = Query.key_exact(
+        b'key',
+        SortBy.KEY_AUTHOR,
+        SortDirection.DESC,
+        None,
+        100
+    )
+    assert 0 == key_exact.offset()
+    assert 100 == key_exact.limit()
+
+    # key_prefix
+    key_prefix = Query.key_prefix(
+        b'prefix',
+        SortBy.KEY_AUTHOR,
+        SortDirection.DESC,
+        None,
+        100,
+    );
+    assert 0 == key_prefix.offset()
+    assert 100 == key_prefix.limit()

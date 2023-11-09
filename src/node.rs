@@ -10,7 +10,7 @@ use iroh::{
 use quic_rpc::transport::flume::FlumeConnection;
 
 use crate::block_on;
-use crate::doc::{AuthorId, Doc, DocTicket, NamespaceId};
+use crate::doc::{AuthorId, CapabilityKind, Doc, DocTicket, NamespaceId};
 use crate::error::IrohError as Error;
 use crate::key::PublicKey;
 
@@ -223,7 +223,7 @@ impl IrohNode {
         })
     }
 
-    pub fn doc_list(&self) -> Result<Vec<Arc<NamespaceId>>, Error> {
+    pub fn doc_list(&self) -> Result<Vec<NamespaceAndCapability>, Error> {
         block_on(&self.async_runtime, async {
             let docs = self
                 .sync_client
@@ -231,7 +231,10 @@ impl IrohNode {
                 .list()
                 .await
                 .map_err(Error::doc)?
-                .map_ok(|n| Arc::new(n.into()))
+                .map_ok(|(namespace, capability)| NamespaceAndCapability {
+                    namespace: Arc::new(namespace.into()),
+                    capability,
+                })
                 .try_collect::<Vec<_>>()
                 .await
                 .map_err(Error::doc)?;
@@ -305,6 +308,11 @@ impl IrohNode {
             Ok(data.into())
         })
     }
+}
+
+pub struct NamespaceAndCapability {
+    pub namespace: Arc<NamespaceId>,
+    pub capability: CapabilityKind,
 }
 
 #[cfg(test)]

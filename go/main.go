@@ -59,7 +59,7 @@ func main() {
 	}
 	fmt.Printf("Inserted %s\n", hash.ToString())
 
-	entries, err := doc.GetMany(iroh.GetFilterAll())
+	entries, err := doc.GetMany(iroh.QueryAll(iroh.SortByKeyAuthor, iroh.SortDirectionAsc, nil, nil))
 	if err != nil {
 		panic(err)
 	}
@@ -85,8 +85,8 @@ func main() {
 	}
 
 	fmt.Printf("Listing all %d documents:\n", len(docs))
-	for _, doc_id := range docs {
-		fmt.Printf("\t%s\n", doc_id.ToString())
+	for _, doc_and_capability := range docs {
+		fmt.Printf("\t%s\n", doc_and_capability.Namespace.ToString())
 	}
 
 	fmt.Printf("Goodbye!\n")

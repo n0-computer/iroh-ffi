@@ -610,8 +610,8 @@ public func FfiConverterTypeDirectAddrInfo_lower(_ value: DirectAddrInfo) -> Uns
 public protocol DocProtocol {
     func close() throws
     func del(authorId: AuthorId, prefix: Data) throws -> UInt64
-    func getMany(filter: GetFilter) throws -> [Entry]
-    func getOne(authorId: AuthorId, key: Data) throws -> Entry?
+    func getMany(query: Query) throws -> [Entry]
+    func getOne(query: Query) throws -> Entry?
     func id() -> NamespaceId
     func leave() throws
     func readToBytes(entry: Entry) throws -> Data
@@ -619,7 +619,7 @@ public protocol DocProtocol {
     func setHash(author: AuthorId, key: Data, hash: Hash, size: UInt64) throws
     func share(mode: ShareMode) throws -> DocTicket
     func size(entry: Entry) throws -> UInt64
-    func startSync(peers: [PeerAddr]) throws
+    func startSync(peers: [NodeAddr]) throws
     func status() throws -> OpenState
     func subscribe(cb: SubscribeCallback) throws
 }
@@ -655,21 +655,20 @@ public class Doc: DocProtocol {
         )
     }
 
-    public func getMany(filter: GetFilter) throws -> [Entry] {
+    public func getMany(query: Query) throws -> [Entry] {
         return try FfiConverterSequenceTypeEntry.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_doc_get_many(self.pointer,
-                                                   FfiConverterTypeGetFilter.lower(filter), $0)
+                                                   FfiConverterTypeQuery.lower(query), $0)
             }
         )
     }
 
-    public func getOne(authorId: AuthorId, key: Data) throws -> Entry? {
+    public func getOne(query: Query) throws -> Entry? {
         return try FfiConverterOptionTypeEntry.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_doc_get_one(self.pointer,
-                                                  FfiConverterTypeAuthorId.lower(authorId),
-                                                  FfiConverterData.lower(key), $0)
+                                                  FfiConverterTypeQuery.lower(query), $0)
             }
         )
     }
@@ -739,11 +738,11 @@ public class Doc: DocProtocol {
         )
     }
 
-    public func startSync(peers: [PeerAddr]) throws {
+    public func startSync(peers: [NodeAddr]) throws {
         try
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_doc_start_sync(self.pointer,
-                                                     FfiConverterSequenceTypePeerAddr.lower(peers), $0)
+                                                     FfiConverterSequenceTypeNodeAddr.lower(peers), $0)
             }
     }
 
@@ -971,112 +970,6 @@ public func FfiConverterTypeEntry_lift(_ pointer: UnsafeMutableRawPointer) throw
 
 public func FfiConverterTypeEntry_lower(_ value: Entry) -> UnsafeMutableRawPointer {
     return FfiConverterTypeEntry.lower(value)
-}
-
-public protocol GetFilterProtocol {
-    func equal(other: GetFilter) -> Bool
-}
-
-public class GetFilter: GetFilterProtocol {
-    fileprivate let pointer: UnsafeMutableRawPointer
-
-    // TODO: We'd like this to be `private` but for Swifty reasons,
-    // we can't implement `FfiConverter` without making this `required` and we can't
-    // make it `required` without making it `public`.
-    required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
-        self.pointer = pointer
-    }
-
-    deinit {
-        try! rustCall { uniffi_iroh_fn_free_getfilter(pointer, $0) }
-    }
-
-    public static func all() -> GetFilter {
-        return GetFilter(unsafeFromRawPointer: try! rustCall {
-            uniffi_iroh_fn_constructor_getfilter_all($0)
-        })
-    }
-
-    public static func author(author: AuthorId) -> GetFilter {
-        return GetFilter(unsafeFromRawPointer: try! rustCall {
-            uniffi_iroh_fn_constructor_getfilter_author(
-                FfiConverterTypeAuthorId.lower(author), $0
-            )
-        })
-    }
-
-    public static func authorPrefix(author: AuthorId, prefix: Data) -> GetFilter {
-        return GetFilter(unsafeFromRawPointer: try! rustCall {
-            uniffi_iroh_fn_constructor_getfilter_author_prefix(
-                FfiConverterTypeAuthorId.lower(author),
-                FfiConverterData.lower(prefix), $0
-            )
-        })
-    }
-
-    public static func key(key: Data) -> GetFilter {
-        return GetFilter(unsafeFromRawPointer: try! rustCall {
-            uniffi_iroh_fn_constructor_getfilter_key(
-                FfiConverterData.lower(key), $0
-            )
-        })
-    }
-
-    public static func prefix(prefix: Data) -> GetFilter {
-        return GetFilter(unsafeFromRawPointer: try! rustCall {
-            uniffi_iroh_fn_constructor_getfilter_prefix(
-                FfiConverterData.lower(prefix), $0
-            )
-        })
-    }
-
-    public func equal(other: GetFilter) -> Bool {
-        return try! FfiConverterBool.lift(
-            try!
-                rustCall {
-                    uniffi_iroh_fn_method_getfilter_equal(self.pointer,
-                                                          FfiConverterTypeGetFilter.lower(other), $0)
-                }
-        )
-    }
-}
-
-public struct FfiConverterTypeGetFilter: FfiConverter {
-    typealias FfiType = UnsafeMutableRawPointer
-    typealias SwiftType = GetFilter
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> GetFilter {
-        let v: UInt64 = try readInt(&buf)
-        // The Rust code won't compile if a pointer won't fit in a UInt64.
-        // We have to go via `UInt` because that's the thing that's the size of a pointer.
-        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if ptr == nil {
-            throw UniffiInternalError.unexpectedNullPointer
-        }
-        return try lift(ptr!)
-    }
-
-    public static func write(_ value: GetFilter, into buf: inout [UInt8]) {
-        // This fiddling is because `Int` is the thing that's the same size as a pointer.
-        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
-        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
-    }
-
-    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> GetFilter {
-        return GetFilter(unsafeFromRawPointer: pointer)
-    }
-
-    public static func lower(_ value: GetFilter) -> UnsafeMutableRawPointer {
-        return value.pointer
-    }
-}
-
-public func FfiConverterTypeGetFilter_lift(_ pointer: UnsafeMutableRawPointer) throws -> GetFilter {
-    return try FfiConverterTypeGetFilter.lift(pointer)
-}
-
-public func FfiConverterTypeGetFilter_lower(_ value: GetFilter) -> UnsafeMutableRawPointer {
-    return FfiConverterTypeGetFilter.lower(value)
 }
 
 public protocol HashProtocol {
@@ -1379,7 +1272,7 @@ public protocol IrohNodeProtocol {
     func connectionInfo(nodeId: PublicKey) throws -> ConnectionInfo?
     func connections() throws -> [ConnectionInfo]
     func docJoin(ticket: DocTicket) throws -> Doc
-    func docList() throws -> [NamespaceId]
+    func docList() throws -> [NamespaceAndCapability]
     func docNew() throws -> Doc
     func nodeId() -> String
     func stats() throws -> [String: CounterStats]
@@ -1466,8 +1359,8 @@ public class IrohNode: IrohNodeProtocol {
         )
     }
 
-    public func docList() throws -> [NamespaceId] {
-        return try FfiConverterSequenceTypeNamespaceId.lift(
+    public func docList() throws -> [NamespaceAndCapability] {
+        return try FfiConverterSequenceTypeNamespaceAndCapability.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_irohnode_doc_list(self.pointer, $0)
             }
@@ -1749,13 +1642,13 @@ public func FfiConverterTypeNamespaceId_lower(_ value: NamespaceId) -> UnsafeMut
     return FfiConverterTypeNamespaceId.lower(value)
 }
 
-public protocol PeerAddrProtocol {
+public protocol NodeAddrProtocol {
     func derpRegion() -> UInt16?
     func directAddresses() -> [SocketAddr]
-    func equal(other: PeerAddr) -> Bool
+    func equal(other: NodeAddr) -> Bool
 }
 
-public class PeerAddr: PeerAddrProtocol {
+public class NodeAddr: NodeAddrProtocol {
     fileprivate let pointer: UnsafeMutableRawPointer
 
     // TODO: We'd like this to be `private` but for Swifty reasons,
@@ -1767,7 +1660,7 @@ public class PeerAddr: PeerAddrProtocol {
 
     public convenience init(nodeId: PublicKey, regionId: UInt16?, addresses: [SocketAddr]) {
         self.init(unsafeFromRawPointer: try! rustCall {
-            uniffi_iroh_fn_constructor_peeraddr_new(
+            uniffi_iroh_fn_constructor_nodeaddr_new(
                 FfiConverterTypePublicKey.lower(nodeId),
                 FfiConverterOptionUInt16.lower(regionId),
                 FfiConverterSequenceTypeSocketAddr.lower(addresses), $0
@@ -1776,14 +1669,14 @@ public class PeerAddr: PeerAddrProtocol {
     }
 
     deinit {
-        try! rustCall { uniffi_iroh_fn_free_peeraddr(pointer, $0) }
+        try! rustCall { uniffi_iroh_fn_free_nodeaddr(pointer, $0) }
     }
 
     public func derpRegion() -> UInt16? {
         return try! FfiConverterOptionUInt16.lift(
             try!
                 rustCall {
-                    uniffi_iroh_fn_method_peeraddr_derp_region(self.pointer, $0)
+                    uniffi_iroh_fn_method_nodeaddr_derp_region(self.pointer, $0)
                 }
         )
     }
@@ -1792,27 +1685,27 @@ public class PeerAddr: PeerAddrProtocol {
         return try! FfiConverterSequenceTypeSocketAddr.lift(
             try!
                 rustCall {
-                    uniffi_iroh_fn_method_peeraddr_direct_addresses(self.pointer, $0)
+                    uniffi_iroh_fn_method_nodeaddr_direct_addresses(self.pointer, $0)
                 }
         )
     }
 
-    public func equal(other: PeerAddr) -> Bool {
+    public func equal(other: NodeAddr) -> Bool {
         return try! FfiConverterBool.lift(
             try!
                 rustCall {
-                    uniffi_iroh_fn_method_peeraddr_equal(self.pointer,
-                                                         FfiConverterTypePeerAddr.lower(other), $0)
+                    uniffi_iroh_fn_method_nodeaddr_equal(self.pointer,
+                                                         FfiConverterTypeNodeAddr.lower(other), $0)
                 }
         )
     }
 }
 
-public struct FfiConverterTypePeerAddr: FfiConverter {
+public struct FfiConverterTypeNodeAddr: FfiConverter {
     typealias FfiType = UnsafeMutableRawPointer
-    typealias SwiftType = PeerAddr
+    typealias SwiftType = NodeAddr
 
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PeerAddr {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> NodeAddr {
         let v: UInt64 = try readInt(&buf)
         // The Rust code won't compile if a pointer won't fit in a UInt64.
         // We have to go via `UInt` because that's the thing that's the size of a pointer.
@@ -1823,27 +1716,27 @@ public struct FfiConverterTypePeerAddr: FfiConverter {
         return try lift(ptr!)
     }
 
-    public static func write(_ value: PeerAddr, into buf: inout [UInt8]) {
+    public static func write(_ value: NodeAddr, into buf: inout [UInt8]) {
         // This fiddling is because `Int` is the thing that's the same size as a pointer.
         // The Rust code won't compile if a pointer won't fit in a `UInt64`.
         writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
     }
 
-    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> PeerAddr {
-        return PeerAddr(unsafeFromRawPointer: pointer)
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> NodeAddr {
+        return NodeAddr(unsafeFromRawPointer: pointer)
     }
 
-    public static func lower(_ value: PeerAddr) -> UnsafeMutableRawPointer {
+    public static func lower(_ value: NodeAddr) -> UnsafeMutableRawPointer {
         return value.pointer
     }
 }
 
-public func FfiConverterTypePeerAddr_lift(_ pointer: UnsafeMutableRawPointer) throws -> PeerAddr {
-    return try FfiConverterTypePeerAddr.lift(pointer)
+public func FfiConverterTypeNodeAddr_lift(_ pointer: UnsafeMutableRawPointer) throws -> NodeAddr {
+    return try FfiConverterTypeNodeAddr.lift(pointer)
 }
 
-public func FfiConverterTypePeerAddr_lower(_ value: PeerAddr) -> UnsafeMutableRawPointer {
-    return FfiConverterTypePeerAddr.lower(value)
+public func FfiConverterTypeNodeAddr_lower(_ value: NodeAddr) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeNodeAddr.lower(value)
 }
 
 public protocol PublicKeyProtocol {
@@ -1957,6 +1850,139 @@ public func FfiConverterTypePublicKey_lift(_ pointer: UnsafeMutableRawPointer) t
 
 public func FfiConverterTypePublicKey_lower(_ value: PublicKey) -> UnsafeMutableRawPointer {
     return FfiConverterTypePublicKey.lower(value)
+}
+
+public protocol QueryProtocol {
+    func limit() -> UInt64?
+    func offset() -> UInt64
+}
+
+public class Query: QueryProtocol {
+    fileprivate let pointer: UnsafeMutableRawPointer
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    deinit {
+        try! rustCall { uniffi_iroh_fn_free_query(pointer, $0) }
+    }
+
+    public static func all(sortBy: SortBy, direction: SortDirection, offset: UInt64?, limit: UInt64?) -> Query {
+        return Query(unsafeFromRawPointer: try! rustCall {
+            uniffi_iroh_fn_constructor_query_all(
+                FfiConverterTypeSortBy.lower(sortBy),
+                FfiConverterTypeSortDirection.lower(direction),
+                FfiConverterOptionUInt64.lower(offset),
+                FfiConverterOptionUInt64.lower(limit), $0
+            )
+        })
+    }
+
+    public static func author(author: AuthorId, sortBy: SortBy, direction: SortDirection, offset: UInt64?, limit: UInt64?) -> Query {
+        return Query(unsafeFromRawPointer: try! rustCall {
+            uniffi_iroh_fn_constructor_query_author(
+                FfiConverterTypeAuthorId.lower(author),
+                FfiConverterTypeSortBy.lower(sortBy),
+                FfiConverterTypeSortDirection.lower(direction),
+                FfiConverterOptionUInt64.lower(offset),
+                FfiConverterOptionUInt64.lower(limit), $0
+            )
+        })
+    }
+
+    public static func keyExact(key: Data, sortBy: SortBy, direction: SortDirection, offset: UInt64?, limit: UInt64?) -> Query {
+        return Query(unsafeFromRawPointer: try! rustCall {
+            uniffi_iroh_fn_constructor_query_key_exact(
+                FfiConverterData.lower(key),
+                FfiConverterTypeSortBy.lower(sortBy),
+                FfiConverterTypeSortDirection.lower(direction),
+                FfiConverterOptionUInt64.lower(offset),
+                FfiConverterOptionUInt64.lower(limit), $0
+            )
+        })
+    }
+
+    public static func keyPrefix(prefix: Data, sortBy: SortBy, direction: SortDirection, offset: UInt64?, limit: UInt64?) -> Query {
+        return Query(unsafeFromRawPointer: try! rustCall {
+            uniffi_iroh_fn_constructor_query_key_prefix(
+                FfiConverterData.lower(prefix),
+                FfiConverterTypeSortBy.lower(sortBy),
+                FfiConverterTypeSortDirection.lower(direction),
+                FfiConverterOptionUInt64.lower(offset),
+                FfiConverterOptionUInt64.lower(limit), $0
+            )
+        })
+    }
+
+    public static func singleLatestPerKey(direction: SortDirection, offset: UInt64?, limit: UInt64?) -> Query {
+        return Query(unsafeFromRawPointer: try! rustCall {
+            uniffi_iroh_fn_constructor_query_single_latest_per_key(
+                FfiConverterTypeSortDirection.lower(direction),
+                FfiConverterOptionUInt64.lower(offset),
+                FfiConverterOptionUInt64.lower(limit), $0
+            )
+        })
+    }
+
+    public func limit() -> UInt64? {
+        return try! FfiConverterOptionUInt64.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_query_limit(self.pointer, $0)
+                }
+        )
+    }
+
+    public func offset() -> UInt64 {
+        return try! FfiConverterUInt64.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_query_offset(self.pointer, $0)
+                }
+        )
+    }
+}
+
+public struct FfiConverterTypeQuery: FfiConverter {
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = Query
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Query {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: Query, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> Query {
+        return Query(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: Query) -> UnsafeMutableRawPointer {
+        return value.pointer
+    }
+}
+
+public func FfiConverterTypeQuery_lift(_ pointer: UnsafeMutableRawPointer) throws -> Query {
+    return try FfiConverterTypeQuery.lift(pointer)
+}
+
+public func FfiConverterTypeQuery_lower(_ value: Query) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeQuery.lower(value)
 }
 
 public protocol SocketAddrProtocol {
@@ -2441,6 +2467,40 @@ public func FfiConverterTypeInsertRemoteEvent_lower(_ value: InsertRemoteEvent) 
     return FfiConverterTypeInsertRemoteEvent.lower(value)
 }
 
+public struct NamespaceAndCapability {
+    public var namespace: NamespaceId
+    public var capability: CapabilityKind
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(namespace: NamespaceId, capability: CapabilityKind) {
+        self.namespace = namespace
+        self.capability = capability
+    }
+}
+
+public struct FfiConverterTypeNamespaceAndCapability: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> NamespaceAndCapability {
+        return try NamespaceAndCapability(
+            namespace: FfiConverterTypeNamespaceId.read(from: &buf),
+            capability: FfiConverterTypeCapabilityKind.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: NamespaceAndCapability, into buf: inout [UInt8]) {
+        FfiConverterTypeNamespaceId.write(value.namespace, into: &buf)
+        FfiConverterTypeCapabilityKind.write(value.capability, into: &buf)
+    }
+}
+
+public func FfiConverterTypeNamespaceAndCapability_lift(_ buf: RustBuffer) throws -> NamespaceAndCapability {
+    return try FfiConverterTypeNamespaceAndCapability.lift(buf)
+}
+
+public func FfiConverterTypeNamespaceAndCapability_lower(_ value: NamespaceAndCapability) -> RustBuffer {
+    return FfiConverterTypeNamespaceAndCapability.lower(value)
+}
+
 public struct OpenState {
     public var sync: Bool
     public var subscribers: UInt64
@@ -2545,6 +2605,48 @@ public func FfiConverterTypeSyncEvent_lift(_ buf: RustBuffer) throws -> SyncEven
 public func FfiConverterTypeSyncEvent_lower(_ value: SyncEvent) -> RustBuffer {
     return FfiConverterTypeSyncEvent.lower(value)
 }
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+public enum CapabilityKind {
+    case write
+    case read
+}
+
+public struct FfiConverterTypeCapabilityKind: FfiConverterRustBuffer {
+    typealias SwiftType = CapabilityKind
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CapabilityKind {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        case 1: return .write
+
+        case 2: return .read
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: CapabilityKind, into buf: inout [UInt8]) {
+        switch value {
+        case .write:
+            writeInt(&buf, Int32(1))
+
+        case .read:
+            writeInt(&buf, Int32(2))
+        }
+    }
+}
+
+public func FfiConverterTypeCapabilityKind_lift(_ buf: RustBuffer) throws -> CapabilityKind {
+    return try FfiConverterTypeCapabilityKind.lift(buf)
+}
+
+public func FfiConverterTypeCapabilityKind_lower(_ value: CapabilityKind) -> RustBuffer {
+    return FfiConverterTypeCapabilityKind.lower(value)
+}
+
+extension CapabilityKind: Equatable, Hashable {}
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
@@ -2676,7 +2778,7 @@ public enum IrohError {
     case SocketAddrV4(description: String)
     case SocketAddrV6(description: String)
     case PublicKey(description: String)
-    case PeerAddr(description: String)
+    case NodeAddr(description: String)
 
     fileprivate static func uniffiErrorHandler(_ error: RustBuffer) throws -> Error {
         return try FfiConverterTypeIrohError.lift(error)
@@ -2731,7 +2833,7 @@ public struct FfiConverterTypeIrohError: FfiConverterRustBuffer {
         case 14: return try .PublicKey(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 15: return try .PeerAddr(
+        case 15: return try .NodeAddr(
                 description: FfiConverterString.read(from: &buf)
             )
 
@@ -2797,7 +2899,7 @@ public struct FfiConverterTypeIrohError: FfiConverterRustBuffer {
             writeInt(&buf, Int32(14))
             FfiConverterString.write(description, into: &buf)
 
-        case let .PeerAddr(description):
+        case let .NodeAddr(description):
             writeInt(&buf, Int32(15))
             FfiConverterString.write(description, into: &buf)
         }
@@ -3066,6 +3168,90 @@ public func FfiConverterTypeSocketAddrType_lower(_ value: SocketAddrType) -> Rus
 
 extension SocketAddrType: Equatable, Hashable {}
 
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+public enum SortBy {
+    case keyAuthor
+    case authorKey
+}
+
+public struct FfiConverterTypeSortBy: FfiConverterRustBuffer {
+    typealias SwiftType = SortBy
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SortBy {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        case 1: return .keyAuthor
+
+        case 2: return .authorKey
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: SortBy, into buf: inout [UInt8]) {
+        switch value {
+        case .keyAuthor:
+            writeInt(&buf, Int32(1))
+
+        case .authorKey:
+            writeInt(&buf, Int32(2))
+        }
+    }
+}
+
+public func FfiConverterTypeSortBy_lift(_ buf: RustBuffer) throws -> SortBy {
+    return try FfiConverterTypeSortBy.lift(buf)
+}
+
+public func FfiConverterTypeSortBy_lower(_ value: SortBy) -> RustBuffer {
+    return FfiConverterTypeSortBy.lower(value)
+}
+
+extension SortBy: Equatable, Hashable {}
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+public enum SortDirection {
+    case asc
+    case desc
+}
+
+public struct FfiConverterTypeSortDirection: FfiConverterRustBuffer {
+    typealias SwiftType = SortDirection
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SortDirection {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        case 1: return .asc
+
+        case 2: return .desc
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: SortDirection, into buf: inout [UInt8]) {
+        switch value {
+        case .asc:
+            writeInt(&buf, Int32(1))
+
+        case .desc:
+            writeInt(&buf, Int32(2))
+        }
+    }
+}
+
+public func FfiConverterTypeSortDirection_lift(_ buf: RustBuffer) throws -> SortDirection {
+    return try FfiConverterTypeSortDirection.lift(buf)
+}
+
+public func FfiConverterTypeSortDirection_lower(_ value: SortDirection) -> RustBuffer {
+    return FfiConverterTypeSortDirection.lower(value)
+}
+
+extension SortDirection: Equatable, Hashable {}
+
 private extension NSLock {
     func withLock<T>(f: () throws -> T) rethrows -> T {
         lock()
@@ -3253,6 +3439,27 @@ private struct FfiConverterOptionUInt16: FfiConverterRustBuffer {
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterUInt16.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+private struct FfiConverterOptionUInt64: FfiConverterRustBuffer {
+    typealias SwiftType = UInt64?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterUInt64.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterUInt64.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
@@ -3474,45 +3681,23 @@ private struct FfiConverterSequenceTypeHash: FfiConverterRustBuffer {
     }
 }
 
-private struct FfiConverterSequenceTypeNamespaceId: FfiConverterRustBuffer {
-    typealias SwiftType = [NamespaceId]
+private struct FfiConverterSequenceTypeNodeAddr: FfiConverterRustBuffer {
+    typealias SwiftType = [NodeAddr]
 
-    public static func write(_ value: [NamespaceId], into buf: inout [UInt8]) {
+    public static func write(_ value: [NodeAddr], into buf: inout [UInt8]) {
         let len = Int32(value.count)
         writeInt(&buf, len)
         for item in value {
-            FfiConverterTypeNamespaceId.write(item, into: &buf)
+            FfiConverterTypeNodeAddr.write(item, into: &buf)
         }
     }
 
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [NamespaceId] {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [NodeAddr] {
         let len: Int32 = try readInt(&buf)
-        var seq = [NamespaceId]()
+        var seq = [NodeAddr]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            try seq.append(FfiConverterTypeNamespaceId.read(from: &buf))
-        }
-        return seq
-    }
-}
-
-private struct FfiConverterSequenceTypePeerAddr: FfiConverterRustBuffer {
-    typealias SwiftType = [PeerAddr]
-
-    public static func write(_ value: [PeerAddr], into buf: inout [UInt8]) {
-        let len = Int32(value.count)
-        writeInt(&buf, len)
-        for item in value {
-            FfiConverterTypePeerAddr.write(item, into: &buf)
-        }
-    }
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [PeerAddr] {
-        let len: Int32 = try readInt(&buf)
-        var seq = [PeerAddr]()
-        seq.reserveCapacity(Int(len))
-        for _ in 0 ..< len {
-            try seq.append(FfiConverterTypePeerAddr.read(from: &buf))
+            try seq.append(FfiConverterTypeNodeAddr.read(from: &buf))
         }
         return seq
     }
@@ -3557,6 +3742,28 @@ private struct FfiConverterSequenceTypeConnectionInfo: FfiConverterRustBuffer {
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
             try seq.append(FfiConverterTypeConnectionInfo.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+private struct FfiConverterSequenceTypeNamespaceAndCapability: FfiConverterRustBuffer {
+    typealias SwiftType = [NamespaceAndCapability]
+
+    public static func write(_ value: [NamespaceAndCapability], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeNamespaceAndCapability.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [NamespaceAndCapability] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [NamespaceAndCapability]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            try seq.append(FfiConverterTypeNamespaceAndCapability.read(from: &buf))
         }
         return seq
     }
@@ -3633,10 +3840,10 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_doc_del() != 22285 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_get_many() != 26710 {
+    if uniffi_iroh_checksum_method_doc_get_many() != 58857 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_get_one() != 19510 {
+    if uniffi_iroh_checksum_method_doc_get_one() != 25151 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_doc_id() != 34677 {
@@ -3660,7 +3867,7 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_doc_size() != 27875 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_start_sync() != 46050 {
+    if uniffi_iroh_checksum_method_doc_start_sync() != 54158 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_doc_status() != 59550 {
@@ -3682,9 +3889,6 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_entry_namespace() != 41306 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_checksum_method_getfilter_equal() != 31562 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_hash_to_bytes() != 29465 {
@@ -3732,7 +3936,7 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_irohnode_doc_join() != 30773 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_doc_list() != 38395 {
+    if uniffi_iroh_checksum_method_irohnode_doc_list() != 44252 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_doc_new() != 34009 {
@@ -3771,13 +3975,13 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_namespaceid_to_string() != 63715 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_peeraddr_derp_region() != 55885 {
+    if uniffi_iroh_checksum_method_nodeaddr_derp_region() != 62080 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_peeraddr_direct_addresses() != 36736 {
+    if uniffi_iroh_checksum_method_nodeaddr_direct_addresses() != 20857 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_peeraddr_equal() != 21646 {
+    if uniffi_iroh_checksum_method_nodeaddr_equal() != 45841 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_publickey_equal() != 10645 {
@@ -3790,6 +3994,12 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_publickey_to_string() != 48998 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_query_limit() != 6405 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_query_offset() != 5309 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_socketaddr_as_ipv4() != 50860 {
@@ -3834,21 +4044,6 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_constructor_docticket_from_string() != 40262 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_getfilter_all() != 21151 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_checksum_constructor_getfilter_author() != 58104 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_checksum_constructor_getfilter_author_prefix() != 65233 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_checksum_constructor_getfilter_key() != 4606 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_checksum_constructor_getfilter_prefix() != 44619 {
-        return InitializationResult.apiChecksumMismatch
-    }
     if uniffi_iroh_checksum_constructor_ipv4addr_from_string() != 60777 {
         return InitializationResult.apiChecksumMismatch
     }
@@ -3867,13 +4062,28 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_constructor_namespaceid_from_string() != 47535 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_peeraddr_new() != 7518 {
+    if uniffi_iroh_checksum_constructor_nodeaddr_new() != 42954 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_constructor_publickey_from_bytes() != 65104 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_constructor_publickey_from_string() != 18975 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_constructor_query_all() != 7812 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_constructor_query_author() != 3352 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_constructor_query_key_exact() != 23311 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_constructor_query_key_prefix() != 13415 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_constructor_query_single_latest_per_key() != 35940 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_constructor_socketaddr_from_ipv4() != 48670 {
