@@ -35,9 +35,25 @@ interface IrohNode {
   ConnectionInfo? connection_info(PublicKey node_id);
 
   [Throws=IrohError]
-  sequence<Hash> blob_list_blobs();
+  sequence<Hash> blobs_list();
   [Throws=IrohError]
-  bytes blob_get(Hash hash);
+  u64 blobs_size(Hash hash);
+  [Throws=IrohError]
+  bytes blobs_read_to_bytes(Hash hash);
+  [Throws=IrohError]
+  void blobs_add_from_path(string path, boolean in_place, SetTagOption tag, WrapOption wrap, AddCallback cb);
+  [Throws=IrohError]
+  void blobs_write_to_path(Hash hash, string path);
+  [Throws=IrohError]
+  BlobAddOutcome blobs_add_bytes(bytes bytes, SetTagOption tag);
+  [Throws=IrohError]
+  void blobs_download(BlobDownloadRequest req, DownloadCallback cb);
+  [Throws=IrohError]
+  sequence<BlobListIncompleteResponse> blobs_list_incomplete();
+  [Throws=IrohError]
+  sequence<BlobListCollectionsResponse> blobs_list_collections();
+  [Throws=IrohError]
+  void blobs_delete_blob(Hash hash);
 };
 
 interface Doc {
@@ -136,8 +152,18 @@ interface Entry {
 };
 
 interface Hash {
+  constructor(bytes buf);
   string to_string();
+  boolean equal(Hash other);
   bytes to_bytes();
+  [Name=from_bytes, Throws=IrohError]
+  constructor(bytes bytes);
+  [Name=from_string, Throws=IrohError]
+  constructor(string str);
+  bytes as_cid_bytes();
+  [Name=from_cid_bytes, Throws=IrohError]
+  constructor(bytes bytes);
+  string to_hex();
 };
 
 interface DocTicket {
@@ -296,6 +322,204 @@ interface PublicKey {
   string fmt_short();
 };
 
+interface Tag {
+  string to_string();
+  boolean equal(Tag other);
+  bytes to_bytes();
+  [Name=from_string]
+  constructor(string s); 
+  [Name=from_bytes]
+  constructor(bytes bytes);
+};
+
+interface SetTagOption {
+  [Name=auto]
+  constructor();
+  [Name=named]
+  constructor(Tag tag);
+};
+
+interface WrapOption {
+  [Name=no_wrap]
+  constructor();
+  [Name=wrap]
+  constructor(string? name);
+};
+
+enum BlobFormat {
+  "Raw",
+  "HashSeq"
+};
+
+enum AddProgressType {
+  "Found",
+  "Progress",
+  "Done",
+  "AllDone",
+  "Abort"
+};
+
+dictionary AddProgressFound {
+  u64 id;
+  string name;
+  u64 size;
+};
+
+dictionary AddProgressProgress {
+  u64 id;
+  u64 offset;
+};
+
+dictionary AddProgressDone {
+  u64 id;
+  Hash hash;
+};
+
+dictionary AddProgressAllDone {
+  Hash hash;
+  BlobFormat format;
+  Tag tag;
+};
+
+dictionary AddProgressAbort {
+  string error;
+};
+
+interface AddProgress {
+  AddProgressType type();
+  AddProgressFound as_found();
+  AddProgressProgress as_progress();
+  AddProgressDone as_done();
+  AddProgressAllDone as_all_done();
+  AddProgressAbort as_abort();
+};
+
+callback interface AddCallback {
+  [Throws=IrohError]
+  void progress(AddProgress progress);
+};
+
+dictionary BlobAddOutcome {
+  Hash hash;
+  BlobFormat format;
+  u64 size;
+  Tag tag;
+};
+
+interface RequestToken {
+  [Throws=IrohError]
+  constructor(bytes bytes); 
+  [Name=generate]
+  constructor();
+  bytes as_bytes();
+  [Name=from_string, Throws=IrohError]
+  constructor(string str);
+  boolean equal(RequestToken other);
+};
+
+interface DownloadLocation {
+  [Name=internal]
+  constructor();
+  [Name=external]
+  constructor(string path, boolean in_place);
+};
+
+interface BlobDownloadRequest {
+  constructor(Hash hash, BlobFormat format, NodeAddr node, SetTagOption tag, DownloadLocation out, RequestToken? token);
+};
+
+callback interface DownloadCallback {
+  [Throws=IrohError]
+  void progress(DownloadProgress progress);
+};
+
+interface DownloadProgress {
+  DownloadProgressType type();
+  DownloadProgressFound as_found();
+  DownloadProgressFoundHashSeq as_found_hash_seq();
+  DownloadProgressProgress as_progress();
+  DownloadProgressDone as_done();
+  DownloadProgressNetworkDone as_network_done();
+  DownloadProgressExport as_export();
+  DownloadProgressExportProgress as_export_progress();
+  DownloadProgressAbort as_abort();
+};
+
+dictionary DownloadProgressFound {
+  u64 id;
+  u64 child;
+  Hash hash;
+  u64 size;
+};
+
+dictionary DownloadProgressFoundHashSeq {
+  u64 children;
+  Hash hash;
+};
+
+dictionary DownloadProgressProgress {
+  u64 id;
+  u64 offset;
+};
+
+dictionary DownloadProgressDone {
+  u64 id;
+};
+
+dictionary DownloadProgressNetworkDone {
+  u64 bytes_written;
+  u64 bytes_read;
+  duration elapsed;
+};
+
+dictionary DownloadProgressExport {
+  u64 id;
+  Hash hash;
+  u64 size;
+  string target;
+};
+
+dictionary DownloadProgressExportProgress {
+  u64 id;
+  u64 offset;
+};
+
+dictionary DownloadProgressAbort {
+  string error;
+};
+
+enum DownloadProgressType {
+  "Connected",
+  "Found",
+  "FoundHashSeq",
+  "Progress",
+  "Done",
+  "NetworkDone",
+  "Export",
+  "ExportProgress",
+  "AllDone",
+  "Abort",
+};
+
+dictionary BlobListResponse {
+  string path;
+  Hash hash;
+  u64 size;
+};
+
+dictionary BlobListIncompleteResponse {
+  u64 size;
+  u64 expected_size;
+  Hash hash;
+};
+
+dictionary BlobListCollectionsResponse {
+  Tag tag;
+  Hash hash;
+  u64? total_blobs_count;
+  u64? total_blobs_size;
+};
+
 [Error]
 interface IrohError {
   Runtime(string description);
@@ -306,11 +530,13 @@ interface IrohError {
   DocTicket(string description);
   Uniffi(string description);
   Connection(string description);
-  Blob(string description);
+  Blobs(string description);
   Ipv4Addr(string description);
   Ipv6Addr(string description);
   SocketAddrV4(string description);
   SocketAddrV6(string description);
   PublicKey(string description);
   NodeAddr(string description);
+  Hash(string description);
+  RequestToken(string description);
 };

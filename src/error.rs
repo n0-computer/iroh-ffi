@@ -19,8 +19,8 @@ pub enum IrohError {
     Uniffi { description: String },
     #[error("connection: {description}")]
     Connection { description: String },
-    #[error("blob: {description}")]
-    Blob { description: String },
+    #[error("blobs: {description}")]
+    Blobs { description: String },
     #[error("Ipv4Addr error: {description}")]
     Ipv4Addr { description: String },
     #[error("SocketAddrV4 error: {description}")]
@@ -33,6 +33,10 @@ pub enum IrohError {
     PublicKey { description: String },
     #[error("NodeAddr error: {description}")]
     NodeAddr { description: String },
+    #[error("Hash error: {description}")]
+    Hash { description: String },
+    #[error("RequestToken error: {description}")]
+    RequestToken { description: String },
 }
 
 impl IrohError {
@@ -78,8 +82,8 @@ impl IrohError {
         }
     }
 
-    pub fn blob(error: impl Display) -> Self {
-        IrohError::Blob {
+    pub fn blobs(error: impl Display) -> Self {
+        IrohError::Blobs {
             description: error.to_string(),
         }
     }
@@ -116,6 +120,18 @@ impl IrohError {
 
     pub fn node_addr(error: impl Display) -> Self {
         IrohError::NodeAddr {
+            description: error.to_string(),
+        }
+    }
+
+    pub fn hash(error: impl Display) -> Self {
+        IrohError::Hash {
+            description: error.to_string(),
+        }
+    }
+
+    pub fn request_token(error: impl Display) -> Self {
+        IrohError::RequestToken {
             description: error.to_string(),
         }
     }

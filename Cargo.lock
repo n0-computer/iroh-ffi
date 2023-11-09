@@ -1705,6 +1705,7 @@ dependencies = [
  "num_cpus",
  "quic-rpc",
  "quinn",
+ "rand",
  "range-collections",
  "tempfile",
  "thiserror",
