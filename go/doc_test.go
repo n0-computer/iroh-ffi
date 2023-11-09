@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-/// Test all PeerAddr functionality
-func TestPeerAddr(t *testing.T) {
+/// Test all NodeAddr functionality
+func TestNodeAddr(t *testing.T) {
 	// create a nodeId
 	keyStr := "ki6htfv2252cj2lhq3hxu4qfcfjtpjnukzonevigudzjpmmruxva"
 	nodeId, err := iroh.PublicKeyFromString(keyStr)
@@ -35,18 +35,18 @@ func TestPeerAddr(t *testing.T) {
 	// derp region
 	var derpRegion uint16 = 1
 
-	// create a PeerAddr
+	// create a NodeAddr
 	expectAddrs := []*iroh.SocketAddr{ipv4, ipv6}
-	peerAddrs := iroh.NewPeerAddr(nodeId, &derpRegion, expectAddrs)
+	nodeAddrs := iroh.NewNodeAddr(nodeId, &derpRegion, expectAddrs)
 
 	// test we have returned the expected addresses
-	gotAddrs := peerAddrs.DirectAddresses()
+	gotAddrs := nodeAddrs.DirectAddresses()
 	for i := 0; i < len(expectAddrs); i++ {
 		assert.True(t, gotAddrs[i].Equal(expectAddrs[i]))
 		assert.True(t, expectAddrs[i].Equal(gotAddrs[i]))
 	}
 
-	assert.Equal(t, peerAddrs.DerpRegion(), &derpRegion)
+	assert.Equal(t, nodeAddrs.DerpRegion(), &derpRegion)
 }
 
 /// Test all NamespaceId functionality
@@ -96,7 +96,7 @@ func TestAuthorId(t *testing.T) {
 /// Test all DocTicket functionality
 func TestDocTicket(t *testing.T) {
 	// create id from string
-	docTicketStr := "docljapn77ljjzwrtxh4b35xg57gfvcrvey6ofrulgzuddnohwc2qnqcicshr4znowxoqsosz4gz55hebirkm32lncwltjfkbva6kl3denf5iaqcbiajjeteswek4ambkabzpcfoajganyabbz2zplaaaaaaaaaagrjyvlqcjqdoaaioowl2ygi2likyov62rofk4asma3qacdtvs6wrg7f7hkxlg3mlrkx"
+	docTicketStr := "docaaqjjfgbzx2ry4zpaoujdppvqktgvfvpxgqubkghiialqovv7z4wosqbebpvjjp2tywajvg6unjza6dnugkalg4srmwkcucmhka7mgy4r3aa4aibayaeusjsjlcfoagavaa4xrcxaetag4aaq45mxvqaaaaaaaaadiu4kvybeybxaaehhlf5mdenfufmhk7nixcvoajganyabbz2zplgbno2vsnuvtkpyvlqcjqdoaaioowl22k3fc26qjx4ot6fk4"
 	docTicket, err := iroh.DocTicketFromString(docTicketStr)
 	if err != nil {
 		panic(err)
@@ -115,37 +115,55 @@ func TestDocTicket(t *testing.T) {
 	assert.True(t, docTicket0.Equal(docTicket))
 }
 
-/// Test all GetFilter functionality
-func TestGetFilter(t *testing.T) {
+/// TestQuery tests all the Query builders
+func TestQuery(t *testing.T) {
 	// all
-	all := iroh.GetFilterAll()
+	var offset uint64 = 10
+	var limit uint64 = 10
+	all := iroh.QueryAll(iroh.SortByKeyAuthor, iroh.SortDirectionAsc, &offset, &limit)
+	assert.Equal(t, offset, all.Offset())
+	assert.Equal(t, limit, *all.Limit())
 
-	// key
-	key := iroh.GetFilterKey([]byte("key"))
-	key0 := iroh.GetFilterKey([]byte("key"))
-	assert.False(t, all.Equal(key))
-	assert.True(t, key0.Equal(key))
-
-	// prefix
-	prefix := iroh.GetFilterPrefix([]byte("prefix"))
-	prefix0 := iroh.GetFilterPrefix([]byte("prefix"))
-	assert.False(t, key.Equal(prefix))
-	assert.True(t, prefix.Equal(prefix0))
+	// single_latest_per_key
+	single_latest_per_key := iroh.QuerySingleLatestPerKey(iroh.SortDirectionDesc, nil, nil)
+	offset = 0
+	assert.Equal(t, offset, single_latest_per_key.Offset())
+	assert.Nil(t, single_latest_per_key.Limit())
 
 	// author
-	authorStr := "mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q"
-	a, err := iroh.AuthorIdFromString(authorStr)
-	if err != nil {
-		panic(err)
-	}
-	author := iroh.GetFilterAuthor(a)
-	author0 := iroh.GetFilterAuthor(a)
-	assert.False(t, prefix.Equal(author))
-	assert.True(t, author.Equal(author0))
+	id, err := iroh.AuthorIdFromString("mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q")
+	assert.Nil(t, err)
 
-	// author&prefix
-	authorPrefix := iroh.GetFilterAuthorPrefix(a, []byte("prefix"))
-	authorPrefix0 := iroh.GetFilterAuthorPrefix(a, []byte("prefix"))
-	assert.False(t, author.Equal(authorPrefix))
-	assert.True(t, authorPrefix.Equal(authorPrefix0))
+	offset = 100
+	limit = 100
+	author := iroh.QueryAuthor(id, iroh.SortByAuthorKey,
+		iroh.SortDirectionAsc,
+		&offset,
+		nil,
+	)
+	assert.Equal(t, offset, author.Offset())
+	assert.Nil(t, author.Limit())
+
+	// key_exact
+	key_exact := iroh.QueryKeyExact(
+		[]byte("key"),
+		iroh.SortByKeyAuthor,
+		iroh.SortDirectionDesc,
+		nil,
+		&limit,
+	)
+	offset = 0
+	assert.Equal(t, offset, key_exact.Offset())
+	assert.Equal(t, limit, *key_exact.Limit())
+
+	// key_prefix
+	key_prefix := iroh.QueryKeyPrefix(
+		[]byte("prefix"),
+		iroh.SortByKeyAuthor,
+		iroh.SortDirectionDesc,
+		nil,
+		&limit,
+	)
+	assert.Equal(t, offset, key_prefix.Offset())
+	assert.Equal(t, limit, *key_prefix.Limit())
 }

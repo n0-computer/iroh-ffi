@@ -13,6 +13,8 @@ use quic_rpc::transport::flume::FlumeConnection;
 
 use crate::{block_on, Hash, IrohError, PublicKey, SocketAddr, SocketAddrType};
 
+pub use iroh::sync::CapabilityKind;
+
 /// A representation of a mutable, synchronizable key-value store.
 pub struct Doc {
     pub(crate) inner: ClientDoc<FlumeConnection<ProviderResponse, ProviderRequest>>,
@@ -106,14 +108,10 @@ impl Doc {
     }
 
     /// Get the latest entry for a key and author.
-    pub fn get_one(
-        &self,
-        author_id: Arc<AuthorId>,
-        key: Vec<u8>,
-    ) -> Result<Option<Arc<Entry>>, IrohError> {
+    pub fn get_one(&self, query: Arc<Query>) -> Result<Option<Arc<Entry>>, IrohError> {
         block_on(&self.rt, async {
             self.inner
-                .get_one(author_id.0, key)
+                .get_one((*query).clone().0)
                 .await
                 .map(|e| e.map(|e| Arc::new(e.into())))
                 .map_err(IrohError::doc)
@@ -124,11 +122,11 @@ impl Doc {
     ///
     /// Note: this allocates for each `Entry`, if you have many `Entry`s this may be a prohibitively large list.
     /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
-    pub fn get_many(&self, filter: Arc<GetFilter>) -> Result<Vec<Arc<Entry>>, IrohError> {
+    pub fn get_many(&self, query: Arc<Query>) -> Result<Vec<Arc<Entry>>, IrohError> {
         block_on(&self.rt, async {
             let entries = self
                 .inner
-                .get_many((*filter).clone().into())
+                .get_many(query.0.clone())
                 .await
                 .map_err(IrohError::doc)?
                 .map_ok(|e| Arc::new(Entry(e)))
@@ -151,7 +149,7 @@ impl Doc {
     }
 
     /// Start to sync this document with a list of peers.
-    pub fn start_sync(&self, peers: Vec<Arc<PeerAddr>>) -> Result<(), IrohError> {
+    pub fn start_sync(&self, peers: Vec<Arc<NodeAddr>>) -> Result<(), IrohError> {
         block_on(&self.rt, async {
             self.inner
                 .start_sync(peers.into_iter().map(|p| (*p).clone().into()).collect())
@@ -223,14 +221,14 @@ impl From<iroh::sync::actor::OpenState> for OpenState {
 
 /// A peer and it's addressing information.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PeerAddr {
+pub struct NodeAddr {
     node_id: Arc<PublicKey>,
     derp_region: Option<u16>,
     addresses: Vec<Arc<SocketAddr>>,
 }
 
-impl PeerAddr {
-    /// Create a new [`PeerAddr`] with empty [`AddrInfo`].
+impl NodeAddr {
+    /// Create a new [`NodeAddr`] with empty [`AddrInfo`].
     pub fn new(
         node_id: Arc<PublicKey>,
         derp_region: Option<u16>,
@@ -253,15 +251,15 @@ impl PeerAddr {
         self.derp_region
     }
 
-    /// Returns true if both PeerAddr's have the same values
-    pub fn equal(&self, other: Arc<PeerAddr>) -> bool {
+    /// Returns true if both NodeAddr's have the same values
+    pub fn equal(&self, other: Arc<NodeAddr>) -> bool {
         *self == *other
     }
 }
 
-impl From<PeerAddr> for iroh::net::magic_endpoint::PeerAddr {
-    fn from(value: PeerAddr) -> Self {
-        let mut peer_addr = iroh::net::magic_endpoint::PeerAddr::new(value.node_id.0);
+impl From<NodeAddr> for iroh::net::magic_endpoint::NodeAddr {
+    fn from(value: NodeAddr) -> Self {
+        let mut node_addr = iroh::net::magic_endpoint::NodeAddr::new(value.node_id.0);
         let addresses = value.direct_addresses().into_iter().map(|addr| {
             let typ = addr.r#type();
             match typ {
@@ -280,10 +278,10 @@ impl From<PeerAddr> for iroh::net::magic_endpoint::PeerAddr {
             }
         });
         if let Some(derp_region) = value.derp_region() {
-            peer_addr = peer_addr.with_derp_region(derp_region);
+            node_addr = node_addr.with_derp_region(derp_region);
         }
-        peer_addr = peer_addr.with_direct_addresses(addresses);
-        peer_addr
+        node_addr = node_addr.with_direct_addresses(addresses);
+        node_addr
     }
 }
 
@@ -386,66 +384,111 @@ impl std::fmt::Display for NamespaceId {
     }
 }
 
-/// Filter a get query onto a namespace
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum GetFilter {
-    /// No filter, list all entries
-    All,
-    /// Filter for exact key match
-    Key(Vec<u8>),
-    /// Filter for key prefix
-    Prefix(Vec<u8>),
-    /// Filter by author
-    Author(Arc<AuthorId>),
-    /// Filter by key prefix and author
-    AuthorAndPrefix(Arc<AuthorId>, Vec<u8>),
-}
+pub use iroh::sync::store::SortBy;
+pub use iroh::sync::store::SortDirection;
 
-use iroh::sync::store::GetFilter as IrohGetFilter;
+#[derive(Clone, Debug)]
+pub struct Query(iroh::sync::store::Query);
 
-impl From<GetFilter> for IrohGetFilter {
-    fn from(filter: GetFilter) -> Self {
-        match filter {
-            GetFilter::All => IrohGetFilter::All,
-            GetFilter::Key(key) => IrohGetFilter::Key(key),
-            GetFilter::Prefix(prefix) => IrohGetFilter::Prefix(prefix),
-            GetFilter::Author(author_id) => IrohGetFilter::Author(author_id.0),
-            GetFilter::AuthorAndPrefix(author_id, prefix) => {
-                IrohGetFilter::AuthorAndPrefix(author_id.0, prefix)
-            }
+impl Query {
+    /// Query all records.
+    pub fn all(
+        sort_by: SortBy,
+        direction: SortDirection,
+        offset: Option<u64>,
+        limit: Option<u64>,
+    ) -> Self {
+        let mut builder = iroh::sync::store::Query::all().sort_by(sort_by, direction);
+        if let Some(offset) = offset {
+            builder = builder.offset(offset);
         }
-    }
-}
-
-impl GetFilter {
-    /// Filter by [`AuthorId`] and prefix
-    pub fn author_prefix(author: Arc<AuthorId>, prefix: Vec<u8>) -> Self {
-        GetFilter::AuthorAndPrefix(author, prefix)
+        if let Some(limit) = limit {
+            builder = builder.limit(limit);
+        }
+        Query(builder.build())
     }
 
-    /// No filter, get all entries in a namespace
-    pub fn all() -> Self {
-        GetFilter::All
+    /// Query only the latest entry for each key, omitting older entries if the entry was written
+    /// to by multiple authors.
+    pub fn single_latest_per_key(
+        direction: SortDirection,
+        offset: Option<u64>,
+        limit: Option<u64>,
+    ) -> Self {
+        let mut builder =
+            iroh::sync::store::Query::single_latest_per_key().sort_direction(direction);
+        if let Some(offset) = offset {
+            builder = builder.offset(offset);
+        }
+        if let Some(limit) = limit {
+            builder = builder.limit(limit);
+        }
+        Query(builder.build())
     }
 
-    /// Filter by [`AuthorId`]
-    pub fn author(author: Arc<AuthorId>) -> Self {
-        GetFilter::Author(author)
+    /// Create a [`Query::all`] query filtered by a single author.
+    pub fn author(
+        author: Arc<AuthorId>,
+        sort_by: SortBy,
+        direction: SortDirection,
+        offset: Option<u64>,
+        limit: Option<u64>,
+    ) -> Self {
+        let mut builder =
+            iroh::sync::store::Query::author((*author).0.clone()).sort_by(sort_by, direction);
+        if let Some(offset) = offset {
+            builder = builder.offset(offset);
+        }
+        if let Some(limit) = limit {
+            builder = builder.limit(limit);
+        }
+        Query(builder.build())
     }
 
-    /// Filter by prefix
-    pub fn prefix(prefix: Vec<u8>) -> Self {
-        GetFilter::Prefix(prefix)
+    /// Create a [`Query::all`] query filtered by a single key.
+    pub fn key_exact(
+        key: Vec<u8>,
+        sort_by: SortBy,
+        direction: SortDirection,
+        offset: Option<u64>,
+        limit: Option<u64>,
+    ) -> Self {
+        let mut builder = iroh::sync::store::Query::key_exact(&key).sort_by(sort_by, direction);
+        if let Some(offset) = offset {
+            builder = builder.offset(offset);
+        }
+        if let Some(limit) = limit {
+            builder = builder.limit(limit);
+        }
+        Query(builder.build())
     }
 
-    /// Filter by an exact key
-    pub fn key(key: Vec<u8>) -> Self {
-        GetFilter::Key(key)
+    /// Create a [`Query::all`] query filtered by a key prefix.
+    pub fn key_prefix(
+        prefix: Vec<u8>,
+        sort_by: SortBy,
+        direction: SortDirection,
+        offset: Option<u64>,
+        limit: Option<u64>,
+    ) -> Self {
+        let mut builder = iroh::sync::store::Query::key_prefix(&prefix).sort_by(sort_by, direction);
+        if let Some(offset) = offset {
+            builder = builder.offset(offset);
+        }
+        if let Some(limit) = limit {
+            builder = builder.limit(limit);
+        }
+        Query(builder.build())
     }
 
-    /// Returns true if both GetFilter's have the same values
-    pub fn equal(&self, other: Arc<GetFilter>) -> bool {
-        *self == *other
+    /// Get the limit for this query (max. number of entries to emit).
+    pub fn limit(&self) -> Option<u64> {
+        self.0.limit()
+    }
+
+    /// Get the offset for this query (number of entries to skip at the beginning).
+    pub fn offset(&self) -> u64 {
+        self.0.offset()
     }
 }
 
@@ -721,7 +764,7 @@ mod tests {
     use crate::{Ipv4Addr, Ipv6Addr, PublicKey, SocketAddr};
 
     #[test]
-    fn test_peer_addr() {
+    fn test_node_addr() {
         //
         // create a node_id
         let key_str = "ki6htfv2252cj2lhq3hxu4qfcfjtpjnukzonevigudzjpmmruxva";
@@ -739,20 +782,20 @@ mod tests {
         // derp region
         let derp_region = Some(1);
         //
-        // create a PeerAddr
+        // create a NodeAddr
         let addrs = vec![Arc::new(ipv4), Arc::new(ipv6)];
         let expect_addrs = addrs.clone();
-        let peer_addr = PeerAddr::new(node_id.into(), derp_region, addrs);
+        let node_addr = NodeAddr::new(node_id.into(), derp_region, addrs);
         //
         // test we have returned the expected addresses
-        let got_addrs = peer_addr.direct_addresses();
+        let got_addrs = node_addr.direct_addresses();
         let addrs = expect_addrs.iter().zip(got_addrs.iter());
         for (expect, got) in addrs {
             assert!(got.equal(expect.clone()));
             assert!(expect.equal(got.clone()));
         }
 
-        assert_eq!(derp_region, peer_addr.derp_region());
+        assert_eq!(derp_region, node_addr.derp_region());
     }
     #[test]
     fn test_namespace_id() {
@@ -794,7 +837,7 @@ mod tests {
     fn test_doc_ticket() {
         //
         // create id from string
-        let doc_ticket_str = "docljapn77ljjzwrtxh4b35xg57gfvcrvey6ofrulgzuddnohwc2qnqcicshr4znowxoqsosz4gz55hebirkm32lncwltjfkbva6kl3denf5iaqcbiajjeteswek4ambkabzpcfoajganyabbz2zplaaaaaaaaaagrjyvlqcjqdoaaioowl2ygi2likyov62rofk4asma3qacdtvs6wrg7f7hkxlg3mlrkx";
+        let doc_ticket_str = "docaaqjjfgbzx2ry4zpaoujdppvqktgvfvpxgqubkghiialqovv7z4wosqbebpvjjp2tywajvg6unjza6dnugkalg4srmwkcucmhka7mgy4r3aa4aibayaeusjsjlcfoagavaa4xrcxaetag4aaq45mxvqaaaaaaaaadiu4kvybeybxaaehhlf5mdenfufmhk7nixcvoajganyabbz2zplgbno2vsnuvtkpyvlqcjqdoaaioowl22k3fc26qjx4ot6fk4";
         let doc_ticket = DocTicket::from_string(doc_ticket_str.into()).unwrap();
         //
         // call to_string, ensure equal
@@ -810,42 +853,49 @@ mod tests {
     }
 
     #[test]
-    fn test_get_filter() {
+    fn test_query() {
         // all
-        let all = GetFilter::all();
+        let all = Query::all(SortBy::KeyAuthor, SortDirection::Asc, Some(10), Some(10));
+        assert_eq!(10, all.offset());
+        assert_eq!(Some(10), all.limit());
 
-        // key
-        let key = Arc::new(GetFilter::key(b"key".to_vec()));
-        let key_0 = GetFilter::key(b"key".to_vec());
-        assert!(!all.equal(key.clone()));
-        assert!(key_0.equal(key.clone()));
+        let single_latest_per_key = Query::single_latest_per_key(SortDirection::Desc, None, None);
+        assert_eq!(0, single_latest_per_key.offset());
+        assert_eq!(None, single_latest_per_key.limit());
 
-        // prefix
-        let prefix = Arc::new(GetFilter::prefix(b"prefix".to_vec()));
-        let prefix_0 = GetFilter::prefix(b"prefix".to_vec());
-        assert!(!key.equal(prefix.clone()));
-        assert!(prefix.equal(prefix_0.into()));
-        //
-        // author
-        let author_str = "mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q";
-        let author = Arc::new(GetFilter::author(Arc::new(
-            AuthorId::from_string(author_str.into()).unwrap(),
-        )));
-        let author_0 =
-            GetFilter::author(Arc::new(AuthorId::from_string(author_str.into()).unwrap()));
-        assert!(!prefix.equal(author.clone()));
-        assert!(author.equal(author_0.into()));
-        //
-        // author&prefix
-        let author_prefix = Arc::new(GetFilter::author_prefix(
-            Arc::new(AuthorId::from_string(author_str.into()).unwrap()),
-            b"prefix".to_vec(),
-        ));
-        let author_prefix_0 = GetFilter::author_prefix(
-            Arc::new(AuthorId::from_string(author_str.into()).unwrap()),
-            b"prefix".to_vec(),
+        let author = Query::author(
+            Arc::new(
+                AuthorId::from_string(
+                    "mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q".to_string(),
+                )
+                .unwrap(),
+            ),
+            SortBy::AuthorKey,
+            SortDirection::Asc,
+            Some(100),
+            None,
         );
-        assert!(!author.equal(author_prefix.clone()));
-        assert!(author_prefix.equal(author_prefix_0.into()));
+        assert_eq!(100, author.offset());
+        assert_eq!(None, author.limit());
+
+        let key_exact = Query::key_exact(
+            b"key".to_vec(),
+            SortBy::KeyAuthor,
+            SortDirection::Desc,
+            None,
+            Some(100),
+        );
+        assert_eq!(0, key_exact.offset());
+        assert_eq!(Some(100), key_exact.limit());
+
+        let key_prefix = Query::key_prefix(
+            b"prefix".to_vec(),
+            SortBy::KeyAuthor,
+            SortDirection::Desc,
+            None,
+            Some(100),
+        );
+        assert_eq!(0, key_prefix.offset());
+        assert_eq!(Some(100), key_prefix.limit());
     }
 }

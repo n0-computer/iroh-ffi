@@ -22,7 +22,7 @@ interface IrohNode {
   [Throws=IrohError]
   Doc doc_join(DocTicket ticket);
   [Throws=IrohError]
-  sequence<NamespaceId> doc_list();
+  sequence<NamespaceAndCapability> doc_list();
   [Throws=IrohError]
   AuthorId author_new();
   [Throws=IrohError]
@@ -55,13 +55,13 @@ interface Doc {
   [Throws=IrohError]
   u64 del(AuthorId author_id, bytes prefix);
   [Throws=IrohError]
-  Entry? get_one(AuthorId author_id, bytes key);
+  Entry? get_one(Query query);
   [Throws=IrohError]
-  sequence<Entry> get_many(GetFilter filter);
+  sequence<Entry> get_many(Query query);
   [Throws=IrohError]
   DocTicket share(ShareMode mode);
   [Throws=IrohError]
-  void start_sync(sequence<PeerAddr> peers);
+  void start_sync(sequence<NodeAddr> peers);
   [Throws=IrohError]
   void leave();
   [Throws=IrohError]
@@ -70,30 +70,51 @@ interface Doc {
   OpenState status();
 };
 
+dictionary NamespaceAndCapability {
+  NamespaceId namespace;
+  CapabilityKind capability;
+};
+
+interface Query {
+  [Name=all]
+  constructor(SortBy sort_by, SortDirection direction, u64? offset, u64? limit);
+  [Name=single_latest_per_key]
+  constructor(SortDirection direction, u64? offset, u64? limit);
+  [Name=author]
+  constructor(AuthorId author, SortBy sort_by, SortDirection direction, u64? offset, u64? limit);
+  [Name=key_exact]
+  constructor(bytes key, SortBy sort_by, SortDirection direction, u64? offset, u64? limit);
+ [Name=key_prefix]
+  constructor(bytes prefix, SortBy sort_by, SortDirection direction, u64? offset, u64? limit);
+  u64 offset();
+  u64? limit();
+};
+
+enum SortDirection {
+  "Asc",
+  "Desc",
+};
+
+enum CapabilityKind {
+  "Write",
+  "Read",
+};
+
+enum SortBy {
+  "KeyAuthor",
+  "AuthorKey",
+};
+
 enum ShareMode {
   "Read",
   "Write",
 };
 
-interface PeerAddr {
+interface NodeAddr {
   constructor(PublicKey node_id, u16? region_id, sequence<SocketAddr> addresses);
   sequence<SocketAddr> direct_addresses();
   u16? derp_region();
-  boolean equal(PeerAddr other);
-};
-
-interface GetFilter {
-  [Name=author_prefix]
-  constructor(AuthorId author, bytes prefix);
-  [Name=all]
-  constructor();
-  [Name=author]
-  constructor(AuthorId author);
-  [Name=key]
-  constructor(bytes key);
-  [Name=prefix]
-  constructor(bytes prefix);
-  boolean equal(GetFilter other);
+  boolean equal(NodeAddr other);
 };
 
 callback interface SubscribeCallback {
@@ -291,5 +312,5 @@ interface IrohError {
   SocketAddrV4(string description);
   SocketAddrV6(string description);
   PublicKey(string description);
-  PeerAddr(string description);
+  NodeAddr(string description);
 };
