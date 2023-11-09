@@ -81,15 +81,14 @@ func TestBlobAddGetBytes(t *testing.T) {
 
 	// check outcome info is as expected
 	assert.Equal(t, iroh.BlobFormatRaw, addOutcome.Format)
-	// assert.Equal(t, addOutcome.size, blobSize)
+	assert.Equal(t, addOutcome.Size, blobSize)
 
 	// check we get the expected size from the hash
 	hash := addOutcome.Hash
 
-	// fails
-	// gotSize, err := node.BlobsSize(hash)
-	// assert.Nil(t, err)
-	// assert.Equal(t, blobSize, gotSize)
+	gotSize, err := node.BlobsSize(hash)
+	assert.Nil(t, err)
+	assert.Equal(t, blobSize, gotSize)
 
 	// get bytes
 	gotBytes, err := node.BlobsReadToBytes(hash)

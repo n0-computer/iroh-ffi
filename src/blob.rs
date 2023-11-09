@@ -1026,6 +1026,7 @@ mod tests {
     use super::*;
     use crate::node::IrohNode;
     use rand::RngCore;
+    use tokio::io::AsyncWriteExt;
 
     #[test]
     fn test_hash() {
@@ -1083,8 +1084,7 @@ mod tests {
         // temp dir
         let dir = tempfile::tempdir().unwrap();
         let node = IrohNode::new(dir.into_path().display().to_string()).unwrap();
-        let sizes = [10000, 100000];
-        // let sizes = [100000];
+        let sizes = [1, 10, 100, 1000, 10000, 100000];
         let mut hashes = Vec::new();
         for size in sizes.iter() {
             let hash = blobs_add_get_bytes_size(&node, *size);
@@ -1417,5 +1417,86 @@ mod tests {
         assert_eq!(got_bytes.len(), size);
         assert_eq!(got_bytes, bytes);
         hash
+    }
+
+    #[tokio::test]
+    async fn iroh_core_blobs_list_collections() {
+        let tokio = tokio::runtime::Handle::current();
+        let tpc = tokio_util::task::LocalPoolHandle::new(num_cpus::get());
+        let rt = iroh::bytes::util::runtime::Handle::new(tokio, tpc);
+        // iroh data dir
+        let iroh_dir = tempfile::tempdir().unwrap();
+        let node = build_iroh_core(iroh_dir.path(), &rt).await;
+
+        // collection dir
+        let dir = tempfile::tempdir().unwrap();
+        let num_blobs = 3;
+        let blob_size = 100;
+        for i in 0..num_blobs {
+            let path = dir.path().join(i.to_string());
+            let mut file = tokio::fs::File::create(path).await.unwrap();
+            let mut bytes = vec![0; blob_size];
+            rand::thread_rng().fill_bytes(&mut bytes);
+            file.write_all(&bytes).await.unwrap()
+        }
+
+        let client = node.client();
+        // ensure there are no blobs to start
+        let blobs = client.blobs.list().await.unwrap().collect::<Vec<_>>().await;
+        assert_eq!(0, blobs.len());
+
+        let mut stream = client
+            .blobs
+            .add_from_path(
+                dir.into_path(),
+                false,
+                iroh::rpc_protocol::SetTagOption::Auto,
+                iroh::rpc_protocol::WrapOption::NoWrap,
+            )
+            .await
+            .unwrap();
+
+        let mut collection_hash = None;
+        let mut collection_format = None;
+        let mut hashes = Vec::new();
+
+        while let Some(progress) = stream.next().await {
+            let progress = progress.unwrap();
+            match progress {
+                iroh::bytes::provider::AddProgress::AllDone { hash, format, .. } => {
+                    collection_hash = Some(hash);
+                    collection_format = Some(format);
+                }
+                iroh::bytes::provider::AddProgress::Abort(err) => {
+                    panic!("{}", err);
+                }
+                iroh::bytes::provider::AddProgress::Done { hash, .. } => hashes.push(hash),
+                _ => {}
+            }
+        }
+
+        let collection_hash = collection_hash.unwrap();
+        let collection_format = collection_format.unwrap();
+
+        assert_eq!(iroh::bytes::util::BlobFormat::HashSeq, collection_format);
+
+        let collections = client
+            .blobs
+            .list_collections()
+            .await
+            .unwrap()
+            .try_collect::<Vec<_>>()
+            .await
+            .unwrap();
+        assert_eq!(1, collections.len());
+        assert_eq!(collections[0].hash, collection_hash);
+        // add length for the metadata blob
+        let total_blobs_count = hashes.len() + 1;
+        assert_eq!(
+            collections[0].total_blobs_count.unwrap(),
+            total_blobs_count as u64
+        );
+        // this is always `None`
+        // assert_eq!(collections[0].total_blobs_size.unwrap(), 300 as u64);
     }
 }

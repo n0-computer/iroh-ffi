@@ -64,7 +64,7 @@ def test_blob_add_get_bytes():
     #
     # check outcome info is as expected
     assert add_outcome.format == BlobFormat.RAW
-    # assert add_outcome.size == blob_size
+    assert add_outcome.size == blob_size
     #
     # check we get the expected size from the hash
     hash = add_outcome.hash
