@@ -369,6 +369,16 @@ void* uniffi_iroh_fn_method_entry_author(
 	RustCallStatus* out_status
 );
 
+void* uniffi_iroh_fn_method_entry_content_hash(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+uint64_t uniffi_iroh_fn_method_entry_content_len(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
 RustBuffer uniffi_iroh_fn_method_entry_key(
 	void* ptr,
 	RustCallStatus* out_status
@@ -1200,6 +1210,14 @@ uint16_t uniffi_iroh_checksum_method_downloadprogress_type(
 );
 
 uint16_t uniffi_iroh_checksum_method_entry_author(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_entry_content_hash(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_entry_content_len(
 	RustCallStatus* out_status
 );
 

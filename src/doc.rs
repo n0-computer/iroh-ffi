@@ -362,6 +362,16 @@ impl Entry {
     pub fn namespace(&self) -> Arc<NamespaceId> {
         Arc::new(NamespaceId(self.0.id().namespace()))
     }
+
+    /// Get the content_hash of this entry.
+    pub fn content_hash(&self) -> Arc<Hash> {
+        Arc::new(Hash(self.0.content_hash()))
+    }
+
+    /// Get the content_length of this entry.
+    pub fn content_len(&self) -> u64 {
+        self.0.content_len()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

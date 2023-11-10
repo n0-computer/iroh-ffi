@@ -697,6 +697,24 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_entry_content_hash(uniffiStatus)
+		})
+		if checksum != 39306 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_entry_content_hash: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_entry_content_len(uniffiStatus)
+		})
+		if checksum != 60107 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_entry_content_len: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_entry_key(uniffiStatus)
 		})
 		if checksum != 19122 {
@@ -2311,6 +2329,21 @@ func (_self *Doc) Del(authorId *AuthorId, prefix []byte) (uint64, error) {
 	}
 }
 
+func (_self *Doc) GetContentBytes(entry *Entry) ([]byte, error) {
+	_pointer := _self.ffiObject.incrementPointer("*Doc")
+	defer _self.ffiObject.decrementPointer()
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_doc_get_content_bytes(
+			_pointer, FfiConverterEntryINSTANCE.Lower(entry), _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue []byte
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterBytesINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
+
 func (_self *Doc) GetMany(query *Query) ([]*Entry, error) {
 	_pointer := _self.ffiObject.incrementPointer("*Doc")
 	defer _self.ffiObject.decrementPointer()
@@ -2803,6 +2836,24 @@ func (_self *Entry) Author() *AuthorId {
 	defer _self.ffiObject.decrementPointer()
 	return FfiConverterAuthorIdINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
 		return C.uniffi_iroh_fn_method_entry_author(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *Entry) ContentHash() *Hash {
+	_pointer := _self.ffiObject.incrementPointer("*Entry")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterHashINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_method_entry_content_hash(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *Entry) ContentLen() uint64 {
+	_pointer := _self.ffiObject.incrementPointer("*Entry")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterUint64INSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) C.uint64_t {
+		return C.uniffi_iroh_fn_method_entry_content_len(
 			_pointer, _uniffiStatus)
 	}))
 }

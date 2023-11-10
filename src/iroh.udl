@@ -153,6 +153,8 @@ interface Entry {
   AuthorId author();
   bytes key();
   NamespaceId namespace();
+  Hash content_hash();
+  u64 content_len();
 };
 
 interface Hash {

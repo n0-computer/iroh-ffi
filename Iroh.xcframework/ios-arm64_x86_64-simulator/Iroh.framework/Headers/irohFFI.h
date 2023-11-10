@@ -122,6 +122,8 @@ void uniffi_iroh_fn_method_doc_close(void*_Nonnull ptr, RustCallStatus *_Nonnull
 );
 uint64_t uniffi_iroh_fn_method_doc_del(void*_Nonnull ptr, void*_Nonnull author_id, RustBuffer prefix, RustCallStatus *_Nonnull out_status
 );
+RustBuffer uniffi_iroh_fn_method_doc_get_content_bytes(void*_Nonnull ptr, void*_Nonnull entry, RustCallStatus *_Nonnull out_status
+);
 RustBuffer uniffi_iroh_fn_method_doc_get_many(void*_Nonnull ptr, void*_Nonnull query, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_doc_get_one(void*_Nonnull ptr, void*_Nonnull query, RustCallStatus *_Nonnull out_status
