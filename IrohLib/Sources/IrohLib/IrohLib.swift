@@ -800,6 +800,7 @@ public protocol DocProtocol {
     func leave() throws
     func readToBytes(entry: Entry) throws -> Data
     func setBytes(author: AuthorId, key: Data, value: Data) throws -> Hash
+    func setFileBytes(author: AuthorId, key: Data, path: String) throws -> Hash
     func setHash(author: AuthorId, key: Data, hash: Hash, size: UInt64) throws
     func share(mode: ShareMode) throws -> DocTicket
     func size(entry: Entry) throws -> UInt64
@@ -889,6 +890,17 @@ public class Doc: DocProtocol {
                                                     FfiConverterTypeAuthorId.lower(author),
                                                     FfiConverterData.lower(key),
                                                     FfiConverterData.lower(value), $0)
+            }
+        )
+    }
+
+    public func setFileBytes(author: AuthorId, key: Data, path: String) throws -> Hash {
+        return try FfiConverterTypeHash.lift(
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_doc_set_file_bytes(self.pointer,
+                                                         FfiConverterTypeAuthorId.lower(author),
+                                                         FfiConverterData.lower(key),
+                                                         FfiConverterString.lower(path), $0)
             }
         )
     }
@@ -5378,54 +5390,55 @@ public protocol SubscribeCallback: AnyObject {
 }
 
 // The ForeignCallback that is passed to Rust.
-private let foreignCallbackCallbackInterfaceSubscribeCallback: ForeignCallback = { (handle: UniFFICallbackHandle, method: Int32, argsData: UnsafePointer<UInt8>, argsLen: Int32, out_buf: UnsafeMutablePointer<RustBuffer>) -> Int32 in
+private let foreignCallbackCallbackInterfaceSubscribeCallback: ForeignCallback =
+    { (handle: UniFFICallbackHandle, method: Int32, argsData: UnsafePointer<UInt8>, argsLen: Int32, out_buf: UnsafeMutablePointer<RustBuffer>) -> Int32 in
 
-    func invokeEvent(_ swiftCallbackInterface: SubscribeCallback, _ argsData: UnsafePointer<UInt8>, _ argsLen: Int32, _ out_buf: UnsafeMutablePointer<RustBuffer>) throws -> Int32 {
-        var reader = createReader(data: Data(bytes: argsData, count: Int(argsLen)))
-        func makeCall() throws -> Int32 {
-            try swiftCallbackInterface.event(
-                event: FfiConverterTypeLiveEvent.read(from: &reader)
-            )
+        func invokeEvent(_ swiftCallbackInterface: SubscribeCallback, _ argsData: UnsafePointer<UInt8>, _ argsLen: Int32, _ out_buf: UnsafeMutablePointer<RustBuffer>) throws -> Int32 {
+            var reader = createReader(data: Data(bytes: argsData, count: Int(argsLen)))
+            func makeCall() throws -> Int32 {
+                try swiftCallbackInterface.event(
+                    event: FfiConverterTypeLiveEvent.read(from: &reader)
+                )
+                return UNIFFI_CALLBACK_SUCCESS
+            }
+            do {
+                return try makeCall()
+            } catch let error as IrohError {
+                out_buf.pointee = FfiConverterTypeIrohError.lower(error)
+                return UNIFFI_CALLBACK_ERROR
+            }
+        }
+
+        switch method {
+        case IDX_CALLBACK_FREE:
+            FfiConverterCallbackInterfaceSubscribeCallback.drop(handle: handle)
+            // Sucessful return
+            // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
             return UNIFFI_CALLBACK_SUCCESS
-        }
-        do {
-            return try makeCall()
-        } catch let error as IrohError {
-            out_buf.pointee = FfiConverterTypeIrohError.lower(error)
-            return UNIFFI_CALLBACK_ERROR
-        }
-    }
+        case 1:
+            let cb: SubscribeCallback
+            do {
+                cb = try FfiConverterCallbackInterfaceSubscribeCallback.lift(handle)
+            } catch {
+                out_buf.pointee = FfiConverterString.lower("SubscribeCallback: Invalid handle")
+                return UNIFFI_CALLBACK_UNEXPECTED_ERROR
+            }
+            do {
+                return try invokeEvent(cb, argsData, argsLen, out_buf)
+            } catch {
+                out_buf.pointee = FfiConverterString.lower(String(describing: error))
+                return UNIFFI_CALLBACK_UNEXPECTED_ERROR
+            }
 
-    switch method {
-    case IDX_CALLBACK_FREE:
-        FfiConverterCallbackInterfaceSubscribeCallback.drop(handle: handle)
-        // Sucessful return
-        // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
-        return UNIFFI_CALLBACK_SUCCESS
-    case 1:
-        let cb: SubscribeCallback
-        do {
-            cb = try FfiConverterCallbackInterfaceSubscribeCallback.lift(handle)
-        } catch {
-            out_buf.pointee = FfiConverterString.lower("SubscribeCallback: Invalid handle")
+        // This should never happen, because an out of bounds method index won't
+        // ever be used. Once we can catch errors, we should return an InternalError.
+        // https://github.com/mozilla/uniffi-rs/issues/351
+        default:
+            // An unexpected error happened.
+            // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
             return UNIFFI_CALLBACK_UNEXPECTED_ERROR
         }
-        do {
-            return try invokeEvent(cb, argsData, argsLen, out_buf)
-        } catch {
-            out_buf.pointee = FfiConverterString.lower(String(describing: error))
-            return UNIFFI_CALLBACK_UNEXPECTED_ERROR
-        }
-
-    // This should never happen, because an out of bounds method index won't
-    // ever be used. Once we can catch errors, we should return an InternalError.
-    // https://github.com/mozilla/uniffi-rs/issues/351
-    default:
-        // An unexpected error happened.
-        // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
-        return UNIFFI_CALLBACK_UNEXPECTED_ERROR
     }
-}
 
 // FfiConverter protocol for callback interfaces
 private enum FfiConverterCallbackInterfaceSubscribeCallback {
@@ -5993,6 +6006,9 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_doc_set_bytes() != 15024 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_doc_set_file_bytes() != 19282 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_doc_set_hash() != 20311 {

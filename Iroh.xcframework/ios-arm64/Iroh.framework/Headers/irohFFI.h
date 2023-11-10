@@ -134,6 +134,8 @@ RustBuffer uniffi_iroh_fn_method_doc_read_to_bytes(void*_Nonnull ptr, void*_Nonn
 );
 void*_Nonnull uniffi_iroh_fn_method_doc_set_bytes(void*_Nonnull ptr, void*_Nonnull author, RustBuffer key, RustBuffer value, RustCallStatus *_Nonnull out_status
 );
+void*_Nonnull uniffi_iroh_fn_method_doc_set_file_bytes(void*_Nonnull ptr, void*_Nonnull author, RustBuffer key, RustBuffer path, RustCallStatus *_Nonnull out_status
+);
 void uniffi_iroh_fn_method_doc_set_hash(void*_Nonnull ptr, void*_Nonnull author, RustBuffer key, void*_Nonnull hash, uint64_t size, RustCallStatus *_Nonnull out_status
 );
 void*_Nonnull uniffi_iroh_fn_method_doc_share(void*_Nonnull ptr, RustBuffer mode, RustCallStatus *_Nonnull out_status
@@ -475,6 +477,9 @@ uint16_t uniffi_iroh_checksum_method_doc_close(void
 uint16_t uniffi_iroh_checksum_method_doc_del(void
     
 );
+uint16_t uniffi_iroh_checksum_method_doc_get_content_bytes(void
+    
+);
 uint16_t uniffi_iroh_checksum_method_doc_get_many(void
     
 );
@@ -491,6 +496,9 @@ uint16_t uniffi_iroh_checksum_method_doc_read_to_bytes(void
     
 );
 uint16_t uniffi_iroh_checksum_method_doc_set_bytes(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_doc_set_file_bytes(void
     
 );
 uint16_t uniffi_iroh_checksum_method_doc_set_hash(void
