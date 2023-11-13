@@ -962,21 +962,12 @@ mod tests {
     fn test_doc_entry_basics() {
         let path = tempfile::tempdir().unwrap();
         let node = crate::IrohNode::new(path.path().to_string_lossy().into_owned()).unwrap();
-        let node_id = node.node_id();
-        println!("id: {}", node_id);
+
+        // create doc  and author
         let doc = node.doc_create().unwrap();
-        let doc_id = doc.id();
-        println!("doc_id: {}", doc_id);
-
-        let doc_ticket = doc.share(crate::doc::ShareMode::Write).unwrap();
-        let doc_ticket_string = doc_ticket.to_string();
-        let doc_ticket_back = DocTicket::from_string(doc_ticket_string.clone()).unwrap();
-        assert_eq!(doc_ticket.0.to_string(), doc_ticket_back.0.to_string());
-        println!("doc_ticket: {}", doc_ticket_string);
-        node.doc_join(doc_ticket).unwrap();
-
         let author = node.author_create().unwrap();
 
+        // add entry
         let val = b"hello world!".to_vec();
         let key = b"foo".to_vec();
         let hash = doc

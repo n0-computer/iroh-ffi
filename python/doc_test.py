@@ -1,6 +1,7 @@
 # tests that correspond to the `src/doc.rs` rust api
-from iroh import PublicKey, SocketAddr, NodeAddr, Ipv4Addr, Ipv6Addr, iroh, AuthorId, NamespaceId, DocTicket, Query, SortBy, SortDirection
+from iroh import IrohNode, PublicKey, SocketAddr, NodeAddr, Ipv4Addr, Ipv6Addr, iroh, AuthorId, NamespaceId, DocTicket, Query, SortBy, SortDirection, QueryOptions
 import pytest
+import tempfile
 
 def test_node_addr():
     #
@@ -81,32 +82,35 @@ def test_doc_ticket():
     assert doc_ticket_0.equal(doc_ticket)
 
 def test_query():
+    opts = QueryOptions(SortBy.KEY_AUTHOR, SortDirection.ASC, 10, 10)
     # all
-    all = Query.all(SortBy.KEY_AUTHOR, SortDirection.ASC, 10, 10)
+    all = Query.all(opts)
     assert 10 == all.offset()
     assert 10 == all.limit()
 
     # single_latest_per_key
-    single_latest_per_key = Query.single_latest_per_key(SortDirection.DESC, None, None);
+    opts.direction = SortDirection.DESC
+    opts.limit = 0
+    opts.offset = 0
+    single_latest_per_key = Query.single_latest_per_key(opts);
     assert 0 == single_latest_per_key.offset()
     assert None == single_latest_per_key.limit()
 
     # author
-    author = Query.author(AuthorId.from_string("mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q"), SortBy.AUTHOR_KEY,
-        SortDirection.ASC,
-        100,
-        None,
-    )
+    opts.direction = SortDirection.ASC
+    opts.offset = 100 
+    author = Query.author(AuthorId.from_string("mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q"), opts)
     assert 100 == author.offset()
     assert None == author.limit()
 
     # key_exact
+    opts.sort_by = SortBy.KEY_AUTHOR
+    opts.direction = SortDirection.DESC
+    opts.offset = 0
+    opts.limit = 100
     key_exact = Query.key_exact(
         b'key',
-        SortBy.KEY_AUTHOR,
-        SortDirection.DESC,
-        None,
-        100
+        opts
     )
     assert 0 == key_exact.offset()
     assert 100 == key_exact.limit()
@@ -114,10 +118,30 @@ def test_query():
     # key_prefix
     key_prefix = Query.key_prefix(
         b'prefix',
-        SortBy.KEY_AUTHOR,
-        SortDirection.DESC,
-        None,
-        100,
+        opts
     );
     assert 0 == key_prefix.offset()
     assert 100 == key_prefix.limit()
+
+def test_doc_entry_basics():
+    #
+    # create node
+    dir = tempfile.TemporaryDirectory()
+    node = IrohNode(dir.name)
+    #
+    # create doc and author
+    doc = node.doc_create()
+    author = node.author_create()
+    #
+    # create entry
+    val = b'hello world!'
+    key = b'foo'
+    hash = doc.set_bytes(author, key, val)
+    #
+    # get entry
+    query = Query.author_key_exact(author, key)
+    entry = doc.get_one(query)
+    assert hash.equal(entry.content_hash())
+    got_val = doc.read_to_bytes(entry)
+    assert val == got_val
+    assert len(val) == entry.content_len()
