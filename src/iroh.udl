@@ -2,6 +2,10 @@ namespace iroh {
   void set_log_level(LogLevel level);
   [Throws=IrohError]
   void start_metrics_collection();
+  [Throws=IrohError]
+  bytes path_to_key(string path, string? prefix, string? root);
+  [Throws=IrohError]
+  string key_to_path(bytes key, string? prefix, string? root);
 };
 
 enum LogLevel {
@@ -607,4 +611,5 @@ interface IrohError {
   NodeAddr(string description);
   Hash(string description);
   RequestToken(string description);
+  FsUtil(string description);
 };
