@@ -544,20 +544,20 @@ pub enum BlobFormat {
     HashSeq,
 }
 
-impl From<iroh::bytes::util::BlobFormat> for BlobFormat {
-    fn from(value: iroh::bytes::util::BlobFormat) -> Self {
+impl From<iroh::rpc_protocol::BlobFormat> for BlobFormat {
+    fn from(value: iroh::rpc_protocol::BlobFormat) -> Self {
         match value {
-            iroh::bytes::util::BlobFormat::Raw => BlobFormat::Raw,
-            iroh::bytes::util::BlobFormat::HashSeq => BlobFormat::HashSeq,
+            iroh::rpc_protocol::BlobFormat::Raw => BlobFormat::Raw,
+            iroh::rpc_protocol::BlobFormat::HashSeq => BlobFormat::HashSeq,
         }
     }
 }
 
-impl From<BlobFormat> for iroh::bytes::util::BlobFormat {
+impl From<BlobFormat> for iroh::rpc_protocol::BlobFormat {
     fn from(value: BlobFormat) -> Self {
         match value {
-            BlobFormat::Raw => iroh::bytes::util::BlobFormat::Raw,
-            BlobFormat::HashSeq => iroh::bytes::util::BlobFormat::HashSeq,
+            BlobFormat::Raw => iroh::rpc_protocol::BlobFormat::Raw,
+            BlobFormat::HashSeq => iroh::rpc_protocol::BlobFormat::HashSeq,
         }
     }
 }
@@ -1478,7 +1478,7 @@ mod tests {
         let collection_hash = collection_hash.unwrap();
         let collection_format = collection_format.unwrap();
 
-        assert_eq!(iroh::bytes::util::BlobFormat::HashSeq, collection_format);
+        assert_eq!(iroh::rpc_protocol::BlobFormat::HashSeq, collection_format);
 
         let collections = client
             .blobs

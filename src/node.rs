@@ -137,7 +137,7 @@ impl IrohNode {
     }
 
     pub fn node_id(&self) -> String {
-        self.node.peer_id().to_string()
+        self.node.node_id().to_string()
     }
 
     pub fn doc_create(&self) -> Result<Arc<Doc>, Error> {
