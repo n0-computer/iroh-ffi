@@ -98,28 +98,28 @@ impl Doc {
         })
     }
 
-    //     /// Export an entry as a file to a given absolute path
-    //     pub fn export_file(
-    //         &self,
-    //         entry: Arc<entry>,
-    //         path: String,
-    //         cb: Box<dyn DocExportFileCallback>,
-    //     ) -> Result<(), IrohError> {
-    //         block_on(&self.async_runtime, async {
-    //             let mut stream = self
-    //                 .inner
-    //                 .export_file((*entry).clone(), path.into())
-    //                 .await
-    //                 .map_err(IrohError::doc)?;
-    //             while let Some(progress) = stream.next().await {
-    //                 let progress = progress.map_err(IrohError::doc)?;
-    //                 if let Err(e) = cb.progress(Arc::new(progress.into())) {
-    //                     return Err(e);
-    //                 }
-    //             }
-    //             Ok(())
-    //         })
-    //     }
+    /// Export an entry as a file to a given absolute path
+    pub fn export_file(
+        &self,
+        entry: Arc<Entry>,
+        path: String,
+        cb: Box<dyn DocExportFileCallback>,
+    ) -> Result<(), IrohError> {
+        block_on(&self.rt, async {
+            let mut stream = self
+                .inner
+                .export_file((*entry).0.clone(), std::path::PathBuf::from(path))
+                .await
+                .map_err(IrohError::doc)?;
+            while let Some(progress) = stream.next().await {
+                let progress = progress.map_err(IrohError::doc)?;
+                if let Err(e) = cb.progress(Arc::new(progress.into())) {
+                    return Err(e);
+                }
+            }
+            Ok(())
+        })
+    }
 
     /// Get the content size of an [`Entry`]
     pub fn size(&self, entry: Arc<Entry>) -> Result<u64, IrohError> {
@@ -1021,6 +1021,126 @@ impl DocImportProgress {
         }
     }
 }
+
+pub trait DocExportFileCallback: Send + Sync + 'static {
+    fn progress(&self, progress: Arc<DocExportProgress>) -> Result<(), IrohError>;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DocExportProgressType {
+    Found,
+    Progress,
+    AllDone,
+    Abort,
+}
+
+/// A DocExportProgress event indicating a file was found with name `name`, from now on referred to via `id`
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DocExportProgressFound {
+    /// A new unique id for this entry.
+    pub id: u64,
+    /// The hash of the entry.
+    pub hash: Arc<Hash>,
+    /// The key of the entry.
+    pub key: Vec<u8>,
+    /// The size of the entry in bytes.
+    pub size: u64,
+    /// The path where we are writing the entry
+    pub outpath: String,
+}
+
+/// A DocExportProgress event indicating we've made progress exporting item `id`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DocExportProgressProgress {
+    /// The unique id of the entry.
+    pub id: u64,
+    /// The offset of the progress, in bytes.
+    pub offset: u64,
+}
+
+/// A DocExportProgress event indicating we got an error and need to abort
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DocExportProgressAbort {
+    pub error: String,
+}
+
+/// Progress updates for the doc import file operation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DocExportProgress {
+    /// An item was found with name `name`, from now on referred to via `id`
+    Found(DocExportProgressFound),
+    /// We got progress ingesting item `id`.
+    Progress(DocExportProgressProgress),
+    /// We are done with the whole operation.
+    AllDone,
+    /// We got an error and need to abort.
+    ///
+    /// This will be the last message in the stream.
+    Abort(DocExportProgressAbort),
+}
+
+impl From<iroh::rpc_protocol::DocExportProgress> for DocExportProgress {
+    fn from(value: iroh::rpc_protocol::DocExportProgress) -> Self {
+        match value {
+            iroh::rpc_protocol::DocExportProgress::Found {
+                id,
+                hash,
+                key,
+                size,
+                outpath,
+            } => DocExportProgress::Found(DocExportProgressFound {
+                id,
+                hash: Arc::new(hash.into()),
+                key: key.to_vec(),
+                size,
+                outpath: outpath.display().to_string(),
+            }),
+            iroh::rpc_protocol::DocExportProgress::Progress { id, offset } => {
+                DocExportProgress::Progress(DocExportProgressProgress { id, offset })
+            }
+            iroh::rpc_protocol::DocExportProgress::AllDone => DocExportProgress::AllDone,
+            iroh::rpc_protocol::DocExportProgress::Abort(err) => {
+                DocExportProgress::Abort(DocExportProgressAbort {
+                    error: err.to_string(),
+                })
+            }
+        }
+    }
+}
+
+impl DocExportProgress {
+    /// Get the type of event
+    pub fn r#type(&self) -> DocExportProgressType {
+        match self {
+            DocExportProgress::Found(_) => DocExportProgressType::Found,
+            DocExportProgress::Progress(_) => DocExportProgressType::Progress,
+            DocExportProgress::AllDone => DocExportProgressType::AllDone,
+            DocExportProgress::Abort(_) => DocExportProgressType::Abort,
+        }
+    }
+    /// Return the `DocExportProgressFound` event
+    pub fn as_found(&self) -> DocExportProgressFound {
+        match self {
+            DocExportProgress::Found(f) => f.clone(),
+            _ => panic!("DocExportProgress type is not 'Found'"),
+        }
+    }
+    /// Return the `DocExportProgressProgress` event
+    pub fn as_progress(&self) -> DocExportProgressProgress {
+        match self {
+            DocExportProgress::Progress(p) => p.clone(),
+            _ => panic!("DocExportProgress type is not 'Progress'"),
+        }
+    }
+    /// Return the `DocExportProgressAbort`
+    pub fn as_abort(&self) -> DocExportProgressAbort {
+        match self {
+            DocExportProgress::Abort(a) => a.clone(),
+            _ => panic!("DocExportProgress type is not 'Abort'"),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
