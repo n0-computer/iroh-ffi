@@ -65,6 +65,8 @@ interface Doc {
   [Throws=IrohError]
   void set_hash(AuthorId author, bytes key, Hash hash, u64 size);
   [Throws=IrohError]
+  void import_file(AuthorId author, bytes key, string path, boolean in_place, DocImportFileCallback cb);
+  [Throws=IrohError]
   u64 size(Entry entry);
   [Throws=IrohError]
   bytes read_to_bytes(Entry entry);
@@ -84,6 +86,52 @@ interface Doc {
   void subscribe(SubscribeCallback cb);
   [Throws=IrohError]
   OpenState status();
+};
+
+enum DocImportProgressType {
+  "Found",
+  "Progress",
+  "IngestDone",
+  "AllDone",
+  "Abort"
+};
+
+dictionary DocImportProgressFound {
+  u64 id;
+  string name;
+  u64 size;
+};
+
+dictionary DocImportProgressProgress {
+  u64 id;
+  u64 offset;
+};
+
+dictionary DocImportProgressIngestDone {
+  u64 id;
+  Hash hash;
+};
+
+dictionary DocImportProgressAllDone {
+  bytes key;
+};
+
+dictionary DocImportProgressAbort {
+  string error;
+};
+
+interface DocImportProgress {
+  DocImportProgressType type();
+  DocImportProgressFound as_found();
+  DocImportProgressProgress as_progress();
+  DocImportProgressIngestDone as_ingest_done();
+  DocImportProgressAllDone as_all_done();
+  DocImportProgressAbort as_abort();
+};
+
+callback interface DocImportFileCallback {
+  [Throws=IrohError]
+  void progress(DocImportProgress progress);
 };
 
 dictionary NamespaceAndCapability {

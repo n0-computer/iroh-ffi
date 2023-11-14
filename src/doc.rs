@@ -68,6 +68,59 @@ impl Doc {
         })
     }
 
+    /// Add an entry from an absolute file path
+    pub fn import_file(
+        &self,
+        author: Arc<AuthorId>,
+        key: Vec<u8>,
+        path: String,
+        in_place: bool,
+        cb: Box<dyn DocImportFileCallback>,
+    ) -> Result<(), IrohError> {
+        block_on(&self.rt, async {
+            let mut stream = self
+                .inner
+                .import_file(
+                    (*author).0.clone(),
+                    bytes::Bytes::from(key),
+                    std::path::PathBuf::from(path),
+                    in_place,
+                )
+                .await
+                .map_err(IrohError::doc)?;
+            while let Some(progress) = stream.next().await {
+                let progress = progress.map_err(IrohError::doc)?;
+                if let Err(e) = cb.progress(Arc::new(progress.into())) {
+                    return Err(e);
+                }
+            }
+            Ok(())
+        })
+    }
+
+    //     /// Export an entry as a file to a given absolute path
+    //     pub fn export_file(
+    //         &self,
+    //         entry: Arc<entry>,
+    //         path: String,
+    //         cb: Box<dyn DocExportFileCallback>,
+    //     ) -> Result<(), IrohError> {
+    //         block_on(&self.async_runtime, async {
+    //             let mut stream = self
+    //                 .inner
+    //                 .export_file((*entry).clone(), path.into())
+    //                 .await
+    //                 .map_err(IrohError::doc)?;
+    //             while let Some(progress) = stream.next().await {
+    //                 let progress = progress.map_err(IrohError::doc)?;
+    //                 if let Err(e) = cb.progress(Arc::new(progress.into())) {
+    //                     return Err(e);
+    //                 }
+    //             }
+    //             Ok(())
+    //         })
+    //     }
+
     /// Get the content size of an [`Entry`]
     pub fn size(&self, entry: Arc<Entry>) -> Result<u64, IrohError> {
         block_on(&self.rt, async {
@@ -819,6 +872,155 @@ impl From<iroh::sync::ContentStatus> for ContentStatus {
     }
 }
 
+pub trait DocImportFileCallback: Send + Sync + 'static {
+    fn progress(&self, progress: Arc<DocImportProgress>) -> Result<(), IrohError>;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DocImportProgressType {
+    Found,
+    Progress,
+    IngestDone,
+    AllDone,
+    Abort,
+}
+
+/// A DocImportProgress event indicating a file was found with name `name`, from now on referred to via `id`
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DocImportProgressFound {
+    /// A new unique id for this entry.
+    pub id: u64,
+    /// The name of the entry.
+    pub name: String,
+    /// The size of the entry in bytes.
+    pub size: u64,
+}
+
+/// A DocImportProgress event indicating we've made progress ingesting item `id`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DocImportProgressProgress {
+    /// The unique id of the entry.
+    pub id: u64,
+    /// The offset of the progress, in bytes.
+    pub offset: u64,
+}
+
+/// A DocImportProgress event indicating we are finished adding `id` to the data store and the hash is `hash`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DocImportProgressIngestDone {
+    /// The unique id of the entry.
+    pub id: u64,
+    /// The hash of the entry.
+    pub hash: Arc<Hash>,
+}
+
+/// A DocImportProgress event indicating we are done setting the entry to the doc
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DocImportProgressAllDone {
+    /// The key of the entry
+    pub key: Vec<u8>,
+}
+
+/// A DocImportProgress event indicating we got an error and need to abort
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DocImportProgressAbort {
+    pub error: String,
+}
+
+/// Progress updates for the doc import file operation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DocImportProgress {
+    /// An item was found with name `name`, from now on referred to via `id`
+    Found(DocImportProgressFound),
+    /// We got progress ingesting item `id`.
+    Progress(DocImportProgressProgress),
+    /// We are done ingesting `id`, and the hash is `hash`.
+    IngestDone(DocImportProgressIngestDone),
+    /// We are done with the whole operation.
+    AllDone(DocImportProgressAllDone),
+    /// We got an error and need to abort.
+    ///
+    /// This will be the last message in the stream.
+    Abort(DocImportProgressAbort),
+}
+
+impl From<iroh::rpc_protocol::DocImportProgress> for DocImportProgress {
+    fn from(value: iroh::rpc_protocol::DocImportProgress) -> Self {
+        match value {
+            iroh::rpc_protocol::DocImportProgress::Found { id, name, size } => {
+                DocImportProgress::Found(DocImportProgressFound { id, name, size })
+            }
+            iroh::rpc_protocol::DocImportProgress::Progress { id, offset } => {
+                DocImportProgress::Progress(DocImportProgressProgress { id, offset })
+            }
+            iroh::rpc_protocol::DocImportProgress::IngestDone { id, hash } => {
+                DocImportProgress::IngestDone(DocImportProgressIngestDone {
+                    id,
+                    hash: Arc::new(hash.into()),
+                })
+            }
+            iroh::rpc_protocol::DocImportProgress::AllDone { key } => {
+                DocImportProgress::AllDone(DocImportProgressAllDone { key: key.into() })
+            }
+            iroh::rpc_protocol::DocImportProgress::Abort(err) => {
+                DocImportProgress::Abort(DocImportProgressAbort {
+                    error: err.to_string(),
+                })
+            }
+        }
+    }
+}
+
+impl DocImportProgress {
+    /// Get the type of event
+    pub fn r#type(&self) -> DocImportProgressType {
+        match self {
+            DocImportProgress::Found(_) => DocImportProgressType::Found,
+            DocImportProgress::Progress(_) => DocImportProgressType::Progress,
+            DocImportProgress::IngestDone(_) => DocImportProgressType::IngestDone,
+            DocImportProgress::AllDone(_) => DocImportProgressType::AllDone,
+            DocImportProgress::Abort(_) => DocImportProgressType::Abort,
+        }
+    }
+    /// Return the `DocImportProgressFound` event
+    pub fn as_found(&self) -> DocImportProgressFound {
+        match self {
+            DocImportProgress::Found(f) => f.clone(),
+            _ => panic!("DocImportProgress type is not 'Found'"),
+        }
+    }
+    /// Return the `DocImportProgressProgress` event
+    pub fn as_progress(&self) -> DocImportProgressProgress {
+        match self {
+            DocImportProgress::Progress(p) => p.clone(),
+            _ => panic!("DocImportProgress type is not 'Progress'"),
+        }
+    }
+
+    /// Return the `DocImportProgressDone` event
+    pub fn as_ingest_done(&self) -> DocImportProgressIngestDone {
+        match self {
+            DocImportProgress::IngestDone(d) => d.clone(),
+            _ => panic!("DocImportProgress type is not 'IngestDone'"),
+        }
+    }
+
+    /// Return the `DocImportProgressAllDone`
+    pub fn as_all_done(&self) -> DocImportProgressAllDone {
+        match self {
+            DocImportProgress::AllDone(a) => a.clone(),
+            _ => panic!("DocImportProgress type is not 'AllDone'"),
+        }
+    }
+
+    /// Return the `DocImportProgressAbort`
+    pub fn as_abort(&self) -> DocImportProgressAbort {
+        match self {
+            DocImportProgress::Abort(a) => a.clone(),
+            _ => panic!("DocImportProgress type is not 'Abort'"),
+        }
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
