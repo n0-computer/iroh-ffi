@@ -18,13 +18,13 @@ interface IrohNode {
   constructor(string path);
   string node_id();
   [Throws=IrohError]
-  Doc doc_new();
+  Doc doc_create();
   [Throws=IrohError]
   Doc doc_join(DocTicket ticket);
   [Throws=IrohError]
   sequence<NamespaceAndCapability> doc_list();
   [Throws=IrohError]
-  AuthorId author_new();
+  AuthorId author_create();
   [Throws=IrohError]
   sequence<AuthorId> author_list();
   [Throws=IrohError]
@@ -93,15 +93,19 @@ dictionary NamespaceAndCapability {
 
 interface Query {
   [Name=all]
-  constructor(SortBy sort_by, SortDirection direction, u64? offset, u64? limit);
+  constructor(QueryOptions? opts);
   [Name=single_latest_per_key]
-  constructor(SortDirection direction, u64? offset, u64? limit);
+  constructor(QueryOptions? opts);
   [Name=author]
-  constructor(AuthorId author, SortBy sort_by, SortDirection direction, u64? offset, u64? limit);
+  constructor(AuthorId author, QueryOptions? opts);
   [Name=key_exact]
-  constructor(bytes key, SortBy sort_by, SortDirection direction, u64? offset, u64? limit);
- [Name=key_prefix]
-  constructor(bytes prefix, SortBy sort_by, SortDirection direction, u64? offset, u64? limit);
+  constructor(bytes key, QueryOptions? opts);
+  [Name=author_key_exact]
+  constructor(AuthorId author, bytes key);
+  [Name=key_prefix]
+  constructor(bytes prefix, QueryOptions? opts);
+  [Name=author_key_prefix]
+  constructor(AuthorId author, bytes prefix, QueryOptions? opts);
   u64 offset();
   u64? limit();
 };
@@ -149,6 +153,8 @@ interface Entry {
   AuthorId author();
   bytes key();
   NamespaceId namespace();
+  Hash content_hash();
+  u64 content_len();
 };
 
 interface Hash {
@@ -234,8 +240,22 @@ dictionary SyncEvent {
 
 [Enum]
 interface Origin {
-  Connect();
+  Connect(SyncReason reason);
   Accept();
+};
+
+enum SyncReason {
+  "DirectJoin",
+  "NewNeighbor",
+  "SyncReport",
+  "Resync",
+};
+
+dictionary QueryOptions {
+  SortBy sort_by;
+  SortDirection direction;
+  u64 offset;
+  u64 limit;
 };
 
 dictionary ConnectionInfo {

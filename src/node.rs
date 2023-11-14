@@ -140,7 +140,7 @@ impl IrohNode {
         self.node.peer_id().to_string()
     }
 
-    pub fn doc_new(&self) -> Result<Arc<Doc>, Error> {
+    pub fn doc_create(&self) -> Result<Arc<Doc>, Error> {
         block_on(&self.async_runtime, async {
             let doc = self.sync_client.docs.create().await.map_err(Error::doc)?;
 
@@ -151,7 +151,7 @@ impl IrohNode {
         })
     }
 
-    pub fn author_new(&self) -> Result<Arc<AuthorId>, Error> {
+    pub fn author_create(&self) -> Result<Arc<AuthorId>, Error> {
         block_on(&self.async_runtime, async {
             let author = self
                 .sync_client
@@ -266,12 +266,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_doc_new() {
+    fn test_doc_create() {
         let path = tempfile::tempdir().unwrap();
         let node = IrohNode::new(path.path().to_string_lossy().into_owned()).unwrap();
         let node_id = node.node_id();
         println!("id: {}", node_id);
-        let doc = node.doc_new().unwrap();
+        let doc = node.doc_create().unwrap();
         let doc_id = doc.id();
         println!("doc_id: {}", doc_id);
 

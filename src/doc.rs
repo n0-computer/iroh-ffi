@@ -332,6 +332,16 @@ impl Entry {
     pub fn namespace(&self) -> Arc<NamespaceId> {
         Arc::new(NamespaceId(self.0.id().namespace()))
     }
+
+    /// Get the content_hash of this entry.
+    pub fn content_hash(&self) -> Arc<Hash> {
+        Arc::new(Hash(self.0.content_hash()))
+    }
+
+    /// Get the content_length of this entry.
+    pub fn content_len(&self) -> u64 {
+        self.0.content_len()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -390,93 +400,163 @@ pub use iroh::sync::store::SortDirection;
 #[derive(Clone, Debug)]
 pub struct Query(iroh::sync::store::Query);
 
+/// Options for sorting and pagination for using [`Query`]s.
+#[derive(Clone, Debug, Default)]
+pub struct QueryOptions {
+    /// Sort by author or key first.
+    ///
+    /// Default is [`SortBy::AuthorKey`], so sorting first by author and then by key.
+    pub sort_by: SortBy,
+    /// Direction by which to sort the entries
+    ///
+    /// Default is [`SortDirection::Asc`]
+    pub direction: SortDirection,
+    /// Offset
+    pub offset: u64,
+    /// Limit to limit the pagination.
+    ///
+    /// When the limit is 0, the limit does not exist.
+    pub limit: u64,
+}
+
 impl Query {
     /// Query all records.
-    pub fn all(
-        sort_by: SortBy,
-        direction: SortDirection,
-        offset: Option<u64>,
-        limit: Option<u64>,
-    ) -> Self {
-        let mut builder = iroh::sync::store::Query::all().sort_by(sort_by, direction);
-        if let Some(offset) = offset {
-            builder = builder.offset(offset);
-        }
-        if let Some(limit) = limit {
-            builder = builder.limit(limit);
+    ///
+    /// If `opts` is `None`, the default values will be used:
+    ///     sort_by: SortBy::AuthorKey
+    ///     direction: SortDirection::Asc
+    ///     offset: None
+    ///     limit: None
+    pub fn all(opts: Option<QueryOptions>) -> Self {
+        let mut builder = iroh::sync::store::Query::all();
+
+        if let Some(opts) = opts {
+            if opts.offset != 0 {
+                builder = builder.offset(opts.offset);
+            }
+            if opts.limit != 0 {
+                builder = builder.limit(opts.limit);
+            }
+            builder = builder.sort_by(opts.sort_by, opts.direction);
         }
         Query(builder.build())
     }
 
     /// Query only the latest entry for each key, omitting older entries if the entry was written
     /// to by multiple authors.
-    pub fn single_latest_per_key(
-        direction: SortDirection,
-        offset: Option<u64>,
-        limit: Option<u64>,
-    ) -> Self {
-        let mut builder =
-            iroh::sync::store::Query::single_latest_per_key().sort_direction(direction);
-        if let Some(offset) = offset {
-            builder = builder.offset(offset);
-        }
-        if let Some(limit) = limit {
-            builder = builder.limit(limit);
+    ///
+    /// If `opts` is `None`, the default values will be used:
+    ///     direction: SortDirection::Asc
+    ///     offset: None
+    ///     limit: None
+    pub fn single_latest_per_key(opts: Option<QueryOptions>) -> Self {
+        let mut builder = iroh::sync::store::Query::single_latest_per_key();
+
+        if let Some(opts) = opts {
+            if opts.offset != 0 {
+                builder = builder.offset(opts.offset);
+            }
+            if opts.limit != 0 {
+                builder = builder.limit(opts.limit);
+            }
+            builder = builder.sort_direction(opts.direction);
         }
         Query(builder.build())
     }
 
     /// Create a [`Query::all`] query filtered by a single author.
-    pub fn author(
-        author: Arc<AuthorId>,
-        sort_by: SortBy,
-        direction: SortDirection,
-        offset: Option<u64>,
-        limit: Option<u64>,
-    ) -> Self {
-        let mut builder =
-            iroh::sync::store::Query::author((*author).0.clone()).sort_by(sort_by, direction);
-        if let Some(offset) = offset {
-            builder = builder.offset(offset);
-        }
-        if let Some(limit) = limit {
-            builder = builder.limit(limit);
+    ///
+    /// If `opts` is `None`, the default values will be used:
+    ///     sort_by: SortBy::AuthorKey
+    ///     direction: SortDirection::Asc
+    ///     offset: None
+    ///     limit: None
+    pub fn author(author: Arc<AuthorId>, opts: Option<QueryOptions>) -> Self {
+        let mut builder = iroh::sync::store::Query::author((*author).0.clone());
+
+        if let Some(opts) = opts {
+            if opts.offset != 0 {
+                builder = builder.offset(opts.offset);
+            }
+            if opts.limit != 0 {
+                builder = builder.limit(opts.limit);
+            }
+            builder = builder.sort_by(opts.sort_by, opts.direction);
         }
         Query(builder.build())
     }
 
     /// Create a [`Query::all`] query filtered by a single key.
-    pub fn key_exact(
-        key: Vec<u8>,
-        sort_by: SortBy,
-        direction: SortDirection,
-        offset: Option<u64>,
-        limit: Option<u64>,
-    ) -> Self {
-        let mut builder = iroh::sync::store::Query::key_exact(&key).sort_by(sort_by, direction);
-        if let Some(offset) = offset {
-            builder = builder.offset(offset);
+    ///
+    /// If `opts` is `None`, the default values will be used:
+    ///     sort_by: SortBy::AuthorKey
+    ///     direction: SortDirection::Asc
+    ///     offset: None
+    ///     limit: None
+    pub fn key_exact(key: Vec<u8>, opts: Option<QueryOptions>) -> Self {
+        let mut builder = iroh::sync::store::Query::key_exact(&key);
+
+        if let Some(opts) = opts {
+            if opts.offset != 0 {
+                builder = builder.offset(opts.offset);
+            }
+            if opts.limit != 0 {
+                builder = builder.limit(opts.limit);
+            }
+            builder = builder.sort_by(opts.sort_by, opts.direction);
         }
-        if let Some(limit) = limit {
-            builder = builder.limit(limit);
+        Query(builder.build())
+    }
+
+    /// Create a [`Query::all`] query filtered by a single key and author.
+    pub fn author_key_exact(author: Arc<AuthorId>, key: Vec<u8>) -> Self {
+        let builder = iroh::sync::store::Query::author((*author).0.clone()).key_exact(&key);
+        Query(builder.build())
+    }
+
+    /// Create a [`Query::all`] query filtered by a key prefix.
+    ///  
+    /// If `opts` is `None`, the default values will be used:
+    ///     sort_by: SortBy::AuthorKey
+    ///     direction: SortDirection::Asc
+    ///     offset: None
+    ///     limit: None
+    pub fn key_prefix(prefix: Vec<u8>, opts: Option<QueryOptions>) -> Self {
+        let mut builder = iroh::sync::store::Query::key_prefix(&prefix);
+
+        if let Some(opts) = opts {
+            if opts.offset != 0 {
+                builder = builder.offset(opts.offset);
+            }
+            if opts.limit != 0 {
+                builder = builder.limit(opts.limit);
+            }
+            builder = builder.sort_by(opts.sort_by, opts.direction);
         }
         Query(builder.build())
     }
 
     /// Create a [`Query::all`] query filtered by a key prefix.
-    pub fn key_prefix(
+    ///  
+    /// If `opts` is `None`, the default values will be used:
+    ///     direction: SortDirection::Asc
+    ///     offset: None
+    ///     limit: None
+    pub fn author_key_prefix(
+        author: Arc<AuthorId>,
         prefix: Vec<u8>,
-        sort_by: SortBy,
-        direction: SortDirection,
-        offset: Option<u64>,
-        limit: Option<u64>,
+        opts: Option<QueryOptions>,
     ) -> Self {
-        let mut builder = iroh::sync::store::Query::key_prefix(&prefix).sort_by(sort_by, direction);
-        if let Some(offset) = offset {
-            builder = builder.offset(offset);
-        }
-        if let Some(limit) = limit {
-            builder = builder.limit(limit);
+        let mut builder = iroh::sync::store::Query::author((*author).0.clone()).key_prefix(&prefix);
+
+        if let Some(opts) = opts {
+            if opts.offset != 0 {
+                builder = builder.offset(opts.offset);
+            }
+            if opts.limit != 0 {
+                builder = builder.limit(opts.limit);
+            }
+            builder = builder.sort_by(opts.sort_by, opts.direction);
         }
         Query(builder.build())
     }
@@ -686,34 +766,13 @@ impl From<iroh::sync_engine::SyncEvent> for SyncEvent {
     }
 }
 
-// TODO: iroh 0.8.0 release made this struct private. Re-implement when it's made public again
-/// Why we started a sync request
-// #[derive(Debug, Clone, Copy)]
-// pub enum SyncReason {
-//     /// Direct join request via API
-//     DirectJoin,
-//     /// Peer showed up as new neighbor in the gossip swarm
-//     NewNeighbor,
-// }
-
-// impl From<iroh::sync_engine::SyncReason> for SyncReason {
-//     fn from(value: iroh::sync_engine::SyncReason) -> Self {
-//         match value {
-//             iroh::sync_engine::SyncReason::DirectJoin => Self::DirectJoin,
-//             iroh::sync_engine::SyncReason::NewNeighbor => Self::NewNeighbor,
-//         }
-//     }
-// }
+pub use iroh::sync_engine::SyncReason;
 
 /// Why we performed a sync exchange
 #[derive(Debug, Clone)]
 pub enum Origin {
-    /// TODO: in iroh 0.8.0 `SyncReason` is private, until the next release when it can be made
     /// public, use a unit variant
-    // Connect {
-    //     reason: SyncReason,
-    // },
-    Connect,
+    Connect { reason: SyncReason },
     /// A peer connected to us and we accepted the exchange
     Accept,
 }
@@ -721,7 +780,9 @@ pub enum Origin {
 impl From<iroh::sync_engine::Origin> for Origin {
     fn from(value: iroh::sync_engine::Origin) -> Self {
         match value {
-            iroh::sync_engine::Origin::Connect(_) => Self::Connect,
+            iroh::sync_engine::Origin::Connect(reason) => Self::Connect {
+                reason: reason.into(),
+            },
             iroh::sync_engine::Origin::Accept => Self::Accept,
         }
     }
@@ -851,18 +912,24 @@ mod tests {
         assert!(doc_ticket.equal(doc_ticket_0.clone()));
         assert!(doc_ticket_0.equal(doc_ticket.into()));
     }
-
     #[test]
     fn test_query() {
+        let mut opts = QueryOptions::default();
+        opts.offset = 10;
+        opts.limit = 10;
         // all
-        let all = Query::all(SortBy::KeyAuthor, SortDirection::Asc, Some(10), Some(10));
+        let all = Query::all(Some(opts));
         assert_eq!(10, all.offset());
         assert_eq!(Some(10), all.limit());
 
-        let single_latest_per_key = Query::single_latest_per_key(SortDirection::Desc, None, None);
+        let mut opts = QueryOptions::default();
+        opts.direction = SortDirection::Desc;
+        let single_latest_per_key = Query::single_latest_per_key(Some(opts));
         assert_eq!(0, single_latest_per_key.offset());
         assert_eq!(None, single_latest_per_key.limit());
 
+        let mut opts = QueryOptions::default();
+        opts.offset = 100;
         let author = Query::author(
             Arc::new(
                 AuthorId::from_string(
@@ -870,32 +937,51 @@ mod tests {
                 )
                 .unwrap(),
             ),
-            SortBy::AuthorKey,
-            SortDirection::Asc,
-            Some(100),
-            None,
+            Some(opts),
         );
         assert_eq!(100, author.offset());
         assert_eq!(None, author.limit());
 
-        let key_exact = Query::key_exact(
-            b"key".to_vec(),
-            SortBy::KeyAuthor,
-            SortDirection::Desc,
-            None,
-            Some(100),
-        );
+        let mut opts = QueryOptions::default();
+        opts.limit = 100;
+        let key_exact = Query::key_exact(b"key".to_vec(), Some(opts));
         assert_eq!(0, key_exact.offset());
         assert_eq!(Some(100), key_exact.limit());
 
-        let key_prefix = Query::key_prefix(
-            b"prefix".to_vec(),
-            SortBy::KeyAuthor,
-            SortDirection::Desc,
-            None,
-            Some(100),
-        );
+        let opts = QueryOptions {
+            sort_by: SortBy::KeyAuthor,
+            direction: SortDirection::Desc,
+            offset: 0,
+            limit: 100,
+        };
+        let key_prefix = Query::key_prefix(b"prefix".to_vec(), Some(opts));
         assert_eq!(0, key_prefix.offset());
         assert_eq!(Some(100), key_prefix.limit());
+    }
+    #[test]
+    fn test_doc_entry_basics() {
+        let path = tempfile::tempdir().unwrap();
+        let node = crate::IrohNode::new(path.path().to_string_lossy().into_owned()).unwrap();
+
+        // create doc  and author
+        let doc = node.doc_create().unwrap();
+        let author = node.author_create().unwrap();
+
+        // add entry
+        let val = b"hello world!".to_vec();
+        let key = b"foo".to_vec();
+        let hash = doc
+            .set_bytes(author.clone(), key.clone(), val.clone())
+            .unwrap();
+
+        // get entry
+        let query = Query::author_key_exact(author, key.clone());
+        let entry = doc.get_one(query.into()).unwrap().unwrap();
+
+        assert!(hash.equal(entry.content_hash()));
+
+        let got_val = doc.read_to_bytes(entry.clone()).unwrap();
+        assert_eq!(val, got_val);
+        assert_eq!(val.len() as u64, entry.content_len());
     }
 }

@@ -1288,6 +1288,8 @@ public func FfiConverterTypeDownloadProgress_lower(_ value: DownloadProgress) ->
 
 public protocol EntryProtocol {
     func author() -> AuthorId
+    func contentHash() -> Hash
+    func contentLen() -> UInt64
     func key() -> Data
     func namespace() -> NamespaceId
 }
@@ -1311,6 +1313,24 @@ public class Entry: EntryProtocol {
             try!
                 rustCall {
                     uniffi_iroh_fn_method_entry_author(self.pointer, $0)
+                }
+        )
+    }
+
+    public func contentHash() -> Hash {
+        return try! FfiConverterTypeHash.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_entry_content_hash(self.pointer, $0)
+                }
+        )
+    }
+
+    public func contentLen() -> UInt64 {
+        return try! FfiConverterUInt64.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_entry_content_len(self.pointer, $0)
                 }
         )
     }
@@ -1728,8 +1748,8 @@ public func FfiConverterTypeIpv6Addr_lower(_ value: Ipv6Addr) -> UnsafeMutableRa
 }
 
 public protocol IrohNodeProtocol {
+    func authorCreate() throws -> AuthorId
     func authorList() throws -> [AuthorId]
-    func authorNew() throws -> AuthorId
     func blobsAddBytes(bytes: Data, tag: SetTagOption) throws -> BlobAddOutcome
     func blobsAddFromPath(path: String, inPlace: Bool, tag: SetTagOption, wrap: WrapOption, cb: AddCallback) throws
     func blobsDeleteBlob(hash: Hash) throws
@@ -1742,9 +1762,9 @@ public protocol IrohNodeProtocol {
     func blobsWriteToPath(hash: Hash, path: String) throws
     func connectionInfo(nodeId: PublicKey) throws -> ConnectionInfo?
     func connections() throws -> [ConnectionInfo]
+    func docCreate() throws -> Doc
     func docJoin(ticket: DocTicket) throws -> Doc
     func docList() throws -> [NamespaceAndCapability]
-    func docNew() throws -> Doc
     func nodeId() -> String
     func stats() throws -> [String: CounterStats]
 }
@@ -1771,18 +1791,18 @@ public class IrohNode: IrohNodeProtocol {
         try! rustCall { uniffi_iroh_fn_free_irohnode(pointer, $0) }
     }
 
-    public func authorList() throws -> [AuthorId] {
-        return try FfiConverterSequenceTypeAuthorId.lift(
+    public func authorCreate() throws -> AuthorId {
+        return try FfiConverterTypeAuthorId.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_irohnode_author_list(self.pointer, $0)
+                uniffi_iroh_fn_method_irohnode_author_create(self.pointer, $0)
             }
         )
     }
 
-    public func authorNew() throws -> AuthorId {
-        return try FfiConverterTypeAuthorId.lift(
+    public func authorList() throws -> [AuthorId] {
+        return try FfiConverterSequenceTypeAuthorId.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_irohnode_author_new(self.pointer, $0)
+                uniffi_iroh_fn_method_irohnode_author_list(self.pointer, $0)
             }
         )
     }
@@ -1894,6 +1914,14 @@ public class IrohNode: IrohNodeProtocol {
         )
     }
 
+    public func docCreate() throws -> Doc {
+        return try FfiConverterTypeDoc.lift(
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_irohnode_doc_create(self.pointer, $0)
+            }
+        )
+    }
+
     public func docJoin(ticket: DocTicket) throws -> Doc {
         return try FfiConverterTypeDoc.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
@@ -1907,14 +1935,6 @@ public class IrohNode: IrohNodeProtocol {
         return try FfiConverterSequenceTypeNamespaceAndCapability.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_irohnode_doc_list(self.pointer, $0)
-            }
-        )
-    }
-
-    public func docNew() throws -> Doc {
-        return try FfiConverterTypeDoc.lift(
-            rustCallWithError(FfiConverterTypeIrohError.lift) {
-                uniffi_iroh_fn_method_irohnode_doc_new(self.pointer, $0)
             }
         )
     }
@@ -2415,59 +2435,64 @@ public class Query: QueryProtocol {
         try! rustCall { uniffi_iroh_fn_free_query(pointer, $0) }
     }
 
-    public static func all(sortBy: SortBy, direction: SortDirection, offset: UInt64?, limit: UInt64?) -> Query {
+    public static func all(opts: QueryOptions?) -> Query {
         return Query(unsafeFromRawPointer: try! rustCall {
             uniffi_iroh_fn_constructor_query_all(
-                FfiConverterTypeSortBy.lower(sortBy),
-                FfiConverterTypeSortDirection.lower(direction),
-                FfiConverterOptionUInt64.lower(offset),
-                FfiConverterOptionUInt64.lower(limit), $0
+                FfiConverterOptionTypeQueryOptions.lower(opts), $0
             )
         })
     }
 
-    public static func author(author: AuthorId, sortBy: SortBy, direction: SortDirection, offset: UInt64?, limit: UInt64?) -> Query {
+    public static func author(author: AuthorId, opts: QueryOptions?) -> Query {
         return Query(unsafeFromRawPointer: try! rustCall {
             uniffi_iroh_fn_constructor_query_author(
                 FfiConverterTypeAuthorId.lower(author),
-                FfiConverterTypeSortBy.lower(sortBy),
-                FfiConverterTypeSortDirection.lower(direction),
-                FfiConverterOptionUInt64.lower(offset),
-                FfiConverterOptionUInt64.lower(limit), $0
+                FfiConverterOptionTypeQueryOptions.lower(opts), $0
             )
         })
     }
 
-    public static func keyExact(key: Data, sortBy: SortBy, direction: SortDirection, offset: UInt64?, limit: UInt64?) -> Query {
+    public static func authorKeyExact(author: AuthorId, key: Data) -> Query {
+        return Query(unsafeFromRawPointer: try! rustCall {
+            uniffi_iroh_fn_constructor_query_author_key_exact(
+                FfiConverterTypeAuthorId.lower(author),
+                FfiConverterData.lower(key), $0
+            )
+        })
+    }
+
+    public static func authorKeyPrefix(author: AuthorId, prefix: Data, opts: QueryOptions?) -> Query {
+        return Query(unsafeFromRawPointer: try! rustCall {
+            uniffi_iroh_fn_constructor_query_author_key_prefix(
+                FfiConverterTypeAuthorId.lower(author),
+                FfiConverterData.lower(prefix),
+                FfiConverterOptionTypeQueryOptions.lower(opts), $0
+            )
+        })
+    }
+
+    public static func keyExact(key: Data, opts: QueryOptions?) -> Query {
         return Query(unsafeFromRawPointer: try! rustCall {
             uniffi_iroh_fn_constructor_query_key_exact(
                 FfiConverterData.lower(key),
-                FfiConverterTypeSortBy.lower(sortBy),
-                FfiConverterTypeSortDirection.lower(direction),
-                FfiConverterOptionUInt64.lower(offset),
-                FfiConverterOptionUInt64.lower(limit), $0
+                FfiConverterOptionTypeQueryOptions.lower(opts), $0
             )
         })
     }
 
-    public static func keyPrefix(prefix: Data, sortBy: SortBy, direction: SortDirection, offset: UInt64?, limit: UInt64?) -> Query {
+    public static func keyPrefix(prefix: Data, opts: QueryOptions?) -> Query {
         return Query(unsafeFromRawPointer: try! rustCall {
             uniffi_iroh_fn_constructor_query_key_prefix(
                 FfiConverterData.lower(prefix),
-                FfiConverterTypeSortBy.lower(sortBy),
-                FfiConverterTypeSortDirection.lower(direction),
-                FfiConverterOptionUInt64.lower(offset),
-                FfiConverterOptionUInt64.lower(limit), $0
+                FfiConverterOptionTypeQueryOptions.lower(opts), $0
             )
         })
     }
 
-    public static func singleLatestPerKey(direction: SortDirection, offset: UInt64?, limit: UInt64?) -> Query {
+    public static func singleLatestPerKey(opts: QueryOptions?) -> Query {
         return Query(unsafeFromRawPointer: try! rustCall {
             uniffi_iroh_fn_constructor_query_single_latest_per_key(
-                FfiConverterTypeSortDirection.lower(direction),
-                FfiConverterOptionUInt64.lower(offset),
-                FfiConverterOptionUInt64.lower(limit), $0
+                FfiConverterOptionTypeQueryOptions.lower(opts), $0
             )
         })
     }
@@ -4194,6 +4219,73 @@ public func FfiConverterTypeOpenState_lower(_ value: OpenState) -> RustBuffer {
     return FfiConverterTypeOpenState.lower(value)
 }
 
+public struct QueryOptions {
+    public var sortBy: SortBy
+    public var direction: SortDirection
+    public var offset: UInt64
+    public var limit: UInt64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(sortBy: SortBy, direction: SortDirection, offset: UInt64, limit: UInt64) {
+        self.sortBy = sortBy
+        self.direction = direction
+        self.offset = offset
+        self.limit = limit
+    }
+}
+
+extension QueryOptions: Equatable, Hashable {
+    public static func == (lhs: QueryOptions, rhs: QueryOptions) -> Bool {
+        if lhs.sortBy != rhs.sortBy {
+            return false
+        }
+        if lhs.direction != rhs.direction {
+            return false
+        }
+        if lhs.offset != rhs.offset {
+            return false
+        }
+        if lhs.limit != rhs.limit {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(sortBy)
+        hasher.combine(direction)
+        hasher.combine(offset)
+        hasher.combine(limit)
+    }
+}
+
+public struct FfiConverterTypeQueryOptions: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> QueryOptions {
+        return try QueryOptions(
+            sortBy: FfiConverterTypeSortBy.read(from: &buf),
+            direction: FfiConverterTypeSortDirection.read(from: &buf),
+            offset: FfiConverterUInt64.read(from: &buf),
+            limit: FfiConverterUInt64.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: QueryOptions, into buf: inout [UInt8]) {
+        FfiConverterTypeSortBy.write(value.sortBy, into: &buf)
+        FfiConverterTypeSortDirection.write(value.direction, into: &buf)
+        FfiConverterUInt64.write(value.offset, into: &buf)
+        FfiConverterUInt64.write(value.limit, into: &buf)
+    }
+}
+
+public func FfiConverterTypeQueryOptions_lift(_ buf: RustBuffer) throws -> QueryOptions {
+    return try FfiConverterTypeQueryOptions.lift(buf)
+}
+
+public func FfiConverterTypeQueryOptions_lower(_ value: QueryOptions) -> RustBuffer {
+    return FfiConverterTypeQueryOptions.lower(value)
+}
+
 public struct SyncEvent {
     public var peer: PublicKey
     public var origin: Origin
@@ -4887,7 +4979,7 @@ extension LogLevel: Equatable, Hashable {}
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 public enum Origin {
-    case connect
+    case connect(reason: SyncReason)
     case accept
 }
 
@@ -4897,7 +4989,9 @@ public struct FfiConverterTypeOrigin: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Origin {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return .connect
+        case 1: return try .connect(
+                reason: FfiConverterTypeSyncReason.read(from: &buf)
+            )
 
         case 2: return .accept
 
@@ -4907,8 +5001,9 @@ public struct FfiConverterTypeOrigin: FfiConverterRustBuffer {
 
     public static func write(_ value: Origin, into buf: inout [UInt8]) {
         switch value {
-        case .connect:
+        case let .connect(reason):
             writeInt(&buf, Int32(1))
+            FfiConverterTypeSyncReason.write(reason, into: &buf)
 
         case .accept:
             writeInt(&buf, Int32(2))
@@ -5093,6 +5188,60 @@ public func FfiConverterTypeSortDirection_lower(_ value: SortDirection) -> RustB
 }
 
 extension SortDirection: Equatable, Hashable {}
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+public enum SyncReason {
+    case directJoin
+    case newNeighbor
+    case syncReport
+    case resync
+}
+
+public struct FfiConverterTypeSyncReason: FfiConverterRustBuffer {
+    typealias SwiftType = SyncReason
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SyncReason {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        case 1: return .directJoin
+
+        case 2: return .newNeighbor
+
+        case 3: return .syncReport
+
+        case 4: return .resync
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: SyncReason, into buf: inout [UInt8]) {
+        switch value {
+        case .directJoin:
+            writeInt(&buf, Int32(1))
+
+        case .newNeighbor:
+            writeInt(&buf, Int32(2))
+
+        case .syncReport:
+            writeInt(&buf, Int32(3))
+
+        case .resync:
+            writeInt(&buf, Int32(4))
+        }
+    }
+}
+
+public func FfiConverterTypeSyncReason_lift(_ buf: RustBuffer) throws -> SyncReason {
+    return try FfiConverterTypeSyncReason.lift(buf)
+}
+
+public func FfiConverterTypeSyncReason_lower(_ value: SyncReason) -> RustBuffer {
+    return FfiConverterTypeSyncReason.lower(value)
+}
+
+extension SyncReason: Equatable, Hashable {}
 
 private extension NSLock {
     func withLock<T>(f: () throws -> T) rethrows -> T {
@@ -5624,6 +5773,27 @@ private struct FfiConverterOptionTypeConnectionInfo: FfiConverterRustBuffer {
     }
 }
 
+private struct FfiConverterOptionTypeQueryOptions: FfiConverterRustBuffer {
+    typealias SwiftType = QueryOptions?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeQueryOptions.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeQueryOptions.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
 private struct FfiConverterSequenceUInt8: FfiConverterRustBuffer {
     typealias SwiftType = [UInt8]
 
@@ -6049,6 +6219,12 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_entry_author() != 26124 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_checksum_method_entry_content_hash() != 39306 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_entry_content_len() != 60107 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_checksum_method_entry_key() != 19122 {
         return InitializationResult.apiChecksumMismatch
     }
@@ -6088,10 +6264,10 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_ipv6addr_to_string() != 46637 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_author_list() != 12499 {
+    if uniffi_iroh_checksum_method_irohnode_author_create() != 31148 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_author_new() != 61553 {
+    if uniffi_iroh_checksum_method_irohnode_author_list() != 12499 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_blobs_add_bytes() != 20668 {
@@ -6130,13 +6306,13 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_irohnode_connections() != 37352 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_checksum_method_irohnode_doc_create() != 64213 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_checksum_method_irohnode_doc_join() != 30773 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_doc_list() != 44252 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_checksum_method_irohnode_doc_new() != 34009 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_node_id() != 31962 {
@@ -6304,19 +6480,25 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_constructor_publickey_from_string() != 18975 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_query_all() != 7812 {
+    if uniffi_iroh_checksum_constructor_query_all() != 18362 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_query_author() != 3352 {
+    if uniffi_iroh_checksum_constructor_query_author() != 6757 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_query_key_exact() != 23311 {
+    if uniffi_iroh_checksum_constructor_query_author_key_exact() != 21618 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_query_key_prefix() != 13415 {
+    if uniffi_iroh_checksum_constructor_query_author_key_prefix() != 63753 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_query_single_latest_per_key() != 35940 {
+    if uniffi_iroh_checksum_constructor_query_key_exact() != 32100 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_constructor_query_key_prefix() != 44412 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_constructor_query_single_latest_per_key() != 42778 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_constructor_requesttoken_from_string() != 49791 {

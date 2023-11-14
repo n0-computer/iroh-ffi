@@ -185,6 +185,10 @@ void uniffi_iroh_fn_free_entry(void*_Nonnull ptr, RustCallStatus *_Nonnull out_s
 );
 void*_Nonnull uniffi_iroh_fn_method_entry_author(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+void*_Nonnull uniffi_iroh_fn_method_entry_content_hash(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+uint64_t uniffi_iroh_fn_method_entry_content_len(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
 RustBuffer uniffi_iroh_fn_method_entry_key(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void*_Nonnull uniffi_iroh_fn_method_entry_namespace(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -237,9 +241,9 @@ void uniffi_iroh_fn_free_irohnode(void*_Nonnull ptr, RustCallStatus *_Nonnull ou
 );
 void*_Nonnull uniffi_iroh_fn_constructor_irohnode_new(RustBuffer path, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_iroh_fn_method_irohnode_author_list(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_iroh_fn_method_irohnode_author_create(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void*_Nonnull uniffi_iroh_fn_method_irohnode_author_new(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_iroh_fn_method_irohnode_author_list(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_irohnode_blobs_add_bytes(void*_Nonnull ptr, RustBuffer bytes, void*_Nonnull tag, RustCallStatus *_Nonnull out_status
 );
@@ -265,11 +269,11 @@ RustBuffer uniffi_iroh_fn_method_irohnode_connection_info(void*_Nonnull ptr, voi
 );
 RustBuffer uniffi_iroh_fn_method_irohnode_connections(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+void*_Nonnull uniffi_iroh_fn_method_irohnode_doc_create(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
 void*_Nonnull uniffi_iroh_fn_method_irohnode_doc_join(void*_Nonnull ptr, void*_Nonnull ticket, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_irohnode_doc_list(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void*_Nonnull uniffi_iroh_fn_method_irohnode_doc_new(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_irohnode_node_id(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -325,15 +329,19 @@ RustBuffer uniffi_iroh_fn_method_publickey_to_string(void*_Nonnull ptr, RustCall
 );
 void uniffi_iroh_fn_free_query(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void*_Nonnull uniffi_iroh_fn_constructor_query_all(RustBuffer sort_by, RustBuffer direction, RustBuffer offset, RustBuffer limit, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_iroh_fn_constructor_query_all(RustBuffer opts, RustCallStatus *_Nonnull out_status
 );
-void*_Nonnull uniffi_iroh_fn_constructor_query_author(void*_Nonnull author, RustBuffer sort_by, RustBuffer direction, RustBuffer offset, RustBuffer limit, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_iroh_fn_constructor_query_author(void*_Nonnull author, RustBuffer opts, RustCallStatus *_Nonnull out_status
 );
-void*_Nonnull uniffi_iroh_fn_constructor_query_key_exact(RustBuffer key, RustBuffer sort_by, RustBuffer direction, RustBuffer offset, RustBuffer limit, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_iroh_fn_constructor_query_author_key_exact(void*_Nonnull author, RustBuffer key, RustCallStatus *_Nonnull out_status
 );
-void*_Nonnull uniffi_iroh_fn_constructor_query_key_prefix(RustBuffer prefix, RustBuffer sort_by, RustBuffer direction, RustBuffer offset, RustBuffer limit, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_iroh_fn_constructor_query_author_key_prefix(void*_Nonnull author, RustBuffer prefix, RustBuffer opts, RustCallStatus *_Nonnull out_status
 );
-void*_Nonnull uniffi_iroh_fn_constructor_query_single_latest_per_key(RustBuffer direction, RustBuffer offset, RustBuffer limit, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_iroh_fn_constructor_query_key_exact(RustBuffer key, RustBuffer opts, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_iroh_fn_constructor_query_key_prefix(RustBuffer prefix, RustBuffer opts, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_iroh_fn_constructor_query_single_latest_per_key(RustBuffer opts, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_query_limit(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -547,6 +555,12 @@ uint16_t uniffi_iroh_checksum_method_downloadprogress_type(void
 uint16_t uniffi_iroh_checksum_method_entry_author(void
     
 );
+uint16_t uniffi_iroh_checksum_method_entry_content_hash(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_entry_content_len(void
+    
+);
 uint16_t uniffi_iroh_checksum_method_entry_key(void
     
 );
@@ -586,10 +600,10 @@ uint16_t uniffi_iroh_checksum_method_ipv6addr_segments(void
 uint16_t uniffi_iroh_checksum_method_ipv6addr_to_string(void
     
 );
-uint16_t uniffi_iroh_checksum_method_irohnode_author_list(void
+uint16_t uniffi_iroh_checksum_method_irohnode_author_create(void
     
 );
-uint16_t uniffi_iroh_checksum_method_irohnode_author_new(void
+uint16_t uniffi_iroh_checksum_method_irohnode_author_list(void
     
 );
 uint16_t uniffi_iroh_checksum_method_irohnode_blobs_add_bytes(void
@@ -628,13 +642,13 @@ uint16_t uniffi_iroh_checksum_method_irohnode_connection_info(void
 uint16_t uniffi_iroh_checksum_method_irohnode_connections(void
     
 );
+uint16_t uniffi_iroh_checksum_method_irohnode_doc_create(void
+    
+);
 uint16_t uniffi_iroh_checksum_method_irohnode_doc_join(void
     
 );
 uint16_t uniffi_iroh_checksum_method_irohnode_doc_list(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_irohnode_doc_new(void
     
 );
 uint16_t uniffi_iroh_checksum_method_irohnode_node_id(void
@@ -806,6 +820,12 @@ uint16_t uniffi_iroh_checksum_constructor_query_all(void
     
 );
 uint16_t uniffi_iroh_checksum_constructor_query_author(void
+    
+);
+uint16_t uniffi_iroh_checksum_constructor_query_author_key_exact(void
+    
+);
+uint16_t uniffi_iroh_checksum_constructor_query_author_key_prefix(void
     
 );
 uint16_t uniffi_iroh_checksum_constructor_query_key_exact(void

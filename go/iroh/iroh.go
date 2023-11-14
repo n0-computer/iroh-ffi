@@ -675,6 +675,24 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_entry_content_hash(uniffiStatus)
+		})
+		if checksum != 39306 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_entry_content_hash: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_entry_content_len(uniffiStatus)
+		})
+		if checksum != 60107 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_entry_content_len: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_entry_key(uniffiStatus)
 		})
 		if checksum != 19122 {
@@ -792,20 +810,20 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_irohnode_author_create(uniffiStatus)
+		})
+		if checksum != 31148 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_irohnode_author_create: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_irohnode_author_list(uniffiStatus)
 		})
 		if checksum != 12499 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_irohnode_author_list: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_method_irohnode_author_new(uniffiStatus)
-		})
-		if checksum != 61553 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_method_irohnode_author_new: UniFFI API checksum mismatch")
 		}
 	}
 	{
@@ -918,6 +936,15 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_irohnode_doc_create(uniffiStatus)
+		})
+		if checksum != 64213 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_irohnode_doc_create: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_irohnode_doc_join(uniffiStatus)
 		})
 		if checksum != 30773 {
@@ -932,15 +959,6 @@ func uniffiCheckChecksums() {
 		if checksum != 44252 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_irohnode_doc_list: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_method_irohnode_doc_new(uniffiStatus)
-		})
-		if checksum != 34009 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_method_irohnode_doc_new: UniFFI API checksum mismatch")
 		}
 	}
 	{
@@ -1442,7 +1460,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_constructor_query_all(uniffiStatus)
 		})
-		if checksum != 7812 {
+		if checksum != 18362 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_constructor_query_all: UniFFI API checksum mismatch")
 		}
@@ -1451,16 +1469,34 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_constructor_query_author(uniffiStatus)
 		})
-		if checksum != 3352 {
+		if checksum != 6757 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_constructor_query_author: UniFFI API checksum mismatch")
 		}
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_constructor_query_author_key_exact(uniffiStatus)
+		})
+		if checksum != 21618 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_constructor_query_author_key_exact: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_constructor_query_author_key_prefix(uniffiStatus)
+		})
+		if checksum != 63753 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_constructor_query_author_key_prefix: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_constructor_query_key_exact(uniffiStatus)
 		})
-		if checksum != 23311 {
+		if checksum != 32100 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_constructor_query_key_exact: UniFFI API checksum mismatch")
 		}
@@ -1469,7 +1505,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_constructor_query_key_prefix(uniffiStatus)
 		})
-		if checksum != 13415 {
+		if checksum != 44412 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_constructor_query_key_prefix: UniFFI API checksum mismatch")
 		}
@@ -1478,7 +1514,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_constructor_query_single_latest_per_key(uniffiStatus)
 		})
-		if checksum != 35940 {
+		if checksum != 42778 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_constructor_query_single_latest_per_key: UniFFI API checksum mismatch")
 		}
@@ -2770,6 +2806,24 @@ func (_self *Entry) Author() *AuthorId {
 	}))
 }
 
+func (_self *Entry) ContentHash() *Hash {
+	_pointer := _self.ffiObject.incrementPointer("*Entry")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterHashINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_method_entry_content_hash(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *Entry) ContentLen() uint64 {
+	_pointer := _self.ffiObject.incrementPointer("*Entry")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterUint64INSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) C.uint64_t {
+		return C.uniffi_iroh_fn_method_entry_content_len(
+			_pointer, _uniffiStatus)
+	}))
+}
+
 func (_self *Entry) Key() []byte {
 	_pointer := _self.ffiObject.incrementPointer("*Entry")
 	defer _self.ffiObject.decrementPointer()
@@ -3167,6 +3221,21 @@ func NewIrohNode(path string) (*IrohNode, error) {
 	}
 }
 
+func (_self *IrohNode) AuthorCreate() (*AuthorId, error) {
+	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
+	defer _self.ffiObject.decrementPointer()
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_method_irohnode_author_create(
+			_pointer, _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue *AuthorId
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterAuthorIdINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
+
 func (_self *IrohNode) AuthorList() ([]*AuthorId, error) {
 	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
 	defer _self.ffiObject.decrementPointer()
@@ -3179,21 +3248,6 @@ func (_self *IrohNode) AuthorList() ([]*AuthorId, error) {
 		return _uniffiDefaultValue, _uniffiErr
 	} else {
 		return FfiConverterSequenceAuthorIdINSTANCE.Lift(_uniffiRV), _uniffiErr
-	}
-}
-
-func (_self *IrohNode) AuthorNew() (*AuthorId, error) {
-	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
-	defer _self.ffiObject.decrementPointer()
-	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_method_irohnode_author_new(
-			_pointer, _uniffiStatus)
-	})
-	if _uniffiErr != nil {
-		var _uniffiDefaultValue *AuthorId
-		return _uniffiDefaultValue, _uniffiErr
-	} else {
-		return FfiConverterAuthorIdINSTANCE.Lift(_uniffiRV), _uniffiErr
 	}
 }
 
@@ -3361,6 +3415,21 @@ func (_self *IrohNode) Connections() ([]ConnectionInfo, error) {
 	}
 }
 
+func (_self *IrohNode) DocCreate() (*Doc, error) {
+	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
+	defer _self.ffiObject.decrementPointer()
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_method_irohnode_doc_create(
+			_pointer, _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue *Doc
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterDocINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
+
 func (_self *IrohNode) DocJoin(ticket *DocTicket) (*Doc, error) {
 	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
 	defer _self.ffiObject.decrementPointer()
@@ -3388,21 +3457,6 @@ func (_self *IrohNode) DocList() ([]NamespaceAndCapability, error) {
 		return _uniffiDefaultValue, _uniffiErr
 	} else {
 		return FfiConverterSequenceTypeNamespaceAndCapabilityINSTANCE.Lift(_uniffiRV), _uniffiErr
-	}
-}
-
-func (_self *IrohNode) DocNew() (*Doc, error) {
-	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
-	defer _self.ffiObject.decrementPointer()
-	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_method_irohnode_doc_new(
-			_pointer, _uniffiStatus)
-	})
-	if _uniffiErr != nil {
-		var _uniffiDefaultValue *Doc
-		return _uniffiDefaultValue, _uniffiErr
-	} else {
-		return FfiConverterDocINSTANCE.Lift(_uniffiRV), _uniffiErr
 	}
 }
 
@@ -3855,29 +3909,39 @@ type Query struct {
 	ffiObject FfiObject
 }
 
-func QueryAll(sortBy SortBy, direction SortDirection, offset *uint64, limit *uint64) *Query {
+func QueryAll(opts *QueryOptions) *Query {
 	return FfiConverterQueryINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_constructor_query_all(FfiConverterTypeSortByINSTANCE.Lower(sortBy), FfiConverterTypeSortDirectionINSTANCE.Lower(direction), FfiConverterOptionalUint64INSTANCE.Lower(offset), FfiConverterOptionalUint64INSTANCE.Lower(limit), _uniffiStatus)
+		return C.uniffi_iroh_fn_constructor_query_all(FfiConverterOptionalTypeQueryOptionsINSTANCE.Lower(opts), _uniffiStatus)
 	}))
 }
-func QueryAuthor(author *AuthorId, sortBy SortBy, direction SortDirection, offset *uint64, limit *uint64) *Query {
+func QueryAuthor(author *AuthorId, opts *QueryOptions) *Query {
 	return FfiConverterQueryINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_constructor_query_author(FfiConverterAuthorIdINSTANCE.Lower(author), FfiConverterTypeSortByINSTANCE.Lower(sortBy), FfiConverterTypeSortDirectionINSTANCE.Lower(direction), FfiConverterOptionalUint64INSTANCE.Lower(offset), FfiConverterOptionalUint64INSTANCE.Lower(limit), _uniffiStatus)
+		return C.uniffi_iroh_fn_constructor_query_author(FfiConverterAuthorIdINSTANCE.Lower(author), FfiConverterOptionalTypeQueryOptionsINSTANCE.Lower(opts), _uniffiStatus)
 	}))
 }
-func QueryKeyExact(key []byte, sortBy SortBy, direction SortDirection, offset *uint64, limit *uint64) *Query {
+func QueryAuthorKeyExact(author *AuthorId, key []byte) *Query {
 	return FfiConverterQueryINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_constructor_query_key_exact(FfiConverterBytesINSTANCE.Lower(key), FfiConverterTypeSortByINSTANCE.Lower(sortBy), FfiConverterTypeSortDirectionINSTANCE.Lower(direction), FfiConverterOptionalUint64INSTANCE.Lower(offset), FfiConverterOptionalUint64INSTANCE.Lower(limit), _uniffiStatus)
+		return C.uniffi_iroh_fn_constructor_query_author_key_exact(FfiConverterAuthorIdINSTANCE.Lower(author), FfiConverterBytesINSTANCE.Lower(key), _uniffiStatus)
 	}))
 }
-func QueryKeyPrefix(prefix []byte, sortBy SortBy, direction SortDirection, offset *uint64, limit *uint64) *Query {
+func QueryAuthorKeyPrefix(author *AuthorId, prefix []byte, opts *QueryOptions) *Query {
 	return FfiConverterQueryINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_constructor_query_key_prefix(FfiConverterBytesINSTANCE.Lower(prefix), FfiConverterTypeSortByINSTANCE.Lower(sortBy), FfiConverterTypeSortDirectionINSTANCE.Lower(direction), FfiConverterOptionalUint64INSTANCE.Lower(offset), FfiConverterOptionalUint64INSTANCE.Lower(limit), _uniffiStatus)
+		return C.uniffi_iroh_fn_constructor_query_author_key_prefix(FfiConverterAuthorIdINSTANCE.Lower(author), FfiConverterBytesINSTANCE.Lower(prefix), FfiConverterOptionalTypeQueryOptionsINSTANCE.Lower(opts), _uniffiStatus)
 	}))
 }
-func QuerySingleLatestPerKey(direction SortDirection, offset *uint64, limit *uint64) *Query {
+func QueryKeyExact(key []byte, opts *QueryOptions) *Query {
 	return FfiConverterQueryINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_constructor_query_single_latest_per_key(FfiConverterTypeSortDirectionINSTANCE.Lower(direction), FfiConverterOptionalUint64INSTANCE.Lower(offset), FfiConverterOptionalUint64INSTANCE.Lower(limit), _uniffiStatus)
+		return C.uniffi_iroh_fn_constructor_query_key_exact(FfiConverterBytesINSTANCE.Lower(key), FfiConverterOptionalTypeQueryOptionsINSTANCE.Lower(opts), _uniffiStatus)
+	}))
+}
+func QueryKeyPrefix(prefix []byte, opts *QueryOptions) *Query {
+	return FfiConverterQueryINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_constructor_query_key_prefix(FfiConverterBytesINSTANCE.Lower(prefix), FfiConverterOptionalTypeQueryOptionsINSTANCE.Lower(opts), _uniffiStatus)
+	}))
+}
+func QuerySingleLatestPerKey(opts *QueryOptions) *Query {
+	return FfiConverterQueryINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_constructor_query_single_latest_per_key(FfiConverterOptionalTypeQueryOptionsINSTANCE.Lower(opts), _uniffiStatus)
 	}))
 }
 
@@ -5485,6 +5549,54 @@ func (_ FfiDestroyerTypeOpenState) Destroy(value OpenState) {
 	value.Destroy()
 }
 
+type QueryOptions struct {
+	SortBy    SortBy
+	Direction SortDirection
+	Offset    uint64
+	Limit     uint64
+}
+
+func (r *QueryOptions) Destroy() {
+	FfiDestroyerTypeSortBy{}.Destroy(r.SortBy)
+	FfiDestroyerTypeSortDirection{}.Destroy(r.Direction)
+	FfiDestroyerUint64{}.Destroy(r.Offset)
+	FfiDestroyerUint64{}.Destroy(r.Limit)
+}
+
+type FfiConverterTypeQueryOptions struct{}
+
+var FfiConverterTypeQueryOptionsINSTANCE = FfiConverterTypeQueryOptions{}
+
+func (c FfiConverterTypeQueryOptions) Lift(rb RustBufferI) QueryOptions {
+	return LiftFromRustBuffer[QueryOptions](c, rb)
+}
+
+func (c FfiConverterTypeQueryOptions) Read(reader io.Reader) QueryOptions {
+	return QueryOptions{
+		FfiConverterTypeSortByINSTANCE.Read(reader),
+		FfiConverterTypeSortDirectionINSTANCE.Read(reader),
+		FfiConverterUint64INSTANCE.Read(reader),
+		FfiConverterUint64INSTANCE.Read(reader),
+	}
+}
+
+func (c FfiConverterTypeQueryOptions) Lower(value QueryOptions) RustBuffer {
+	return LowerIntoRustBuffer[QueryOptions](c, value)
+}
+
+func (c FfiConverterTypeQueryOptions) Write(writer io.Writer, value QueryOptions) {
+	FfiConverterTypeSortByINSTANCE.Write(writer, value.SortBy)
+	FfiConverterTypeSortDirectionINSTANCE.Write(writer, value.Direction)
+	FfiConverterUint64INSTANCE.Write(writer, value.Offset)
+	FfiConverterUint64INSTANCE.Write(writer, value.Limit)
+}
+
+type FfiDestroyerTypeQueryOptions struct{}
+
+func (_ FfiDestroyerTypeQueryOptions) Destroy(value QueryOptions) {
+	value.Destroy()
+}
+
 type SyncEvent struct {
 	Peer     *PublicKey
 	Origin   Origin
@@ -6519,12 +6631,22 @@ type FfiDestroyerTypeLogLevel struct{}
 func (_ FfiDestroyerTypeLogLevel) Destroy(value LogLevel) {
 }
 
-type Origin uint
+type Origin interface {
+	Destroy()
+}
+type OriginConnect struct {
+	Reason SyncReason
+}
 
-const (
-	OriginConnect Origin = 1
-	OriginAccept  Origin = 2
-)
+func (e OriginConnect) Destroy() {
+	FfiDestroyerTypeSyncReason{}.Destroy(e.Reason)
+}
+
+type OriginAccept struct {
+}
+
+func (e OriginAccept) Destroy() {
+}
 
 type FfiConverterTypeOrigin struct{}
 
@@ -6539,16 +6661,35 @@ func (c FfiConverterTypeOrigin) Lower(value Origin) RustBuffer {
 }
 func (FfiConverterTypeOrigin) Read(reader io.Reader) Origin {
 	id := readInt32(reader)
-	return Origin(id)
+	switch id {
+	case 1:
+		return OriginConnect{
+			FfiConverterTypeSyncReasonINSTANCE.Read(reader),
+		}
+	case 2:
+		return OriginAccept{}
+	default:
+		panic(fmt.Sprintf("invalid enum value %v in FfiConverterTypeOrigin.Read()", id))
+	}
 }
 
 func (FfiConverterTypeOrigin) Write(writer io.Writer, value Origin) {
-	writeInt32(writer, int32(value))
+	switch variant_value := value.(type) {
+	case OriginConnect:
+		writeInt32(writer, 1)
+		FfiConverterTypeSyncReasonINSTANCE.Write(writer, variant_value.Reason)
+	case OriginAccept:
+		writeInt32(writer, 2)
+	default:
+		_ = variant_value
+		panic(fmt.Sprintf("invalid enum value `%v` in FfiConverterTypeOrigin.Write", value))
+	}
 }
 
 type FfiDestroyerTypeOrigin struct{}
 
 func (_ FfiDestroyerTypeOrigin) Destroy(value Origin) {
+	value.Destroy()
 }
 
 type ShareMode uint
@@ -6677,6 +6818,40 @@ func (FfiConverterTypeSortDirection) Write(writer io.Writer, value SortDirection
 type FfiDestroyerTypeSortDirection struct{}
 
 func (_ FfiDestroyerTypeSortDirection) Destroy(value SortDirection) {
+}
+
+type SyncReason uint
+
+const (
+	SyncReasonDirectJoin  SyncReason = 1
+	SyncReasonNewNeighbor SyncReason = 2
+	SyncReasonSyncReport  SyncReason = 3
+	SyncReasonResync      SyncReason = 4
+)
+
+type FfiConverterTypeSyncReason struct{}
+
+var FfiConverterTypeSyncReasonINSTANCE = FfiConverterTypeSyncReason{}
+
+func (c FfiConverterTypeSyncReason) Lift(rb RustBufferI) SyncReason {
+	return LiftFromRustBuffer[SyncReason](c, rb)
+}
+
+func (c FfiConverterTypeSyncReason) Lower(value SyncReason) RustBuffer {
+	return LowerIntoRustBuffer[SyncReason](c, value)
+}
+func (FfiConverterTypeSyncReason) Read(reader io.Reader) SyncReason {
+	id := readInt32(reader)
+	return SyncReason(id)
+}
+
+func (FfiConverterTypeSyncReason) Write(writer io.Writer, value SyncReason) {
+	writeInt32(writer, int32(value))
+}
+
+type FfiDestroyerTypeSyncReason struct{}
+
+func (_ FfiDestroyerTypeSyncReason) Destroy(value SyncReason) {
 }
 
 type uniffiCallbackResult C.int32_t
@@ -7230,6 +7405,43 @@ type FfiDestroyerOptionalTypeConnectionInfo struct{}
 func (_ FfiDestroyerOptionalTypeConnectionInfo) Destroy(value *ConnectionInfo) {
 	if value != nil {
 		FfiDestroyerTypeConnectionInfo{}.Destroy(*value)
+	}
+}
+
+type FfiConverterOptionalTypeQueryOptions struct{}
+
+var FfiConverterOptionalTypeQueryOptionsINSTANCE = FfiConverterOptionalTypeQueryOptions{}
+
+func (c FfiConverterOptionalTypeQueryOptions) Lift(rb RustBufferI) *QueryOptions {
+	return LiftFromRustBuffer[*QueryOptions](c, rb)
+}
+
+func (_ FfiConverterOptionalTypeQueryOptions) Read(reader io.Reader) *QueryOptions {
+	if readInt8(reader) == 0 {
+		return nil
+	}
+	temp := FfiConverterTypeQueryOptionsINSTANCE.Read(reader)
+	return &temp
+}
+
+func (c FfiConverterOptionalTypeQueryOptions) Lower(value *QueryOptions) RustBuffer {
+	return LowerIntoRustBuffer[*QueryOptions](c, value)
+}
+
+func (_ FfiConverterOptionalTypeQueryOptions) Write(writer io.Writer, value *QueryOptions) {
+	if value == nil {
+		writeInt8(writer, 0)
+	} else {
+		writeInt8(writer, 1)
+		FfiConverterTypeQueryOptionsINSTANCE.Write(writer, *value)
+	}
+}
+
+type FfiDestroyerOptionalTypeQueryOptions struct{}
+
+func (_ FfiDestroyerOptionalTypeQueryOptions) Destroy(value *QueryOptions) {
+	if value != nil {
+		FfiDestroyerTypeQueryOptions{}.Destroy(*value)
 	}
 }
 

@@ -31,12 +31,12 @@ func main() {
 		fmt.Printf("conn: %v\n", conn)
 	}
 
-	doc, err := node.DocNew()
+	doc, err := node.DocCreate()
 	if err != nil {
 		panic(err)
 	}
 	fmt.Printf("Created document %s\n", doc.Id().ToString())
-	author, err := node.AuthorNew()
+	author, err := node.AuthorCreate()
 	if err != nil {
 		panic(err)
 	}
@@ -59,7 +59,7 @@ func main() {
 	}
 	fmt.Printf("Inserted %s\n", hash.ToString())
 
-	entries, err := doc.GetMany(iroh.QueryAll(iroh.SortByKeyAuthor, iroh.SortDirectionAsc, nil, nil))
+	entries, err := doc.GetMany(iroh.QueryAll(nil))
 	if err != nil {
 		panic(err)
 	}
@@ -72,7 +72,7 @@ func main() {
 		fmt.Printf("Entry: %s: \"%s\"\n", string(entry.Key()), string(content))
 	}
 
-	doc, err = node.DocNew()
+	doc, err = node.DocCreate()
 	if err != nil {
 		panic(err)
 	}
