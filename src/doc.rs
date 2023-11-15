@@ -195,7 +195,7 @@ impl Doc {
     }
 
     /// Share this document with peers over a ticket.
-    pub fn share(&self, mode: ShareMode) -> anyhow::Result<Arc<DocTicket>, IrohError> {
+    pub fn share(&self, mode: ShareMode) -> Result<Arc<DocTicket>, IrohError> {
         block_on(&self.rt, async {
             self.inner
                 .share(mode.into())
