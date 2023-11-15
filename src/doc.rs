@@ -68,6 +68,63 @@ impl Doc {
         })
     }
 
+    /// Add an entry from an absolute file path
+    pub fn import_file(
+        &self,
+        author: Arc<AuthorId>,
+        key: Vec<u8>,
+        path: String,
+        in_place: bool,
+        cb: Option<Box<dyn DocImportFileCallback>>,
+    ) -> Result<(), IrohError> {
+        block_on(&self.rt, async {
+            let mut stream = self
+                .inner
+                .import_file(
+                    (*author).0.clone(),
+                    bytes::Bytes::from(key),
+                    std::path::PathBuf::from(path),
+                    in_place,
+                )
+                .await
+                .map_err(IrohError::doc)?;
+            while let Some(progress) = stream.next().await {
+                let progress = progress.map_err(IrohError::doc)?;
+                if let Some(ref cb) = cb {
+                    if let Err(e) = cb.progress(Arc::new(progress.into())) {
+                        return Err(e);
+                    }
+                }
+            }
+            Ok(())
+        })
+    }
+
+    /// Export an entry as a file to a given absolute path
+    pub fn export_file(
+        &self,
+        entry: Arc<Entry>,
+        path: String,
+        cb: Option<Box<dyn DocExportFileCallback>>,
+    ) -> Result<(), IrohError> {
+        block_on(&self.rt, async {
+            let mut stream = self
+                .inner
+                .export_file((*entry).0.clone(), std::path::PathBuf::from(path))
+                .await
+                .map_err(IrohError::doc)?;
+            while let Some(progress) = stream.next().await {
+                let progress = progress.map_err(IrohError::doc)?;
+                if let Some(ref cb) = cb {
+                    if let Err(e) = cb.progress(Arc::new(progress.into())) {
+                        return Err(e);
+                    }
+                }
+            }
+            Ok(())
+        })
+    }
+
     /// Get the content size of an [`Entry`]
     pub fn size(&self, entry: Arc<Entry>) -> Result<u64, IrohError> {
         block_on(&self.rt, async {
@@ -138,7 +195,7 @@ impl Doc {
     }
 
     /// Share this document with peers over a ticket.
-    pub fn share(&self, mode: ShareMode) -> anyhow::Result<Arc<DocTicket>, IrohError> {
+    pub fn share(&self, mode: ShareMode) -> Result<Arc<DocTicket>, IrohError> {
         block_on(&self.rt, async {
             self.inner
                 .share(mode.into())
@@ -819,10 +876,281 @@ impl From<iroh::sync::ContentStatus> for ContentStatus {
     }
 }
 
+pub trait DocImportFileCallback: Send + Sync + 'static {
+    fn progress(&self, progress: Arc<DocImportProgress>) -> Result<(), IrohError>;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DocImportProgressType {
+    Found,
+    Progress,
+    IngestDone,
+    AllDone,
+    Abort,
+}
+
+/// A DocImportProgress event indicating a file was found with name `name`, from now on referred to via `id`
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DocImportProgressFound {
+    /// A new unique id for this entry.
+    pub id: u64,
+    /// The name of the entry.
+    pub name: String,
+    /// The size of the entry in bytes.
+    pub size: u64,
+}
+
+/// A DocImportProgress event indicating we've made progress ingesting item `id`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DocImportProgressProgress {
+    /// The unique id of the entry.
+    pub id: u64,
+    /// The offset of the progress, in bytes.
+    pub offset: u64,
+}
+
+/// A DocImportProgress event indicating we are finished adding `id` to the data store and the hash is `hash`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DocImportProgressIngestDone {
+    /// The unique id of the entry.
+    pub id: u64,
+    /// The hash of the entry.
+    pub hash: Arc<Hash>,
+}
+
+/// A DocImportProgress event indicating we are done setting the entry to the doc
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DocImportProgressAllDone {
+    /// The key of the entry
+    pub key: Vec<u8>,
+}
+
+/// A DocImportProgress event indicating we got an error and need to abort
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DocImportProgressAbort {
+    pub error: String,
+}
+
+/// Progress updates for the doc import file operation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DocImportProgress {
+    /// An item was found with name `name`, from now on referred to via `id`
+    Found(DocImportProgressFound),
+    /// We got progress ingesting item `id`.
+    Progress(DocImportProgressProgress),
+    /// We are done ingesting `id`, and the hash is `hash`.
+    IngestDone(DocImportProgressIngestDone),
+    /// We are done with the whole operation.
+    AllDone(DocImportProgressAllDone),
+    /// We got an error and need to abort.
+    ///
+    /// This will be the last message in the stream.
+    Abort(DocImportProgressAbort),
+}
+
+impl From<iroh::rpc_protocol::DocImportProgress> for DocImportProgress {
+    fn from(value: iroh::rpc_protocol::DocImportProgress) -> Self {
+        match value {
+            iroh::rpc_protocol::DocImportProgress::Found { id, name, size } => {
+                DocImportProgress::Found(DocImportProgressFound { id, name, size })
+            }
+            iroh::rpc_protocol::DocImportProgress::Progress { id, offset } => {
+                DocImportProgress::Progress(DocImportProgressProgress { id, offset })
+            }
+            iroh::rpc_protocol::DocImportProgress::IngestDone { id, hash } => {
+                DocImportProgress::IngestDone(DocImportProgressIngestDone {
+                    id,
+                    hash: Arc::new(hash.into()),
+                })
+            }
+            iroh::rpc_protocol::DocImportProgress::AllDone { key } => {
+                DocImportProgress::AllDone(DocImportProgressAllDone { key: key.into() })
+            }
+            iroh::rpc_protocol::DocImportProgress::Abort(err) => {
+                DocImportProgress::Abort(DocImportProgressAbort {
+                    error: err.to_string(),
+                })
+            }
+        }
+    }
+}
+
+impl DocImportProgress {
+    /// Get the type of event
+    pub fn r#type(&self) -> DocImportProgressType {
+        match self {
+            DocImportProgress::Found(_) => DocImportProgressType::Found,
+            DocImportProgress::Progress(_) => DocImportProgressType::Progress,
+            DocImportProgress::IngestDone(_) => DocImportProgressType::IngestDone,
+            DocImportProgress::AllDone(_) => DocImportProgressType::AllDone,
+            DocImportProgress::Abort(_) => DocImportProgressType::Abort,
+        }
+    }
+    /// Return the `DocImportProgressFound` event
+    pub fn as_found(&self) -> DocImportProgressFound {
+        match self {
+            DocImportProgress::Found(f) => f.clone(),
+            _ => panic!("DocImportProgress type is not 'Found'"),
+        }
+    }
+    /// Return the `DocImportProgressProgress` event
+    pub fn as_progress(&self) -> DocImportProgressProgress {
+        match self {
+            DocImportProgress::Progress(p) => p.clone(),
+            _ => panic!("DocImportProgress type is not 'Progress'"),
+        }
+    }
+
+    /// Return the `DocImportProgressDone` event
+    pub fn as_ingest_done(&self) -> DocImportProgressIngestDone {
+        match self {
+            DocImportProgress::IngestDone(d) => d.clone(),
+            _ => panic!("DocImportProgress type is not 'IngestDone'"),
+        }
+    }
+
+    /// Return the `DocImportProgressAllDone`
+    pub fn as_all_done(&self) -> DocImportProgressAllDone {
+        match self {
+            DocImportProgress::AllDone(a) => a.clone(),
+            _ => panic!("DocImportProgress type is not 'AllDone'"),
+        }
+    }
+
+    /// Return the `DocImportProgressAbort`
+    pub fn as_abort(&self) -> DocImportProgressAbort {
+        match self {
+            DocImportProgress::Abort(a) => a.clone(),
+            _ => panic!("DocImportProgress type is not 'Abort'"),
+        }
+    }
+}
+
+pub trait DocExportFileCallback: Send + Sync + 'static {
+    fn progress(&self, progress: Arc<DocExportProgress>) -> Result<(), IrohError>;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DocExportProgressType {
+    Found,
+    Progress,
+    AllDone,
+    Abort,
+}
+
+/// A DocExportProgress event indicating a file was found with name `name`, from now on referred to via `id`
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DocExportProgressFound {
+    /// A new unique id for this entry.
+    pub id: u64,
+    /// The hash of the entry.
+    pub hash: Arc<Hash>,
+    /// The key of the entry.
+    pub key: Vec<u8>,
+    /// The size of the entry in bytes.
+    pub size: u64,
+    /// The path where we are writing the entry
+    pub outpath: String,
+}
+
+/// A DocExportProgress event indicating we've made progress exporting item `id`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DocExportProgressProgress {
+    /// The unique id of the entry.
+    pub id: u64,
+    /// The offset of the progress, in bytes.
+    pub offset: u64,
+}
+
+/// A DocExportProgress event indicating we got an error and need to abort
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DocExportProgressAbort {
+    pub error: String,
+}
+
+/// Progress updates for the doc import file operation.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DocExportProgress {
+    /// An item was found with name `name`, from now on referred to via `id`
+    Found(DocExportProgressFound),
+    /// We got progress ingesting item `id`.
+    Progress(DocExportProgressProgress),
+    /// We are done with the whole operation.
+    AllDone,
+    /// We got an error and need to abort.
+    ///
+    /// This will be the last message in the stream.
+    Abort(DocExportProgressAbort),
+}
+
+impl From<iroh::rpc_protocol::DocExportProgress> for DocExportProgress {
+    fn from(value: iroh::rpc_protocol::DocExportProgress) -> Self {
+        match value {
+            iroh::rpc_protocol::DocExportProgress::Found {
+                id,
+                hash,
+                key,
+                size,
+                outpath,
+            } => DocExportProgress::Found(DocExportProgressFound {
+                id,
+                hash: Arc::new(hash.into()),
+                key: key.to_vec(),
+                size,
+                outpath: outpath.to_string_lossy().to_string(),
+            }),
+            iroh::rpc_protocol::DocExportProgress::Progress { id, offset } => {
+                DocExportProgress::Progress(DocExportProgressProgress { id, offset })
+            }
+            iroh::rpc_protocol::DocExportProgress::AllDone => DocExportProgress::AllDone,
+            iroh::rpc_protocol::DocExportProgress::Abort(err) => {
+                DocExportProgress::Abort(DocExportProgressAbort {
+                    error: err.to_string(),
+                })
+            }
+        }
+    }
+}
+
+impl DocExportProgress {
+    /// Get the type of event
+    pub fn r#type(&self) -> DocExportProgressType {
+        match self {
+            DocExportProgress::Found(_) => DocExportProgressType::Found,
+            DocExportProgress::Progress(_) => DocExportProgressType::Progress,
+            DocExportProgress::AllDone => DocExportProgressType::AllDone,
+            DocExportProgress::Abort(_) => DocExportProgressType::Abort,
+        }
+    }
+    /// Return the `DocExportProgressFound` event
+    pub fn as_found(&self) -> DocExportProgressFound {
+        match self {
+            DocExportProgress::Found(f) => f.clone(),
+            _ => panic!("DocExportProgress type is not 'Found'"),
+        }
+    }
+    /// Return the `DocExportProgressProgress` event
+    pub fn as_progress(&self) -> DocExportProgressProgress {
+        match self {
+            DocExportProgress::Progress(p) => p.clone(),
+            _ => panic!("DocExportProgress type is not 'Progress'"),
+        }
+    }
+    /// Return the `DocExportProgressAbort`
+    pub fn as_abort(&self) -> DocExportProgressAbort {
+        match self {
+            DocExportProgress::Abort(a) => a.clone(),
+            _ => panic!("DocExportProgress type is not 'Abort'"),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::{Ipv4Addr, Ipv6Addr, PublicKey, SocketAddr};
+    use rand::RngCore;
+    use std::io::Write;
 
     #[test]
     fn test_node_addr() {
@@ -983,5 +1311,50 @@ mod tests {
         let got_val = doc.read_to_bytes(entry.clone()).unwrap();
         assert_eq!(val, got_val);
         assert_eq!(val.len() as u64, entry.content_len());
+    }
+    #[test]
+    fn test_doc_import_export() {
+        // create temp file
+        let temp_dir = tempfile::tempdir().unwrap();
+        let in_root = temp_dir.path().join("in");
+        std::fs::create_dir_all(in_root.clone()).unwrap();
+
+        let out_root = temp_dir.path().join("out");
+        let path = in_root.join("test");
+
+        let size = 100;
+        let mut buf = vec![0u8; size];
+        rand::thread_rng().fill_bytes(&mut buf);
+        let mut file = std::fs::File::create(path.clone()).unwrap();
+        file.write_all(&buf.clone()).unwrap();
+        file.flush().unwrap();
+
+        // spawn node
+        let iroh_dir = tempfile::tempdir().unwrap();
+        let node = crate::IrohNode::new(iroh_dir.path().to_string_lossy().into_owned()).unwrap();
+
+        // create doc & author
+        let doc = node.doc_create().unwrap();
+        let author = node.author_create().unwrap();
+
+        // import file
+        let path_str = path.to_string_lossy().into_owned();
+        let in_root_str = in_root.to_string_lossy().into_owned();
+        let key = crate::path_to_key(path_str.clone(), None, Some(in_root_str)).unwrap();
+        doc.import_file(author.clone(), key.clone(), path_str, true, None)
+            .unwrap();
+
+        // export file
+        let entry = doc
+            .get_one(Query::author_key_exact(author, key).into())
+            .unwrap()
+            .unwrap();
+        let key = entry.key().to_vec();
+        let out_root_str = out_root.to_string_lossy().into_owned();
+        let path = crate::key_to_path(key, None, Some(out_root_str)).unwrap();
+        doc.export_file(entry, path.clone(), None).unwrap();
+
+        let got_bytes = std::fs::read(path).unwrap();
+        assert_eq!(buf, got_bytes);
     }
 }

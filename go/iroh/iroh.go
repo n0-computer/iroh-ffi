@@ -333,6 +333,8 @@ func readFloat64(reader io.Reader) float64 {
 func init() {
 
 	(&FfiConverterCallbackInterfaceAddCallback{}).register()
+	(&FfiConverterCallbackInterfaceDocExportFileCallback{}).register()
+	(&FfiConverterCallbackInterfaceDocImportFileCallback{}).register()
 	(&FfiConverterCallbackInterfaceDownloadCallback{}).register()
 	(&FfiConverterCallbackInterfaceSubscribeCallback{}).register()
 	uniffiCheckChecksums()
@@ -348,6 +350,24 @@ func uniffiCheckChecksums() {
 	if bindingsContractVersion != int(scaffoldingContractVersion) {
 		// If this happens try cleaning and rebuilding your project
 		panic("iroh: UniFFI contract version mismatch")
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_func_key_to_path(uniffiStatus)
+		})
+		if checksum != 1201 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_func_key_to_path: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_func_path_to_key(uniffiStatus)
+		})
+		if checksum != 27769 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_func_path_to_key: UniFFI API checksum mismatch")
+		}
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
@@ -459,6 +479,15 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_doc_export_file(uniffiStatus)
+		})
+		if checksum != 34185 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_doc_export_file: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_doc_get_many(uniffiStatus)
 		})
 		if checksum != 58857 {
@@ -482,6 +511,15 @@ func uniffiCheckChecksums() {
 		if checksum != 34677 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_doc_id: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_doc_import_file(uniffiStatus)
+		})
+		if checksum != 33349 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_doc_import_file: UniFFI API checksum mismatch")
 		}
 	}
 	{
@@ -563,6 +601,96 @@ func uniffiCheckChecksums() {
 		if checksum != 2866 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_doc_subscribe: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_docexportprogress_as_abort(uniffiStatus)
+		})
+		if checksum != 39226 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_docexportprogress_as_abort: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_docexportprogress_as_found(uniffiStatus)
+		})
+		if checksum != 11254 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_docexportprogress_as_found: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_docexportprogress_as_progress(uniffiStatus)
+		})
+		if checksum != 8859 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_docexportprogress_as_progress: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_docexportprogress_type(uniffiStatus)
+		})
+		if checksum != 43844 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_docexportprogress_type: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_docimportprogress_as_abort(uniffiStatus)
+		})
+		if checksum != 45779 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_docimportprogress_as_abort: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_docimportprogress_as_all_done(uniffiStatus)
+		})
+		if checksum != 7478 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_docimportprogress_as_all_done: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_docimportprogress_as_found(uniffiStatus)
+		})
+		if checksum != 55008 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_docimportprogress_as_found: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_docimportprogress_as_ingest_done(uniffiStatus)
+		})
+		if checksum != 37186 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_docimportprogress_as_ingest_done: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_docimportprogress_as_progress(uniffiStatus)
+		})
+		if checksum != 35401 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_docimportprogress_as_progress: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_docimportprogress_type(uniffiStatus)
+		})
+		if checksum != 49227 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_docimportprogress_type: UniFFI API checksum mismatch")
 		}
 	}
 	{
@@ -1665,6 +1793,24 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_docexportfilecallback_progress(uniffiStatus)
+		})
+		if checksum != 20951 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_docexportfilecallback_progress: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_docimportfilecallback_progress(uniffiStatus)
+		})
+		if checksum != 18783 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_docimportfilecallback_progress: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_downloadcallback_progress(uniffiStatus)
 		})
 		if checksum != 64403 {
@@ -2325,6 +2471,17 @@ func (_self *Doc) Del(authorId *AuthorId, prefix []byte) (uint64, error) {
 	}
 }
 
+func (_self *Doc) ExportFile(entry *Entry, path string, cb *DocExportFileCallback) error {
+	_pointer := _self.ffiObject.incrementPointer("*Doc")
+	defer _self.ffiObject.decrementPointer()
+	_, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) bool {
+		C.uniffi_iroh_fn_method_doc_export_file(
+			_pointer, FfiConverterEntryINSTANCE.Lower(entry), FfiConverterStringINSTANCE.Lower(path), FfiConverterOptionalCallbackInterfaceDocExportFileCallbackINSTANCE.Lower(cb), _uniffiStatus)
+		return false
+	})
+	return _uniffiErr
+}
+
 func (_self *Doc) GetMany(query *Query) ([]*Entry, error) {
 	_pointer := _self.ffiObject.incrementPointer("*Doc")
 	defer _self.ffiObject.decrementPointer()
@@ -2362,6 +2519,17 @@ func (_self *Doc) Id() *NamespaceId {
 		return C.uniffi_iroh_fn_method_doc_id(
 			_pointer, _uniffiStatus)
 	}))
+}
+
+func (_self *Doc) ImportFile(author *AuthorId, key []byte, path string, inPlace bool, cb *DocImportFileCallback) error {
+	_pointer := _self.ffiObject.incrementPointer("*Doc")
+	defer _self.ffiObject.decrementPointer()
+	_, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) bool {
+		C.uniffi_iroh_fn_method_doc_import_file(
+			_pointer, FfiConverterAuthorIdINSTANCE.Lower(author), FfiConverterBytesINSTANCE.Lower(key), FfiConverterStringINSTANCE.Lower(path), FfiConverterBoolINSTANCE.Lower(inPlace), FfiConverterOptionalCallbackInterfaceDocImportFileCallbackINSTANCE.Lower(cb), _uniffiStatus)
+		return false
+	})
+	return _uniffiErr
 }
 
 func (_self *Doc) Leave() error {
@@ -2524,6 +2692,192 @@ func (c FfiConverterDoc) Write(writer io.Writer, value *Doc) {
 type FfiDestroyerDoc struct{}
 
 func (_ FfiDestroyerDoc) Destroy(value *Doc) {
+	value.Destroy()
+}
+
+type DocExportProgress struct {
+	ffiObject FfiObject
+}
+
+func (_self *DocExportProgress) AsAbort() DocExportProgressAbort {
+	_pointer := _self.ffiObject.incrementPointer("*DocExportProgress")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterTypeDocExportProgressAbortINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_docexportprogress_as_abort(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *DocExportProgress) AsFound() DocExportProgressFound {
+	_pointer := _self.ffiObject.incrementPointer("*DocExportProgress")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterTypeDocExportProgressFoundINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_docexportprogress_as_found(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *DocExportProgress) AsProgress() DocExportProgressProgress {
+	_pointer := _self.ffiObject.incrementPointer("*DocExportProgress")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterTypeDocExportProgressProgressINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_docexportprogress_as_progress(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *DocExportProgress) Type() DocExportProgressType {
+	_pointer := _self.ffiObject.incrementPointer("*DocExportProgress")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterTypeDocExportProgressTypeINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_docexportprogress_type(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (object *DocExportProgress) Destroy() {
+	runtime.SetFinalizer(object, nil)
+	object.ffiObject.destroy()
+}
+
+type FfiConverterDocExportProgress struct{}
+
+var FfiConverterDocExportProgressINSTANCE = FfiConverterDocExportProgress{}
+
+func (c FfiConverterDocExportProgress) Lift(pointer unsafe.Pointer) *DocExportProgress {
+	result := &DocExportProgress{
+		newFfiObject(
+			pointer,
+			func(pointer unsafe.Pointer, status *C.RustCallStatus) {
+				C.uniffi_iroh_fn_free_docexportprogress(pointer, status)
+			}),
+	}
+	runtime.SetFinalizer(result, (*DocExportProgress).Destroy)
+	return result
+}
+
+func (c FfiConverterDocExportProgress) Read(reader io.Reader) *DocExportProgress {
+	return c.Lift(unsafe.Pointer(uintptr(readUint64(reader))))
+}
+
+func (c FfiConverterDocExportProgress) Lower(value *DocExportProgress) unsafe.Pointer {
+	// TODO: this is bad - all synchronization from ObjectRuntime.go is discarded here,
+	// because the pointer will be decremented immediately after this function returns,
+	// and someone will be left holding onto a non-locked pointer.
+	pointer := value.ffiObject.incrementPointer("*DocExportProgress")
+	defer value.ffiObject.decrementPointer()
+	return pointer
+}
+
+func (c FfiConverterDocExportProgress) Write(writer io.Writer, value *DocExportProgress) {
+	writeUint64(writer, uint64(uintptr(c.Lower(value))))
+}
+
+type FfiDestroyerDocExportProgress struct{}
+
+func (_ FfiDestroyerDocExportProgress) Destroy(value *DocExportProgress) {
+	value.Destroy()
+}
+
+type DocImportProgress struct {
+	ffiObject FfiObject
+}
+
+func (_self *DocImportProgress) AsAbort() DocImportProgressAbort {
+	_pointer := _self.ffiObject.incrementPointer("*DocImportProgress")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterTypeDocImportProgressAbortINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_docimportprogress_as_abort(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *DocImportProgress) AsAllDone() DocImportProgressAllDone {
+	_pointer := _self.ffiObject.incrementPointer("*DocImportProgress")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterTypeDocImportProgressAllDoneINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_docimportprogress_as_all_done(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *DocImportProgress) AsFound() DocImportProgressFound {
+	_pointer := _self.ffiObject.incrementPointer("*DocImportProgress")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterTypeDocImportProgressFoundINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_docimportprogress_as_found(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *DocImportProgress) AsIngestDone() DocImportProgressIngestDone {
+	_pointer := _self.ffiObject.incrementPointer("*DocImportProgress")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterTypeDocImportProgressIngestDoneINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_docimportprogress_as_ingest_done(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *DocImportProgress) AsProgress() DocImportProgressProgress {
+	_pointer := _self.ffiObject.incrementPointer("*DocImportProgress")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterTypeDocImportProgressProgressINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_docimportprogress_as_progress(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *DocImportProgress) Type() DocImportProgressType {
+	_pointer := _self.ffiObject.incrementPointer("*DocImportProgress")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterTypeDocImportProgressTypeINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_docimportprogress_type(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (object *DocImportProgress) Destroy() {
+	runtime.SetFinalizer(object, nil)
+	object.ffiObject.destroy()
+}
+
+type FfiConverterDocImportProgress struct{}
+
+var FfiConverterDocImportProgressINSTANCE = FfiConverterDocImportProgress{}
+
+func (c FfiConverterDocImportProgress) Lift(pointer unsafe.Pointer) *DocImportProgress {
+	result := &DocImportProgress{
+		newFfiObject(
+			pointer,
+			func(pointer unsafe.Pointer, status *C.RustCallStatus) {
+				C.uniffi_iroh_fn_free_docimportprogress(pointer, status)
+			}),
+	}
+	runtime.SetFinalizer(result, (*DocImportProgress).Destroy)
+	return result
+}
+
+func (c FfiConverterDocImportProgress) Read(reader io.Reader) *DocImportProgress {
+	return c.Lift(unsafe.Pointer(uintptr(readUint64(reader))))
+}
+
+func (c FfiConverterDocImportProgress) Lower(value *DocImportProgress) unsafe.Pointer {
+	// TODO: this is bad - all synchronization from ObjectRuntime.go is discarded here,
+	// because the pointer will be decremented immediately after this function returns,
+	// and someone will be left holding onto a non-locked pointer.
+	pointer := value.ffiObject.incrementPointer("*DocImportProgress")
+	defer value.ffiObject.decrementPointer()
+	return pointer
+}
+
+func (c FfiConverterDocImportProgress) Write(writer io.Writer, value *DocImportProgress) {
+	writeUint64(writer, uint64(uintptr(c.Lower(value))))
+}
+
+type FfiDestroyerDocImportProgress struct{}
+
+func (_ FfiDestroyerDocImportProgress) Destroy(value *DocImportProgress) {
 	value.Destroy()
 }
 
@@ -5089,6 +5443,330 @@ func (_ FfiDestroyerTypeCounterStats) Destroy(value CounterStats) {
 	value.Destroy()
 }
 
+type DocExportProgressAbort struct {
+	Error string
+}
+
+func (r *DocExportProgressAbort) Destroy() {
+	FfiDestroyerString{}.Destroy(r.Error)
+}
+
+type FfiConverterTypeDocExportProgressAbort struct{}
+
+var FfiConverterTypeDocExportProgressAbortINSTANCE = FfiConverterTypeDocExportProgressAbort{}
+
+func (c FfiConverterTypeDocExportProgressAbort) Lift(rb RustBufferI) DocExportProgressAbort {
+	return LiftFromRustBuffer[DocExportProgressAbort](c, rb)
+}
+
+func (c FfiConverterTypeDocExportProgressAbort) Read(reader io.Reader) DocExportProgressAbort {
+	return DocExportProgressAbort{
+		FfiConverterStringINSTANCE.Read(reader),
+	}
+}
+
+func (c FfiConverterTypeDocExportProgressAbort) Lower(value DocExportProgressAbort) RustBuffer {
+	return LowerIntoRustBuffer[DocExportProgressAbort](c, value)
+}
+
+func (c FfiConverterTypeDocExportProgressAbort) Write(writer io.Writer, value DocExportProgressAbort) {
+	FfiConverterStringINSTANCE.Write(writer, value.Error)
+}
+
+type FfiDestroyerTypeDocExportProgressAbort struct{}
+
+func (_ FfiDestroyerTypeDocExportProgressAbort) Destroy(value DocExportProgressAbort) {
+	value.Destroy()
+}
+
+type DocExportProgressFound struct {
+	Id      uint64
+	Hash    *Hash
+	Key     []byte
+	Size    uint64
+	Outpath string
+}
+
+func (r *DocExportProgressFound) Destroy() {
+	FfiDestroyerUint64{}.Destroy(r.Id)
+	FfiDestroyerHash{}.Destroy(r.Hash)
+	FfiDestroyerBytes{}.Destroy(r.Key)
+	FfiDestroyerUint64{}.Destroy(r.Size)
+	FfiDestroyerString{}.Destroy(r.Outpath)
+}
+
+type FfiConverterTypeDocExportProgressFound struct{}
+
+var FfiConverterTypeDocExportProgressFoundINSTANCE = FfiConverterTypeDocExportProgressFound{}
+
+func (c FfiConverterTypeDocExportProgressFound) Lift(rb RustBufferI) DocExportProgressFound {
+	return LiftFromRustBuffer[DocExportProgressFound](c, rb)
+}
+
+func (c FfiConverterTypeDocExportProgressFound) Read(reader io.Reader) DocExportProgressFound {
+	return DocExportProgressFound{
+		FfiConverterUint64INSTANCE.Read(reader),
+		FfiConverterHashINSTANCE.Read(reader),
+		FfiConverterBytesINSTANCE.Read(reader),
+		FfiConverterUint64INSTANCE.Read(reader),
+		FfiConverterStringINSTANCE.Read(reader),
+	}
+}
+
+func (c FfiConverterTypeDocExportProgressFound) Lower(value DocExportProgressFound) RustBuffer {
+	return LowerIntoRustBuffer[DocExportProgressFound](c, value)
+}
+
+func (c FfiConverterTypeDocExportProgressFound) Write(writer io.Writer, value DocExportProgressFound) {
+	FfiConverterUint64INSTANCE.Write(writer, value.Id)
+	FfiConverterHashINSTANCE.Write(writer, value.Hash)
+	FfiConverterBytesINSTANCE.Write(writer, value.Key)
+	FfiConverterUint64INSTANCE.Write(writer, value.Size)
+	FfiConverterStringINSTANCE.Write(writer, value.Outpath)
+}
+
+type FfiDestroyerTypeDocExportProgressFound struct{}
+
+func (_ FfiDestroyerTypeDocExportProgressFound) Destroy(value DocExportProgressFound) {
+	value.Destroy()
+}
+
+type DocExportProgressProgress struct {
+	Id     uint64
+	Offset uint64
+}
+
+func (r *DocExportProgressProgress) Destroy() {
+	FfiDestroyerUint64{}.Destroy(r.Id)
+	FfiDestroyerUint64{}.Destroy(r.Offset)
+}
+
+type FfiConverterTypeDocExportProgressProgress struct{}
+
+var FfiConverterTypeDocExportProgressProgressINSTANCE = FfiConverterTypeDocExportProgressProgress{}
+
+func (c FfiConverterTypeDocExportProgressProgress) Lift(rb RustBufferI) DocExportProgressProgress {
+	return LiftFromRustBuffer[DocExportProgressProgress](c, rb)
+}
+
+func (c FfiConverterTypeDocExportProgressProgress) Read(reader io.Reader) DocExportProgressProgress {
+	return DocExportProgressProgress{
+		FfiConverterUint64INSTANCE.Read(reader),
+		FfiConverterUint64INSTANCE.Read(reader),
+	}
+}
+
+func (c FfiConverterTypeDocExportProgressProgress) Lower(value DocExportProgressProgress) RustBuffer {
+	return LowerIntoRustBuffer[DocExportProgressProgress](c, value)
+}
+
+func (c FfiConverterTypeDocExportProgressProgress) Write(writer io.Writer, value DocExportProgressProgress) {
+	FfiConverterUint64INSTANCE.Write(writer, value.Id)
+	FfiConverterUint64INSTANCE.Write(writer, value.Offset)
+}
+
+type FfiDestroyerTypeDocExportProgressProgress struct{}
+
+func (_ FfiDestroyerTypeDocExportProgressProgress) Destroy(value DocExportProgressProgress) {
+	value.Destroy()
+}
+
+type DocImportProgressAbort struct {
+	Error string
+}
+
+func (r *DocImportProgressAbort) Destroy() {
+	FfiDestroyerString{}.Destroy(r.Error)
+}
+
+type FfiConverterTypeDocImportProgressAbort struct{}
+
+var FfiConverterTypeDocImportProgressAbortINSTANCE = FfiConverterTypeDocImportProgressAbort{}
+
+func (c FfiConverterTypeDocImportProgressAbort) Lift(rb RustBufferI) DocImportProgressAbort {
+	return LiftFromRustBuffer[DocImportProgressAbort](c, rb)
+}
+
+func (c FfiConverterTypeDocImportProgressAbort) Read(reader io.Reader) DocImportProgressAbort {
+	return DocImportProgressAbort{
+		FfiConverterStringINSTANCE.Read(reader),
+	}
+}
+
+func (c FfiConverterTypeDocImportProgressAbort) Lower(value DocImportProgressAbort) RustBuffer {
+	return LowerIntoRustBuffer[DocImportProgressAbort](c, value)
+}
+
+func (c FfiConverterTypeDocImportProgressAbort) Write(writer io.Writer, value DocImportProgressAbort) {
+	FfiConverterStringINSTANCE.Write(writer, value.Error)
+}
+
+type FfiDestroyerTypeDocImportProgressAbort struct{}
+
+func (_ FfiDestroyerTypeDocImportProgressAbort) Destroy(value DocImportProgressAbort) {
+	value.Destroy()
+}
+
+type DocImportProgressAllDone struct {
+	Key []byte
+}
+
+func (r *DocImportProgressAllDone) Destroy() {
+	FfiDestroyerBytes{}.Destroy(r.Key)
+}
+
+type FfiConverterTypeDocImportProgressAllDone struct{}
+
+var FfiConverterTypeDocImportProgressAllDoneINSTANCE = FfiConverterTypeDocImportProgressAllDone{}
+
+func (c FfiConverterTypeDocImportProgressAllDone) Lift(rb RustBufferI) DocImportProgressAllDone {
+	return LiftFromRustBuffer[DocImportProgressAllDone](c, rb)
+}
+
+func (c FfiConverterTypeDocImportProgressAllDone) Read(reader io.Reader) DocImportProgressAllDone {
+	return DocImportProgressAllDone{
+		FfiConverterBytesINSTANCE.Read(reader),
+	}
+}
+
+func (c FfiConverterTypeDocImportProgressAllDone) Lower(value DocImportProgressAllDone) RustBuffer {
+	return LowerIntoRustBuffer[DocImportProgressAllDone](c, value)
+}
+
+func (c FfiConverterTypeDocImportProgressAllDone) Write(writer io.Writer, value DocImportProgressAllDone) {
+	FfiConverterBytesINSTANCE.Write(writer, value.Key)
+}
+
+type FfiDestroyerTypeDocImportProgressAllDone struct{}
+
+func (_ FfiDestroyerTypeDocImportProgressAllDone) Destroy(value DocImportProgressAllDone) {
+	value.Destroy()
+}
+
+type DocImportProgressFound struct {
+	Id   uint64
+	Name string
+	Size uint64
+}
+
+func (r *DocImportProgressFound) Destroy() {
+	FfiDestroyerUint64{}.Destroy(r.Id)
+	FfiDestroyerString{}.Destroy(r.Name)
+	FfiDestroyerUint64{}.Destroy(r.Size)
+}
+
+type FfiConverterTypeDocImportProgressFound struct{}
+
+var FfiConverterTypeDocImportProgressFoundINSTANCE = FfiConverterTypeDocImportProgressFound{}
+
+func (c FfiConverterTypeDocImportProgressFound) Lift(rb RustBufferI) DocImportProgressFound {
+	return LiftFromRustBuffer[DocImportProgressFound](c, rb)
+}
+
+func (c FfiConverterTypeDocImportProgressFound) Read(reader io.Reader) DocImportProgressFound {
+	return DocImportProgressFound{
+		FfiConverterUint64INSTANCE.Read(reader),
+		FfiConverterStringINSTANCE.Read(reader),
+		FfiConverterUint64INSTANCE.Read(reader),
+	}
+}
+
+func (c FfiConverterTypeDocImportProgressFound) Lower(value DocImportProgressFound) RustBuffer {
+	return LowerIntoRustBuffer[DocImportProgressFound](c, value)
+}
+
+func (c FfiConverterTypeDocImportProgressFound) Write(writer io.Writer, value DocImportProgressFound) {
+	FfiConverterUint64INSTANCE.Write(writer, value.Id)
+	FfiConverterStringINSTANCE.Write(writer, value.Name)
+	FfiConverterUint64INSTANCE.Write(writer, value.Size)
+}
+
+type FfiDestroyerTypeDocImportProgressFound struct{}
+
+func (_ FfiDestroyerTypeDocImportProgressFound) Destroy(value DocImportProgressFound) {
+	value.Destroy()
+}
+
+type DocImportProgressIngestDone struct {
+	Id   uint64
+	Hash *Hash
+}
+
+func (r *DocImportProgressIngestDone) Destroy() {
+	FfiDestroyerUint64{}.Destroy(r.Id)
+	FfiDestroyerHash{}.Destroy(r.Hash)
+}
+
+type FfiConverterTypeDocImportProgressIngestDone struct{}
+
+var FfiConverterTypeDocImportProgressIngestDoneINSTANCE = FfiConverterTypeDocImportProgressIngestDone{}
+
+func (c FfiConverterTypeDocImportProgressIngestDone) Lift(rb RustBufferI) DocImportProgressIngestDone {
+	return LiftFromRustBuffer[DocImportProgressIngestDone](c, rb)
+}
+
+func (c FfiConverterTypeDocImportProgressIngestDone) Read(reader io.Reader) DocImportProgressIngestDone {
+	return DocImportProgressIngestDone{
+		FfiConverterUint64INSTANCE.Read(reader),
+		FfiConverterHashINSTANCE.Read(reader),
+	}
+}
+
+func (c FfiConverterTypeDocImportProgressIngestDone) Lower(value DocImportProgressIngestDone) RustBuffer {
+	return LowerIntoRustBuffer[DocImportProgressIngestDone](c, value)
+}
+
+func (c FfiConverterTypeDocImportProgressIngestDone) Write(writer io.Writer, value DocImportProgressIngestDone) {
+	FfiConverterUint64INSTANCE.Write(writer, value.Id)
+	FfiConverterHashINSTANCE.Write(writer, value.Hash)
+}
+
+type FfiDestroyerTypeDocImportProgressIngestDone struct{}
+
+func (_ FfiDestroyerTypeDocImportProgressIngestDone) Destroy(value DocImportProgressIngestDone) {
+	value.Destroy()
+}
+
+type DocImportProgressProgress struct {
+	Id     uint64
+	Offset uint64
+}
+
+func (r *DocImportProgressProgress) Destroy() {
+	FfiDestroyerUint64{}.Destroy(r.Id)
+	FfiDestroyerUint64{}.Destroy(r.Offset)
+}
+
+type FfiConverterTypeDocImportProgressProgress struct{}
+
+var FfiConverterTypeDocImportProgressProgressINSTANCE = FfiConverterTypeDocImportProgressProgress{}
+
+func (c FfiConverterTypeDocImportProgressProgress) Lift(rb RustBufferI) DocImportProgressProgress {
+	return LiftFromRustBuffer[DocImportProgressProgress](c, rb)
+}
+
+func (c FfiConverterTypeDocImportProgressProgress) Read(reader io.Reader) DocImportProgressProgress {
+	return DocImportProgressProgress{
+		FfiConverterUint64INSTANCE.Read(reader),
+		FfiConverterUint64INSTANCE.Read(reader),
+	}
+}
+
+func (c FfiConverterTypeDocImportProgressProgress) Lower(value DocImportProgressProgress) RustBuffer {
+	return LowerIntoRustBuffer[DocImportProgressProgress](c, value)
+}
+
+func (c FfiConverterTypeDocImportProgressProgress) Write(writer io.Writer, value DocImportProgressProgress) {
+	FfiConverterUint64INSTANCE.Write(writer, value.Id)
+	FfiConverterUint64INSTANCE.Write(writer, value.Offset)
+}
+
+type FfiDestroyerTypeDocImportProgressProgress struct{}
+
+func (_ FfiDestroyerTypeDocImportProgressProgress) Destroy(value DocImportProgressProgress) {
+	value.Destroy()
+}
+
 type DownloadProgressAbort struct {
 	Error string
 }
@@ -5880,6 +6558,75 @@ type FfiDestroyerTypeContentStatus struct{}
 func (_ FfiDestroyerTypeContentStatus) Destroy(value ContentStatus) {
 }
 
+type DocExportProgressType uint
+
+const (
+	DocExportProgressTypeFound    DocExportProgressType = 1
+	DocExportProgressTypeProgress DocExportProgressType = 2
+	DocExportProgressTypeAllDone  DocExportProgressType = 3
+	DocExportProgressTypeAbort    DocExportProgressType = 4
+)
+
+type FfiConverterTypeDocExportProgressType struct{}
+
+var FfiConverterTypeDocExportProgressTypeINSTANCE = FfiConverterTypeDocExportProgressType{}
+
+func (c FfiConverterTypeDocExportProgressType) Lift(rb RustBufferI) DocExportProgressType {
+	return LiftFromRustBuffer[DocExportProgressType](c, rb)
+}
+
+func (c FfiConverterTypeDocExportProgressType) Lower(value DocExportProgressType) RustBuffer {
+	return LowerIntoRustBuffer[DocExportProgressType](c, value)
+}
+func (FfiConverterTypeDocExportProgressType) Read(reader io.Reader) DocExportProgressType {
+	id := readInt32(reader)
+	return DocExportProgressType(id)
+}
+
+func (FfiConverterTypeDocExportProgressType) Write(writer io.Writer, value DocExportProgressType) {
+	writeInt32(writer, int32(value))
+}
+
+type FfiDestroyerTypeDocExportProgressType struct{}
+
+func (_ FfiDestroyerTypeDocExportProgressType) Destroy(value DocExportProgressType) {
+}
+
+type DocImportProgressType uint
+
+const (
+	DocImportProgressTypeFound      DocImportProgressType = 1
+	DocImportProgressTypeProgress   DocImportProgressType = 2
+	DocImportProgressTypeIngestDone DocImportProgressType = 3
+	DocImportProgressTypeAllDone    DocImportProgressType = 4
+	DocImportProgressTypeAbort      DocImportProgressType = 5
+)
+
+type FfiConverterTypeDocImportProgressType struct{}
+
+var FfiConverterTypeDocImportProgressTypeINSTANCE = FfiConverterTypeDocImportProgressType{}
+
+func (c FfiConverterTypeDocImportProgressType) Lift(rb RustBufferI) DocImportProgressType {
+	return LiftFromRustBuffer[DocImportProgressType](c, rb)
+}
+
+func (c FfiConverterTypeDocImportProgressType) Lower(value DocImportProgressType) RustBuffer {
+	return LowerIntoRustBuffer[DocImportProgressType](c, value)
+}
+func (FfiConverterTypeDocImportProgressType) Read(reader io.Reader) DocImportProgressType {
+	id := readInt32(reader)
+	return DocImportProgressType(id)
+}
+
+func (FfiConverterTypeDocImportProgressType) Write(writer io.Writer, value DocImportProgressType) {
+	writeInt32(writer, int32(value))
+}
+
+type FfiDestroyerTypeDocImportProgressType struct{}
+
+func (_ FfiDestroyerTypeDocImportProgressType) Destroy(value DocImportProgressType) {
+}
+
 type DownloadProgressType uint
 
 const (
@@ -5950,6 +6697,7 @@ var ErrIrohErrorPublicKey = fmt.Errorf("IrohErrorPublicKey")
 var ErrIrohErrorNodeAddr = fmt.Errorf("IrohErrorNodeAddr")
 var ErrIrohErrorHash = fmt.Errorf("IrohErrorHash")
 var ErrIrohErrorRequestToken = fmt.Errorf("IrohErrorRequestToken")
+var ErrIrohErrorFsUtil = fmt.Errorf("IrohErrorFsUtil")
 
 // Variant structs
 type IrohErrorRuntime struct {
@@ -6411,6 +7159,33 @@ func (self IrohErrorRequestToken) Is(target error) bool {
 	return target == ErrIrohErrorRequestToken
 }
 
+type IrohErrorFsUtil struct {
+	Description string
+}
+
+func NewIrohErrorFsUtil(
+	description string,
+) *IrohError {
+	return &IrohError{
+		err: &IrohErrorFsUtil{
+			Description: description,
+		},
+	}
+}
+
+func (err IrohErrorFsUtil) Error() string {
+	return fmt.Sprint("FsUtil",
+		": ",
+
+		"Description=",
+		err.Description,
+	)
+}
+
+func (self IrohErrorFsUtil) Is(target error) bool {
+	return target == ErrIrohErrorFsUtil
+}
+
 type FfiConverterTypeIrohError struct{}
 
 var FfiConverterTypeIrohErrorINSTANCE = FfiConverterTypeIrohError{}
@@ -6495,6 +7270,10 @@ func (c FfiConverterTypeIrohError) Read(reader io.Reader) error {
 		return &IrohError{&IrohErrorRequestToken{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
+	case 18:
+		return &IrohError{&IrohErrorFsUtil{
+			Description: FfiConverterStringINSTANCE.Read(reader),
+		}}
 	default:
 		panic(fmt.Sprintf("Unknown error code %d in FfiConverterTypeIrohError.Read()", errorID))
 	}
@@ -6552,6 +7331,9 @@ func (c FfiConverterTypeIrohError) Write(writer io.Writer, value *IrohError) {
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
 	case *IrohErrorRequestToken:
 		writeInt32(writer, 17)
+		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
+	case *IrohErrorFsUtil:
+		writeInt32(writer, 18)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
 	default:
 		_ = variantValue
@@ -7005,6 +7787,150 @@ type FfiDestroyerCallbackInterfaceAddCallback struct{}
 func (FfiDestroyerCallbackInterfaceAddCallback) Destroy(value AddCallback) {
 }
 
+// Declaration and FfiConverters for DocExportFileCallback Callback Interface
+type DocExportFileCallback interface {
+	Progress(progress *DocExportProgress) *IrohError
+}
+
+// foreignCallbackCallbackInterfaceDocExportFileCallback cannot be callable be a compiled function at a same time
+type foreignCallbackCallbackInterfaceDocExportFileCallback struct{}
+
+//export iroh_cgo_DocExportFileCallback
+func iroh_cgo_DocExportFileCallback(handle C.uint64_t, method C.int32_t, argsPtr *C.uint8_t, argsLen C.int32_t, outBuf *C.RustBuffer) C.int32_t {
+	cb := FfiConverterCallbackInterfaceDocExportFileCallbackINSTANCE.Lift(uint64(handle))
+	switch method {
+	case 0:
+		// 0 means Rust is done with the callback, and the callback
+		// can be dropped by the foreign language.
+		*outBuf = FfiConverterCallbackInterfaceDocExportFileCallbackINSTANCE.drop(uint64(handle))
+		// See docs of ForeignCallback in `uniffi/src/ffi/foreigncallbacks.rs`
+		return C.int32_t(idxCallbackFree)
+
+	case 1:
+		var result uniffiCallbackResult
+		args := unsafe.Slice((*byte)(argsPtr), argsLen)
+		result = foreignCallbackCallbackInterfaceDocExportFileCallback{}.InvokeProgress(cb, args, outBuf)
+		return C.int32_t(result)
+
+	default:
+		// This should never happen, because an out of bounds method index won't
+		// ever be used. Once we can catch errors, we should return an InternalException.
+		// https://github.com/mozilla/uniffi-rs/issues/351
+		return C.int32_t(uniffiCallbackUnexpectedResultError)
+	}
+}
+
+func (foreignCallbackCallbackInterfaceDocExportFileCallback) InvokeProgress(callback DocExportFileCallback, args []byte, outBuf *C.RustBuffer) uniffiCallbackResult {
+	reader := bytes.NewReader(args)
+	err := callback.Progress(FfiConverterDocExportProgressINSTANCE.Read(reader))
+
+	if err != nil {
+		// The only way to bypass an unexpected error is to bypass pointer to an empty
+		// instance of the error
+		if err.err == nil {
+			return uniffiCallbackUnexpectedResultError
+		}
+		*outBuf = LowerIntoRustBuffer[*IrohError](FfiConverterTypeIrohErrorINSTANCE, err)
+		return uniffiCallbackResultError
+	}
+	return uniffiCallbackResultSuccess
+}
+
+type FfiConverterCallbackInterfaceDocExportFileCallback struct {
+	FfiConverterCallbackInterface[DocExportFileCallback]
+}
+
+var FfiConverterCallbackInterfaceDocExportFileCallbackINSTANCE = &FfiConverterCallbackInterfaceDocExportFileCallback{
+	FfiConverterCallbackInterface: FfiConverterCallbackInterface[DocExportFileCallback]{
+		handleMap: newConcurrentHandleMap[DocExportFileCallback](),
+	},
+}
+
+// This is a static function because only 1 instance is supported for registering
+func (c *FfiConverterCallbackInterfaceDocExportFileCallback) register() {
+	rustCall(func(status *C.RustCallStatus) int32 {
+		C.uniffi_iroh_fn_init_callback_docexportfilecallback(C.ForeignCallback(C.iroh_cgo_DocExportFileCallback), status)
+		return 0
+	})
+}
+
+type FfiDestroyerCallbackInterfaceDocExportFileCallback struct{}
+
+func (FfiDestroyerCallbackInterfaceDocExportFileCallback) Destroy(value DocExportFileCallback) {
+}
+
+// Declaration and FfiConverters for DocImportFileCallback Callback Interface
+type DocImportFileCallback interface {
+	Progress(progress *DocImportProgress) *IrohError
+}
+
+// foreignCallbackCallbackInterfaceDocImportFileCallback cannot be callable be a compiled function at a same time
+type foreignCallbackCallbackInterfaceDocImportFileCallback struct{}
+
+//export iroh_cgo_DocImportFileCallback
+func iroh_cgo_DocImportFileCallback(handle C.uint64_t, method C.int32_t, argsPtr *C.uint8_t, argsLen C.int32_t, outBuf *C.RustBuffer) C.int32_t {
+	cb := FfiConverterCallbackInterfaceDocImportFileCallbackINSTANCE.Lift(uint64(handle))
+	switch method {
+	case 0:
+		// 0 means Rust is done with the callback, and the callback
+		// can be dropped by the foreign language.
+		*outBuf = FfiConverterCallbackInterfaceDocImportFileCallbackINSTANCE.drop(uint64(handle))
+		// See docs of ForeignCallback in `uniffi/src/ffi/foreigncallbacks.rs`
+		return C.int32_t(idxCallbackFree)
+
+	case 1:
+		var result uniffiCallbackResult
+		args := unsafe.Slice((*byte)(argsPtr), argsLen)
+		result = foreignCallbackCallbackInterfaceDocImportFileCallback{}.InvokeProgress(cb, args, outBuf)
+		return C.int32_t(result)
+
+	default:
+		// This should never happen, because an out of bounds method index won't
+		// ever be used. Once we can catch errors, we should return an InternalException.
+		// https://github.com/mozilla/uniffi-rs/issues/351
+		return C.int32_t(uniffiCallbackUnexpectedResultError)
+	}
+}
+
+func (foreignCallbackCallbackInterfaceDocImportFileCallback) InvokeProgress(callback DocImportFileCallback, args []byte, outBuf *C.RustBuffer) uniffiCallbackResult {
+	reader := bytes.NewReader(args)
+	err := callback.Progress(FfiConverterDocImportProgressINSTANCE.Read(reader))
+
+	if err != nil {
+		// The only way to bypass an unexpected error is to bypass pointer to an empty
+		// instance of the error
+		if err.err == nil {
+			return uniffiCallbackUnexpectedResultError
+		}
+		*outBuf = LowerIntoRustBuffer[*IrohError](FfiConverterTypeIrohErrorINSTANCE, err)
+		return uniffiCallbackResultError
+	}
+	return uniffiCallbackResultSuccess
+}
+
+type FfiConverterCallbackInterfaceDocImportFileCallback struct {
+	FfiConverterCallbackInterface[DocImportFileCallback]
+}
+
+var FfiConverterCallbackInterfaceDocImportFileCallbackINSTANCE = &FfiConverterCallbackInterfaceDocImportFileCallback{
+	FfiConverterCallbackInterface: FfiConverterCallbackInterface[DocImportFileCallback]{
+		handleMap: newConcurrentHandleMap[DocImportFileCallback](),
+	},
+}
+
+// This is a static function because only 1 instance is supported for registering
+func (c *FfiConverterCallbackInterfaceDocImportFileCallback) register() {
+	rustCall(func(status *C.RustCallStatus) int32 {
+		C.uniffi_iroh_fn_init_callback_docimportfilecallback(C.ForeignCallback(C.iroh_cgo_DocImportFileCallback), status)
+		return 0
+	})
+}
+
+type FfiDestroyerCallbackInterfaceDocImportFileCallback struct{}
+
+func (FfiDestroyerCallbackInterfaceDocImportFileCallback) Destroy(value DocImportFileCallback) {
+}
+
 // Declaration and FfiConverters for DownloadCallback Callback Interface
 type DownloadCallback interface {
 	Progress(progress *DownloadProgress) *IrohError
@@ -7442,6 +8368,80 @@ type FfiDestroyerOptionalTypeQueryOptions struct{}
 func (_ FfiDestroyerOptionalTypeQueryOptions) Destroy(value *QueryOptions) {
 	if value != nil {
 		FfiDestroyerTypeQueryOptions{}.Destroy(*value)
+	}
+}
+
+type FfiConverterOptionalCallbackInterfaceDocExportFileCallback struct{}
+
+var FfiConverterOptionalCallbackInterfaceDocExportFileCallbackINSTANCE = FfiConverterOptionalCallbackInterfaceDocExportFileCallback{}
+
+func (c FfiConverterOptionalCallbackInterfaceDocExportFileCallback) Lift(rb RustBufferI) *DocExportFileCallback {
+	return LiftFromRustBuffer[*DocExportFileCallback](c, rb)
+}
+
+func (_ FfiConverterOptionalCallbackInterfaceDocExportFileCallback) Read(reader io.Reader) *DocExportFileCallback {
+	if readInt8(reader) == 0 {
+		return nil
+	}
+	temp := FfiConverterCallbackInterfaceDocExportFileCallbackINSTANCE.Read(reader)
+	return &temp
+}
+
+func (c FfiConverterOptionalCallbackInterfaceDocExportFileCallback) Lower(value *DocExportFileCallback) RustBuffer {
+	return LowerIntoRustBuffer[*DocExportFileCallback](c, value)
+}
+
+func (_ FfiConverterOptionalCallbackInterfaceDocExportFileCallback) Write(writer io.Writer, value *DocExportFileCallback) {
+	if value == nil {
+		writeInt8(writer, 0)
+	} else {
+		writeInt8(writer, 1)
+		FfiConverterCallbackInterfaceDocExportFileCallbackINSTANCE.Write(writer, *value)
+	}
+}
+
+type FfiDestroyerOptionalCallbackInterfaceDocExportFileCallback struct{}
+
+func (_ FfiDestroyerOptionalCallbackInterfaceDocExportFileCallback) Destroy(value *DocExportFileCallback) {
+	if value != nil {
+		FfiDestroyerCallbackInterfaceDocExportFileCallback{}.Destroy(*value)
+	}
+}
+
+type FfiConverterOptionalCallbackInterfaceDocImportFileCallback struct{}
+
+var FfiConverterOptionalCallbackInterfaceDocImportFileCallbackINSTANCE = FfiConverterOptionalCallbackInterfaceDocImportFileCallback{}
+
+func (c FfiConverterOptionalCallbackInterfaceDocImportFileCallback) Lift(rb RustBufferI) *DocImportFileCallback {
+	return LiftFromRustBuffer[*DocImportFileCallback](c, rb)
+}
+
+func (_ FfiConverterOptionalCallbackInterfaceDocImportFileCallback) Read(reader io.Reader) *DocImportFileCallback {
+	if readInt8(reader) == 0 {
+		return nil
+	}
+	temp := FfiConverterCallbackInterfaceDocImportFileCallbackINSTANCE.Read(reader)
+	return &temp
+}
+
+func (c FfiConverterOptionalCallbackInterfaceDocImportFileCallback) Lower(value *DocImportFileCallback) RustBuffer {
+	return LowerIntoRustBuffer[*DocImportFileCallback](c, value)
+}
+
+func (_ FfiConverterOptionalCallbackInterfaceDocImportFileCallback) Write(writer io.Writer, value *DocImportFileCallback) {
+	if value == nil {
+		writeInt8(writer, 0)
+	} else {
+		writeInt8(writer, 1)
+		FfiConverterCallbackInterfaceDocImportFileCallbackINSTANCE.Write(writer, *value)
+	}
+}
+
+type FfiDestroyerOptionalCallbackInterfaceDocImportFileCallback struct{}
+
+func (_ FfiDestroyerOptionalCallbackInterfaceDocImportFileCallback) Destroy(value *DocImportFileCallback) {
+	if value != nil {
+		FfiDestroyerCallbackInterfaceDocImportFileCallback{}.Destroy(*value)
 	}
 }
 
@@ -8002,6 +9002,30 @@ func (_ FfiDestroyerMapStringTypeCounterStats) Destroy(mapValue map[string]Count
 	for key, value := range mapValue {
 		FfiDestroyerString{}.Destroy(key)
 		FfiDestroyerTypeCounterStats{}.Destroy(value)
+	}
+}
+
+func KeyToPath(key []byte, prefix *string, root *string) (string, error) {
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_func_key_to_path(FfiConverterBytesINSTANCE.Lower(key), FfiConverterOptionalStringINSTANCE.Lower(prefix), FfiConverterOptionalStringINSTANCE.Lower(root), _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue string
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterStringINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
+
+func PathToKey(path string, prefix *string, root *string) ([]byte, error) {
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_func_path_to_key(FfiConverterStringINSTANCE.Lower(path), FfiConverterOptionalStringINSTANCE.Lower(prefix), FfiConverterOptionalStringINSTANCE.Lower(root), _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue []byte
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterBytesINSTANCE.Lift(_uniffiRV), _uniffiErr
 	}
 }
 

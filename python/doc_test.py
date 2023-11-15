@@ -1,7 +1,9 @@
 # tests that correspond to the `src/doc.rs` rust api
-from iroh import IrohNode, PublicKey, SocketAddr, NodeAddr, Ipv4Addr, Ipv6Addr, iroh, AuthorId, NamespaceId, DocTicket, Query, SortBy, SortDirection, QueryOptions
+from iroh import IrohNode, PublicKey, SocketAddr, NodeAddr, Ipv4Addr, Ipv6Addr, iroh, AuthorId, NamespaceId, DocTicket, Query, SortBy, SortDirection, QueryOptions, path_to_key, key_to_path
 import pytest
 import tempfile
+import os
+import random
 
 def test_node_addr():
     #
@@ -145,3 +147,49 @@ def test_doc_entry_basics():
     got_val = doc.read_to_bytes(entry)
     assert val == got_val
     assert len(val) == entry.content_len()
+
+def test_doc_import_export():
+    #
+    # create file temp der
+    dir = tempfile.TemporaryDirectory()
+    in_root = os.path.join(dir.name, "in")
+    out_root = os.path.join(dir.name, "out")
+    os.makedirs(in_root, exist_ok=True)
+    os.makedirs(out_root, exist_ok=True)
+    #
+    # create file
+    path = os.path.join(in_root, "test")
+    size = 100
+    bytes = bytearray(map(random.getrandbits,(8,)*size))
+    file = open(path, "wb")
+    file.write(bytes)
+    file.close()
+    #
+    # create node
+    iroh_dir = tempfile.TemporaryDirectory()
+    node = IrohNode(iroh_dir.name)
+    #
+    # create doc and author
+    doc = node.doc_create()
+    author = node.author_create()
+    #
+    # import entry
+    key = path_to_key(path, None, in_root)
+    doc.import_file(author, key, path, True, None)
+    #
+    # get entry
+    query = Query.author_key_exact(author, key)
+    entry = doc.get_one(query)
+    #
+    # export entry
+    path = key_to_path(key, None, out_root)
+    doc.export_file(entry, path, None)
+    #
+    # read file
+    file = open(path, "rb")
+    got_bytes = file.read()
+    file.close()
+    #
+    #
+    assert bytes == got_bytes
+

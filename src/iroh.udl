@@ -2,6 +2,10 @@ namespace iroh {
   void set_log_level(LogLevel level);
   [Throws=IrohError]
   void start_metrics_collection();
+  [Throws=IrohError]
+  bytes path_to_key(string path, string? prefix, string? root);
+  [Throws=IrohError]
+  string key_to_path(bytes key, string? prefix, string? root);
 };
 
 enum LogLevel {
@@ -65,6 +69,10 @@ interface Doc {
   [Throws=IrohError]
   void set_hash(AuthorId author, bytes key, Hash hash, u64 size);
   [Throws=IrohError]
+  void import_file(AuthorId author, bytes key, string path, boolean in_place, DocImportFileCallback? cb);
+  [Throws=IrohError]
+  void export_file(Entry entry, string path, DocExportFileCallback? cb);
+  [Throws=IrohError]
   u64 size(Entry entry);
   [Throws=IrohError]
   bytes read_to_bytes(Entry entry);
@@ -84,6 +92,88 @@ interface Doc {
   void subscribe(SubscribeCallback cb);
   [Throws=IrohError]
   OpenState status();
+};
+
+enum DocImportProgressType {
+  "Found",
+  "Progress",
+  "IngestDone",
+  "AllDone",
+  "Abort"
+};
+
+dictionary DocImportProgressFound {
+  u64 id;
+  string name;
+  u64 size;
+};
+
+dictionary DocImportProgressProgress {
+  u64 id;
+  u64 offset;
+};
+
+dictionary DocImportProgressIngestDone {
+  u64 id;
+  Hash hash;
+};
+
+dictionary DocImportProgressAllDone {
+  bytes key;
+};
+
+dictionary DocImportProgressAbort {
+  string error;
+};
+
+interface DocImportProgress {
+  DocImportProgressType type();
+  DocImportProgressFound as_found();
+  DocImportProgressProgress as_progress();
+  DocImportProgressIngestDone as_ingest_done();
+  DocImportProgressAllDone as_all_done();
+  DocImportProgressAbort as_abort();
+};
+
+callback interface DocImportFileCallback {
+  [Throws=IrohError]
+  void progress(DocImportProgress progress);
+};
+
+enum DocExportProgressType {
+  "Found",
+  "Progress",
+  "AllDone",
+  "Abort"
+};
+
+dictionary DocExportProgressFound {
+  u64 id;
+  Hash hash;
+  bytes key;
+  u64 size;
+  string outpath;
+};
+
+dictionary DocExportProgressProgress {
+  u64 id;
+  u64 offset;
+};
+
+dictionary DocExportProgressAbort {
+  string error;
+};
+
+interface DocExportProgress {
+  DocExportProgressType type();
+  DocExportProgressFound as_found();
+  DocExportProgressProgress as_progress();
+  DocExportProgressAbort as_abort();
+};
+
+callback interface DocExportFileCallback {
+  [Throws=IrohError]
+  void progress(DocExportProgress progress);
 };
 
 dictionary NamespaceAndCapability {
@@ -559,4 +649,5 @@ interface IrohError {
   NodeAddr(string description);
   Hash(string description);
   RequestToken(string description);
+  FsUtil(string description);
 };

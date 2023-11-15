@@ -137,7 +137,7 @@ impl IrohNode {
     }
 
     pub fn node_id(&self) -> String {
-        self.node.peer_id().to_string()
+        self.node.node_id().to_string()
     }
 
     pub fn doc_create(&self) -> Result<Arc<Doc>, Error> {
@@ -263,7 +263,10 @@ pub struct NamespaceAndCapability {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     use super::*;
+    use crate::{Hash, IrohError, LiveEvent, ShareMode, SubscribeCallback};
 
     #[test]
     fn test_doc_create() {
@@ -281,5 +284,53 @@ mod tests {
         assert_eq!(doc_ticket.0.to_string(), dock_ticket_back.0.to_string());
         println!("doc_ticket: {}", doc_ticket_string);
         node.doc_join(doc_ticket).unwrap();
+    }
+
+    #[test]
+    fn test_basic_sync() {
+        // create node_0
+        let iroh_dir_0 = tempfile::tempdir().unwrap();
+        let node_0 = IrohNode::new(iroh_dir_0.path().to_string_lossy().into_owned()).unwrap();
+
+        // create node_1
+        let iroh_dir_1 = tempfile::tempdir().unwrap();
+        let node_1 = IrohNode::new(iroh_dir_1.path().to_string_lossy().into_owned()).unwrap();
+
+        // create doc on node_0
+        let doc_0 = node_0.doc_create().unwrap();
+        let ticket = doc_0.share(ShareMode::Write).unwrap();
+
+        // subscribe to sync events
+        let (found_s, found_r) = std::sync::mpsc::channel();
+        struct Callback {
+            found_s: std::sync::mpsc::Sender<Result<Hash, IrohError>>,
+        }
+        impl SubscribeCallback for Callback {
+            fn event(&self, event: Arc<LiveEvent>) -> Result<(), IrohError> {
+                match *event {
+                    LiveEvent::ContentReady { ref hash } => {
+                        self.found_s
+                            .send(Ok(hash.clone()))
+                            .map_err(IrohError::doc)?;
+                    }
+                    _ => {}
+                }
+                Ok(())
+            }
+        }
+        let cb = Callback { found_s };
+        doc_0.subscribe(Box::new(cb)).unwrap();
+
+        // join the same doc from node_1
+        let doc_1 = node_1.doc_join(ticket).unwrap();
+
+        // create author on node_1
+        let author = node_1.author_create().unwrap();
+        doc_1
+            .set_bytes(author, b"hello".to_vec(), b"world".to_vec())
+            .unwrap();
+        let hash = found_r.recv().unwrap().unwrap();
+        let val = node_1.blobs_read_to_bytes(hash.into()).unwrap();
+        assert_eq!(b"world".to_vec(), val);
     }
 }
