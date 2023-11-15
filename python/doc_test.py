@@ -183,7 +183,7 @@ def test_doc_import_export():
     #
     # export entry
     path = key_to_path(key, None, out_root)
-    doc.export_file(entry, path)
+    doc.export_file(entry, path, None)
     #
     # read file
     file = open(path, "rb")
