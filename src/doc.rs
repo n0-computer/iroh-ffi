@@ -1097,7 +1097,7 @@ impl From<iroh::rpc_protocol::DocExportProgress> for DocExportProgress {
                 hash: Arc::new(hash.into()),
                 key: key.to_vec(),
                 size,
-                outpath: outpath.display().to_string(),
+                outpath: outpath.to_string_lossy().to_string(),
             }),
             iroh::rpc_protocol::DocExportProgress::Progress { id, offset } => {
                 DocExportProgress::Progress(DocExportProgressProgress { id, offset })
@@ -1338,20 +1338,11 @@ mod tests {
         let author = node.author_create().unwrap();
 
         // import file
-        let key = crate::path_to_key(
-            path.display().to_string(),
-            None,
-            Some(in_root.display().to_string()),
-        )
-        .unwrap();
-        doc.import_file(
-            author.clone(),
-            key.clone(),
-            path.display().to_string(),
-            true,
-            None,
-        )
-        .unwrap();
+        let path_str = path.to_string_lossy().into_owned();
+        let in_root_str = in_root.to_string_lossy().into_owned();
+        let key = crate::path_to_key(path_str.clone(), None, Some(in_root_str)).unwrap();
+        doc.import_file(author.clone(), key.clone(), path_str, true, None)
+            .unwrap();
 
         // export file
         let entry = doc
@@ -1359,7 +1350,8 @@ mod tests {
             .unwrap()
             .unwrap();
         let key = entry.key().to_vec();
-        let path = crate::key_to_path(key, None, Some(out_root.display().to_string())).unwrap();
+        let out_root_str = out_root.to_string_lossy().into_owned();
+        let path = crate::key_to_path(key, None, Some(out_root_str)).unwrap();
         doc.export_file(entry, path.clone(), None).unwrap();
 
         let got_bytes = std::fs::read(path).unwrap();

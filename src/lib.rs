@@ -78,7 +78,11 @@ pub fn key_to_path(
 ) -> Result<String, IrohError> {
     let path = iroh::util::fs::key_to_path(&key, prefix, root.map(|r| std::path::PathBuf::from(r)))
         .map_err(IrohError::fs_util)?;
-    iroh::util::fs::canonicalized_path_to_string(path, false).map_err(IrohError::fs_util)
+    let path = path
+        .to_str()
+        .ok_or_else(|| IrohError::fs_util(format!("Unable to parse path {:?}", path)))
+        .map(|s| s.to_string())?;
+    Ok(path)
 }
 
 /// Helper function that creates a document key from a canonicalized path, removing the `root` and adding the `prefix`, if they exist
@@ -105,7 +109,8 @@ mod tests {
     use super::*;
     #[test]
     fn test_path_to_key_roundtrip() {
-        let path = String::from("/foo/bar");
+        let path = std::path::PathBuf::new().join("/").join("foo").join("bar");
+        let path = path.to_str().unwrap().to_string();
         let mut key = b"/foo/bar\0".to_vec();
 
         let got_key = path_to_key(path.clone(), None, None).unwrap();
@@ -123,7 +128,8 @@ mod tests {
         assert_eq!(path, got_path);
 
         // including root
-        let root = String::from("/foo");
+        let root = std::path::PathBuf::new().join("/").join("foo");
+        let root = root.to_str().unwrap().to_string();
         key = b"prefix:bar\0".to_vec();
 
         let got_key = path_to_key(path.clone(), Some(prefix.clone()), Some(root.clone())).unwrap();
