@@ -1,6 +1,6 @@
 [package]
 name = "iroh-ffi"
-version = "0.10.0"
+version = "0.11.0-alpha"
 edition = "2021"
 publish = false
 readme = "README.md"
