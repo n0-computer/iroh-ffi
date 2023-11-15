@@ -1,7 +1,10 @@
 package main
 
 import (
+	"crypto/rand"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/n0-computer/iroh-ffi/iroh"
@@ -203,4 +206,65 @@ func TestDocEntryBasics(t *testing.T) {
 	got_val, err := doc.ReadToBytes(entry)
 	assert.Equal(t, val, got_val)
 	assert.Equal(t, uint64(len(val)), entry.ContentLen())
+}
+
+func TestDocImportExport(t *testing.T) {
+	// Create temporary directory
+	dir, err := ioutil.TempDir("", "test")
+	assert.Nil(t, err)
+	defer os.RemoveAll(dir)
+
+	inRoot := filepath.Join(dir, "in")
+	outRoot := filepath.Join(dir, "out")
+	err = os.MkdirAll(inRoot, os.ModePerm)
+	assert.Nil(t, err)
+	err = os.MkdirAll(outRoot, os.ModePerm)
+	assert.Nil(t, err)
+
+	// Create file
+	path := filepath.Join(inRoot, "test")
+	size := 100
+	bytes := make([]byte, size)
+	_, err = rand.Read(bytes)
+	assert.Nil(t, err)
+	err = ioutil.WriteFile(path, bytes, 0644)
+	assert.Nil(t, err)
+
+	// Create node
+	irohDir, err := ioutil.TempDir("", "iroh")
+	assert.Nil(t, err)
+	defer os.RemoveAll(irohDir)
+	node, err := iroh.NewIrohNode(irohDir)
+	assert.Nil(t, err)
+
+	// Create doc and author
+	doc, err := node.DocCreate()
+	assert.Nil(t, err)
+	author, err := node.AuthorCreate()
+	assert.Nil(t, err)
+
+	// Import entry
+	key, err := iroh.PathToKey(path, nil, &inRoot)
+	assert.Nil(t, err)
+
+	err = doc.ImportFile(author, key, path, true, nil)
+	assert.Nil(t, err)
+
+	// Get entry
+	query := iroh.QueryAuthorKeyExact(author, key)
+	maybe_entry, err := doc.GetOne(query)
+	assert.Nil(t, err)
+	entry := *maybe_entry
+
+	// Export entry
+	exportPath, err := iroh.KeyToPath(key, nil, &outRoot)
+	assert.Nil(t, err)
+	err = doc.ExportFile(entry, exportPath, nil)
+	assert.Nil(t, err)
+
+	// Read file
+	gotBytes, err := ioutil.ReadFile(exportPath)
+	assert.Nil(t, err)
+
+	assert.Equal(t, bytes, gotBytes)
 }

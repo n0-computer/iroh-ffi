@@ -75,7 +75,7 @@ impl Doc {
         key: Vec<u8>,
         path: String,
         in_place: bool,
-        cb: Box<dyn DocImportFileCallback>,
+        cb: Option<Box<dyn DocImportFileCallback>>,
     ) -> Result<(), IrohError> {
         block_on(&self.rt, async {
             let mut stream = self
@@ -90,8 +90,10 @@ impl Doc {
                 .map_err(IrohError::doc)?;
             while let Some(progress) = stream.next().await {
                 let progress = progress.map_err(IrohError::doc)?;
-                if let Err(e) = cb.progress(Arc::new(progress.into())) {
-                    return Err(e);
+                if let Some(ref cb) = cb {
+                    if let Err(e) = cb.progress(Arc::new(progress.into())) {
+                        return Err(e);
+                    }
                 }
             }
             Ok(())
@@ -103,7 +105,7 @@ impl Doc {
         &self,
         entry: Arc<Entry>,
         path: String,
-        cb: Box<dyn DocExportFileCallback>,
+        cb: Option<Box<dyn DocExportFileCallback>>,
     ) -> Result<(), IrohError> {
         block_on(&self.rt, async {
             let mut stream = self
@@ -113,8 +115,10 @@ impl Doc {
                 .map_err(IrohError::doc)?;
             while let Some(progress) = stream.next().await {
                 let progress = progress.map_err(IrohError::doc)?;
-                if let Err(e) = cb.progress(Arc::new(progress.into())) {
-                    return Err(e);
+                if let Some(ref cb) = cb {
+                    if let Err(e) = cb.progress(Arc::new(progress.into())) {
+                        return Err(e);
+                    }
                 }
             }
             Ok(())
@@ -1145,6 +1149,8 @@ impl DocExportProgress {
 mod tests {
     use super::*;
     use crate::{Ipv4Addr, Ipv6Addr, PublicKey, SocketAddr};
+    use rand::RngCore;
+    use std::io::Write;
 
     #[test]
     fn test_node_addr() {
@@ -1305,5 +1311,58 @@ mod tests {
         let got_val = doc.read_to_bytes(entry.clone()).unwrap();
         assert_eq!(val, got_val);
         assert_eq!(val.len() as u64, entry.content_len());
+    }
+    #[test]
+    fn test_doc_import_export() {
+        // create temp file
+        let temp_dir = tempfile::tempdir().unwrap();
+        let in_root = temp_dir.path().join("in");
+        std::fs::create_dir_all(in_root.clone()).unwrap();
+
+        let out_root = temp_dir.path().join("out");
+        let path = in_root.join("test");
+
+        let size = 100;
+        let mut buf = vec![0u8; size];
+        rand::thread_rng().fill_bytes(&mut buf);
+        let mut file = std::fs::File::create(path.clone()).unwrap();
+        file.write_all(&buf.clone()).unwrap();
+        file.flush().unwrap();
+
+        // spawn node
+        let iroh_dir = tempfile::tempdir().unwrap();
+        let node = crate::IrohNode::new(iroh_dir.path().to_string_lossy().into_owned()).unwrap();
+
+        // create doc & author
+        let doc = node.doc_create().unwrap();
+        let author = node.author_create().unwrap();
+
+        // import file
+        let key = crate::path_to_key(
+            path.display().to_string(),
+            None,
+            Some(in_root.display().to_string()),
+        )
+        .unwrap();
+        doc.import_file(
+            author.clone(),
+            key.clone(),
+            path.display().to_string(),
+            true,
+            None,
+        )
+        .unwrap();
+
+        // export file
+        let entry = doc
+            .get_one(Query::author_key_exact(author, key).into())
+            .unwrap()
+            .unwrap();
+        let key = entry.key().to_vec();
+        let path = crate::key_to_path(key, None, Some(out_root.display().to_string())).unwrap();
+        doc.export_file(entry, path.clone(), None).unwrap();
+
+        let got_bytes = std::fs::read(path).unwrap();
+        assert_eq!(buf, got_bytes);
     }
 }

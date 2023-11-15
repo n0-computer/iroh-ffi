@@ -185,6 +185,14 @@ uint64_t uniffi_iroh_fn_method_doc_del(
 	RustCallStatus* out_status
 );
 
+void uniffi_iroh_fn_method_doc_export_file(
+	void* ptr,
+	void* entry,
+	RustBuffer path,
+	RustBuffer cb,
+	RustCallStatus* out_status
+);
+
 RustBuffer uniffi_iroh_fn_method_doc_get_many(
 	void* ptr,
 	void* query,
@@ -208,7 +216,7 @@ void uniffi_iroh_fn_method_doc_import_file(
 	RustBuffer key,
 	RustBuffer path,
 	int8_t in_place,
-	uint64_t cb,
+	RustBuffer cb,
 	RustCallStatus* out_status
 );
 
@@ -266,6 +274,31 @@ RustBuffer uniffi_iroh_fn_method_doc_status(
 void uniffi_iroh_fn_method_doc_subscribe(
 	void* ptr,
 	uint64_t cb,
+	RustCallStatus* out_status
+);
+
+void uniffi_iroh_fn_free_docexportprogress(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+RustBuffer uniffi_iroh_fn_method_docexportprogress_as_abort(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+RustBuffer uniffi_iroh_fn_method_docexportprogress_as_found(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+RustBuffer uniffi_iroh_fn_method_docexportprogress_as_progress(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+RustBuffer uniffi_iroh_fn_method_docexportprogress_type(
+	void* ptr,
 	RustCallStatus* out_status
 );
 
@@ -1051,6 +1084,11 @@ void uniffi_iroh_fn_init_callback_addcallback(
 	RustCallStatus* out_status
 );
 
+void uniffi_iroh_fn_init_callback_docexportfilecallback(
+	ForeignCallback callback_stub,
+	RustCallStatus* out_status
+);
+
 void uniffi_iroh_fn_init_callback_docimportfilecallback(
 	ForeignCallback callback_stub,
 	RustCallStatus* out_status
@@ -1166,6 +1204,10 @@ uint16_t uniffi_iroh_checksum_method_doc_del(
 	RustCallStatus* out_status
 );
 
+uint16_t uniffi_iroh_checksum_method_doc_export_file(
+	RustCallStatus* out_status
+);
+
 uint16_t uniffi_iroh_checksum_method_doc_get_many(
 	RustCallStatus* out_status
 );
@@ -1215,6 +1257,22 @@ uint16_t uniffi_iroh_checksum_method_doc_status(
 );
 
 uint16_t uniffi_iroh_checksum_method_doc_subscribe(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_docexportprogress_as_abort(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_docexportprogress_as_found(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_docexportprogress_as_progress(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_docexportprogress_type(
 	RustCallStatus* out_status
 );
 
@@ -1730,6 +1788,10 @@ uint16_t uniffi_iroh_checksum_method_addcallback_progress(
 	RustCallStatus* out_status
 );
 
+uint16_t uniffi_iroh_checksum_method_docexportfilecallback_progress(
+	RustCallStatus* out_status
+);
+
 uint16_t uniffi_iroh_checksum_method_docimportfilecallback_progress(
 	RustCallStatus* out_status
 );
@@ -1748,6 +1810,7 @@ uint32_t ffi_iroh_uniffi_contract_version(
 
 
 int32_t iroh_cgo_AddCallback(uint64_t, int32_t, uint8_t *, int32_t, RustBuffer *);
+int32_t iroh_cgo_DocExportFileCallback(uint64_t, int32_t, uint8_t *, int32_t, RustBuffer *);
 int32_t iroh_cgo_DocImportFileCallback(uint64_t, int32_t, uint8_t *, int32_t, RustBuffer *);
 int32_t iroh_cgo_DownloadCallback(uint64_t, int32_t, uint8_t *, int32_t, RustBuffer *);
 int32_t iroh_cgo_SubscribeCallback(uint64_t, int32_t, uint8_t *, int32_t, RustBuffer *);
@@ -1797,6 +1860,9 @@ void uniffiFutureCallbackHandlerTypeAddProgressDone(void *, RustBuffer, RustCall
 void uniffiFutureCallbackHandlerTypeAddProgressFound(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerTypeAddProgressProgress(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerTypeBlobAddOutcomeTypeIrohError(void *, RustBuffer, RustCallStatus);
+void uniffiFutureCallbackHandlerTypeDocExportProgressAbort(void *, RustBuffer, RustCallStatus);
+void uniffiFutureCallbackHandlerTypeDocExportProgressFound(void *, RustBuffer, RustCallStatus);
+void uniffiFutureCallbackHandlerTypeDocExportProgressProgress(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerTypeDocImportProgressAbort(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerTypeDocImportProgressAllDone(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerTypeDocImportProgressFound(void *, RustBuffer, RustCallStatus);
@@ -1814,6 +1880,7 @@ void uniffiFutureCallbackHandlerTypeInsertRemoteEvent(void *, RustBuffer, RustCa
 void uniffiFutureCallbackHandlerTypeOpenStateTypeIrohError(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerTypeSyncEvent(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerTypeAddProgressType(void *, RustBuffer, RustCallStatus);
+void uniffiFutureCallbackHandlerTypeDocExportProgressType(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerTypeDocImportProgressType(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerTypeDownloadProgressType(void *, RustBuffer, RustCallStatus);
 void uniffiFutureCallbackHandlerTypeLiveEventType(void *, RustBuffer, RustCallStatus);

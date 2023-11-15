@@ -69,7 +69,9 @@ interface Doc {
   [Throws=IrohError]
   void set_hash(AuthorId author, bytes key, Hash hash, u64 size);
   [Throws=IrohError]
-  void import_file(AuthorId author, bytes key, string path, boolean in_place, DocImportFileCallback cb);
+  void import_file(AuthorId author, bytes key, string path, boolean in_place, DocImportFileCallback? cb);
+  [Throws=IrohError]
+  void export_file(Entry entry, string path, DocExportFileCallback? cb);
   [Throws=IrohError]
   u64 size(Entry entry);
   [Throws=IrohError]
@@ -136,6 +138,42 @@ interface DocImportProgress {
 callback interface DocImportFileCallback {
   [Throws=IrohError]
   void progress(DocImportProgress progress);
+};
+
+enum DocExportProgressType {
+  "Found",
+  "Progress",
+  "AllDone",
+  "Abort"
+};
+
+dictionary DocExportProgressFound {
+  u64 id;
+  Hash hash;
+  bytes key;
+  u64 size;
+  string outpath;
+};
+
+dictionary DocExportProgressProgress {
+  u64 id;
+  u64 offset;
+};
+
+dictionary DocExportProgressAbort {
+  string error;
+};
+
+interface DocExportProgress {
+  DocExportProgressType type();
+  DocExportProgressFound as_found();
+  DocExportProgressProgress as_progress();
+  DocExportProgressAbort as_abort();
+};
+
+callback interface DocExportFileCallback {
+  [Throws=IrohError]
+  void progress(DocExportProgress progress);
 };
 
 dictionary NamespaceAndCapability {
