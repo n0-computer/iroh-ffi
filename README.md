@@ -75,7 +75,7 @@ where `<binaries path` needs to be replaced with the absolute path to where the 
 Install `uniffi-bindgen-go`: 
 
 ```
-cargo install uniffi-bindgen-go --git https://github.com/dignifiedquire/uniffi-bindgen-go --branch upgarde-uniffi-24
+cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bindgen-go --tag v0.2.0+v0.25.0
 ```
 
 # Developers
