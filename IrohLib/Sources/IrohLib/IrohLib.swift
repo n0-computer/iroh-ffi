@@ -224,6 +224,7 @@ private enum UniffiInternalError: LocalizedError {
 private let CALL_SUCCESS: Int8 = 0
 private let CALL_ERROR: Int8 = 1
 private let CALL_PANIC: Int8 = 2
+private let CALL_CANCELLED: Int8 = 3
 
 private extension RustCallStatus {
     init() {
@@ -286,6 +287,9 @@ private func uniffiCheckCallStatus(
             callStatus.errorBuf.deallocate()
             throw UniffiInternalError.rustPanic("Rust panic")
         }
+
+    case CALL_CANCELLED:
+        throw CancellationError()
 
     default:
         throw UniffiInternalError.unexpectedRustCallStatusCode
@@ -6037,60 +6041,60 @@ private let UNIFFI_CALLBACK_ERROR: Int32 = 1
 private let UNIFFI_CALLBACK_UNEXPECTED_ERROR: Int32 = 2
 
 // Declaration and FfiConverters for AddCallback Callback Interface
-
 public protocol AddCallback: AnyObject {
     func progress(progress: AddProgress) throws
 }
 
 // The ForeignCallback that is passed to Rust.
-private let foreignCallbackCallbackInterfaceAddCallback: ForeignCallback = { (handle: UniFFICallbackHandle, method: Int32, argsData: UnsafePointer<UInt8>, argsLen: Int32, out_buf: UnsafeMutablePointer<RustBuffer>) -> Int32 in
+private let foreignCallbackCallbackInterfaceAddCallback: ForeignCallback =
+    { (handle: UniFFICallbackHandle, method: Int32, argsData: UnsafePointer<UInt8>, argsLen: Int32, out_buf: UnsafeMutablePointer<RustBuffer>) -> Int32 in
 
-    func invokeProgress(_ swiftCallbackInterface: AddCallback, _ argsData: UnsafePointer<UInt8>, _ argsLen: Int32, _ out_buf: UnsafeMutablePointer<RustBuffer>) throws -> Int32 {
-        var reader = createReader(data: Data(bytes: argsData, count: Int(argsLen)))
-        func makeCall() throws -> Int32 {
-            try swiftCallbackInterface.progress(
-                progress: FfiConverterTypeAddProgress.read(from: &reader)
-            )
+        func invokeProgress(_ swiftCallbackInterface: AddCallback, _ argsData: UnsafePointer<UInt8>, _ argsLen: Int32, _ out_buf: UnsafeMutablePointer<RustBuffer>) throws -> Int32 {
+            var reader = createReader(data: Data(bytes: argsData, count: Int(argsLen)))
+            func makeCall() throws -> Int32 {
+                try swiftCallbackInterface.progress(
+                    progress: FfiConverterTypeAddProgress.read(from: &reader)
+                )
+                return UNIFFI_CALLBACK_SUCCESS
+            }
+            do {
+                return try makeCall()
+            } catch let error as IrohError {
+                out_buf.pointee = FfiConverterTypeIrohError.lower(error)
+                return UNIFFI_CALLBACK_ERROR
+            }
+        }
+
+        switch method {
+        case IDX_CALLBACK_FREE:
+            FfiConverterCallbackInterfaceAddCallback.drop(handle: handle)
+            // Sucessful return
+            // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
             return UNIFFI_CALLBACK_SUCCESS
-        }
-        do {
-            return try makeCall()
-        } catch let error as IrohError {
-            out_buf.pointee = FfiConverterTypeIrohError.lower(error)
-            return UNIFFI_CALLBACK_ERROR
-        }
-    }
+        case 1:
+            let cb: AddCallback
+            do {
+                cb = try FfiConverterCallbackInterfaceAddCallback.lift(handle)
+            } catch {
+                out_buf.pointee = FfiConverterString.lower("AddCallback: Invalid handle")
+                return UNIFFI_CALLBACK_UNEXPECTED_ERROR
+            }
+            do {
+                return try invokeProgress(cb, argsData, argsLen, out_buf)
+            } catch {
+                out_buf.pointee = FfiConverterString.lower(String(describing: error))
+                return UNIFFI_CALLBACK_UNEXPECTED_ERROR
+            }
 
-    switch method {
-    case IDX_CALLBACK_FREE:
-        FfiConverterCallbackInterfaceAddCallback.drop(handle: handle)
-        // Sucessful return
-        // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
-        return UNIFFI_CALLBACK_SUCCESS
-    case 1:
-        let cb: AddCallback
-        do {
-            cb = try FfiConverterCallbackInterfaceAddCallback.lift(handle)
-        } catch {
-            out_buf.pointee = FfiConverterString.lower("AddCallback: Invalid handle")
+        // This should never happen, because an out of bounds method index won't
+        // ever be used. Once we can catch errors, we should return an InternalError.
+        // https://github.com/mozilla/uniffi-rs/issues/351
+        default:
+            // An unexpected error happened.
+            // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
             return UNIFFI_CALLBACK_UNEXPECTED_ERROR
         }
-        do {
-            return try invokeProgress(cb, argsData, argsLen, out_buf)
-        } catch {
-            out_buf.pointee = FfiConverterString.lower(String(describing: error))
-            return UNIFFI_CALLBACK_UNEXPECTED_ERROR
-        }
-
-    // This should never happen, because an out of bounds method index won't
-    // ever be used. Once we can catch errors, we should return an InternalError.
-    // https://github.com/mozilla/uniffi-rs/issues/351
-    default:
-        // An unexpected error happened.
-        // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
-        return UNIFFI_CALLBACK_UNEXPECTED_ERROR
     }
-}
 
 // FfiConverter protocol for callback interfaces
 private enum FfiConverterCallbackInterfaceAddCallback {
@@ -6143,60 +6147,60 @@ extension FfiConverterCallbackInterfaceAddCallback: FfiConverter {
 }
 
 // Declaration and FfiConverters for DocExportFileCallback Callback Interface
-
 public protocol DocExportFileCallback: AnyObject {
     func progress(progress: DocExportProgress) throws
 }
 
 // The ForeignCallback that is passed to Rust.
-private let foreignCallbackCallbackInterfaceDocExportFileCallback: ForeignCallback = { (handle: UniFFICallbackHandle, method: Int32, argsData: UnsafePointer<UInt8>, argsLen: Int32, out_buf: UnsafeMutablePointer<RustBuffer>) -> Int32 in
+private let foreignCallbackCallbackInterfaceDocExportFileCallback: ForeignCallback =
+    { (handle: UniFFICallbackHandle, method: Int32, argsData: UnsafePointer<UInt8>, argsLen: Int32, out_buf: UnsafeMutablePointer<RustBuffer>) -> Int32 in
 
-    func invokeProgress(_ swiftCallbackInterface: DocExportFileCallback, _ argsData: UnsafePointer<UInt8>, _ argsLen: Int32, _ out_buf: UnsafeMutablePointer<RustBuffer>) throws -> Int32 {
-        var reader = createReader(data: Data(bytes: argsData, count: Int(argsLen)))
-        func makeCall() throws -> Int32 {
-            try swiftCallbackInterface.progress(
-                progress: FfiConverterTypeDocExportProgress.read(from: &reader)
-            )
+        func invokeProgress(_ swiftCallbackInterface: DocExportFileCallback, _ argsData: UnsafePointer<UInt8>, _ argsLen: Int32, _ out_buf: UnsafeMutablePointer<RustBuffer>) throws -> Int32 {
+            var reader = createReader(data: Data(bytes: argsData, count: Int(argsLen)))
+            func makeCall() throws -> Int32 {
+                try swiftCallbackInterface.progress(
+                    progress: FfiConverterTypeDocExportProgress.read(from: &reader)
+                )
+                return UNIFFI_CALLBACK_SUCCESS
+            }
+            do {
+                return try makeCall()
+            } catch let error as IrohError {
+                out_buf.pointee = FfiConverterTypeIrohError.lower(error)
+                return UNIFFI_CALLBACK_ERROR
+            }
+        }
+
+        switch method {
+        case IDX_CALLBACK_FREE:
+            FfiConverterCallbackInterfaceDocExportFileCallback.drop(handle: handle)
+            // Sucessful return
+            // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
             return UNIFFI_CALLBACK_SUCCESS
-        }
-        do {
-            return try makeCall()
-        } catch let error as IrohError {
-            out_buf.pointee = FfiConverterTypeIrohError.lower(error)
-            return UNIFFI_CALLBACK_ERROR
-        }
-    }
+        case 1:
+            let cb: DocExportFileCallback
+            do {
+                cb = try FfiConverterCallbackInterfaceDocExportFileCallback.lift(handle)
+            } catch {
+                out_buf.pointee = FfiConverterString.lower("DocExportFileCallback: Invalid handle")
+                return UNIFFI_CALLBACK_UNEXPECTED_ERROR
+            }
+            do {
+                return try invokeProgress(cb, argsData, argsLen, out_buf)
+            } catch {
+                out_buf.pointee = FfiConverterString.lower(String(describing: error))
+                return UNIFFI_CALLBACK_UNEXPECTED_ERROR
+            }
 
-    switch method {
-    case IDX_CALLBACK_FREE:
-        FfiConverterCallbackInterfaceDocExportFileCallback.drop(handle: handle)
-        // Sucessful return
-        // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
-        return UNIFFI_CALLBACK_SUCCESS
-    case 1:
-        let cb: DocExportFileCallback
-        do {
-            cb = try FfiConverterCallbackInterfaceDocExportFileCallback.lift(handle)
-        } catch {
-            out_buf.pointee = FfiConverterString.lower("DocExportFileCallback: Invalid handle")
+        // This should never happen, because an out of bounds method index won't
+        // ever be used. Once we can catch errors, we should return an InternalError.
+        // https://github.com/mozilla/uniffi-rs/issues/351
+        default:
+            // An unexpected error happened.
+            // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
             return UNIFFI_CALLBACK_UNEXPECTED_ERROR
         }
-        do {
-            return try invokeProgress(cb, argsData, argsLen, out_buf)
-        } catch {
-            out_buf.pointee = FfiConverterString.lower(String(describing: error))
-            return UNIFFI_CALLBACK_UNEXPECTED_ERROR
-        }
-
-    // This should never happen, because an out of bounds method index won't
-    // ever be used. Once we can catch errors, we should return an InternalError.
-    // https://github.com/mozilla/uniffi-rs/issues/351
-    default:
-        // An unexpected error happened.
-        // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
-        return UNIFFI_CALLBACK_UNEXPECTED_ERROR
     }
-}
 
 // FfiConverter protocol for callback interfaces
 private enum FfiConverterCallbackInterfaceDocExportFileCallback {
@@ -6249,60 +6253,60 @@ extension FfiConverterCallbackInterfaceDocExportFileCallback: FfiConverter {
 }
 
 // Declaration and FfiConverters for DocImportFileCallback Callback Interface
-
 public protocol DocImportFileCallback: AnyObject {
     func progress(progress: DocImportProgress) throws
 }
 
 // The ForeignCallback that is passed to Rust.
-private let foreignCallbackCallbackInterfaceDocImportFileCallback: ForeignCallback = { (handle: UniFFICallbackHandle, method: Int32, argsData: UnsafePointer<UInt8>, argsLen: Int32, out_buf: UnsafeMutablePointer<RustBuffer>) -> Int32 in
+private let foreignCallbackCallbackInterfaceDocImportFileCallback: ForeignCallback =
+    { (handle: UniFFICallbackHandle, method: Int32, argsData: UnsafePointer<UInt8>, argsLen: Int32, out_buf: UnsafeMutablePointer<RustBuffer>) -> Int32 in
 
-    func invokeProgress(_ swiftCallbackInterface: DocImportFileCallback, _ argsData: UnsafePointer<UInt8>, _ argsLen: Int32, _ out_buf: UnsafeMutablePointer<RustBuffer>) throws -> Int32 {
-        var reader = createReader(data: Data(bytes: argsData, count: Int(argsLen)))
-        func makeCall() throws -> Int32 {
-            try swiftCallbackInterface.progress(
-                progress: FfiConverterTypeDocImportProgress.read(from: &reader)
-            )
+        func invokeProgress(_ swiftCallbackInterface: DocImportFileCallback, _ argsData: UnsafePointer<UInt8>, _ argsLen: Int32, _ out_buf: UnsafeMutablePointer<RustBuffer>) throws -> Int32 {
+            var reader = createReader(data: Data(bytes: argsData, count: Int(argsLen)))
+            func makeCall() throws -> Int32 {
+                try swiftCallbackInterface.progress(
+                    progress: FfiConverterTypeDocImportProgress.read(from: &reader)
+                )
+                return UNIFFI_CALLBACK_SUCCESS
+            }
+            do {
+                return try makeCall()
+            } catch let error as IrohError {
+                out_buf.pointee = FfiConverterTypeIrohError.lower(error)
+                return UNIFFI_CALLBACK_ERROR
+            }
+        }
+
+        switch method {
+        case IDX_CALLBACK_FREE:
+            FfiConverterCallbackInterfaceDocImportFileCallback.drop(handle: handle)
+            // Sucessful return
+            // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
             return UNIFFI_CALLBACK_SUCCESS
-        }
-        do {
-            return try makeCall()
-        } catch let error as IrohError {
-            out_buf.pointee = FfiConverterTypeIrohError.lower(error)
-            return UNIFFI_CALLBACK_ERROR
-        }
-    }
+        case 1:
+            let cb: DocImportFileCallback
+            do {
+                cb = try FfiConverterCallbackInterfaceDocImportFileCallback.lift(handle)
+            } catch {
+                out_buf.pointee = FfiConverterString.lower("DocImportFileCallback: Invalid handle")
+                return UNIFFI_CALLBACK_UNEXPECTED_ERROR
+            }
+            do {
+                return try invokeProgress(cb, argsData, argsLen, out_buf)
+            } catch {
+                out_buf.pointee = FfiConverterString.lower(String(describing: error))
+                return UNIFFI_CALLBACK_UNEXPECTED_ERROR
+            }
 
-    switch method {
-    case IDX_CALLBACK_FREE:
-        FfiConverterCallbackInterfaceDocImportFileCallback.drop(handle: handle)
-        // Sucessful return
-        // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
-        return UNIFFI_CALLBACK_SUCCESS
-    case 1:
-        let cb: DocImportFileCallback
-        do {
-            cb = try FfiConverterCallbackInterfaceDocImportFileCallback.lift(handle)
-        } catch {
-            out_buf.pointee = FfiConverterString.lower("DocImportFileCallback: Invalid handle")
+        // This should never happen, because an out of bounds method index won't
+        // ever be used. Once we can catch errors, we should return an InternalError.
+        // https://github.com/mozilla/uniffi-rs/issues/351
+        default:
+            // An unexpected error happened.
+            // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
             return UNIFFI_CALLBACK_UNEXPECTED_ERROR
         }
-        do {
-            return try invokeProgress(cb, argsData, argsLen, out_buf)
-        } catch {
-            out_buf.pointee = FfiConverterString.lower(String(describing: error))
-            return UNIFFI_CALLBACK_UNEXPECTED_ERROR
-        }
-
-    // This should never happen, because an out of bounds method index won't
-    // ever be used. Once we can catch errors, we should return an InternalError.
-    // https://github.com/mozilla/uniffi-rs/issues/351
-    default:
-        // An unexpected error happened.
-        // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
-        return UNIFFI_CALLBACK_UNEXPECTED_ERROR
     }
-}
 
 // FfiConverter protocol for callback interfaces
 private enum FfiConverterCallbackInterfaceDocImportFileCallback {
@@ -6355,60 +6359,60 @@ extension FfiConverterCallbackInterfaceDocImportFileCallback: FfiConverter {
 }
 
 // Declaration and FfiConverters for DownloadCallback Callback Interface
-
 public protocol DownloadCallback: AnyObject {
     func progress(progress: DownloadProgress) throws
 }
 
 // The ForeignCallback that is passed to Rust.
-private let foreignCallbackCallbackInterfaceDownloadCallback: ForeignCallback = { (handle: UniFFICallbackHandle, method: Int32, argsData: UnsafePointer<UInt8>, argsLen: Int32, out_buf: UnsafeMutablePointer<RustBuffer>) -> Int32 in
+private let foreignCallbackCallbackInterfaceDownloadCallback: ForeignCallback =
+    { (handle: UniFFICallbackHandle, method: Int32, argsData: UnsafePointer<UInt8>, argsLen: Int32, out_buf: UnsafeMutablePointer<RustBuffer>) -> Int32 in
 
-    func invokeProgress(_ swiftCallbackInterface: DownloadCallback, _ argsData: UnsafePointer<UInt8>, _ argsLen: Int32, _ out_buf: UnsafeMutablePointer<RustBuffer>) throws -> Int32 {
-        var reader = createReader(data: Data(bytes: argsData, count: Int(argsLen)))
-        func makeCall() throws -> Int32 {
-            try swiftCallbackInterface.progress(
-                progress: FfiConverterTypeDownloadProgress.read(from: &reader)
-            )
+        func invokeProgress(_ swiftCallbackInterface: DownloadCallback, _ argsData: UnsafePointer<UInt8>, _ argsLen: Int32, _ out_buf: UnsafeMutablePointer<RustBuffer>) throws -> Int32 {
+            var reader = createReader(data: Data(bytes: argsData, count: Int(argsLen)))
+            func makeCall() throws -> Int32 {
+                try swiftCallbackInterface.progress(
+                    progress: FfiConverterTypeDownloadProgress.read(from: &reader)
+                )
+                return UNIFFI_CALLBACK_SUCCESS
+            }
+            do {
+                return try makeCall()
+            } catch let error as IrohError {
+                out_buf.pointee = FfiConverterTypeIrohError.lower(error)
+                return UNIFFI_CALLBACK_ERROR
+            }
+        }
+
+        switch method {
+        case IDX_CALLBACK_FREE:
+            FfiConverterCallbackInterfaceDownloadCallback.drop(handle: handle)
+            // Sucessful return
+            // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
             return UNIFFI_CALLBACK_SUCCESS
-        }
-        do {
-            return try makeCall()
-        } catch let error as IrohError {
-            out_buf.pointee = FfiConverterTypeIrohError.lower(error)
-            return UNIFFI_CALLBACK_ERROR
-        }
-    }
+        case 1:
+            let cb: DownloadCallback
+            do {
+                cb = try FfiConverterCallbackInterfaceDownloadCallback.lift(handle)
+            } catch {
+                out_buf.pointee = FfiConverterString.lower("DownloadCallback: Invalid handle")
+                return UNIFFI_CALLBACK_UNEXPECTED_ERROR
+            }
+            do {
+                return try invokeProgress(cb, argsData, argsLen, out_buf)
+            } catch {
+                out_buf.pointee = FfiConverterString.lower(String(describing: error))
+                return UNIFFI_CALLBACK_UNEXPECTED_ERROR
+            }
 
-    switch method {
-    case IDX_CALLBACK_FREE:
-        FfiConverterCallbackInterfaceDownloadCallback.drop(handle: handle)
-        // Sucessful return
-        // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
-        return UNIFFI_CALLBACK_SUCCESS
-    case 1:
-        let cb: DownloadCallback
-        do {
-            cb = try FfiConverterCallbackInterfaceDownloadCallback.lift(handle)
-        } catch {
-            out_buf.pointee = FfiConverterString.lower("DownloadCallback: Invalid handle")
+        // This should never happen, because an out of bounds method index won't
+        // ever be used. Once we can catch errors, we should return an InternalError.
+        // https://github.com/mozilla/uniffi-rs/issues/351
+        default:
+            // An unexpected error happened.
+            // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
             return UNIFFI_CALLBACK_UNEXPECTED_ERROR
         }
-        do {
-            return try invokeProgress(cb, argsData, argsLen, out_buf)
-        } catch {
-            out_buf.pointee = FfiConverterString.lower(String(describing: error))
-            return UNIFFI_CALLBACK_UNEXPECTED_ERROR
-        }
-
-    // This should never happen, because an out of bounds method index won't
-    // ever be used. Once we can catch errors, we should return an InternalError.
-    // https://github.com/mozilla/uniffi-rs/issues/351
-    default:
-        // An unexpected error happened.
-        // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
-        return UNIFFI_CALLBACK_UNEXPECTED_ERROR
     }
-}
 
 // FfiConverter protocol for callback interfaces
 private enum FfiConverterCallbackInterfaceDownloadCallback {
@@ -6461,60 +6465,60 @@ extension FfiConverterCallbackInterfaceDownloadCallback: FfiConverter {
 }
 
 // Declaration and FfiConverters for SubscribeCallback Callback Interface
-
 public protocol SubscribeCallback: AnyObject {
     func event(event: LiveEvent) throws
 }
 
 // The ForeignCallback that is passed to Rust.
-private let foreignCallbackCallbackInterfaceSubscribeCallback: ForeignCallback = { (handle: UniFFICallbackHandle, method: Int32, argsData: UnsafePointer<UInt8>, argsLen: Int32, out_buf: UnsafeMutablePointer<RustBuffer>) -> Int32 in
+private let foreignCallbackCallbackInterfaceSubscribeCallback: ForeignCallback =
+    { (handle: UniFFICallbackHandle, method: Int32, argsData: UnsafePointer<UInt8>, argsLen: Int32, out_buf: UnsafeMutablePointer<RustBuffer>) -> Int32 in
 
-    func invokeEvent(_ swiftCallbackInterface: SubscribeCallback, _ argsData: UnsafePointer<UInt8>, _ argsLen: Int32, _ out_buf: UnsafeMutablePointer<RustBuffer>) throws -> Int32 {
-        var reader = createReader(data: Data(bytes: argsData, count: Int(argsLen)))
-        func makeCall() throws -> Int32 {
-            try swiftCallbackInterface.event(
-                event: FfiConverterTypeLiveEvent.read(from: &reader)
-            )
+        func invokeEvent(_ swiftCallbackInterface: SubscribeCallback, _ argsData: UnsafePointer<UInt8>, _ argsLen: Int32, _ out_buf: UnsafeMutablePointer<RustBuffer>) throws -> Int32 {
+            var reader = createReader(data: Data(bytes: argsData, count: Int(argsLen)))
+            func makeCall() throws -> Int32 {
+                try swiftCallbackInterface.event(
+                    event: FfiConverterTypeLiveEvent.read(from: &reader)
+                )
+                return UNIFFI_CALLBACK_SUCCESS
+            }
+            do {
+                return try makeCall()
+            } catch let error as IrohError {
+                out_buf.pointee = FfiConverterTypeIrohError.lower(error)
+                return UNIFFI_CALLBACK_ERROR
+            }
+        }
+
+        switch method {
+        case IDX_CALLBACK_FREE:
+            FfiConverterCallbackInterfaceSubscribeCallback.drop(handle: handle)
+            // Sucessful return
+            // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
             return UNIFFI_CALLBACK_SUCCESS
-        }
-        do {
-            return try makeCall()
-        } catch let error as IrohError {
-            out_buf.pointee = FfiConverterTypeIrohError.lower(error)
-            return UNIFFI_CALLBACK_ERROR
-        }
-    }
+        case 1:
+            let cb: SubscribeCallback
+            do {
+                cb = try FfiConverterCallbackInterfaceSubscribeCallback.lift(handle)
+            } catch {
+                out_buf.pointee = FfiConverterString.lower("SubscribeCallback: Invalid handle")
+                return UNIFFI_CALLBACK_UNEXPECTED_ERROR
+            }
+            do {
+                return try invokeEvent(cb, argsData, argsLen, out_buf)
+            } catch {
+                out_buf.pointee = FfiConverterString.lower(String(describing: error))
+                return UNIFFI_CALLBACK_UNEXPECTED_ERROR
+            }
 
-    switch method {
-    case IDX_CALLBACK_FREE:
-        FfiConverterCallbackInterfaceSubscribeCallback.drop(handle: handle)
-        // Sucessful return
-        // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
-        return UNIFFI_CALLBACK_SUCCESS
-    case 1:
-        let cb: SubscribeCallback
-        do {
-            cb = try FfiConverterCallbackInterfaceSubscribeCallback.lift(handle)
-        } catch {
-            out_buf.pointee = FfiConverterString.lower("SubscribeCallback: Invalid handle")
+        // This should never happen, because an out of bounds method index won't
+        // ever be used. Once we can catch errors, we should return an InternalError.
+        // https://github.com/mozilla/uniffi-rs/issues/351
+        default:
+            // An unexpected error happened.
+            // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
             return UNIFFI_CALLBACK_UNEXPECTED_ERROR
         }
-        do {
-            return try invokeEvent(cb, argsData, argsLen, out_buf)
-        } catch {
-            out_buf.pointee = FfiConverterString.lower(String(describing: error))
-            return UNIFFI_CALLBACK_UNEXPECTED_ERROR
-        }
-
-    // This should never happen, because an out of bounds method index won't
-    // ever be used. Once we can catch errors, we should return an InternalError.
-    // https://github.com/mozilla/uniffi-rs/issues/351
-    default:
-        // An unexpected error happened.
-        // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
-        return UNIFFI_CALLBACK_UNEXPECTED_ERROR
     }
-}
 
 // FfiConverter protocol for callback interfaces
 private enum FfiConverterCallbackInterfaceSubscribeCallback {
@@ -7111,7 +7115,7 @@ private enum InitializationResult {
 // the code inside is only computed once.
 private var initializationResult: InitializationResult {
     // Get the bindings contract version from our ComponentInterface
-    let bindings_contract_version = 23
+    let bindings_contract_version = 24
     // Get the scaffolding contract version by calling the into the dylib
     let scaffolding_contract_version = ffi_iroh_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {

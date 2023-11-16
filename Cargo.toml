@@ -41,7 +41,7 @@ tempfile = "3.4"
 thiserror = "1.0.44"
 tokio = "1.25.0"
 tokio-util = { version = "0.7", features = ["io-util", "io"] }
-uniffi = { version = "0.24.3", features = ["cli"] }
+uniffi = { version = "=0.25.0", features = ["cli"] }
 futures = "0.3.28"
 quic-rpc = "0.6.1"
 tracing-subscriber = { version = "0.3.17" }
@@ -50,10 +50,11 @@ tracing-subscriber = { version = "0.3.17" }
 rand = "0.8"
 
 [build-dependencies]
-uniffi = { version = "0.24.3", features = ["build"] }
+uniffi = { version = "=0.25.0", features = ["build"] }
 
 [patch.crates-io]
 # https://github.com/mullvad/system-configuration-rs/pull/42
 system-configuration = { git = "https://github.com/tmpfs/system-configuration-rs", branch = "ios-hack" }
 
-uniffi = { git = "https://github.com/mozilla/uniffi-rs", rev = "86c2e26272cfd5054d78d9e8c8ed225d20ab89bc" } # needs to match the version being used uniffi-bindgen-go
+# needs to match the version being used uniffi-bindgen-go
+uniffi = { git = "https://github.com/NordSecurity/uniffi-rs", tag = "v0.25.0-1" } 
