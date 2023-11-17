@@ -108,12 +108,12 @@ jobs:
     runs-on: [self-hosted, macOS, ARM64]
     steps:
     - uses: actions/checkout@master
-    - name: Ensure Xcode CLI tools are installed
-      run: |
-        if ! [ -x "$(command -v xcode-select)" ]; then
-          xcode-select --install
-        fi
-        xcode-select --switch /Applications/Xcode.app
+    # - name: Ensure Xcode CLI tools are installed
+    #   run: |
+    #     if ! [ -x "$(command -v xcode-select)" ]; then
+    #       xcode-select --install
+    #     fi
+    #     # xcode-select --switch /Applications/Xcode.app
     - uses: dtolnay/rust-toolchain@stable
       with:
         targets: aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios
