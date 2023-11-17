@@ -117,7 +117,7 @@ jobs:
       with:
         targets: aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios
     - name: Install Swift
-      uses: slashmo/install-swift@v0.1.0
+      uses: slashmo/install-swift@v0.4.0
       with:
         version: 5.9
     - name: Show Swift version
