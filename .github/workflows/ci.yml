@@ -118,7 +118,7 @@ jobs:
         targets: aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios
     - uses: sushichop/gha-swift-env@v1
       with:
-        swift-version: '5.9'
+        swift-version: '5.6'
     - name: Show Swift version
       run: |
         swift --version
