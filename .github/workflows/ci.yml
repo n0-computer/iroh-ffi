@@ -113,6 +113,7 @@ jobs:
         if ! [ -x "$(command -v xcode-select)" ]; then
           xcode-select --install
         fi
+        xcode-select --switch /Applications/Xcode.app
     - uses: dtolnay/rust-toolchain@stable
       with:
         targets: aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios
