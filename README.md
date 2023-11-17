@@ -26,6 +26,8 @@ For builds targeting older versions of MacOS, build with with:  `MACOSX_DEPLOYME
 
 ### Xcode and IOS 
 
+- Make sure you have rust target [`aarch64-apple-ios`, `aarch64-apple-ios-sim`, `x86_64-apple-ios`] installed (`rustup target add xyz`)
+- Make sure xcode cli tools are set up (`sudo xcode-select --switch /Applications/Xcode.app`)
 - Run `make_swift.sh`. 
 - Add `IrohLib` as a local package dependency under `Frameworks, Libraries, and Embedded Content` in the `General` settings of your project. 
 - Run `Build`

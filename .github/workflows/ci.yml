@@ -102,25 +102,30 @@ jobs:
         CGO_LDFLAGS="-liroh -L /root/actions-runner/_work/iroh-ffi/iroh-ffi/target/debug" \
         go test ./...
 
-  build_and_test_python:
-    name: Python - Build and test 
+  build_and_test_swift:
+    name: Swift - Build and test 
     timeout-minutes: 30
-    runs-on: [linux, x64]
+    runs-on: [self-hosted, macOS, ARM64]
     steps:
     - uses: actions/checkout@master
-    - uses: dtolnay/rust-toolchain@stable
-    - uses: actions/setup-python@v4
-      with:
-          python-version: 3.11
-    - name: Install Deps
-      run: pip install virtualenv maturin uniffi-bindgen
-    - name: Python tests
+    - name: Ensure Xcode CLI tools are installed
       run: |
-        virtualenv venv && \
-        source venv/bin/activate && \
-        pip install pytest 
-        maturin develop && \
-        python -m pytest
-
+        if ! [ -x "$(command -v xcode-select)" ]; then
+          xcode-select --install
+        fi
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios
+    - uses: sushichop/gha-swift-env@v1
+      with:
+        swift-version: '5.9'
+    - name: Show Swift version
+      run: |
+        swift --version
+    - name: Build rust
+      run: cargo build --release
+    - name: Build swift library
+      run: ./make_swift.sh
+    
 
                     
