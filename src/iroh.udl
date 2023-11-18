@@ -116,6 +116,26 @@ interface IrohNode {
   void blobs_delete_blob(Hash hash);
 };
 
+/// Information about a direct address.
+interface DirectAddrInfo {
+  /// Get the reported address
+  SocketAddr addr();
+  /// Get the reported latency, if it exists
+  duration? latency();
+  /// Get the last control message received by this node
+  LatencyAndControlMsg? last_control();
+  /// Get how long ago the last payload message was received for this node
+  duration? last_payload();
+};
+
+/// The latency and type of the control message
+dictionary LatencyAndControlMsg {
+  /// The latency of the control message
+  duration latency;
+  /// The type of control message, represented as a string
+  string control_msg;
+};
+
 /// A representation of a mutable, synchronizable key-value store.
 interface Doc {
   /// Get the document id of this doc.
@@ -686,9 +706,6 @@ interface ConnectionType{
   /// We have no verified connection to this PublicKey
   None();
 };
-
-/// Information about a direct address.
-interface DirectAddrInfo {};
 
 /// Type of SocketAddr
 enum SocketAddrType {

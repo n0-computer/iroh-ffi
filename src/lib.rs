@@ -1,3 +1,4 @@
+mod author;
 mod blob;
 mod doc;
 mod error;
@@ -6,6 +7,7 @@ mod net;
 mod node;
 mod tag;
 
+pub use self::author::*;
 pub use self::blob::*;
 pub use self::doc::*;
 pub use self::error::IrohError;

@@ -9,17 +9,53 @@ use iroh::{
 };
 use quic_rpc::transport::flume::FlumeConnection;
 
-use crate::block_on;
-use crate::doc::{AuthorId, CapabilityKind, Doc, DocTicket, NamespaceId};
-use crate::error::IrohError as Error;
-use crate::key::PublicKey;
+use crate::{block_on, IrohError, PublicKey, SocketAddr};
 
 pub use iroh::rpc_protocol::CounterStats;
 
 /// Information about a direct address.
-/// TODO: when refactoring the iroh.node API, give this an impl
 #[derive(Debug)]
 pub struct DirectAddrInfo(iroh::net::magicsock::DirectAddrInfo);
+
+impl DirectAddrInfo {
+    /// Get the reported address
+    pub fn addr(&self) -> Arc<SocketAddr> {
+        <std::net::SocketAddr as Into<SocketAddr>>::into(self.0.addr).into()
+    }
+
+    /// Get the reported latency, if it exists
+    pub fn latency(&self) -> Option<Duration> {
+        self.0.latency
+    }
+
+    /// Get the last control message received by this node
+    pub fn last_control(&self) -> Option<LatencyAndControlMsg> {
+        self.0
+            .last_control
+            .map(|(latency, control_msg)| LatencyAndControlMsg {
+                latency,
+                control_msg: control_msg.to_string(),
+            })
+    }
+
+    /// Get how long ago the last payload message was received for this node
+    pub fn last_payload(&self) -> Option<Duration> {
+        self.0.last_payload
+    }
+}
+
+/// The latency and type of the control message
+pub struct LatencyAndControlMsg {
+    /// The latency of the control message
+    pub latency: Duration,
+    /// The type of control message, represented as a string
+    pub control_msg: String,
+    // control_msg: ControlMsg
+}
+
+// TODO: enable and use for `LatencyAndControlMsg.control_msg` field when iroh core makes this public
+/// The kinds of control messages that can be sent
+// pub use iroh::net::magicsock::ControlMsg;
 
 /// Information about a connection
 #[derive(Debug)]
@@ -101,14 +137,14 @@ pub struct IrohNode {
 impl IrohNode {
     /// Create a new iroh node. The `path` param should be a directory where we can store or load
     /// iroh data from a previous session.
-    pub fn new(path: String) -> Result<Self, Error> {
+    pub fn new(path: String) -> Result<Self, IrohError> {
         let path = PathBuf::from(path);
         let tokio_rt = tokio::runtime::Builder::new_multi_thread()
             .thread_name("main-runtime")
             .worker_threads(2)
             .enable_all()
             .build()
-            .map_err(Error::runtime)?;
+            .map_err(IrohError::runtime)?;
 
         let tpc = tokio_util::task::LocalPoolHandle::new(num_cpus::get());
         let rt = iroh::bytes::util::runtime::Handle::new(tokio_rt.handle().clone(), tpc);
@@ -136,7 +172,7 @@ impl IrohNode {
                 .spawn()
                 .await
         })
-        .map_err(Error::node_create)?;
+        .map_err(IrohError::node_create)?;
 
         let sync_client = node.client();
 
@@ -153,108 +189,32 @@ impl IrohNode {
         self.node.node_id().to_string()
     }
 
-    /// Create a new doc.
-    pub fn doc_create(&self) -> Result<Arc<Doc>, Error> {
-        block_on(&self.async_runtime, async {
-            let doc = self.sync_client.docs.create().await.map_err(Error::doc)?;
-
-            Ok(Arc::new(Doc {
-                inner: doc,
-                rt: self.async_runtime.clone(),
-            }))
-        })
-    }
-
-    /// Create a new author.
-    pub fn author_create(&self) -> Result<Arc<AuthorId>, Error> {
-        block_on(&self.async_runtime, async {
-            let author = self
-                .sync_client
-                .authors
-                .create()
-                .await
-                .map_err(Error::author)?;
-
-            Ok(Arc::new(AuthorId(author)))
-        })
-    }
-
-    /// List all the AuthorIds that exist on this node.
-    pub fn author_list(&self) -> Result<Vec<Arc<AuthorId>>, Error> {
-        block_on(&self.async_runtime, async {
-            let authors = self
-                .sync_client
-                .authors
-                .list()
-                .await
-                .map_err(Error::author)?
-                .map_ok(|id| Arc::new(AuthorId(id)))
-                .try_collect::<Vec<_>>()
-                .await
-                .map_err(Error::author)?;
-            Ok(authors)
-        })
-    }
-
-    /// Join and sync with an already existing document.
-    pub fn doc_join(&self, ticket: Arc<DocTicket>) -> Result<Arc<Doc>, Error> {
-        block_on(&self.async_runtime, async {
-            let doc = self
-                .sync_client
-                .docs
-                .import(ticket.0.clone())
-                .await
-                .map_err(Error::doc)?;
-
-            Ok(Arc::new(Doc {
-                inner: doc,
-                rt: self.async_runtime.clone(),
-            }))
-        })
-    }
-
-    /// List all the docs we have access to on this node.
-    pub fn doc_list(&self) -> Result<Vec<NamespaceAndCapability>, Error> {
-        block_on(&self.async_runtime, async {
-            let docs = self
-                .sync_client
-                .docs
-                .list()
-                .await
-                .map_err(Error::doc)?
-                .map_ok(|(namespace, capability)| NamespaceAndCapability {
-                    namespace: Arc::new(namespace.into()),
-                    capability,
-                })
-                .try_collect::<Vec<_>>()
-                .await
-                .map_err(Error::doc)?;
-
-            Ok(docs)
-        })
-    }
-
     /// Get statistics of the running node.
-    pub fn stats(&self) -> Result<HashMap<String, CounterStats>, Error> {
+    pub fn stats(&self) -> Result<HashMap<String, CounterStats>, IrohError> {
         block_on(&self.async_runtime, async {
-            let stats = self.sync_client.node.stats().await.map_err(Error::doc)?;
+            let stats = self
+                .sync_client
+                .node
+                .stats()
+                .await
+                .map_err(IrohError::doc)?;
             Ok(stats)
         })
     }
 
     /// Return `ConnectionInfo`s for each connection we have to another iroh node.
-    pub fn connections(&self) -> Result<Vec<ConnectionInfo>, Error> {
+    pub fn connections(&self) -> Result<Vec<ConnectionInfo>, IrohError> {
         block_on(&self.async_runtime, async {
             let infos = self
                 .sync_client
                 .node
                 .connections()
                 .await
-                .map_err(Error::connection)?
+                .map_err(IrohError::connection)?
                 .map_ok(|info| info.into())
                 .try_collect::<Vec<_>>()
                 .await
-                .map_err(Error::connection)?;
+                .map_err(IrohError::connection)?;
             Ok(infos)
         })
     }
@@ -263,7 +223,7 @@ impl IrohNode {
     pub fn connection_info(
         &self,
         node_id: Arc<PublicKey>,
-    ) -> Result<Option<ConnectionInfo>, Error> {
+    ) -> Result<Option<ConnectionInfo>, IrohError> {
         block_on(&self.async_runtime, async {
             let info = self
                 .sync_client
@@ -271,90 +231,8 @@ impl IrohNode {
                 .connection_info(node_id.as_ref().0)
                 .await
                 .map(|i| i.map(|i| i.into()))
-                .map_err(Error::connection)?;
+                .map_err(IrohError::connection)?;
             Ok(info)
         })
-    }
-}
-
-/// The NamespaceId and CapabilityKind (read/write) of the doc
-pub struct NamespaceAndCapability {
-    /// The NamespaceId of the doc
-    pub namespace: Arc<NamespaceId>,
-    /// The capability you have for the doc (read/write)
-    pub capability: CapabilityKind,
-}
-
-#[cfg(test)]
-mod tests {
-    use std::sync::Arc;
-
-    use super::*;
-    use crate::{Hash, IrohError, LiveEvent, ShareMode, SubscribeCallback};
-
-    #[test]
-    fn test_doc_create() {
-        let path = tempfile::tempdir().unwrap();
-        let node = IrohNode::new(path.path().to_string_lossy().into_owned()).unwrap();
-        let node_id = node.node_id();
-        println!("id: {}", node_id);
-        let doc = node.doc_create().unwrap();
-        let doc_id = doc.id();
-        println!("doc_id: {}", doc_id);
-
-        let doc_ticket = doc.share(crate::doc::ShareMode::Write).unwrap();
-        let doc_ticket_string = doc_ticket.to_string();
-        let dock_ticket_back = DocTicket::from_string(doc_ticket_string.clone()).unwrap();
-        assert_eq!(doc_ticket.0.to_string(), dock_ticket_back.0.to_string());
-        println!("doc_ticket: {}", doc_ticket_string);
-        node.doc_join(doc_ticket).unwrap();
-    }
-
-    #[test]
-    fn test_basic_sync() {
-        // create node_0
-        let iroh_dir_0 = tempfile::tempdir().unwrap();
-        let node_0 = IrohNode::new(iroh_dir_0.path().to_string_lossy().into_owned()).unwrap();
-
-        // create node_1
-        let iroh_dir_1 = tempfile::tempdir().unwrap();
-        let node_1 = IrohNode::new(iroh_dir_1.path().to_string_lossy().into_owned()).unwrap();
-
-        // create doc on node_0
-        let doc_0 = node_0.doc_create().unwrap();
-        let ticket = doc_0.share(ShareMode::Write).unwrap();
-
-        // subscribe to sync events
-        let (found_s, found_r) = std::sync::mpsc::channel();
-        struct Callback {
-            found_s: std::sync::mpsc::Sender<Result<Hash, IrohError>>,
-        }
-        impl SubscribeCallback for Callback {
-            fn event(&self, event: Arc<LiveEvent>) -> Result<(), IrohError> {
-                match *event {
-                    LiveEvent::ContentReady { ref hash } => {
-                        self.found_s
-                            .send(Ok(hash.clone()))
-                            .map_err(IrohError::doc)?;
-                    }
-                    _ => {}
-                }
-                Ok(())
-            }
-        }
-        let cb = Callback { found_s };
-        doc_0.subscribe(Box::new(cb)).unwrap();
-
-        // join the same doc from node_1
-        let doc_1 = node_1.doc_join(ticket).unwrap();
-
-        // create author on node_1
-        let author = node_1.author_create().unwrap();
-        doc_1
-            .set_bytes(author, b"hello".to_vec(), b"world".to_vec())
-            .unwrap();
-        let hash = found_r.recv().unwrap().unwrap();
-        let val = node_1.blobs_read_to_bytes(hash.into()).unwrap();
-        assert_eq!(b"world".to_vec(), val);
     }
 }
