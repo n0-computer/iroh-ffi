@@ -300,6 +300,7 @@ impl From<WrapOption> for iroh::rpc_protocol::WrapOption {
     }
 }
 
+/// Hash type used throughout Iroh. A blake3 hash.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Hash(pub(crate) iroh::bytes::Hash);
 
@@ -377,16 +378,27 @@ impl From<Hash> for iroh::bytes::Hash {
     }
 }
 
+/// The `progress` method will be called for each `AddProgress` event that is
+/// emitted during a `node.blobs_add_from_path`. Use the `AddProgress.type()`
+/// method to check the `AddProgressType`
 pub trait AddCallback: Send + Sync + 'static {
     fn progress(&self, progress: Arc<AddProgress>) -> Result<(), IrohError>;
 }
 
+/// The different types of AddProgress events
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AddProgressType {
+    /// An item was found with name `name`, from now on referred to via `id`
     Found,
+    /// We got progress ingesting item `id`.
     Progress,
+    /// We are done with `id`, and the hash is `hash`.
     Done,
+    /// We are done with the whole operation.
     AllDone,
+    /// We got an error and need to abort.
+    ///
+    /// This will be the last message in the stream.
     Abort,
 }
 
@@ -678,10 +690,14 @@ impl BlobDownloadRequest {
     }
 }
 
+/// The `progress` method will be called for each `DownloadProgress` event that is emitted during
+/// a `node.blobs_download`. Use the `DownloadProgress.type()` method to check the
+/// `DownloadProgressType` of the event.
 pub trait DownloadCallback: Send + Sync + 'static {
     fn progress(&self, progress: Arc<DownloadProgress>) -> Result<(), IrohError>;
 }
 
+/// The different types of DownloadProgress events
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DownloadProgressType {
     Connected,
@@ -776,7 +792,7 @@ pub struct DownloadProgressAbort {
     pub error: String,
 }
 
-/// Progress updates for the add operation.
+/// Progress updates for the get operation.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DownloadProgress {
     /// A new connection was established.
@@ -791,8 +807,7 @@ pub enum DownloadProgress {
     Done(DownloadProgressDone),
     /// We are done with the network part - all data is local
     NetworkDone(DownloadProgressNetworkDone),
-    /// The download part is done for this id, we are not exporting the data to the specified out
-    /// path
+    /// The download part is done for this id, we are not exporting the data to the specified outpath
     Export(DownloadProgressExport),
     /// We have made progress exporting the data
     ///
