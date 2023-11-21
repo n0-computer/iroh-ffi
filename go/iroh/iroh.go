@@ -342,7 +342,7 @@ func init() {
 
 func uniffiCheckChecksums() {
 	// Get the bindings contract version from our ComponentInterface
-	bindingsContractVersion := 23
+	bindingsContractVersion := 24
 	// Get the scaffolding contract version by calling the into the dylib
 	scaffoldingContractVersion := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint32_t {
 		return C.ffi_iroh_uniffi_contract_version(uniffiStatus)
@@ -8163,17 +8163,18 @@ func (_ FfiDestroyerTypeSyncReason) Destroy(value SyncReason) {
 type uniffiCallbackResult C.int32_t
 
 const (
-	idxCallbackFree                                          = 0
+	uniffiIdxCallbackFree               uniffiCallbackResult = 0
 	uniffiCallbackResultSuccess         uniffiCallbackResult = 0
 	uniffiCallbackResultError           uniffiCallbackResult = 1
 	uniffiCallbackUnexpectedResultError uniffiCallbackResult = 2
+	uniffiCallbackCancelled             uniffiCallbackResult = 3
 )
 
 type concurrentHandleMap[T any] struct {
 	leftMap       map[uint64]*T
 	rightMap      map[*T]uint64
 	currentHandle uint64
-	lock          sync.Mutex
+	lock          sync.RWMutex
 }
 
 func newConcurrentHandleMap[T any]() *concurrentHandleMap[T] {
@@ -8186,6 +8187,7 @@ func newConcurrentHandleMap[T any]() *concurrentHandleMap[T] {
 func (cm *concurrentHandleMap[T]) insert(obj *T) uint64 {
 	cm.lock.Lock()
 	defer cm.lock.Unlock()
+
 	if existingHandle, ok := cm.rightMap[obj]; ok {
 		return existingHandle
 	}
@@ -8198,6 +8200,7 @@ func (cm *concurrentHandleMap[T]) insert(obj *T) uint64 {
 func (cm *concurrentHandleMap[T]) remove(handle uint64) bool {
 	cm.lock.Lock()
 	defer cm.lock.Unlock()
+
 	if val, ok := cm.leftMap[handle]; ok {
 		delete(cm.leftMap, handle)
 		delete(cm.rightMap, val)
@@ -8206,6 +8209,9 @@ func (cm *concurrentHandleMap[T]) remove(handle uint64) bool {
 }
 
 func (cm *concurrentHandleMap[T]) tryGet(handle uint64) (*T, bool) {
+	cm.lock.RLock()
+	defer cm.lock.RUnlock()
+
 	val, ok := cm.leftMap[handle]
 	return val, ok
 }
@@ -8256,7 +8262,7 @@ func iroh_cgo_AddCallback(handle C.uint64_t, method C.int32_t, argsPtr *C.uint8_
 		// can be dropped by the foreign language.
 		*outBuf = FfiConverterCallbackInterfaceAddCallbackINSTANCE.drop(uint64(handle))
 		// See docs of ForeignCallback in `uniffi/src/ffi/foreigncallbacks.rs`
-		return C.int32_t(idxCallbackFree)
+		return C.int32_t(uniffiIdxCallbackFree)
 
 	case 1:
 		var result uniffiCallbackResult
@@ -8328,7 +8334,7 @@ func iroh_cgo_DocExportFileCallback(handle C.uint64_t, method C.int32_t, argsPtr
 		// can be dropped by the foreign language.
 		*outBuf = FfiConverterCallbackInterfaceDocExportFileCallbackINSTANCE.drop(uint64(handle))
 		// See docs of ForeignCallback in `uniffi/src/ffi/foreigncallbacks.rs`
-		return C.int32_t(idxCallbackFree)
+		return C.int32_t(uniffiIdxCallbackFree)
 
 	case 1:
 		var result uniffiCallbackResult
@@ -8400,7 +8406,7 @@ func iroh_cgo_DocImportFileCallback(handle C.uint64_t, method C.int32_t, argsPtr
 		// can be dropped by the foreign language.
 		*outBuf = FfiConverterCallbackInterfaceDocImportFileCallbackINSTANCE.drop(uint64(handle))
 		// See docs of ForeignCallback in `uniffi/src/ffi/foreigncallbacks.rs`
-		return C.int32_t(idxCallbackFree)
+		return C.int32_t(uniffiIdxCallbackFree)
 
 	case 1:
 		var result uniffiCallbackResult
@@ -8472,7 +8478,7 @@ func iroh_cgo_DownloadCallback(handle C.uint64_t, method C.int32_t, argsPtr *C.u
 		// can be dropped by the foreign language.
 		*outBuf = FfiConverterCallbackInterfaceDownloadCallbackINSTANCE.drop(uint64(handle))
 		// See docs of ForeignCallback in `uniffi/src/ffi/foreigncallbacks.rs`
-		return C.int32_t(idxCallbackFree)
+		return C.int32_t(uniffiIdxCallbackFree)
 
 	case 1:
 		var result uniffiCallbackResult
@@ -8544,7 +8550,7 @@ func iroh_cgo_SubscribeCallback(handle C.uint64_t, method C.int32_t, argsPtr *C.
 		// can be dropped by the foreign language.
 		*outBuf = FfiConverterCallbackInterfaceSubscribeCallbackINSTANCE.drop(uint64(handle))
 		// See docs of ForeignCallback in `uniffi/src/ffi/foreigncallbacks.rs`
-		return C.int32_t(idxCallbackFree)
+		return C.int32_t(uniffiIdxCallbackFree)
 
 	case 1:
 		var result uniffiCallbackResult
