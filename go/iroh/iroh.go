@@ -7171,7 +7171,6 @@ func (err IrohError) Unwrap() error {
 // Err* are used for checking error type with `errors.Is`
 var ErrIrohErrorRuntime = fmt.Errorf("IrohErrorRuntime")
 var ErrIrohErrorNodeCreate = fmt.Errorf("IrohErrorNodeCreate")
-var ErrIrohErrorNodeShutdown = fmt.Errorf("IrohErrorNodeShutdown")
 var ErrIrohErrorDoc = fmt.Errorf("IrohErrorDoc")
 var ErrIrohErrorAuthor = fmt.Errorf("IrohErrorAuthor")
 var ErrIrohErrorNamespace = fmt.Errorf("IrohErrorNamespace")
@@ -7243,33 +7242,6 @@ func (err IrohErrorNodeCreate) Error() string {
 
 func (self IrohErrorNodeCreate) Is(target error) bool {
 	return target == ErrIrohErrorNodeCreate
-}
-
-type IrohErrorNodeShutdown struct {
-	Description string
-}
-
-func NewIrohErrorNodeShutdown(
-	description string,
-) *IrohError {
-	return &IrohError{
-		err: &IrohErrorNodeShutdown{
-			Description: description,
-		},
-	}
-}
-
-func (err IrohErrorNodeShutdown) Error() string {
-	return fmt.Sprint("NodeShutdown",
-		": ",
-
-		"Description=",
-		err.Description,
-	)
-}
-
-func (self IrohErrorNodeShutdown) Is(target error) bool {
-	return target == ErrIrohErrorNodeShutdown
 }
 
 type IrohErrorDoc struct {
@@ -7756,74 +7728,70 @@ func (c FfiConverterTypeIrohError) Read(reader io.Reader) error {
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 3:
-		return &IrohError{&IrohErrorNodeShutdown{
-			Description: FfiConverterStringINSTANCE.Read(reader),
-		}}
-	case 4:
 		return &IrohError{&IrohErrorDoc{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
-	case 5:
+	case 4:
 		return &IrohError{&IrohErrorAuthor{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
-	case 6:
+	case 5:
 		return &IrohError{&IrohErrorNamespace{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
-	case 7:
+	case 6:
 		return &IrohError{&IrohErrorDocTicket{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
-	case 8:
+	case 7:
 		return &IrohError{&IrohErrorUniffi{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
-	case 9:
+	case 8:
 		return &IrohError{&IrohErrorConnection{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
-	case 10:
+	case 9:
 		return &IrohError{&IrohErrorBlobs{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
-	case 11:
+	case 10:
 		return &IrohError{&IrohErrorIpv4Addr{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
-	case 12:
+	case 11:
 		return &IrohError{&IrohErrorIpv6Addr{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
-	case 13:
+	case 12:
 		return &IrohError{&IrohErrorSocketAddrV4{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
-	case 14:
+	case 13:
 		return &IrohError{&IrohErrorSocketAddrV6{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
-	case 15:
+	case 14:
 		return &IrohError{&IrohErrorPublicKey{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
-	case 16:
+	case 15:
 		return &IrohError{&IrohErrorNodeAddr{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
-	case 17:
+	case 16:
 		return &IrohError{&IrohErrorHash{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
-	case 18:
+	case 17:
 		return &IrohError{&IrohErrorRequestToken{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
-	case 19:
+	case 18:
 		return &IrohError{&IrohErrorFsUtil{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
-	case 20:
+	case 19:
 		return &IrohError{&IrohErrorTags{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
@@ -7840,59 +7808,56 @@ func (c FfiConverterTypeIrohError) Write(writer io.Writer, value *IrohError) {
 	case *IrohErrorNodeCreate:
 		writeInt32(writer, 2)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorNodeShutdown:
+	case *IrohErrorDoc:
 		writeInt32(writer, 3)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorDoc:
+	case *IrohErrorAuthor:
 		writeInt32(writer, 4)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorAuthor:
+	case *IrohErrorNamespace:
 		writeInt32(writer, 5)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorNamespace:
+	case *IrohErrorDocTicket:
 		writeInt32(writer, 6)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorDocTicket:
+	case *IrohErrorUniffi:
 		writeInt32(writer, 7)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorUniffi:
+	case *IrohErrorConnection:
 		writeInt32(writer, 8)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorConnection:
+	case *IrohErrorBlobs:
 		writeInt32(writer, 9)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorBlobs:
+	case *IrohErrorIpv4Addr:
 		writeInt32(writer, 10)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorIpv4Addr:
+	case *IrohErrorIpv6Addr:
 		writeInt32(writer, 11)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorIpv6Addr:
+	case *IrohErrorSocketAddrV4:
 		writeInt32(writer, 12)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorSocketAddrV4:
+	case *IrohErrorSocketAddrV6:
 		writeInt32(writer, 13)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorSocketAddrV6:
+	case *IrohErrorPublicKey:
 		writeInt32(writer, 14)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorPublicKey:
+	case *IrohErrorNodeAddr:
 		writeInt32(writer, 15)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorNodeAddr:
+	case *IrohErrorHash:
 		writeInt32(writer, 16)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorHash:
+	case *IrohErrorRequestToken:
 		writeInt32(writer, 17)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorRequestToken:
+	case *IrohErrorFsUtil:
 		writeInt32(writer, 18)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorFsUtil:
-		writeInt32(writer, 19)
-		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
 	case *IrohErrorTags:
-		writeInt32(writer, 20)
+		writeInt32(writer, 19)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
 	default:
 		_ = variantValue

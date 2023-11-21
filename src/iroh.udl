@@ -1235,7 +1235,6 @@ dictionary BlobListCollectionsResponse {
 interface IrohError {
   Runtime(string description);
   NodeCreate(string description);
-  NodeShutdown(string description);
   Doc(string description);
   Author(string description);
   Namespace(string description);

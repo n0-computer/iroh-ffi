@@ -77,7 +77,7 @@ impl IrohNode {
             let doc = self
                 .sync_client
                 .docs
-                .open((*id).0.clone())
+                .open(id.0)
                 .await
                 .map_err(IrohError::doc)?;
             Ok(doc.map(|d| {
@@ -99,7 +99,7 @@ impl IrohNode {
         block_on(&self.async_runtime, async {
             self.sync_client
                 .docs
-                .drop_doc((*doc_id).0.clone())
+                .drop_doc(doc_id.0)
                 .await
                 .map_err(IrohError::doc)
         })
@@ -180,7 +180,7 @@ impl Doc {
             let mut stream = self
                 .inner
                 .import_file(
-                    (*author).0.clone(),
+                    author.0,
                     bytes::Bytes::from(key),
                     std::path::PathBuf::from(path),
                     in_place,
@@ -190,9 +190,7 @@ impl Doc {
             while let Some(progress) = stream.next().await {
                 let progress = progress.map_err(IrohError::doc)?;
                 if let Some(ref cb) = cb {
-                    if let Err(e) = cb.progress(Arc::new(progress.into())) {
-                        return Err(e);
-                    }
+                    cb.progress(Arc::new(progress.into()))?;
                 }
             }
             Ok(())
@@ -209,15 +207,13 @@ impl Doc {
         block_on(&self.rt, async {
             let mut stream = self
                 .inner
-                .export_file((*entry).0.clone(), std::path::PathBuf::from(path))
+                .export_file(entry.0.clone(), std::path::PathBuf::from(path))
                 .await
                 .map_err(IrohError::doc)?;
             while let Some(progress) = stream.next().await {
                 let progress = progress.map_err(IrohError::doc)?;
                 if let Some(ref cb) = cb {
-                    if let Err(e) = cb.progress(Arc::new(progress.into())) {
-                        return Err(e);
-                    }
+                    cb.progress(Arc::new(progress.into()))?
                 }
             }
             Ok(())
@@ -283,7 +279,7 @@ impl Doc {
     ) -> Result<Option<Arc<Entry>>, IrohError> {
         block_on(&self.rt, async {
             self.inner
-                .get_exact((*author).0, key, include_empty)
+                .get_exact(author.0, key, include_empty)
                 .await
                 .map(|e| e.map(|e| Arc::new(e.into())))
                 .map_err(IrohError::doc)
@@ -645,7 +641,7 @@ impl Query {
     ///     offset: None
     ///     limit: None
     pub fn author(author: Arc<AuthorId>, opts: Option<QueryOptions>) -> Self {
-        let mut builder = iroh::sync::store::Query::author((*author).0.clone());
+        let mut builder = iroh::sync::store::Query::author(author.0);
 
         if let Some(opts) = opts {
             if opts.offset != 0 {
@@ -667,7 +663,7 @@ impl Query {
     ///     offset: None
     ///     limit: None
     pub fn key_exact(key: Vec<u8>, opts: Option<QueryOptions>) -> Self {
-        let mut builder = iroh::sync::store::Query::key_exact(&key);
+        let mut builder = iroh::sync::store::Query::key_exact(key);
 
         if let Some(opts) = opts {
             if opts.offset != 0 {
@@ -683,7 +679,7 @@ impl Query {
 
     /// Create a Query for a single key and author.
     pub fn author_key_exact(author: Arc<AuthorId>, key: Vec<u8>) -> Self {
-        let builder = iroh::sync::store::Query::author((*author).0.clone()).key_exact(&key);
+        let builder = iroh::sync::store::Query::author(author.0).key_exact(key);
         Query(builder.build())
     }
 
@@ -695,7 +691,7 @@ impl Query {
     ///     offset: None
     ///     limit: None
     pub fn key_prefix(prefix: Vec<u8>, opts: Option<QueryOptions>) -> Self {
-        let mut builder = iroh::sync::store::Query::key_prefix(&prefix);
+        let mut builder = iroh::sync::store::Query::key_prefix(prefix);
 
         if let Some(opts) = opts {
             if opts.offset != 0 {
@@ -720,7 +716,7 @@ impl Query {
         prefix: Vec<u8>,
         opts: Option<QueryOptions>,
     ) -> Self {
-        let mut builder = iroh::sync::store::Query::author((*author).0.clone()).key_prefix(&prefix);
+        let mut builder = iroh::sync::store::Query::author(author.0).key_prefix(prefix);
 
         if let Some(opts) = opts {
             if opts.offset != 0 {
@@ -972,9 +968,7 @@ pub enum Origin {
 impl From<iroh::sync_engine::Origin> for Origin {
     fn from(value: iroh::sync_engine::Origin) -> Self {
         match value {
-            iroh::sync_engine::Origin::Connect(reason) => Self::Connect {
-                reason: reason.into(),
-            },
+            iroh::sync_engine::Origin::Connect(reason) => Self::Connect { reason },
             iroh::sync_engine::Origin::Accept => Self::Accept,
         }
     }

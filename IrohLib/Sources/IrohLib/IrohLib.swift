@@ -7033,7 +7033,6 @@ extension DownloadProgressType: Equatable, Hashable {}
 public enum IrohError {
     case Runtime(description: String)
     case NodeCreate(description: String)
-    case NodeShutdown(description: String)
     case Doc(description: String)
     case Author(description: String)
     case Namespace(description: String)
@@ -7069,58 +7068,55 @@ public struct FfiConverterTypeIrohError: FfiConverterRustBuffer {
         case 2: return try .NodeCreate(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 3: return try .NodeShutdown(
+        case 3: return try .Doc(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 4: return try .Doc(
+        case 4: return try .Author(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 5: return try .Author(
+        case 5: return try .Namespace(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 6: return try .Namespace(
+        case 6: return try .DocTicket(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 7: return try .DocTicket(
+        case 7: return try .Uniffi(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 8: return try .Uniffi(
+        case 8: return try .Connection(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 9: return try .Connection(
+        case 9: return try .Blobs(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 10: return try .Blobs(
+        case 10: return try .Ipv4Addr(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 11: return try .Ipv4Addr(
+        case 11: return try .Ipv6Addr(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 12: return try .Ipv6Addr(
+        case 12: return try .SocketAddrV4(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 13: return try .SocketAddrV4(
+        case 13: return try .SocketAddrV6(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 14: return try .SocketAddrV6(
+        case 14: return try .PublicKey(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 15: return try .PublicKey(
+        case 15: return try .NodeAddr(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 16: return try .NodeAddr(
+        case 16: return try .Hash(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 17: return try .Hash(
+        case 17: return try .RequestToken(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 18: return try .RequestToken(
+        case 18: return try .FsUtil(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 19: return try .FsUtil(
-                description: FfiConverterString.read(from: &buf)
-            )
-        case 20: return try .Tags(
+        case 19: return try .Tags(
                 description: FfiConverterString.read(from: &buf)
             )
 
@@ -7138,76 +7134,72 @@ public struct FfiConverterTypeIrohError: FfiConverterRustBuffer {
             writeInt(&buf, Int32(2))
             FfiConverterString.write(description, into: &buf)
 
-        case let .NodeShutdown(description):
+        case let .Doc(description):
             writeInt(&buf, Int32(3))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Doc(description):
+        case let .Author(description):
             writeInt(&buf, Int32(4))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Author(description):
+        case let .Namespace(description):
             writeInt(&buf, Int32(5))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Namespace(description):
+        case let .DocTicket(description):
             writeInt(&buf, Int32(6))
             FfiConverterString.write(description, into: &buf)
 
-        case let .DocTicket(description):
+        case let .Uniffi(description):
             writeInt(&buf, Int32(7))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Uniffi(description):
+        case let .Connection(description):
             writeInt(&buf, Int32(8))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Connection(description):
+        case let .Blobs(description):
             writeInt(&buf, Int32(9))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Blobs(description):
+        case let .Ipv4Addr(description):
             writeInt(&buf, Int32(10))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Ipv4Addr(description):
+        case let .Ipv6Addr(description):
             writeInt(&buf, Int32(11))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Ipv6Addr(description):
+        case let .SocketAddrV4(description):
             writeInt(&buf, Int32(12))
             FfiConverterString.write(description, into: &buf)
 
-        case let .SocketAddrV4(description):
+        case let .SocketAddrV6(description):
             writeInt(&buf, Int32(13))
             FfiConverterString.write(description, into: &buf)
 
-        case let .SocketAddrV6(description):
+        case let .PublicKey(description):
             writeInt(&buf, Int32(14))
             FfiConverterString.write(description, into: &buf)
 
-        case let .PublicKey(description):
+        case let .NodeAddr(description):
             writeInt(&buf, Int32(15))
             FfiConverterString.write(description, into: &buf)
 
-        case let .NodeAddr(description):
+        case let .Hash(description):
             writeInt(&buf, Int32(16))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Hash(description):
+        case let .RequestToken(description):
             writeInt(&buf, Int32(17))
             FfiConverterString.write(description, into: &buf)
 
-        case let .RequestToken(description):
+        case let .FsUtil(description):
             writeInt(&buf, Int32(18))
             FfiConverterString.write(description, into: &buf)
 
-        case let .FsUtil(description):
-            writeInt(&buf, Int32(19))
-            FfiConverterString.write(description, into: &buf)
-
         case let .Tags(description):
-            writeInt(&buf, Int32(20))
+            writeInt(&buf, Int32(19))
             FfiConverterString.write(description, into: &buf)
         }
     }

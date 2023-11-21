@@ -49,7 +49,7 @@ impl IrohNode {
         block_on(&self.async_runtime, async {
             self.sync_client
                 .tags
-                .delete((*name).0.clone())
+                .delete(name.0.clone())
                 .await
                 .map_err(IrohError::tags)
         })

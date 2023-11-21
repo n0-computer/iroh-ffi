@@ -88,9 +88,7 @@ impl IrohNode {
                 .map_err(IrohError::blobs)?;
             while let Some(progress) = stream.next().await {
                 let progress = progress.map_err(IrohError::blobs)?;
-                if let Err(e) = cb.progress(Arc::new(progress.into())) {
-                    return Err(e);
-                }
+                cb.progress(Arc::new(progress.into()))?;
             }
             Ok(())
         })
@@ -153,9 +151,7 @@ impl IrohNode {
                 .map_err(IrohError::blobs)?;
             while let Some(progress) = stream.next().await {
                 let progress = progress.map_err(IrohError::blobs)?;
-                if let Err(e) = cb.progress(Arc::new(progress.into())) {
-                    return Err(e);
-                }
+                cb.progress(Arc::new(progress.into()))?;
             }
             Ok(())
         })
@@ -680,7 +676,7 @@ impl BlobDownloadRequest {
         token: Option<Arc<RequestToken>>,
     ) -> Self {
         BlobDownloadRequest(iroh::rpc_protocol::BlobDownloadRequest {
-            hash: (*hash).0.clone(),
+            hash: hash.0,
             format: format.into(),
             peer: (*node).clone().into(),
             token: token.map(|token| (*token).clone().0),
