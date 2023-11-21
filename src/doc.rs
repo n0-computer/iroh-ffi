@@ -1,6 +1,4 @@
-use std::str::FromStr;
-use std::sync::Arc;
-use std::time::SystemTime;
+use std::{str::FromStr, sync::Arc, time::SystemTime};
 
 use futures::{StreamExt, TryStreamExt};
 use iroh::{
@@ -9,11 +7,75 @@ use iroh::{
     rpc_protocol::{ProviderRequest, ProviderResponse},
 };
 
+pub use iroh::sync::CapabilityKind;
+
 use quic_rpc::transport::flume::FlumeConnection;
 
-use crate::{block_on, Hash, IrohError, PublicKey, SocketAddr, SocketAddrType};
+use crate::{block_on, AuthorId, Hash, IrohError, IrohNode, PublicKey, SocketAddr, SocketAddrType};
 
-pub use iroh::sync::CapabilityKind;
+impl IrohNode {
+    /// Create a new doc.
+    pub fn doc_create(&self) -> Result<Arc<Doc>, IrohError> {
+        block_on(&self.async_runtime, async {
+            let doc = self
+                .sync_client
+                .docs
+                .create()
+                .await
+                .map_err(IrohError::doc)?;
+
+            Ok(Arc::new(Doc {
+                inner: doc,
+                rt: self.async_runtime.clone(),
+            }))
+        })
+    }
+
+    /// Join and sync with an already existing document.
+    pub fn doc_join(&self, ticket: Arc<DocTicket>) -> Result<Arc<Doc>, IrohError> {
+        block_on(&self.async_runtime, async {
+            let doc = self
+                .sync_client
+                .docs
+                .import(ticket.0.clone())
+                .await
+                .map_err(IrohError::doc)?;
+
+            Ok(Arc::new(Doc {
+                inner: doc,
+                rt: self.async_runtime.clone(),
+            }))
+        })
+    }
+    /// List all the docs we have access to on this node.
+    pub fn doc_list(&self) -> Result<Vec<NamespaceAndCapability>, IrohError> {
+        block_on(&self.async_runtime, async {
+            let docs = self
+                .sync_client
+                .docs
+                .list()
+                .await
+                .map_err(IrohError::doc)?
+                .map_ok(|(namespace, capability)| NamespaceAndCapability {
+                    namespace: Arc::new(namespace.into()),
+                    capability,
+                })
+                .try_collect::<Vec<_>>()
+                .await
+                .map_err(IrohError::doc)?;
+
+            Ok(docs)
+        })
+    }
+}
+
+/// The NamespaceId and CapabilityKind (read/write) of the doc
+pub struct NamespaceAndCapability {
+    /// The NamespaceId of the doc
+    pub namespace: Arc<NamespaceId>,
+    /// The capability you have for the doc (read/write)
+    pub capability: CapabilityKind,
+}
 
 /// A representation of a mutable, synchronizable key-value store.
 pub struct Doc {
@@ -399,29 +461,6 @@ impl Entry {
     /// Get the content_length of this entry.
     pub fn content_len(&self) -> u64 {
         self.0.content_len()
-    }
-}
-
-/// Identifier for an [`Author`]
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AuthorId(pub(crate) iroh::sync::AuthorId);
-
-impl std::fmt::Display for AuthorId {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl AuthorId {
-    /// Get an [`AuthorId`] from a String
-    pub fn from_string(str: String) -> Result<Self, IrohError> {
-        let author = iroh::sync::AuthorId::from_str(&str).map_err(IrohError::author)?;
-        Ok(AuthorId(author))
-    }
-
-    /// Returns true when both AuthorId's have the same value
-    pub fn equal(&self, other: Arc<AuthorId>) -> bool {
-        *self == *other
     }
 }
 
@@ -1205,6 +1244,72 @@ mod tests {
     use crate::{Ipv4Addr, Ipv6Addr, PublicKey, SocketAddr};
     use rand::RngCore;
     use std::io::Write;
+
+    #[test]
+    fn test_doc_create() {
+        let path = tempfile::tempdir().unwrap();
+        let node = IrohNode::new(path.path().to_string_lossy().into_owned()).unwrap();
+        let node_id = node.node_id();
+        println!("id: {}", node_id);
+        let doc = node.doc_create().unwrap();
+        let doc_id = doc.id();
+        println!("doc_id: {}", doc_id);
+
+        let doc_ticket = doc.share(crate::doc::ShareMode::Write).unwrap();
+        let doc_ticket_string = doc_ticket.to_string();
+        let dock_ticket_back = DocTicket::from_string(doc_ticket_string.clone()).unwrap();
+        assert_eq!(doc_ticket.0.to_string(), dock_ticket_back.0.to_string());
+        println!("doc_ticket: {}", doc_ticket_string);
+        node.doc_join(doc_ticket).unwrap();
+    }
+
+    #[test]
+    fn test_basic_sync() {
+        // create node_0
+        let iroh_dir_0 = tempfile::tempdir().unwrap();
+        let node_0 = IrohNode::new(iroh_dir_0.path().to_string_lossy().into_owned()).unwrap();
+
+        // create node_1
+        let iroh_dir_1 = tempfile::tempdir().unwrap();
+        let node_1 = IrohNode::new(iroh_dir_1.path().to_string_lossy().into_owned()).unwrap();
+
+        // create doc on node_0
+        let doc_0 = node_0.doc_create().unwrap();
+        let ticket = doc_0.share(ShareMode::Write).unwrap();
+
+        // subscribe to sync events
+        let (found_s, found_r) = std::sync::mpsc::channel();
+        struct Callback {
+            found_s: std::sync::mpsc::Sender<Result<Hash, IrohError>>,
+        }
+        impl SubscribeCallback for Callback {
+            fn event(&self, event: Arc<LiveEvent>) -> Result<(), IrohError> {
+                match *event {
+                    LiveEvent::ContentReady { ref hash } => {
+                        self.found_s
+                            .send(Ok(hash.clone()))
+                            .map_err(IrohError::doc)?;
+                    }
+                    _ => {}
+                }
+                Ok(())
+            }
+        }
+        let cb = Callback { found_s };
+        doc_0.subscribe(Box::new(cb)).unwrap();
+
+        // join the same doc from node_1
+        let doc_1 = node_1.doc_join(ticket).unwrap();
+
+        // create author on node_1
+        let author = node_1.author_create().unwrap();
+        doc_1
+            .set_bytes(author, b"hello".to_vec(), b"world".to_vec())
+            .unwrap();
+        let hash = found_r.recv().unwrap().unwrap();
+        let val = node_1.blobs_read_to_bytes(hash.into()).unwrap();
+        assert_eq!(b"world".to_vec(), val);
+    }
 
     #[test]
     fn test_node_addr() {
