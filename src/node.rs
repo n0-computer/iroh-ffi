@@ -21,6 +21,7 @@ pub use iroh::rpc_protocol::CounterStats;
 #[derive(Debug)]
 pub struct DirectAddrInfo(iroh::net::magicsock::DirectAddrInfo);
 
+/// Information about a connection
 #[derive(Debug)]
 pub struct ConnectionInfo {
     /// The public key of the endpoint.
@@ -55,11 +56,19 @@ impl From<iroh::net::magic_endpoint::ConnectionInfo> for ConnectionInfo {
     }
 }
 
+/// The type of connection we have to the node
 #[derive(Debug)]
 pub enum ConnectionType {
+    /// Direct UDP connection
     Direct { addr: String, port: u16 },
+    /// Relay connection over DERP
     Relay { port: u16 },
+    /// Both a UDP and a DERP connection are used.
+    ///
+    /// This is the case if we do have a UDP address, but are missing a recent confirmation that
+    /// the address works.
     Mixed { addr: String, port: u16 },
+    /// We have no verified connection to this PublicKey
     None,
 }
 
@@ -80,6 +89,7 @@ impl From<iroh::net::magicsock::ConnectionType> for ConnectionType {
     }
 }
 
+/// An Iroh node. Allows you to sync, store, and transfer data.
 pub struct IrohNode {
     pub(crate) node: Node<iroh::bytes::store::flat::Store>,
     pub(crate) async_runtime: Handle,
@@ -89,6 +99,8 @@ pub struct IrohNode {
 }
 
 impl IrohNode {
+    /// Create a new iroh node. The `path` param should be a directory where we can store or load
+    /// iroh data from a previous session.
     pub fn new(path: String) -> Result<Self, Error> {
         let path = PathBuf::from(path);
         let tokio_rt = tokio::runtime::Builder::new_multi_thread()
@@ -136,10 +148,12 @@ impl IrohNode {
         })
     }
 
+    /// The string representation of the PublicKey of this node.
     pub fn node_id(&self) -> String {
         self.node.node_id().to_string()
     }
 
+    /// Create a new doc.
     pub fn doc_create(&self) -> Result<Arc<Doc>, Error> {
         block_on(&self.async_runtime, async {
             let doc = self.sync_client.docs.create().await.map_err(Error::doc)?;
@@ -151,6 +165,7 @@ impl IrohNode {
         })
     }
 
+    /// Create a new author.
     pub fn author_create(&self) -> Result<Arc<AuthorId>, Error> {
         block_on(&self.async_runtime, async {
             let author = self
@@ -164,6 +179,7 @@ impl IrohNode {
         })
     }
 
+    /// List all the AuthorIds that exist on this node.
     pub fn author_list(&self) -> Result<Vec<Arc<AuthorId>>, Error> {
         block_on(&self.async_runtime, async {
             let authors = self
@@ -180,6 +196,7 @@ impl IrohNode {
         })
     }
 
+    /// Join and sync with an already existing document.
     pub fn doc_join(&self, ticket: Arc<DocTicket>) -> Result<Arc<Doc>, Error> {
         block_on(&self.async_runtime, async {
             let doc = self
@@ -196,6 +213,7 @@ impl IrohNode {
         })
     }
 
+    /// List all the docs we have access to on this node.
     pub fn doc_list(&self) -> Result<Vec<NamespaceAndCapability>, Error> {
         block_on(&self.async_runtime, async {
             let docs = self
@@ -216,6 +234,7 @@ impl IrohNode {
         })
     }
 
+    /// Get statistics of the running node.
     pub fn stats(&self) -> Result<HashMap<String, CounterStats>, Error> {
         block_on(&self.async_runtime, async {
             let stats = self.sync_client.node.stats().await.map_err(Error::doc)?;
@@ -223,6 +242,7 @@ impl IrohNode {
         })
     }
 
+    /// Return `ConnectionInfo`s for each connection we have to another iroh node.
     pub fn connections(&self) -> Result<Vec<ConnectionInfo>, Error> {
         block_on(&self.async_runtime, async {
             let infos = self
@@ -239,6 +259,7 @@ impl IrohNode {
         })
     }
 
+    // Return connection information on the currently running node.
     pub fn connection_info(
         &self,
         node_id: Arc<PublicKey>,
@@ -256,8 +277,11 @@ impl IrohNode {
     }
 }
 
+/// The NamespaceId and CapabilityKind (read/write) of the doc
 pub struct NamespaceAndCapability {
+    /// The NamespaceId of the doc
     pub namespace: Arc<NamespaceId>,
+    /// The capability you have for the doc (read/write)
     pub capability: CapabilityKind,
 }
 

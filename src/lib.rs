@@ -19,6 +19,7 @@ use iroh::{bytes::util::runtime::Handle, metrics::try_init_metrics_collection};
 
 use tracing_subscriber::filter::LevelFilter;
 
+/// The logging level. See the rust (log crate)[https://docs.rs/log] for more information.
 #[derive(Debug)]
 pub enum LogLevel {
     Trace,
@@ -42,6 +43,7 @@ impl From<LogLevel> for LevelFilter {
     }
 }
 
+/// Set the logging level.
 pub fn set_log_level(level: LogLevel) {
     use tracing_subscriber::{fmt, prelude::*, reload};
     let filter: LevelFilter = level.into();
@@ -54,6 +56,7 @@ pub fn set_log_level(level: LogLevel) {
         .init();
 }
 
+/// Initialize the global metrics collection.
 pub fn start_metrics_collection() -> Result<(), IrohError> {
     try_init_metrics_collection().map_err(IrohError::runtime)
 }

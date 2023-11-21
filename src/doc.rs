@@ -233,6 +233,7 @@ impl Doc {
         })
     }
 
+    /// Subscribe to events for this document.
     pub fn subscribe(&self, cb: Box<dyn SubscribeCallback>) -> Result<(), IrohError> {
         let client = self.inner.clone();
         self.rt.main().spawn(async move {
@@ -401,6 +402,7 @@ impl Entry {
     }
 }
 
+/// Identifier for an [`Author`]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AuthorId(pub(crate) iroh::sync::AuthorId);
 
@@ -423,6 +425,7 @@ impl AuthorId {
     }
 }
 
+/// An identifier for a Doc
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NamespaceId(pub(crate) iroh::sync::NamespaceId);
 
@@ -451,9 +454,15 @@ impl std::fmt::Display for NamespaceId {
     }
 }
 
+/// Fields by which the query can be sorted
 pub use iroh::sync::store::SortBy;
+
+/// Sort direction
 pub use iroh::sync::store::SortDirection;
 
+/// Build a Query to search for an entry or entries in a doc.
+///
+/// Use this with `QueryOptions` to determine sorting, grouping, and pagination.
 #[derive(Clone, Debug)]
 pub struct Query(iroh::sync::store::Query);
 
@@ -521,7 +530,7 @@ impl Query {
         Query(builder.build())
     }
 
-    /// Create a [`Query::all`] query filtered by a single author.
+    /// Query all entries for by a single author.
     ///
     /// If `opts` is `None`, the default values will be used:
     ///     sort_by: SortBy::AuthorKey
@@ -543,7 +552,7 @@ impl Query {
         Query(builder.build())
     }
 
-    /// Create a [`Query::all`] query filtered by a single key.
+    /// Query all entries that have an exact key.
     ///
     /// If `opts` is `None`, the default values will be used:
     ///     sort_by: SortBy::AuthorKey
@@ -565,13 +574,13 @@ impl Query {
         Query(builder.build())
     }
 
-    /// Create a [`Query::all`] query filtered by a single key and author.
+    /// Create a Query for a single key and author.
     pub fn author_key_exact(author: Arc<AuthorId>, key: Vec<u8>) -> Self {
         let builder = iroh::sync::store::Query::author((*author).0.clone()).key_exact(&key);
         Query(builder.build())
     }
 
-    /// Create a [`Query::all`] query filtered by a key prefix.
+    /// Create a query for all entries with a given key prefix.
     ///  
     /// If `opts` is `None`, the default values will be used:
     ///     sort_by: SortBy::AuthorKey
@@ -593,7 +602,7 @@ impl Query {
         Query(builder.build())
     }
 
-    /// Create a [`Query::all`] query filtered by a key prefix.
+    /// Create a query for all entries of a single author with a given key prefix.
     ///  
     /// If `opts` is `None`, the default values will be used:
     ///     direction: SortDirection::Asc
@@ -655,10 +664,14 @@ impl std::fmt::Display for DocTicket {
     }
 }
 
+/// The `progress` method will be called for each `SubscribeProgress` event that is
+/// emitted during a `node.doc_subscribe`. Use the `SubscribeProgress.type()`
+/// method to check the `LiveEvent`
 pub trait SubscribeCallback: Send + Sync + 'static {
     fn event(&self, event: Arc<LiveEvent>) -> Result<(), IrohError>;
 }
 
+/// Events informing about actions of the live sync progress
 #[derive(Debug)]
 #[allow(clippy::large_enum_variant)]
 pub enum LiveEvent {
@@ -689,16 +702,24 @@ pub enum LiveEvent {
     SyncFinished(SyncEvent),
 }
 
+/// The type of events that can be emitted during the live sync progress
 pub enum LiveEventType {
+    /// A local insertion.
     InsertLocal,
+    /// Received a remote insert.
     InsertRemote,
+    /// The content of an entry was downloaded and is now available at the local node
     ContentReady,
+    /// We have a new neighbor in the swarm.
     NeighborUp,
+    /// We lost a neighbor in the swarm.
     NeighborDown,
+    /// A set-reconciliation sync finished.
     SyncFinished,
 }
 
 impl LiveEvent {
+    /// The type LiveEvent
     pub fn r#type(&self) -> LiveEventType {
         match self {
             Self::InsertLocal { .. } => LiveEventType::InsertLocal,
@@ -710,6 +731,7 @@ impl LiveEvent {
         }
     }
 
+    /// For `LiveEventType::InsertLocal`, returns an Entry
     pub fn as_insert_local(&self) -> Arc<Entry> {
         if let Self::InsertLocal { entry } = self {
             Arc::new(entry.clone())
@@ -718,6 +740,7 @@ impl LiveEvent {
         }
     }
 
+    /// For `LiveEventType::InsertRemote`, returns an InsertRemoteEvent
     pub fn as_insert_remote(&self) -> InsertRemoteEvent {
         if let Self::InsertRemote {
             from,
@@ -735,6 +758,7 @@ impl LiveEvent {
         }
     }
 
+    /// For `LiveEventType::ContentReady`, returns a Hash
     pub fn as_content_ready(&self) -> Arc<Hash> {
         if let Self::ContentReady { hash } = self {
             Arc::new(hash.clone())
@@ -743,6 +767,7 @@ impl LiveEvent {
         }
     }
 
+    /// For `LiveEventType::NeighborUp`, returns a PublicKey
     pub fn as_neighbor_up(&self) -> Arc<PublicKey> {
         if let Self::NeighborUp(key) = self {
             Arc::new(key.clone())
@@ -751,6 +776,7 @@ impl LiveEvent {
         }
     }
 
+    /// For `LiveEventType::NeighborDown`, returns a PublicKey
     pub fn as_neighbor_down(&self) -> Arc<PublicKey> {
         if let Self::NeighborDown(key) = self {
             Arc::new(key.clone())
@@ -759,6 +785,7 @@ impl LiveEvent {
         }
     }
 
+    /// For `LiveEventType::SyncFinished`, returns a SyncEvent
     pub fn as_sync_finished(&self) -> SyncEvent {
         if let Self::SyncFinished(event) = self {
             event.clone()
@@ -823,6 +850,7 @@ impl From<iroh::sync_engine::SyncEvent> for SyncEvent {
     }
 }
 
+/// Why we started a sync request
 pub use iroh::sync_engine::SyncReason;
 
 /// Why we performed a sync exchange
@@ -845,6 +873,7 @@ impl From<iroh::sync_engine::Origin> for Origin {
     }
 }
 
+/// Outcome of an InsertRemove event.
 #[derive(Debug)]
 pub struct InsertRemoteEvent {
     /// The peer that sent us the entry.
@@ -876,16 +905,27 @@ impl From<iroh::sync::ContentStatus> for ContentStatus {
     }
 }
 
+/// The `progress` method will be called for each `DocImportProgress` event that is
+/// emitted during a `doc.import_file()` call. Use the `DocImportProgress.type()`
+/// method to check the `DocImportProgressType`
 pub trait DocImportFileCallback: Send + Sync + 'static {
     fn progress(&self, progress: Arc<DocImportProgress>) -> Result<(), IrohError>;
 }
 
+/// The type of `DocImportProgress` event
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DocImportProgressType {
+    /// An item was found with name `name`, from now on referred to via `id`
     Found,
+    /// We got progress ingesting item `id`.
     Progress,
+    /// We are done ingesting `id`, and the hash is `hash`.
     IngestDone,
+    /// We are done with the whole operation.
     AllDone,
+    /// We got an error and need to abort.
+    ///
+    /// This will be the last message in the stream.
     Abort,
 }
 
@@ -928,6 +968,7 @@ pub struct DocImportProgressAllDone {
 /// A DocImportProgress event indicating we got an error and need to abort
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DocImportProgressAbort {
+    /// The error message
     pub error: String,
 }
 
@@ -986,6 +1027,7 @@ impl DocImportProgress {
             DocImportProgress::Abort(_) => DocImportProgressType::Abort,
         }
     }
+
     /// Return the `DocImportProgressFound` event
     pub fn as_found(&self) -> DocImportProgressFound {
         match self {
@@ -993,6 +1035,7 @@ impl DocImportProgress {
             _ => panic!("DocImportProgress type is not 'Found'"),
         }
     }
+
     /// Return the `DocImportProgressProgress` event
     pub fn as_progress(&self) -> DocImportProgressProgress {
         match self {
@@ -1026,15 +1069,25 @@ impl DocImportProgress {
     }
 }
 
+/// The `progress` method will be called for each `DocExportProgress` event that is
+/// emitted during a `doc.export_file()` call. Use the `DocExportProgress.type()`
+/// method to check the `DocExportProgressType`
 pub trait DocExportFileCallback: Send + Sync + 'static {
     fn progress(&self, progress: Arc<DocExportProgress>) -> Result<(), IrohError>;
 }
 
+/// The type of `DocExportProgress` event
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DocExportProgressType {
+    /// An item was found with name `name`, from now on referred to via `id`
     Found,
+    /// We got progress exporting item `id`.
     Progress,
+    /// We are done writing the entry to the filesystem
     AllDone,
+    /// We got an error and need to abort.
+    ///
+    /// This will be the last message in the stream.
     Abort,
 }
 
@@ -1065,6 +1118,7 @@ pub struct DocExportProgressProgress {
 /// A DocExportProgress event indicating we got an error and need to abort
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DocExportProgressAbort {
+    /// The error message
     pub error: String,
 }
 
