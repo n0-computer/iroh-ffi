@@ -461,6 +461,78 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_connectiontype_as_direct(uniffiStatus)
+		})
+		if checksum != 41690 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_connectiontype_as_direct: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_connectiontype_as_mixed(uniffiStatus)
+		})
+		if checksum != 41300 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_connectiontype_as_mixed: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_connectiontype_as_relay(uniffiStatus)
+		})
+		if checksum != 47022 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_connectiontype_as_relay: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_connectiontype_type(uniffiStatus)
+		})
+		if checksum != 1057 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_connectiontype_type: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_directaddrinfo_addr(uniffiStatus)
+		})
+		if checksum != 49936 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_directaddrinfo_addr: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_directaddrinfo_last_control(uniffiStatus)
+		})
+		if checksum != 46706 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_directaddrinfo_last_control: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_directaddrinfo_last_payload(uniffiStatus)
+		})
+		if checksum != 16797 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_directaddrinfo_last_payload: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_directaddrinfo_latency(uniffiStatus)
+		})
+		if checksum != 62303 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_directaddrinfo_latency: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_doc_close(uniffiStatus)
 		})
 		if checksum != 23013 {
@@ -484,6 +556,15 @@ func uniffiCheckChecksums() {
 		if checksum != 34185 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_doc_export_file: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_doc_get_exact(uniffiStatus)
+		})
+		if checksum != 48441 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_doc_get_exact: UniFFI API checksum mismatch")
 		}
 	}
 	{
@@ -1073,6 +1154,15 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_irohnode_doc_drop(uniffiStatus)
+		})
+		if checksum != 64324 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_irohnode_doc_drop: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_irohnode_doc_join(uniffiStatus)
 		})
 		if checksum != 30773 {
@@ -1091,6 +1181,15 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_irohnode_doc_open(uniffiStatus)
+		})
+		if checksum != 8490 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_irohnode_doc_open: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_irohnode_node_id(uniffiStatus)
 		})
 		if checksum != 31962 {
@@ -1105,6 +1204,33 @@ func uniffiCheckChecksums() {
 		if checksum != 16158 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_irohnode_stats: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_irohnode_status(uniffiStatus)
+		})
+		if checksum != 32660 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_irohnode_status: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_irohnode_tags_delete(uniffiStatus)
+		})
+		if checksum != 21632 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_irohnode_tags_delete: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_irohnode_tags_list(uniffiStatus)
+		})
+		if checksum != 6726 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_irohnode_tags_list: UniFFI API checksum mismatch")
 		}
 	}
 	{
@@ -1213,6 +1339,33 @@ func uniffiCheckChecksums() {
 		if checksum != 45841 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_nodeaddr_equal: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_nodestatusresponse_listen_addrs(uniffiStatus)
+		})
+		if checksum != 44280 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_nodestatusresponse_listen_addrs: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_nodestatusresponse_node_addr(uniffiStatus)
+		})
+		if checksum != 37017 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_nodestatusresponse_node_addr: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_nodestatusresponse_version(uniffiStatus)
+		})
+		if checksum != 50257 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_nodestatusresponse_version: UniFFI API checksum mismatch")
 		}
 	}
 	{
@@ -2393,8 +2546,128 @@ func (_ FfiDestroyerBlobDownloadRequest) Destroy(value *BlobDownloadRequest) {
 	value.Destroy()
 }
 
+type ConnectionType struct {
+	ffiObject FfiObject
+}
+
+func (_self *ConnectionType) AsDirect() *SocketAddr {
+	_pointer := _self.ffiObject.incrementPointer("*ConnectionType")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterSocketAddrINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_method_connectiontype_as_direct(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *ConnectionType) AsMixed() ConnectionTypeMixed {
+	_pointer := _self.ffiObject.incrementPointer("*ConnectionType")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterTypeConnectionTypeMixedINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_connectiontype_as_mixed(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *ConnectionType) AsRelay() uint16 {
+	_pointer := _self.ffiObject.incrementPointer("*ConnectionType")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterUint16INSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) C.uint16_t {
+		return C.uniffi_iroh_fn_method_connectiontype_as_relay(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *ConnectionType) Type() ConnType {
+	_pointer := _self.ffiObject.incrementPointer("*ConnectionType")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterTypeConnTypeINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_connectiontype_type(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (object *ConnectionType) Destroy() {
+	runtime.SetFinalizer(object, nil)
+	object.ffiObject.destroy()
+}
+
+type FfiConverterConnectionType struct{}
+
+var FfiConverterConnectionTypeINSTANCE = FfiConverterConnectionType{}
+
+func (c FfiConverterConnectionType) Lift(pointer unsafe.Pointer) *ConnectionType {
+	result := &ConnectionType{
+		newFfiObject(
+			pointer,
+			func(pointer unsafe.Pointer, status *C.RustCallStatus) {
+				C.uniffi_iroh_fn_free_connectiontype(pointer, status)
+			}),
+	}
+	runtime.SetFinalizer(result, (*ConnectionType).Destroy)
+	return result
+}
+
+func (c FfiConverterConnectionType) Read(reader io.Reader) *ConnectionType {
+	return c.Lift(unsafe.Pointer(uintptr(readUint64(reader))))
+}
+
+func (c FfiConverterConnectionType) Lower(value *ConnectionType) unsafe.Pointer {
+	// TODO: this is bad - all synchronization from ObjectRuntime.go is discarded here,
+	// because the pointer will be decremented immediately after this function returns,
+	// and someone will be left holding onto a non-locked pointer.
+	pointer := value.ffiObject.incrementPointer("*ConnectionType")
+	defer value.ffiObject.decrementPointer()
+	return pointer
+}
+
+func (c FfiConverterConnectionType) Write(writer io.Writer, value *ConnectionType) {
+	writeUint64(writer, uint64(uintptr(c.Lower(value))))
+}
+
+type FfiDestroyerConnectionType struct{}
+
+func (_ FfiDestroyerConnectionType) Destroy(value *ConnectionType) {
+	value.Destroy()
+}
+
 type DirectAddrInfo struct {
 	ffiObject FfiObject
+}
+
+func (_self *DirectAddrInfo) Addr() *SocketAddr {
+	_pointer := _self.ffiObject.incrementPointer("*DirectAddrInfo")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterSocketAddrINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_method_directaddrinfo_addr(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *DirectAddrInfo) LastControl() *LatencyAndControlMsg {
+	_pointer := _self.ffiObject.incrementPointer("*DirectAddrInfo")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterOptionalTypeLatencyAndControlMsgINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_directaddrinfo_last_control(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *DirectAddrInfo) LastPayload() *time.Duration {
+	_pointer := _self.ffiObject.incrementPointer("*DirectAddrInfo")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterOptionalDurationINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_directaddrinfo_last_payload(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *DirectAddrInfo) Latency() *time.Duration {
+	_pointer := _self.ffiObject.incrementPointer("*DirectAddrInfo")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterOptionalDurationINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_directaddrinfo_latency(
+			_pointer, _uniffiStatus)
+	}))
 }
 
 func (object *DirectAddrInfo) Destroy() {
@@ -2480,6 +2753,21 @@ func (_self *Doc) ExportFile(entry *Entry, path string, cb *DocExportFileCallbac
 		return false
 	})
 	return _uniffiErr
+}
+
+func (_self *Doc) GetExact(author *AuthorId, key []byte, includeEmpty bool) (**Entry, error) {
+	_pointer := _self.ffiObject.incrementPointer("*Doc")
+	defer _self.ffiObject.decrementPointer()
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_doc_get_exact(
+			_pointer, FfiConverterAuthorIdINSTANCE.Lower(author), FfiConverterBytesINSTANCE.Lower(key), FfiConverterBoolINSTANCE.Lower(includeEmpty), _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue **Entry
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterOptionalEntryINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
 }
 
 func (_self *Doc) GetMany(query *Query) ([]*Entry, error) {
@@ -3784,6 +4072,17 @@ func (_self *IrohNode) DocCreate() (*Doc, error) {
 	}
 }
 
+func (_self *IrohNode) DocDrop(docId *NamespaceId) error {
+	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
+	defer _self.ffiObject.decrementPointer()
+	_, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) bool {
+		C.uniffi_iroh_fn_method_irohnode_doc_drop(
+			_pointer, FfiConverterNamespaceIdINSTANCE.Lower(docId), _uniffiStatus)
+		return false
+	})
+	return _uniffiErr
+}
+
 func (_self *IrohNode) DocJoin(ticket *DocTicket) (*Doc, error) {
 	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
 	defer _self.ffiObject.decrementPointer()
@@ -3814,6 +4113,21 @@ func (_self *IrohNode) DocList() ([]NamespaceAndCapability, error) {
 	}
 }
 
+func (_self *IrohNode) DocOpen(id *NamespaceId) (**Doc, error) {
+	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
+	defer _self.ffiObject.decrementPointer()
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_irohnode_doc_open(
+			_pointer, FfiConverterNamespaceIdINSTANCE.Lower(id), _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue **Doc
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterOptionalDocINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
+
 func (_self *IrohNode) NodeId() string {
 	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
 	defer _self.ffiObject.decrementPointer()
@@ -3835,6 +4149,47 @@ func (_self *IrohNode) Stats() (map[string]CounterStats, error) {
 		return _uniffiDefaultValue, _uniffiErr
 	} else {
 		return FfiConverterMapStringTypeCounterStatsINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
+
+func (_self *IrohNode) Status() (*NodeStatusResponse, error) {
+	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
+	defer _self.ffiObject.decrementPointer()
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_method_irohnode_status(
+			_pointer, _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue *NodeStatusResponse
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterNodeStatusResponseINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
+
+func (_self *IrohNode) TagsDelete(name *Tag) error {
+	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
+	defer _self.ffiObject.decrementPointer()
+	_, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) bool {
+		C.uniffi_iroh_fn_method_irohnode_tags_delete(
+			_pointer, FfiConverterTagINSTANCE.Lower(name), _uniffiStatus)
+		return false
+	})
+	return _uniffiErr
+}
+
+func (_self *IrohNode) TagsList() ([]ListTagsResponse, error) {
+	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
+	defer _self.ffiObject.decrementPointer()
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_irohnode_tags_list(
+			_pointer, _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue []ListTagsResponse
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterSequenceTypeListTagsResponseINSTANCE.Lift(_uniffiRV), _uniffiErr
 	}
 }
 
@@ -4149,6 +4504,81 @@ func (c FfiConverterNodeAddr) Write(writer io.Writer, value *NodeAddr) {
 type FfiDestroyerNodeAddr struct{}
 
 func (_ FfiDestroyerNodeAddr) Destroy(value *NodeAddr) {
+	value.Destroy()
+}
+
+type NodeStatusResponse struct {
+	ffiObject FfiObject
+}
+
+func (_self *NodeStatusResponse) ListenAddrs() []*SocketAddr {
+	_pointer := _self.ffiObject.incrementPointer("*NodeStatusResponse")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterSequenceSocketAddrINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_nodestatusresponse_listen_addrs(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *NodeStatusResponse) NodeAddr() *NodeAddr {
+	_pointer := _self.ffiObject.incrementPointer("*NodeStatusResponse")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterNodeAddrINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_method_nodestatusresponse_node_addr(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *NodeStatusResponse) Version() string {
+	_pointer := _self.ffiObject.incrementPointer("*NodeStatusResponse")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterStringINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_nodestatusresponse_version(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (object *NodeStatusResponse) Destroy() {
+	runtime.SetFinalizer(object, nil)
+	object.ffiObject.destroy()
+}
+
+type FfiConverterNodeStatusResponse struct{}
+
+var FfiConverterNodeStatusResponseINSTANCE = FfiConverterNodeStatusResponse{}
+
+func (c FfiConverterNodeStatusResponse) Lift(pointer unsafe.Pointer) *NodeStatusResponse {
+	result := &NodeStatusResponse{
+		newFfiObject(
+			pointer,
+			func(pointer unsafe.Pointer, status *C.RustCallStatus) {
+				C.uniffi_iroh_fn_free_nodestatusresponse(pointer, status)
+			}),
+	}
+	runtime.SetFinalizer(result, (*NodeStatusResponse).Destroy)
+	return result
+}
+
+func (c FfiConverterNodeStatusResponse) Read(reader io.Reader) *NodeStatusResponse {
+	return c.Lift(unsafe.Pointer(uintptr(readUint64(reader))))
+}
+
+func (c FfiConverterNodeStatusResponse) Lower(value *NodeStatusResponse) unsafe.Pointer {
+	// TODO: this is bad - all synchronization from ObjectRuntime.go is discarded here,
+	// because the pointer will be decremented immediately after this function returns,
+	// and someone will be left holding onto a non-locked pointer.
+	pointer := value.ffiObject.incrementPointer("*NodeStatusResponse")
+	defer value.ffiObject.decrementPointer()
+	return pointer
+}
+
+func (c FfiConverterNodeStatusResponse) Write(writer io.Writer, value *NodeStatusResponse) {
+	writeUint64(writer, uint64(uintptr(c.Lower(value))))
+}
+
+type FfiDestroyerNodeStatusResponse struct{}
+
+func (_ FfiDestroyerNodeStatusResponse) Destroy(value *NodeStatusResponse) {
 	value.Destroy()
 }
 
@@ -5351,7 +5781,7 @@ type ConnectionInfo struct {
 	PublicKey  *PublicKey
 	DerpRegion *uint16
 	Addrs      []*DirectAddrInfo
-	ConnType   ConnectionType
+	ConnType   *ConnectionType
 	Latency    *time.Duration
 	LastUsed   *time.Duration
 }
@@ -5360,7 +5790,7 @@ func (r *ConnectionInfo) Destroy() {
 	FfiDestroyerPublicKey{}.Destroy(r.PublicKey)
 	FfiDestroyerOptionalUint16{}.Destroy(r.DerpRegion)
 	FfiDestroyerSequenceDirectAddrInfo{}.Destroy(r.Addrs)
-	FfiDestroyerTypeConnectionType{}.Destroy(r.ConnType)
+	FfiDestroyerConnectionType{}.Destroy(r.ConnType)
 	FfiDestroyerOptionalDuration{}.Destroy(r.Latency)
 	FfiDestroyerOptionalDuration{}.Destroy(r.LastUsed)
 }
@@ -5378,7 +5808,7 @@ func (c FfiConverterTypeConnectionInfo) Read(reader io.Reader) ConnectionInfo {
 		FfiConverterPublicKeyINSTANCE.Read(reader),
 		FfiConverterOptionalUint16INSTANCE.Read(reader),
 		FfiConverterSequenceDirectAddrInfoINSTANCE.Read(reader),
-		FfiConverterTypeConnectionTypeINSTANCE.Read(reader),
+		FfiConverterConnectionTypeINSTANCE.Read(reader),
 		FfiConverterOptionalDurationINSTANCE.Read(reader),
 		FfiConverterOptionalDurationINSTANCE.Read(reader),
 	}
@@ -5392,7 +5822,7 @@ func (c FfiConverterTypeConnectionInfo) Write(writer io.Writer, value Connection
 	FfiConverterPublicKeyINSTANCE.Write(writer, value.PublicKey)
 	FfiConverterOptionalUint16INSTANCE.Write(writer, value.DerpRegion)
 	FfiConverterSequenceDirectAddrInfoINSTANCE.Write(writer, value.Addrs)
-	FfiConverterTypeConnectionTypeINSTANCE.Write(writer, value.ConnType)
+	FfiConverterConnectionTypeINSTANCE.Write(writer, value.ConnType)
 	FfiConverterOptionalDurationINSTANCE.Write(writer, value.Latency)
 	FfiConverterOptionalDurationINSTANCE.Write(writer, value.LastUsed)
 }
@@ -5400,6 +5830,46 @@ func (c FfiConverterTypeConnectionInfo) Write(writer io.Writer, value Connection
 type FfiDestroyerTypeConnectionInfo struct{}
 
 func (_ FfiDestroyerTypeConnectionInfo) Destroy(value ConnectionInfo) {
+	value.Destroy()
+}
+
+type ConnectionTypeMixed struct {
+	Addr       *SocketAddr
+	DerpRegion uint16
+}
+
+func (r *ConnectionTypeMixed) Destroy() {
+	FfiDestroyerSocketAddr{}.Destroy(r.Addr)
+	FfiDestroyerUint16{}.Destroy(r.DerpRegion)
+}
+
+type FfiConverterTypeConnectionTypeMixed struct{}
+
+var FfiConverterTypeConnectionTypeMixedINSTANCE = FfiConverterTypeConnectionTypeMixed{}
+
+func (c FfiConverterTypeConnectionTypeMixed) Lift(rb RustBufferI) ConnectionTypeMixed {
+	return LiftFromRustBuffer[ConnectionTypeMixed](c, rb)
+}
+
+func (c FfiConverterTypeConnectionTypeMixed) Read(reader io.Reader) ConnectionTypeMixed {
+	return ConnectionTypeMixed{
+		FfiConverterSocketAddrINSTANCE.Read(reader),
+		FfiConverterUint16INSTANCE.Read(reader),
+	}
+}
+
+func (c FfiConverterTypeConnectionTypeMixed) Lower(value ConnectionTypeMixed) RustBuffer {
+	return LowerIntoRustBuffer[ConnectionTypeMixed](c, value)
+}
+
+func (c FfiConverterTypeConnectionTypeMixed) Write(writer io.Writer, value ConnectionTypeMixed) {
+	FfiConverterSocketAddrINSTANCE.Write(writer, value.Addr)
+	FfiConverterUint16INSTANCE.Write(writer, value.DerpRegion)
+}
+
+type FfiDestroyerTypeConnectionTypeMixed struct{}
+
+func (_ FfiDestroyerTypeConnectionTypeMixed) Destroy(value ConnectionTypeMixed) {
 	value.Destroy()
 }
 
@@ -6143,6 +6613,90 @@ func (_ FfiDestroyerTypeInsertRemoteEvent) Destroy(value InsertRemoteEvent) {
 	value.Destroy()
 }
 
+type LatencyAndControlMsg struct {
+	Latency    time.Duration
+	ControlMsg string
+}
+
+func (r *LatencyAndControlMsg) Destroy() {
+	FfiDestroyerDuration{}.Destroy(r.Latency)
+	FfiDestroyerString{}.Destroy(r.ControlMsg)
+}
+
+type FfiConverterTypeLatencyAndControlMsg struct{}
+
+var FfiConverterTypeLatencyAndControlMsgINSTANCE = FfiConverterTypeLatencyAndControlMsg{}
+
+func (c FfiConverterTypeLatencyAndControlMsg) Lift(rb RustBufferI) LatencyAndControlMsg {
+	return LiftFromRustBuffer[LatencyAndControlMsg](c, rb)
+}
+
+func (c FfiConverterTypeLatencyAndControlMsg) Read(reader io.Reader) LatencyAndControlMsg {
+	return LatencyAndControlMsg{
+		FfiConverterDurationINSTANCE.Read(reader),
+		FfiConverterStringINSTANCE.Read(reader),
+	}
+}
+
+func (c FfiConverterTypeLatencyAndControlMsg) Lower(value LatencyAndControlMsg) RustBuffer {
+	return LowerIntoRustBuffer[LatencyAndControlMsg](c, value)
+}
+
+func (c FfiConverterTypeLatencyAndControlMsg) Write(writer io.Writer, value LatencyAndControlMsg) {
+	FfiConverterDurationINSTANCE.Write(writer, value.Latency)
+	FfiConverterStringINSTANCE.Write(writer, value.ControlMsg)
+}
+
+type FfiDestroyerTypeLatencyAndControlMsg struct{}
+
+func (_ FfiDestroyerTypeLatencyAndControlMsg) Destroy(value LatencyAndControlMsg) {
+	value.Destroy()
+}
+
+type ListTagsResponse struct {
+	Name   *Tag
+	Format BlobFormat
+	Hash   *Hash
+}
+
+func (r *ListTagsResponse) Destroy() {
+	FfiDestroyerTag{}.Destroy(r.Name)
+	FfiDestroyerTypeBlobFormat{}.Destroy(r.Format)
+	FfiDestroyerHash{}.Destroy(r.Hash)
+}
+
+type FfiConverterTypeListTagsResponse struct{}
+
+var FfiConverterTypeListTagsResponseINSTANCE = FfiConverterTypeListTagsResponse{}
+
+func (c FfiConverterTypeListTagsResponse) Lift(rb RustBufferI) ListTagsResponse {
+	return LiftFromRustBuffer[ListTagsResponse](c, rb)
+}
+
+func (c FfiConverterTypeListTagsResponse) Read(reader io.Reader) ListTagsResponse {
+	return ListTagsResponse{
+		FfiConverterTagINSTANCE.Read(reader),
+		FfiConverterTypeBlobFormatINSTANCE.Read(reader),
+		FfiConverterHashINSTANCE.Read(reader),
+	}
+}
+
+func (c FfiConverterTypeListTagsResponse) Lower(value ListTagsResponse) RustBuffer {
+	return LowerIntoRustBuffer[ListTagsResponse](c, value)
+}
+
+func (c FfiConverterTypeListTagsResponse) Write(writer io.Writer, value ListTagsResponse) {
+	FfiConverterTagINSTANCE.Write(writer, value.Name)
+	FfiConverterTypeBlobFormatINSTANCE.Write(writer, value.Format)
+	FfiConverterHashINSTANCE.Write(writer, value.Hash)
+}
+
+type FfiDestroyerTypeListTagsResponse struct{}
+
+func (_ FfiDestroyerTypeListTagsResponse) Destroy(value ListTagsResponse) {
+	value.Destroy()
+}
+
 type NamespaceAndCapability struct {
 	Namespace  *NamespaceId
 	Capability CapabilityKind
@@ -6426,103 +6980,38 @@ type FfiDestroyerTypeCapabilityKind struct{}
 func (_ FfiDestroyerTypeCapabilityKind) Destroy(value CapabilityKind) {
 }
 
-type ConnectionType interface {
-	Destroy()
-}
-type ConnectionTypeDirect struct {
-	Addr string
-	Port uint16
-}
+type ConnType uint
 
-func (e ConnectionTypeDirect) Destroy() {
-	FfiDestroyerString{}.Destroy(e.Addr)
-	FfiDestroyerUint16{}.Destroy(e.Port)
-}
+const (
+	ConnTypeDirect ConnType = 1
+	ConnTypeRelay  ConnType = 2
+	ConnTypeMixed  ConnType = 3
+	ConnTypeNone   ConnType = 4
+)
 
-type ConnectionTypeRelay struct {
-	Port uint16
-}
+type FfiConverterTypeConnType struct{}
 
-func (e ConnectionTypeRelay) Destroy() {
-	FfiDestroyerUint16{}.Destroy(e.Port)
+var FfiConverterTypeConnTypeINSTANCE = FfiConverterTypeConnType{}
+
+func (c FfiConverterTypeConnType) Lift(rb RustBufferI) ConnType {
+	return LiftFromRustBuffer[ConnType](c, rb)
 }
 
-type ConnectionTypeMixed struct {
-	Addr string
-	Port uint16
+func (c FfiConverterTypeConnType) Lower(value ConnType) RustBuffer {
+	return LowerIntoRustBuffer[ConnType](c, value)
 }
-
-func (e ConnectionTypeMixed) Destroy() {
-	FfiDestroyerString{}.Destroy(e.Addr)
-	FfiDestroyerUint16{}.Destroy(e.Port)
-}
-
-type ConnectionTypeNone struct {
-}
-
-func (e ConnectionTypeNone) Destroy() {
-}
-
-type FfiConverterTypeConnectionType struct{}
-
-var FfiConverterTypeConnectionTypeINSTANCE = FfiConverterTypeConnectionType{}
-
-func (c FfiConverterTypeConnectionType) Lift(rb RustBufferI) ConnectionType {
-	return LiftFromRustBuffer[ConnectionType](c, rb)
-}
-
-func (c FfiConverterTypeConnectionType) Lower(value ConnectionType) RustBuffer {
-	return LowerIntoRustBuffer[ConnectionType](c, value)
-}
-func (FfiConverterTypeConnectionType) Read(reader io.Reader) ConnectionType {
+func (FfiConverterTypeConnType) Read(reader io.Reader) ConnType {
 	id := readInt32(reader)
-	switch id {
-	case 1:
-		return ConnectionTypeDirect{
-			FfiConverterStringINSTANCE.Read(reader),
-			FfiConverterUint16INSTANCE.Read(reader),
-		}
-	case 2:
-		return ConnectionTypeRelay{
-			FfiConverterUint16INSTANCE.Read(reader),
-		}
-	case 3:
-		return ConnectionTypeMixed{
-			FfiConverterStringINSTANCE.Read(reader),
-			FfiConverterUint16INSTANCE.Read(reader),
-		}
-	case 4:
-		return ConnectionTypeNone{}
-	default:
-		panic(fmt.Sprintf("invalid enum value %v in FfiConverterTypeConnectionType.Read()", id))
-	}
+	return ConnType(id)
 }
 
-func (FfiConverterTypeConnectionType) Write(writer io.Writer, value ConnectionType) {
-	switch variant_value := value.(type) {
-	case ConnectionTypeDirect:
-		writeInt32(writer, 1)
-		FfiConverterStringINSTANCE.Write(writer, variant_value.Addr)
-		FfiConverterUint16INSTANCE.Write(writer, variant_value.Port)
-	case ConnectionTypeRelay:
-		writeInt32(writer, 2)
-		FfiConverterUint16INSTANCE.Write(writer, variant_value.Port)
-	case ConnectionTypeMixed:
-		writeInt32(writer, 3)
-		FfiConverterStringINSTANCE.Write(writer, variant_value.Addr)
-		FfiConverterUint16INSTANCE.Write(writer, variant_value.Port)
-	case ConnectionTypeNone:
-		writeInt32(writer, 4)
-	default:
-		_ = variant_value
-		panic(fmt.Sprintf("invalid enum value `%v` in FfiConverterTypeConnectionType.Write", value))
-	}
+func (FfiConverterTypeConnType) Write(writer io.Writer, value ConnType) {
+	writeInt32(writer, int32(value))
 }
 
-type FfiDestroyerTypeConnectionType struct{}
+type FfiDestroyerTypeConnType struct{}
 
-func (_ FfiDestroyerTypeConnectionType) Destroy(value ConnectionType) {
-	value.Destroy()
+func (_ FfiDestroyerTypeConnType) Destroy(value ConnType) {
 }
 
 type ContentStatus uint
@@ -6682,6 +7171,7 @@ func (err IrohError) Unwrap() error {
 // Err* are used for checking error type with `errors.Is`
 var ErrIrohErrorRuntime = fmt.Errorf("IrohErrorRuntime")
 var ErrIrohErrorNodeCreate = fmt.Errorf("IrohErrorNodeCreate")
+var ErrIrohErrorNodeShutdown = fmt.Errorf("IrohErrorNodeShutdown")
 var ErrIrohErrorDoc = fmt.Errorf("IrohErrorDoc")
 var ErrIrohErrorAuthor = fmt.Errorf("IrohErrorAuthor")
 var ErrIrohErrorNamespace = fmt.Errorf("IrohErrorNamespace")
@@ -6698,6 +7188,7 @@ var ErrIrohErrorNodeAddr = fmt.Errorf("IrohErrorNodeAddr")
 var ErrIrohErrorHash = fmt.Errorf("IrohErrorHash")
 var ErrIrohErrorRequestToken = fmt.Errorf("IrohErrorRequestToken")
 var ErrIrohErrorFsUtil = fmt.Errorf("IrohErrorFsUtil")
+var ErrIrohErrorTags = fmt.Errorf("IrohErrorTags")
 
 // Variant structs
 type IrohErrorRuntime struct {
@@ -6752,6 +7243,33 @@ func (err IrohErrorNodeCreate) Error() string {
 
 func (self IrohErrorNodeCreate) Is(target error) bool {
 	return target == ErrIrohErrorNodeCreate
+}
+
+type IrohErrorNodeShutdown struct {
+	Description string
+}
+
+func NewIrohErrorNodeShutdown(
+	description string,
+) *IrohError {
+	return &IrohError{
+		err: &IrohErrorNodeShutdown{
+			Description: description,
+		},
+	}
+}
+
+func (err IrohErrorNodeShutdown) Error() string {
+	return fmt.Sprint("NodeShutdown",
+		": ",
+
+		"Description=",
+		err.Description,
+	)
+}
+
+func (self IrohErrorNodeShutdown) Is(target error) bool {
+	return target == ErrIrohErrorNodeShutdown
 }
 
 type IrohErrorDoc struct {
@@ -7186,6 +7704,33 @@ func (self IrohErrorFsUtil) Is(target error) bool {
 	return target == ErrIrohErrorFsUtil
 }
 
+type IrohErrorTags struct {
+	Description string
+}
+
+func NewIrohErrorTags(
+	description string,
+) *IrohError {
+	return &IrohError{
+		err: &IrohErrorTags{
+			Description: description,
+		},
+	}
+}
+
+func (err IrohErrorTags) Error() string {
+	return fmt.Sprint("Tags",
+		": ",
+
+		"Description=",
+		err.Description,
+	)
+}
+
+func (self IrohErrorTags) Is(target error) bool {
+	return target == ErrIrohErrorTags
+}
+
 type FfiConverterTypeIrohError struct{}
 
 var FfiConverterTypeIrohErrorINSTANCE = FfiConverterTypeIrohError{}
@@ -7211,67 +7756,75 @@ func (c FfiConverterTypeIrohError) Read(reader io.Reader) error {
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 3:
-		return &IrohError{&IrohErrorDoc{
+		return &IrohError{&IrohErrorNodeShutdown{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 4:
-		return &IrohError{&IrohErrorAuthor{
+		return &IrohError{&IrohErrorDoc{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 5:
-		return &IrohError{&IrohErrorNamespace{
+		return &IrohError{&IrohErrorAuthor{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 6:
-		return &IrohError{&IrohErrorDocTicket{
+		return &IrohError{&IrohErrorNamespace{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 7:
-		return &IrohError{&IrohErrorUniffi{
+		return &IrohError{&IrohErrorDocTicket{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 8:
-		return &IrohError{&IrohErrorConnection{
+		return &IrohError{&IrohErrorUniffi{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 9:
-		return &IrohError{&IrohErrorBlobs{
+		return &IrohError{&IrohErrorConnection{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 10:
-		return &IrohError{&IrohErrorIpv4Addr{
+		return &IrohError{&IrohErrorBlobs{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 11:
-		return &IrohError{&IrohErrorIpv6Addr{
+		return &IrohError{&IrohErrorIpv4Addr{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 12:
-		return &IrohError{&IrohErrorSocketAddrV4{
+		return &IrohError{&IrohErrorIpv6Addr{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 13:
-		return &IrohError{&IrohErrorSocketAddrV6{
+		return &IrohError{&IrohErrorSocketAddrV4{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 14:
-		return &IrohError{&IrohErrorPublicKey{
+		return &IrohError{&IrohErrorSocketAddrV6{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 15:
-		return &IrohError{&IrohErrorNodeAddr{
+		return &IrohError{&IrohErrorPublicKey{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 16:
-		return &IrohError{&IrohErrorHash{
+		return &IrohError{&IrohErrorNodeAddr{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 17:
-		return &IrohError{&IrohErrorRequestToken{
+		return &IrohError{&IrohErrorHash{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 18:
+		return &IrohError{&IrohErrorRequestToken{
+			Description: FfiConverterStringINSTANCE.Read(reader),
+		}}
+	case 19:
 		return &IrohError{&IrohErrorFsUtil{
+			Description: FfiConverterStringINSTANCE.Read(reader),
+		}}
+	case 20:
+		return &IrohError{&IrohErrorTags{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	default:
@@ -7287,53 +7840,59 @@ func (c FfiConverterTypeIrohError) Write(writer io.Writer, value *IrohError) {
 	case *IrohErrorNodeCreate:
 		writeInt32(writer, 2)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorDoc:
+	case *IrohErrorNodeShutdown:
 		writeInt32(writer, 3)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorAuthor:
+	case *IrohErrorDoc:
 		writeInt32(writer, 4)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorNamespace:
+	case *IrohErrorAuthor:
 		writeInt32(writer, 5)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorDocTicket:
+	case *IrohErrorNamespace:
 		writeInt32(writer, 6)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorUniffi:
+	case *IrohErrorDocTicket:
 		writeInt32(writer, 7)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorConnection:
+	case *IrohErrorUniffi:
 		writeInt32(writer, 8)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorBlobs:
+	case *IrohErrorConnection:
 		writeInt32(writer, 9)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorIpv4Addr:
+	case *IrohErrorBlobs:
 		writeInt32(writer, 10)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorIpv6Addr:
+	case *IrohErrorIpv4Addr:
 		writeInt32(writer, 11)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorSocketAddrV4:
+	case *IrohErrorIpv6Addr:
 		writeInt32(writer, 12)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorSocketAddrV6:
+	case *IrohErrorSocketAddrV4:
 		writeInt32(writer, 13)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorPublicKey:
+	case *IrohErrorSocketAddrV6:
 		writeInt32(writer, 14)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorNodeAddr:
+	case *IrohErrorPublicKey:
 		writeInt32(writer, 15)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorHash:
+	case *IrohErrorNodeAddr:
 		writeInt32(writer, 16)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorRequestToken:
+	case *IrohErrorHash:
 		writeInt32(writer, 17)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorFsUtil:
+	case *IrohErrorRequestToken:
 		writeInt32(writer, 18)
+		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
+	case *IrohErrorFsUtil:
+		writeInt32(writer, 19)
+		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
+	case *IrohErrorTags:
+		writeInt32(writer, 20)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
 	default:
 		_ = variantValue
@@ -8223,6 +8782,43 @@ func (_ FfiDestroyerOptionalDuration) Destroy(value *time.Duration) {
 	}
 }
 
+type FfiConverterOptionalDoc struct{}
+
+var FfiConverterOptionalDocINSTANCE = FfiConverterOptionalDoc{}
+
+func (c FfiConverterOptionalDoc) Lift(rb RustBufferI) **Doc {
+	return LiftFromRustBuffer[**Doc](c, rb)
+}
+
+func (_ FfiConverterOptionalDoc) Read(reader io.Reader) **Doc {
+	if readInt8(reader) == 0 {
+		return nil
+	}
+	temp := FfiConverterDocINSTANCE.Read(reader)
+	return &temp
+}
+
+func (c FfiConverterOptionalDoc) Lower(value **Doc) RustBuffer {
+	return LowerIntoRustBuffer[**Doc](c, value)
+}
+
+func (_ FfiConverterOptionalDoc) Write(writer io.Writer, value **Doc) {
+	if value == nil {
+		writeInt8(writer, 0)
+	} else {
+		writeInt8(writer, 1)
+		FfiConverterDocINSTANCE.Write(writer, *value)
+	}
+}
+
+type FfiDestroyerOptionalDoc struct{}
+
+func (_ FfiDestroyerOptionalDoc) Destroy(value **Doc) {
+	if value != nil {
+		FfiDestroyerDoc{}.Destroy(*value)
+	}
+}
+
 type FfiConverterOptionalEntry struct{}
 
 var FfiConverterOptionalEntryINSTANCE = FfiConverterOptionalEntry{}
@@ -8331,6 +8927,43 @@ type FfiDestroyerOptionalTypeConnectionInfo struct{}
 func (_ FfiDestroyerOptionalTypeConnectionInfo) Destroy(value *ConnectionInfo) {
 	if value != nil {
 		FfiDestroyerTypeConnectionInfo{}.Destroy(*value)
+	}
+}
+
+type FfiConverterOptionalTypeLatencyAndControlMsg struct{}
+
+var FfiConverterOptionalTypeLatencyAndControlMsgINSTANCE = FfiConverterOptionalTypeLatencyAndControlMsg{}
+
+func (c FfiConverterOptionalTypeLatencyAndControlMsg) Lift(rb RustBufferI) *LatencyAndControlMsg {
+	return LiftFromRustBuffer[*LatencyAndControlMsg](c, rb)
+}
+
+func (_ FfiConverterOptionalTypeLatencyAndControlMsg) Read(reader io.Reader) *LatencyAndControlMsg {
+	if readInt8(reader) == 0 {
+		return nil
+	}
+	temp := FfiConverterTypeLatencyAndControlMsgINSTANCE.Read(reader)
+	return &temp
+}
+
+func (c FfiConverterOptionalTypeLatencyAndControlMsg) Lower(value *LatencyAndControlMsg) RustBuffer {
+	return LowerIntoRustBuffer[*LatencyAndControlMsg](c, value)
+}
+
+func (_ FfiConverterOptionalTypeLatencyAndControlMsg) Write(writer io.Writer, value *LatencyAndControlMsg) {
+	if value == nil {
+		writeInt8(writer, 0)
+	} else {
+		writeInt8(writer, 1)
+		FfiConverterTypeLatencyAndControlMsgINSTANCE.Write(writer, *value)
+	}
+}
+
+type FfiDestroyerOptionalTypeLatencyAndControlMsg struct{}
+
+func (_ FfiDestroyerOptionalTypeLatencyAndControlMsg) Destroy(value *LatencyAndControlMsg) {
+	if value != nil {
+		FfiDestroyerTypeLatencyAndControlMsg{}.Destroy(*value)
 	}
 }
 
@@ -8915,6 +9548,49 @@ type FfiDestroyerSequenceTypeConnectionInfo struct{}
 func (FfiDestroyerSequenceTypeConnectionInfo) Destroy(sequence []ConnectionInfo) {
 	for _, value := range sequence {
 		FfiDestroyerTypeConnectionInfo{}.Destroy(value)
+	}
+}
+
+type FfiConverterSequenceTypeListTagsResponse struct{}
+
+var FfiConverterSequenceTypeListTagsResponseINSTANCE = FfiConverterSequenceTypeListTagsResponse{}
+
+func (c FfiConverterSequenceTypeListTagsResponse) Lift(rb RustBufferI) []ListTagsResponse {
+	return LiftFromRustBuffer[[]ListTagsResponse](c, rb)
+}
+
+func (c FfiConverterSequenceTypeListTagsResponse) Read(reader io.Reader) []ListTagsResponse {
+	length := readInt32(reader)
+	if length == 0 {
+		return nil
+	}
+	result := make([]ListTagsResponse, 0, length)
+	for i := int32(0); i < length; i++ {
+		result = append(result, FfiConverterTypeListTagsResponseINSTANCE.Read(reader))
+	}
+	return result
+}
+
+func (c FfiConverterSequenceTypeListTagsResponse) Lower(value []ListTagsResponse) RustBuffer {
+	return LowerIntoRustBuffer[[]ListTagsResponse](c, value)
+}
+
+func (c FfiConverterSequenceTypeListTagsResponse) Write(writer io.Writer, value []ListTagsResponse) {
+	if len(value) > math.MaxInt32 {
+		panic("[]ListTagsResponse is too large to fit into Int32")
+	}
+
+	writeInt32(writer, int32(len(value)))
+	for _, item := range value {
+		FfiConverterTypeListTagsResponseINSTANCE.Write(writer, item)
+	}
+}
+
+type FfiDestroyerSequenceTypeListTagsResponse struct{}
+
+func (FfiDestroyerSequenceTypeListTagsResponse) Destroy(sequence []ListTagsResponse) {
+	for _, value := range sequence {
+		FfiDestroyerTypeListTagsResponse{}.Destroy(value)
 	}
 }
 

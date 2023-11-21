@@ -47,6 +47,7 @@ impl IrohNode {
             }))
         })
     }
+
     /// List all the docs we have access to on this node.
     pub fn doc_list(&self) -> Result<Vec<NamespaceAndCapability>, IrohError> {
         block_on(&self.async_runtime, async {
@@ -65,6 +66,42 @@ impl IrohNode {
                 .map_err(IrohError::doc)?;
 
             Ok(docs)
+        })
+    }
+
+    /// Get a [`Doc`].
+    ///
+    /// Returns None if the document cannot be found.
+    pub fn doc_open(&self, id: Arc<NamespaceId>) -> Result<Option<Arc<Doc>>, IrohError> {
+        block_on(&self.async_runtime, async {
+            let doc = self
+                .sync_client
+                .docs
+                .open((*id).0.clone())
+                .await
+                .map_err(IrohError::doc)?;
+            Ok(doc.map(|d| {
+                Arc::new(Doc {
+                    inner: d,
+                    rt: self.async_runtime.clone(),
+                })
+            }))
+        })
+    }
+
+    /// Delete a document from the local node.
+    ///
+    /// This is a destructive operation. Both the document secret key and all entries in the
+    /// document will be permanently deleted from the node's storage. Content blobs will be
+    /// deleted.clone()).await.map_err(Iroh::doc)
+    /// through garbage collection unless they are referenced from another document or tag.
+    pub fn doc_drop(&self, doc_id: Arc<NamespaceId>) -> Result<(), IrohError> {
+        block_on(&self.async_runtime, async {
+            self.sync_client
+                .docs
+                .drop_doc((*doc_id).0.clone())
+                .await
+                .map_err(IrohError::doc)
         })
     }
 }
@@ -237,6 +274,22 @@ impl Doc {
         })
     }
 
+    /// Get an entry for a key and author.
+    pub fn get_exact(
+        &self,
+        author: Arc<AuthorId>,
+        key: Vec<u8>,
+        include_empty: bool,
+    ) -> Result<Option<Arc<Entry>>, IrohError> {
+        block_on(&self.rt, async {
+            self.inner
+                .get_exact((*author).0, key, include_empty)
+                .await
+                .map(|e| e.map(|e| Arc::new(e.into())))
+                .map_err(IrohError::doc)
+        })
+    }
+
     /// Get entries.
     ///
     /// Note: this allocates for each `Entry`, if you have many `Entry`s this may be a prohibitively large list.
@@ -402,6 +455,21 @@ impl From<NodeAddr> for iroh::net::magic_endpoint::NodeAddr {
         }
         node_addr = node_addr.with_direct_addresses(addresses);
         node_addr
+    }
+}
+
+impl From<iroh::net::magic_endpoint::NodeAddr> for NodeAddr {
+    fn from(value: iroh::net::magic_endpoint::NodeAddr) -> Self {
+        NodeAddr {
+            node_id: Arc::new(value.node_id.into()),
+            derp_region: value.info.derp_region,
+            addresses: value
+                .info
+                .direct_addresses
+                .into_iter()
+                .map(|d| Arc::new(d.into()))
+                .collect(),
+        }
     }
 }
 

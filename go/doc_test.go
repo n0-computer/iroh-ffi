@@ -198,7 +198,7 @@ func TestDocEntryBasics(t *testing.T) {
 
 	// get entry
 	query := iroh.QueryAuthorKeyExact(author, key)
-	maybe_entry, err := doc.GetOne(query)
+	maybe_entry, err := doc.GetExact(query)
 	assert.NotNil(t, maybe_entry)
 	entry := *maybe_entry
 	assert.Nil(t, err)
@@ -252,7 +252,7 @@ func TestDocImportExport(t *testing.T) {
 
 	// Get entry
 	query := iroh.QueryAuthorKeyExact(author, key)
-	maybe_entry, err := doc.GetOne(query)
+	maybe_entry, err := doc.GetExact(query)
 	assert.Nil(t, err)
 	entry := *maybe_entry
 

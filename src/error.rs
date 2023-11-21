@@ -7,6 +7,8 @@ pub enum IrohError {
     Runtime { description: String },
     #[error("node creation failed: {description}")]
     NodeCreate { description: String },
+    #[error("node shutdown ran into an error: {description}")]
+    NodeShutdown { description: String },
     #[error("doc error: {description}")]
     Doc { description: String },
     #[error("author error: {description}")]
@@ -39,6 +41,8 @@ pub enum IrohError {
     RequestToken { description: String },
     #[error("FsUtil error: {description}")]
     FsUtil { description: String },
+    #[error("Tags error: {description}")]
+    Tags { description: String },
 }
 
 impl IrohError {
@@ -50,6 +54,12 @@ impl IrohError {
 
     pub fn node_create(error: impl Display) -> Self {
         IrohError::NodeCreate {
+            description: error.to_string(),
+        }
+    }
+
+    pub fn node_shutdown(error: impl Display) -> Self {
+        IrohError::NodeShutdown {
             description: error.to_string(),
         }
     }
@@ -140,6 +150,12 @@ impl IrohError {
 
     pub fn fs_util(error: impl Display) -> Self {
         IrohError::FsUtil {
+            description: error.to_string(),
+        }
+    }
+
+    pub fn tags(error: impl Display) -> Self {
+        IrohError::Tags {
             description: error.to_string(),
         }
     }

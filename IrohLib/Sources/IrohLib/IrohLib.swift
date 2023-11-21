@@ -776,7 +776,123 @@ public func FfiConverterTypeBlobDownloadRequest_lower(_ value: BlobDownloadReque
     return FfiConverterTypeBlobDownloadRequest.lower(value)
 }
 
-public protocol DirectAddrInfoProtocol {}
+public protocol ConnectionTypeProtocol {
+    func asDirect() -> SocketAddr
+    func asMixed() -> ConnectionTypeMixed
+    func asRelay() -> UInt16
+    func type() -> ConnType
+}
+
+/**
+ * The type of connection we have to the node
+ */
+public class ConnectionType: ConnectionTypeProtocol {
+    fileprivate let pointer: UnsafeMutableRawPointer
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    deinit {
+        try! rustCall { uniffi_iroh_fn_free_connectiontype(pointer, $0) }
+    }
+
+    /**
+     * Return the [`SocketAddr`] if this is a direct connection
+     */
+    public func asDirect() -> SocketAddr {
+        return try! FfiConverterTypeSocketAddr.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_connectiontype_as_direct(self.pointer, $0)
+                }
+        )
+    }
+
+    /**
+     * Return the [`SocketAddr`] and DERP region if this is a mixed connection
+     */
+    public func asMixed() -> ConnectionTypeMixed {
+        return try! FfiConverterTypeConnectionTypeMixed.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_connectiontype_as_mixed(self.pointer, $0)
+                }
+        )
+    }
+
+    /**
+     * Return the derp region if this is a relay connection
+     */
+    public func asRelay() -> UInt16 {
+        return try! FfiConverterUInt16.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_connectiontype_as_relay(self.pointer, $0)
+                }
+        )
+    }
+
+    /**
+     * Whether connection is direct, relay, mixed, or none
+     */
+    public func type() -> ConnType {
+        return try! FfiConverterTypeConnType.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_connectiontype_type(self.pointer, $0)
+                }
+        )
+    }
+}
+
+public struct FfiConverterTypeConnectionType: FfiConverter {
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = ConnectionType
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ConnectionType {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: ConnectionType, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> ConnectionType {
+        return ConnectionType(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: ConnectionType) -> UnsafeMutableRawPointer {
+        return value.pointer
+    }
+}
+
+public func FfiConverterTypeConnectionType_lift(_ pointer: UnsafeMutableRawPointer) throws -> ConnectionType {
+    return try FfiConverterTypeConnectionType.lift(pointer)
+}
+
+public func FfiConverterTypeConnectionType_lower(_ value: ConnectionType) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeConnectionType.lower(value)
+}
+
+public protocol DirectAddrInfoProtocol {
+    func addr() -> SocketAddr
+    func lastControl() -> LatencyAndControlMsg?
+    func lastPayload() -> TimeInterval?
+    func latency() -> TimeInterval?
+}
 
 /**
  * Information about a direct address.
@@ -793,6 +909,54 @@ public class DirectAddrInfo: DirectAddrInfoProtocol {
 
     deinit {
         try! rustCall { uniffi_iroh_fn_free_directaddrinfo(pointer, $0) }
+    }
+
+    /**
+     * Get the reported address
+     */
+    public func addr() -> SocketAddr {
+        return try! FfiConverterTypeSocketAddr.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_directaddrinfo_addr(self.pointer, $0)
+                }
+        )
+    }
+
+    /**
+     * Get the last control message received by this node
+     */
+    public func lastControl() -> LatencyAndControlMsg? {
+        return try! FfiConverterOptionTypeLatencyAndControlMsg.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_directaddrinfo_last_control(self.pointer, $0)
+                }
+        )
+    }
+
+    /**
+     * Get how long ago the last payload message was received for this node
+     */
+    public func lastPayload() -> TimeInterval? {
+        return try! FfiConverterOptionDuration.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_directaddrinfo_last_payload(self.pointer, $0)
+                }
+        )
+    }
+
+    /**
+     * Get the reported latency, if it exists
+     */
+    public func latency() -> TimeInterval? {
+        return try! FfiConverterOptionDuration.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_directaddrinfo_latency(self.pointer, $0)
+                }
+        )
     }
 }
 
@@ -838,6 +1002,7 @@ public protocol DocProtocol {
     func close() throws
     func del(authorId: AuthorId, prefix: Data) throws -> UInt64
     func exportFile(entry: Entry, path: String, cb: DocExportFileCallback?) throws
+    func getExact(author: AuthorId, key: Data, includeEmpty: Bool) throws -> Entry?
     func getMany(query: Query) throws -> [Entry]
     func getOne(query: Query) throws -> Entry?
     func id() -> NamespaceId
@@ -909,6 +1074,22 @@ public class Doc: DocProtocol {
                                                       FfiConverterString.lower(path),
                                                       FfiConverterOptionCallbackInterfaceDocExportFileCallback.lower(cb), $0)
             }
+    }
+
+    /**
+     * Get an entry for a key and author.
+     *
+     * Optionally also get the entry if it is empty (i.e. a deletion marker)
+     */
+    public func getExact(author: AuthorId, key: Data, includeEmpty: Bool) throws -> Entry? {
+        return try FfiConverterOptionTypeEntry.lift(
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_doc_get_exact(self.pointer,
+                                                    FfiConverterTypeAuthorId.lower(author),
+                                                    FfiConverterData.lower(key),
+                                                    FfiConverterBool.lower(includeEmpty), $0)
+            }
+        )
     }
 
     /**
@@ -2292,10 +2473,15 @@ public protocol IrohNodeProtocol {
     func connectionInfo(nodeId: PublicKey) throws -> ConnectionInfo?
     func connections() throws -> [ConnectionInfo]
     func docCreate() throws -> Doc
+    func docDrop(docId: NamespaceId) throws
     func docJoin(ticket: DocTicket) throws -> Doc
     func docList() throws -> [NamespaceAndCapability]
+    func docOpen(id: NamespaceId) throws -> Doc?
     func nodeId() -> String
     func stats() throws -> [String: CounterStats]
+    func status() throws -> NodeStatusResponse
+    func tagsDelete(name: Tag) throws
+    func tagsList() throws -> [ListTagsResponse]
 }
 
 /**
@@ -2520,6 +2706,22 @@ public class IrohNode: IrohNodeProtocol {
     }
 
     /**
+     * Delete a document from the local node.
+     *
+     * This is a destructive operation. Both the document secret key and all entries in the
+     * document will be permanently deleted from the node's storage. Content blobs will be
+     * deleted.clone()).await.map_err(Iroh::doc)
+     * through garbage collection unless they are referenced from another document or tag.
+     */
+    public func docDrop(docId: NamespaceId) throws {
+        try
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_irohnode_doc_drop(self.pointer,
+                                                        FfiConverterTypeNamespaceId.lower(docId), $0)
+            }
+    }
+
+    /**
      * Join and sync with an already existing document.
      */
     public func docJoin(ticket: DocTicket) throws -> Doc {
@@ -2543,6 +2745,20 @@ public class IrohNode: IrohNodeProtocol {
     }
 
     /**
+     * Get a [`Doc`].
+     *
+     * Returns None if the document cannot be found.
+     */
+    public func docOpen(id: NamespaceId) throws -> Doc? {
+        return try FfiConverterOptionTypeDoc.lift(
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_irohnode_doc_open(self.pointer,
+                                                        FfiConverterTypeNamespaceId.lower(id), $0)
+            }
+        )
+    }
+
+    /**
      * The string representation of the PublicKey of this node.
      */
     public func nodeId() -> String {
@@ -2561,6 +2777,42 @@ public class IrohNode: IrohNodeProtocol {
         return try FfiConverterDictionaryStringTypeCounterStats.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_irohnode_stats(self.pointer, $0)
+            }
+        )
+    }
+
+    /**
+     * Get status information about a node
+     */
+    public func status() throws -> NodeStatusResponse {
+        return try FfiConverterTypeNodeStatusResponse.lift(
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_irohnode_status(self.pointer, $0)
+            }
+        )
+    }
+
+    /**
+     * Delete a tag.
+     */
+    public func tagsDelete(name: Tag) throws {
+        try
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_irohnode_tags_delete(self.pointer,
+                                                           FfiConverterTypeTag.lower(name), $0)
+            }
+    }
+
+    /**
+     * List all tags
+     *
+     * Note: this allocates for each `ListTagsResponse`, if you have many `Tags`s this may be a prohibitively large list.
+     * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
+     */
+    public func tagsList() throws -> [ListTagsResponse] {
+        return try FfiConverterSequenceTypeListTagsResponse.lift(
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_irohnode_tags_list(self.pointer, $0)
             }
         )
     }
@@ -2961,6 +3213,101 @@ public func FfiConverterTypeNodeAddr_lift(_ pointer: UnsafeMutableRawPointer) th
 
 public func FfiConverterTypeNodeAddr_lower(_ value: NodeAddr) -> UnsafeMutableRawPointer {
     return FfiConverterTypeNodeAddr.lower(value)
+}
+
+public protocol NodeStatusResponseProtocol {
+    func listenAddrs() -> [SocketAddr]
+    func nodeAddr() -> NodeAddr
+    func version() -> String
+}
+
+public class NodeStatusResponse: NodeStatusResponseProtocol {
+    fileprivate let pointer: UnsafeMutableRawPointer
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    deinit {
+        try! rustCall { uniffi_iroh_fn_free_nodestatusresponse(pointer, $0) }
+    }
+
+    /**
+     * The bound listening addresses of the node
+     */
+    public func listenAddrs() -> [SocketAddr] {
+        return try! FfiConverterSequenceTypeSocketAddr.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_nodestatusresponse_listen_addrs(self.pointer, $0)
+                }
+        )
+    }
+
+    /**
+     * The node id and socket addresses of this node.
+     */
+    public func nodeAddr() -> NodeAddr {
+        return try! FfiConverterTypeNodeAddr.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_nodestatusresponse_node_addr(self.pointer, $0)
+                }
+        )
+    }
+
+    /**
+     * The version of the node
+     */
+    public func version() -> String {
+        return try! FfiConverterString.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_nodestatusresponse_version(self.pointer, $0)
+                }
+        )
+    }
+}
+
+public struct FfiConverterTypeNodeStatusResponse: FfiConverter {
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = NodeStatusResponse
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> NodeStatusResponse {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: NodeStatusResponse, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> NodeStatusResponse {
+        return NodeStatusResponse(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: NodeStatusResponse) -> UnsafeMutableRawPointer {
+        return value.pointer
+    }
+}
+
+public func FfiConverterTypeNodeStatusResponse_lift(_ pointer: UnsafeMutableRawPointer) throws -> NodeStatusResponse {
+    return try FfiConverterTypeNodeStatusResponse.lift(pointer)
+}
+
+public func FfiConverterTypeNodeStatusResponse_lower(_ value: NodeStatusResponse) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeNodeStatusResponse.lower(value)
 }
 
 public protocol PublicKeyProtocol {
@@ -4668,6 +5015,49 @@ public func FfiConverterTypeConnectionInfo_lower(_ value: ConnectionInfo) -> Rus
 }
 
 /**
+ * The [`SocketAddr`] and region id of the mixed connection
+ */
+public struct ConnectionTypeMixed {
+    /**
+     * Address of the node
+     */
+    public var addr: SocketAddr
+    /**
+     * Region Id of the region to which the node is connected
+     */
+    public var derpRegion: UInt16
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(addr: SocketAddr, derpRegion: UInt16) {
+        self.addr = addr
+        self.derpRegion = derpRegion
+    }
+}
+
+public struct FfiConverterTypeConnectionTypeMixed: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ConnectionTypeMixed {
+        return try ConnectionTypeMixed(
+            addr: FfiConverterTypeSocketAddr.read(from: &buf),
+            derpRegion: FfiConverterUInt16.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: ConnectionTypeMixed, into buf: inout [UInt8]) {
+        FfiConverterTypeSocketAddr.write(value.addr, into: &buf)
+        FfiConverterUInt16.write(value.derpRegion, into: &buf)
+    }
+}
+
+public func FfiConverterTypeConnectionTypeMixed_lift(_ buf: RustBuffer) throws -> ConnectionTypeMixed {
+    return try FfiConverterTypeConnectionTypeMixed.lift(buf)
+}
+
+public func FfiConverterTypeConnectionTypeMixed_lower(_ value: ConnectionTypeMixed) -> RustBuffer {
+    return FfiConverterTypeConnectionTypeMixed.lower(value)
+}
+
+/**
  * Stats counter
  */
 public struct CounterStats {
@@ -5673,6 +6063,116 @@ public func FfiConverterTypeInsertRemoteEvent_lower(_ value: InsertRemoteEvent) 
 }
 
 /**
+ * The latency and type of the control message
+ */
+public struct LatencyAndControlMsg {
+    /**
+     * The latency of the control message
+     */
+    public var latency: TimeInterval
+    /**
+     * The type of control message, represented as a string
+     */
+    public var controlMsg: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(latency: TimeInterval, controlMsg: String) {
+        self.latency = latency
+        self.controlMsg = controlMsg
+    }
+}
+
+extension LatencyAndControlMsg: Equatable, Hashable {
+    public static func == (lhs: LatencyAndControlMsg, rhs: LatencyAndControlMsg) -> Bool {
+        if lhs.latency != rhs.latency {
+            return false
+        }
+        if lhs.controlMsg != rhs.controlMsg {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(latency)
+        hasher.combine(controlMsg)
+    }
+}
+
+public struct FfiConverterTypeLatencyAndControlMsg: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> LatencyAndControlMsg {
+        return try LatencyAndControlMsg(
+            latency: FfiConverterDuration.read(from: &buf),
+            controlMsg: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: LatencyAndControlMsg, into buf: inout [UInt8]) {
+        FfiConverterDuration.write(value.latency, into: &buf)
+        FfiConverterString.write(value.controlMsg, into: &buf)
+    }
+}
+
+public func FfiConverterTypeLatencyAndControlMsg_lift(_ buf: RustBuffer) throws -> LatencyAndControlMsg {
+    return try FfiConverterTypeLatencyAndControlMsg.lift(buf)
+}
+
+public func FfiConverterTypeLatencyAndControlMsg_lower(_ value: LatencyAndControlMsg) -> RustBuffer {
+    return FfiConverterTypeLatencyAndControlMsg.lower(value)
+}
+
+/**
+ * A response to a list collections request
+ */
+public struct ListTagsResponse {
+    /**
+     * The tag
+     */
+    public var name: Tag
+    /**
+     * The format of the associated blob
+     */
+    public var format: BlobFormat
+    /**
+     * The hash of the associated blob
+     */
+    public var hash: Hash
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(name: Tag, format: BlobFormat, hash: Hash) {
+        self.name = name
+        self.format = format
+        self.hash = hash
+    }
+}
+
+public struct FfiConverterTypeListTagsResponse: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ListTagsResponse {
+        return try ListTagsResponse(
+            name: FfiConverterTypeTag.read(from: &buf),
+            format: FfiConverterTypeBlobFormat.read(from: &buf),
+            hash: FfiConverterTypeHash.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: ListTagsResponse, into buf: inout [UInt8]) {
+        FfiConverterTypeTag.write(value.name, into: &buf)
+        FfiConverterTypeBlobFormat.write(value.format, into: &buf)
+        FfiConverterTypeHash.write(value.hash, into: &buf)
+    }
+}
+
+public func FfiConverterTypeListTagsResponse_lift(_ buf: RustBuffer) throws -> ListTagsResponse {
+    return try FfiConverterTypeListTagsResponse.lift(buf)
+}
+
+public func FfiConverterTypeListTagsResponse_lower(_ value: ListTagsResponse) -> RustBuffer {
+    return FfiConverterTypeListTagsResponse.lower(value)
+}
+
+/**
  * The NamespaceId and CapabilityKind (read/write) of the doc
  */
 public struct NamespaceAndCapability {
@@ -6123,49 +6623,38 @@ extension CapabilityKind: Equatable, Hashable {}
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 /**
- * The type of connection we have to the node
+ * The type of the connection
  */
-public enum ConnectionType {
+public enum ConnType {
     /**
-     * Direct UDP connection
+     * Indicates you have a UDP connection.
      */
-    case direct(addr: String, port: UInt16)
+    case direct
     /**
-     * Relay connection over DERP
+     * Indicates you have a DERP relay connection.
      */
-    case relay(port: UInt16)
+    case relay
     /**
-     * Both a UDP and a DERP connection are used.
-     *
-     * This is the case if we do have a UDP address, but are missing a recent confirmation that
-     * the address works.
+     * Indicates you have an unverified UDP connection, and a relay connection for backup.
      */
-    case mixed(addr: String, port: UInt16)
+    case mixed
     /**
-     * We have no verified connection to this PublicKey
+     * Indicates you have no proof of connection.
      */
     case none
 }
 
-public struct FfiConverterTypeConnectionType: FfiConverterRustBuffer {
-    typealias SwiftType = ConnectionType
+public struct FfiConverterTypeConnType: FfiConverterRustBuffer {
+    typealias SwiftType = ConnType
 
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ConnectionType {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ConnType {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return try .direct(
-                addr: FfiConverterString.read(from: &buf),
-                port: FfiConverterUInt16.read(from: &buf)
-            )
+        case 1: return .direct
 
-        case 2: return try .relay(
-                port: FfiConverterUInt16.read(from: &buf)
-            )
+        case 2: return .relay
 
-        case 3: return try .mixed(
-                addr: FfiConverterString.read(from: &buf),
-                port: FfiConverterUInt16.read(from: &buf)
-            )
+        case 3: return .mixed
 
         case 4: return .none
 
@@ -6173,21 +6662,16 @@ public struct FfiConverterTypeConnectionType: FfiConverterRustBuffer {
         }
     }
 
-    public static func write(_ value: ConnectionType, into buf: inout [UInt8]) {
+    public static func write(_ value: ConnType, into buf: inout [UInt8]) {
         switch value {
-        case let .direct(addr, port):
+        case .direct:
             writeInt(&buf, Int32(1))
-            FfiConverterString.write(addr, into: &buf)
-            FfiConverterUInt16.write(port, into: &buf)
 
-        case let .relay(port):
+        case .relay:
             writeInt(&buf, Int32(2))
-            FfiConverterUInt16.write(port, into: &buf)
 
-        case let .mixed(addr, port):
+        case .mixed:
             writeInt(&buf, Int32(3))
-            FfiConverterString.write(addr, into: &buf)
-            FfiConverterUInt16.write(port, into: &buf)
 
         case .none:
             writeInt(&buf, Int32(4))
@@ -6195,15 +6679,15 @@ public struct FfiConverterTypeConnectionType: FfiConverterRustBuffer {
     }
 }
 
-public func FfiConverterTypeConnectionType_lift(_ buf: RustBuffer) throws -> ConnectionType {
-    return try FfiConverterTypeConnectionType.lift(buf)
+public func FfiConverterTypeConnType_lift(_ buf: RustBuffer) throws -> ConnType {
+    return try FfiConverterTypeConnType.lift(buf)
 }
 
-public func FfiConverterTypeConnectionType_lower(_ value: ConnectionType) -> RustBuffer {
-    return FfiConverterTypeConnectionType.lower(value)
+public func FfiConverterTypeConnType_lower(_ value: ConnType) -> RustBuffer {
+    return FfiConverterTypeConnType.lower(value)
 }
 
-extension ConnectionType: Equatable, Hashable {}
+extension ConnType: Equatable, Hashable {}
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
@@ -6549,6 +7033,7 @@ extension DownloadProgressType: Equatable, Hashable {}
 public enum IrohError {
     case Runtime(description: String)
     case NodeCreate(description: String)
+    case NodeShutdown(description: String)
     case Doc(description: String)
     case Author(description: String)
     case Namespace(description: String)
@@ -6565,6 +7050,7 @@ public enum IrohError {
     case Hash(description: String)
     case RequestToken(description: String)
     case FsUtil(description: String)
+    case Tags(description: String)
 
     fileprivate static func uniffiErrorHandler(_ error: RustBuffer) throws -> Error {
         return try FfiConverterTypeIrohError.lift(error)
@@ -6583,52 +7069,58 @@ public struct FfiConverterTypeIrohError: FfiConverterRustBuffer {
         case 2: return try .NodeCreate(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 3: return try .Doc(
+        case 3: return try .NodeShutdown(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 4: return try .Author(
+        case 4: return try .Doc(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 5: return try .Namespace(
+        case 5: return try .Author(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 6: return try .DocTicket(
+        case 6: return try .Namespace(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 7: return try .Uniffi(
+        case 7: return try .DocTicket(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 8: return try .Connection(
+        case 8: return try .Uniffi(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 9: return try .Blobs(
+        case 9: return try .Connection(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 10: return try .Ipv4Addr(
+        case 10: return try .Blobs(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 11: return try .Ipv6Addr(
+        case 11: return try .Ipv4Addr(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 12: return try .SocketAddrV4(
+        case 12: return try .Ipv6Addr(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 13: return try .SocketAddrV6(
+        case 13: return try .SocketAddrV4(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 14: return try .PublicKey(
+        case 14: return try .SocketAddrV6(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 15: return try .NodeAddr(
+        case 15: return try .PublicKey(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 16: return try .Hash(
+        case 16: return try .NodeAddr(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 17: return try .RequestToken(
+        case 17: return try .Hash(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 18: return try .FsUtil(
+        case 18: return try .RequestToken(
+                description: FfiConverterString.read(from: &buf)
+            )
+        case 19: return try .FsUtil(
+                description: FfiConverterString.read(from: &buf)
+            )
+        case 20: return try .Tags(
                 description: FfiConverterString.read(from: &buf)
             )
 
@@ -6646,68 +7138,76 @@ public struct FfiConverterTypeIrohError: FfiConverterRustBuffer {
             writeInt(&buf, Int32(2))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Doc(description):
+        case let .NodeShutdown(description):
             writeInt(&buf, Int32(3))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Author(description):
+        case let .Doc(description):
             writeInt(&buf, Int32(4))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Namespace(description):
+        case let .Author(description):
             writeInt(&buf, Int32(5))
             FfiConverterString.write(description, into: &buf)
 
-        case let .DocTicket(description):
+        case let .Namespace(description):
             writeInt(&buf, Int32(6))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Uniffi(description):
+        case let .DocTicket(description):
             writeInt(&buf, Int32(7))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Connection(description):
+        case let .Uniffi(description):
             writeInt(&buf, Int32(8))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Blobs(description):
+        case let .Connection(description):
             writeInt(&buf, Int32(9))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Ipv4Addr(description):
+        case let .Blobs(description):
             writeInt(&buf, Int32(10))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Ipv6Addr(description):
+        case let .Ipv4Addr(description):
             writeInt(&buf, Int32(11))
             FfiConverterString.write(description, into: &buf)
 
-        case let .SocketAddrV4(description):
+        case let .Ipv6Addr(description):
             writeInt(&buf, Int32(12))
             FfiConverterString.write(description, into: &buf)
 
-        case let .SocketAddrV6(description):
+        case let .SocketAddrV4(description):
             writeInt(&buf, Int32(13))
             FfiConverterString.write(description, into: &buf)
 
-        case let .PublicKey(description):
+        case let .SocketAddrV6(description):
             writeInt(&buf, Int32(14))
             FfiConverterString.write(description, into: &buf)
 
-        case let .NodeAddr(description):
+        case let .PublicKey(description):
             writeInt(&buf, Int32(15))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Hash(description):
+        case let .NodeAddr(description):
             writeInt(&buf, Int32(16))
             FfiConverterString.write(description, into: &buf)
 
-        case let .RequestToken(description):
+        case let .Hash(description):
             writeInt(&buf, Int32(17))
             FfiConverterString.write(description, into: &buf)
 
-        case let .FsUtil(description):
+        case let .RequestToken(description):
             writeInt(&buf, Int32(18))
+            FfiConverterString.write(description, into: &buf)
+
+        case let .FsUtil(description):
+            writeInt(&buf, Int32(19))
+            FfiConverterString.write(description, into: &buf)
+
+        case let .Tags(description):
+            writeInt(&buf, Int32(20))
             FfiConverterString.write(description, into: &buf)
         }
     }
@@ -7899,6 +8399,27 @@ private struct FfiConverterOptionDuration: FfiConverterRustBuffer {
     }
 }
 
+private struct FfiConverterOptionTypeDoc: FfiConverterRustBuffer {
+    typealias SwiftType = Doc?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeDoc.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeDoc.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
 private struct FfiConverterOptionTypeEntry: FfiConverterRustBuffer {
     typealias SwiftType = Entry?
 
@@ -7957,6 +8478,27 @@ private struct FfiConverterOptionTypeConnectionInfo: FfiConverterRustBuffer {
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterTypeConnectionInfo.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+private struct FfiConverterOptionTypeLatencyAndControlMsg: FfiConverterRustBuffer {
+    typealias SwiftType = LatencyAndControlMsg?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeLatencyAndControlMsg.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeLatencyAndControlMsg.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
@@ -8267,6 +8809,28 @@ private struct FfiConverterSequenceTypeConnectionInfo: FfiConverterRustBuffer {
     }
 }
 
+private struct FfiConverterSequenceTypeListTagsResponse: FfiConverterRustBuffer {
+    typealias SwiftType = [ListTagsResponse]
+
+    public static func write(_ value: [ListTagsResponse], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeListTagsResponse.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [ListTagsResponse] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [ListTagsResponse]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            try seq.append(FfiConverterTypeListTagsResponse.read(from: &buf))
+        }
+        return seq
+    }
+}
+
 private struct FfiConverterSequenceTypeNamespaceAndCapability: FfiConverterRustBuffer {
     typealias SwiftType = [NamespaceAndCapability]
 
@@ -8421,6 +8985,30 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_authorid_to_string() != 42389 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_checksum_method_connectiontype_as_direct() != 41690 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_connectiontype_as_mixed() != 41300 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_connectiontype_as_relay() != 47022 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_connectiontype_type() != 1057 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_directaddrinfo_addr() != 49936 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_directaddrinfo_last_control() != 46706 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_directaddrinfo_last_payload() != 16797 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_directaddrinfo_latency() != 62303 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_checksum_method_doc_close() != 23013 {
         return InitializationResult.apiChecksumMismatch
     }
@@ -8428,6 +9016,9 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_doc_export_file() != 34185 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_doc_get_exact() != 48441 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_doc_get_many() != 58857 {
@@ -8625,16 +9216,31 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_irohnode_doc_create() != 64213 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_checksum_method_irohnode_doc_drop() != 64324 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_checksum_method_irohnode_doc_join() != 30773 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_doc_list() != 44252 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_checksum_method_irohnode_doc_open() != 8490 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_checksum_method_irohnode_node_id() != 31962 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_stats() != 16158 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_irohnode_status() != 32660 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_irohnode_tags_delete() != 21632 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_irohnode_tags_list() != 6726 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_liveevent_as_content_ready() != 15237 {
@@ -8671,6 +9277,15 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_nodeaddr_equal() != 45841 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_nodestatusresponse_listen_addrs() != 44280 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_nodestatusresponse_node_addr() != 37017 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_nodestatusresponse_version() != 50257 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_publickey_equal() != 10645 {
