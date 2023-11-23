@@ -9,8 +9,9 @@ use iroh::{
 };
 use quic_rpc::transport::flume::FlumeConnection;
 
-use crate::{block_on, IrohError, PublicKey, SocketAddr};
+use crate::{block_on, IrohError, NodeAddr, PublicKey, SocketAddr};
 
+/// Stats counter
 pub use iroh::rpc_protocol::CounterStats;
 
 /// Information about a direct address.
@@ -68,7 +69,7 @@ pub struct ConnectionInfo {
     /// have about that address and the last time the address was used.
     pub addrs: Vec<Arc<DirectAddrInfo>>,
     /// The type of connection we have to the peer, either direct or over relay.
-    pub conn_type: ConnectionType,
+    pub conn_type: Arc<ConnectionType>,
     /// The latency of the `conn_type`.
     pub latency: Option<Duration>,
     /// Duration since the last time this peer was used.
@@ -85,7 +86,7 @@ impl From<iroh::net::magic_endpoint::ConnectionInfo> for ConnectionInfo {
                 .iter()
                 .map(|a| Arc::new(DirectAddrInfo(a.clone())))
                 .collect(),
-            conn_type: value.conn_type.into(),
+            conn_type: Arc::new(value.conn_type.into()),
             latency: value.latency,
             last_used: value.last_used,
         }
@@ -96,30 +97,87 @@ impl From<iroh::net::magic_endpoint::ConnectionInfo> for ConnectionInfo {
 #[derive(Debug)]
 pub enum ConnectionType {
     /// Direct UDP connection
-    Direct { addr: String, port: u16 },
+    Direct(SocketAddr),
     /// Relay connection over DERP
-    Relay { port: u16 },
+    Relay(u16),
     /// Both a UDP and a DERP connection are used.
     ///
     /// This is the case if we do have a UDP address, but are missing a recent confirmation that
     /// the address works.
-    Mixed { addr: String, port: u16 },
+    Mixed(SocketAddr, u16),
     /// We have no verified connection to this PublicKey
     None,
+}
+
+/// The type of the connection
+pub enum ConnType {
+    /// Indicates you have a UDP connection.
+    Direct,
+    /// Indicates you have a DERP relay connection.
+    Relay,
+    /// Indicates you have an unverified UDP connection, and a relay connection for backup.
+    Mixed,
+    /// Indicates you have no proof of connection.
+    None,
+}
+
+impl ConnectionType {
+    /// Whether connection is direct, relay, mixed, or none
+    pub fn r#type(&self) -> ConnType {
+        match self {
+            ConnectionType::Direct(_) => ConnType::Direct,
+            ConnectionType::Relay(_) => ConnType::Relay,
+            ConnectionType::Mixed(..) => ConnType::Mixed,
+            ConnectionType::None => ConnType::None,
+        }
+    }
+
+    /// Return the [`SocketAddr`] if this is a direct connection
+    pub fn as_direct(&self) -> Arc<SocketAddr> {
+        match self {
+            ConnectionType::Direct(addr) => Arc::new(addr.clone()),
+            _ => panic!("ConnectionType type is not 'Direct'"),
+        }
+    }
+
+    /// Return the derp region if this is a relay connection
+    pub fn as_relay(&self) -> u16 {
+        match self {
+            ConnectionType::Relay(region) => *region,
+            _ => panic!("ConnectionType is not `Relay`"),
+        }
+    }
+
+    /// Return the [`SocketAddr`] and DERP region if this is a mixed connection
+    pub fn as_mixed(&self) -> ConnectionTypeMixed {
+        match self {
+            ConnectionType::Mixed(addr, derp_region) => ConnectionTypeMixed {
+                addr: Arc::new(addr.clone()),
+                derp_region: *derp_region,
+            },
+            _ => panic!("ConnectionType is not `Relay`"),
+        }
+    }
+}
+
+/// The [`SocketAddr`] and region id of the mixed connection
+pub struct ConnectionTypeMixed {
+    /// Address of the node
+    pub addr: Arc<SocketAddr>,
+    /// Region Id of the region to which the node is connected
+    pub derp_region: u16,
 }
 
 impl From<iroh::net::magicsock::ConnectionType> for ConnectionType {
     fn from(value: iroh::net::magicsock::ConnectionType) -> Self {
         match value {
-            iroh::net::magicsock::ConnectionType::Direct(addr) => ConnectionType::Direct {
-                addr: addr.ip().to_string(),
-                port: addr.port(),
-            },
-            iroh::net::magicsock::ConnectionType::Mixed(addr, port) => ConnectionType::Mixed {
-                addr: addr.ip().to_string(),
-                port,
-            },
-            iroh::net::magicsock::ConnectionType::Relay(port) => ConnectionType::Relay { port },
+            iroh::net::magicsock::ConnectionType::Direct(addr) => {
+                ConnectionType::Direct(addr.into())
+            }
+            iroh::net::magicsock::ConnectionType::Mixed(addr, port) => {
+                ConnectionType::Mixed(addr.into(), port)
+            }
+            iroh::net::magicsock::ConnectionType::Relay(port) => ConnectionType::Relay(port),
             iroh::net::magicsock::ConnectionType::None => ConnectionType::None,
         }
     }
@@ -234,5 +292,47 @@ impl IrohNode {
                 .map_err(IrohError::connection)?;
             Ok(info)
         })
+    }
+
+    /// Get status information about a node
+    pub fn status(&self) -> Result<Arc<NodeStatusResponse>, IrohError> {
+        block_on(&self.async_runtime, async {
+            self.sync_client
+                .node
+                .status()
+                .await
+                .map(|n| Arc::new(n.into()))
+                .map_err(IrohError::connection)
+        })
+    }
+}
+
+/// The response to a status request
+pub struct NodeStatusResponse(iroh::rpc_protocol::NodeStatusResponse);
+
+impl From<iroh::rpc_protocol::NodeStatusResponse> for NodeStatusResponse {
+    fn from(n: iroh::rpc_protocol::NodeStatusResponse) -> Self {
+        NodeStatusResponse(n)
+    }
+}
+
+impl NodeStatusResponse {
+    /// The node id and socket addresses of this node.
+    pub fn node_addr(&self) -> Arc<NodeAddr> {
+        Arc::new(self.0.addr.clone().into())
+    }
+
+    /// The bound listening addresses of the node
+    pub fn listen_addrs(&self) -> Vec<Arc<SocketAddr>> {
+        self.0
+            .listen_addrs
+            .iter()
+            .map(|addr| Arc::new((*addr).into()))
+            .collect()
+    }
+
+    /// The version of the node
+    pub fn version(&self) -> String {
+        self.0.version.clone()
     }
 }

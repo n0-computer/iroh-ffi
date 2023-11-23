@@ -41,12 +41,25 @@ interface IrohNode {
   /// Create a new doc.
   [Throws=IrohError]
   Doc doc_create();
+  /// Delete a document from the local node.
+  ///
+  /// This is a destructive operation. Both the document secret key and all entries in the
+  /// document will be permanently deleted from the node's storage. Content blobs will be
+  /// deleted.clone()).await.map_err(Iroh::doc)
+  /// through garbage collection unless they are referenced from another document or tag.
+  [Throws=IrohError]
+  void doc_drop(NamespaceId doc_id);
   /// Join and sync with an already existing document.
   [Throws=IrohError]
   Doc doc_join(DocTicket ticket);
   /// List all the docs we have access to on this node.
   [Throws=IrohError]
   sequence<NamespaceAndCapability> doc_list();
+  /// Get a [`Doc`].
+  ///
+  /// Returns None if the document cannot be found.
+  [Throws=IrohError]
+  Doc? doc_open(NamespaceId id);
 
   /// Create a new author.
   [Throws=IrohError]
@@ -64,6 +77,9 @@ interface IrohNode {
   // Return connection information on the currently running node.
   [Throws=IrohError]
   ConnectionInfo? connection_info(PublicKey node_id);
+  /// Get status information about a node
+  [Throws=IrohError]
+  NodeStatusResponse status();
 
   /// List all complete blobs.
   ///
@@ -114,6 +130,26 @@ interface IrohNode {
   /// Delete a blob.
   [Throws=IrohError]
   void blobs_delete_blob(Hash hash);
+  
+  /// List all tags
+  ///
+  /// Note: this allocates for each `ListTagsResponse`, if you have many `Tags`s this may be a prohibitively large list.
+  /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
+  [Throws=IrohError]
+  sequence<ListTagsResponse> tags_list();
+  /// Delete a tag.
+  [Throws=IrohError]
+  void tags_delete(Tag name);
+};
+
+/// A response to a list collections request
+dictionary ListTagsResponse {
+  /// The tag
+  Tag name; 
+  /// The format of the associated blob
+  BlobFormat format;
+  /// The hash of the associated blob
+  Hash hash;
 };
 
 /// Information about a direct address.
@@ -181,6 +217,12 @@ interface Doc {
   /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
   [Throws=IrohError]
   sequence<Entry> get_many(Query query);
+  /// Get an entry for a key and author.
+  ///
+  /// Optionally also get the entry if it is empty (i.e. a deletion marker)
+  [Throws=IrohError]
+  Entry? get_exact(AuthorId author, bytes key, boolean include_empty);
+
   /// Share this document with peers over a ticket.
   [Throws=IrohError]
   DocTicket share(ShareMode mode);
@@ -456,6 +498,15 @@ interface NodeAddr {
   boolean equal(NodeAddr other);
 };
 
+interface NodeStatusResponse {
+    /// The node id and socket addresses of this node.
+    NodeAddr node_addr();
+    /// The bound listening addresses of the node
+    sequence<SocketAddr> listen_addrs();
+    /// The version of the node
+    string version();
+};
+
 /// The `progress` method will be called for each `SubscribeProgress` event that is
 /// emitted during a `node.doc_subscribe`. Use the `SubscribeProgress.type()`
 /// method to check the `LiveEvent`
@@ -691,20 +742,37 @@ dictionary ConnectionInfo {
   duration? last_used;
 };
 
+/// The type of the connection
+enum ConnType {
+  /// Indicates you have a UDP connection.
+  "Direct",
+  /// Indicates you have a DERP relay connection.
+  "Relay",
+  /// Indicates you have an unverified UDP connection, and a relay connection for backup.
+  "Mixed",
+  /// Indicates you have no proof of connection.
+  "None",
+};
+
 /// The type of connection we have to the node
-[Enum]
 interface ConnectionType{
-  /// Direct UDP connection
-  Direct(string addr, u16 port);
-  /// Relay connection over DERP
-  Relay(u16 port);
-  /// Both a UDP and a DERP connection are used.
-  ///
-  /// This is the case if we do have a UDP address, but are missing a recent confirmation that
-  /// the address works.
-  Mixed(string addr, u16 port);
-  /// We have no verified connection to this PublicKey
-  None();
+  /// Whether connection is direct, relay, mixed, or none
+  ConnType type();
+  /// Return the [`SocketAddr`] if this is a direct connection
+  SocketAddr as_direct();
+  /// Return the derp region if this is a relay connection
+  u16 as_relay();
+  /// Return the [`SocketAddr`] and DERP region if this is a mixed connection
+  ConnectionTypeMixed as_mixed();
+};
+
+
+/// The [`SocketAddr`] and region id of the mixed connection
+dictionary ConnectionTypeMixed {
+    /// Address of the node
+    SocketAddr addr;
+    /// Region Id of the region to which the node is connected
+    u16 derp_region;
 };
 
 /// Type of SocketAddr
@@ -1183,4 +1251,5 @@ interface IrohError {
   Hash(string description);
   RequestToken(string description);
   FsUtil(string description);
+  Tags(string description);
 };

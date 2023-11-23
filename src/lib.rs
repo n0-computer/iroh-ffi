@@ -81,7 +81,7 @@ pub fn key_to_path(
     prefix: Option<String>,
     root: Option<String>,
 ) -> Result<String, IrohError> {
-    let path = iroh::util::fs::key_to_path(&key, prefix, root.map(|r| std::path::PathBuf::from(r)))
+    let path = iroh::util::fs::key_to_path(key, prefix, root.map(std::path::PathBuf::from))
         .map_err(IrohError::fs_util)?;
     let path = path
         .to_str()
@@ -101,7 +101,7 @@ pub fn path_to_key(
     iroh::util::fs::path_to_key(
         std::path::PathBuf::from(path),
         prefix,
-        root.map(|r| std::path::PathBuf::from(r)),
+        root.map(std::path::PathBuf::from),
     )
     .map(|k| k.to_vec())
     .map_err(IrohError::fs_util)

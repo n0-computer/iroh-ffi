@@ -39,6 +39,8 @@ pub enum IrohError {
     RequestToken { description: String },
     #[error("FsUtil error: {description}")]
     FsUtil { description: String },
+    #[error("Tags error: {description}")]
+    Tags { description: String },
 }
 
 impl IrohError {
@@ -140,6 +142,12 @@ impl IrohError {
 
     pub fn fs_util(error: impl Display) -> Self {
         IrohError::FsUtil {
+            description: error.to_string(),
+        }
+    }
+
+    pub fn tags(error: impl Display) -> Self {
+        IrohError::Tags {
             description: error.to_string(),
         }
     }

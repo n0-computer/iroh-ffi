@@ -47,6 +47,7 @@ impl IrohNode {
             }))
         })
     }
+
     /// List all the docs we have access to on this node.
     pub fn doc_list(&self) -> Result<Vec<NamespaceAndCapability>, IrohError> {
         block_on(&self.async_runtime, async {
@@ -65,6 +66,42 @@ impl IrohNode {
                 .map_err(IrohError::doc)?;
 
             Ok(docs)
+        })
+    }
+
+    /// Get a [`Doc`].
+    ///
+    /// Returns None if the document cannot be found.
+    pub fn doc_open(&self, id: Arc<NamespaceId>) -> Result<Option<Arc<Doc>>, IrohError> {
+        block_on(&self.async_runtime, async {
+            let doc = self
+                .sync_client
+                .docs
+                .open(id.0)
+                .await
+                .map_err(IrohError::doc)?;
+            Ok(doc.map(|d| {
+                Arc::new(Doc {
+                    inner: d,
+                    rt: self.async_runtime.clone(),
+                })
+            }))
+        })
+    }
+
+    /// Delete a document from the local node.
+    ///
+    /// This is a destructive operation. Both the document secret key and all entries in the
+    /// document will be permanently deleted from the node's storage. Content blobs will be
+    /// deleted.clone()).await.map_err(Iroh::doc)
+    /// through garbage collection unless they are referenced from another document or tag.
+    pub fn doc_drop(&self, doc_id: Arc<NamespaceId>) -> Result<(), IrohError> {
+        block_on(&self.async_runtime, async {
+            self.sync_client
+                .docs
+                .drop_doc(doc_id.0)
+                .await
+                .map_err(IrohError::doc)
         })
     }
 }
@@ -143,7 +180,7 @@ impl Doc {
             let mut stream = self
                 .inner
                 .import_file(
-                    (*author).0.clone(),
+                    author.0,
                     bytes::Bytes::from(key),
                     std::path::PathBuf::from(path),
                     in_place,
@@ -153,9 +190,7 @@ impl Doc {
             while let Some(progress) = stream.next().await {
                 let progress = progress.map_err(IrohError::doc)?;
                 if let Some(ref cb) = cb {
-                    if let Err(e) = cb.progress(Arc::new(progress.into())) {
-                        return Err(e);
-                    }
+                    cb.progress(Arc::new(progress.into()))?;
                 }
             }
             Ok(())
@@ -172,15 +207,13 @@ impl Doc {
         block_on(&self.rt, async {
             let mut stream = self
                 .inner
-                .export_file((*entry).0.clone(), std::path::PathBuf::from(path))
+                .export_file(entry.0.clone(), std::path::PathBuf::from(path))
                 .await
                 .map_err(IrohError::doc)?;
             while let Some(progress) = stream.next().await {
                 let progress = progress.map_err(IrohError::doc)?;
                 if let Some(ref cb) = cb {
-                    if let Err(e) = cb.progress(Arc::new(progress.into())) {
-                        return Err(e);
-                    }
+                    cb.progress(Arc::new(progress.into()))?
                 }
             }
             Ok(())
@@ -231,6 +264,22 @@ impl Doc {
         block_on(&self.rt, async {
             self.inner
                 .get_one((*query).clone().0)
+                .await
+                .map(|e| e.map(|e| Arc::new(e.into())))
+                .map_err(IrohError::doc)
+        })
+    }
+
+    /// Get an entry for a key and author.
+    pub fn get_exact(
+        &self,
+        author: Arc<AuthorId>,
+        key: Vec<u8>,
+        include_empty: bool,
+    ) -> Result<Option<Arc<Entry>>, IrohError> {
+        block_on(&self.rt, async {
+            self.inner
+                .get_exact(author.0, key, include_empty)
                 .await
                 .map(|e| e.map(|e| Arc::new(e.into())))
                 .map_err(IrohError::doc)
@@ -402,6 +451,21 @@ impl From<NodeAddr> for iroh::net::magic_endpoint::NodeAddr {
         }
         node_addr = node_addr.with_direct_addresses(addresses);
         node_addr
+    }
+}
+
+impl From<iroh::net::magic_endpoint::NodeAddr> for NodeAddr {
+    fn from(value: iroh::net::magic_endpoint::NodeAddr) -> Self {
+        NodeAddr {
+            node_id: Arc::new(value.node_id.into()),
+            derp_region: value.info.derp_region,
+            addresses: value
+                .info
+                .direct_addresses
+                .into_iter()
+                .map(|d| Arc::new(d.into()))
+                .collect(),
+        }
     }
 }
 
@@ -577,7 +641,7 @@ impl Query {
     ///     offset: None
     ///     limit: None
     pub fn author(author: Arc<AuthorId>, opts: Option<QueryOptions>) -> Self {
-        let mut builder = iroh::sync::store::Query::author((*author).0.clone());
+        let mut builder = iroh::sync::store::Query::author(author.0);
 
         if let Some(opts) = opts {
             if opts.offset != 0 {
@@ -599,7 +663,7 @@ impl Query {
     ///     offset: None
     ///     limit: None
     pub fn key_exact(key: Vec<u8>, opts: Option<QueryOptions>) -> Self {
-        let mut builder = iroh::sync::store::Query::key_exact(&key);
+        let mut builder = iroh::sync::store::Query::key_exact(key);
 
         if let Some(opts) = opts {
             if opts.offset != 0 {
@@ -615,7 +679,7 @@ impl Query {
 
     /// Create a Query for a single key and author.
     pub fn author_key_exact(author: Arc<AuthorId>, key: Vec<u8>) -> Self {
-        let builder = iroh::sync::store::Query::author((*author).0.clone()).key_exact(&key);
+        let builder = iroh::sync::store::Query::author(author.0).key_exact(key);
         Query(builder.build())
     }
 
@@ -627,7 +691,7 @@ impl Query {
     ///     offset: None
     ///     limit: None
     pub fn key_prefix(prefix: Vec<u8>, opts: Option<QueryOptions>) -> Self {
-        let mut builder = iroh::sync::store::Query::key_prefix(&prefix);
+        let mut builder = iroh::sync::store::Query::key_prefix(prefix);
 
         if let Some(opts) = opts {
             if opts.offset != 0 {
@@ -652,7 +716,7 @@ impl Query {
         prefix: Vec<u8>,
         opts: Option<QueryOptions>,
     ) -> Self {
-        let mut builder = iroh::sync::store::Query::author((*author).0.clone()).key_prefix(&prefix);
+        let mut builder = iroh::sync::store::Query::author(author.0).key_prefix(prefix);
 
         if let Some(opts) = opts {
             if opts.offset != 0 {
@@ -904,9 +968,7 @@ pub enum Origin {
 impl From<iroh::sync_engine::Origin> for Origin {
     fn from(value: iroh::sync_engine::Origin) -> Self {
         match value {
-            iroh::sync_engine::Origin::Connect(reason) => Self::Connect {
-                reason: reason.into(),
-            },
+            iroh::sync_engine::Origin::Connect(reason) => Self::Connect { reason },
             iroh::sync_engine::Origin::Accept => Self::Accept,
         }
     }

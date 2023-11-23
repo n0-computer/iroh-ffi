@@ -89,7 +89,25 @@ void uniffi_iroh_fn_free_blobdownloadrequest(void*_Nonnull ptr, RustCallStatus *
 );
 void*_Nonnull uniffi_iroh_fn_constructor_blobdownloadrequest_new(void*_Nonnull hash, RustBuffer format, void*_Nonnull node, void*_Nonnull tag, void*_Nonnull out, RustBuffer token, RustCallStatus *_Nonnull out_status
 );
+void uniffi_iroh_fn_free_connectiontype(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_iroh_fn_method_connectiontype_as_direct(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_iroh_fn_method_connectiontype_as_mixed(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+uint16_t uniffi_iroh_fn_method_connectiontype_as_relay(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_iroh_fn_method_connectiontype_type(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
 void uniffi_iroh_fn_free_directaddrinfo(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_iroh_fn_method_directaddrinfo_addr(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_iroh_fn_method_directaddrinfo_last_control(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_iroh_fn_method_directaddrinfo_last_payload(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_iroh_fn_method_directaddrinfo_latency(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void uniffi_iroh_fn_free_doc(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -98,6 +116,8 @@ void uniffi_iroh_fn_method_doc_close(void*_Nonnull ptr, RustCallStatus *_Nonnull
 uint64_t uniffi_iroh_fn_method_doc_del(void*_Nonnull ptr, void*_Nonnull author_id, RustBuffer prefix, RustCallStatus *_Nonnull out_status
 );
 void uniffi_iroh_fn_method_doc_export_file(void*_Nonnull ptr, void*_Nonnull entry, RustBuffer path, RustBuffer cb, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_iroh_fn_method_doc_get_exact(void*_Nonnull ptr, void*_Nonnull author, RustBuffer key, int8_t include_empty, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_doc_get_many(void*_Nonnull ptr, void*_Nonnull query, RustCallStatus *_Nonnull out_status
 );
@@ -274,13 +294,23 @@ RustBuffer uniffi_iroh_fn_method_irohnode_connections(void*_Nonnull ptr, RustCal
 );
 void*_Nonnull uniffi_iroh_fn_method_irohnode_doc_create(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+void uniffi_iroh_fn_method_irohnode_doc_drop(void*_Nonnull ptr, void*_Nonnull doc_id, RustCallStatus *_Nonnull out_status
+);
 void*_Nonnull uniffi_iroh_fn_method_irohnode_doc_join(void*_Nonnull ptr, void*_Nonnull ticket, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_irohnode_doc_list(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+RustBuffer uniffi_iroh_fn_method_irohnode_doc_open(void*_Nonnull ptr, void*_Nonnull id, RustCallStatus *_Nonnull out_status
+);
 RustBuffer uniffi_iroh_fn_method_irohnode_node_id(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_irohnode_stats(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_iroh_fn_method_irohnode_status(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void uniffi_iroh_fn_method_irohnode_tags_delete(void*_Nonnull ptr, void*_Nonnull name, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_iroh_fn_method_irohnode_tags_list(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void uniffi_iroh_fn_free_liveevent(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -315,6 +345,14 @@ RustBuffer uniffi_iroh_fn_method_nodeaddr_derp_region(void*_Nonnull ptr, RustCal
 RustBuffer uniffi_iroh_fn_method_nodeaddr_direct_addresses(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 int8_t uniffi_iroh_fn_method_nodeaddr_equal(void*_Nonnull ptr, void*_Nonnull other, RustCallStatus *_Nonnull out_status
+);
+void uniffi_iroh_fn_free_nodestatusresponse(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_iroh_fn_method_nodestatusresponse_listen_addrs(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_iroh_fn_method_nodestatusresponse_node_addr(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_iroh_fn_method_nodestatusresponse_version(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void uniffi_iroh_fn_free_publickey(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -600,6 +638,30 @@ uint16_t uniffi_iroh_checksum_method_authorid_equal(void
 uint16_t uniffi_iroh_checksum_method_authorid_to_string(void
     
 );
+uint16_t uniffi_iroh_checksum_method_connectiontype_as_direct(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_connectiontype_as_mixed(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_connectiontype_as_relay(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_connectiontype_type(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_directaddrinfo_addr(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_directaddrinfo_last_control(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_directaddrinfo_last_payload(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_directaddrinfo_latency(void
+    
+);
 uint16_t uniffi_iroh_checksum_method_doc_close(void
     
 );
@@ -607,6 +669,9 @@ uint16_t uniffi_iroh_checksum_method_doc_del(void
     
 );
 uint16_t uniffi_iroh_checksum_method_doc_export_file(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_doc_get_exact(void
     
 );
 uint16_t uniffi_iroh_checksum_method_doc_get_many(void
@@ -804,16 +869,31 @@ uint16_t uniffi_iroh_checksum_method_irohnode_connections(void
 uint16_t uniffi_iroh_checksum_method_irohnode_doc_create(void
     
 );
+uint16_t uniffi_iroh_checksum_method_irohnode_doc_drop(void
+    
+);
 uint16_t uniffi_iroh_checksum_method_irohnode_doc_join(void
     
 );
 uint16_t uniffi_iroh_checksum_method_irohnode_doc_list(void
     
 );
+uint16_t uniffi_iroh_checksum_method_irohnode_doc_open(void
+    
+);
 uint16_t uniffi_iroh_checksum_method_irohnode_node_id(void
     
 );
 uint16_t uniffi_iroh_checksum_method_irohnode_stats(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_irohnode_status(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_irohnode_tags_delete(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_irohnode_tags_list(void
     
 );
 uint16_t uniffi_iroh_checksum_method_liveevent_as_content_ready(void
@@ -850,6 +930,15 @@ uint16_t uniffi_iroh_checksum_method_nodeaddr_direct_addresses(void
     
 );
 uint16_t uniffi_iroh_checksum_method_nodeaddr_equal(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_nodestatusresponse_listen_addrs(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_nodestatusresponse_node_addr(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_nodestatusresponse_version(void
     
 );
 uint16_t uniffi_iroh_checksum_method_publickey_equal(void
