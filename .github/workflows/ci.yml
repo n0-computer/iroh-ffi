@@ -105,15 +105,9 @@ jobs:
   build_and_test_swift:
     name: Swift - Build and test 
     timeout-minutes: 30
-    runs-on: [self-hosted, macOS, ARM64]
+    runs-on: [macOS-latest]
     steps:
     - uses: actions/checkout@master
-    # - name: Ensure Xcode CLI tools are installed
-    #   run: |
-    #     if ! [ -x "$(command -v xcode-select)" ]; then
-    #       xcode-select --install
-    #     fi
-    #     # xcode-select --switch /Applications/Xcode.app
     - uses: dtolnay/rust-toolchain@stable
       with:
         targets: aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios
@@ -127,7 +121,7 @@ jobs:
     - name: Build rust
       run: cargo build --release
     - name: Build swift library
-      run: ./make_swift_ci.sh
+      run: ./make_swift.sh
     
 
                     
