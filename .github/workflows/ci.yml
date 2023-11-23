@@ -127,7 +127,7 @@ jobs:
     - name: Build rust
       run: cargo build --release
     - name: Build swift library
-      run: ./make_swift.sh
+      run: ./make_swift_ci.sh
     
 
                     
