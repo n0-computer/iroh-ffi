@@ -1,10 +1,10 @@
 package iroh
 
 /*
-#cgo CFLAGS: -I./go/iroh/include
-#cgo LDFLAGS: -liroh -L./go/iroh/include
+#cgo CFLAGS: -I./include/debug
+#cgo LDFLAGS: -liroh -L./include/debug
 #include <iroh.h>
-/*
+*/
 import "C"
 
 import (
