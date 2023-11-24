@@ -1,8 +1,8 @@
 package iroh
 
 /*
-#cgo CFLAGS: -I./include/debug
-#cgo LDFLAGS: -liroh -L./include/debug
+#cgo CFLAGS: -I./include/release
+#cgo LDFLAGS: -liroh -L./include/release
 #include <iroh.h>
 */
 import "C"
