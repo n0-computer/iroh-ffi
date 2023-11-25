@@ -99,7 +99,7 @@ jobs:
         XDG_CACHE_HOME: /root/.cache
         HOME: /root #added based on https://github.com/actions/setup-go/issues/116
       run: |
-        cd ./go && \
+        cd ./iroh-go && \
         go test ./...
 
   build_and_test_python:
