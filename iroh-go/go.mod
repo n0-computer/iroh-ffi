@@ -1,4 +1,4 @@
-module github.com/n0-computer/iroh-ffi/go
+module github.com/n0-computer/iroh-ffi/iroh-go
 
 go 1.19
 
