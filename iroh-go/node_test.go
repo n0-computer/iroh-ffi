@@ -5,7 +5,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/n0-computer/iroh-ffi/iroh"
+	"github.com/n0-computer/iroh-ffi/iroh-go/iroh"
+
 	"github.com/stretchr/testify/assert"
 )
 
