@@ -1,0 +1,96 @@
+name: Release Assets
+
+on:
+  push:
+    branches:
+      - main 
+  pull_request:
+
+jobs:
+  manylinux2014:
+    runs-on: ${{ matrix.runner }}
+    container: ${{ matrix.container }}
+    strategy:
+      matrix:
+        name: [ubuntu-latest, ubuntu-arm-latest]
+        include:
+          - name: ubuntu-latest
+            os: ubuntu-latest
+            release-os: manylinux2014
+            release-arch: x86_64
+            container: quay.io/pypa/manylinux2014_x86_64
+            runner: [ubuntu-latest]
+          - name: ubuntu-arm-latest
+            os: ubuntu-latest
+            release-os: manylinux2014
+            release-arch: aarch64
+            container: quay.io/pypa/manylinux2014_aarch64
+            runner: [self-hosted, linux, ARM64]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install stable rust
+        run: curl --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+      - name: Build rust
+        run: |
+          source $HOME/.cargo/env
+          export PATH
+          cargo build --release
+      - name: Tar files
+        run: |
+          tar -cvf iroh-ffi-${{ matrix.release-os }}-${{ matrix.release-arch }} target/release
+          ls
+      - name: Upload iroh-ffi
+        uses: actions/upload-artifact@v3
+        with:
+          name: iroh-ffi-${{ matrix.release-os }}-${{ matrix.release-arch }}
+          path: .
+  osx:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        name: [macOS-latest, macOS-arm-latest]
+        include:
+          - name: macOS-latest
+            os: macOS-latest
+            release-os: darwin
+            release-arch: x86_64
+            runner: [macOS-latest]
+          - name: macOS-arm-latest
+            os: macOS-latest
+            release-os: darwin
+            release-arch: aarch64
+            runner: [self-hosted, macOS, ARM64]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build rust 
+        run: |
+          cargo build --release
+      - name: Tar files
+        run: |
+          tar -cvf iroh-ffi-${{ matrix.release-os }}-${{ matrix.release-arch }} target/release
+          ls
+      - name: Upload iroh-ffi
+        uses: actions/upload-artifact@v3
+        with:
+          name: iroh-ffi-${{ matrix.release-os }}-${{ matrix.release-arch }}
+          path: .
+      
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build rust 
+        run: |
+          cargo build --release
+      - name: Tar files
+        run: |
+          tar -cvf iroh-ffi-windows-x86_64.tar target/release
+          ls
+      - name: Upload tar 
+        uses: actions/upload-artifact@v3
+        with:
+          name: iroh-ffi-windows-x86_64
+          path: .
+
