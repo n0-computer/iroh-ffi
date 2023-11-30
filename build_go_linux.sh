@@ -22,8 +22,19 @@ IROH_GO_FILE="${GO_DIR}/iroh/iroh.go"
 rm -rf $IROH_GO_PATH
 
 # build iroh-ffi and save the assets to ./go/iroh/include
-cargo build $MODE --target-dir $INCLUDE_PATH
+cargo build $MODE 
 
 uniffi-bindgen-go $UDL_PATH --out-dir $GO_DIR
 
-sed -i '' "s/\/\/ #include <iroh.h>/\/\*\n#cgo CFLAGS: -I.\/ffi\/${DIR_NAME}\n#cgo LDFLAGS: -liroh -L.\/ffi\/${DIR_NAME}\n#include <iroh.h>\n\*\//" $IROH_GO_FILE
+# TODO why does this needs to exist twice? once in the path and the other in
+# the "deps" directory?
+# move needed files over
+mkdir ${INCLUDE_PATH}
+cp "target/${DIR_NAME}/libiroh.so" "${INCLUDE_PATH}/libiroh.so"
+mkdir "${INCLUDE_PATH}/deps"
+cp "${INCLUDE_PATH}/libiroh.so" "${INCLUDE_PATH}/deps/libiroh.so"
+
+# to run you need to let the linker know where the linked library files are:
+# LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}:./iroh/ffi" \
+# CGO_LDFLAGS="-liroh -L ./iroh/ffi" \
+# go <actual go command to build or run>

@@ -27,9 +27,10 @@ cargo build $MODE
 # TODO why does this needs to exist twice? once in the path and the other in
 # the "deps" directory?
 # move needed files over
+mkdir ${INCLUDE_PATH}
 cp "target/${DIR_NAME}/libiroh.dylib" "${INCLUDE_PATH}/libiroh.dylib"
 mkdir "${INCLUDE_PATH}/deps"
-cp "${INCLUDE_PATH}"/libiroh.dylib" "${INCLUDE_PATH}/deps/libiroh.dylib"
+cp "${INCLUDE_PATH}/libiroh.dylib" "${INCLUDE_PATH}/deps/libiroh.dylib"
 
 uniffi-bindgen-go $UDL_PATH --out-dir $GO_DIR
 

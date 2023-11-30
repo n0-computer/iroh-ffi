@@ -213,6 +213,7 @@ impl IrohNode {
             let secret_key = SecretKey::generate();
 
             let docs_path = path.join("docs.db");
+            tokio::fs::create_dir_all(&docs_path).await?;
             let docs = iroh::sync::store::fs::Store::new(&docs_path)?;
 
             // create a bao store for the iroh-bytes blobs
