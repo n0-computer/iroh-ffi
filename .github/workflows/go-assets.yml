@@ -27,7 +27,7 @@ jobs:
             container: quay.io/pypa/manylinux2014_aarch64
             runner: [self-hosted, linux, ARM64]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install stable rust
         run: curl --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
       - name: Install uniffi-bindgen-go
@@ -35,7 +35,7 @@ jobs:
           source "$HOME/.cargo/env"
           cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bindgen-go --tag v0.2.0+v0.25.0
       - name: Setup Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
           go-version: '1.21.x'
       - name: Build 
@@ -69,10 +69,10 @@ jobs:
             release-arch: aarch64
             runner: [self-hosted, macOS, ARM64]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - name: Setup Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
           go-version: '1.21.x'
       - name: Install uniffi-bindgen-go
