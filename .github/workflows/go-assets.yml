@@ -1,0 +1,107 @@
+name: Go Assets
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  manylinux2014:
+    runs-on: ${{ matrix.runner }}
+    container: ${{ matrix.container }}
+    strategy:
+      matrix:
+        name: [ubuntu-latest, ubuntu-arm-latest]
+        include:
+          - name: ubuntu-latest
+            os: ubuntu-latest
+            release-os: manylinux2014
+            release-arch: x86_64
+            container: quay.io/pypa/manylinux2014_x86_64
+            runner: [ubuntu-latest]
+          - name: ubuntu-arm-latest
+            os: ubuntu-latest
+            release-os: manylinux2014
+            release-arch: aarch64
+            container: quay.io/pypa/manylinux2014_aarch64
+            runner: [self-hosted, linux, ARM64]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install stable rust
+        run: curl --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+      - name: Install uniffi-bindgen-go
+        run: |
+          source "$HOME/.cargo/env"
+          cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bindgen-go --tag v0.2.0+v0.25.0
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.21.x'
+      - name: Build 
+        run: ./build_go_linux.sh
+      - name: Tar assets
+        run: tar -czvf iroh-go.tar.gz ./iroh-go/iroh
+      - name: Upload assets
+        uses: actions/upload-artifact@v3
+        with:
+          name: iroh-go-${{ matrix.release-os }}-${{ matrix.release-arch }}
+          path: iroh-go.tar.gz
+
+  osx:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        name: [macOS-latest, macOS-arm-latest]
+        include:
+          - name: macOS-latest
+            python: 3.11
+            os: macOS-latest
+            release-os: darwin
+            release-arch: x86_64
+            runner: [macOS-latest]
+          - name: macOS-arm-latest
+            python: 3.11
+            os: macOS-latest
+            release-os: darwin
+            release-arch: aarch64
+            runner: [self-hosted, macOS, ARM64]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.21.x'
+      - name: Install uniffi-bindgen-go
+        run: cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bindgen-go --tag v0.2.0+v0.25.0
+      - name: Build 
+        run: ./build_go_linux.sh
+      - name: Tar assets
+        run: tar -czvf iroh-go.tar.gz ./iroh-go/iroh
+      - name: Upload assets
+        uses: actions/upload-artifact@v3
+        with:
+          name: iroh-go-${{ matrix.release-os }}-${{ matrix.release-arch }}
+          path: iroh-go.tar.gz
+     
+  # windows:
+    # runs-on: windows-latest
+    # steps:
+     #  - uses: actions/checkout@v3
+     #  - uses: dtolnay/rust-toolchain@stable
+     #  - uses: actions/setup-python@v4
+     #    with:
+     #      python-version: '3.11'
+     #  - name: Install maturin & uniffi-bindgen
+     #    run: |
+     #      pip install maturin uniffi-bindgen
+     #  - name: Build wheel
+     #    run: |
+     #      maturin build --release
+     #  - name: Upload wheel
+     #    uses: actions/upload-artifact@v3
+     #    with:
+     #      name: wheels-windows-x86_64
+     #      path: target/wheels/*.whl
+
