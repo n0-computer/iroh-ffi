@@ -3,7 +3,7 @@ name: Go Assets
 on:
   push:
     branches:
-      - main
+      - go_assets 
   pull_request:
 
 jobs:
@@ -71,10 +71,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
-      - name: set HOME
-        run: |
-          echo ${HOME}
-          HOME=/usr/local/
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
