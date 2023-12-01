@@ -76,7 +76,7 @@ jobs:
         with:
           go-version: '1.21.x'
         env:
-          HOME: /Users/hetzner
+          GOCACHE: ~/Library/Caches/go-build
       - name: Install uniffi-bindgen-go
         run: cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bindgen-go --tag v0.2.0+v0.25.0
       - name: Build 
