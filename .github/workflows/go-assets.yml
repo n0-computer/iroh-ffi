@@ -79,7 +79,7 @@ jobs:
         env:
           HOME: /Users/hetzner
       - name: Setup Go (gh)
-        if: ! startsWith(runner.name, 'hetz-')
+        if: startsWith(runner.name, 'hetz-') != true
         uses: actions/setup-go@v3
         with:
           go-version: '1.21.x'
