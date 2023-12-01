@@ -71,12 +71,18 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
-      - name: Setup Go
+      - name: Setup Go (self-hosted)
+        if: runner.name == 'macOS-arm-latest'
         uses: actions/setup-go@v3
         with:
           go-version: '1.21.x'
         env:
-          GOCACHE: ~/Library/Caches/go-build
+          HOME: /Users/hetzner
+      - name: Setup Go (gh)
+        if: runner.name != 'macOS-arm-latest'
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.21.x'
       - name: Install uniffi-bindgen-go
         run: cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bindgen-go --tag v0.2.0+v0.25.0
       - name: Build 
