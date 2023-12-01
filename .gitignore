@@ -105,8 +105,8 @@ docs/_build/
 .python-version
 
 # Go
-iroh-go/iroh-node-go
-iroh-go/iroh/ffi/
+iroh-node-go
+/iroh-go/iroh/ffi/
 
 # Python
 python/iroh-data
