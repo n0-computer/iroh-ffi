@@ -34,6 +34,8 @@ cp "target/${DIR_NAME}/libiroh.so" "${INCLUDE_PATH}/libiroh.so"
 mkdir "${INCLUDE_PATH}/deps"
 cp "${INCLUDE_PATH}/libiroh.so" "${INCLUDE_PATH}/deps/libiroh.so"
 
+sed -i "s/\/\/ #include <iroh.h>/\/\*\n#cgo CFLAGS: -I.\/ffi\n#cgo LDFLAGS: -liroh -L.\/ffi\n#include <iroh.h>\n\*\//" $IROH_GO_FILE
+
 # to run you need to let the linker know where the linked library files are:
 # LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}:./iroh/ffi" \
 # CGO_LDFLAGS="-liroh -L ./iroh/ffi" \
