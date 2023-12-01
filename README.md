@@ -57,8 +57,83 @@ docker run --rm -v $(pwd):/mnt -w /mnt quay.io/pypa/manylinux2014_x86_64 /mnt/bu
 
 ## Go
 
-### Running 
+### Mac
 
+#### Building
+Ensure you have golang & rust installed.
+
+Install `uniffi-bindgen-go`: 
+
+```
+cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bindgen-go --tag v0.2.0+v0.25.0
+```
+
+Build the bindings:
+```
+./build_go_mac.sh
+```
+
+Or build in release mode:
+```
+./build_go_mac.sh release
+```
+
+#### Running
+Once you've built the bindings, run go normally:
+```
+cd iroh-go
+go test ./...
+```
+
+### Linux 
+Ensure you have golang & rust installed.
+
+Install `uniffi-bindgen-go`: 
+
+```
+cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bindgen-go --tag v0.2.0+v0.25.0
+```
+
+Build the bindings:
+```
+./build_go_linux.sh
+```
+
+Or in release mode:
+```
+./build_go_linux.sh release
+```
+
+#### Running
+
+If you've used the build script to build the go bindings, it will also place the files in the correct locations.
+
+Add the following to let go know where the dynamically linked files are located:
+
+```
+cd iroh-go
+LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}:.iroh/ffi" \
+CGO_LDFLAGS="-liroh -L .iroh/ffi" \
+go <actual go command to build or run>
+```
+
+### Windows
+
+### Building
+Ensure you have golang & rust installed.
+
+Install `uniffi-bindgen-go`: 
+
+```
+cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bindgen-go --tag v0.2.0+v0.25.0
+```
+
+Build the bindings:
+```
+cargo build
+```
+
+### Running
 To make sure everything go needs to find is included the following is needed
 
 ```
@@ -69,14 +144,22 @@ go <actual go command to build or run>
 
 where `<binaries path` needs to be replaced with the absolute path to where the rust build output is. Eg `/<path to repo>/iroh-ffi/target/debug` in debug mode.
 
+#### Running
+
+If you've used the build script to build the go bindings, it will also place the files in the correct locations.
+
+Add the following to let go know where the dynamically linked files are located:
+
+```
+cd iroh-go
+LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}:.iroh/ffi" \
+CGO_LDFLAGS="-liroh -L .iroh/ffi" \
+go <actual go command to build or run>
+```
+
+
 
 ### Updating the bindings
-
-Install `uniffi-bindgen-go`: 
-
-```
-cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bindgen-go --tag v0.2.0+v0.25.0
-```
 
 # Developers
 Check our our [DEVELOPERS.md](DEVELOPERS.md) for guides on how to translate from the iroh rust API to the iroh FFI API, as well as how to set up testing for golang and python.
