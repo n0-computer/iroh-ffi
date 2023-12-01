@@ -100,6 +100,8 @@ jobs:
         HOME: /root #added based on https://github.com/actions/setup-go/issues/116
       run: |
         cd ./iroh-go && \
+        LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}:./iroh/ffi" \
+        CGO_LDFLAGS="-liroh -L ./iroh/ffi" \
         go test ./...
 
   build_and_test_python:
