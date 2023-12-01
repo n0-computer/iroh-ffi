@@ -39,7 +39,9 @@ jobs:
         with:
           go-version: '1.21.x'
       - name: Build 
-        run: ./build_go_linux.sh
+        run: |
+          source "$HOME/.cargo/env"
+          ./build_go_linux.sh
       - name: Tar assets
         run: tar -czvf iroh-go.tar.gz ./iroh-go/iroh
       - name: Upload assets
