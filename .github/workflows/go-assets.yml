@@ -78,7 +78,7 @@ jobs:
       - name: Install uniffi-bindgen-go
         run: cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bindgen-go --tag v0.2.0+v0.25.0
       - name: Build 
-        run: ./build_go_linux.sh
+        run: ./build_go_mac.sh
       - name: Tar assets
         run: tar -czvf iroh-go.tar.gz ./iroh-go/iroh
       - name: Upload assets
