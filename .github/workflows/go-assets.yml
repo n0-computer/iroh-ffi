@@ -3,7 +3,8 @@ name: Go Assets
 on:
   push:
     branches:
-      - go_assets 
+      - go_assets
+      - arqu/go_assets_2
   pull_request:
 
 jobs:
