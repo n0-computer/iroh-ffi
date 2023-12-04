@@ -42,13 +42,11 @@ jobs:
         run: |
           source "$HOME/.cargo/env"
           ./build_go_linux.sh
-      - name: Tar assets
-        run: tar -czvf iroh-go.tar.gz ./iroh-go/iroh
       - name: Upload assets
         uses: actions/upload-artifact@v3
         with:
           name: iroh-go-${{ matrix.release-os }}-${{ matrix.release-arch }}
-          path: iroh-go.tar.gz
+          path: ./iroh-go/iroh
 
   osx:
     runs-on: ${{ matrix.runner }}
@@ -83,17 +81,19 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: '1.21.x'
+      - name: Install uniffi-bindgen-go
+        run: |
+          export PATH=$PATH:~/.cargo/bin/
+          cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bindgen-go --tag v0.2.0+v0.25.0
       - name: Install uniffi-bindgen-go & Build iroh ffi
         run: |
-          cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bindgen-go --tag v0.2.0+v0.25.0
+          export PATH=$PATH:~/.cargo/bin/
           ./build_go_mac.sh
-      - name: Tar assets
-        run: tar -czvf iroh-go.tar.gz ./iroh-go/iroh
       - name: Upload assets
         uses: actions/upload-artifact@v3
         with:
           name: iroh-go-${{ matrix.release-os }}-${{ matrix.release-arch }}
-          path: iroh-go.tar.gz
+          path: ./iroh-go/iroh
      
   # windows:
     # runs-on: windows-latest

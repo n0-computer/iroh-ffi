@@ -1,0 +1,59 @@
+# Makefile script
+
+PLATFORM :=
+PROCESSOR :=
+VERSION :=
+REPO_NAME := iroh-ffi
+GO_NAME := iroh-go
+DIR_NAME := iroh
+PROJECT_NAME := n0-computer
+TAR_FILENAME :=
+
+# Detect the operating system
+ifeq ($(OS),Windows_NT)
+    PLATFORM := windows
+    $(error Windows is not supported)
+else
+    UNAME_S := $(shell uname -s)
+    ifeq ($(UNAME_S),Linux)
+        PLATFORM := linux
+    endif
+    ifeq ($(UNAME_S),Darwin)
+        PLATFORM := darwin
+    endif
+endif
+
+# Detect the processor architecture
+PROCESSOR := $(shell uname -m)
+ifeq ($(PROCESSOR),amd64)
+    PROCESSOR := amd64
+endif
+ifeq ($(PROCESSOR),arm64)
+    PROCESSOR := aarch64
+endif
+
+# Get the latest tag from git
+VERSION := $(shell git describe --tags --abbrev=0)
+
+.PHONY: all
+all: check-platform check-processor download-and-extract
+
+.PHONY: check-platform
+check-platform:
+		@echo "Detected Platform: $(PLATFORM)"
+
+.PHONY: check-processor
+check-processor:
+		@echo "Detected Processor: $(PROCESSOR)"
+
+.PHONY: download-and-extract
+download-and-extract:
+		@echo "Fetching release $(VERSION) for $(REPO_NAME)..."
+		@echo "Would normally fetch from https://github.com/$(PROJECT_NAME)/$(REPO_NAME)/releases/download/$(VERSION)/$(GO_NAME)-$(PLATFORM)-$(PROCESSOR).tar.gz"
+		@echo "But installing locally instead"
+		@cp ~/Downloads/$(GO_NAME)-$(PLATFORM)-$(PROCESSOR) .
+		# @curl -L -o $(TAR_FILENAME) https://github.com/$(PROJECT_NAME)/$(REPO_NAME)/releases/download/$(VERSION)/$(GO_NAME)-$(PLATFORM)-$(PROCESSOR)
+		@mkdir -p $(GO_NAME)/$(DIR_NAME)
+		@tar -xf $(GO_NAME)-$(PLATFORM)-$(PROCESSOR) -C $(GO_NAME)/$(DIR_NAME)
+		@rm $(GO_NAME)-$(PLATFORM)-$(PROCESSOR)
+		@echo "Successfully downloaded and extracted release $(VERSION) to $(REPO_NAME)/$(GO_NAME)/$(DIR_NAME)"
