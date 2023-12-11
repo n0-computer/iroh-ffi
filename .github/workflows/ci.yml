@@ -93,7 +93,7 @@ jobs:
 #     - name: install uniffi-bindgen
 #       run: cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bindgen-go --tag v0.2.0+v0.25.0
 #     - name: Build iroh-go
-#       run: ./build_go_linux.sh
+#       run: ./build_go.sh
 #     - name: Go test
 #       env:
 #         XDG_CACHE_HOME: /root/.cache
