@@ -7,10 +7,9 @@ DIR_NAME="release"
 
 # the path to the new folder we are including
 GO_DIR="./iroh-go"
-INCLUDE_PATH="${GO_DIR}/iroh/ffi"
-IROH_GO_PATH="${GO_DIR}/iroh/*"
+IROH_GO_PATH="${GO_DIR}/iroh"
 UDL_PATH="./src/iroh.udl"
-IROH_GO_FILE="${GO_DIR}/iroh/iroh.go"
+IROH_GO_FILE="${IROH_GO_PATH}/iroh.go"
 
 rm -rf $IROH_GO_PATH
 
@@ -20,23 +19,18 @@ cargo build $MODE
 # build go bindings
 uniffi-bindgen-go $UDL_PATH --out-dir $GO_DIR
 
-# move needed files over
-mkdir -p ${INCLUDE_PATH}
+# move static library to the expected place
+mv "target/${DIR_NAME}/libiroh.a" "${IROH_GO_PATH}/libiroh.a"
 
 # Detect the operating system using uname
 OS=$(uname -s)
-
+SED='sed -i'
 if [[ "$OS" == "Darwin" ]]; then
-  # macOS
-  cp "target/${DIR_NAME}/libiroh.dylib" "${INCLUDE_PATH}/libiroh.dylib"
-  sed -i '' "s/\/\/ #include <iroh.h>/\/\*\n#cgo CFLAGS: -I.\/ffi\n#cgo LDFLAGS: -liroh -L.\/ffi\n#include <iroh.h>\n\*\//" $IROH_GO_FILE
-elif [[ "$OS" == "Linux" ]]; then
-  # Linux
-  cp "target/${DIR_NAME}/libiroh.so" "${INCLUDE_PATH}/libiroh.so"
-  sed -i "s/\/\/ #include <iroh.h>/\/\*\n#cgo CFLAGS: -I.\/ffi\n#cgo LDFLAGS: -liroh -L.\/ffi\n#include <iroh.h>\n\*\//" $IROH_GO_FILE
-else
-  echo "Unsupported operating system: $OS"
-  exit 1
+  SED='sed -i .temp'
+fi
+$SED 's|\/\/ #include <iroh.h>|\/\*\n#cgo windows LDFLAGS: -L${SRCDIR} -liroh\n#cgo linux LDFLAGS: -L${SRCDIR} -liroh -Wl,-unresolved-symbols=ignore-all\n#cgo darwin LDFLAGS: -L${SRCDIR} -liroh -Wl,-undefined,dynamic_lookup\n#include ".\/iroh.h"\n\*\/|' "$IROH_GO_FILE"
+if [[ "$OS" == "Darwin" ]]; then
+  rm $IROH_GO_FILE.temp
 fi
 
-echo "Build completed for $OS"
+echo "Build completed"

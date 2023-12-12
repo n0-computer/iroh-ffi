@@ -1,9 +1,10 @@
 package iroh
 
 /*
-#cgo CFLAGS: -I./ffi
-#cgo LDFLAGS: -liroh -L./ffi
-#include <iroh.h>
+#cgo windows LDFLAGS: -L${SRCDIR} -liroh
+#cgo linux LDFLAGS: -L${SRCDIR} -liroh -Wl,-unresolved-symbols=ignore-all
+#cgo darwin LDFLAGS: -L${SRCDIR} -liroh -Wl,-undefined,dynamic_lookup
+#include "./iroh.h"
 */
 import "C"
 

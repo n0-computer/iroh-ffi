@@ -106,7 +106,7 @@ docs/_build/
 
 # Go
 iroh-node-go
-/iroh-go/iroh/ffi/
+/iroh-go/iroh/libiroh.a
 
 # Python
 python/iroh-data
