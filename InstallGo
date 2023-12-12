@@ -51,8 +51,8 @@ download-and-extract:
 		@echo "Fetching release $(VERSION) for $(REPO_NAME)..."
 		@echo "Would normally fetch from https://github.com/$(PROJECT_NAME)/$(REPO_NAME)/releases/download/$(VERSION)/$(GO_NAME)-$(PLATFORM)-$(PROCESSOR)"
 		@echo "But installing locally instead"
-		@cp ~/Downloads/$(GO_NAME)-$(PLATFORM)-$(PROCESSOR) .
+		@cp ~/Downloads/$(GO_NAME)-$(PLATFORM)-$(PROCESSOR).zip .
 		# @curl -L -o $(TAR_FILENAME) https://github.com/$(PROJECT_NAME)/$(REPO_NAME)/releases/download/$(VERSION)/$(GO_NAME)-$(PLATFORM)-$(PROCESSOR)
-		@tar -xf $(GO_NAME)-$(PLATFORM)-$(PROCESSOR) -C extern/$(REPO_NAME)/$(GO_NAME)/$(DIR_NAME)
-		@rm $(GO_NAME)-$(PLATFORM)-$(PROCESSOR)
+		@tar -xf $(GO_NAME)-$(PLATFORM)-$(PROCESSOR).zip -C extern/$(REPO_NAME)/$(GO_NAME)/$(DIR_NAME)
+		@rm $(GO_NAME)-$(PLATFORM)-$(PROCESSOR).zip
 		@echo "Successfully downloaded and extracted release $(VERSION) to extern/$(REPO_NAME)/$(GO_NAME)/$(DIR_NAME)"
