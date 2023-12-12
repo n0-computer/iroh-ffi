@@ -70,12 +70,12 @@ cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bin
 
 Build the bindings:
 ```
-./build_go_mac.sh
+./build_go.sh
 ```
 
 Or build in release mode:
 ```
-./build_go_mac.sh release
+./build_go.sh release
 ```
 
 #### Running
@@ -96,12 +96,12 @@ cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bin
 
 Build the bindings:
 ```
-./build_go_linux.sh
+./build_go.sh
 ```
 
 Or in release mode:
 ```
-./build_go_linux.sh release
+./build_go.sh release
 ```
 
 #### Running

@@ -2,17 +2,8 @@
 
 set -eu
 
-MODE=""
-DIR_NAME="debug"
-if [ "$#" -eq 1 ]; then
-  if [[ $1 == "release" ]]; then
-    MODE="--release"
-    DIR_NAME="release"
-  elif [[ $1 != "debug" ]]; then
-    echo "Unknown mode '$1'. Options are 'release' and 'debug'. Defaults to 'debug'"
-    exit
-  fi
-fi
+MODE="--release"
+DIR_NAME="release"
 
 # the path to the new folder we are including
 GO_DIR="./iroh-go"
@@ -38,12 +29,10 @@ OS=$(uname -s)
 if [[ "$OS" == "Darwin" ]]; then
   # macOS
   cp "target/${DIR_NAME}/libiroh.dylib" "${INCLUDE_PATH}/libiroh.dylib"
-  ln -s "../libiroh.dylib" "${INCLUDE_PATH}/deps/libiroh.dylib"
   sed -i '' "s/\/\/ #include <iroh.h>/\/\*\n#cgo CFLAGS: -I.\/ffi\n#cgo LDFLAGS: -liroh -L.\/ffi\n#include <iroh.h>\n\*\//" $IROH_GO_FILE
 elif [[ "$OS" == "Linux" ]]; then
   # Linux
   cp "target/${DIR_NAME}/libiroh.so" "${INCLUDE_PATH}/libiroh.so"
-  ln -s "../libiroh.so" "${INCLUDE_PATH}/deps/libiroh.so"
   sed -i "s/\/\/ #include <iroh.h>/\/\*\n#cgo CFLAGS: -I.\/ffi\n#cgo LDFLAGS: -liroh -L.\/ffi\n#include <iroh.h>\n\*\//" $IROH_GO_FILE
 else
   echo "Unsupported operating system: $OS"

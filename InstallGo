@@ -49,11 +49,10 @@ check-processor:
 .PHONY: download-and-extract
 download-and-extract:
 		@echo "Fetching release $(VERSION) for $(REPO_NAME)..."
-		@echo "Would normally fetch from https://github.com/$(PROJECT_NAME)/$(REPO_NAME)/releases/download/$(VERSION)/$(GO_NAME)-$(PLATFORM)-$(PROCESSOR).tar.gz"
+		@echo "Would normally fetch from https://github.com/$(PROJECT_NAME)/$(REPO_NAME)/releases/download/$(VERSION)/$(GO_NAME)-$(PLATFORM)-$(PROCESSOR)"
 		@echo "But installing locally instead"
 		@cp ~/Downloads/$(GO_NAME)-$(PLATFORM)-$(PROCESSOR) .
 		# @curl -L -o $(TAR_FILENAME) https://github.com/$(PROJECT_NAME)/$(REPO_NAME)/releases/download/$(VERSION)/$(GO_NAME)-$(PLATFORM)-$(PROCESSOR)
-		@mkdir -p $(GO_NAME)/$(DIR_NAME)
-		@tar -xf $(GO_NAME)-$(PLATFORM)-$(PROCESSOR) -C $(GO_NAME)/$(DIR_NAME)
+		@tar -xf $(GO_NAME)-$(PLATFORM)-$(PROCESSOR) -C extern/$(REPO_NAME)/$(GO_NAME)/$(DIR_NAME)
 		@rm $(GO_NAME)-$(PLATFORM)-$(PROCESSOR)
-		@echo "Successfully downloaded and extracted release $(VERSION) to $(REPO_NAME)/$(GO_NAME)/$(DIR_NAME)"
+		@echo "Successfully downloaded and extracted release $(VERSION) to extern/$(REPO_NAME)/$(GO_NAME)/$(DIR_NAME)"
