@@ -14,14 +14,14 @@ IROH_GO_FILE="${GO_DIR}/iroh/iroh.go"
 
 rm -rf $IROH_GO_PATH
 
-# build iroh-ffi and save the assets to ./go/iroh/include
+# build iroh-ffi
 cargo build $MODE 
 
+# build go bindings
 uniffi-bindgen-go $UDL_PATH --out-dir $GO_DIR
 
 # move needed files over
 mkdir -p ${INCLUDE_PATH}
-mkdir -p "${INCLUDE_PATH}/deps"
 
 # Detect the operating system using uname
 OS=$(uname -s)
