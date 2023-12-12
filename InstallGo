@@ -9,6 +9,8 @@ DIR_NAME := iroh
 PROJECT_NAME := n0-computer
 TAR_FILENAME :=
 
+IROH_FFI_DIR := ./extern/iroh-ffi
+
 # Detect the operating system
 ifeq ($(OS),Windows_NT)
     PLATFORM := windows
@@ -32,11 +34,18 @@ ifeq ($(PROCESSOR),arm64)
     PROCESSOR := aarch64
 endif
 
-# Get the latest tag from git
-VERSION := $(shell git describe --tags --abbrev=0)
-
 .PHONY: all
-all: check-platform check-processor download-and-extract
+all: enter-ffi-dir check-platform check-processor get-version exit-ffi-dir download-and-extract
+
+.PHONY: enter-ffi-dir
+enter-ffi-dir:
+		@echo "Entering $(IROH_FFI_DIR)..."
+		@pushd $(IROH_FFI_DIR)
+
+.PHONY: exit-ffi-dir
+exit-ffi-dir:
+		@echo "Leaving $(IROH_FFI_DIR)..."
+		@popd
 
 .PHONY: check-platform
 check-platform:
@@ -46,13 +55,19 @@ check-platform:
 check-processor:
 		@echo "Detected Processor: $(PROCESSOR)"
 
+.PHONY: get-version
+get-version:
+		@echo "Getting the latest tag from git..."
+		@VERSION=$(shell git describe --tags --abbrev=0)
+		@echo "Detected Version: $$VERSION"
+
 .PHONY: download-and-extract
 download-and-extract:
 		@echo "Fetching release $(VERSION) for $(REPO_NAME)..."
 		@echo "Would normally fetch from https://github.com/$(PROJECT_NAME)/$(REPO_NAME)/releases/download/$(VERSION)/$(GO_NAME)-$(PLATFORM)-$(PROCESSOR)"
 		@echo "But installing locally instead"
 		@cp ~/Downloads/$(GO_NAME)-$(PLATFORM)-$(PROCESSOR).zip .
-		# @curl -L -o $(TAR_FILENAME) https://github.com/$(PROJECT_NAME)/$(REPO_NAME)/releases/download/$(VERSION)/$(GO_NAME)-$(PLATFORM)-$(PROCESSOR)
-		@tar -xf $(GO_NAME)-$(PLATFORM)-$(PROCESSOR).zip -C extern/$(REPO_NAME)/$(GO_NAME)/$(DIR_NAME)
+		@tar -xf $(GO_NAME)-$(PLATFORM)-$(PROCESSOR).zip -C $(DIR_NAME)
 		@rm $(GO_NAME)-$(PLATFORM)-$(PROCESSOR).zip
-		@echo "Successfully downloaded and extracted release $(VERSION) to extern/$(REPO_NAME)/$(GO_NAME)/$(DIR_NAME)"
+		@echo "Successfully downloaded and extracted release $(VERSION) to $(IROH_FFI_DIR)/$(DIR_NAME)"
+
