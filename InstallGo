@@ -4,17 +4,16 @@ PLATFORM :=
 PROCESSOR :=
 VERSION :=
 REPO_NAME := iroh-ffi
-GO_NAME := iroh-go
-DIR_NAME := iroh
+LIB_NAME := libiroh
+DIR_NAME := iroh 
 PROJECT_NAME := n0-computer
 TAR_FILENAME :=
 
-IROH_FFI_DIR := ./extern/iroh-ffi
+IROH_FFI_DIR := extern/iroh-ffi
 
 # Detect the operating system
 ifeq ($(OS),Windows_NT)
     PLATFORM := windows
-    $(error Windows is not supported)
 else
     UNAME_S := $(shell uname -s)
     ifeq ($(UNAME_S),Linux)
@@ -57,17 +56,21 @@ check-processor:
 
 .PHONY: get-version
 get-version:
-		@echo "Getting the latest tag from git..."
-		@VERSION=$(shell git describe --tags --abbrev=0)
+		@echo "Getting the latest tag semver tag from git..."
+		@VERSION=$(git describe --tags --match "v*" --abbrev=0)
 		@echo "Detected Version: $$VERSION"
 
 .PHONY: download-and-extract
 download-and-extract:
 		@echo "Fetching release $(VERSION) for $(REPO_NAME)..."
-		@echo "Would normally fetch from https://github.com/$(PROJECT_NAME)/$(REPO_NAME)/releases/download/$(VERSION)/$(GO_NAME)-$(PLATFORM)-$(PROCESSOR)"
-		@echo "But installing locally instead"
-		@cp ~/Downloads/$(GO_NAME)-$(PLATFORM)-$(PROCESSOR).zip .
-		@tar -xf $(GO_NAME)-$(PLATFORM)-$(PROCESSOR).zip -C $(DIR_NAME)
-		@rm $(GO_NAME)-$(PLATFORM)-$(PROCESSOR).zip
+		@echo "Downloading from https://github.com/$(PROJECT_NAME)/$(REPO_NAME)/releases/download/$(VERSION)/$(LIB_NAME)-$(PLATFORM)-$(PROCESSOR)"
+		@if [ "$(PLATFORM)" = "windows" ]; then \
+			curl -L -o $(LIB_NAME)-$(PLATFORM)-$(PROCESSOR).zip https://github.com/$(PROJECT_NAME)/$(REPO_NAME)/releases/download/$(VERSION)/$(LIB_NAME)-$(PLATFORM)-$(PROCESSOR).zip; \
+			unzip -q $(LIB_NAME)-$(PLATFORM)-$(PROCESSOR).zip -d $(DIR_NAME); \
+			rm $(LIB_NAME)-$(PLATFORM)-$(PROCESSOR).zip; \
+		else \
+			curl -L -o $(LIB_NAME)-$(PLATFORM)-$(PROCESSOR).tar.gz https://github.com/$(PROJECT_NAME)/$(REPO_NAME)/releases/download/$(VERSION)/$(LIB_NAME)-$(PLATFORM)-$(PROCESSOR).tar.gz; \
+			tar -xf $(LIB_NAME)-$(PLATFORM)-$(PROCESSOR).tar.gz -C $(DIR_NAME); \
+			rm $(LIB_NAME)-$(PLATFORM)-$(PROCESSOR).tar.gz; \
+		fi
 		@echo "Successfully downloaded and extracted release $(VERSION) to $(IROH_FFI_DIR)/$(DIR_NAME)"
-
