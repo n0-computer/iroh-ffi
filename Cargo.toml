@@ -19,7 +19,7 @@ strip = "symbols"
 
 [lib]
 name = "iroh"
-crate-type = ["rlib", "staticlib"]
+crate-type = ["staticlib"]
 
 [[bin]]
 name = "uniffi-bindgen"
