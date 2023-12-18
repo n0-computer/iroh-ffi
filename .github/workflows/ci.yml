@@ -7,122 +7,122 @@ on:
     branches:
       - main
 
-# concurrency:
-#   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-#   cancel-in-progress: true
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 
 jobs:
-#   build_and_test_rust:
-#     runs-on: ${{ matrix.runner }}
-#     timeout-minutes: 30
-#     name: Rust - Build and test 
-#     strategy:
-#       fail-fast: false
-#       matrix:
-#         name: [ubuntu-latest, macOS-arm-latest, windows-latest]
-#         rust: [stable]
-#         include:
-#           - name: ubuntu-latest
-#             os: ubuntu-latest
-#             release-os: linux
-#             release-arch: amd64
-#             runner: [linux, X64]
-#           - name: macOS-arm-latest
-#             os: macOS-latest
-#             release-os: darwin
-#             release-arch: aarch64
-#             runner: [macOS, ARM64]
-#           - name: windows-latest
-#             os: windows
-#             runner: [windows-latest]
+  build_and_test_rust:
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    name: Rust - Build and test 
+    strategy:
+      fail-fast: false
+      matrix:
+        name: [ubuntu-latest, macOS-arm-latest, windows-latest]
+        rust: [stable]
+        include:
+          - name: ubuntu-latest
+            os: ubuntu-latest
+            release-os: linux
+            release-arch: amd64
+            runner: [linux, X64]
+          - name: macOS-arm-latest
+            os: macOS-latest
+            release-os: darwin
+            release-arch: aarch64
+            runner: [macOS, ARM64]
+          - name: windows-latest
+            os: windows
+            runner: [windows-latest]
 
-#     steps:
-#     - name: Checkout
-#       uses: actions/checkout@master
-#       with:
-#         submodules: recursive
+    steps:
+    - name: Checkout
+      uses: actions/checkout@master
+      with:
+        submodules: recursive
 
-#     - name: Install ${{ matrix.rust }}
-#       uses: dtolnay/rust-toolchain@master
-#       with:
-#         toolchain: ${{ matrix.rust }}
+    - name: Install ${{ matrix.rust }}
+      uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: ${{ matrix.rust }}
 
-#     - name: cargo test
-#       run: cargo test
+    - name: cargo test
+      run: cargo test
 
-#   check_fmt_and_docs:
-#     timeout-minutes: 30
-#     name: Checking fmt and docs
-#     runs-on: ubuntu-latest
-#     steps:
-#     - uses: actions/checkout@master
-#     - uses: dtolnay/rust-toolchain@stable
-#       with:
-#         components: rustfmt
-#     - name: fmt
-#       run: cargo fmt -- --check
-#     - name: Docs
-#       run: cargo doc --all-features --no-deps --document-private-items
+  check_fmt_and_docs:
+    timeout-minutes: 30
+    name: Checking fmt and docs
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt
+    - name: fmt
+      run: cargo fmt -- --check
+    - name: Docs
+      run: cargo doc --all-features --no-deps --document-private-items
 
-#   clippy_check:
-#     timeout-minutes: 30
-#     runs-on: ubuntu-latest
-#     steps:
-#     - uses: actions/checkout@master
-#     - uses: dtolnay/rust-toolchain@stable
-#       with:
-#           components: clippy
+  clippy_check:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+          components: clippy
 
-#     - name: clippy check
-#       run: cargo clippy --all-targets --bins --tests --benches
+    - name: clippy check
+      run: cargo clippy --all-targets --bins --tests --benches
 
-#   build_and_test_go:
-#     name: Go - Build and test 
-#     timeout-minutes: 30
-#     runs-on: [linux, x64]
-#     steps:
-#     - uses: actions/checkout@master
-#     - uses: dtolnay/rust-toolchain@stable
-#     - uses: actions/setup-go@v4
-#       with:
-#           go-version: 'stable'
-#       env:
-#         XDG_CACHE_HOME: /root/.cache
-#         HOME: /root #added based on https://github.com/actions/setup-go/issues/116
-#     - name: install uniffi-bindgen
-#       run: cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bindgen-go --tag v0.2.0+v0.25.0
-#     - name: Build iroh-go
-#       run: ./build_go.sh
-#     - name: Go test
-#       env:
-#         XDG_CACHE_HOME: /root/.cache
-#         HOME: /root #added based on https://github.com/actions/setup-go/issues/116
-#       run: |
-#         cd ./iroh-go && \
-#         LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}:./iroh/ffi" \
-#         CGO_LDFLAGS="-liroh -L ./iroh/ffi" \
-#         go test ./...
+  build_and_test_go:
+    name: Go - Build and test 
+    timeout-minutes: 30
+    runs-on: [linux, x64]
+    steps:
+    - uses: actions/checkout@master
+    - uses: dtolnay/rust-toolchain@stable
+    - uses: actions/setup-go@v4
+      with:
+          go-version: 'stable'
+      env:
+        XDG_CACHE_HOME: /root/.cache
+        HOME: /root #added based on https://github.com/actions/setup-go/issues/116
+    - name: install uniffi-bindgen
+      run: cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bindgen-go --tag v0.2.0+v0.25.0
+    - name: Build iroh-go
+      run: ./build_go.sh
+    - name: Go test
+      env:
+        XDG_CACHE_HOME: /root/.cache
+        HOME: /root #added based on https://github.com/actions/setup-go/issues/116
+      run: |
+        cd ./iroh-go && \
+        LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}:./iroh/ffi" \
+        CGO_LDFLAGS="-liroh -L ./iroh/ffi" \
+        go test ./...
 
-#   build_and_test_python:
-#     name: Python - Build and test 
-#     timeout-minutes: 30
-#     runs-on: [linux, x64]
-#     steps:
-#     - uses: actions/checkout@master
-#     - uses: dtolnay/rust-toolchain@stable
-#     - uses: actions/setup-python@v4
-#       with:
-#           python-version: 3.11
-#     - name: Install Deps
-#       run: pip install virtualenv maturin uniffi-bindgen
-#     - name: Python tests
-#       run: |
-#         virtualenv venv && \
-#         source venv/bin/activate && \
-#         pip install pytest 
-#         maturin develop && \
-#         python -m pytest
+  build_and_test_python:
+    name: Python - Build and test 
+    timeout-minutes: 30
+    runs-on: [linux, x64]
+    steps:
+    - uses: actions/checkout@master
+    - uses: dtolnay/rust-toolchain@stable
+    - uses: actions/setup-python@v4
+      with:
+          python-version: 3.11
+    - name: Install Deps
+      run: pip install virtualenv maturin uniffi-bindgen
+    - name: Python tests
+      run: |
+        virtualenv venv && \
+        source venv/bin/activate && \
+        pip install pytest 
+        maturin develop && \
+        python -m pytest
 
 
                     
