@@ -2,7 +2,6 @@ use std::{str::FromStr, sync::Arc, time::SystemTime};
 
 use futures::{StreamExt, TryStreamExt};
 use iroh::{
-    bytes::util::runtime::Handle,
     client::Doc as ClientDoc,
     rpc_protocol::{ProviderRequest, ProviderResponse},
 };
@@ -11,6 +10,7 @@ pub use iroh::sync::CapabilityKind;
 
 use quic_rpc::transport::flume::FlumeConnection;
 
+use crate::runtime::Handle;
 use crate::{block_on, AuthorId, Hash, IrohError, IrohNode, PublicKey, SocketAddr, SocketAddrType};
 
 impl IrohNode {
@@ -446,8 +446,8 @@ impl From<NodeAddr> for iroh::net::magic_endpoint::NodeAddr {
                 }
             }
         });
-        if let Some(derp_region) = value.derp_region() {
-            node_addr = node_addr.with_derp_region(derp_region);
+        if let Some(derp_url) = value.derp_url() {
+            node_addr = node_addr.with_derp_url(derp_url);
         }
         node_addr = node_addr.with_direct_addresses(addresses);
         node_addr

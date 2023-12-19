@@ -325,30 +325,12 @@ impl Hash {
         Ok(Hash(iroh::bytes::Hash::from_bytes(bytes)))
     }
 
-    /// Make a Hash from hex or base 64 encoded cid string
+    /// Make a Hash from hex string
     pub fn from_string(s: String) -> Result<Self, IrohError> {
         match iroh::bytes::Hash::from_str(&s) {
             Ok(key) => Ok(key.into()),
             Err(err) => Err(IrohError::hash(err)),
         }
-    }
-
-    /// Get the cid as bytes.
-    pub fn as_cid_bytes(&self) -> Vec<u8> {
-        self.0.as_cid_bytes().to_vec()
-    }
-
-    /// Try to create a blake3 cid from cid bytes.
-    ///
-    /// This will only work if the prefix is the following:
-    /// - version 1
-    /// - raw codec
-    /// - blake3 hash function
-    /// - 32 byte hash size
-    pub fn from_cid_bytes(bytes: Vec<u8>) -> Result<Self, IrohError> {
-        Ok(Hash(
-            iroh::bytes::Hash::from_cid_bytes(&bytes).map_err(IrohError::hash)?,
-        ))
     }
 
     /// Convert the hash to a hex string.
@@ -570,50 +552,6 @@ impl From<BlobFormat> for iroh::rpc_protocol::BlobFormat {
     }
 }
 
-/// A Request token is an opaque byte sequence associated with a single request.
-/// Applications can use request tokens to implement request authorization,
-/// user association, etc.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RequestToken(iroh::bytes::protocol::RequestToken);
-
-impl RequestToken {
-    /// Creates a new request token from bytes.
-    pub fn new(bytes: Vec<u8>) -> Result<Self, IrohError> {
-        Ok(RequestToken(
-            iroh::bytes::protocol::RequestToken::new(bytes).map_err(IrohError::request_token)?,
-        ))
-    }
-
-    /// Generate a random 32 byte request token.
-    pub fn generate() -> Self {
-        RequestToken(iroh::bytes::protocol::RequestToken::generate())
-    }
-
-    /// Returns a reference the token bytes.
-    pub fn as_bytes(&self) -> Vec<u8> {
-        self.0.as_bytes().to_vec()
-    }
-
-    /// Create a request token from a string
-    pub fn from_string(str: String) -> Result<Self, IrohError> {
-        Ok(RequestToken(
-            iroh::bytes::protocol::RequestToken::from_str(&str)
-                .map_err(IrohError::request_token)?,
-        ))
-    }
-
-    /// Returns true if both RequestTokens have the same value
-    pub fn equal(&self, other: Arc<RequestToken>) -> bool {
-        *self == *other
-    }
-}
-
-impl std::fmt::Display for RequestToken {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
 /// Location to store a downloaded blob at.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DownloadLocation {
@@ -676,13 +614,11 @@ impl BlobDownloadRequest {
         node: Arc<NodeAddr>,
         tag: Arc<SetTagOption>,
         out: Arc<DownloadLocation>,
-        token: Option<Arc<RequestToken>>,
     ) -> Self {
         BlobDownloadRequest(iroh::rpc_protocol::BlobDownloadRequest {
             hash: hash.0,
             format: format.into(),
             peer: (*node).clone().into(),
-            token: token.map(|token| (*token).clone().0),
             tag: (*tag).clone().into(),
             out: (*out).clone().into(),
         })
@@ -1039,6 +975,7 @@ mod tests {
 
     use super::*;
     use crate::node::IrohNode;
+    use crate::runtime::Handle;
     use rand::RngCore;
     use tokio::io::AsyncWriteExt;
 
@@ -1047,13 +984,7 @@ mod tests {
         let hash_str = "bafkr4ih6qxpyfyrgxbcrvmiqbm7hb5fdpn4yezj7ayh6gwto4hm2573glu";
         let hex_str = "fe85df82e226b8451ab1100b3e70f4a37b7982653f060fe35a6ee1d9aeff665d";
         let bytes = b"\xfe\x85\xdf\x82\xe2\x26\xb8\x45\x1a\xb1\x10\x0b\x3e\x70\xf4\xa3\x7b\x79\x82\x65\x3f\x06\x0f\xe3\x5a\x6e\xe1\xd9\xae\xff\x66\x5d".to_vec();
-        let cid_prefix = b"\x01\x55\x1e\x20".to_vec();
 
-        let cid_bytes = {
-            let mut b = cid_prefix.clone();
-            b.append(&mut bytes.clone());
-            b
-        };
         // create hash from string
         let hash = Hash::from_string(hash_str.into()).unwrap();
 
@@ -1061,7 +992,6 @@ mod tests {
         assert_eq!(hash_str.to_string(), hash.to_string());
         assert_eq!(bytes.to_vec(), hash.to_bytes());
         assert_eq!(hex_str.to_string(), hash.to_hex());
-        assert_eq!(cid_bytes, hash.as_cid_bytes());
 
         // create hash from bytes
         let hash_0 = Hash::from_bytes(bytes.clone()).unwrap();
@@ -1070,27 +1000,12 @@ mod tests {
         assert_eq!(hash_str.to_string(), hash_0.to_string());
         assert_eq!(bytes, hash_0.to_bytes());
         assert_eq!(hex_str.to_string(), hash_0.to_hex());
-        assert_eq!(cid_bytes, hash_0.as_cid_bytes());
-
-        // create hash from cid bytes
-        let hash_1 = Hash::from_cid_bytes(cid_bytes.clone()).unwrap();
-
-        // test methods are as expected
-        assert_eq!(hash_str.to_string(), hash_1.to_string());
-        assert_eq!(bytes, hash_1.to_bytes());
-        assert_eq!(hex_str.to_string(), hash_1.to_hex());
-        assert_eq!(cid_bytes, hash_1.as_cid_bytes());
 
         // test that the eq function works
         let hash = Arc::new(hash);
         let hash_0 = Arc::new(hash_0);
-        let hash_1 = Arc::new(hash_1);
         assert!(hash.equal(hash_0.clone()));
-        assert!(hash.equal(hash_1.clone()));
         assert!(hash_0.equal(hash.clone()));
-        assert!(hash_0.equal(hash_1.clone()));
-        assert!(hash_1.equal(hash));
-        assert!(hash_1.equal(hash_0));
     }
 
     #[test]
@@ -1365,7 +1280,7 @@ mod tests {
 
     async fn build_iroh_core(
         path: &std::path::Path,
-        rt: &iroh::bytes::util::runtime::Handle,
+        rt: &Handle,
     ) -> iroh::node::Node<iroh::bytes::store::flat::Store> {
         // TODO: store and load keypair
         let secret_key = iroh::net::key::SecretKey::generate();
@@ -1393,7 +1308,7 @@ mod tests {
     async fn iroh_core_blobs_add_get_bytes() {
         let tokio = tokio::runtime::Handle::current();
         let tpc = tokio_util::task::LocalPoolHandle::new(num_cpus::get());
-        let rt = iroh::bytes::util::runtime::Handle::new(tokio, tpc);
+        let rt = Handle::new(tokio, tpc);
         // temp dir
         let dir = tempfile::tempdir().unwrap();
         let node = build_iroh_core(dir.path(), &rt).await;
@@ -1437,7 +1352,7 @@ mod tests {
     async fn iroh_core_blobs_list_collections() {
         let tokio = tokio::runtime::Handle::current();
         let tpc = tokio_util::task::LocalPoolHandle::new(num_cpus::get());
-        let rt = iroh::bytes::util::runtime::Handle::new(tokio, tpc);
+        let rt = Handle::new(tokio, tpc);
         // iroh data dir
         let iroh_dir = tempfile::tempdir().unwrap();
         let node = build_iroh_core(iroh_dir.path(), &rt).await;

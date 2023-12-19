@@ -557,20 +557,6 @@ interface Hash {
   /// Create a Hash from its raw bytes representation.
   [Name=from_bytes, Throws=IrohError]
   constructor(bytes bytes);
-  /// Make a Hash from hex or base 64 encoded cid string
-  [Name=from_string, Throws=IrohError]
-  constructor(string str);
-  /// Get the cid as bytes.
-  bytes as_cid_bytes();
-  /// Try to create a blake3 cid from cid bytes.
-  ///
-  /// This will only work if the prefix is the following:
-  /// - version 1
-  /// - raw codec
-  /// - blake3 hash function
-  /// - 32 byte hash size
-  [Name=from_cid_bytes, Throws=IrohError]
-  constructor(bytes bytes);
   /// Convert the hash to a hex string.
   string to_hex();
 };
@@ -1021,25 +1007,6 @@ dictionary BlobAddOutcome {
   Tag tag;
 };
 
-/// A Request token is an opaque byte sequence associated with a single request.
-/// Applications can use request tokens to implement request authorization,
-/// user association, etc.
-interface RequestToken {
-  /// Creates a new request token from bytes.
-  [Throws=IrohError]
-  constructor(bytes bytes); 
-  /// Generate a random 32 byte request token.
-  [Name=generate]
-  constructor();
-  /// Returns a reference the token bytes.
-  bytes as_bytes();
-  /// Create a request token from a string
-  [Name=from_string, Throws=IrohError]
-  constructor(string str);
-  /// Returns true if both RequestTokens have the same value
-  boolean equal(RequestToken other);
-};
-
 /// Location to store a downloaded blob at.
 interface DownloadLocation {
   /// Store in the node's blob storage directory.
@@ -1059,7 +1026,7 @@ interface DownloadLocation {
 
 /// A request to the node to download and share the data specified by the hash.
 interface BlobDownloadRequest {
-  constructor(Hash hash, BlobFormat format, NodeAddr node, SetTagOption tag, DownloadLocation out, RequestToken? token);
+  constructor(Hash hash, BlobFormat format, NodeAddr node, SetTagOption tag, DownloadLocation out);
 };
 
 /// The `progress` method will be called for each `DownloadProgress` event that is emitted during
@@ -1249,7 +1216,6 @@ interface IrohError {
   PublicKey(string description);
   NodeAddr(string description);
   Hash(string description);
-  RequestToken(string description);
   FsUtil(string description);
   Tags(string description);
 };

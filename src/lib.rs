@@ -5,6 +5,7 @@ mod error;
 mod key;
 mod net;
 mod node;
+mod runtime;
 mod tag;
 
 pub use self::author::*;
@@ -17,9 +18,11 @@ pub use self::node::*;
 pub use self::tag::*;
 
 use futures::Future;
-use iroh::{bytes::util::runtime::Handle, metrics::try_init_metrics_collection};
+use iroh::metrics::try_init_metrics_collection;
 
 use tracing_subscriber::filter::LevelFilter;
+
+use crate::runtime::Handle;
 
 /// The logging level. See the rust (log crate)[https://docs.rs/log] for more information.
 #[derive(Debug)]

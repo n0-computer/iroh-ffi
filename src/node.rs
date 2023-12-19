@@ -1,13 +1,14 @@
-use std::{collections::HashMap, path::PathBuf, sync::Arc, time::Duration};
+use std::{collections::BTreeMap, path::PathBuf, sync::Arc, time::Duration};
 
 use futures::stream::TryStreamExt;
 use iroh::{
-    bytes::util::runtime::Handle,
-    node::{Node, DEFAULT_BIND_ADDR},
+    net::key::SecretKey,
+    node::Node,
     rpc_protocol::{ProviderRequest, ProviderResponse},
 };
 use quic_rpc::transport::flume::FlumeConnection;
 
+use crate::runtime::Handle;
 use crate::{block_on, IrohError, NodeAddr, PublicKey, SocketAddr};
 
 /// Stats counter
@@ -204,7 +205,7 @@ impl IrohNode {
             .map_err(IrohError::runtime)?;
 
         let tpc = tokio_util::task::LocalPoolHandle::new(num_cpus::get());
-        let rt = iroh::bytes::util::runtime::Handle::new(tokio_rt.handle().clone(), tpc);
+        let rt = Handle::new(tokio_rt.handle().clone(), tpc);
 
         let rt_inner = rt.clone();
         let node = block_on(&rt, async move {
@@ -219,17 +220,9 @@ impl IrohNode {
             // create a bao store for the iroh-bytes blobs
             let blob_path = iroh::util::path::IrohPaths::BaoFlatStoreComplete.with_root(&path);
             tokio::fs::create_dir_all(&blob_path).await?;
-            let db = iroh::bytes::store::flat::Store::load(
-                &blob_path, &blob_path, &blob_path, &rt_inner,
-            )
-            .await?;
+            let db = iroh::bytes::store::flat::Store::load(&blob_path).await?;
 
-            Node::builder(db, docs)
-                .bind_addr(DEFAULT_BIND_ADDR.into())
-                .secret_key(secret_key)
-                .runtime(&rt_inner)
-                .spawn()
-                .await
+            Node::builder(db, docs).secret_key(secret_key).spawn().await
         })
         .map_err(IrohError::node_create)?;
 
@@ -249,7 +242,7 @@ impl IrohNode {
     }
 
     /// Get statistics of the running node.
-    pub fn stats(&self) -> Result<HashMap<String, CounterStats>, IrohError> {
+    pub fn stats(&self) -> Result<BTreeMap<String, CounterStats>, IrohError> {
         block_on(&self.async_runtime, async {
             let stats = self
                 .sync_client

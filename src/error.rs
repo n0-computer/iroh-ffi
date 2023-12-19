@@ -35,8 +35,6 @@ pub enum IrohError {
     NodeAddr { description: String },
     #[error("Hash error: {description}")]
     Hash { description: String },
-    #[error("RequestToken error: {description}")]
-    RequestToken { description: String },
     #[error("FsUtil error: {description}")]
     FsUtil { description: String },
     #[error("Tags error: {description}")]
@@ -130,12 +128,6 @@ impl IrohError {
 
     pub fn hash(error: impl Display) -> Self {
         IrohError::Hash {
-            description: error.to_string(),
-        }
-    }
-
-    pub fn request_token(error: impl Display) -> Self {
-        IrohError::RequestToken {
             description: error.to_string(),
         }
     }
