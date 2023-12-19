@@ -2,7 +2,7 @@ package iroh
 
 /*
 #cgo windows LDFLAGS: -L${SRCDIR} -liroh
-#cgo linux LDFLAGS: -L${SRCDIR} -liroh -Wl,-unresolved-symbols=ignore-all
+#cgo linux LDFLAGS: -L${SRCDIR} -liroh -lm -Wl,-unresolved-symbols=ignore-all
 #cgo darwin LDFLAGS: -L${SRCDIR} -liroh -Wl,-undefined,dynamic_lookup
 #include "./iroh.h"
 */
