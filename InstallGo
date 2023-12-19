@@ -1,0 +1,73 @@
+# Makefile script
+
+PLATFORM :=
+PROCESSOR :=
+VERSION :=
+REPO_NAME := iroh-ffi
+LIB_NAME := libiroh
+DIR_NAME := iroh 
+PROJECT_NAME := n0-computer
+TAR_FILENAME :=
+
+IROH_FFI_DIR := extern/iroh-ffi
+
+# Detect the operating system
+ifeq ($(OS),Windows_NT)
+    PLATFORM := windows
+else
+    UNAME_S := $(shell uname -s)
+    ifeq ($(UNAME_S),Linux)
+        PLATFORM := linux
+    endif
+    ifeq ($(UNAME_S),Darwin)
+        PLATFORM := darwin
+    endif
+endif
+
+VERSION := $(shell cd $(IROH_FFI_DIR) && git describe --tags --match "v*" --abbrev=0)
+
+# Detect the processor architecture
+PROCESSOR := $(shell uname -m)
+ifeq ($(PROCESSOR),amd64)
+    PROCESSOR := amd64
+endif
+ifeq ($(PROCESSOR),arm64)
+    PROCESSOR := aarch64
+endif
+
+.PHONY: all
+all: check-platform check-processor get-version download-and-extract check-libiroh
+
+.PHONY: check-platform
+check-platform:
+		@echo "Detected Platform: $(PLATFORM)"
+
+.PHONY: check-processor
+check-processor:
+		@echo "Detected Processor: $(PROCESSOR)"
+
+.PHONY: get-version
+get-version:
+		@echo "Detected Version: $(VERSION)"
+
+.PHONY: download-and-extract
+download-and-extract:
+		@echo "Fetching release $(VERSION) for $(REPO_NAME)..."
+		@echo "Downloading from https://github.com/$(PROJECT_NAME)/$(REPO_NAME)/releases/download/$(VERSION)/$(LIB_NAME)-$(PLATFORM)-$(PROCESSOR)"
+		@if [ "$(PLATFORM)" = "windows" ]; then \
+			curl -L -o $(LIB_NAME)-$(PLATFORM)-$(PROCESSOR).zip https://github.com/$(PROJECT_NAME)/$(REPO_NAME)/releases/download/$(VERSION)/$(LIB_NAME)-$(PLATFORM)-$(PROCESSOR).zip; \
+			unzip -q $(LIB_NAME)-$(PLATFORM)-$(PROCESSOR).zip -d $(DIR_NAME); \
+			rm $(LIB_NAME)-$(PLATFORM)-$(PROCESSOR).zip; \
+		else \
+			curl -L -o $(LIB_NAME)-$(PLATFORM)-$(PROCESSOR).tar.gz https://github.com/$(PROJECT_NAME)/$(REPO_NAME)/releases/download/$(VERSION)/$(LIB_NAME)-$(PLATFORM)-$(PROCESSOR).tar.gz; \
+			tar -xf $(LIB_NAME)-$(PLATFORM)-$(PROCESSOR).tar.gz -C $(DIR_NAME); \
+			rm $(LIB_NAME)-$(PLATFORM)-$(PROCESSOR).tar.gz; \
+		fi
+
+.PHONY: check-libiroh
+check-libiroh:
+		@if [ -n "$(wildcard ./extern/iroh-ffi/iroh/libiroh.a)" ]; then \
+				echo "Successfully downloaded and extracted release $(VERSION) to $(IROH_FFI_DIR)/$(DIR_NAME)"; \
+		else \
+				echo "Unable to download and extract libiroh"; \
+		fi
