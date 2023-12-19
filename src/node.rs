@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, path::PathBuf, sync::Arc, time::Duration};
+use std::{collections::HashMap, path::PathBuf, sync::Arc, time::Duration};
 
 use futures::stream::TryStreamExt;
 use iroh::{
@@ -9,7 +9,7 @@ use iroh::{
 use quic_rpc::transport::flume::FlumeConnection;
 
 use crate::runtime::Handle;
-use crate::{block_on, IrohError, NodeAddr, PublicKey, SocketAddr};
+use crate::{block_on, IrohError, NodeAddr, PublicKey, SocketAddr, Url};
 
 /// Stats counter
 pub use iroh::rpc_protocol::CounterStats;
@@ -63,8 +63,8 @@ pub struct LatencyAndControlMsg {
 pub struct ConnectionInfo {
     /// The public key of the endpoint.
     pub public_key: Arc<PublicKey>,
-    /// Derp region, if available.
-    pub derp_region: Option<u16>,
+    /// Derp url, if available.
+    pub derp_url: Option<Arc<Url>>,
     /// List of addresses at which this node might be reachable, plus any latency information we
     /// have about that address and the last time the address was used.
     pub addrs: Vec<Arc<DirectAddrInfo>>,
@@ -80,7 +80,7 @@ impl From<iroh::net::magic_endpoint::ConnectionInfo> for ConnectionInfo {
     fn from(value: iroh::net::magic_endpoint::ConnectionInfo) -> Self {
         ConnectionInfo {
             public_key: Arc::new(PublicKey(value.public_key)),
-            derp_region: value.derp_region,
+            derp_url: value.derp_url.map(|url| Url(url).into()),
             addrs: value
                 .addrs
                 .iter()
@@ -99,12 +99,12 @@ pub enum ConnectionType {
     /// Direct UDP connection
     Direct(SocketAddr),
     /// Relay connection over DERP
-    Relay(u16),
+    Relay(Url),
     /// Both a UDP and a DERP connection are used.
     ///
     /// This is the case if we do have a UDP address, but are missing a recent confirmation that
     /// the address works.
-    Mixed(SocketAddr, u16),
+    Mixed(SocketAddr, Url),
     /// We have no verified connection to this PublicKey
     None,
 }
@@ -140,32 +140,32 @@ impl ConnectionType {
         }
     }
 
-    /// Return the derp region if this is a relay connection
-    pub fn as_relay(&self) -> u16 {
+    /// Return the derp url if this is a relay connection
+    pub fn as_relay(&self) -> Arc<Url> {
         match self {
-            ConnectionType::Relay(region) => *region,
+            ConnectionType::Relay(url) => url.clone().into(),
             _ => panic!("ConnectionType is not `Relay`"),
         }
     }
 
-    /// Return the [`SocketAddr`] and DERP region if this is a mixed connection
+    /// Return the [`SocketAddr`] and DERP url if this is a mixed connection
     pub fn as_mixed(&self) -> ConnectionTypeMixed {
         match self {
-            ConnectionType::Mixed(addr, derp_region) => ConnectionTypeMixed {
+            ConnectionType::Mixed(addr, url) => ConnectionTypeMixed {
                 addr: Arc::new(addr.clone()),
-                derp_region: *derp_region,
+                derp_url: Arc::new(url.clone()),
             },
             _ => panic!("ConnectionType is not `Relay`"),
         }
     }
 }
 
-/// The [`SocketAddr`] and region id of the mixed connection
+/// The [`SocketAddr`] and url of the mixed connection
 pub struct ConnectionTypeMixed {
     /// Address of the node
     pub addr: Arc<SocketAddr>,
-    /// Region Id of the region to which the node is connected
-    pub derp_region: u16,
+    /// Url of the DERP node to which the node is connected
+    pub derp_url: Arc<Url>,
 }
 
 impl From<iroh::net::magicsock::ConnectionType> for ConnectionType {
@@ -174,10 +174,10 @@ impl From<iroh::net::magicsock::ConnectionType> for ConnectionType {
             iroh::net::magicsock::ConnectionType::Direct(addr) => {
                 ConnectionType::Direct(addr.into())
             }
-            iroh::net::magicsock::ConnectionType::Mixed(addr, port) => {
-                ConnectionType::Mixed(addr.into(), port)
+            iroh::net::magicsock::ConnectionType::Mixed(addr, url) => {
+                ConnectionType::Mixed(addr.into(), url.into())
             }
-            iroh::net::magicsock::ConnectionType::Relay(port) => ConnectionType::Relay(port),
+            iroh::net::magicsock::ConnectionType::Relay(url) => ConnectionType::Relay(url.into()),
             iroh::net::magicsock::ConnectionType::None => ConnectionType::None,
         }
     }
@@ -242,7 +242,7 @@ impl IrohNode {
     }
 
     /// Get statistics of the running node.
-    pub fn stats(&self) -> Result<BTreeMap<String, CounterStats>, IrohError> {
+    pub fn stats(&self) -> Result<HashMap<String, CounterStats>, IrohError> {
         block_on(&self.async_runtime, async {
             let stats = self
                 .sync_client

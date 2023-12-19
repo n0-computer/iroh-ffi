@@ -39,6 +39,8 @@ pub enum IrohError {
     FsUtil { description: String },
     #[error("Tags error: {description}")]
     Tags { description: String },
+    #[error("Url error: {description}")]
+    Url { description: String },
 }
 
 impl IrohError {
@@ -140,6 +142,12 @@ impl IrohError {
 
     pub fn tags(error: impl Display) -> Self {
         IrohError::Tags {
+            description: error.to_string(),
+        }
+    }
+
+    pub fn url(error: impl Display) -> Self {
+        IrohError::Url {
             description: error.to_string(),
         }
     }

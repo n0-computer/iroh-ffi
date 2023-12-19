@@ -11,7 +11,9 @@ pub use iroh::sync::CapabilityKind;
 use quic_rpc::transport::flume::FlumeConnection;
 
 use crate::runtime::Handle;
-use crate::{block_on, AuthorId, Hash, IrohError, IrohNode, PublicKey, SocketAddr, SocketAddrType};
+use crate::{
+    block_on, AuthorId, Hash, IrohError, IrohNode, PublicKey, SocketAddr, SocketAddrType, Url,
+};
 
 impl IrohNode {
     /// Create a new doc.
@@ -392,7 +394,7 @@ impl From<iroh::sync::actor::OpenState> for OpenState {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NodeAddr {
     node_id: Arc<PublicKey>,
-    derp_region: Option<u16>,
+    derp_url: Option<Arc<Url>>,
     addresses: Vec<Arc<SocketAddr>>,
 }
 
@@ -400,12 +402,12 @@ impl NodeAddr {
     /// Create a new [`NodeAddr`] with empty [`AddrInfo`].
     pub fn new(
         node_id: Arc<PublicKey>,
-        derp_region: Option<u16>,
+        derp_url: Option<Arc<Url>>,
         addresses: Vec<Arc<SocketAddr>>,
     ) -> Self {
         Self {
             node_id,
-            derp_region,
+            derp_url,
             addresses,
         }
     }
@@ -416,8 +418,8 @@ impl NodeAddr {
     }
 
     /// Get the derp region of this peer.
-    pub fn derp_region(&self) -> Option<u16> {
-        self.derp_region
+    pub fn derp_url(&self) -> Option<Arc<Url>> {
+        self.derp_url
     }
 
     /// Returns true if both NodeAddr's have the same values
@@ -447,7 +449,7 @@ impl From<NodeAddr> for iroh::net::magic_endpoint::NodeAddr {
             }
         });
         if let Some(derp_url) = value.derp_url() {
-            node_addr = node_addr.with_derp_url(derp_url);
+            node_addr = node_addr.with_derp_url(derp_url.0.clone());
         }
         node_addr = node_addr.with_direct_addresses(addresses);
         node_addr
@@ -458,7 +460,7 @@ impl From<iroh::net::magic_endpoint::NodeAddr> for NodeAddr {
     fn from(value: iroh::net::magic_endpoint::NodeAddr) -> Self {
         NodeAddr {
             node_id: Arc::new(value.node_id.into()),
-            derp_region: value.info.derp_region,
+            derp_url: value.info.derp_url.map(|url| Arc::new(url.into())),
             addresses: value
                 .info
                 .direct_addresses
@@ -898,13 +900,13 @@ impl LiveEvent {
     }
 }
 
-impl From<iroh::sync_engine::LiveEvent> for LiveEvent {
-    fn from(value: iroh::sync_engine::LiveEvent) -> Self {
+impl From<iroh::client::LiveEvent> for LiveEvent {
+    fn from(value: iroh::client::LiveEvent) -> Self {
         match value {
-            iroh::sync_engine::LiveEvent::InsertLocal { entry } => LiveEvent::InsertLocal {
+            iroh::client::LiveEvent::InsertLocal { entry } => LiveEvent::InsertLocal {
                 entry: entry.into(),
             },
-            iroh::sync_engine::LiveEvent::InsertRemote {
+            iroh::client::LiveEvent::InsertRemote {
                 from,
                 entry,
                 content_status,
@@ -913,12 +915,12 @@ impl From<iroh::sync_engine::LiveEvent> for LiveEvent {
                 entry: entry.into(),
                 content_status: content_status.into(),
             },
-            iroh::sync_engine::LiveEvent::ContentReady { hash } => {
+            iroh::client::LiveEvent::ContentReady { hash } => {
                 LiveEvent::ContentReady { hash: hash.into() }
             }
-            iroh::sync_engine::LiveEvent::NeighborUp(key) => LiveEvent::NeighborUp(key.into()),
-            iroh::sync_engine::LiveEvent::NeighborDown(key) => LiveEvent::NeighborDown(key.into()),
-            iroh::sync_engine::LiveEvent::SyncFinished(e) => LiveEvent::SyncFinished(e.into()),
+            iroh::client::LiveEvent::NeighborUp(key) => LiveEvent::NeighborUp(key.into()),
+            iroh::client::LiveEvent::NeighborDown(key) => LiveEvent::NeighborDown(key.into()),
+            iroh::client::LiveEvent::SyncFinished(e) => LiveEvent::SyncFinished(e.into()),
         }
     }
 }
@@ -1390,12 +1392,12 @@ mod tests {
         let ipv6 = SocketAddr::from_ipv6(ipv6_ip.into(), port);
         //
         // derp region
-        let derp_region = Some(1);
+        let derp_url = Arc::new(Url::from_string("https://derp.url").unwrap());
         //
         // create a NodeAddr
         let addrs = vec![Arc::new(ipv4), Arc::new(ipv6)];
         let expect_addrs = addrs.clone();
-        let node_addr = NodeAddr::new(node_id.into(), derp_region, addrs);
+        let node_addr = NodeAddr::new(node_id.into(), Some(derp_url), addrs);
         //
         // test we have returned the expected addresses
         let got_addrs = node_addr.direct_addresses();
@@ -1405,7 +1407,8 @@ mod tests {
             assert!(expect.equal(got.clone()));
         }
 
-        assert_eq!(derp_region, node_addr.derp_region());
+        let got_derp_url = node_addr.derp_url().unwrap();
+        assert!(derp_url.equal(got_derp_url));
     }
     #[test]
     fn test_namespace_id() {
