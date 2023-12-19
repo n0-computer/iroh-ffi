@@ -28,7 +28,7 @@ SED='sed -i'
 if [[ "$OS" == "Darwin" ]]; then
   SED='sed -i .temp'
 fi
-$SED 's|\/\/ #include <iroh.h>|\/\*\n#cgo windows LDFLAGS: -L${SRCDIR} -liroh\n#cgo linux LDFLAGS: -L${SRCDIR} -lm -liroh -Wl,-unresolved-symbols=ignore-all\n#cgo darwin LDFLAGS: -L${SRCDIR} -liroh -Wl,-undefined,dynamic_lookup\n#include ".\/iroh.h"\n\*\/|' "$IROH_GO_FILE"
+$SED 's|\/\/ #include <iroh.h>|\/\*\n#cgo windows LDFLAGS: -L${SRCDIR} -liroh\n#cgo linux LDFLAGS: -L${SRCDIR} -liroh -lm -Wl,-unresolved-symbols=ignore-all\n#cgo darwin LDFLAGS: -L${SRCDIR} -liroh -Wl,-undefined,dynamic_lookup\n#include ".\/iroh.h"\n\*\/|' "$IROH_GO_FILE"
 if [[ "$OS" == "Darwin" ]]; then
   rm $IROH_GO_FILE.temp
 fi
