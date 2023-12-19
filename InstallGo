@@ -24,6 +24,8 @@ else
     endif
 endif
 
+VERSION := $(shell cd $(IROH_FFI_DIR) && git describe --tags --match "v*" --abbrev=0)
+
 # Detect the processor architecture
 PROCESSOR := $(shell uname -m)
 ifeq ($(PROCESSOR),amd64)
@@ -34,17 +36,7 @@ ifeq ($(PROCESSOR),arm64)
 endif
 
 .PHONY: all
-all: enter-ffi-dir check-platform check-processor get-version exit-ffi-dir download-and-extract
-
-.PHONY: enter-ffi-dir
-enter-ffi-dir:
-		@echo "Entering $(IROH_FFI_DIR)..."
-		@pushd $(IROH_FFI_DIR)
-
-.PHONY: exit-ffi-dir
-exit-ffi-dir:
-		@echo "Leaving $(IROH_FFI_DIR)..."
-		@popd
+all: check-platform check-processor get-version download-and-extract check-libiroh
 
 .PHONY: check-platform
 check-platform:
@@ -56,9 +48,7 @@ check-processor:
 
 .PHONY: get-version
 get-version:
-		@echo "Getting the latest tag semver tag from git..."
-		@VERSION=$(git describe --tags --match "v*" --abbrev=0)
-		@echo "Detected Version: $$VERSION"
+		@echo "Detected Version: $(VERSION)"
 
 .PHONY: download-and-extract
 download-and-extract:
@@ -73,4 +63,11 @@ download-and-extract:
 			tar -xf $(LIB_NAME)-$(PLATFORM)-$(PROCESSOR).tar.gz -C $(DIR_NAME); \
 			rm $(LIB_NAME)-$(PLATFORM)-$(PROCESSOR).tar.gz; \
 		fi
-		@echo "Successfully downloaded and extracted release $(VERSION) to $(IROH_FFI_DIR)/$(DIR_NAME)"
+
+.PHONY: check-libiroh
+check-libiroh:
+		@if [ -n "$(wildcard ./extern/iroh-ffi/iroh/libiroh.a)" ]; then \
+				echo "Successfully downloaded and extracted release $(VERSION) to $(IROH_FFI_DIR)/$(DIR_NAME)"; \
+		else \
+				echo "Unable to download and extract libiroh"; \
+		fi
