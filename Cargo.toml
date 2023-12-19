@@ -15,7 +15,6 @@ documentation = "https://iroh.computer/docs"
 rust-version = "1.67"
 
 [profile.release]
-strip = "symbols"
 
 [lib]
 name = "iroh"
