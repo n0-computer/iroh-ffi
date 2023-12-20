@@ -975,15 +975,14 @@ mod tests {
 
     use super::*;
     use crate::node::IrohNode;
-    use crate::runtime::Handle;
     use rand::RngCore;
     use tokio::io::AsyncWriteExt;
 
     #[test]
     fn test_hash() {
-        let hash_str = "bafkr4ih6qxpyfyrgxbcrvmiqbm7hb5fdpn4yezj7ayh6gwto4hm2573glu";
-        let hex_str = "fe85df82e226b8451ab1100b3e70f4a37b7982653f060fe35a6ee1d9aeff665d";
-        let bytes = b"\xfe\x85\xdf\x82\xe2\x26\xb8\x45\x1a\xb1\x10\x0b\x3e\x70\xf4\xa3\x7b\x79\x82\x65\x3f\x06\x0f\xe3\x5a\x6e\xe1\xd9\xae\xff\x66\x5d".to_vec();
+        let hash_str = "6vp273v6cqbbq7xesa2xfrdt3oajykgeifprn3pj4p6y76654amq";
+        let hex_str = "f55fafeebe1402187ee4903572c473db809c28c4415f16ede9e3fd8ffbdde019";
+        let bytes = b"\xf5\x5f\xaf\xee\xbe\x14\x02\x18\x7e\xe4\x90\x35\x72\xc4\x73\xdb\x80\x9c\x28\xc4\x41\x5f\x16\xed\xe9\xe3\xfd\x8f\xfb\xdd\xe0\x19".to_vec();
 
         // create hash from string
         let hash = Hash::from_string(hash_str.into()).unwrap();
@@ -1280,7 +1279,6 @@ mod tests {
 
     async fn build_iroh_core(
         path: &std::path::Path,
-        rt: &Handle,
     ) -> iroh::node::Node<iroh::bytes::store::flat::Store> {
         // TODO: store and load keypair
         let secret_key = iroh::net::key::SecretKey::generate();
@@ -1291,14 +1289,12 @@ mod tests {
         // create a bao store for the iroh-bytes blobs
         let blob_path = path.join("blobs");
         tokio::fs::create_dir_all(&blob_path).await.unwrap();
-        let db = iroh::bytes::store::flat::Store::load(&blob_path, &blob_path, &blob_path, &rt)
+        let db = iroh::bytes::store::flat::Store::load(&blob_path)
             .await
             .unwrap();
 
         iroh::node::Node::builder(db, docs)
-            .bind_addr(iroh::node::DEFAULT_BIND_ADDR.into())
             .secret_key(secret_key)
-            .runtime(rt)
             .spawn()
             .await
             .unwrap()
@@ -1306,12 +1302,9 @@ mod tests {
 
     #[tokio::test]
     async fn iroh_core_blobs_add_get_bytes() {
-        let tokio = tokio::runtime::Handle::current();
-        let tpc = tokio_util::task::LocalPoolHandle::new(num_cpus::get());
-        let rt = Handle::new(tokio, tpc);
         // temp dir
         let dir = tempfile::tempdir().unwrap();
-        let node = build_iroh_core(dir.path(), &rt).await;
+        let node = build_iroh_core(dir.path()).await;
         let sizes = [1, 10, 100, 1000, 10000, 100000];
         let mut hashes = Vec::new();
         for size in sizes.iter() {
@@ -1350,12 +1343,9 @@ mod tests {
 
     #[tokio::test]
     async fn iroh_core_blobs_list_collections() {
-        let tokio = tokio::runtime::Handle::current();
-        let tpc = tokio_util::task::LocalPoolHandle::new(num_cpus::get());
-        let rt = Handle::new(tokio, tpc);
         // iroh data dir
         let iroh_dir = tempfile::tempdir().unwrap();
-        let node = build_iroh_core(iroh_dir.path(), &rt).await;
+        let node = build_iroh_core(iroh_dir.path()).await;
 
         // collection dir
         let dir = tempfile::tempdir().unwrap();

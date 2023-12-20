@@ -191,15 +191,6 @@ interface Doc {
   /// Export an entry as a file to a given absolute path
   [Throws=IrohError]
   void export_file(Entry entry, string path, DocExportFileCallback? cb);
-  /// Get the content size of an [`Entry`]
-  [Throws=IrohError]
-  u64 size(Entry entry);
-  /// Read all content of an [`Entry`] into a buffer.
-  /// This allocates a buffer for the full entry. Use only if you know that the entry you're
-  /// reading is small. If not sure, use [`Self::size`] and check the size with
-  /// before calling [`Self::read_to_bytes`].
-  [Throws=IrohError]
-  bytes read_to_bytes(Entry entry);
   /// Delete entries that match the given `author` and key `prefix`.
   ///
   /// This inserts an empty entry with the key set to `prefix`, effectively clearing all other
@@ -542,6 +533,12 @@ interface Entry {
   Hash content_hash();
   /// Get the content_length of this entry.
   u64 content_len();
+  /// Read all content of an [`Entry`] into a buffer.
+  /// This allocates a buffer for the full entry. Use only if you know that the entry you're
+  /// reading is small. If not sure, use [`Self::content_len`] and check the size with
+  /// before calling [`Self::content_bytes`].
+  [Throws=IrohError]
+  bytes content_bytes(Doc doc);
 };
 
 /// Hash type used throughout Iroh. A blake3 hash.
@@ -1229,4 +1226,6 @@ interface IrohError {
   Hash(string description);
   FsUtil(string description);
   Tags(string description);
+  Url(string description);
+  Entry(string description);
 };

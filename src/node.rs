@@ -204,10 +204,8 @@ impl IrohNode {
             .build()
             .map_err(IrohError::runtime)?;
 
-        let tpc = tokio_util::task::LocalPoolHandle::new(num_cpus::get());
-        let rt = Handle::new(tokio_rt.handle().clone(), tpc);
+        let rt = Handle::new(tokio_rt.handle().clone());
 
-        let rt_inner = rt.clone();
         let node = block_on(&rt, async move {
             tokio::fs::create_dir_all(&path).await?;
             // create or load secret key

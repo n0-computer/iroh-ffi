@@ -222,28 +222,6 @@ impl Doc {
         })
     }
 
-    /// Get the content size of an [`Entry`]
-    pub fn size(&self, entry: Arc<Entry>) -> Result<u64, IrohError> {
-        block_on(&self.rt, async {
-            let r = self.inner.read(&entry.0).await.map_err(IrohError::doc)?;
-            Ok(r.size())
-        })
-    }
-
-    /// Read all content of an [`Entry`] into a buffer.
-    /// This allocates a buffer for the full entry. Use only if you know that the entry you're
-    /// reading is small. If not sure, use [`Self::size`] and check the size with
-    /// before calling [`Self::read_to_bytes`].
-    pub fn read_to_bytes(&self, entry: Arc<Entry>) -> Result<Vec<u8>, IrohError> {
-        block_on(&self.rt, async {
-            self.inner
-                .read_to_bytes(&entry.0)
-                .await
-                .map(|c| c.to_vec())
-                .map_err(IrohError::doc)
-        })
-    }
-
     /// Delete entries that match the given `author` and key `prefix`.
     ///
     /// This inserts an empty entry with the key set to `prefix`, effectively clearing all other
@@ -258,17 +236,6 @@ impl Doc {
                 .await
                 .map_err(IrohError::doc)?;
             u64::try_from(num_del).map_err(IrohError::doc)
-        })
-    }
-
-    /// Get the latest entry for a key and author.
-    pub fn get_one(&self, query: Arc<Query>) -> Result<Option<Arc<Entry>>, IrohError> {
-        block_on(&self.rt, async {
-            self.inner
-                .get_one((*query).clone().0)
-                .await
-                .map(|e| e.map(|e| Arc::new(e.into())))
-                .map_err(IrohError::doc)
         })
     }
 
@@ -307,6 +274,17 @@ impl Doc {
         })
     }
 
+    /// Get the latest entry for a key and author.
+    pub fn get_one(&self, query: Arc<Query>) -> Result<Option<Arc<Entry>>, IrohError> {
+        block_on(&self.rt, async {
+            self.inner
+                .get_one((*query).clone().0)
+                .await
+                .map(|e| e.map(|e| Arc::new(e.into())))
+                .map_err(IrohError::doc)
+        })
+    }
+
     /// Share this document with peers over a ticket.
     pub fn share(&self, mode: ShareMode) -> Result<Arc<DocTicket>, IrohError> {
         block_on(&self.rt, async {
@@ -335,17 +313,6 @@ impl Doc {
         })
     }
 
-    /// Get status info for this document
-    pub fn status(&self) -> Result<OpenState, IrohError> {
-        block_on(&self.rt, async {
-            self.inner
-                .status()
-                .await
-                .map(|o| o.into())
-                .map_err(IrohError::doc)
-        })
-    }
-
     /// Subscribe to events for this document.
     pub fn subscribe(&self, cb: Box<dyn SubscribeCallback>) -> Result<(), IrohError> {
         let client = self.inner.clone();
@@ -366,6 +333,17 @@ impl Doc {
         });
 
         Ok(())
+    }
+
+    /// Get status info for this document
+    pub fn status(&self) -> Result<OpenState, IrohError> {
+        block_on(&self.rt, async {
+            self.inner
+                .status()
+                .await
+                .map(|o| o.into())
+                .map_err(IrohError::doc)
+        })
     }
 }
 
@@ -419,7 +397,7 @@ impl NodeAddr {
 
     /// Get the derp region of this peer.
     pub fn derp_url(&self) -> Option<Arc<Url>> {
-        self.derp_url
+        self.derp_url.clone()
     }
 
     /// Returns true if both NodeAddr's have the same values
@@ -495,10 +473,10 @@ impl From<ShareMode> for iroh::rpc_protocol::ShareMode {
 /// [`NamespaceId`]. Its value is the 32-byte BLAKE3 [`hash`]
 /// of the entry's content data, the size of this content data, and a timestamp.
 #[derive(Debug, Clone)]
-pub struct Entry(pub(crate) iroh::sync::Entry);
+pub struct Entry(pub(crate) iroh::client::Entry);
 
-impl From<iroh::sync::Entry> for Entry {
-    fn from(e: iroh::sync::Entry) -> Self {
+impl From<iroh::client::Entry> for Entry {
+    fn from(e: iroh::client::Entry) -> Self {
         Entry(e)
     }
 }
@@ -507,6 +485,16 @@ impl Entry {
     /// Get the [`AuthorId`] of this entry.
     pub fn author(&self) -> Arc<AuthorId> {
         Arc::new(AuthorId(self.0.id().author()))
+    }
+
+    /// Get the content_hash of this entry.
+    pub fn content_hash(&self) -> Arc<Hash> {
+        Arc::new(Hash(self.0.content_hash()))
+    }
+
+    /// Get the content_length of this entry.
+    pub fn content_len(&self) -> u64 {
+        self.0.content_len()
     }
 
     /// Get the key of this entry.
@@ -519,14 +507,18 @@ impl Entry {
         Arc::new(NamespaceId(self.0.id().namespace()))
     }
 
-    /// Get the content_hash of this entry.
-    pub fn content_hash(&self) -> Arc<Hash> {
-        Arc::new(Hash(self.0.content_hash()))
-    }
-
-    /// Get the content_length of this entry.
-    pub fn content_len(&self) -> u64 {
-        self.0.content_len()
+    /// Read all content of an [`Entry`] into a buffer.
+    /// This allocates a buffer for the full entry. Use only if you know that the entry you're
+    /// reading is small. If not sure, use [`Self::content_len`] and check the size with
+    /// before calling [`Self::content_bytes`].
+    pub fn content_bytes(&self, doc: Arc<Doc>) -> Result<Vec<u8>, IrohError> {
+        block_on(&doc.rt, async {
+            self.0
+                .content_bytes(&doc.inner)
+                .await
+                .map(|c| c.to_vec())
+                .map_err(IrohError::entry)
+        })
     }
 }
 
@@ -1392,12 +1384,12 @@ mod tests {
         let ipv6 = SocketAddr::from_ipv6(ipv6_ip.into(), port);
         //
         // derp region
-        let derp_url = Arc::new(Url::from_string("https://derp.url").unwrap());
+        let derp_url = Arc::new(Url::from_string("https://derp.url".to_string()).unwrap());
         //
         // create a NodeAddr
         let addrs = vec![Arc::new(ipv4), Arc::new(ipv6)];
         let expect_addrs = addrs.clone();
-        let node_addr = NodeAddr::new(node_id.into(), Some(derp_url), addrs);
+        let node_addr = NodeAddr::new(node_id.into(), Some(derp_url.clone()), addrs);
         //
         // test we have returned the expected addresses
         let got_addrs = node_addr.direct_addresses();
@@ -1450,7 +1442,7 @@ mod tests {
     fn test_doc_ticket() {
         //
         // create id from string
-        let doc_ticket_str = "docaaqjjfgbzx2ry4zpaoujdppvqktgvfvpxgqubkghiialqovv7z4wosqbebpvjjp2tywajvg6unjza6dnugkalg4srmwkcucmhka7mgy4r3aa4aibayaeusjsjlcfoagavaa4xrcxaetag4aaq45mxvqaaaaaaaaadiu4kvybeybxaaehhlf5mdenfufmhk7nixcvoajganyabbz2zplgbno2vsnuvtkpyvlqcjqdoaaioowl22k3fc26qjx4ot6fk4";
+        let doc_ticket_str = "docaesh4ma4po2nngklsxsbmhsxbhu4nnrydt656lh3gpq37wzsxlj3sajal5kkl6u6fqcnjxvdkoihq3nbsqczxeulfsqvatb2qh3bwheoyahacitior2ha4z2f4xxk43fgewtcltemvzhaltjojxwqltomv2ho33snmxc6biajjeteswek4ambkabzpcfoajganyabbz2zplaaaaaaaaaagrjyvlqcjqdoaaioowl2yghrwv2hi3wwe6fk4asma3qacdtvs6wbsgs2cwdvpwulrkx";
         let doc_ticket = DocTicket::from_string(doc_ticket_str.into()).unwrap();
         //
         // call to_string, ensure equal
@@ -1532,7 +1524,7 @@ mod tests {
 
         assert!(hash.equal(entry.content_hash()));
 
-        let got_val = doc.read_to_bytes(entry.clone()).unwrap();
+        let got_val = entry.content_bytes(doc).unwrap();
         assert_eq!(val, got_val);
         assert_eq!(val.len() as u64, entry.content_len());
     }
