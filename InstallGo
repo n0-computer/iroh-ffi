@@ -3,17 +3,19 @@
 PLATFORM :=
 PROCESSOR :=
 VERSION :=
+FILE_NAME :=
 REPO_NAME := iroh-ffi
 LIB_NAME := libiroh
-DIR_NAME := iroh 
 PROJECT_NAME := n0-computer
 TAR_FILENAME :=
 
 IROH_FFI_DIR := extern/iroh-ffi
+GO_DIR := iroh-go/iroh
 
 # Detect the operating system
 ifeq ($(OS),Windows_NT)
     PLATFORM := windows
+    FILE_NAME := "$(IROH_FFI_DIR)/$(GO_DIR)/$(LIB_NAME)"
 else
     UNAME_S := $(shell uname -s)
     ifeq ($(UNAME_S),Linux)
@@ -22,6 +24,7 @@ else
     ifeq ($(UNAME_S),Darwin)
         PLATFORM := darwin
     endif
+    FILE_NAME := "$(IROH_FFI_DIR)/$(GO_DIR)/$(LIB_NAME).a"
 endif
 
 VERSION := $(shell cd $(IROH_FFI_DIR) && git describe --tags --match "v*" --abbrev=0)
@@ -36,7 +39,7 @@ ifeq ($(PROCESSOR),arm64)
 endif
 
 .PHONY: all
-all: check-platform check-processor get-version download-and-extract check-libiroh
+all: check-platform check-processor get-version download-and-extract check-libiroh-a
 
 .PHONY: check-platform
 check-platform:
@@ -56,18 +59,18 @@ download-and-extract:
 		@echo "Downloading from https://github.com/$(PROJECT_NAME)/$(REPO_NAME)/releases/download/$(VERSION)/$(LIB_NAME)-$(PLATFORM)-$(PROCESSOR)"
 		@if [ "$(PLATFORM)" = "windows" ]; then \
 			curl -L -o $(LIB_NAME)-$(PLATFORM)-$(PROCESSOR).zip https://github.com/$(PROJECT_NAME)/$(REPO_NAME)/releases/download/$(VERSION)/$(LIB_NAME)-$(PLATFORM)-$(PROCESSOR).zip; \
-			unzip -q $(LIB_NAME)-$(PLATFORM)-$(PROCESSOR).zip -d $(DIR_NAME); \
+			unzip -q $(LIB_NAME)-$(PLATFORM)-$(PROCESSOR).zip -d $(IROH_FFI_DIR)/$(GO_DIR); \
 			rm $(LIB_NAME)-$(PLATFORM)-$(PROCESSOR).zip; \
 		else \
 			curl -L -o $(LIB_NAME)-$(PLATFORM)-$(PROCESSOR).tar.gz https://github.com/$(PROJECT_NAME)/$(REPO_NAME)/releases/download/$(VERSION)/$(LIB_NAME)-$(PLATFORM)-$(PROCESSOR).tar.gz; \
-			tar -xf $(LIB_NAME)-$(PLATFORM)-$(PROCESSOR).tar.gz -C $(DIR_NAME); \
+			tar -xf $(LIB_NAME)-$(PLATFORM)-$(PROCESSOR).tar.gz -C $(IROH_FFI_DIR)/$(GO_DIR); \
 			rm $(LIB_NAME)-$(PLATFORM)-$(PROCESSOR).tar.gz; \
 		fi
 
-.PHONY: check-libiroh
-check-libiroh:
-		@if [ -n "$(wildcard ./extern/iroh-ffi/iroh/libiroh.a)" ]; then \
-				echo "Successfully downloaded and extracted release $(VERSION) to $(IROH_FFI_DIR)/$(DIR_NAME)"; \
+.PHONY: check-libiroh-a
+check-libiroh-a:
+		@if [ -s $(FILE_NAME) ]; then \
+				echo "Successfully downloaded and extracted release $(VERSION) to $(IROH_FFI_DIR)/$(GO_DIR)"; \
 		else \
-				echo "Unable to download and extract libiroh"; \
+				echo "Unable to download and extract $(LIB_NAME)"; \
 		fi
