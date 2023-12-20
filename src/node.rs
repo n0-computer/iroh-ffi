@@ -3,7 +3,6 @@ use std::{collections::HashMap, path::PathBuf, sync::Arc, time::Duration};
 use futures::stream::TryStreamExt;
 use iroh::{
     bytes::util::runtime::Handle,
-    net::key::SecretKey,
     node::{Node, DEFAULT_BIND_ADDR},
     rpc_protocol::{ProviderRequest, ProviderResponse},
 };
@@ -209,15 +208,16 @@ impl IrohNode {
 
         let rt_inner = rt.clone();
         let node = block_on(&rt, async move {
-            // TODO: store and load keypair
-            let secret_key = SecretKey::generate();
-
             tokio::fs::create_dir_all(&path).await?;
-            let docs_path = path.join("docs.db");
+            // create or load secret key
+            let secret_key_path = iroh::util::path::IrohPaths::SecretKey.with_root(&path);
+            let secret_key = iroh::util::fs::load_secret_key(secret_key_path).await?;
+
+            let docs_path = iroh::util::path::IrohPaths::DocsDatabase.with_root(&path);
             let docs = iroh::sync::store::fs::Store::new(&docs_path)?;
 
             // create a bao store for the iroh-bytes blobs
-            let blob_path = path.join("blobs");
+            let blob_path = iroh::util::path::IrohPaths::BaoFlatStoreComplete.with_root(&path);
             tokio::fs::create_dir_all(&blob_path).await?;
             let db = iroh::bytes::store::flat::Store::load(
                 &blob_path, &blob_path, &blob_path, &rt_inner,

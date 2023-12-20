@@ -1697,7 +1697,7 @@ dependencies = [
 
 [[package]]
 name = "iroh-ffi"
-version = "0.11.0-alpha"
+version = "0.11.0"
 dependencies = [
  "anyhow",
  "blake3",

@@ -94,7 +94,7 @@ jobs:
       shell: bash
       run: |
         outdir="./target/release"
-        staging="${{ env.BIN_NAME }}-${{ matrix.target }}"
+        staging="${{ env.LIB_NAME }}-${{ matrix.target }}"
         mkdir -p "$staging"
         if [ "${{ matrix.os }}" = "windows-latest" ]; then
           cp "target/release/${{ env.LIB_NAME }}" "$staging/"
@@ -102,7 +102,7 @@ jobs:
           7z a "../$staging.zip" .
           echo "ASSET=$staging.zip" >> $GITHUB_ENV
         else
-          cp "target/release/${{ env.LIB_NAME }}" "$staging/"
+          cp "target/release/${{ env.LIB_NAME }}.a" "$staging/"
           tar czf "$staging.tar.gz" -C "$staging" .
           echo "ASSET=$staging.tar.gz" >> $GITHUB_ENV
         fi
