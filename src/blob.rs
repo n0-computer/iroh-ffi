@@ -657,7 +657,10 @@ impl From<DownloadLocation> for iroh::rpc_protocol::DownloadLocation {
         match value {
             DownloadLocation::Internal => iroh::rpc_protocol::DownloadLocation::Internal,
             DownloadLocation::External { path, in_place } => {
-                iroh::rpc_protocol::DownloadLocation::External { path, in_place }
+                iroh::rpc_protocol::DownloadLocation::External {
+                    path: path.into(),
+                    in_place,
+                }
             }
         }
     }
@@ -862,7 +865,7 @@ impl From<iroh::bytes::provider::DownloadProgress> for DownloadProgress {
                 id,
                 hash: Arc::new(hash.into()),
                 size,
-                target,
+                target: target.into_os_string().into_string().unwrap(),
             }),
             iroh::bytes::provider::DownloadProgress::ExportProgress { id, offset } => {
                 DownloadProgress::ExportProgress(DownloadProgressExportProgress { id, offset })

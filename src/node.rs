@@ -257,7 +257,7 @@ impl IrohNode {
                 .stats()
                 .await
                 .map_err(IrohError::doc)?;
-            Ok(stats)
+            Ok(stats.into_iter().collect())
         })
     }
 
