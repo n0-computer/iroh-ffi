@@ -94,7 +94,7 @@ jobs:
       shell: bash
       run: |
         outdir="./target/release"
-        staging="${{ env.BIN_NAME }}-${{ matrix.target }}"
+        staging="${{ env.LIB_NAME }}-${{ matrix.target }}"
         mkdir -p "$staging"
         if [ "${{ matrix.os }}" = "windows-latest" ]; then
           cp "target/release/${{ env.LIB_NAME }}" "$staging/"
