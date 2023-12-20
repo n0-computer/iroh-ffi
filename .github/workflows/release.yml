@@ -102,7 +102,7 @@ jobs:
           7z a "../$staging.zip" .
           echo "ASSET=$staging.zip" >> $GITHUB_ENV
         else
-          cp "target/release/${{ env.LIB_NAME }}" "$staging/"
+          cp "target/release/${{ env.LIB_NAME }}.a" "$staging/"
           tar czf "$staging.tar.gz" -C "$staging" .
           echo "ASSET=$staging.tar.gz" >> $GITHUB_ENV
         fi
