@@ -97,7 +97,7 @@ jobs:
         staging="${{ env.LIB_NAME }}-${{ matrix.target }}"
         mkdir -p "$staging"
         if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          cp "target/release/${{ env.LIB_NAME }}" "$staging/"
+          cp "target/release/iroh.lib" "$staging/"
           cd "$staging"
           7z a "../$staging.zip" .
           echo "ASSET=$staging.zip" >> $GITHUB_ENV
