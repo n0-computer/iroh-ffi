@@ -2,7 +2,6 @@ use std::{collections::HashMap, path::PathBuf, sync::Arc, time::Duration};
 
 use futures::stream::TryStreamExt;
 use iroh::{
-    net::key::SecretKey,
     node::Node,
     rpc_protocol::{ProviderRequest, ProviderResponse},
 };
@@ -216,7 +215,7 @@ impl IrohNode {
             let docs = iroh::sync::store::fs::Store::new(&docs_path)?;
 
             // create a bao store for the iroh-bytes blobs
-            let blob_path = iroh::util::path::IrohPaths::BaoFlatStoreComplete.with_root(&path);
+            let blob_path = iroh::util::path::IrohPaths::BaoFlatStoreDir.with_root(&path);
             tokio::fs::create_dir_all(&blob_path).await?;
             let db = iroh::bytes::store::flat::Store::load(&blob_path).await?;
 

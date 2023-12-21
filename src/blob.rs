@@ -443,33 +443,31 @@ pub enum AddProgress {
     Abort(AddProgressAbort),
 }
 
-impl From<iroh::bytes::provider::AddProgress> for AddProgress {
-    fn from(value: iroh::bytes::provider::AddProgress) -> Self {
+impl From<iroh::rpc_protocol::AddProgress> for AddProgress {
+    fn from(value: iroh::rpc_protocol::AddProgress) -> Self {
         match value {
-            iroh::bytes::provider::AddProgress::Found { id, name, size } => {
+            iroh::rpc_protocol::AddProgress::Found { id, name, size } => {
                 AddProgress::Found(AddProgressFound { id, name, size })
             }
-            iroh::bytes::provider::AddProgress::Progress { id, offset } => {
+            iroh::rpc_protocol::AddProgress::Progress { id, offset } => {
                 AddProgress::Progress(AddProgressProgress { id, offset })
             }
-            iroh::bytes::provider::AddProgress::Done { id, hash } => {
+            iroh::rpc_protocol::AddProgress::Done { id, hash } => {
                 AddProgress::Done(AddProgressDone {
                     id,
                     hash: Arc::new(hash.into()),
                 })
             }
-            iroh::bytes::provider::AddProgress::AllDone { hash, format, tag } => {
+            iroh::rpc_protocol::AddProgress::AllDone { hash, format, tag } => {
                 AddProgress::AllDone(AddProgressAllDone {
                     hash: Arc::new(hash.into()),
                     format: format.into(),
                     tag: Arc::new(tag.into()),
                 })
             }
-            iroh::bytes::provider::AddProgress::Abort(err) => {
-                AddProgress::Abort(AddProgressAbort {
-                    error: err.to_string(),
-                })
-            }
+            iroh::rpc_protocol::AddProgress::Abort(err) => AddProgress::Abort(AddProgressAbort {
+                error: err.to_string(),
+            }),
         }
     }
 }
@@ -662,6 +660,19 @@ pub struct DownloadProgressFound {
 
 /// A DownloadProgress event indicating an item was found with hash `hash`, that can be referred to by `id`
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DownloadProgressFound {
+    /// child offset
+    child: u64,
+    /// The hash of the entry.
+    hash: Arc<Hash>,
+    /// The size of the entry in bytes.
+    size: u64,
+    /// The ranges that are available locally.
+    valid_ranges: RangeSpec,
+}
+
+/// A DownloadProgress event indicating an item was found with hash `hash`, that can be referred to by `id`
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DownloadProgressFoundHashSeq {
     /// Number of children in the collection, if known.
     pub children: u64,
@@ -734,6 +745,8 @@ pub enum DownloadProgress {
     Connected,
     /// An item was found with hash `hash`, from now on referred to via `id`
     Found(DownloadProgressFound),
+    /// Data was found locally
+    FoundLocal(DownloadProgressFoundLocal),
     /// An item was found with hash `hash`, from now on referred to via `id`
     FoundHashSeq(DownloadProgressFoundHashSeq),
     /// We got progress ingesting item `id`.
@@ -756,11 +769,11 @@ pub enum DownloadProgress {
     Abort(DownloadProgressAbort),
 }
 
-impl From<iroh::bytes::provider::DownloadProgress> for DownloadProgress {
-    fn from(value: iroh::bytes::provider::DownloadProgress) -> Self {
+impl From<iroh::rpc_protocol::DownloadProgress> for DownloadProgress {
+    fn from(value: iroh::rpc_protocol::DownloadProgress) -> Self {
         match value {
-            iroh::bytes::provider::DownloadProgress::Connected => DownloadProgress::Connected,
-            iroh::bytes::provider::DownloadProgress::Found {
+            iroh::rpc_protocol::DownloadProgress::Connected => DownloadProgress::Connected,
+            iroh::rpc_protocol::DownloadProgress::Found {
                 id,
                 hash,
                 child,
@@ -771,19 +784,19 @@ impl From<iroh::bytes::provider::DownloadProgress> for DownloadProgress {
                 child,
                 size,
             }),
-            iroh::bytes::provider::DownloadProgress::FoundHashSeq { hash, children } => {
+            iroh::rpc_protocol::DownloadProgress::FoundHashSeq { hash, children } => {
                 DownloadProgress::FoundHashSeq(DownloadProgressFoundHashSeq {
                     hash: Arc::new(hash.into()),
                     children,
                 })
             }
-            iroh::bytes::provider::DownloadProgress::Progress { id, offset } => {
+            iroh::rpc_protocol::DownloadProgress::Progress { id, offset } => {
                 DownloadProgress::Progress(DownloadProgressProgress { id, offset })
             }
-            iroh::bytes::provider::DownloadProgress::Done { id } => {
+            iroh::rpc_protocol::DownloadProgress::Done { id } => {
                 DownloadProgress::Done(DownloadProgressDone { id })
             }
-            iroh::bytes::provider::DownloadProgress::NetworkDone {
+            iroh::rpc_protocol::DownloadProgress::NetworkDone {
                 bytes_written,
                 bytes_read,
                 elapsed,
@@ -792,7 +805,7 @@ impl From<iroh::bytes::provider::DownloadProgress> for DownloadProgress {
                 bytes_read,
                 elapsed,
             }),
-            iroh::bytes::provider::DownloadProgress::Export {
+            iroh::rpc_protocol::DownloadProgress::Export {
                 id,
                 hash,
                 size,
@@ -803,11 +816,11 @@ impl From<iroh::bytes::provider::DownloadProgress> for DownloadProgress {
                 size,
                 target: target.into_os_string().into_string().unwrap(),
             }),
-            iroh::bytes::provider::DownloadProgress::ExportProgress { id, offset } => {
+            iroh::rpc_protocol::DownloadProgress::ExportProgress { id, offset } => {
                 DownloadProgress::ExportProgress(DownloadProgressExportProgress { id, offset })
             }
-            iroh::bytes::provider::DownloadProgress::AllDone => DownloadProgress::AllDone,
-            iroh::bytes::provider::DownloadProgress::Abort(err) => {
+            iroh::rpc_protocol::DownloadProgress::AllDone => DownloadProgress::AllDone,
+            iroh::rpc_protocol::DownloadProgress::Abort(err) => {
                 DownloadProgress::Abort(DownloadProgressAbort {
                     error: err.to_string(),
                 })
@@ -1382,14 +1395,14 @@ mod tests {
         while let Some(progress) = stream.next().await {
             let progress = progress.unwrap();
             match progress {
-                iroh::bytes::provider::AddProgress::AllDone { hash, format, .. } => {
+                iroh::rpc_protocol::AddProgress::AllDone { hash, format, .. } => {
                     collection_hash = Some(hash);
                     collection_format = Some(format);
                 }
-                iroh::bytes::provider::AddProgress::Abort(err) => {
+                iroh::rpc_protocol::AddProgress::Abort(err) => {
                     panic!("{}", err);
                 }
-                iroh::bytes::provider::AddProgress::Done { hash, .. } => hashes.push(hash),
+                iroh::rpc_protocol::AddProgress::Done { hash, .. } => hashes.push(hash),
                 _ => {}
             }
         }
