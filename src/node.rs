@@ -7,7 +7,6 @@ use iroh::{
 };
 use quic_rpc::transport::flume::FlumeConnection;
 
-use crate::runtime::Handle;
 use crate::{block_on, IrohError, NodeAddr, PublicKey, SocketAddr, Url};
 
 /// Stats counter
@@ -185,7 +184,7 @@ impl From<iroh::net::magicsock::ConnectionType> for ConnectionType {
 /// An Iroh node. Allows you to sync, store, and transfer data.
 pub struct IrohNode {
     pub(crate) node: Node<iroh::bytes::store::flat::Store>,
-    pub(crate) async_runtime: Handle,
+    pub(crate) async_runtime: tokio::runtime::Handle,
     pub(crate) sync_client: iroh::client::Iroh<FlumeConnection<ProviderResponse, ProviderRequest>>,
     #[allow(dead_code)]
     pub(crate) tokio_rt: tokio::runtime::Runtime,
@@ -202,8 +201,7 @@ impl IrohNode {
             .enable_all()
             .build()
             .map_err(IrohError::runtime)?;
-
-        let rt = Handle::new(tokio_rt.handle().clone());
+        let rt = tokio_rt.handle().clone();
 
         let node = block_on(&rt, async move {
             tokio::fs::create_dir_all(&path).await?;

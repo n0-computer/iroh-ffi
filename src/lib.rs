@@ -5,7 +5,6 @@ mod error;
 mod key;
 mod net;
 mod node;
-mod runtime;
 mod tag;
 
 pub use self::author::*;
@@ -21,8 +20,6 @@ use futures::Future;
 use iroh::metrics::try_init_metrics_collection;
 
 use tracing_subscriber::filter::LevelFilter;
-
-use crate::runtime::Handle;
 
 /// The logging level. See the rust (log crate)[https://docs.rs/log] for more information.
 #[derive(Debug)]
@@ -66,10 +63,10 @@ pub fn start_metrics_collection() -> Result<(), IrohError> {
     try_init_metrics_collection().map_err(IrohError::runtime)
 }
 
-fn block_on<F: Future<Output = T>, T>(rt: &Handle, fut: F) -> T {
+fn block_on<F: Future<Output = T>, T>(rt: &tokio::runtime::Handle, fut: F) -> T {
     tokio::task::block_in_place(move || match tokio::runtime::Handle::try_current() {
         Ok(handle) => handle.block_on(fut),
-        Err(_) => rt.main().block_on(fut),
+        Err(_) => rt.block_on(fut),
     })
 }
 

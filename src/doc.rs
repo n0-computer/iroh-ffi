@@ -10,7 +10,6 @@ pub use iroh::sync::CapabilityKind;
 
 use quic_rpc::transport::flume::FlumeConnection;
 
-use crate::runtime::Handle;
 use crate::{
     block_on, AuthorId, Hash, IrohError, IrohNode, PublicKey, SocketAddr, SocketAddrType, Url,
 };
@@ -119,7 +118,7 @@ pub struct NamespaceAndCapability {
 /// A representation of a mutable, synchronizable key-value store.
 pub struct Doc {
     pub(crate) inner: ClientDoc<FlumeConnection<ProviderResponse, ProviderRequest>>,
-    pub(crate) rt: Handle,
+    pub(crate) rt: tokio::runtime::Handle,
 }
 
 impl Doc {
@@ -316,7 +315,7 @@ impl Doc {
     /// Subscribe to events for this document.
     pub fn subscribe(&self, cb: Box<dyn SubscribeCallback>) -> Result<(), IrohError> {
         let client = self.inner.clone();
-        self.rt.main().spawn(async move {
+        self.rt.spawn(async move {
             let mut sub = client.subscribe().await.unwrap();
             while let Some(event) = sub.next().await {
                 match event {
