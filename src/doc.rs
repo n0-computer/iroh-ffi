@@ -345,6 +345,27 @@ impl Doc {
                 .map_err(IrohError::doc)
         })
     }
+
+    /// Set the download policy for this document
+    pub fn set_download_policy(&self, policy: Arc<DownloadPolicy>) -> Result<(), IrohError> {
+        block_on(&self.rt, async {
+            self.inner
+                .set_download_policy((*policy).clone().into())
+                .await
+                .map_err(IrohError::doc)
+        })
+    }
+
+    /// Get the download policy for this document
+    pub fn get_download_policy(&self) -> Result<Arc<DownloadPolicy>, IrohError> {
+        block_on(&self.rt, async {
+            self.inner
+                .get_download_policy()
+                .await
+                .map(|policy| Arc::new(policy.into()))
+                .map_err(IrohError::doc)
+        })
+    }
 }
 
 /// Download policy to decide which content blobs shall be downloaded.
@@ -378,6 +399,40 @@ impl DownloadPolicy {
     }
 }
 
+impl From<iroh::sync::store::DownloadPolicy> for DownloadPolicy {
+    fn from(value: iroh::sync::store::DownloadPolicy) -> Self {
+        match value {
+            iroh::sync::store::DownloadPolicy::NothingExcept(filters) => {
+                DownloadPolicy::NothingExcept(
+                    filters.into_iter().map(|f| Arc::new(f.into())).collect(),
+                )
+            }
+            iroh::sync::store::DownloadPolicy::EverythingExcept(filters) => {
+                DownloadPolicy::EverythingExcept(
+                    filters.into_iter().map(|f| Arc::new(f.into())).collect(),
+                )
+            }
+        }
+    }
+}
+
+impl From<DownloadPolicy> for iroh::sync::store::DownloadPolicy {
+    fn from(value: DownloadPolicy) -> Self {
+        match value {
+            DownloadPolicy::NothingExcept(filters) => {
+                iroh::sync::store::DownloadPolicy::NothingExcept(
+                    filters.into_iter().map(|f| f.0.clone()).collect(),
+                )
+            }
+            DownloadPolicy::EverythingExcept(filters) => {
+                iroh::sync::store::DownloadPolicy::EverythingExcept(
+                    filters.into_iter().map(|f| f.0.clone()).collect(),
+                )
+            }
+        }
+    }
+}
+
 /// Filter strategy used in download policies.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FilterKind(pub(crate) iroh::sync::store::FilterKind);
@@ -400,6 +455,12 @@ impl FilterKind {
         FilterKind(iroh::sync::store::FilterKind::Exact(bytes::Bytes::from(
             key,
         )))
+    }
+}
+
+impl From<iroh::sync::store::FilterKind> for FilterKind {
+    fn from(value: iroh::sync::store::FilterKind) -> Self {
+        FilterKind(value)
     }
 }
 

@@ -1,5 +1,5 @@
 # tests that correspond to the `src/doc.rs` rust api
-from iroh import IrohNode, PublicKey, SocketAddr, NodeAddr, Ipv4Addr, Ipv6Addr, iroh, AuthorId, NamespaceId, DocTicket, Query, SortBy, SortDirection, QueryOptions, path_to_key, key_to_path
+from iroh import IrohNode, PublicKey, SocketAddr, NodeAddr, Ipv4Addr, Ipv6Addr, iroh, AuthorId, NamespaceId, DocTicket, Query, SortBy, SortDirection, QueryOptions, path_to_key, key_to_path, Url
 import pytest
 import tempfile
 import os
@@ -20,12 +20,12 @@ def test_node_addr():
     ipv4 = SocketAddr.from_ipv4(ipv4_ip, port)
     ipv6 = SocketAddr.from_ipv6(ipv6_ip, port)
     #
-    # derp region
-    derp_region = 1
+    # derp url 
+    derp_url = Url.from_string("https://example.com")
     #
     # create a NodeAddr
     expect_addrs = [ipv4, ipv6]
-    node_addr = NodeAddr(node_id, derp_region, expect_addrs)
+    node_addr = NodeAddr(node_id, derp_url, expect_addrs)
     #
     # test we have returned the expected addresses
     got_addrs = node_addr.direct_addresses()
@@ -33,7 +33,7 @@ def test_node_addr():
         assert got.equal(expect)
         assert expect.equal(got)
     
-    assert derp_region == node_addr.derp_region()
+    assert derp_url.equal(node_addr.derp_url())
 
 def test_namespace_id():
     #
@@ -70,7 +70,7 @@ def test_author_id():
 def test_doc_ticket():
     #
     # create id from string
-    doc_ticket_str = "docaaqjjfgbzx2ry4zpaoujdppvqktgvfvpxgqubkghiialqovv7z4wosqbebpvjjp2tywajvg6unjza6dnugkalg4srmwkcucmhka7mgy4r3aa4aibayaeusjsjlcfoagavaa4xrcxaetag4aaq45mxvqaaaaaaaaadiu4kvybeybxaaehhlf5mdenfufmhk7nixcvoajganyabbz2zplgbno2vsnuvtkpyvlqcjqdoaaioowl22k3fc26qjx4ot6fk4"
+    doc_ticket_str = "docaaa7qg6afc6zupqzfxmu5uuueaoei5zlye7a4ahhrfhvzjfrfewozgybl5kkl6u6fqcnjxvdkoihq3nbsqczxeulfsqvatb2qh3bwheoyahacitior2ha4z2f4xxk43fgewtcltemvzhaltjojxwqltomv2ho33snmxc6biajjeteswek4ambkabzpcfoajganyabbz2zplaaaaaaaaaagrjyvlqcjqdoaaioowl2ygi2likyov62rofk4asma3qacdtvs6whqsdbizopsefrrkx"
     doc_ticket = DocTicket.from_string(doc_ticket_str)
     #
     # call to_string, ensure equal
@@ -144,9 +144,9 @@ def test_doc_entry_basics():
     query = Query.author_key_exact(author, key)
     entry = doc.get_one(query)
     assert hash.equal(entry.content_hash())
-    got_val = doc.read_to_bytes(entry)
-    assert val == got_val
     assert len(val) == entry.content_len()
+    got_val = entry.content_bytes(doc)
+    assert val == got_val
 
 def test_doc_import_export():
     #

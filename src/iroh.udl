@@ -229,6 +229,12 @@ interface Doc {
   /// Get status info for this document
   [Throws=IrohError]
   OpenState status();
+  /// Set the download policy for this document
+  [Throws=IrohError]
+  void set_download_policy(DownloadPolicy policy);
+  /// Get the download policy for this document
+  [Throws=IrohError]
+  DownloadPolicy get_download_policy();
 };
 
 /// The type of `DocImportProgress` event
@@ -554,6 +560,9 @@ interface Hash {
   /// Create a Hash from its raw bytes representation.
   [Name=from_bytes, Throws=IrohError]
   constructor(bytes bytes);
+  /// Make a Hash from hex string
+  [Name=from_string, Throws=IrohError]
+  constructor(string s);
   /// Convert the hash to a hex string.
   string to_hex();
 };

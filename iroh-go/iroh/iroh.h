@@ -135,7 +135,6 @@ void* uniffi_iroh_fn_constructor_blobdownloadrequest_new(
 	void* node,
 	void* tag,
 	void* out,
-	RustBuffer token,
 	RustCallStatus* out_status
 );
 
@@ -154,7 +153,7 @@ RustBuffer uniffi_iroh_fn_method_connectiontype_as_mixed(
 	RustCallStatus* out_status
 );
 
-uint16_t uniffi_iroh_fn_method_connectiontype_as_relay(
+void* uniffi_iroh_fn_method_connectiontype_as_relay(
 	void* ptr,
 	RustCallStatus* out_status
 );
@@ -214,6 +213,11 @@ void uniffi_iroh_fn_method_doc_export_file(
 	RustCallStatus* out_status
 );
 
+void* uniffi_iroh_fn_method_doc_get_download_policy(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
 RustBuffer uniffi_iroh_fn_method_doc_get_exact(
 	void* ptr,
 	void* author,
@@ -254,17 +258,17 @@ void uniffi_iroh_fn_method_doc_leave(
 	RustCallStatus* out_status
 );
 
-RustBuffer uniffi_iroh_fn_method_doc_read_to_bytes(
-	void* ptr,
-	void* entry,
-	RustCallStatus* out_status
-);
-
 void* uniffi_iroh_fn_method_doc_set_bytes(
 	void* ptr,
 	void* author,
 	RustBuffer key,
 	RustBuffer value,
+	RustCallStatus* out_status
+);
+
+void uniffi_iroh_fn_method_doc_set_download_policy(
+	void* ptr,
+	void* policy,
 	RustCallStatus* out_status
 );
 
@@ -280,12 +284,6 @@ void uniffi_iroh_fn_method_doc_set_hash(
 void* uniffi_iroh_fn_method_doc_share(
 	void* ptr,
 	RustBuffer mode,
-	RustCallStatus* out_status
-);
-
-uint64_t uniffi_iroh_fn_method_doc_size(
-	void* ptr,
-	void* entry,
 	RustCallStatus* out_status
 );
 
@@ -402,6 +400,29 @@ void* uniffi_iroh_fn_constructor_downloadlocation_internal(
 	RustCallStatus* out_status
 );
 
+void uniffi_iroh_fn_free_downloadpolicy(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+void* uniffi_iroh_fn_constructor_downloadpolicy_everything(
+	RustCallStatus* out_status
+);
+
+void* uniffi_iroh_fn_constructor_downloadpolicy_everything_except(
+	RustBuffer filters,
+	RustCallStatus* out_status
+);
+
+void* uniffi_iroh_fn_constructor_downloadpolicy_nothing(
+	RustCallStatus* out_status
+);
+
+void* uniffi_iroh_fn_constructor_downloadpolicy_nothing_except(
+	RustBuffer filters,
+	RustCallStatus* out_status
+);
+
 void uniffi_iroh_fn_free_downloadprogress(
 	void* ptr,
 	RustCallStatus* out_status
@@ -462,6 +483,12 @@ void* uniffi_iroh_fn_method_entry_author(
 	RustCallStatus* out_status
 );
 
+RustBuffer uniffi_iroh_fn_method_entry_content_bytes(
+	void* ptr,
+	void* doc,
+	RustCallStatus* out_status
+);
+
 void* uniffi_iroh_fn_method_entry_content_hash(
 	void* ptr,
 	RustCallStatus* out_status
@@ -482,6 +509,27 @@ void* uniffi_iroh_fn_method_entry_namespace(
 	RustCallStatus* out_status
 );
 
+void uniffi_iroh_fn_free_filterkind(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+void* uniffi_iroh_fn_constructor_filterkind_exact(
+	RustBuffer key,
+	RustCallStatus* out_status
+);
+
+void* uniffi_iroh_fn_constructor_filterkind_prefix(
+	RustBuffer prefix,
+	RustCallStatus* out_status
+);
+
+int8_t uniffi_iroh_fn_method_filterkind_matches(
+	void* ptr,
+	RustBuffer key,
+	RustCallStatus* out_status
+);
+
 void uniffi_iroh_fn_free_hash(
 	void* ptr,
 	RustCallStatus* out_status
@@ -492,23 +540,8 @@ void* uniffi_iroh_fn_constructor_hash_from_bytes(
 	RustCallStatus* out_status
 );
 
-void* uniffi_iroh_fn_constructor_hash_from_cid_bytes(
-	RustBuffer bytes,
-	RustCallStatus* out_status
-);
-
-void* uniffi_iroh_fn_constructor_hash_from_string(
-	RustBuffer str,
-	RustCallStatus* out_status
-);
-
 void* uniffi_iroh_fn_constructor_hash_new(
 	RustBuffer buf,
-	RustCallStatus* out_status
-);
-
-RustBuffer uniffi_iroh_fn_method_hash_as_cid_bytes(
-	void* ptr,
 	RustCallStatus* out_status
 );
 
@@ -822,12 +855,12 @@ void uniffi_iroh_fn_free_nodeaddr(
 
 void* uniffi_iroh_fn_constructor_nodeaddr_new(
 	void* node_id,
-	RustBuffer region_id,
+	RustBuffer derp_url,
 	RustBuffer addresses,
 	RustCallStatus* out_status
 );
 
-RustBuffer uniffi_iroh_fn_method_nodeaddr_derp_region(
+RustBuffer uniffi_iroh_fn_method_nodeaddr_derp_url(
 	void* ptr,
 	RustCallStatus* out_status
 );
@@ -955,33 +988,18 @@ uint64_t uniffi_iroh_fn_method_query_offset(
 	RustCallStatus* out_status
 );
 
-void uniffi_iroh_fn_free_requesttoken(
+void uniffi_iroh_fn_free_rangespec(
 	void* ptr,
 	RustCallStatus* out_status
 );
 
-void* uniffi_iroh_fn_constructor_requesttoken_from_string(
-	RustBuffer str,
-	RustCallStatus* out_status
-);
-
-void* uniffi_iroh_fn_constructor_requesttoken_generate(
-	RustCallStatus* out_status
-);
-
-void* uniffi_iroh_fn_constructor_requesttoken_new(
-	RustBuffer bytes,
-	RustCallStatus* out_status
-);
-
-RustBuffer uniffi_iroh_fn_method_requesttoken_as_bytes(
+int8_t uniffi_iroh_fn_method_rangespec_is_all(
 	void* ptr,
 	RustCallStatus* out_status
 );
 
-int8_t uniffi_iroh_fn_method_requesttoken_equal(
+int8_t uniffi_iroh_fn_method_rangespec_is_empty(
 	void* ptr,
-	void* other,
 	RustCallStatus* out_status
 );
 
@@ -1138,6 +1156,27 @@ RustBuffer uniffi_iroh_fn_method_tag_to_bytes(
 );
 
 RustBuffer uniffi_iroh_fn_method_tag_to_string(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+void uniffi_iroh_fn_free_url(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+void* uniffi_iroh_fn_constructor_url_from_string(
+	RustBuffer s,
+	RustCallStatus* out_status
+);
+
+int8_t uniffi_iroh_fn_method_url_equal(
+	void* ptr,
+	void* other,
+	RustCallStatus* out_status
+);
+
+RustBuffer uniffi_iroh_fn_method_url_to_string(
 	void* ptr,
 	RustCallStatus* out_status
 );
@@ -1595,6 +1634,10 @@ uint16_t uniffi_iroh_checksum_method_doc_export_file(
 	RustCallStatus* out_status
 );
 
+uint16_t uniffi_iroh_checksum_method_doc_get_download_policy(
+	RustCallStatus* out_status
+);
+
 uint16_t uniffi_iroh_checksum_method_doc_get_exact(
 	RustCallStatus* out_status
 );
@@ -1619,11 +1662,11 @@ uint16_t uniffi_iroh_checksum_method_doc_leave(
 	RustCallStatus* out_status
 );
 
-uint16_t uniffi_iroh_checksum_method_doc_read_to_bytes(
+uint16_t uniffi_iroh_checksum_method_doc_set_bytes(
 	RustCallStatus* out_status
 );
 
-uint16_t uniffi_iroh_checksum_method_doc_set_bytes(
+uint16_t uniffi_iroh_checksum_method_doc_set_download_policy(
 	RustCallStatus* out_status
 );
 
@@ -1632,10 +1675,6 @@ uint16_t uniffi_iroh_checksum_method_doc_set_hash(
 );
 
 uint16_t uniffi_iroh_checksum_method_doc_share(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_method_doc_size(
 	RustCallStatus* out_status
 );
 
@@ -1739,6 +1778,10 @@ uint16_t uniffi_iroh_checksum_method_entry_author(
 	RustCallStatus* out_status
 );
 
+uint16_t uniffi_iroh_checksum_method_entry_content_bytes(
+	RustCallStatus* out_status
+);
+
 uint16_t uniffi_iroh_checksum_method_entry_content_hash(
 	RustCallStatus* out_status
 );
@@ -1755,7 +1798,7 @@ uint16_t uniffi_iroh_checksum_method_entry_namespace(
 	RustCallStatus* out_status
 );
 
-uint16_t uniffi_iroh_checksum_method_hash_as_cid_bytes(
+uint16_t uniffi_iroh_checksum_method_filterkind_matches(
 	RustCallStatus* out_status
 );
 
@@ -1931,7 +1974,7 @@ uint16_t uniffi_iroh_checksum_method_namespaceid_to_string(
 	RustCallStatus* out_status
 );
 
-uint16_t uniffi_iroh_checksum_method_nodeaddr_derp_region(
+uint16_t uniffi_iroh_checksum_method_nodeaddr_derp_url(
 	RustCallStatus* out_status
 );
 
@@ -1979,11 +2022,11 @@ uint16_t uniffi_iroh_checksum_method_query_offset(
 	RustCallStatus* out_status
 );
 
-uint16_t uniffi_iroh_checksum_method_requesttoken_as_bytes(
+uint16_t uniffi_iroh_checksum_method_rangespec_is_all(
 	RustCallStatus* out_status
 );
 
-uint16_t uniffi_iroh_checksum_method_requesttoken_equal(
+uint16_t uniffi_iroh_checksum_method_rangespec_is_empty(
 	RustCallStatus* out_status
 );
 
@@ -2047,6 +2090,14 @@ uint16_t uniffi_iroh_checksum_method_tag_to_string(
 	RustCallStatus* out_status
 );
 
+uint16_t uniffi_iroh_checksum_method_url_equal(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_url_to_string(
+	RustCallStatus* out_status
+);
+
 uint16_t uniffi_iroh_checksum_constructor_authorid_from_string(
 	RustCallStatus* out_status
 );
@@ -2067,15 +2118,31 @@ uint16_t uniffi_iroh_checksum_constructor_downloadlocation_internal(
 	RustCallStatus* out_status
 );
 
+uint16_t uniffi_iroh_checksum_constructor_downloadpolicy_everything(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_constructor_downloadpolicy_everything_except(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_constructor_downloadpolicy_nothing(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_constructor_downloadpolicy_nothing_except(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_constructor_filterkind_exact(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_constructor_filterkind_prefix(
+	RustCallStatus* out_status
+);
+
 uint16_t uniffi_iroh_checksum_constructor_hash_from_bytes(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_constructor_hash_from_cid_bytes(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_constructor_hash_from_string(
 	RustCallStatus* out_status
 );
 
@@ -2147,18 +2214,6 @@ uint16_t uniffi_iroh_checksum_constructor_query_single_latest_per_key(
 	RustCallStatus* out_status
 );
 
-uint16_t uniffi_iroh_checksum_constructor_requesttoken_from_string(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_constructor_requesttoken_generate(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_constructor_requesttoken_new(
-	RustCallStatus* out_status
-);
-
 uint16_t uniffi_iroh_checksum_constructor_settagoption_auto(
 	RustCallStatus* out_status
 );
@@ -2196,6 +2251,10 @@ uint16_t uniffi_iroh_checksum_constructor_tag_from_bytes(
 );
 
 uint16_t uniffi_iroh_checksum_constructor_tag_from_string(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_constructor_url_from_string(
 	RustCallStatus* out_status
 );
 
