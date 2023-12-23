@@ -633,6 +633,7 @@ pub trait DownloadCallback: Send + Sync + 'static {
 /// The different types of DownloadProgress events
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DownloadProgressType {
+    FoundLocal,
     Connected,
     Found,
     FoundHashSeq,
@@ -658,17 +659,17 @@ pub struct DownloadProgressFound {
     pub size: u64,
 }
 
-/// A DownloadProgress event indicating an item was found with hash `hash`, that can be referred to by `id`
+/// A DownloadProgress event indicating an entry was found locally
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DownloadProgressFound {
+pub struct DownloadProgressFoundLocal {
     /// child offset
-    child: u64,
+    pub child: u64,
     /// The hash of the entry.
-    hash: Arc<Hash>,
+    pub hash: Arc<Hash>,
     /// The size of the entry in bytes.
-    size: u64,
+    pub size: u64,
     /// The ranges that are available locally.
-    valid_ranges: RangeSpec,
+    pub valid_ranges: Arc<RangeSpec>,
 }
 
 /// A DownloadProgress event indicating an item was found with hash `hash`, that can be referred to by `id`
@@ -772,6 +773,17 @@ pub enum DownloadProgress {
 impl From<iroh::rpc_protocol::DownloadProgress> for DownloadProgress {
     fn from(value: iroh::rpc_protocol::DownloadProgress) -> Self {
         match value {
+            iroh::rpc_protocol::DownloadProgress::FoundLocal {
+                child,
+                hash,
+                size,
+                valid_ranges,
+            } => DownloadProgress::FoundLocal(DownloadProgressFoundLocal {
+                child,
+                hash: Arc::new(hash.into()),
+                size,
+                valid_ranges: Arc::new(valid_ranges.into()),
+            }),
             iroh::rpc_protocol::DownloadProgress::Connected => DownloadProgress::Connected,
             iroh::rpc_protocol::DownloadProgress::Found {
                 id,
@@ -833,6 +845,7 @@ impl DownloadProgress {
     /// Get the type of event
     pub fn r#type(&self) -> DownloadProgressType {
         match self {
+            DownloadProgress::FoundLocal(_) => DownloadProgressType::FoundLocal,
             DownloadProgress::Connected => DownloadProgressType::Connected,
             DownloadProgress::Found(_) => DownloadProgressType::Found,
             DownloadProgress::FoundHashSeq(_) => DownloadProgressType::FoundHashSeq,
@@ -843,6 +856,14 @@ impl DownloadProgress {
             DownloadProgress::ExportProgress(_) => DownloadProgressType::ExportProgress,
             DownloadProgress::AllDone => DownloadProgressType::AllDone,
             DownloadProgress::Abort(_) => DownloadProgressType::Abort,
+        }
+    }
+
+    /// Return the `DownloadProgressFoundLocal` event
+    pub fn as_found_local(&self) -> DownloadProgressFoundLocal {
+        match self {
+            DownloadProgress::FoundLocal(f) => f.clone(),
+            _ => panic!("DownloadProgress type is not 'FoundLocal'"),
         }
     }
 
@@ -908,6 +929,28 @@ impl DownloadProgress {
             DownloadProgress::Abort(a) => a.clone(),
             _ => panic!("DownloadProgress type is not 'Abort'"),
         }
+    }
+}
+
+/// A chunk range specification as a sequence of chunk offsets
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RangeSpec(pub(crate) iroh::bytes::protocol::RangeSpec);
+
+impl RangeSpec {
+    /// Checks if this [`RangeSpec`] does not select any chunks in the blob
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    /// Check if this [`RangeSpec`] selects all chunks in the blob
+    pub fn is_all(&self) -> bool {
+        self.0.is_all()
+    }
+}
+
+impl From<iroh::bytes::protocol::RangeSpec> for RangeSpec {
+    fn from(h: iroh::bytes::protocol::RangeSpec) -> Self {
+        RangeSpec(h)
     }
 }
 

@@ -1079,6 +1079,26 @@ dictionary DownloadProgressFound {
   u64 size;
 };
 
+/// A DownloadProgress event indicating an entry was found locally
+dictionary DownloadProgressFoundLocal {
+  /// child offset
+  u64 child;
+  /// The hash of the entry.
+  Hash hash;
+  /// The size of the entry in bytes.
+  u64 size;
+  /// The ranges that are available locally.
+  RangeSpec valid_ranges;
+};
+
+/// A chunk range specification as a sequence of chunk offsets
+interface RangeSpec {
+  /// Checks if this [`RangeSpec`] does not select any chunks in the blob
+  boolean is_empty();
+  /// Check if this [`RangeSpec`] selects all chunks in the blob
+  boolean is_all();
+};
+
 /// A DownloadProgress event indicating an item was found with hash `hash`, that can be referred to by `id`
 dictionary DownloadProgressFoundHashSeq {
   /// Number of children in the collection, if known.
@@ -1143,6 +1163,8 @@ dictionary DownloadProgressAbort {
 
 /// The kinds of progress events that can occur in a `DownloadProgress`
 enum DownloadProgressType {
+  /// Data was found locally
+  "FoundLocal",
   /// A new connection was established.
   "Connected",
   /// An item was found with hash `hash`, from now on referred to via `id`
@@ -1167,6 +1189,35 @@ enum DownloadProgressType {
   ///
   /// This will be the last message in the stream.
   "Abort",
+};
+
+
+/// Filter strategy used in download policies.
+interface FilterKind {
+  /// Verifies whether this filter matches a given key
+  boolean matches(bytes key);
+  /// Returns a FilterKind that matches if the contained bytes are a prefix of the key.
+  [Name=prefix]
+  constructor(bytes prefix);
+  /// Returns a FilterKind that matches if the contained bytes and the key are the same.
+  [Name=exact]
+  constructor(bytes key);
+};
+
+/// Download policy to decide which content blobs shall be downloaded.
+interface DownloadPolicy {
+  /// Download everything
+  [Name=everything]
+  constructor();
+  /// Download nothing
+  [Name=nothing]
+  constructor();
+  /// Download nothing except keys that match the given filters
+  [Name=nothing_except]
+  constructor(sequence<FilterKind> filters);
+  /// Download everything except keys that match the given filters
+  [Name=everything_except]
+  constructor(sequence<FilterKind> filters);
 };
 
 /// A response to a list blobs request

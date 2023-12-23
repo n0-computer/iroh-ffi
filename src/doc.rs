@@ -347,6 +347,62 @@ impl Doc {
     }
 }
 
+/// Download policy to decide which content blobs shall be downloaded.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DownloadPolicy {
+    /// Do not download any key unless it matches one of the filters.
+    NothingExcept(Vec<Arc<FilterKind>>),
+    /// Download every key unless it matches one of the filters.
+    EverythingExcept(Vec<Arc<FilterKind>>),
+}
+
+impl DownloadPolicy {
+    /// Download everything
+    pub fn everything() -> Self {
+        DownloadPolicy::EverythingExcept(Vec::default())
+    }
+
+    /// Download nothing
+    pub fn nothing() -> Self {
+        DownloadPolicy::NothingExcept(Vec::default())
+    }
+
+    /// Download nothing except keys that match the given filters
+    pub fn nothing_except(filters: Vec<Arc<FilterKind>>) -> Self {
+        DownloadPolicy::NothingExcept(filters)
+    }
+
+    /// Download everything except keys that match the given filters
+    pub fn everything_except(filters: Vec<Arc<FilterKind>>) -> Self {
+        DownloadPolicy::EverythingExcept(filters)
+    }
+}
+
+/// Filter strategy used in download policies.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FilterKind(pub(crate) iroh::sync::store::FilterKind);
+
+impl FilterKind {
+    /// Verifies whether this filter matches a given key
+    pub fn matches(&self, key: Vec<u8>) -> bool {
+        self.0.matches(key)
+    }
+
+    /// Returns a FilterKind that matches if the contained bytes are a prefix of the key.
+    pub fn prefix(prefix: Vec<u8>) -> FilterKind {
+        FilterKind(iroh::sync::store::FilterKind::Prefix(bytes::Bytes::from(
+            prefix,
+        )))
+    }
+
+    /// Returns a FilterKind that matches if the contained bytes and the key are the same.
+    pub fn exact(key: Vec<u8>) -> FilterKind {
+        FilterKind(iroh::sync::store::FilterKind::Exact(bytes::Bytes::from(
+            key,
+        )))
+    }
+}
+
 /// The state for an open replica.
 #[derive(Debug, Clone, Copy)]
 pub struct OpenState {
