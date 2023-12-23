@@ -1558,7 +1558,7 @@ mod tests {
     fn test_doc_ticket() {
         //
         // create id from string
-        let doc_ticket_str = "docaesh4ma4po2nngklsxsbmhsxbhu4nnrydt656lh3gpq37wzsxlj3sajal5kkl6u6fqcnjxvdkoihq3nbsqczxeulfsqvatb2qh3bwheoyahacitior2ha4z2f4xxk43fgewtcltemvzhaltjojxwqltomv2ho33snmxc6biajjeteswek4ambkabzpcfoajganyabbz2zplaaaaaaaaaagrjyvlqcjqdoaaioowl2yghrwv2hi3wwe6fk4asma3qacdtvs6wbsgs2cwdvpwulrkx";
+        let doc_ticket_str = "docaaa7qg6afc6zupqzfxmu5uuueaoei5zlye7a4ahhrfhvzjfrfewozgybl5kkl6u6fqcnjxvdkoihq3nbsqczxeulfsqvatb2qh3bwheoyahacitior2ha4z2f4xxk43fgewtcltemvzhaltjojxwqltomv2ho33snmxc6biajjeteswek4ambkabzpcfoajganyabbz2zplaaaaaaaaaagrjyvlqcjqdoaaioowl2ygi2likyov62rofk4asma3qacdtvs6whqsdbizopsefrrkx";
         let doc_ticket = DocTicket::from_string(doc_ticket_str.into()).unwrap();
         //
         // call to_string, ensure equal
