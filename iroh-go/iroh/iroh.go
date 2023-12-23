@@ -1717,6 +1717,15 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_constructor_hash_from_string(uniffiStatus)
+		})
+		if checksum != 30790 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_constructor_hash_from_string: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_constructor_hash_new(uniffiStatus)
 		})
 		if checksum != 22809 {
@@ -3739,6 +3748,17 @@ func NewHash(buf []byte) *Hash {
 func HashFromBytes(bytes []byte) (*Hash, error) {
 	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
 		return C.uniffi_iroh_fn_constructor_hash_from_bytes(FfiConverterBytesINSTANCE.Lower(bytes), _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue *Hash
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterHashINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
+func HashFromString(s string) (*Hash, error) {
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_constructor_hash_from_string(FfiConverterStringINSTANCE.Lower(s), _uniffiStatus)
 	})
 	if _uniffiErr != nil {
 		var _uniffiDefaultValue *Hash

@@ -37,12 +37,15 @@ func TestNodeAddr(t *testing.T) {
 	ipv4 := iroh.SocketAddrFromIpv4(ipv4Ip, port)
 	ipv6 := iroh.SocketAddrFromIpv6(ipv6Ip, port)
 
-	// derp region
-	var derpRegion uint16 = 1
+	// derp Url
+	derpUrl, err := iroh.UrlFromString("https://example.com")
+	if err != nil {
+		panic(err)
+	}
 
 	// create a NodeAddr
 	expectAddrs := []*iroh.SocketAddr{ipv4, ipv6}
-	nodeAddrs := iroh.NewNodeAddr(nodeId, &derpRegion, expectAddrs)
+	nodeAddrs := iroh.NewNodeAddr(nodeId, &derpUrl, expectAddrs)
 
 	// test we have returned the expected addresses
 	gotAddrs := nodeAddrs.DirectAddresses()
@@ -51,7 +54,7 @@ func TestNodeAddr(t *testing.T) {
 		assert.True(t, expectAddrs[i].Equal(gotAddrs[i]))
 	}
 
-	assert.Equal(t, nodeAddrs.DerpRegion(), &derpRegion)
+	assert.True(t, derpUrl.Equal(*nodeAddrs.DerpUrl()))
 }
 
 /// Test all NamespaceId functionality
@@ -101,7 +104,7 @@ func TestAuthorId(t *testing.T) {
 /// Test all DocTicket functionality
 func TestDocTicket(t *testing.T) {
 	// create id from string
-	docTicketStr := "docaaqjjfgbzx2ry4zpaoujdppvqktgvfvpxgqubkghiialqovv7z4wosqbebpvjjp2tywajvg6unjza6dnugkalg4srmwkcucmhka7mgy4r3aa4aibayaeusjsjlcfoagavaa4xrcxaetag4aaq45mxvqaaaaaaaaadiu4kvybeybxaaehhlf5mdenfufmhk7nixcvoajganyabbz2zplgbno2vsnuvtkpyvlqcjqdoaaioowl22k3fc26qjx4ot6fk4"
+	docTicketStr := "docaaa7qg6afc6zupqzfxmu5uuueaoei5zlye7a4ahhrfhvzjfrfewozgybl5kkl6u6fqcnjxvdkoihq3nbsqczxeulfsqvatb2qh3bwheoyahacitior2ha4z2f4xxk43fgewtcltemvzhaltjojxwqltomv2ho33snmxc6biajjeteswek4ambkabzpcfoajganyabbz2zplaaaaaaaaaagrjyvlqcjqdoaaioowl2ygi2likyov62rofk4asma3qacdtvs6whqsdbizopsefrrkx"
 	docTicket, err := iroh.DocTicketFromString(docTicketStr)
 	if err != nil {
 		panic(err)
@@ -203,9 +206,9 @@ func TestDocEntryBasics(t *testing.T) {
 	entry := *maybe_entry
 	assert.Nil(t, err)
 	assert.True(t, hash.Equal(entry.ContentHash()))
-	got_val, err := doc.ReadToBytes(entry)
-	assert.Equal(t, val, got_val)
 	assert.Equal(t, uint64(len(val)), entry.ContentLen())
+	got_val, err := entry.ContentBytes(doc)
+	assert.Equal(t, val, got_val)
 }
 
 func TestDocImportExport(t *testing.T) {

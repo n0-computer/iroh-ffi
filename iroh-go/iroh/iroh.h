@@ -540,6 +540,11 @@ void* uniffi_iroh_fn_constructor_hash_from_bytes(
 	RustCallStatus* out_status
 );
 
+void* uniffi_iroh_fn_constructor_hash_from_string(
+	RustBuffer s,
+	RustCallStatus* out_status
+);
+
 void* uniffi_iroh_fn_constructor_hash_new(
 	RustBuffer buf,
 	RustCallStatus* out_status
@@ -2143,6 +2148,10 @@ uint16_t uniffi_iroh_checksum_constructor_filterkind_prefix(
 );
 
 uint16_t uniffi_iroh_checksum_constructor_hash_from_bytes(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_constructor_hash_from_string(
 	RustCallStatus* out_status
 );
 
