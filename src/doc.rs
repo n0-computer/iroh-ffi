@@ -2,7 +2,6 @@ use std::{str::FromStr, sync::Arc, time::SystemTime};
 
 use futures::{StreamExt, TryStreamExt};
 use iroh::{
-    bytes::util::runtime::Handle,
     client::Doc as ClientDoc,
     rpc_protocol::{ProviderRequest, ProviderResponse},
 };
@@ -11,7 +10,9 @@ pub use iroh::sync::CapabilityKind;
 
 use quic_rpc::transport::flume::FlumeConnection;
 
-use crate::{block_on, AuthorId, Hash, IrohError, IrohNode, PublicKey, SocketAddr, SocketAddrType};
+use crate::{
+    block_on, AuthorId, Hash, IrohError, IrohNode, PublicKey, SocketAddr, SocketAddrType, Url,
+};
 
 impl IrohNode {
     /// Create a new doc.
@@ -117,7 +118,7 @@ pub struct NamespaceAndCapability {
 /// A representation of a mutable, synchronizable key-value store.
 pub struct Doc {
     pub(crate) inner: ClientDoc<FlumeConnection<ProviderResponse, ProviderRequest>>,
-    pub(crate) rt: Handle,
+    pub(crate) rt: tokio::runtime::Handle,
 }
 
 impl Doc {
@@ -220,28 +221,6 @@ impl Doc {
         })
     }
 
-    /// Get the content size of an [`Entry`]
-    pub fn size(&self, entry: Arc<Entry>) -> Result<u64, IrohError> {
-        block_on(&self.rt, async {
-            let r = self.inner.read(&entry.0).await.map_err(IrohError::doc)?;
-            Ok(r.size())
-        })
-    }
-
-    /// Read all content of an [`Entry`] into a buffer.
-    /// This allocates a buffer for the full entry. Use only if you know that the entry you're
-    /// reading is small. If not sure, use [`Self::size`] and check the size with
-    /// before calling [`Self::read_to_bytes`].
-    pub fn read_to_bytes(&self, entry: Arc<Entry>) -> Result<Vec<u8>, IrohError> {
-        block_on(&self.rt, async {
-            self.inner
-                .read_to_bytes(&entry.0)
-                .await
-                .map(|c| c.to_vec())
-                .map_err(IrohError::doc)
-        })
-    }
-
     /// Delete entries that match the given `author` and key `prefix`.
     ///
     /// This inserts an empty entry with the key set to `prefix`, effectively clearing all other
@@ -256,17 +235,6 @@ impl Doc {
                 .await
                 .map_err(IrohError::doc)?;
             u64::try_from(num_del).map_err(IrohError::doc)
-        })
-    }
-
-    /// Get the latest entry for a key and author.
-    pub fn get_one(&self, query: Arc<Query>) -> Result<Option<Arc<Entry>>, IrohError> {
-        block_on(&self.rt, async {
-            self.inner
-                .get_one((*query).clone().0)
-                .await
-                .map(|e| e.map(|e| Arc::new(e.into())))
-                .map_err(IrohError::doc)
         })
     }
 
@@ -305,6 +273,17 @@ impl Doc {
         })
     }
 
+    /// Get the latest entry for a key and author.
+    pub fn get_one(&self, query: Arc<Query>) -> Result<Option<Arc<Entry>>, IrohError> {
+        block_on(&self.rt, async {
+            self.inner
+                .get_one((*query).clone().0)
+                .await
+                .map(|e| e.map(|e| Arc::new(e.into())))
+                .map_err(IrohError::doc)
+        })
+    }
+
     /// Share this document with peers over a ticket.
     pub fn share(&self, mode: ShareMode) -> Result<Arc<DocTicket>, IrohError> {
         block_on(&self.rt, async {
@@ -333,21 +312,10 @@ impl Doc {
         })
     }
 
-    /// Get status info for this document
-    pub fn status(&self) -> Result<OpenState, IrohError> {
-        block_on(&self.rt, async {
-            self.inner
-                .status()
-                .await
-                .map(|o| o.into())
-                .map_err(IrohError::doc)
-        })
-    }
-
     /// Subscribe to events for this document.
     pub fn subscribe(&self, cb: Box<dyn SubscribeCallback>) -> Result<(), IrohError> {
         let client = self.inner.clone();
-        self.rt.main().spawn(async move {
+        self.rt.spawn(async move {
             let mut sub = client.subscribe().await.unwrap();
             while let Some(event) = sub.next().await {
                 match event {
@@ -364,6 +332,134 @@ impl Doc {
         });
 
         Ok(())
+    }
+
+    /// Get status info for this document
+    pub fn status(&self) -> Result<OpenState, IrohError> {
+        block_on(&self.rt, async {
+            self.inner
+                .status()
+                .await
+                .map(|o| o.into())
+                .map_err(IrohError::doc)
+        })
+    }
+
+    /// Set the download policy for this document
+    pub fn set_download_policy(&self, policy: Arc<DownloadPolicy>) -> Result<(), IrohError> {
+        block_on(&self.rt, async {
+            self.inner
+                .set_download_policy((*policy).clone().into())
+                .await
+                .map_err(IrohError::doc)
+        })
+    }
+
+    /// Get the download policy for this document
+    pub fn get_download_policy(&self) -> Result<Arc<DownloadPolicy>, IrohError> {
+        block_on(&self.rt, async {
+            self.inner
+                .get_download_policy()
+                .await
+                .map(|policy| Arc::new(policy.into()))
+                .map_err(IrohError::doc)
+        })
+    }
+}
+
+/// Download policy to decide which content blobs shall be downloaded.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DownloadPolicy {
+    /// Do not download any key unless it matches one of the filters.
+    NothingExcept(Vec<Arc<FilterKind>>),
+    /// Download every key unless it matches one of the filters.
+    EverythingExcept(Vec<Arc<FilterKind>>),
+}
+
+impl DownloadPolicy {
+    /// Download everything
+    pub fn everything() -> Self {
+        DownloadPolicy::EverythingExcept(Vec::default())
+    }
+
+    /// Download nothing
+    pub fn nothing() -> Self {
+        DownloadPolicy::NothingExcept(Vec::default())
+    }
+
+    /// Download nothing except keys that match the given filters
+    pub fn nothing_except(filters: Vec<Arc<FilterKind>>) -> Self {
+        DownloadPolicy::NothingExcept(filters)
+    }
+
+    /// Download everything except keys that match the given filters
+    pub fn everything_except(filters: Vec<Arc<FilterKind>>) -> Self {
+        DownloadPolicy::EverythingExcept(filters)
+    }
+}
+
+impl From<iroh::sync::store::DownloadPolicy> for DownloadPolicy {
+    fn from(value: iroh::sync::store::DownloadPolicy) -> Self {
+        match value {
+            iroh::sync::store::DownloadPolicy::NothingExcept(filters) => {
+                DownloadPolicy::NothingExcept(
+                    filters.into_iter().map(|f| Arc::new(f.into())).collect(),
+                )
+            }
+            iroh::sync::store::DownloadPolicy::EverythingExcept(filters) => {
+                DownloadPolicy::EverythingExcept(
+                    filters.into_iter().map(|f| Arc::new(f.into())).collect(),
+                )
+            }
+        }
+    }
+}
+
+impl From<DownloadPolicy> for iroh::sync::store::DownloadPolicy {
+    fn from(value: DownloadPolicy) -> Self {
+        match value {
+            DownloadPolicy::NothingExcept(filters) => {
+                iroh::sync::store::DownloadPolicy::NothingExcept(
+                    filters.into_iter().map(|f| f.0.clone()).collect(),
+                )
+            }
+            DownloadPolicy::EverythingExcept(filters) => {
+                iroh::sync::store::DownloadPolicy::EverythingExcept(
+                    filters.into_iter().map(|f| f.0.clone()).collect(),
+                )
+            }
+        }
+    }
+}
+
+/// Filter strategy used in download policies.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FilterKind(pub(crate) iroh::sync::store::FilterKind);
+
+impl FilterKind {
+    /// Verifies whether this filter matches a given key
+    pub fn matches(&self, key: Vec<u8>) -> bool {
+        self.0.matches(key)
+    }
+
+    /// Returns a FilterKind that matches if the contained bytes are a prefix of the key.
+    pub fn prefix(prefix: Vec<u8>) -> FilterKind {
+        FilterKind(iroh::sync::store::FilterKind::Prefix(bytes::Bytes::from(
+            prefix,
+        )))
+    }
+
+    /// Returns a FilterKind that matches if the contained bytes and the key are the same.
+    pub fn exact(key: Vec<u8>) -> FilterKind {
+        FilterKind(iroh::sync::store::FilterKind::Exact(bytes::Bytes::from(
+            key,
+        )))
+    }
+}
+
+impl From<iroh::sync::store::FilterKind> for FilterKind {
+    fn from(value: iroh::sync::store::FilterKind) -> Self {
+        FilterKind(value)
     }
 }
 
@@ -392,7 +488,7 @@ impl From<iroh::sync::actor::OpenState> for OpenState {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NodeAddr {
     node_id: Arc<PublicKey>,
-    derp_region: Option<u16>,
+    derp_url: Option<Arc<Url>>,
     addresses: Vec<Arc<SocketAddr>>,
 }
 
@@ -400,12 +496,12 @@ impl NodeAddr {
     /// Create a new [`NodeAddr`] with empty [`AddrInfo`].
     pub fn new(
         node_id: Arc<PublicKey>,
-        derp_region: Option<u16>,
+        derp_url: Option<Arc<Url>>,
         addresses: Vec<Arc<SocketAddr>>,
     ) -> Self {
         Self {
             node_id,
-            derp_region,
+            derp_url,
             addresses,
         }
     }
@@ -416,8 +512,8 @@ impl NodeAddr {
     }
 
     /// Get the derp region of this peer.
-    pub fn derp_region(&self) -> Option<u16> {
-        self.derp_region
+    pub fn derp_url(&self) -> Option<Arc<Url>> {
+        self.derp_url.clone()
     }
 
     /// Returns true if both NodeAddr's have the same values
@@ -446,8 +542,8 @@ impl From<NodeAddr> for iroh::net::magic_endpoint::NodeAddr {
                 }
             }
         });
-        if let Some(derp_region) = value.derp_region() {
-            node_addr = node_addr.with_derp_region(derp_region);
+        if let Some(derp_url) = value.derp_url() {
+            node_addr = node_addr.with_derp_url(derp_url.0.clone());
         }
         node_addr = node_addr.with_direct_addresses(addresses);
         node_addr
@@ -458,7 +554,7 @@ impl From<iroh::net::magic_endpoint::NodeAddr> for NodeAddr {
     fn from(value: iroh::net::magic_endpoint::NodeAddr) -> Self {
         NodeAddr {
             node_id: Arc::new(value.node_id.into()),
-            derp_region: value.info.derp_region,
+            derp_url: value.info.derp_url.map(|url| Arc::new(url.into())),
             addresses: value
                 .info
                 .direct_addresses
@@ -493,10 +589,10 @@ impl From<ShareMode> for iroh::rpc_protocol::ShareMode {
 /// [`NamespaceId`]. Its value is the 32-byte BLAKE3 [`hash`]
 /// of the entry's content data, the size of this content data, and a timestamp.
 #[derive(Debug, Clone)]
-pub struct Entry(pub(crate) iroh::sync::Entry);
+pub struct Entry(pub(crate) iroh::client::Entry);
 
-impl From<iroh::sync::Entry> for Entry {
-    fn from(e: iroh::sync::Entry) -> Self {
+impl From<iroh::client::Entry> for Entry {
+    fn from(e: iroh::client::Entry) -> Self {
         Entry(e)
     }
 }
@@ -505,6 +601,16 @@ impl Entry {
     /// Get the [`AuthorId`] of this entry.
     pub fn author(&self) -> Arc<AuthorId> {
         Arc::new(AuthorId(self.0.id().author()))
+    }
+
+    /// Get the content_hash of this entry.
+    pub fn content_hash(&self) -> Arc<Hash> {
+        Arc::new(Hash(self.0.content_hash()))
+    }
+
+    /// Get the content_length of this entry.
+    pub fn content_len(&self) -> u64 {
+        self.0.content_len()
     }
 
     /// Get the key of this entry.
@@ -517,14 +623,18 @@ impl Entry {
         Arc::new(NamespaceId(self.0.id().namespace()))
     }
 
-    /// Get the content_hash of this entry.
-    pub fn content_hash(&self) -> Arc<Hash> {
-        Arc::new(Hash(self.0.content_hash()))
-    }
-
-    /// Get the content_length of this entry.
-    pub fn content_len(&self) -> u64 {
-        self.0.content_len()
+    /// Read all content of an [`Entry`] into a buffer.
+    /// This allocates a buffer for the full entry. Use only if you know that the entry you're
+    /// reading is small. If not sure, use [`Self::content_len`] and check the size with
+    /// before calling [`Self::content_bytes`].
+    pub fn content_bytes(&self, doc: Arc<Doc>) -> Result<Vec<u8>, IrohError> {
+        block_on(&doc.rt, async {
+            self.0
+                .content_bytes(&doc.inner)
+                .await
+                .map(|c| c.to_vec())
+                .map_err(IrohError::entry)
+        })
     }
 }
 
@@ -898,13 +1008,13 @@ impl LiveEvent {
     }
 }
 
-impl From<iroh::sync_engine::LiveEvent> for LiveEvent {
-    fn from(value: iroh::sync_engine::LiveEvent) -> Self {
+impl From<iroh::client::LiveEvent> for LiveEvent {
+    fn from(value: iroh::client::LiveEvent) -> Self {
         match value {
-            iroh::sync_engine::LiveEvent::InsertLocal { entry } => LiveEvent::InsertLocal {
+            iroh::client::LiveEvent::InsertLocal { entry } => LiveEvent::InsertLocal {
                 entry: entry.into(),
             },
-            iroh::sync_engine::LiveEvent::InsertRemote {
+            iroh::client::LiveEvent::InsertRemote {
                 from,
                 entry,
                 content_status,
@@ -913,12 +1023,12 @@ impl From<iroh::sync_engine::LiveEvent> for LiveEvent {
                 entry: entry.into(),
                 content_status: content_status.into(),
             },
-            iroh::sync_engine::LiveEvent::ContentReady { hash } => {
+            iroh::client::LiveEvent::ContentReady { hash } => {
                 LiveEvent::ContentReady { hash: hash.into() }
             }
-            iroh::sync_engine::LiveEvent::NeighborUp(key) => LiveEvent::NeighborUp(key.into()),
-            iroh::sync_engine::LiveEvent::NeighborDown(key) => LiveEvent::NeighborDown(key.into()),
-            iroh::sync_engine::LiveEvent::SyncFinished(e) => LiveEvent::SyncFinished(e.into()),
+            iroh::client::LiveEvent::NeighborUp(key) => LiveEvent::NeighborUp(key.into()),
+            iroh::client::LiveEvent::NeighborDown(key) => LiveEvent::NeighborDown(key.into()),
+            iroh::client::LiveEvent::SyncFinished(e) => LiveEvent::SyncFinished(e.into()),
         }
     }
 }
@@ -1390,12 +1500,12 @@ mod tests {
         let ipv6 = SocketAddr::from_ipv6(ipv6_ip.into(), port);
         //
         // derp region
-        let derp_region = Some(1);
+        let derp_url = Arc::new(Url::from_string("https://derp.url".to_string()).unwrap());
         //
         // create a NodeAddr
         let addrs = vec![Arc::new(ipv4), Arc::new(ipv6)];
         let expect_addrs = addrs.clone();
-        let node_addr = NodeAddr::new(node_id.into(), derp_region, addrs);
+        let node_addr = NodeAddr::new(node_id.into(), Some(derp_url.clone()), addrs);
         //
         // test we have returned the expected addresses
         let got_addrs = node_addr.direct_addresses();
@@ -1405,7 +1515,8 @@ mod tests {
             assert!(expect.equal(got.clone()));
         }
 
-        assert_eq!(derp_region, node_addr.derp_region());
+        let got_derp_url = node_addr.derp_url().unwrap();
+        assert!(derp_url.equal(got_derp_url));
     }
     #[test]
     fn test_namespace_id() {
@@ -1447,7 +1558,7 @@ mod tests {
     fn test_doc_ticket() {
         //
         // create id from string
-        let doc_ticket_str = "docaaqjjfgbzx2ry4zpaoujdppvqktgvfvpxgqubkghiialqovv7z4wosqbebpvjjp2tywajvg6unjza6dnugkalg4srmwkcucmhka7mgy4r3aa4aibayaeusjsjlcfoagavaa4xrcxaetag4aaq45mxvqaaaaaaaaadiu4kvybeybxaaehhlf5mdenfufmhk7nixcvoajganyabbz2zplgbno2vsnuvtkpyvlqcjqdoaaioowl22k3fc26qjx4ot6fk4";
+        let doc_ticket_str = "docaaa7qg6afc6zupqzfxmu5uuueaoei5zlye7a4ahhrfhvzjfrfewozgybl5kkl6u6fqcnjxvdkoihq3nbsqczxeulfsqvatb2qh3bwheoyahacitior2ha4z2f4xxk43fgewtcltemvzhaltjojxwqltomv2ho33snmxc6biajjeteswek4ambkabzpcfoajganyabbz2zplaaaaaaaaaagrjyvlqcjqdoaaioowl2ygi2likyov62rofk4asma3qacdtvs6whqsdbizopsefrrkx";
         let doc_ticket = DocTicket::from_string(doc_ticket_str.into()).unwrap();
         //
         // call to_string, ensure equal
@@ -1529,7 +1640,7 @@ mod tests {
 
         assert!(hash.equal(entry.content_hash()));
 
-        let got_val = doc.read_to_bytes(entry.clone()).unwrap();
+        let got_val = entry.content_bytes(doc).unwrap();
         assert_eq!(val, got_val);
         assert_eq!(val.len() as u64, entry.content_len());
     }

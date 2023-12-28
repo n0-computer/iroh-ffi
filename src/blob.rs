@@ -325,30 +325,12 @@ impl Hash {
         Ok(Hash(iroh::bytes::Hash::from_bytes(bytes)))
     }
 
-    /// Make a Hash from hex or base 64 encoded cid string
+    /// Make a Hash from hex string
     pub fn from_string(s: String) -> Result<Self, IrohError> {
         match iroh::bytes::Hash::from_str(&s) {
             Ok(key) => Ok(key.into()),
             Err(err) => Err(IrohError::hash(err)),
         }
-    }
-
-    /// Get the cid as bytes.
-    pub fn as_cid_bytes(&self) -> Vec<u8> {
-        self.0.as_cid_bytes().to_vec()
-    }
-
-    /// Try to create a blake3 cid from cid bytes.
-    ///
-    /// This will only work if the prefix is the following:
-    /// - version 1
-    /// - raw codec
-    /// - blake3 hash function
-    /// - 32 byte hash size
-    pub fn from_cid_bytes(bytes: Vec<u8>) -> Result<Self, IrohError> {
-        Ok(Hash(
-            iroh::bytes::Hash::from_cid_bytes(&bytes).map_err(IrohError::hash)?,
-        ))
     }
 
     /// Convert the hash to a hex string.
@@ -461,33 +443,31 @@ pub enum AddProgress {
     Abort(AddProgressAbort),
 }
 
-impl From<iroh::bytes::provider::AddProgress> for AddProgress {
-    fn from(value: iroh::bytes::provider::AddProgress) -> Self {
+impl From<iroh::rpc_protocol::AddProgress> for AddProgress {
+    fn from(value: iroh::rpc_protocol::AddProgress) -> Self {
         match value {
-            iroh::bytes::provider::AddProgress::Found { id, name, size } => {
+            iroh::rpc_protocol::AddProgress::Found { id, name, size } => {
                 AddProgress::Found(AddProgressFound { id, name, size })
             }
-            iroh::bytes::provider::AddProgress::Progress { id, offset } => {
+            iroh::rpc_protocol::AddProgress::Progress { id, offset } => {
                 AddProgress::Progress(AddProgressProgress { id, offset })
             }
-            iroh::bytes::provider::AddProgress::Done { id, hash } => {
+            iroh::rpc_protocol::AddProgress::Done { id, hash } => {
                 AddProgress::Done(AddProgressDone {
                     id,
                     hash: Arc::new(hash.into()),
                 })
             }
-            iroh::bytes::provider::AddProgress::AllDone { hash, format, tag } => {
+            iroh::rpc_protocol::AddProgress::AllDone { hash, format, tag } => {
                 AddProgress::AllDone(AddProgressAllDone {
                     hash: Arc::new(hash.into()),
                     format: format.into(),
                     tag: Arc::new(tag.into()),
                 })
             }
-            iroh::bytes::provider::AddProgress::Abort(err) => {
-                AddProgress::Abort(AddProgressAbort {
-                    error: err.to_string(),
-                })
-            }
+            iroh::rpc_protocol::AddProgress::Abort(err) => AddProgress::Abort(AddProgressAbort {
+                error: err.to_string(),
+            }),
         }
     }
 }
@@ -570,50 +550,6 @@ impl From<BlobFormat> for iroh::rpc_protocol::BlobFormat {
     }
 }
 
-/// A Request token is an opaque byte sequence associated with a single request.
-/// Applications can use request tokens to implement request authorization,
-/// user association, etc.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RequestToken(iroh::bytes::protocol::RequestToken);
-
-impl RequestToken {
-    /// Creates a new request token from bytes.
-    pub fn new(bytes: Vec<u8>) -> Result<Self, IrohError> {
-        Ok(RequestToken(
-            iroh::bytes::protocol::RequestToken::new(bytes).map_err(IrohError::request_token)?,
-        ))
-    }
-
-    /// Generate a random 32 byte request token.
-    pub fn generate() -> Self {
-        RequestToken(iroh::bytes::protocol::RequestToken::generate())
-    }
-
-    /// Returns a reference the token bytes.
-    pub fn as_bytes(&self) -> Vec<u8> {
-        self.0.as_bytes().to_vec()
-    }
-
-    /// Create a request token from a string
-    pub fn from_string(str: String) -> Result<Self, IrohError> {
-        Ok(RequestToken(
-            iroh::bytes::protocol::RequestToken::from_str(&str)
-                .map_err(IrohError::request_token)?,
-        ))
-    }
-
-    /// Returns true if both RequestTokens have the same value
-    pub fn equal(&self, other: Arc<RequestToken>) -> bool {
-        *self == *other
-    }
-}
-
-impl std::fmt::Display for RequestToken {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
 /// Location to store a downloaded blob at.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DownloadLocation {
@@ -676,13 +612,11 @@ impl BlobDownloadRequest {
         node: Arc<NodeAddr>,
         tag: Arc<SetTagOption>,
         out: Arc<DownloadLocation>,
-        token: Option<Arc<RequestToken>>,
     ) -> Self {
         BlobDownloadRequest(iroh::rpc_protocol::BlobDownloadRequest {
             hash: hash.0,
             format: format.into(),
             peer: (*node).clone().into(),
-            token: token.map(|token| (*token).clone().0),
             tag: (*tag).clone().into(),
             out: (*out).clone().into(),
         })
@@ -699,6 +633,7 @@ pub trait DownloadCallback: Send + Sync + 'static {
 /// The different types of DownloadProgress events
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DownloadProgressType {
+    FoundLocal,
     Connected,
     Found,
     FoundHashSeq,
@@ -722,6 +657,19 @@ pub struct DownloadProgressFound {
     pub hash: Arc<Hash>,
     /// The size of the entry in bytes.
     pub size: u64,
+}
+
+/// A DownloadProgress event indicating an entry was found locally
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DownloadProgressFoundLocal {
+    /// child offset
+    pub child: u64,
+    /// The hash of the entry.
+    pub hash: Arc<Hash>,
+    /// The size of the entry in bytes.
+    pub size: u64,
+    /// The ranges that are available locally.
+    pub valid_ranges: Arc<RangeSpec>,
 }
 
 /// A DownloadProgress event indicating an item was found with hash `hash`, that can be referred to by `id`
@@ -798,6 +746,8 @@ pub enum DownloadProgress {
     Connected,
     /// An item was found with hash `hash`, from now on referred to via `id`
     Found(DownloadProgressFound),
+    /// Data was found locally
+    FoundLocal(DownloadProgressFoundLocal),
     /// An item was found with hash `hash`, from now on referred to via `id`
     FoundHashSeq(DownloadProgressFoundHashSeq),
     /// We got progress ingesting item `id`.
@@ -820,11 +770,22 @@ pub enum DownloadProgress {
     Abort(DownloadProgressAbort),
 }
 
-impl From<iroh::bytes::provider::DownloadProgress> for DownloadProgress {
-    fn from(value: iroh::bytes::provider::DownloadProgress) -> Self {
+impl From<iroh::rpc_protocol::DownloadProgress> for DownloadProgress {
+    fn from(value: iroh::rpc_protocol::DownloadProgress) -> Self {
         match value {
-            iroh::bytes::provider::DownloadProgress::Connected => DownloadProgress::Connected,
-            iroh::bytes::provider::DownloadProgress::Found {
+            iroh::rpc_protocol::DownloadProgress::FoundLocal {
+                child,
+                hash,
+                size,
+                valid_ranges,
+            } => DownloadProgress::FoundLocal(DownloadProgressFoundLocal {
+                child,
+                hash: Arc::new(hash.into()),
+                size,
+                valid_ranges: Arc::new(valid_ranges.into()),
+            }),
+            iroh::rpc_protocol::DownloadProgress::Connected => DownloadProgress::Connected,
+            iroh::rpc_protocol::DownloadProgress::Found {
                 id,
                 hash,
                 child,
@@ -835,19 +796,19 @@ impl From<iroh::bytes::provider::DownloadProgress> for DownloadProgress {
                 child,
                 size,
             }),
-            iroh::bytes::provider::DownloadProgress::FoundHashSeq { hash, children } => {
+            iroh::rpc_protocol::DownloadProgress::FoundHashSeq { hash, children } => {
                 DownloadProgress::FoundHashSeq(DownloadProgressFoundHashSeq {
                     hash: Arc::new(hash.into()),
                     children,
                 })
             }
-            iroh::bytes::provider::DownloadProgress::Progress { id, offset } => {
+            iroh::rpc_protocol::DownloadProgress::Progress { id, offset } => {
                 DownloadProgress::Progress(DownloadProgressProgress { id, offset })
             }
-            iroh::bytes::provider::DownloadProgress::Done { id } => {
+            iroh::rpc_protocol::DownloadProgress::Done { id } => {
                 DownloadProgress::Done(DownloadProgressDone { id })
             }
-            iroh::bytes::provider::DownloadProgress::NetworkDone {
+            iroh::rpc_protocol::DownloadProgress::NetworkDone {
                 bytes_written,
                 bytes_read,
                 elapsed,
@@ -856,7 +817,7 @@ impl From<iroh::bytes::provider::DownloadProgress> for DownloadProgress {
                 bytes_read,
                 elapsed,
             }),
-            iroh::bytes::provider::DownloadProgress::Export {
+            iroh::rpc_protocol::DownloadProgress::Export {
                 id,
                 hash,
                 size,
@@ -867,11 +828,11 @@ impl From<iroh::bytes::provider::DownloadProgress> for DownloadProgress {
                 size,
                 target: target.into_os_string().into_string().unwrap(),
             }),
-            iroh::bytes::provider::DownloadProgress::ExportProgress { id, offset } => {
+            iroh::rpc_protocol::DownloadProgress::ExportProgress { id, offset } => {
                 DownloadProgress::ExportProgress(DownloadProgressExportProgress { id, offset })
             }
-            iroh::bytes::provider::DownloadProgress::AllDone => DownloadProgress::AllDone,
-            iroh::bytes::provider::DownloadProgress::Abort(err) => {
+            iroh::rpc_protocol::DownloadProgress::AllDone => DownloadProgress::AllDone,
+            iroh::rpc_protocol::DownloadProgress::Abort(err) => {
                 DownloadProgress::Abort(DownloadProgressAbort {
                     error: err.to_string(),
                 })
@@ -884,6 +845,7 @@ impl DownloadProgress {
     /// Get the type of event
     pub fn r#type(&self) -> DownloadProgressType {
         match self {
+            DownloadProgress::FoundLocal(_) => DownloadProgressType::FoundLocal,
             DownloadProgress::Connected => DownloadProgressType::Connected,
             DownloadProgress::Found(_) => DownloadProgressType::Found,
             DownloadProgress::FoundHashSeq(_) => DownloadProgressType::FoundHashSeq,
@@ -894,6 +856,14 @@ impl DownloadProgress {
             DownloadProgress::ExportProgress(_) => DownloadProgressType::ExportProgress,
             DownloadProgress::AllDone => DownloadProgressType::AllDone,
             DownloadProgress::Abort(_) => DownloadProgressType::Abort,
+        }
+    }
+
+    /// Return the `DownloadProgressFoundLocal` event
+    pub fn as_found_local(&self) -> DownloadProgressFoundLocal {
+        match self {
+            DownloadProgress::FoundLocal(f) => f.clone(),
+            _ => panic!("DownloadProgress type is not 'FoundLocal'"),
         }
     }
 
@@ -959,6 +929,28 @@ impl DownloadProgress {
             DownloadProgress::Abort(a) => a.clone(),
             _ => panic!("DownloadProgress type is not 'Abort'"),
         }
+    }
+}
+
+/// A chunk range specification as a sequence of chunk offsets
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RangeSpec(pub(crate) iroh::bytes::protocol::RangeSpec);
+
+impl RangeSpec {
+    /// Checks if this [`RangeSpec`] does not select any chunks in the blob
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    /// Check if this [`RangeSpec`] selects all chunks in the blob
+    pub fn is_all(&self) -> bool {
+        self.0.is_all()
+    }
+}
+
+impl From<iroh::bytes::protocol::RangeSpec> for RangeSpec {
+    fn from(h: iroh::bytes::protocol::RangeSpec) -> Self {
+        RangeSpec(h)
     }
 }
 
@@ -1044,16 +1036,10 @@ mod tests {
 
     #[test]
     fn test_hash() {
-        let hash_str = "bafkr4ih6qxpyfyrgxbcrvmiqbm7hb5fdpn4yezj7ayh6gwto4hm2573glu";
-        let hex_str = "fe85df82e226b8451ab1100b3e70f4a37b7982653f060fe35a6ee1d9aeff665d";
-        let bytes = b"\xfe\x85\xdf\x82\xe2\x26\xb8\x45\x1a\xb1\x10\x0b\x3e\x70\xf4\xa3\x7b\x79\x82\x65\x3f\x06\x0f\xe3\x5a\x6e\xe1\xd9\xae\xff\x66\x5d".to_vec();
-        let cid_prefix = b"\x01\x55\x1e\x20".to_vec();
+        let hash_str = "6vp273v6cqbbq7xesa2xfrdt3oajykgeifprn3pj4p6y76654amq";
+        let hex_str = "f55fafeebe1402187ee4903572c473db809c28c4415f16ede9e3fd8ffbdde019";
+        let bytes = b"\xf5\x5f\xaf\xee\xbe\x14\x02\x18\x7e\xe4\x90\x35\x72\xc4\x73\xdb\x80\x9c\x28\xc4\x41\x5f\x16\xed\xe9\xe3\xfd\x8f\xfb\xdd\xe0\x19".to_vec();
 
-        let cid_bytes = {
-            let mut b = cid_prefix.clone();
-            b.append(&mut bytes.clone());
-            b
-        };
         // create hash from string
         let hash = Hash::from_string(hash_str.into()).unwrap();
 
@@ -1061,7 +1047,6 @@ mod tests {
         assert_eq!(hash_str.to_string(), hash.to_string());
         assert_eq!(bytes.to_vec(), hash.to_bytes());
         assert_eq!(hex_str.to_string(), hash.to_hex());
-        assert_eq!(cid_bytes, hash.as_cid_bytes());
 
         // create hash from bytes
         let hash_0 = Hash::from_bytes(bytes.clone()).unwrap();
@@ -1070,27 +1055,12 @@ mod tests {
         assert_eq!(hash_str.to_string(), hash_0.to_string());
         assert_eq!(bytes, hash_0.to_bytes());
         assert_eq!(hex_str.to_string(), hash_0.to_hex());
-        assert_eq!(cid_bytes, hash_0.as_cid_bytes());
-
-        // create hash from cid bytes
-        let hash_1 = Hash::from_cid_bytes(cid_bytes.clone()).unwrap();
-
-        // test methods are as expected
-        assert_eq!(hash_str.to_string(), hash_1.to_string());
-        assert_eq!(bytes, hash_1.to_bytes());
-        assert_eq!(hex_str.to_string(), hash_1.to_hex());
-        assert_eq!(cid_bytes, hash_1.as_cid_bytes());
 
         // test that the eq function works
         let hash = Arc::new(hash);
         let hash_0 = Arc::new(hash_0);
-        let hash_1 = Arc::new(hash_1);
         assert!(hash.equal(hash_0.clone()));
-        assert!(hash.equal(hash_1.clone()));
         assert!(hash_0.equal(hash.clone()));
-        assert!(hash_0.equal(hash_1.clone()));
-        assert!(hash_1.equal(hash));
-        assert!(hash_1.equal(hash_0));
     }
 
     #[test]
@@ -1365,7 +1335,6 @@ mod tests {
 
     async fn build_iroh_core(
         path: &std::path::Path,
-        rt: &iroh::bytes::util::runtime::Handle,
     ) -> iroh::node::Node<iroh::bytes::store::flat::Store> {
         // TODO: store and load keypair
         let secret_key = iroh::net::key::SecretKey::generate();
@@ -1376,14 +1345,12 @@ mod tests {
         // create a bao store for the iroh-bytes blobs
         let blob_path = path.join("blobs");
         tokio::fs::create_dir_all(&blob_path).await.unwrap();
-        let db = iroh::bytes::store::flat::Store::load(&blob_path, &blob_path, &blob_path, &rt)
+        let db = iroh::bytes::store::flat::Store::load(&blob_path)
             .await
             .unwrap();
 
         iroh::node::Node::builder(db, docs)
-            .bind_addr(iroh::node::DEFAULT_BIND_ADDR.into())
             .secret_key(secret_key)
-            .runtime(rt)
             .spawn()
             .await
             .unwrap()
@@ -1391,12 +1358,9 @@ mod tests {
 
     #[tokio::test]
     async fn iroh_core_blobs_add_get_bytes() {
-        let tokio = tokio::runtime::Handle::current();
-        let tpc = tokio_util::task::LocalPoolHandle::new(num_cpus::get());
-        let rt = iroh::bytes::util::runtime::Handle::new(tokio, tpc);
         // temp dir
         let dir = tempfile::tempdir().unwrap();
-        let node = build_iroh_core(dir.path(), &rt).await;
+        let node = build_iroh_core(dir.path()).await;
         let sizes = [1, 10, 100, 1000, 10000, 100000];
         let mut hashes = Vec::new();
         for size in sizes.iter() {
@@ -1435,12 +1399,9 @@ mod tests {
 
     #[tokio::test]
     async fn iroh_core_blobs_list_collections() {
-        let tokio = tokio::runtime::Handle::current();
-        let tpc = tokio_util::task::LocalPoolHandle::new(num_cpus::get());
-        let rt = iroh::bytes::util::runtime::Handle::new(tokio, tpc);
         // iroh data dir
         let iroh_dir = tempfile::tempdir().unwrap();
-        let node = build_iroh_core(iroh_dir.path(), &rt).await;
+        let node = build_iroh_core(iroh_dir.path()).await;
 
         // collection dir
         let dir = tempfile::tempdir().unwrap();
@@ -1477,14 +1438,14 @@ mod tests {
         while let Some(progress) = stream.next().await {
             let progress = progress.unwrap();
             match progress {
-                iroh::bytes::provider::AddProgress::AllDone { hash, format, .. } => {
+                iroh::rpc_protocol::AddProgress::AllDone { hash, format, .. } => {
                     collection_hash = Some(hash);
                     collection_format = Some(format);
                 }
-                iroh::bytes::provider::AddProgress::Abort(err) => {
+                iroh::rpc_protocol::AddProgress::Abort(err) => {
                     panic!("{}", err);
                 }
-                iroh::bytes::provider::AddProgress::Done { hash, .. } => hashes.push(hash),
+                iroh::rpc_protocol::AddProgress::Done { hash, .. } => hashes.push(hash),
                 _ => {}
             }
         }

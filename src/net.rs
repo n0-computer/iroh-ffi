@@ -264,3 +264,32 @@ pub enum SocketAddrType {
     V4,
     V6,
 }
+
+/// A Url record
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Url(pub(crate) url::Url);
+
+impl From<url::Url> for Url {
+    fn from(value: url::Url) -> Self {
+        Url(value)
+    }
+}
+
+impl std::fmt::Display for Url {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl Url {
+    /// Get a Url from a String
+    pub fn from_string(s: String) -> Result<Url, IrohError> {
+        let url = url::Url::parse(&s).map_err(IrohError::url)?;
+        Ok(Url(url))
+    }
+
+    /// Returns true when both Urls have the same value
+    pub fn equal(&self, other: Arc<Url>) -> bool {
+        *self == *other
+    }
+}

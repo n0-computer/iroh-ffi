@@ -191,15 +191,6 @@ interface Doc {
   /// Export an entry as a file to a given absolute path
   [Throws=IrohError]
   void export_file(Entry entry, string path, DocExportFileCallback? cb);
-  /// Get the content size of an [`Entry`]
-  [Throws=IrohError]
-  u64 size(Entry entry);
-  /// Read all content of an [`Entry`] into a buffer.
-  /// This allocates a buffer for the full entry. Use only if you know that the entry you're
-  /// reading is small. If not sure, use [`Self::size`] and check the size with
-  /// before calling [`Self::read_to_bytes`].
-  [Throws=IrohError]
-  bytes read_to_bytes(Entry entry);
   /// Delete entries that match the given `author` and key `prefix`.
   ///
   /// This inserts an empty entry with the key set to `prefix`, effectively clearing all other
@@ -238,6 +229,12 @@ interface Doc {
   /// Get status info for this document
   [Throws=IrohError]
   OpenState status();
+  /// Set the download policy for this document
+  [Throws=IrohError]
+  void set_download_policy(DownloadPolicy policy);
+  /// Get the download policy for this document
+  [Throws=IrohError]
+  DownloadPolicy get_download_policy();
 };
 
 /// The type of `DocImportProgress` event
@@ -489,11 +486,11 @@ enum ShareMode {
 /// A peer and it's addressing information.
 interface NodeAddr {
   /// Create a new [`NodeAddr`] with empty [`AddrInfo`].
-  constructor(PublicKey node_id, u16? region_id, sequence<SocketAddr> addresses);
+  constructor(PublicKey node_id, Url? derp_url, sequence<SocketAddr> addresses);
   /// Get the direct addresses of this peer.
   sequence<SocketAddr> direct_addresses();
-  /// Get the derp region of this peer.
-  u16? derp_region();
+  /// Get the derp url of this peer.
+  Url? derp_url();
   /// Returns true if both NodeAddr's have the same values
   boolean equal(NodeAddr other);
 };
@@ -542,6 +539,12 @@ interface Entry {
   Hash content_hash();
   /// Get the content_length of this entry.
   u64 content_len();
+  /// Read all content of an [`Entry`] into a buffer.
+  /// This allocates a buffer for the full entry. Use only if you know that the entry you're
+  /// reading is small. If not sure, use [`Self::content_len`] and check the size with
+  /// before calling [`Self::content_bytes`].
+  [Throws=IrohError]
+  bytes content_bytes(Doc doc);
 };
 
 /// Hash type used throughout Iroh. A blake3 hash.
@@ -557,20 +560,9 @@ interface Hash {
   /// Create a Hash from its raw bytes representation.
   [Name=from_bytes, Throws=IrohError]
   constructor(bytes bytes);
-  /// Make a Hash from hex or base 64 encoded cid string
+  /// Make a Hash from hex string
   [Name=from_string, Throws=IrohError]
-  constructor(string str);
-  /// Get the cid as bytes.
-  bytes as_cid_bytes();
-  /// Try to create a blake3 cid from cid bytes.
-  ///
-  /// This will only work if the prefix is the following:
-  /// - version 1
-  /// - raw codec
-  /// - blake3 hash function
-  /// - 32 byte hash size
-  [Name=from_cid_bytes, Throws=IrohError]
-  constructor(bytes bytes);
+  constructor(string s);
   /// Convert the hash to a hex string.
   string to_hex();
 };
@@ -729,8 +721,8 @@ dictionary QueryOptions {
 dictionary ConnectionInfo {
   /// The public key of the endpoint.
   PublicKey public_key;
-  /// Derp region, if available.
-  u16? derp_region;
+  /// Derp url, if available.
+  Url? derp_url;
   /// List of addresses at which this node might be reachable, plus any latency information we
   /// have about that address and the last time the address was used.
   sequence<DirectAddrInfo> addrs;
@@ -760,19 +752,19 @@ interface ConnectionType{
   ConnType type();
   /// Return the [`SocketAddr`] if this is a direct connection
   SocketAddr as_direct();
-  /// Return the derp region if this is a relay connection
-  u16 as_relay();
-  /// Return the [`SocketAddr`] and DERP region if this is a mixed connection
+  /// Return the derp url if this is a relay connection
+  Url as_relay();
+  /// Return the [`SocketAddr`] and DERP url if this is a mixed connection
   ConnectionTypeMixed as_mixed();
 };
 
 
-/// The [`SocketAddr`] and region id of the mixed connection
+/// The [`SocketAddr`] and url id of the mixed connection
 dictionary ConnectionTypeMixed {
     /// Address of the node
     SocketAddr addr;
-    /// Region Id of the region to which the node is connected
-    u16 derp_region;
+    /// Url of the DERP node to which the node is connected
+    Url derp_url;
 };
 
 /// Type of SocketAddr
@@ -863,6 +855,17 @@ interface SocketAddr {
   SocketAddrV6 as_ipv6();
   /// Returns true if the two SocketAddrs have the same value
   boolean equal(SocketAddr other);
+};
+
+/// A Url
+interface Url {
+  /// Create a Url from a string
+  [Name=from_string, Throws=IrohError]
+  constructor(string s);
+  /// Get a string from a Url
+  string to_string();
+  /// Returns true if the two Urls have the same value
+  boolean equal(Url other);
 };
 
 /// A public key
@@ -1021,25 +1024,6 @@ dictionary BlobAddOutcome {
   Tag tag;
 };
 
-/// A Request token is an opaque byte sequence associated with a single request.
-/// Applications can use request tokens to implement request authorization,
-/// user association, etc.
-interface RequestToken {
-  /// Creates a new request token from bytes.
-  [Throws=IrohError]
-  constructor(bytes bytes); 
-  /// Generate a random 32 byte request token.
-  [Name=generate]
-  constructor();
-  /// Returns a reference the token bytes.
-  bytes as_bytes();
-  /// Create a request token from a string
-  [Name=from_string, Throws=IrohError]
-  constructor(string str);
-  /// Returns true if both RequestTokens have the same value
-  boolean equal(RequestToken other);
-};
-
 /// Location to store a downloaded blob at.
 interface DownloadLocation {
   /// Store in the node's blob storage directory.
@@ -1059,7 +1043,7 @@ interface DownloadLocation {
 
 /// A request to the node to download and share the data specified by the hash.
 interface BlobDownloadRequest {
-  constructor(Hash hash, BlobFormat format, NodeAddr node, SetTagOption tag, DownloadLocation out, RequestToken? token);
+  constructor(Hash hash, BlobFormat format, NodeAddr node, SetTagOption tag, DownloadLocation out);
 };
 
 /// The `progress` method will be called for each `DownloadProgress` event that is emitted during
@@ -1102,6 +1086,26 @@ dictionary DownloadProgressFound {
   Hash hash;
   /// The size of the entry in bytes.
   u64 size;
+};
+
+/// A DownloadProgress event indicating an entry was found locally
+dictionary DownloadProgressFoundLocal {
+  /// child offset
+  u64 child;
+  /// The hash of the entry.
+  Hash hash;
+  /// The size of the entry in bytes.
+  u64 size;
+  /// The ranges that are available locally.
+  RangeSpec valid_ranges;
+};
+
+/// A chunk range specification as a sequence of chunk offsets
+interface RangeSpec {
+  /// Checks if this [`RangeSpec`] does not select any chunks in the blob
+  boolean is_empty();
+  /// Check if this [`RangeSpec`] selects all chunks in the blob
+  boolean is_all();
 };
 
 /// A DownloadProgress event indicating an item was found with hash `hash`, that can be referred to by `id`
@@ -1168,6 +1172,8 @@ dictionary DownloadProgressAbort {
 
 /// The kinds of progress events that can occur in a `DownloadProgress`
 enum DownloadProgressType {
+  /// Data was found locally
+  "FoundLocal",
   /// A new connection was established.
   "Connected",
   /// An item was found with hash `hash`, from now on referred to via `id`
@@ -1192,6 +1198,35 @@ enum DownloadProgressType {
   ///
   /// This will be the last message in the stream.
   "Abort",
+};
+
+
+/// Filter strategy used in download policies.
+interface FilterKind {
+  /// Verifies whether this filter matches a given key
+  boolean matches(bytes key);
+  /// Returns a FilterKind that matches if the contained bytes are a prefix of the key.
+  [Name=prefix]
+  constructor(bytes prefix);
+  /// Returns a FilterKind that matches if the contained bytes and the key are the same.
+  [Name=exact]
+  constructor(bytes key);
+};
+
+/// Download policy to decide which content blobs shall be downloaded.
+interface DownloadPolicy {
+  /// Download everything
+  [Name=everything]
+  constructor();
+  /// Download nothing
+  [Name=nothing]
+  constructor();
+  /// Download nothing except keys that match the given filters
+  [Name=nothing_except]
+  constructor(sequence<FilterKind> filters);
+  /// Download everything except keys that match the given filters
+  [Name=everything_except]
+  constructor(sequence<FilterKind> filters);
 };
 
 /// A response to a list blobs request
@@ -1249,7 +1284,8 @@ interface IrohError {
   PublicKey(string description);
   NodeAddr(string description);
   Hash(string description);
-  RequestToken(string description);
   FsUtil(string description);
   Tags(string description);
+  Url(string description);
+  Entry(string description);
 };

@@ -15,11 +15,9 @@ import (
 
 // TestHash tests all functionality for the Hash struct
 func TestHash(t *testing.T) {
-	hashStr := "bafkr4ih6qxpyfyrgxbcrvmiqbm7hb5fdpn4yezj7ayh6gwto4hm2573glu"
-	hexStr := "fe85df82e226b8451ab1100b3e70f4a37b7982653f060fe35a6ee1d9aeff665d"
-	bytes := []byte("\xfe\x85\xdf\x82\xe2\x26\xb8\x45\x1a\xb1\x10\x0b\x3e\x70\xf4\xa3\x7b\x79\x82\x65\x3f\x06\x0f\xe3\x5a\x6e\xe1\xd9\xae\xff\x66\x5d")
-	cidPrefix := []byte("\x01\x55\x1e\x20")
-	prefixAndBytes := append(cidPrefix, bytes...)
+	hashStr := "2kbxxbofqx5rau77wzafrj4yntjb4gn4olfpwxmv26js6dvhgjhq"
+	hexStr := "d2837b85c585fb1053ffb64058a7986cd21e19bc72cafb5d95d7932f0ea7324f"
+	bytes := []byte("\xd2\x83\x7b\x85\xc5\x85\xfb\x10\x53\xff\xb6\x40\x58\xa7\x98\x6c\xd2\x1e\x19\xbc\x72\xca\xfb\x5d\x95\xd7\x93\x2f\x0e\xa7\x32\x4f")
 
 	// create hash from string
 	hash, err := iroh.HashFromString(hashStr)
@@ -29,7 +27,6 @@ func TestHash(t *testing.T) {
 	assert.Equal(t, hashStr, hash.ToString())
 	assert.Equal(t, bytes, hash.ToBytes())
 	assert.Equal(t, hexStr, hash.ToHex())
-	assert.Equal(t, prefixAndBytes, hash.AsCidBytes())
 
 	// create hash from bytes
 	hash0, err := iroh.HashFromBytes(bytes)
@@ -39,25 +36,10 @@ func TestHash(t *testing.T) {
 	assert.Equal(t, hashStr, hash0.ToString())
 	assert.Equal(t, bytes, hash0.ToBytes())
 	assert.Equal(t, hexStr, hash0.ToHex())
-	assert.Equal(t, prefixAndBytes, hash0.AsCidBytes())
-
-	// create hash from cid bytes
-	hash1, err := iroh.HashFromCidBytes(prefixAndBytes)
-	assert.Nil(t, err)
-
-	// test methods are as expected
-	assert.Equal(t, hashStr, hash1.ToString())
-	assert.Equal(t, bytes, hash1.ToBytes())
-	assert.Equal(t, hexStr, hash1.ToHex())
-	assert.Equal(t, prefixAndBytes, hash1.AsCidBytes())
 
 	// test that the eq function works
 	assert.True(t, hash.Equal(hash0))
-	assert.True(t, hash.Equal(hash1))
 	assert.True(t, hash0.Equal(hash))
-	assert.True(t, hash0.Equal(hash1))
-	assert.True(t, hash1.Equal(hash))
-	assert.True(t, hash1.Equal(hash0))
 }
 
 // test functionality between adding as bytes and reading to bytes
