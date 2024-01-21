@@ -15,21 +15,14 @@ DerivedData/
 
 /IrohLib.xcframework.zip
 
-/Iroh.xcframework/ios-arm64/Iroh.framework/*
-/Iroh.xcframework/ios-arm64/Iroh.framework/Headers/*
-!/Iroh.xcframework/ios-arm64/Iroh.framework/Info.plist
-!/Iroh.xcframework/ios-arm64/Iroh.framework/Modules
-!/Iroh.xcframework/ios-arm64/Iroh.framework/Headers
-!/Iroh.xcframework/ios-arm64/Iroh.framework/Headers/irohFFI.h
-!/Iroh.xcframework/ios-arm64/Iroh.framework/Headers/Export.h
+/Iroh.xcframework/*/Iroh.framework/*
+/Iroh.xcframework/*/Iroh.framework/Headers/*
+!/Iroh.xcframework/*/Iroh.framework/Info.plist
+!/Iroh.xcframework/*/Iroh.framework/Modules
+!/Iroh.xcframework/*/Iroh.framework/Headers
+!/Iroh.xcframework/*/Iroh.framework/Headers/irohFFI.h
+!/Iroh.xcframework/*/Iroh.framework/Headers/Export.h
 
-/Iroh.xcframework/ios-arm64_x86_64-simulator/Iroh.framework/*
-/Iroh.xcframework/ios-arm64_x86_64-simulator/Iroh.framework/Headers/*
-!/Iroh.xcframework/ios-arm64_x86_64-simulator/Iroh.framework/Info.plist
-!/Iroh.xcframework/ios-arm64_x86_64-simulator/Iroh.framework/Modules
-!/Iroh.xcframework/ios-arm64_x86_64-simulator/Iroh.framework/Headers
-!/Iroh.xcframework/ios-arm64_x86_64-simulator/Iroh.framework/Headers/irohFFI.h
-!/Iroh.xcframework/ios-arm64_x86_64-simulator/Iroh.framework/Headers/Export.h
 
 /IrohLib/artifacts/
 
