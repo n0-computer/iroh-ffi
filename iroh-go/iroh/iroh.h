@@ -238,7 +238,7 @@ RustBuffer uniffi_iroh_fn_method_doc_get_one(
 	RustCallStatus* out_status
 );
 
-void* uniffi_iroh_fn_method_doc_id(
+RustBuffer uniffi_iroh_fn_method_doc_id(
 	void* ptr,
 	RustCallStatus* out_status
 );
@@ -504,7 +504,7 @@ RustBuffer uniffi_iroh_fn_method_entry_key(
 	RustCallStatus* out_status
 );
 
-void* uniffi_iroh_fn_method_entry_namespace(
+RustBuffer uniffi_iroh_fn_method_entry_namespace(
 	void* ptr,
 	RustCallStatus* out_status
 );
@@ -745,7 +745,7 @@ void* uniffi_iroh_fn_method_irohnode_doc_create(
 
 void uniffi_iroh_fn_method_irohnode_doc_drop(
 	void* ptr,
-	void* doc_id,
+	RustBuffer doc_id,
 	RustCallStatus* out_status
 );
 
@@ -762,7 +762,7 @@ RustBuffer uniffi_iroh_fn_method_irohnode_doc_list(
 
 RustBuffer uniffi_iroh_fn_method_irohnode_doc_open(
 	void* ptr,
-	void* id,
+	RustBuffer id,
 	RustCallStatus* out_status
 );
 
@@ -828,27 +828,6 @@ RustBuffer uniffi_iroh_fn_method_liveevent_as_sync_finished(
 );
 
 RustBuffer uniffi_iroh_fn_method_liveevent_type(
-	void* ptr,
-	RustCallStatus* out_status
-);
-
-void uniffi_iroh_fn_free_namespaceid(
-	void* ptr,
-	RustCallStatus* out_status
-);
-
-void* uniffi_iroh_fn_constructor_namespaceid_from_string(
-	RustBuffer str,
-	RustCallStatus* out_status
-);
-
-int8_t uniffi_iroh_fn_method_namespaceid_equal(
-	void* ptr,
-	void* other,
-	RustCallStatus* out_status
-);
-
-RustBuffer uniffi_iroh_fn_method_namespaceid_to_string(
 	void* ptr,
 	RustCallStatus* out_status
 );
@@ -1971,14 +1950,6 @@ uint16_t uniffi_iroh_checksum_method_liveevent_type(
 	RustCallStatus* out_status
 );
 
-uint16_t uniffi_iroh_checksum_method_namespaceid_equal(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_method_namespaceid_to_string(
-	RustCallStatus* out_status
-);
-
 uint16_t uniffi_iroh_checksum_method_nodeaddr_derp_url(
 	RustCallStatus* out_status
 );
@@ -2176,10 +2147,6 @@ uint16_t uniffi_iroh_checksum_constructor_ipv6addr_new(
 );
 
 uint16_t uniffi_iroh_checksum_constructor_irohnode_new(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_constructor_namespaceid_from_string(
 	RustCallStatus* out_status
 );
 

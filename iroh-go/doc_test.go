@@ -57,28 +57,6 @@ func TestNodeAddr(t *testing.T) {
 	assert.True(t, derpUrl.Equal(*nodeAddrs.DerpUrl()))
 }
 
-/// Test all NamespaceId functionality
-func TestNamespaceId(t *testing.T) {
-	// create id from string
-	namespaceStr := "mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q"
-	namespace, err := iroh.NamespaceIdFromString(namespaceStr)
-	if err != nil {
-		panic(err)
-	}
-
-	// call ToString, ensure Equal
-	assert.Equal(t, namespace.ToString(), namespaceStr)
-	// create another id, same string
-	namespace0, err := iroh.NamespaceIdFromString(namespaceStr)
-	if err != nil {
-		panic(err)
-	}
-
-	// ensure Equal
-	assert.True(t, namespace.Equal(namespace0))
-	assert.True(t, namespace0.Equal(namespace))
-}
-
 /// Test all AuthorId functionality
 func TestAuthorId(t *testing.T) {
 	// create id from string

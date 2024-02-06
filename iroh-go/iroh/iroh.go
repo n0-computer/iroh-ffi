@@ -603,7 +603,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_doc_id(uniffiStatus)
 		})
-		if checksum != 34677 {
+		if checksum != 32607 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_doc_id: UniFFI API checksum mismatch")
 		}
@@ -927,7 +927,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_entry_namespace(uniffiStatus)
 		})
-		if checksum != 41306 {
+		if checksum != 52248 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_entry_namespace: UniFFI API checksum mismatch")
 		}
@@ -1170,7 +1170,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_irohnode_doc_drop(uniffiStatus)
 		})
-		if checksum != 64324 {
+		if checksum != 49858 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_irohnode_doc_drop: UniFFI API checksum mismatch")
 		}
@@ -1197,7 +1197,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_irohnode_doc_open(uniffiStatus)
 		})
-		if checksum != 8490 {
+		if checksum != 47317 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_irohnode_doc_open: UniFFI API checksum mismatch")
 		}
@@ -1308,24 +1308,6 @@ func uniffiCheckChecksums() {
 		if checksum != 35533 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_liveevent_type: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_method_namespaceid_equal(uniffiStatus)
-		})
-		if checksum != 18805 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_method_namespaceid_equal: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_method_namespaceid_to_string(uniffiStatus)
-		})
-		if checksum != 63715 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_method_namespaceid_to_string: UniFFI API checksum mismatch")
 		}
 	}
 	{
@@ -1776,15 +1758,6 @@ func uniffiCheckChecksums() {
 		if checksum != 22562 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_constructor_irohnode_new: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_constructor_namespaceid_from_string(uniffiStatus)
-		})
-		if checksum != 47535 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_constructor_namespaceid_from_string: UniFFI API checksum mismatch")
 		}
 	}
 	{
@@ -2874,10 +2847,10 @@ func (_self *Doc) GetOne(query *Query) (**Entry, error) {
 	}
 }
 
-func (_self *Doc) Id() *NamespaceId {
+func (_self *Doc) Id() string {
 	_pointer := _self.ffiObject.incrementPointer("*Doc")
 	defer _self.ffiObject.decrementPointer()
-	return FfiConverterNamespaceIdINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+	return FfiConverterStringINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
 		return C.uniffi_iroh_fn_method_doc_id(
 			_pointer, _uniffiStatus)
 	}))
@@ -3614,10 +3587,10 @@ func (_self *Entry) Key() []byte {
 	}))
 }
 
-func (_self *Entry) Namespace() *NamespaceId {
+func (_self *Entry) Namespace() string {
 	_pointer := _self.ffiObject.incrementPointer("*Entry")
 	defer _self.ffiObject.decrementPointer()
-	return FfiConverterNamespaceIdINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+	return FfiConverterStringINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
 		return C.uniffi_iroh_fn_method_entry_namespace(
 			_pointer, _uniffiStatus)
 	}))
@@ -4259,12 +4232,12 @@ func (_self *IrohNode) DocCreate() (*Doc, error) {
 	}
 }
 
-func (_self *IrohNode) DocDrop(docId *NamespaceId) error {
+func (_self *IrohNode) DocDrop(docId string) error {
 	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
 	defer _self.ffiObject.decrementPointer()
 	_, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) bool {
 		C.uniffi_iroh_fn_method_irohnode_doc_drop(
-			_pointer, FfiConverterNamespaceIdINSTANCE.Lower(docId), _uniffiStatus)
+			_pointer, FfiConverterStringINSTANCE.Lower(docId), _uniffiStatus)
 		return false
 	})
 	return _uniffiErr
@@ -4300,12 +4273,12 @@ func (_self *IrohNode) DocList() ([]NamespaceAndCapability, error) {
 	}
 }
 
-func (_self *IrohNode) DocOpen(id *NamespaceId) (**Doc, error) {
+func (_self *IrohNode) DocOpen(id string) (**Doc, error) {
 	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
 	defer _self.ffiObject.decrementPointer()
 	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) RustBufferI {
 		return C.uniffi_iroh_fn_method_irohnode_doc_open(
-			_pointer, FfiConverterNamespaceIdINSTANCE.Lower(id), _uniffiStatus)
+			_pointer, FfiConverterStringINSTANCE.Lower(id), _uniffiStatus)
 	})
 	if _uniffiErr != nil {
 		var _uniffiDefaultValue **Doc
@@ -4532,84 +4505,6 @@ func (c FfiConverterLiveEvent) Write(writer io.Writer, value *LiveEvent) {
 type FfiDestroyerLiveEvent struct{}
 
 func (_ FfiDestroyerLiveEvent) Destroy(value *LiveEvent) {
-	value.Destroy()
-}
-
-type NamespaceId struct {
-	ffiObject FfiObject
-}
-
-func NamespaceIdFromString(str string) (*NamespaceId, error) {
-	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_constructor_namespaceid_from_string(FfiConverterStringINSTANCE.Lower(str), _uniffiStatus)
-	})
-	if _uniffiErr != nil {
-		var _uniffiDefaultValue *NamespaceId
-		return _uniffiDefaultValue, _uniffiErr
-	} else {
-		return FfiConverterNamespaceIdINSTANCE.Lift(_uniffiRV), _uniffiErr
-	}
-}
-
-func (_self *NamespaceId) Equal(other *NamespaceId) bool {
-	_pointer := _self.ffiObject.incrementPointer("*NamespaceId")
-	defer _self.ffiObject.decrementPointer()
-	return FfiConverterBoolINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) C.int8_t {
-		return C.uniffi_iroh_fn_method_namespaceid_equal(
-			_pointer, FfiConverterNamespaceIdINSTANCE.Lower(other), _uniffiStatus)
-	}))
-}
-
-func (_self *NamespaceId) ToString() string {
-	_pointer := _self.ffiObject.incrementPointer("*NamespaceId")
-	defer _self.ffiObject.decrementPointer()
-	return FfiConverterStringINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
-		return C.uniffi_iroh_fn_method_namespaceid_to_string(
-			_pointer, _uniffiStatus)
-	}))
-}
-
-func (object *NamespaceId) Destroy() {
-	runtime.SetFinalizer(object, nil)
-	object.ffiObject.destroy()
-}
-
-type FfiConverterNamespaceId struct{}
-
-var FfiConverterNamespaceIdINSTANCE = FfiConverterNamespaceId{}
-
-func (c FfiConverterNamespaceId) Lift(pointer unsafe.Pointer) *NamespaceId {
-	result := &NamespaceId{
-		newFfiObject(
-			pointer,
-			func(pointer unsafe.Pointer, status *C.RustCallStatus) {
-				C.uniffi_iroh_fn_free_namespaceid(pointer, status)
-			}),
-	}
-	runtime.SetFinalizer(result, (*NamespaceId).Destroy)
-	return result
-}
-
-func (c FfiConverterNamespaceId) Read(reader io.Reader) *NamespaceId {
-	return c.Lift(unsafe.Pointer(uintptr(readUint64(reader))))
-}
-
-func (c FfiConverterNamespaceId) Lower(value *NamespaceId) unsafe.Pointer {
-	// TODO: this is bad - all synchronization from ObjectRuntime.go is discarded here,
-	// because the pointer will be decremented immediately after this function returns,
-	// and someone will be left holding onto a non-locked pointer.
-	pointer := value.ffiObject.incrementPointer("*NamespaceId")
-	defer value.ffiObject.decrementPointer()
-	return pointer
-}
-
-func (c FfiConverterNamespaceId) Write(writer io.Writer, value *NamespaceId) {
-	writeUint64(writer, uint64(uintptr(c.Lower(value))))
-}
-
-type FfiDestroyerNamespaceId struct{}
-
-func (_ FfiDestroyerNamespaceId) Destroy(value *NamespaceId) {
 	value.Destroy()
 }
 
@@ -6982,12 +6877,12 @@ func (_ FfiDestroyerTypeListTagsResponse) Destroy(value ListTagsResponse) {
 }
 
 type NamespaceAndCapability struct {
-	Namespace  *NamespaceId
+	Namespace  string
 	Capability CapabilityKind
 }
 
 func (r *NamespaceAndCapability) Destroy() {
-	FfiDestroyerNamespaceId{}.Destroy(r.Namespace)
+	FfiDestroyerString{}.Destroy(r.Namespace)
 	FfiDestroyerTypeCapabilityKind{}.Destroy(r.Capability)
 }
 
@@ -7001,7 +6896,7 @@ func (c FfiConverterTypeNamespaceAndCapability) Lift(rb RustBufferI) NamespaceAn
 
 func (c FfiConverterTypeNamespaceAndCapability) Read(reader io.Reader) NamespaceAndCapability {
 	return NamespaceAndCapability{
-		FfiConverterNamespaceIdINSTANCE.Read(reader),
+		FfiConverterStringINSTANCE.Read(reader),
 		FfiConverterTypeCapabilityKindINSTANCE.Read(reader),
 	}
 }
@@ -7011,7 +6906,7 @@ func (c FfiConverterTypeNamespaceAndCapability) Lower(value NamespaceAndCapabili
 }
 
 func (c FfiConverterTypeNamespaceAndCapability) Write(writer io.Writer, value NamespaceAndCapability) {
-	FfiConverterNamespaceIdINSTANCE.Write(writer, value.Namespace)
+	FfiConverterStringINSTANCE.Write(writer, value.Namespace)
 	FfiConverterTypeCapabilityKindINSTANCE.Write(writer, value.Capability)
 }
 
