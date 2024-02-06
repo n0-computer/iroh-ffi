@@ -51,7 +51,7 @@ interface IrohNode {
   void doc_drop(string doc_id);
   /// Join and sync with an already existing document.
   [Throws=IrohError]
-  Doc doc_join(DocTicket ticket);
+  Doc doc_join(string ticket);
   /// List all the docs we have access to on this node.
   [Throws=IrohError]
   sequence<NamespaceAndCapability> doc_list();
@@ -216,7 +216,7 @@ interface Doc {
 
   /// Share this document with peers over a ticket.
   [Throws=IrohError]
-  DocTicket share(ShareMode mode);
+  string share(ShareMode mode);
   /// Start to sync this document with a list of peers.
   [Throws=IrohError]
   void start_sync(sequence<NodeAddr> peers);
@@ -565,17 +565,6 @@ interface Hash {
   constructor(string s);
   /// Convert the hash to a hex string.
   string to_hex();
-};
-
-/// Contains both a key (either secret or public) to a document, and a list of peers to join.
-interface DocTicket {
-  /// Create a `DocTicket` from a string
-  [Name=from_string, Throws=IrohError]
-  constructor(string content);
-  /// Return a string representation of a `DocTicket`
-  string to_string();
-  /// Returns true if both `DocTicket`'s have the same value
-  boolean equal(DocTicket other);
 };
 
 /// The state for an open replica.

@@ -79,28 +79,6 @@ func TestAuthorId(t *testing.T) {
 	assert.True(t, author0.Equal(author))
 }
 
-/// Test all DocTicket functionality
-func TestDocTicket(t *testing.T) {
-	// create id from string
-	docTicketStr := "docaaa7qg6afc6zupqzfxmu5uuueaoei5zlye7a4ahhrfhvzjfrfewozgybl5kkl6u6fqcnjxvdkoihq3nbsqczxeulfsqvatb2qh3bwheoyahacitior2ha4z2f4xxk43fgewtcltemvzhaltjojxwqltomv2ho33snmxc6biajjeteswek4ambkabzpcfoajganyabbz2zplaaaaaaaaaagrjyvlqcjqdoaaioowl2ygi2likyov62rofk4asma3qacdtvs6whqsdbizopsefrrkx"
-	docTicket, err := iroh.DocTicketFromString(docTicketStr)
-	if err != nil {
-		panic(err)
-	}
-
-	// call ToString, ensure Equal
-	assert.Equal(t, docTicket.ToString(), docTicketStr)
-	// create another ticket, same string
-	docTicket0, err := iroh.DocTicketFromString(docTicketStr)
-	if err != nil {
-		panic(err)
-	}
-
-	// ensure Equal
-	assert.True(t, docTicket.Equal(docTicket0))
-	assert.True(t, docTicket0.Equal(docTicket))
-}
-
 /// TestQuery tests all the Query builders
 func TestQuery(t *testing.T) {
 	// all

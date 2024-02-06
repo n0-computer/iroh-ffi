@@ -137,7 +137,7 @@ void uniffi_iroh_fn_method_doc_set_download_policy(void*_Nonnull ptr, void*_Nonn
 );
 void uniffi_iroh_fn_method_doc_set_hash(void*_Nonnull ptr, void*_Nonnull author, RustBuffer key, void*_Nonnull hash, uint64_t size, RustCallStatus *_Nonnull out_status
 );
-void*_Nonnull uniffi_iroh_fn_method_doc_share(void*_Nonnull ptr, RustBuffer mode, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_iroh_fn_method_doc_share(void*_Nonnull ptr, RustBuffer mode, RustCallStatus *_Nonnull out_status
 );
 void uniffi_iroh_fn_method_doc_start_sync(void*_Nonnull ptr, RustBuffer peers, RustCallStatus *_Nonnull out_status
 );
@@ -168,14 +168,6 @@ RustBuffer uniffi_iroh_fn_method_docimportprogress_as_ingest_done(void*_Nonnull 
 RustBuffer uniffi_iroh_fn_method_docimportprogress_as_progress(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_docimportprogress_type(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void uniffi_iroh_fn_free_docticket(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void*_Nonnull uniffi_iroh_fn_constructor_docticket_from_string(RustBuffer content, RustCallStatus *_Nonnull out_status
-);
-int8_t uniffi_iroh_fn_method_docticket_equal(void*_Nonnull ptr, void*_Nonnull other, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_iroh_fn_method_docticket_to_string(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void uniffi_iroh_fn_free_downloadlocation(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -314,7 +306,7 @@ void*_Nonnull uniffi_iroh_fn_method_irohnode_doc_create(void*_Nonnull ptr, RustC
 );
 void uniffi_iroh_fn_method_irohnode_doc_drop(void*_Nonnull ptr, RustBuffer doc_id, RustCallStatus *_Nonnull out_status
 );
-void*_Nonnull uniffi_iroh_fn_method_irohnode_doc_join(void*_Nonnull ptr, void*_Nonnull ticket, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_iroh_fn_method_irohnode_doc_join(void*_Nonnull ptr, RustBuffer ticket, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_irohnode_doc_list(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -754,12 +746,6 @@ uint16_t uniffi_iroh_checksum_method_docimportprogress_as_progress(void
 uint16_t uniffi_iroh_checksum_method_docimportprogress_type(void
     
 );
-uint16_t uniffi_iroh_checksum_method_docticket_equal(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_docticket_to_string(void
-    
-);
 uint16_t uniffi_iroh_checksum_method_downloadprogress_as_abort(void
     
 );
@@ -1028,9 +1014,6 @@ uint16_t uniffi_iroh_checksum_constructor_authorid_from_string(void
     
 );
 uint16_t uniffi_iroh_checksum_constructor_blobdownloadrequest_new(void
-    
-);
-uint16_t uniffi_iroh_checksum_constructor_docticket_from_string(void
     
 );
 uint16_t uniffi_iroh_checksum_constructor_downloadlocation_external(void

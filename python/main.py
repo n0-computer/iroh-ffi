@@ -53,8 +53,7 @@ if __name__ == "__main__":
     print("Started Iroh node: {}".format(node.node_id()))
 
     # join doc
-    doc_ticket = iroh.DocTicket.from_string(args.ticket)
-    doc = node.doc_join(doc_ticket)
+    doc = node.doc_join(args.ticket)
     print("Joined doc: {}".format(doc.id()))
 
     # sync & print

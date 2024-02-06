@@ -281,7 +281,7 @@ void uniffi_iroh_fn_method_doc_set_hash(
 	RustCallStatus* out_status
 );
 
-void* uniffi_iroh_fn_method_doc_share(
+RustBuffer uniffi_iroh_fn_method_doc_share(
 	void* ptr,
 	RustBuffer mode,
 	RustCallStatus* out_status
@@ -360,27 +360,6 @@ RustBuffer uniffi_iroh_fn_method_docimportprogress_as_progress(
 );
 
 RustBuffer uniffi_iroh_fn_method_docimportprogress_type(
-	void* ptr,
-	RustCallStatus* out_status
-);
-
-void uniffi_iroh_fn_free_docticket(
-	void* ptr,
-	RustCallStatus* out_status
-);
-
-void* uniffi_iroh_fn_constructor_docticket_from_string(
-	RustBuffer content,
-	RustCallStatus* out_status
-);
-
-int8_t uniffi_iroh_fn_method_docticket_equal(
-	void* ptr,
-	void* other,
-	RustCallStatus* out_status
-);
-
-RustBuffer uniffi_iroh_fn_method_docticket_to_string(
 	void* ptr,
 	RustCallStatus* out_status
 );
@@ -751,7 +730,7 @@ void uniffi_iroh_fn_method_irohnode_doc_drop(
 
 void* uniffi_iroh_fn_method_irohnode_doc_join(
 	void* ptr,
-	void* ticket,
+	RustBuffer ticket,
 	RustCallStatus* out_status
 );
 
@@ -1714,14 +1693,6 @@ uint16_t uniffi_iroh_checksum_method_docimportprogress_type(
 	RustCallStatus* out_status
 );
 
-uint16_t uniffi_iroh_checksum_method_docticket_equal(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_method_docticket_to_string(
-	RustCallStatus* out_status
-);
-
 uint16_t uniffi_iroh_checksum_method_downloadprogress_as_abort(
 	RustCallStatus* out_status
 );
@@ -2079,10 +2050,6 @@ uint16_t uniffi_iroh_checksum_constructor_authorid_from_string(
 );
 
 uint16_t uniffi_iroh_checksum_constructor_blobdownloadrequest_new(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_constructor_docticket_from_string(
 	RustCallStatus* out_status
 );
 

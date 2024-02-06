@@ -1,5 +1,5 @@
 # tests that correspond to the `src/doc.rs` rust api
-from iroh import IrohNode, PublicKey, SocketAddr, NodeAddr, Ipv4Addr, Ipv6Addr, iroh, AuthorId, DocTicket, Query, SortBy, SortDirection, QueryOptions, path_to_key, key_to_path, Url
+from iroh import IrohNode, PublicKey, SocketAddr, NodeAddr, Ipv4Addr, Ipv6Addr, iroh, AuthorId, Query, SortBy, SortDirection, QueryOptions, path_to_key, key_to_path, Url
 import pytest
 import tempfile
 import os
@@ -50,22 +50,6 @@ def test_author_id():
     # ensure equal
     assert author.equal(author_0)
     assert author_0.equal(author)
-
-def test_doc_ticket():
-    #
-    # create id from string
-    doc_ticket_str = "docaaa7qg6afc6zupqzfxmu5uuueaoei5zlye7a4ahhrfhvzjfrfewozgybl5kkl6u6fqcnjxvdkoihq3nbsqczxeulfsqvatb2qh3bwheoyahacitior2ha4z2f4xxk43fgewtcltemvzhaltjojxwqltomv2ho33snmxc6biajjeteswek4ambkabzpcfoajganyabbz2zplaaaaaaaaaagrjyvlqcjqdoaaioowl2ygi2likyov62rofk4asma3qacdtvs6whqsdbizopsefrrkx"
-    doc_ticket = DocTicket.from_string(doc_ticket_str)
-    #
-    # call to_string, ensure equal
-    assert doc_ticket.to_string() == doc_ticket_str
-    #
-    # create another id, same string
-    doc_ticket_0 = DocTicket.from_string(doc_ticket_str)
-    #
-    # ensure equal
-    assert doc_ticket.equal(doc_ticket_0)
-    assert doc_ticket_0.equal(doc_ticket)
 
 def test_query():
     opts = QueryOptions(SortBy.KEY_AUTHOR, SortDirection.ASC, 10, 10)

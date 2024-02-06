@@ -657,7 +657,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_doc_share(uniffiStatus)
 		})
-		if checksum != 28913 {
+		if checksum != 19220 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_doc_share: UniFFI API checksum mismatch")
 		}
@@ -777,24 +777,6 @@ func uniffiCheckChecksums() {
 		if checksum != 49227 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_docimportprogress_type: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_method_docticket_equal(uniffiStatus)
-		})
-		if checksum != 14909 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_method_docticket_equal: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_method_docticket_to_string(uniffiStatus)
-		})
-		if checksum != 22814 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_method_docticket_to_string: UniFFI API checksum mismatch")
 		}
 	}
 	{
@@ -1179,7 +1161,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_irohnode_doc_join(uniffiStatus)
 		})
-		if checksum != 30773 {
+		if checksum != 48292 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_irohnode_doc_join: UniFFI API checksum mismatch")
 		}
@@ -1605,15 +1587,6 @@ func uniffiCheckChecksums() {
 		if checksum != 5113 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_constructor_blobdownloadrequest_new: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_constructor_docticket_from_string(uniffiStatus)
-		})
-		if checksum != 40262 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_constructor_docticket_from_string: UniFFI API checksum mismatch")
 		}
 	}
 	{
@@ -2915,18 +2888,18 @@ func (_self *Doc) SetHash(author *AuthorId, key []byte, hash *Hash, size uint64)
 	return _uniffiErr
 }
 
-func (_self *Doc) Share(mode ShareMode) (*DocTicket, error) {
+func (_self *Doc) Share(mode ShareMode) (string, error) {
 	_pointer := _self.ffiObject.incrementPointer("*Doc")
 	defer _self.ffiObject.decrementPointer()
-	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) RustBufferI {
 		return C.uniffi_iroh_fn_method_doc_share(
 			_pointer, FfiConverterTypeShareModeINSTANCE.Lower(mode), _uniffiStatus)
 	})
 	if _uniffiErr != nil {
-		var _uniffiDefaultValue *DocTicket
+		var _uniffiDefaultValue string
 		return _uniffiDefaultValue, _uniffiErr
 	} else {
-		return FfiConverterDocTicketINSTANCE.Lift(_uniffiRV), _uniffiErr
+		return FfiConverterStringINSTANCE.Lift(_uniffiRV), _uniffiErr
 	}
 }
 
@@ -3194,84 +3167,6 @@ func (c FfiConverterDocImportProgress) Write(writer io.Writer, value *DocImportP
 type FfiDestroyerDocImportProgress struct{}
 
 func (_ FfiDestroyerDocImportProgress) Destroy(value *DocImportProgress) {
-	value.Destroy()
-}
-
-type DocTicket struct {
-	ffiObject FfiObject
-}
-
-func DocTicketFromString(content string) (*DocTicket, error) {
-	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_constructor_docticket_from_string(FfiConverterStringINSTANCE.Lower(content), _uniffiStatus)
-	})
-	if _uniffiErr != nil {
-		var _uniffiDefaultValue *DocTicket
-		return _uniffiDefaultValue, _uniffiErr
-	} else {
-		return FfiConverterDocTicketINSTANCE.Lift(_uniffiRV), _uniffiErr
-	}
-}
-
-func (_self *DocTicket) Equal(other *DocTicket) bool {
-	_pointer := _self.ffiObject.incrementPointer("*DocTicket")
-	defer _self.ffiObject.decrementPointer()
-	return FfiConverterBoolINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) C.int8_t {
-		return C.uniffi_iroh_fn_method_docticket_equal(
-			_pointer, FfiConverterDocTicketINSTANCE.Lower(other), _uniffiStatus)
-	}))
-}
-
-func (_self *DocTicket) ToString() string {
-	_pointer := _self.ffiObject.incrementPointer("*DocTicket")
-	defer _self.ffiObject.decrementPointer()
-	return FfiConverterStringINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
-		return C.uniffi_iroh_fn_method_docticket_to_string(
-			_pointer, _uniffiStatus)
-	}))
-}
-
-func (object *DocTicket) Destroy() {
-	runtime.SetFinalizer(object, nil)
-	object.ffiObject.destroy()
-}
-
-type FfiConverterDocTicket struct{}
-
-var FfiConverterDocTicketINSTANCE = FfiConverterDocTicket{}
-
-func (c FfiConverterDocTicket) Lift(pointer unsafe.Pointer) *DocTicket {
-	result := &DocTicket{
-		newFfiObject(
-			pointer,
-			func(pointer unsafe.Pointer, status *C.RustCallStatus) {
-				C.uniffi_iroh_fn_free_docticket(pointer, status)
-			}),
-	}
-	runtime.SetFinalizer(result, (*DocTicket).Destroy)
-	return result
-}
-
-func (c FfiConverterDocTicket) Read(reader io.Reader) *DocTicket {
-	return c.Lift(unsafe.Pointer(uintptr(readUint64(reader))))
-}
-
-func (c FfiConverterDocTicket) Lower(value *DocTicket) unsafe.Pointer {
-	// TODO: this is bad - all synchronization from ObjectRuntime.go is discarded here,
-	// because the pointer will be decremented immediately after this function returns,
-	// and someone will be left holding onto a non-locked pointer.
-	pointer := value.ffiObject.incrementPointer("*DocTicket")
-	defer value.ffiObject.decrementPointer()
-	return pointer
-}
-
-func (c FfiConverterDocTicket) Write(writer io.Writer, value *DocTicket) {
-	writeUint64(writer, uint64(uintptr(c.Lower(value))))
-}
-
-type FfiDestroyerDocTicket struct{}
-
-func (_ FfiDestroyerDocTicket) Destroy(value *DocTicket) {
 	value.Destroy()
 }
 
@@ -4243,12 +4138,12 @@ func (_self *IrohNode) DocDrop(docId string) error {
 	return _uniffiErr
 }
 
-func (_self *IrohNode) DocJoin(ticket *DocTicket) (*Doc, error) {
+func (_self *IrohNode) DocJoin(ticket string) (*Doc, error) {
 	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
 	defer _self.ffiObject.decrementPointer()
 	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
 		return C.uniffi_iroh_fn_method_irohnode_doc_join(
-			_pointer, FfiConverterDocTicketINSTANCE.Lower(ticket), _uniffiStatus)
+			_pointer, FfiConverterStringINSTANCE.Lower(ticket), _uniffiStatus)
 	})
 	if _uniffiErr != nil {
 		var _uniffiDefaultValue *Doc

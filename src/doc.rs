@@ -33,12 +33,14 @@ impl IrohNode {
     }
 
     /// Join and sync with an already existing document.
-    pub fn doc_join(&self, ticket: Arc<DocTicket>) -> Result<Arc<Doc>, IrohError> {
+    pub fn doc_join(&self, ticket: String) -> Result<Arc<Doc>, IrohError> {
         block_on(&self.async_runtime, async {
+            let ticket =
+                iroh::ticket::DocTicket::from_str(&ticket).map_err(IrohError::doc_ticket)?;
             let doc = self
                 .sync_client
                 .docs
-                .import(ticket.0.clone())
+                .import(ticket)
                 .await
                 .map_err(IrohError::doc)?;
 
@@ -287,12 +289,12 @@ impl Doc {
     }
 
     /// Share this document with peers over a ticket.
-    pub fn share(&self, mode: ShareMode) -> Result<Arc<DocTicket>, IrohError> {
+    pub fn share(&self, mode: ShareMode) -> Result<String, IrohError> {
         block_on(&self.rt, async {
             self.inner
                 .share(mode.into())
                 .await
-                .map(|ticket| Arc::new(DocTicket(ticket)))
+                .map(|ticket| ticket.to_string())
                 .map_err(IrohError::doc)
         })
     }
@@ -821,32 +823,6 @@ impl Query {
     /// Get the offset for this query (number of entries to skip at the beginning).
     pub fn offset(&self) -> u64 {
         self.0.offset()
-    }
-}
-
-/// Contains both a key (either secret or public) to a document, and a list of peers to join.
-#[derive(Debug, Clone)]
-pub struct DocTicket(pub(crate) iroh::rpc_protocol::DocTicket);
-
-impl DocTicket {
-    /// Create a `DocTicket` from a string
-    pub fn from_string(content: String) -> Result<Self, IrohError> {
-        let ticket = content
-            .parse::<iroh::rpc_protocol::DocTicket>()
-            .map_err(IrohError::doc_ticket)?;
-        Ok(DocTicket(ticket))
-    }
-
-    /// Returns true if both `DocTicket`'s have the same value
-    pub fn equal(&self, other: Arc<DocTicket>) -> bool {
-        // TODO: implement partialeq and eq on DocTicket
-        self.to_string() == *other.to_string()
-    }
-}
-
-impl std::fmt::Display for DocTicket {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.0)
     }
 }
 
@@ -1401,10 +1377,7 @@ mod tests {
         println!("doc_id: {}", doc_id);
 
         let doc_ticket = doc.share(crate::doc::ShareMode::Write).unwrap();
-        let doc_ticket_string = doc_ticket.to_string();
-        let dock_ticket_back = DocTicket::from_string(doc_ticket_string.clone()).unwrap();
-        assert_eq!(doc_ticket.0.to_string(), dock_ticket_back.0.to_string());
-        println!("doc_ticket: {}", doc_ticket_string);
+        println!("doc_ticket: {}", doc_ticket);
         node.doc_join(doc_ticket).unwrap();
     }
 
@@ -1509,24 +1482,7 @@ mod tests {
         assert!(author.equal(author_0.clone()));
         assert!(author_0.equal(author.into()));
     }
-    #[test]
-    fn test_doc_ticket() {
-        //
-        // create id from string
-        let doc_ticket_str = "docaaa7qg6afc6zupqzfxmu5uuueaoei5zlye7a4ahhrfhvzjfrfewozgybl5kkl6u6fqcnjxvdkoihq3nbsqczxeulfsqvatb2qh3bwheoyahacitior2ha4z2f4xxk43fgewtcltemvzhaltjojxwqltomv2ho33snmxc6biajjeteswek4ambkabzpcfoajganyabbz2zplaaaaaaaaaagrjyvlqcjqdoaaioowl2ygi2likyov62rofk4asma3qacdtvs6whqsdbizopsefrrkx";
-        let doc_ticket = DocTicket::from_string(doc_ticket_str.into()).unwrap();
-        //
-        // call to_string, ensure equal
-        assert_eq!(doc_ticket_str, doc_ticket.to_string());
-        //
-        // create another id, same string
-        let doc_ticket_0 = DocTicket::from_string(doc_ticket_str.into()).unwrap();
-        //
-        // ensure equal
-        let doc_ticket_0 = Arc::new(doc_ticket_0);
-        assert!(doc_ticket.equal(doc_ticket_0.clone()));
-        assert!(doc_ticket_0.equal(doc_ticket.into()));
-    }
+
     #[test]
     fn test_query() {
         let mut opts = QueryOptions::default();

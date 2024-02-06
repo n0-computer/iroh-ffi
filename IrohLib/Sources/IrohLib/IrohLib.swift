@@ -1011,7 +1011,7 @@ public protocol DocProtocol {
     func setBytes(author: AuthorId, key: Data, value: Data) throws -> Hash
     func setDownloadPolicy(policy: DownloadPolicy) throws
     func setHash(author: AuthorId, key: Data, hash: Hash, size: UInt64) throws
-    func share(mode: ShareMode) throws -> DocTicket
+    func share(mode: ShareMode) throws -> String
     func startSync(peers: [NodeAddr]) throws
     func status() throws -> OpenState
     func subscribe(cb: SubscribeCallback) throws
@@ -1208,8 +1208,8 @@ public class Doc: DocProtocol {
     /**
      * Share this document with peers over a ticket.
      */
-    public func share(mode: ShareMode) throws -> DocTicket {
-        return try FfiConverterTypeDocTicket.lift(
+    public func share(mode: ShareMode) throws -> String {
+        return try FfiConverterString.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_doc_share(self.pointer,
                                                 FfiConverterTypeShareMode.lower(mode), $0)
@@ -1535,103 +1535,6 @@ public func FfiConverterTypeDocImportProgress_lift(_ pointer: UnsafeMutableRawPo
 
 public func FfiConverterTypeDocImportProgress_lower(_ value: DocImportProgress) -> UnsafeMutableRawPointer {
     return FfiConverterTypeDocImportProgress.lower(value)
-}
-
-public protocol DocTicketProtocol {
-    func equal(other: DocTicket) -> Bool
-    func toString() -> String
-}
-
-/**
- * Contains both a key (either secret or public) to a document, and a list of peers to join.
- */
-public class DocTicket: DocTicketProtocol {
-    fileprivate let pointer: UnsafeMutableRawPointer
-
-    // TODO: We'd like this to be `private` but for Swifty reasons,
-    // we can't implement `FfiConverter` without making this `required` and we can't
-    // make it `required` without making it `public`.
-    required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
-        self.pointer = pointer
-    }
-
-    deinit {
-        try! rustCall { uniffi_iroh_fn_free_docticket(pointer, $0) }
-    }
-
-    /**
-     * Create a `DocTicket` from a string
-     */
-    public static func fromString(content: String) throws -> DocTicket {
-        return try DocTicket(unsafeFromRawPointer: rustCallWithError(FfiConverterTypeIrohError.lift) {
-            uniffi_iroh_fn_constructor_docticket_from_string(
-                FfiConverterString.lower(content), $0
-            )
-        })
-    }
-
-    /**
-     * Returns true if both `DocTicket`'s have the same value
-     */
-    public func equal(other: DocTicket) -> Bool {
-        return try! FfiConverterBool.lift(
-            try!
-                rustCall {
-                    uniffi_iroh_fn_method_docticket_equal(self.pointer,
-                                                          FfiConverterTypeDocTicket.lower(other), $0)
-                }
-        )
-    }
-
-    /**
-     * Return a string representation of a `DocTicket`
-     */
-    public func toString() -> String {
-        return try! FfiConverterString.lift(
-            try!
-                rustCall {
-                    uniffi_iroh_fn_method_docticket_to_string(self.pointer, $0)
-                }
-        )
-    }
-}
-
-public struct FfiConverterTypeDocTicket: FfiConverter {
-    typealias FfiType = UnsafeMutableRawPointer
-    typealias SwiftType = DocTicket
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DocTicket {
-        let v: UInt64 = try readInt(&buf)
-        // The Rust code won't compile if a pointer won't fit in a UInt64.
-        // We have to go via `UInt` because that's the thing that's the size of a pointer.
-        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if ptr == nil {
-            throw UniffiInternalError.unexpectedNullPointer
-        }
-        return try lift(ptr!)
-    }
-
-    public static func write(_ value: DocTicket, into buf: inout [UInt8]) {
-        // This fiddling is because `Int` is the thing that's the same size as a pointer.
-        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
-        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
-    }
-
-    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> DocTicket {
-        return DocTicket(unsafeFromRawPointer: pointer)
-    }
-
-    public static func lower(_ value: DocTicket) -> UnsafeMutableRawPointer {
-        return value.pointer
-    }
-}
-
-public func FfiConverterTypeDocTicket_lift(_ pointer: UnsafeMutableRawPointer) throws -> DocTicket {
-    return try FfiConverterTypeDocTicket.lift(pointer)
-}
-
-public func FfiConverterTypeDocTicket_lower(_ value: DocTicket) -> UnsafeMutableRawPointer {
-    return FfiConverterTypeDocTicket.lower(value)
 }
 
 public protocol DownloadLocationProtocol {}
@@ -2647,7 +2550,7 @@ public protocol IrohNodeProtocol {
     func connections() throws -> [ConnectionInfo]
     func docCreate() throws -> Doc
     func docDrop(docId: String) throws
-    func docJoin(ticket: DocTicket) throws -> Doc
+    func docJoin(ticket: String) throws -> Doc
     func docList() throws -> [NamespaceAndCapability]
     func docOpen(id: String) throws -> Doc?
     func nodeId() -> String
@@ -2897,11 +2800,11 @@ public class IrohNode: IrohNodeProtocol {
     /**
      * Join and sync with an already existing document.
      */
-    public func docJoin(ticket: DocTicket) throws -> Doc {
+    public func docJoin(ticket: String) throws -> Doc {
         return try FfiConverterTypeDoc.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_irohnode_doc_join(self.pointer,
-                                                        FfiConverterTypeDocTicket.lower(ticket), $0)
+                                                        FfiConverterString.lower(ticket), $0)
             }
         )
     }
@@ -9271,7 +9174,7 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_doc_set_hash() != 20311 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_share() != 28913 {
+    if uniffi_iroh_checksum_method_doc_share() != 19220 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_doc_start_sync() != 54158 {
@@ -9311,12 +9214,6 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_docimportprogress_type() != 49227 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_checksum_method_docticket_equal() != 14909 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_checksum_method_docticket_to_string() != 22814 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_downloadprogress_as_abort() != 13741 {
@@ -9445,7 +9342,7 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_irohnode_doc_drop() != 49858 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_doc_join() != 30773 {
+    if uniffi_iroh_checksum_method_irohnode_doc_join() != 48292 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_doc_list() != 44252 {
@@ -9587,9 +9484,6 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_constructor_blobdownloadrequest_new() != 5113 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_checksum_constructor_docticket_from_string() != 40262 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_constructor_downloadlocation_external() != 45372 {
