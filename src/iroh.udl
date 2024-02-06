@@ -139,13 +139,13 @@ interface IrohNode {
   sequence<ListTagsResponse> tags_list();
   /// Delete a tag.
   [Throws=IrohError]
-  void tags_delete(Tag name);
+  void tags_delete(string name);
 };
 
 /// A response to a list collections request
 dictionary ListTagsResponse {
   /// The tag
-  Tag name; 
+  string name; 
   /// The format of the associated blob
   BlobFormat format;
   /// The hash of the associated blob
@@ -864,30 +864,14 @@ interface PublicKey {
   string fmt_short();
 };
 
-/// A tag
-interface Tag {
-  /// Represent a Tag as a string
-  string to_string();
-  /// Returns trun when the two tags have the same value
-  boolean equal(Tag other);
-  /// Represent a Tag as bytes
-  bytes to_bytes();
-  /// Get a Tag from a string
-  [Name=from_string]
-  constructor(string s); 
-  /// Get a Tag from a slice of bytes
-  [Name=from_bytes]
-  constructor(bytes bytes);
-};
-
-/// An option for commands that allow setting a Tag
+/// An option for commands that allow setting a tag
 interface SetTagOption {
   /// Indicate you want an automatically generated tag
   [Name=auto]
   constructor();
   /// Indicate you want a named tag
   [Name=named]
-  constructor(Tag tag);
+  constructor(string tag);
 };
 
 /// Whether to wrap the added data in a collection.
@@ -957,7 +941,7 @@ dictionary AddProgressAllDone {
   /// The format of the added data.
   BlobFormat format;
   /// The tag of the added data.
-  Tag tag;
+  string tag;
 };
 
 /// An AddProgress event indicating we got an error and need to abort
@@ -999,7 +983,7 @@ dictionary BlobAddOutcome {
   /// The size of the blob
   u64 size;
   /// The tag of the blob
-  Tag tag;
+  string tag;
 };
 
 /// Location to store a downloaded blob at.
@@ -1230,7 +1214,7 @@ dictionary BlobListIncompleteResponse {
 /// A response to a list collections request
 dictionary BlobListCollectionsResponse {
   /// Tag of the collection
-  Tag tag;
+  string tag;
   /// Hash of the collection
   Hash hash;
   /// Number of children in the collection

@@ -318,7 +318,7 @@ RustBuffer uniffi_iroh_fn_method_irohnode_stats(void*_Nonnull ptr, RustCallStatu
 );
 void*_Nonnull uniffi_iroh_fn_method_irohnode_status(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void uniffi_iroh_fn_method_irohnode_tags_delete(void*_Nonnull ptr, void*_Nonnull name, RustCallStatus *_Nonnull out_status
+void uniffi_iroh_fn_method_irohnode_tags_delete(void*_Nonnull ptr, RustBuffer name, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_irohnode_tags_list(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -401,7 +401,7 @@ void uniffi_iroh_fn_free_settagoption(void*_Nonnull ptr, RustCallStatus *_Nonnul
 void*_Nonnull uniffi_iroh_fn_constructor_settagoption_auto(RustCallStatus *_Nonnull out_status
     
 );
-void*_Nonnull uniffi_iroh_fn_constructor_settagoption_named(void*_Nonnull tag, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_iroh_fn_constructor_settagoption_named(RustBuffer tag, RustCallStatus *_Nonnull out_status
 );
 void uniffi_iroh_fn_free_socketaddr(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -444,18 +444,6 @@ void*_Nonnull uniffi_iroh_fn_method_socketaddrv6_ip(void*_Nonnull ptr, RustCallS
 uint16_t uniffi_iroh_fn_method_socketaddrv6_port(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_socketaddrv6_to_string(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void uniffi_iroh_fn_free_tag(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void*_Nonnull uniffi_iroh_fn_constructor_tag_from_bytes(RustBuffer bytes, RustCallStatus *_Nonnull out_status
-);
-void*_Nonnull uniffi_iroh_fn_constructor_tag_from_string(RustBuffer s, RustCallStatus *_Nonnull out_status
-);
-int8_t uniffi_iroh_fn_method_tag_equal(void*_Nonnull ptr, void*_Nonnull other, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_iroh_fn_method_tag_to_bytes(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_iroh_fn_method_tag_to_string(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void uniffi_iroh_fn_free_url(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -995,15 +983,6 @@ uint16_t uniffi_iroh_checksum_method_socketaddrv6_port(void
 uint16_t uniffi_iroh_checksum_method_socketaddrv6_to_string(void
     
 );
-uint16_t uniffi_iroh_checksum_method_tag_equal(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_tag_to_bytes(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_tag_to_string(void
-    
-);
 uint16_t uniffi_iroh_checksum_method_url_equal(void
     
 );
@@ -1116,12 +1095,6 @@ uint16_t uniffi_iroh_checksum_constructor_socketaddrv6_from_string(void
     
 );
 uint16_t uniffi_iroh_checksum_constructor_socketaddrv6_new(void
-    
-);
-uint16_t uniffi_iroh_checksum_constructor_tag_from_bytes(void
-    
-);
-uint16_t uniffi_iroh_checksum_constructor_tag_from_string(void
     
 );
 uint16_t uniffi_iroh_checksum_constructor_url_from_string(void

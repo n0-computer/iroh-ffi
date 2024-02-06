@@ -762,7 +762,7 @@ void* uniffi_iroh_fn_method_irohnode_status(
 
 void uniffi_iroh_fn_method_irohnode_tags_delete(
 	void* ptr,
-	void* name,
+	RustBuffer name,
 	RustCallStatus* out_status
 );
 
@@ -976,7 +976,7 @@ void* uniffi_iroh_fn_constructor_settagoption_auto(
 );
 
 void* uniffi_iroh_fn_constructor_settagoption_named(
-	void* tag,
+	RustBuffer tag,
 	RustCallStatus* out_status
 );
 
@@ -1088,37 +1088,6 @@ uint16_t uniffi_iroh_fn_method_socketaddrv6_port(
 );
 
 RustBuffer uniffi_iroh_fn_method_socketaddrv6_to_string(
-	void* ptr,
-	RustCallStatus* out_status
-);
-
-void uniffi_iroh_fn_free_tag(
-	void* ptr,
-	RustCallStatus* out_status
-);
-
-void* uniffi_iroh_fn_constructor_tag_from_bytes(
-	RustBuffer bytes,
-	RustCallStatus* out_status
-);
-
-void* uniffi_iroh_fn_constructor_tag_from_string(
-	RustBuffer s,
-	RustCallStatus* out_status
-);
-
-int8_t uniffi_iroh_fn_method_tag_equal(
-	void* ptr,
-	void* other,
-	RustCallStatus* out_status
-);
-
-RustBuffer uniffi_iroh_fn_method_tag_to_bytes(
-	void* ptr,
-	RustCallStatus* out_status
-);
-
-RustBuffer uniffi_iroh_fn_method_tag_to_string(
 	void* ptr,
 	RustCallStatus* out_status
 );
@@ -2025,18 +1994,6 @@ uint16_t uniffi_iroh_checksum_method_socketaddrv6_to_string(
 	RustCallStatus* out_status
 );
 
-uint16_t uniffi_iroh_checksum_method_tag_equal(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_method_tag_to_bytes(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_method_tag_to_string(
-	RustCallStatus* out_status
-);
-
 uint16_t uniffi_iroh_checksum_method_url_equal(
 	RustCallStatus* out_status
 );
@@ -2186,14 +2143,6 @@ uint16_t uniffi_iroh_checksum_constructor_socketaddrv6_from_string(
 );
 
 uint16_t uniffi_iroh_checksum_constructor_socketaddrv6_new(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_constructor_tag_from_bytes(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_constructor_tag_from_string(
 	RustCallStatus* out_status
 );
 

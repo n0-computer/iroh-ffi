@@ -2556,7 +2556,7 @@ public protocol IrohNodeProtocol {
     func nodeId() -> String
     func stats() throws -> [String: CounterStats]
     func status() throws -> NodeStatusResponse
-    func tagsDelete(name: Tag) throws
+    func tagsDelete(name: String) throws
     func tagsList() throws -> [ListTagsResponse]
 }
 
@@ -2871,11 +2871,11 @@ public class IrohNode: IrohNodeProtocol {
     /**
      * Delete a tag.
      */
-    public func tagsDelete(name: Tag) throws {
+    public func tagsDelete(name: String) throws {
         try
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_irohnode_tags_delete(self.pointer,
-                                                           FfiConverterTypeTag.lower(name), $0)
+                                                           FfiConverterString.lower(name), $0)
             }
     }
 
@@ -3716,7 +3716,7 @@ public func FfiConverterTypeRangeSpec_lower(_ value: RangeSpec) -> UnsafeMutable
 public protocol SetTagOptionProtocol {}
 
 /**
- * An option for commands that allow setting a Tag
+ * An option for commands that allow setting a tag
  */
 public class SetTagOption: SetTagOptionProtocol {
     fileprivate let pointer: UnsafeMutableRawPointer
@@ -3744,10 +3744,10 @@ public class SetTagOption: SetTagOptionProtocol {
     /**
      * Indicate you want a named tag
      */
-    public static func named(tag: Tag) -> SetTagOption {
+    public static func named(tag: String) -> SetTagOption {
         return SetTagOption(unsafeFromRawPointer: try! rustCall {
             uniffi_iroh_fn_constructor_settagoption_named(
-                FfiConverterTypeTag.lower(tag), $0
+                FfiConverterString.lower(tag), $0
             )
         })
     }
@@ -4197,127 +4197,6 @@ public func FfiConverterTypeSocketAddrV6_lower(_ value: SocketAddrV6) -> UnsafeM
     return FfiConverterTypeSocketAddrV6.lower(value)
 }
 
-public protocol TagProtocol {
-    func equal(other: Tag) -> Bool
-    func toBytes() -> Data
-    func toString() -> String
-}
-
-/**
- * A tag
- */
-public class Tag: TagProtocol {
-    fileprivate let pointer: UnsafeMutableRawPointer
-
-    // TODO: We'd like this to be `private` but for Swifty reasons,
-    // we can't implement `FfiConverter` without making this `required` and we can't
-    // make it `required` without making it `public`.
-    required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
-        self.pointer = pointer
-    }
-
-    deinit {
-        try! rustCall { uniffi_iroh_fn_free_tag(pointer, $0) }
-    }
-
-    /**
-     * Get a Tag from a slice of bytes
-     */
-    public static func fromBytes(bytes: Data) -> Tag {
-        return Tag(unsafeFromRawPointer: try! rustCall {
-            uniffi_iroh_fn_constructor_tag_from_bytes(
-                FfiConverterData.lower(bytes), $0
-            )
-        })
-    }
-
-    /**
-     * Get a Tag from a string
-     */
-    public static func fromString(s: String) -> Tag {
-        return Tag(unsafeFromRawPointer: try! rustCall {
-            uniffi_iroh_fn_constructor_tag_from_string(
-                FfiConverterString.lower(s), $0
-            )
-        })
-    }
-
-    /**
-     * Returns trun when the two tags have the same value
-     */
-    public func equal(other: Tag) -> Bool {
-        return try! FfiConverterBool.lift(
-            try!
-                rustCall {
-                    uniffi_iroh_fn_method_tag_equal(self.pointer,
-                                                    FfiConverterTypeTag.lower(other), $0)
-                }
-        )
-    }
-
-    /**
-     * Represent a Tag as bytes
-     */
-    public func toBytes() -> Data {
-        return try! FfiConverterData.lift(
-            try!
-                rustCall {
-                    uniffi_iroh_fn_method_tag_to_bytes(self.pointer, $0)
-                }
-        )
-    }
-
-    /**
-     * Represent a Tag as a string
-     */
-    public func toString() -> String {
-        return try! FfiConverterString.lift(
-            try!
-                rustCall {
-                    uniffi_iroh_fn_method_tag_to_string(self.pointer, $0)
-                }
-        )
-    }
-}
-
-public struct FfiConverterTypeTag: FfiConverter {
-    typealias FfiType = UnsafeMutableRawPointer
-    typealias SwiftType = Tag
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Tag {
-        let v: UInt64 = try readInt(&buf)
-        // The Rust code won't compile if a pointer won't fit in a UInt64.
-        // We have to go via `UInt` because that's the thing that's the size of a pointer.
-        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if ptr == nil {
-            throw UniffiInternalError.unexpectedNullPointer
-        }
-        return try lift(ptr!)
-    }
-
-    public static func write(_ value: Tag, into buf: inout [UInt8]) {
-        // This fiddling is because `Int` is the thing that's the same size as a pointer.
-        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
-        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
-    }
-
-    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> Tag {
-        return Tag(unsafeFromRawPointer: pointer)
-    }
-
-    public static func lower(_ value: Tag) -> UnsafeMutableRawPointer {
-        return value.pointer
-    }
-}
-
-public func FfiConverterTypeTag_lift(_ pointer: UnsafeMutableRawPointer) throws -> Tag {
-    return try FfiConverterTypeTag.lift(pointer)
-}
-
-public func FfiConverterTypeTag_lower(_ value: Tag) -> UnsafeMutableRawPointer {
-    return FfiConverterTypeTag.lower(value)
-}
-
 public protocol UrlProtocol {
     func equal(other: Url) -> Bool
     func toString() -> String
@@ -4557,11 +4436,11 @@ public struct AddProgressAllDone {
     /**
      * The tag of the added data.
      */
-    public var tag: Tag
+    public var tag: String
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(hash: Hash, format: BlobFormat, tag: Tag) {
+    public init(hash: Hash, format: BlobFormat, tag: String) {
         self.hash = hash
         self.format = format
         self.tag = tag
@@ -4573,14 +4452,14 @@ public struct FfiConverterTypeAddProgressAllDone: FfiConverterRustBuffer {
         return try AddProgressAllDone(
             hash: FfiConverterTypeHash.read(from: &buf),
             format: FfiConverterTypeBlobFormat.read(from: &buf),
-            tag: FfiConverterTypeTag.read(from: &buf)
+            tag: FfiConverterString.read(from: &buf)
         )
     }
 
     public static func write(_ value: AddProgressAllDone, into buf: inout [UInt8]) {
         FfiConverterTypeHash.write(value.hash, into: &buf)
         FfiConverterTypeBlobFormat.write(value.format, into: &buf)
-        FfiConverterTypeTag.write(value.tag, into: &buf)
+        FfiConverterString.write(value.tag, into: &buf)
     }
 }
 
@@ -4785,11 +4664,11 @@ public struct BlobAddOutcome {
     /**
      * The tag of the blob
      */
-    public var tag: Tag
+    public var tag: String
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(hash: Hash, format: BlobFormat, size: UInt64, tag: Tag) {
+    public init(hash: Hash, format: BlobFormat, size: UInt64, tag: String) {
         self.hash = hash
         self.format = format
         self.size = size
@@ -4803,7 +4682,7 @@ public struct FfiConverterTypeBlobAddOutcome: FfiConverterRustBuffer {
             hash: FfiConverterTypeHash.read(from: &buf),
             format: FfiConverterTypeBlobFormat.read(from: &buf),
             size: FfiConverterUInt64.read(from: &buf),
-            tag: FfiConverterTypeTag.read(from: &buf)
+            tag: FfiConverterString.read(from: &buf)
         )
     }
 
@@ -4811,7 +4690,7 @@ public struct FfiConverterTypeBlobAddOutcome: FfiConverterRustBuffer {
         FfiConverterTypeHash.write(value.hash, into: &buf)
         FfiConverterTypeBlobFormat.write(value.format, into: &buf)
         FfiConverterUInt64.write(value.size, into: &buf)
-        FfiConverterTypeTag.write(value.tag, into: &buf)
+        FfiConverterString.write(value.tag, into: &buf)
     }
 }
 
@@ -4830,7 +4709,7 @@ public struct BlobListCollectionsResponse {
     /**
      * Tag of the collection
      */
-    public var tag: Tag
+    public var tag: String
     /**
      * Hash of the collection
      */
@@ -4850,7 +4729,7 @@ public struct BlobListCollectionsResponse {
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(tag: Tag, hash: Hash, totalBlobsCount: UInt64?, totalBlobsSize: UInt64?) {
+    public init(tag: String, hash: Hash, totalBlobsCount: UInt64?, totalBlobsSize: UInt64?) {
         self.tag = tag
         self.hash = hash
         self.totalBlobsCount = totalBlobsCount
@@ -4861,7 +4740,7 @@ public struct BlobListCollectionsResponse {
 public struct FfiConverterTypeBlobListCollectionsResponse: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BlobListCollectionsResponse {
         return try BlobListCollectionsResponse(
-            tag: FfiConverterTypeTag.read(from: &buf),
+            tag: FfiConverterString.read(from: &buf),
             hash: FfiConverterTypeHash.read(from: &buf),
             totalBlobsCount: FfiConverterOptionUInt64.read(from: &buf),
             totalBlobsSize: FfiConverterOptionUInt64.read(from: &buf)
@@ -4869,7 +4748,7 @@ public struct FfiConverterTypeBlobListCollectionsResponse: FfiConverterRustBuffe
     }
 
     public static func write(_ value: BlobListCollectionsResponse, into buf: inout [UInt8]) {
-        FfiConverterTypeTag.write(value.tag, into: &buf)
+        FfiConverterString.write(value.tag, into: &buf)
         FfiConverterTypeHash.write(value.hash, into: &buf)
         FfiConverterOptionUInt64.write(value.totalBlobsCount, into: &buf)
         FfiConverterOptionUInt64.write(value.totalBlobsSize, into: &buf)
@@ -6228,7 +6107,7 @@ public struct ListTagsResponse {
     /**
      * The tag
      */
-    public var name: Tag
+    public var name: String
     /**
      * The format of the associated blob
      */
@@ -6240,7 +6119,7 @@ public struct ListTagsResponse {
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(name: Tag, format: BlobFormat, hash: Hash) {
+    public init(name: String, format: BlobFormat, hash: Hash) {
         self.name = name
         self.format = format
         self.hash = hash
@@ -6250,14 +6129,14 @@ public struct ListTagsResponse {
 public struct FfiConverterTypeListTagsResponse: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ListTagsResponse {
         return try ListTagsResponse(
-            name: FfiConverterTypeTag.read(from: &buf),
+            name: FfiConverterString.read(from: &buf),
             format: FfiConverterTypeBlobFormat.read(from: &buf),
             hash: FfiConverterTypeHash.read(from: &buf)
         )
     }
 
     public static func write(_ value: ListTagsResponse, into buf: inout [UInt8]) {
-        FfiConverterTypeTag.write(value.name, into: &buf)
+        FfiConverterString.write(value.name, into: &buf)
         FfiConverterTypeBlobFormat.write(value.format, into: &buf)
         FfiConverterTypeHash.write(value.hash, into: &buf)
     }
@@ -9360,7 +9239,7 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_irohnode_status() != 32660 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_tags_delete() != 21632 {
+    if uniffi_iroh_checksum_method_irohnode_tags_delete() != 23866 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_tags_list() != 6726 {
@@ -9465,15 +9344,6 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_socketaddrv6_to_string() != 14154 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_tag_equal() != 62383 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_checksum_method_tag_to_bytes() != 33917 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_checksum_method_tag_to_string() != 65488 {
-        return InitializationResult.apiChecksumMismatch
-    }
     if uniffi_iroh_checksum_method_url_equal() != 65501 {
         return InitializationResult.apiChecksumMismatch
     }
@@ -9567,7 +9437,7 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_constructor_settagoption_auto() != 13040 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_settagoption_named() != 24631 {
+    if uniffi_iroh_checksum_constructor_settagoption_named() != 36253 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_constructor_socketaddr_from_ipv4() != 48670 {
@@ -9586,12 +9456,6 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_constructor_socketaddrv6_new() != 46347 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_checksum_constructor_tag_from_bytes() != 48807 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_checksum_constructor_tag_from_string() != 40751 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_constructor_url_from_string() != 50979 {
