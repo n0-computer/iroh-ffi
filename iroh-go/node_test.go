@@ -70,6 +70,26 @@ type callback struct {
 
 func (c *callback) Event(event *iroh.LiveEvent) *iroh.IrohError {
 	fmt.Println("event type", event.Type())
+	if event.Type() == iroh.LiveEventTypeInsertLocal {
+		fmt.Println("type insert local")
+	}
+
+	if event.Type() == iroh.LiveEventTypeInsertRemote {
+		fmt.Println("type insert remote")
+	}
+
+	if event.Type() == iroh.LiveEventTypeNeighborUp {
+		fmt.Println("type neighbor up")
+	}
+
+	if event.Type() == iroh.LiveEventTypeNeighborDown {
+		fmt.Println("type neighbor down")
+	}
+
+	if event.Type() == iroh.LiveEventTypeSyncFinished {
+		fmt.Println("type sync finished")
+	}
+
 	if event.Type() == iroh.LiveEventTypeContentReady {
 		fmt.Println("type content ready found")
 		c.hashCh <- *event.AsContentReady()
