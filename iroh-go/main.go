@@ -35,7 +35,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("Created document %s\n", doc.Id().ToString())
+	fmt.Printf("Created document %s\n", doc.Id())
 	author, err := node.AuthorCreate()
 	if err != nil {
 		panic(err)
@@ -77,7 +77,7 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Printf("Created second document %s\n", doc.Id().ToString())
+	fmt.Printf("Created second document %s\n", doc.Id())
 
 	docs, err := node.DocList()
 	if err != nil {
@@ -86,7 +86,7 @@ func main() {
 
 	fmt.Printf("Listing all %d documents:\n", len(docs))
 	for _, doc_and_capability := range docs {
-		fmt.Printf("\t%s\n", doc_and_capability.Namespace.ToString())
+		fmt.Printf("\t%s\n", doc_and_capability.Namespace)
 	}
 
 	fmt.Printf("Goodbye!\n")

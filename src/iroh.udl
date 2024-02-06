@@ -48,7 +48,7 @@ interface IrohNode {
   /// deleted.clone()).await.map_err(Iroh::doc)
   /// through garbage collection unless they are referenced from another document or tag.
   [Throws=IrohError]
-  void doc_drop(NamespaceId doc_id);
+  void doc_drop(string doc_id);
   /// Join and sync with an already existing document.
   [Throws=IrohError]
   Doc doc_join(DocTicket ticket);
@@ -59,7 +59,7 @@ interface IrohNode {
   ///
   /// Returns None if the document cannot be found.
   [Throws=IrohError]
-  Doc? doc_open(NamespaceId id);
+  Doc? doc_open(string id);
 
   /// Create a new author.
   [Throws=IrohError]
@@ -175,7 +175,7 @@ dictionary LatencyAndControlMsg {
 /// A representation of a mutable, synchronizable key-value store.
 interface Doc {
   /// Get the document id of this doc.
-  NamespaceId id();
+  string id();
   /// Close the document.
   [Throws=IrohError]
   void close(); 
@@ -377,10 +377,10 @@ callback interface DocExportFileCallback {
   void progress(DocExportProgress progress);
 };
 
-/// The NamespaceId and CapabilityKind (read/write) of the doc
+/// The namespace id and CapabilityKind (read/write) of the doc
 dictionary NamespaceAndCapability {
-  /// The NamespaceId of the doc
-  NamespaceId namespace;
+  /// The namespace id of the doc
+  string namespace;
   /// The capability you have for the doc (read/write)
   CapabilityKind capability;
 };
@@ -526,15 +526,15 @@ interface AuthorId {
 /// A single entry in a [`Doc`]
 ///
 /// An entry is identified by a key, its [`AuthorId`], and the [`Doc`]'s
-/// [`NamespaceId`]. Its value is the 32-byte BLAKE3 [`hash`]
+/// namespace id. Its value is the 32-byte BLAKE3 [`hash`]
 /// of the entry's content data, the size of this content data, and a timestamp.
 interface Entry {
   /// Get the [`AuthorId`] of this entry.
   AuthorId author();
   /// Get the key of this entry.
   bytes key();
-  /// Get the [`NamespaceId`] of this entry.
-  NamespaceId namespace();
+  /// Get the namespace id of this entry.
+  string namespace();
   /// Get the content_hash of this entry.
   Hash content_hash();
   /// Get the content_length of this entry.
@@ -651,17 +651,6 @@ interface ContentStatus {
   Incomplete();
   /// The content is missing.
   Missing();
-};
-
-/// An identifier for a Doc
-interface NamespaceId {
-  /// Get an [`NamespaceId`] from a String
-  [Name=from_string, Throws=IrohError]
-  constructor(string str);
-  /// Return a NamespaceId as a string
-  string to_string();
-  /// Returns true when both NamespaceId's have the same value
-  boolean equal(NamespaceId other);
 };
 
 /// Outcome of a sync operation

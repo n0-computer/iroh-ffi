@@ -1,5 +1,5 @@
 # tests that correspond to the `src/doc.rs` rust api
-from iroh import IrohNode, PublicKey, SocketAddr, NodeAddr, Ipv4Addr, Ipv6Addr, iroh, AuthorId, NamespaceId, DocTicket, Query, SortBy, SortDirection, QueryOptions, path_to_key, key_to_path, Url
+from iroh import IrohNode, PublicKey, SocketAddr, NodeAddr, Ipv4Addr, Ipv6Addr, iroh, AuthorId, DocTicket, Query, SortBy, SortDirection, QueryOptions, path_to_key, key_to_path, Url
 import pytest
 import tempfile
 import os
@@ -34,22 +34,6 @@ def test_node_addr():
         assert expect.equal(got)
     
     assert derp_url.equal(node_addr.derp_url())
-
-def test_namespace_id():
-    #
-    # create id from string
-    namespace_str = "mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q"
-    namespace = NamespaceId.from_string(namespace_str)
-    #
-    # call to_string, ensure equal
-    assert namespace.to_string() == namespace_str
-    #
-    # create another id, same string
-    namespace_0 = NamespaceId.from_string(namespace_str)
-    #
-    # ensure equal
-    assert namespace.equal(namespace_0)
-    assert namespace_0.equal(namespace)
 
 def test_author_id():
     #

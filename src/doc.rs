@@ -59,7 +59,7 @@ impl IrohNode {
                 .await
                 .map_err(IrohError::doc)?
                 .map_ok(|(namespace, capability)| NamespaceAndCapability {
-                    namespace: Arc::new(namespace.into()),
+                    namespace: namespace.to_string(),
                     capability,
                 })
                 .try_collect::<Vec<_>>()
@@ -73,12 +73,13 @@ impl IrohNode {
     /// Get a [`Doc`].
     ///
     /// Returns None if the document cannot be found.
-    pub fn doc_open(&self, id: Arc<NamespaceId>) -> Result<Option<Arc<Doc>>, IrohError> {
+    pub fn doc_open(&self, id: String) -> Result<Option<Arc<Doc>>, IrohError> {
+        let namespace_id = iroh::sync::NamespaceId::from_str(&id).map_err(IrohError::namespace)?;
         block_on(&self.async_runtime, async {
             let doc = self
                 .sync_client
                 .docs
-                .open(id.0)
+                .open(namespace_id)
                 .await
                 .map_err(IrohError::doc)?;
             Ok(doc.map(|d| {
@@ -96,21 +97,22 @@ impl IrohNode {
     /// document will be permanently deleted from the node's storage. Content blobs will be
     /// deleted.clone()).await.map_err(Iroh::doc)
     /// through garbage collection unless they are referenced from another document or tag.
-    pub fn doc_drop(&self, doc_id: Arc<NamespaceId>) -> Result<(), IrohError> {
+    pub fn doc_drop(&self, doc_id: String) -> Result<(), IrohError> {
+        let doc_id = iroh::sync::NamespaceId::from_str(&doc_id).map_err(IrohError::namespace)?;
         block_on(&self.async_runtime, async {
             self.sync_client
                 .docs
-                .drop_doc(doc_id.0)
+                .drop_doc(doc_id)
                 .await
                 .map_err(IrohError::doc)
         })
     }
 }
 
-/// The NamespaceId and CapabilityKind (read/write) of the doc
+/// The namespace id and CapabilityKind (read/write) of the doc
 pub struct NamespaceAndCapability {
-    /// The NamespaceId of the doc
-    pub namespace: Arc<NamespaceId>,
+    /// The namespace id of the doc
+    pub namespace: String,
     /// The capability you have for the doc (read/write)
     pub capability: CapabilityKind,
 }
@@ -123,8 +125,8 @@ pub struct Doc {
 
 impl Doc {
     /// Get the document id of this doc.
-    pub fn id(&self) -> Arc<NamespaceId> {
-        Arc::new(self.inner.id().into())
+    pub fn id(&self) -> String {
+        self.inner.id().to_string()
     }
 
     /// Close the document.
@@ -586,7 +588,7 @@ impl From<ShareMode> for iroh::rpc_protocol::ShareMode {
 /// A single entry in a [`Doc`]
 ///
 /// An entry is identified by a key, its [`AuthorId`], and the [`Doc`]'s
-/// [`NamespaceId`]. Its value is the 32-byte BLAKE3 [`hash`]
+/// namespace id. Its value is the 32-byte BLAKE3 [`hash`]
 /// of the entry's content data, the size of this content data, and a timestamp.
 #[derive(Debug, Clone)]
 pub struct Entry(pub(crate) iroh::client::Entry);
@@ -618,9 +620,9 @@ impl Entry {
         self.0.id().key().to_vec()
     }
 
-    /// Get the [`NamespaceId`] of this entry.
-    pub fn namespace(&self) -> Arc<NamespaceId> {
-        Arc::new(NamespaceId(self.0.id().namespace()))
+    /// Get the namespace id of this entry.
+    pub fn namespace(&self) -> String {
+        self.0.id().namespace().to_string()
     }
 
     /// Read all content of an [`Entry`] into a buffer.
@@ -635,35 +637,6 @@ impl Entry {
                 .map(|c| c.to_vec())
                 .map_err(IrohError::entry)
         })
-    }
-}
-
-/// An identifier for a Doc
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct NamespaceId(pub(crate) iroh::sync::NamespaceId);
-
-impl From<iroh::sync::NamespaceId> for NamespaceId {
-    fn from(id: iroh::sync::NamespaceId) -> Self {
-        NamespaceId(id)
-    }
-}
-
-impl NamespaceId {
-    /// Get an [`NamespaceId`] from a String
-    pub fn from_string(str: String) -> Result<Self, IrohError> {
-        let author = iroh::sync::NamespaceId::from_str(&str).map_err(IrohError::namespace)?;
-        Ok(NamespaceId(author))
-    }
-
-    /// Returns true when both NamespaceId's have the same value
-    pub fn equal(&self, other: Arc<NamespaceId>) -> bool {
-        *self == *other
-    }
-}
-
-impl std::fmt::Display for NamespaceId {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.0)
     }
 }
 
@@ -1517,24 +1490,6 @@ mod tests {
 
         let got_derp_url = node_addr.derp_url().unwrap();
         assert!(derp_url.equal(got_derp_url));
-    }
-    #[test]
-    fn test_namespace_id() {
-        //
-        // create id from string
-        let namespace_str = "mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q";
-        let namespace = NamespaceId::from_string(namespace_str.into()).unwrap();
-        //
-        // call to_string, ensure equal
-        assert_eq!(namespace.to_string(), namespace_str);
-        //
-        // create another id, same string
-        let namespace_0 = NamespaceId::from_string(namespace_str.into()).unwrap();
-        //
-        // ensure equal
-        let namespace_0 = Arc::new(namespace_0);
-        assert!(namespace.equal(namespace_0.clone()));
-        assert!(namespace_0.equal(namespace.into()));
     }
     #[test]
     fn test_author_id() {
