@@ -468,7 +468,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_connectiontype_as_direct(uniffiStatus)
 		})
-		if checksum != 41690 {
+		if checksum != 27175 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_connectiontype_as_direct: UniFFI API checksum mismatch")
 		}
@@ -504,7 +504,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_directaddrinfo_addr(uniffiStatus)
 		})
-		if checksum != 49936 {
+		if checksum != 41252 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_directaddrinfo_addr: UniFFI API checksum mismatch")
 		}
@@ -961,60 +961,6 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_method_ipv4addr_equal(uniffiStatus)
-		})
-		if checksum != 51523 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_method_ipv4addr_equal: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_method_ipv4addr_octets(uniffiStatus)
-		})
-		if checksum != 17752 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_method_ipv4addr_octets: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_method_ipv4addr_to_string(uniffiStatus)
-		})
-		if checksum != 5658 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_method_ipv4addr_to_string: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_method_ipv6addr_equal(uniffiStatus)
-		})
-		if checksum != 26037 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_method_ipv6addr_equal: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_method_ipv6addr_segments(uniffiStatus)
-		})
-		if checksum != 41182 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_method_ipv6addr_segments: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_method_ipv6addr_to_string(uniffiStatus)
-		})
-		if checksum != 46637 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_method_ipv6addr_to_string: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_irohnode_author_create(uniffiStatus)
 		})
 		if checksum != 31148 {
@@ -1305,7 +1251,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_nodeaddr_direct_addresses(uniffiStatus)
 		})
-		if checksum != 20857 {
+		if checksum != 44368 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_nodeaddr_direct_addresses: UniFFI API checksum mismatch")
 		}
@@ -1323,7 +1269,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_nodestatusresponse_listen_addrs(uniffiStatus)
 		})
-		if checksum != 44280 {
+		if checksum != 43813 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_nodestatusresponse_listen_addrs: UniFFI API checksum mismatch")
 		}
@@ -1416,114 +1362,6 @@ func uniffiCheckChecksums() {
 		if checksum != 55537 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_rangespec_is_empty: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_method_socketaddr_as_ipv4(uniffiStatus)
-		})
-		if checksum != 50860 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_method_socketaddr_as_ipv4: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_method_socketaddr_as_ipv6(uniffiStatus)
-		})
-		if checksum != 40970 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_method_socketaddr_as_ipv6: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_method_socketaddr_equal(uniffiStatus)
-		})
-		if checksum != 1891 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_method_socketaddr_equal: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_method_socketaddr_type(uniffiStatus)
-		})
-		if checksum != 50972 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_method_socketaddr_type: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_method_socketaddrv4_equal(uniffiStatus)
-		})
-		if checksum != 51550 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_method_socketaddrv4_equal: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_method_socketaddrv4_ip(uniffiStatus)
-		})
-		if checksum != 54004 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_method_socketaddrv4_ip: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_method_socketaddrv4_port(uniffiStatus)
-		})
-		if checksum != 34504 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_method_socketaddrv4_port: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_method_socketaddrv4_to_string(uniffiStatus)
-		})
-		if checksum != 43672 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_method_socketaddrv4_to_string: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_method_socketaddrv6_equal(uniffiStatus)
-		})
-		if checksum != 37651 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_method_socketaddrv6_equal: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_method_socketaddrv6_ip(uniffiStatus)
-		})
-		if checksum != 49803 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_method_socketaddrv6_ip: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_method_socketaddrv6_port(uniffiStatus)
-		})
-		if checksum != 39562 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_method_socketaddrv6_port: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_method_socketaddrv6_to_string(uniffiStatus)
-		})
-		if checksum != 14154 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_method_socketaddrv6_to_string: UniFFI API checksum mismatch")
 		}
 	}
 	{
@@ -1645,42 +1483,6 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_constructor_ipv4addr_from_string(uniffiStatus)
-		})
-		if checksum != 60777 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_constructor_ipv4addr_from_string: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_constructor_ipv4addr_new(uniffiStatus)
-		})
-		if checksum != 51336 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_constructor_ipv4addr_new: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_constructor_ipv6addr_from_string(uniffiStatus)
-		})
-		if checksum != 24533 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_constructor_ipv6addr_from_string: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_constructor_ipv6addr_new(uniffiStatus)
-		})
-		if checksum != 18364 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_constructor_ipv6addr_new: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_constructor_irohnode_new(uniffiStatus)
 		})
 		if checksum != 22562 {
@@ -1692,7 +1494,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_constructor_nodeaddr_new(uniffiStatus)
 		})
-		if checksum != 40170 {
+		if checksum != 18892 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_constructor_nodeaddr_new: UniFFI API checksum mismatch")
 		}
@@ -1798,60 +1600,6 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_constructor_socketaddr_from_ipv4(uniffiStatus)
-		})
-		if checksum != 48670 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_constructor_socketaddr_from_ipv4: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_constructor_socketaddr_from_ipv6(uniffiStatus)
-		})
-		if checksum != 45955 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_constructor_socketaddr_from_ipv6: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_constructor_socketaddrv4_from_string(uniffiStatus)
-		})
-		if checksum != 16157 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_constructor_socketaddrv4_from_string: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_constructor_socketaddrv4_new(uniffiStatus)
-		})
-		if checksum != 12651 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_constructor_socketaddrv4_new: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_constructor_socketaddrv6_from_string(uniffiStatus)
-		})
-		if checksum != 22443 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_constructor_socketaddrv6_from_string: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
-			return C.uniffi_iroh_checksum_constructor_socketaddrv6_new(uniffiStatus)
-		})
-		if checksum != 46347 {
-			// If this happens try cleaning and rebuilding your project
-			panic("iroh: uniffi_iroh_checksum_constructor_socketaddrv6_new: UniFFI API checksum mismatch")
-		}
-	}
-	{
-		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_constructor_wrapoption_no_wrap(uniffiStatus)
 		})
 		if checksum != 60952 {
@@ -1914,54 +1662,6 @@ func uniffiCheckChecksums() {
 		}
 	}
 }
-
-type FfiConverterUint8 struct{}
-
-var FfiConverterUint8INSTANCE = FfiConverterUint8{}
-
-func (FfiConverterUint8) Lower(value uint8) C.uint8_t {
-	return C.uint8_t(value)
-}
-
-func (FfiConverterUint8) Write(writer io.Writer, value uint8) {
-	writeUint8(writer, value)
-}
-
-func (FfiConverterUint8) Lift(value C.uint8_t) uint8 {
-	return uint8(value)
-}
-
-func (FfiConverterUint8) Read(reader io.Reader) uint8 {
-	return readUint8(reader)
-}
-
-type FfiDestroyerUint8 struct{}
-
-func (FfiDestroyerUint8) Destroy(_ uint8) {}
-
-type FfiConverterUint16 struct{}
-
-var FfiConverterUint16INSTANCE = FfiConverterUint16{}
-
-func (FfiConverterUint16) Lower(value uint16) C.uint16_t {
-	return C.uint16_t(value)
-}
-
-func (FfiConverterUint16) Write(writer io.Writer, value uint16) {
-	writeUint16(writer, value)
-}
-
-func (FfiConverterUint16) Lift(value C.uint16_t) uint16 {
-	return uint16(value)
-}
-
-func (FfiConverterUint16) Read(reader io.Reader) uint16 {
-	return readUint16(reader)
-}
-
-type FfiDestroyerUint16 struct{}
-
-func (FfiDestroyerUint16) Destroy(_ uint16) {}
 
 type FfiConverterUint64 struct{}
 
@@ -2489,10 +2189,10 @@ type ConnectionType struct {
 	ffiObject FfiObject
 }
 
-func (_self *ConnectionType) AsDirect() *SocketAddr {
+func (_self *ConnectionType) AsDirect() string {
 	_pointer := _self.ffiObject.incrementPointer("*ConnectionType")
 	defer _self.ffiObject.decrementPointer()
-	return FfiConverterSocketAddrINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+	return FfiConverterStringINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
 		return C.uniffi_iroh_fn_method_connectiontype_as_direct(
 			_pointer, _uniffiStatus)
 	}))
@@ -2573,10 +2273,10 @@ type DirectAddrInfo struct {
 	ffiObject FfiObject
 }
 
-func (_self *DirectAddrInfo) Addr() *SocketAddr {
+func (_self *DirectAddrInfo) Addr() string {
 	_pointer := _self.ffiObject.incrementPointer("*DirectAddrInfo")
 	defer _self.ffiObject.decrementPointer()
-	return FfiConverterSocketAddrINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+	return FfiConverterStringINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
 		return C.uniffi_iroh_fn_method_directaddrinfo_addr(
 			_pointer, _uniffiStatus)
 	}))
@@ -3650,192 +3350,6 @@ func (_ FfiDestroyerHash) Destroy(value *Hash) {
 	value.Destroy()
 }
 
-type Ipv4Addr struct {
-	ffiObject FfiObject
-}
-
-func NewIpv4Addr(a uint8, b uint8, c uint8, d uint8) *Ipv4Addr {
-	return FfiConverterIpv4AddrINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_constructor_ipv4addr_new(FfiConverterUint8INSTANCE.Lower(a), FfiConverterUint8INSTANCE.Lower(b), FfiConverterUint8INSTANCE.Lower(c), FfiConverterUint8INSTANCE.Lower(d), _uniffiStatus)
-	}))
-}
-
-func Ipv4AddrFromString(str string) (*Ipv4Addr, error) {
-	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_constructor_ipv4addr_from_string(FfiConverterStringINSTANCE.Lower(str), _uniffiStatus)
-	})
-	if _uniffiErr != nil {
-		var _uniffiDefaultValue *Ipv4Addr
-		return _uniffiDefaultValue, _uniffiErr
-	} else {
-		return FfiConverterIpv4AddrINSTANCE.Lift(_uniffiRV), _uniffiErr
-	}
-}
-
-func (_self *Ipv4Addr) Equal(other *Ipv4Addr) bool {
-	_pointer := _self.ffiObject.incrementPointer("*Ipv4Addr")
-	defer _self.ffiObject.decrementPointer()
-	return FfiConverterBoolINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) C.int8_t {
-		return C.uniffi_iroh_fn_method_ipv4addr_equal(
-			_pointer, FfiConverterIpv4AddrINSTANCE.Lower(other), _uniffiStatus)
-	}))
-}
-
-func (_self *Ipv4Addr) Octets() []uint8 {
-	_pointer := _self.ffiObject.incrementPointer("*Ipv4Addr")
-	defer _self.ffiObject.decrementPointer()
-	return FfiConverterSequenceUint8INSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
-		return C.uniffi_iroh_fn_method_ipv4addr_octets(
-			_pointer, _uniffiStatus)
-	}))
-}
-
-func (_self *Ipv4Addr) ToString() string {
-	_pointer := _self.ffiObject.incrementPointer("*Ipv4Addr")
-	defer _self.ffiObject.decrementPointer()
-	return FfiConverterStringINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
-		return C.uniffi_iroh_fn_method_ipv4addr_to_string(
-			_pointer, _uniffiStatus)
-	}))
-}
-
-func (object *Ipv4Addr) Destroy() {
-	runtime.SetFinalizer(object, nil)
-	object.ffiObject.destroy()
-}
-
-type FfiConverterIpv4Addr struct{}
-
-var FfiConverterIpv4AddrINSTANCE = FfiConverterIpv4Addr{}
-
-func (c FfiConverterIpv4Addr) Lift(pointer unsafe.Pointer) *Ipv4Addr {
-	result := &Ipv4Addr{
-		newFfiObject(
-			pointer,
-			func(pointer unsafe.Pointer, status *C.RustCallStatus) {
-				C.uniffi_iroh_fn_free_ipv4addr(pointer, status)
-			}),
-	}
-	runtime.SetFinalizer(result, (*Ipv4Addr).Destroy)
-	return result
-}
-
-func (c FfiConverterIpv4Addr) Read(reader io.Reader) *Ipv4Addr {
-	return c.Lift(unsafe.Pointer(uintptr(readUint64(reader))))
-}
-
-func (c FfiConverterIpv4Addr) Lower(value *Ipv4Addr) unsafe.Pointer {
-	// TODO: this is bad - all synchronization from ObjectRuntime.go is discarded here,
-	// because the pointer will be decremented immediately after this function returns,
-	// and someone will be left holding onto a non-locked pointer.
-	pointer := value.ffiObject.incrementPointer("*Ipv4Addr")
-	defer value.ffiObject.decrementPointer()
-	return pointer
-}
-
-func (c FfiConverterIpv4Addr) Write(writer io.Writer, value *Ipv4Addr) {
-	writeUint64(writer, uint64(uintptr(c.Lower(value))))
-}
-
-type FfiDestroyerIpv4Addr struct{}
-
-func (_ FfiDestroyerIpv4Addr) Destroy(value *Ipv4Addr) {
-	value.Destroy()
-}
-
-type Ipv6Addr struct {
-	ffiObject FfiObject
-}
-
-func NewIpv6Addr(a uint16, b uint16, c uint16, d uint16, e uint16, f uint16, g uint16, h uint16) *Ipv6Addr {
-	return FfiConverterIpv6AddrINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_constructor_ipv6addr_new(FfiConverterUint16INSTANCE.Lower(a), FfiConverterUint16INSTANCE.Lower(b), FfiConverterUint16INSTANCE.Lower(c), FfiConverterUint16INSTANCE.Lower(d), FfiConverterUint16INSTANCE.Lower(e), FfiConverterUint16INSTANCE.Lower(f), FfiConverterUint16INSTANCE.Lower(g), FfiConverterUint16INSTANCE.Lower(h), _uniffiStatus)
-	}))
-}
-
-func Ipv6AddrFromString(str string) (*Ipv6Addr, error) {
-	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_constructor_ipv6addr_from_string(FfiConverterStringINSTANCE.Lower(str), _uniffiStatus)
-	})
-	if _uniffiErr != nil {
-		var _uniffiDefaultValue *Ipv6Addr
-		return _uniffiDefaultValue, _uniffiErr
-	} else {
-		return FfiConverterIpv6AddrINSTANCE.Lift(_uniffiRV), _uniffiErr
-	}
-}
-
-func (_self *Ipv6Addr) Equal(other *Ipv6Addr) bool {
-	_pointer := _self.ffiObject.incrementPointer("*Ipv6Addr")
-	defer _self.ffiObject.decrementPointer()
-	return FfiConverterBoolINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) C.int8_t {
-		return C.uniffi_iroh_fn_method_ipv6addr_equal(
-			_pointer, FfiConverterIpv6AddrINSTANCE.Lower(other), _uniffiStatus)
-	}))
-}
-
-func (_self *Ipv6Addr) Segments() []uint16 {
-	_pointer := _self.ffiObject.incrementPointer("*Ipv6Addr")
-	defer _self.ffiObject.decrementPointer()
-	return FfiConverterSequenceUint16INSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
-		return C.uniffi_iroh_fn_method_ipv6addr_segments(
-			_pointer, _uniffiStatus)
-	}))
-}
-
-func (_self *Ipv6Addr) ToString() string {
-	_pointer := _self.ffiObject.incrementPointer("*Ipv6Addr")
-	defer _self.ffiObject.decrementPointer()
-	return FfiConverterStringINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
-		return C.uniffi_iroh_fn_method_ipv6addr_to_string(
-			_pointer, _uniffiStatus)
-	}))
-}
-
-func (object *Ipv6Addr) Destroy() {
-	runtime.SetFinalizer(object, nil)
-	object.ffiObject.destroy()
-}
-
-type FfiConverterIpv6Addr struct{}
-
-var FfiConverterIpv6AddrINSTANCE = FfiConverterIpv6Addr{}
-
-func (c FfiConverterIpv6Addr) Lift(pointer unsafe.Pointer) *Ipv6Addr {
-	result := &Ipv6Addr{
-		newFfiObject(
-			pointer,
-			func(pointer unsafe.Pointer, status *C.RustCallStatus) {
-				C.uniffi_iroh_fn_free_ipv6addr(pointer, status)
-			}),
-	}
-	runtime.SetFinalizer(result, (*Ipv6Addr).Destroy)
-	return result
-}
-
-func (c FfiConverterIpv6Addr) Read(reader io.Reader) *Ipv6Addr {
-	return c.Lift(unsafe.Pointer(uintptr(readUint64(reader))))
-}
-
-func (c FfiConverterIpv6Addr) Lower(value *Ipv6Addr) unsafe.Pointer {
-	// TODO: this is bad - all synchronization from ObjectRuntime.go is discarded here,
-	// because the pointer will be decremented immediately after this function returns,
-	// and someone will be left holding onto a non-locked pointer.
-	pointer := value.ffiObject.incrementPointer("*Ipv6Addr")
-	defer value.ffiObject.decrementPointer()
-	return pointer
-}
-
-func (c FfiConverterIpv6Addr) Write(writer io.Writer, value *Ipv6Addr) {
-	writeUint64(writer, uint64(uintptr(c.Lower(value))))
-}
-
-type FfiDestroyerIpv6Addr struct{}
-
-func (_ FfiDestroyerIpv6Addr) Destroy(value *Ipv6Addr) {
-	value.Destroy()
-}
-
 type IrohNode struct {
 	ffiObject FfiObject
 }
@@ -4341,9 +3855,9 @@ type NodeAddr struct {
 	ffiObject FfiObject
 }
 
-func NewNodeAddr(nodeId *PublicKey, derpUrl *string, addresses []*SocketAddr) *NodeAddr {
+func NewNodeAddr(nodeId *PublicKey, derpUrl *string, addresses []string) *NodeAddr {
 	return FfiConverterNodeAddrINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_constructor_nodeaddr_new(FfiConverterPublicKeyINSTANCE.Lower(nodeId), FfiConverterOptionalStringINSTANCE.Lower(derpUrl), FfiConverterSequenceSocketAddrINSTANCE.Lower(addresses), _uniffiStatus)
+		return C.uniffi_iroh_fn_constructor_nodeaddr_new(FfiConverterPublicKeyINSTANCE.Lower(nodeId), FfiConverterOptionalStringINSTANCE.Lower(derpUrl), FfiConverterSequenceStringINSTANCE.Lower(addresses), _uniffiStatus)
 	}))
 }
 
@@ -4356,10 +3870,10 @@ func (_self *NodeAddr) DerpUrl() *string {
 	}))
 }
 
-func (_self *NodeAddr) DirectAddresses() []*SocketAddr {
+func (_self *NodeAddr) DirectAddresses() []string {
 	_pointer := _self.ffiObject.incrementPointer("*NodeAddr")
 	defer _self.ffiObject.decrementPointer()
-	return FfiConverterSequenceSocketAddrINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+	return FfiConverterSequenceStringINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
 		return C.uniffi_iroh_fn_method_nodeaddr_direct_addresses(
 			_pointer, _uniffiStatus)
 	}))
@@ -4422,10 +3936,10 @@ type NodeStatusResponse struct {
 	ffiObject FfiObject
 }
 
-func (_self *NodeStatusResponse) ListenAddrs() []*SocketAddr {
+func (_self *NodeStatusResponse) ListenAddrs() []string {
 	_pointer := _self.ffiObject.incrementPointer("*NodeStatusResponse")
 	defer _self.ffiObject.decrementPointer()
-	return FfiConverterSequenceSocketAddrINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+	return FfiConverterSequenceStringINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
 		return C.uniffi_iroh_fn_method_nodestatusresponse_listen_addrs(
 			_pointer, _uniffiStatus)
 	}))
@@ -4824,305 +4338,6 @@ func (c FfiConverterSetTagOption) Write(writer io.Writer, value *SetTagOption) {
 type FfiDestroyerSetTagOption struct{}
 
 func (_ FfiDestroyerSetTagOption) Destroy(value *SetTagOption) {
-	value.Destroy()
-}
-
-type SocketAddr struct {
-	ffiObject FfiObject
-}
-
-func SocketAddrFromIpv4(ipv4 *Ipv4Addr, port uint16) *SocketAddr {
-	return FfiConverterSocketAddrINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_constructor_socketaddr_from_ipv4(FfiConverterIpv4AddrINSTANCE.Lower(ipv4), FfiConverterUint16INSTANCE.Lower(port), _uniffiStatus)
-	}))
-}
-func SocketAddrFromIpv6(ipv6 *Ipv6Addr, port uint16) *SocketAddr {
-	return FfiConverterSocketAddrINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_constructor_socketaddr_from_ipv6(FfiConverterIpv6AddrINSTANCE.Lower(ipv6), FfiConverterUint16INSTANCE.Lower(port), _uniffiStatus)
-	}))
-}
-
-func (_self *SocketAddr) AsIpv4() *SocketAddrV4 {
-	_pointer := _self.ffiObject.incrementPointer("*SocketAddr")
-	defer _self.ffiObject.decrementPointer()
-	return FfiConverterSocketAddrV4INSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_method_socketaddr_as_ipv4(
-			_pointer, _uniffiStatus)
-	}))
-}
-
-func (_self *SocketAddr) AsIpv6() *SocketAddrV6 {
-	_pointer := _self.ffiObject.incrementPointer("*SocketAddr")
-	defer _self.ffiObject.decrementPointer()
-	return FfiConverterSocketAddrV6INSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_method_socketaddr_as_ipv6(
-			_pointer, _uniffiStatus)
-	}))
-}
-
-func (_self *SocketAddr) Equal(other *SocketAddr) bool {
-	_pointer := _self.ffiObject.incrementPointer("*SocketAddr")
-	defer _self.ffiObject.decrementPointer()
-	return FfiConverterBoolINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) C.int8_t {
-		return C.uniffi_iroh_fn_method_socketaddr_equal(
-			_pointer, FfiConverterSocketAddrINSTANCE.Lower(other), _uniffiStatus)
-	}))
-}
-
-func (_self *SocketAddr) Type() SocketAddrType {
-	_pointer := _self.ffiObject.incrementPointer("*SocketAddr")
-	defer _self.ffiObject.decrementPointer()
-	return FfiConverterTypeSocketAddrTypeINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
-		return C.uniffi_iroh_fn_method_socketaddr_type(
-			_pointer, _uniffiStatus)
-	}))
-}
-
-func (object *SocketAddr) Destroy() {
-	runtime.SetFinalizer(object, nil)
-	object.ffiObject.destroy()
-}
-
-type FfiConverterSocketAddr struct{}
-
-var FfiConverterSocketAddrINSTANCE = FfiConverterSocketAddr{}
-
-func (c FfiConverterSocketAddr) Lift(pointer unsafe.Pointer) *SocketAddr {
-	result := &SocketAddr{
-		newFfiObject(
-			pointer,
-			func(pointer unsafe.Pointer, status *C.RustCallStatus) {
-				C.uniffi_iroh_fn_free_socketaddr(pointer, status)
-			}),
-	}
-	runtime.SetFinalizer(result, (*SocketAddr).Destroy)
-	return result
-}
-
-func (c FfiConverterSocketAddr) Read(reader io.Reader) *SocketAddr {
-	return c.Lift(unsafe.Pointer(uintptr(readUint64(reader))))
-}
-
-func (c FfiConverterSocketAddr) Lower(value *SocketAddr) unsafe.Pointer {
-	// TODO: this is bad - all synchronization from ObjectRuntime.go is discarded here,
-	// because the pointer will be decremented immediately after this function returns,
-	// and someone will be left holding onto a non-locked pointer.
-	pointer := value.ffiObject.incrementPointer("*SocketAddr")
-	defer value.ffiObject.decrementPointer()
-	return pointer
-}
-
-func (c FfiConverterSocketAddr) Write(writer io.Writer, value *SocketAddr) {
-	writeUint64(writer, uint64(uintptr(c.Lower(value))))
-}
-
-type FfiDestroyerSocketAddr struct{}
-
-func (_ FfiDestroyerSocketAddr) Destroy(value *SocketAddr) {
-	value.Destroy()
-}
-
-type SocketAddrV4 struct {
-	ffiObject FfiObject
-}
-
-func NewSocketAddrV4(ipv4 *Ipv4Addr, port uint16) *SocketAddrV4 {
-	return FfiConverterSocketAddrV4INSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_constructor_socketaddrv4_new(FfiConverterIpv4AddrINSTANCE.Lower(ipv4), FfiConverterUint16INSTANCE.Lower(port), _uniffiStatus)
-	}))
-}
-
-func SocketAddrV4FromString(str string) (*SocketAddrV4, error) {
-	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_constructor_socketaddrv4_from_string(FfiConverterStringINSTANCE.Lower(str), _uniffiStatus)
-	})
-	if _uniffiErr != nil {
-		var _uniffiDefaultValue *SocketAddrV4
-		return _uniffiDefaultValue, _uniffiErr
-	} else {
-		return FfiConverterSocketAddrV4INSTANCE.Lift(_uniffiRV), _uniffiErr
-	}
-}
-
-func (_self *SocketAddrV4) Equal(other *SocketAddrV4) bool {
-	_pointer := _self.ffiObject.incrementPointer("*SocketAddrV4")
-	defer _self.ffiObject.decrementPointer()
-	return FfiConverterBoolINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) C.int8_t {
-		return C.uniffi_iroh_fn_method_socketaddrv4_equal(
-			_pointer, FfiConverterSocketAddrV4INSTANCE.Lower(other), _uniffiStatus)
-	}))
-}
-
-func (_self *SocketAddrV4) Ip() *Ipv4Addr {
-	_pointer := _self.ffiObject.incrementPointer("*SocketAddrV4")
-	defer _self.ffiObject.decrementPointer()
-	return FfiConverterIpv4AddrINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_method_socketaddrv4_ip(
-			_pointer, _uniffiStatus)
-	}))
-}
-
-func (_self *SocketAddrV4) Port() uint16 {
-	_pointer := _self.ffiObject.incrementPointer("*SocketAddrV4")
-	defer _self.ffiObject.decrementPointer()
-	return FfiConverterUint16INSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) C.uint16_t {
-		return C.uniffi_iroh_fn_method_socketaddrv4_port(
-			_pointer, _uniffiStatus)
-	}))
-}
-
-func (_self *SocketAddrV4) ToString() string {
-	_pointer := _self.ffiObject.incrementPointer("*SocketAddrV4")
-	defer _self.ffiObject.decrementPointer()
-	return FfiConverterStringINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
-		return C.uniffi_iroh_fn_method_socketaddrv4_to_string(
-			_pointer, _uniffiStatus)
-	}))
-}
-
-func (object *SocketAddrV4) Destroy() {
-	runtime.SetFinalizer(object, nil)
-	object.ffiObject.destroy()
-}
-
-type FfiConverterSocketAddrV4 struct{}
-
-var FfiConverterSocketAddrV4INSTANCE = FfiConverterSocketAddrV4{}
-
-func (c FfiConverterSocketAddrV4) Lift(pointer unsafe.Pointer) *SocketAddrV4 {
-	result := &SocketAddrV4{
-		newFfiObject(
-			pointer,
-			func(pointer unsafe.Pointer, status *C.RustCallStatus) {
-				C.uniffi_iroh_fn_free_socketaddrv4(pointer, status)
-			}),
-	}
-	runtime.SetFinalizer(result, (*SocketAddrV4).Destroy)
-	return result
-}
-
-func (c FfiConverterSocketAddrV4) Read(reader io.Reader) *SocketAddrV4 {
-	return c.Lift(unsafe.Pointer(uintptr(readUint64(reader))))
-}
-
-func (c FfiConverterSocketAddrV4) Lower(value *SocketAddrV4) unsafe.Pointer {
-	// TODO: this is bad - all synchronization from ObjectRuntime.go is discarded here,
-	// because the pointer will be decremented immediately after this function returns,
-	// and someone will be left holding onto a non-locked pointer.
-	pointer := value.ffiObject.incrementPointer("*SocketAddrV4")
-	defer value.ffiObject.decrementPointer()
-	return pointer
-}
-
-func (c FfiConverterSocketAddrV4) Write(writer io.Writer, value *SocketAddrV4) {
-	writeUint64(writer, uint64(uintptr(c.Lower(value))))
-}
-
-type FfiDestroyerSocketAddrV4 struct{}
-
-func (_ FfiDestroyerSocketAddrV4) Destroy(value *SocketAddrV4) {
-	value.Destroy()
-}
-
-type SocketAddrV6 struct {
-	ffiObject FfiObject
-}
-
-func NewSocketAddrV6(ipv6 *Ipv6Addr, port uint16) *SocketAddrV6 {
-	return FfiConverterSocketAddrV6INSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_constructor_socketaddrv6_new(FfiConverterIpv6AddrINSTANCE.Lower(ipv6), FfiConverterUint16INSTANCE.Lower(port), _uniffiStatus)
-	}))
-}
-
-func SocketAddrV6FromString(str string) (*SocketAddrV6, error) {
-	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_constructor_socketaddrv6_from_string(FfiConverterStringINSTANCE.Lower(str), _uniffiStatus)
-	})
-	if _uniffiErr != nil {
-		var _uniffiDefaultValue *SocketAddrV6
-		return _uniffiDefaultValue, _uniffiErr
-	} else {
-		return FfiConverterSocketAddrV6INSTANCE.Lift(_uniffiRV), _uniffiErr
-	}
-}
-
-func (_self *SocketAddrV6) Equal(other *SocketAddrV6) bool {
-	_pointer := _self.ffiObject.incrementPointer("*SocketAddrV6")
-	defer _self.ffiObject.decrementPointer()
-	return FfiConverterBoolINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) C.int8_t {
-		return C.uniffi_iroh_fn_method_socketaddrv6_equal(
-			_pointer, FfiConverterSocketAddrV6INSTANCE.Lower(other), _uniffiStatus)
-	}))
-}
-
-func (_self *SocketAddrV6) Ip() *Ipv6Addr {
-	_pointer := _self.ffiObject.incrementPointer("*SocketAddrV6")
-	defer _self.ffiObject.decrementPointer()
-	return FfiConverterIpv6AddrINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_method_socketaddrv6_ip(
-			_pointer, _uniffiStatus)
-	}))
-}
-
-func (_self *SocketAddrV6) Port() uint16 {
-	_pointer := _self.ffiObject.incrementPointer("*SocketAddrV6")
-	defer _self.ffiObject.decrementPointer()
-	return FfiConverterUint16INSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) C.uint16_t {
-		return C.uniffi_iroh_fn_method_socketaddrv6_port(
-			_pointer, _uniffiStatus)
-	}))
-}
-
-func (_self *SocketAddrV6) ToString() string {
-	_pointer := _self.ffiObject.incrementPointer("*SocketAddrV6")
-	defer _self.ffiObject.decrementPointer()
-	return FfiConverterStringINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
-		return C.uniffi_iroh_fn_method_socketaddrv6_to_string(
-			_pointer, _uniffiStatus)
-	}))
-}
-
-func (object *SocketAddrV6) Destroy() {
-	runtime.SetFinalizer(object, nil)
-	object.ffiObject.destroy()
-}
-
-type FfiConverterSocketAddrV6 struct{}
-
-var FfiConverterSocketAddrV6INSTANCE = FfiConverterSocketAddrV6{}
-
-func (c FfiConverterSocketAddrV6) Lift(pointer unsafe.Pointer) *SocketAddrV6 {
-	result := &SocketAddrV6{
-		newFfiObject(
-			pointer,
-			func(pointer unsafe.Pointer, status *C.RustCallStatus) {
-				C.uniffi_iroh_fn_free_socketaddrv6(pointer, status)
-			}),
-	}
-	runtime.SetFinalizer(result, (*SocketAddrV6).Destroy)
-	return result
-}
-
-func (c FfiConverterSocketAddrV6) Read(reader io.Reader) *SocketAddrV6 {
-	return c.Lift(unsafe.Pointer(uintptr(readUint64(reader))))
-}
-
-func (c FfiConverterSocketAddrV6) Lower(value *SocketAddrV6) unsafe.Pointer {
-	// TODO: this is bad - all synchronization from ObjectRuntime.go is discarded here,
-	// because the pointer will be decremented immediately after this function returns,
-	// and someone will be left holding onto a non-locked pointer.
-	pointer := value.ffiObject.incrementPointer("*SocketAddrV6")
-	defer value.ffiObject.decrementPointer()
-	return pointer
-}
-
-func (c FfiConverterSocketAddrV6) Write(writer io.Writer, value *SocketAddrV6) {
-	writeUint64(writer, uint64(uintptr(c.Lower(value))))
-}
-
-type FfiDestroyerSocketAddrV6 struct{}
-
-func (_ FfiDestroyerSocketAddrV6) Destroy(value *SocketAddrV6) {
 	value.Destroy()
 }
 
@@ -5630,12 +4845,12 @@ func (_ FfiDestroyerTypeConnectionInfo) Destroy(value ConnectionInfo) {
 }
 
 type ConnectionTypeMixed struct {
-	Addr    *SocketAddr
+	Addr    string
 	DerpUrl string
 }
 
 func (r *ConnectionTypeMixed) Destroy() {
-	FfiDestroyerSocketAddr{}.Destroy(r.Addr)
+	FfiDestroyerString{}.Destroy(r.Addr)
 	FfiDestroyerString{}.Destroy(r.DerpUrl)
 }
 
@@ -5649,7 +4864,7 @@ func (c FfiConverterTypeConnectionTypeMixed) Lift(rb RustBufferI) ConnectionType
 
 func (c FfiConverterTypeConnectionTypeMixed) Read(reader io.Reader) ConnectionTypeMixed {
 	return ConnectionTypeMixed{
-		FfiConverterSocketAddrINSTANCE.Read(reader),
+		FfiConverterStringINSTANCE.Read(reader),
 		FfiConverterStringINSTANCE.Read(reader),
 	}
 }
@@ -5659,7 +4874,7 @@ func (c FfiConverterTypeConnectionTypeMixed) Lower(value ConnectionTypeMixed) Ru
 }
 
 func (c FfiConverterTypeConnectionTypeMixed) Write(writer io.Writer, value ConnectionTypeMixed) {
-	FfiConverterSocketAddrINSTANCE.Write(writer, value.Addr)
+	FfiConverterStringINSTANCE.Write(writer, value.Addr)
 	FfiConverterStringINSTANCE.Write(writer, value.DerpUrl)
 }
 
@@ -7025,8 +6240,7 @@ var ErrIrohErrorConnection = fmt.Errorf("IrohErrorConnection")
 var ErrIrohErrorBlobs = fmt.Errorf("IrohErrorBlobs")
 var ErrIrohErrorIpv4Addr = fmt.Errorf("IrohErrorIpv4Addr")
 var ErrIrohErrorIpv6Addr = fmt.Errorf("IrohErrorIpv6Addr")
-var ErrIrohErrorSocketAddrV4 = fmt.Errorf("IrohErrorSocketAddrV4")
-var ErrIrohErrorSocketAddrV6 = fmt.Errorf("IrohErrorSocketAddrV6")
+var ErrIrohErrorSocketAddr = fmt.Errorf("IrohErrorSocketAddr")
 var ErrIrohErrorPublicKey = fmt.Errorf("IrohErrorPublicKey")
 var ErrIrohErrorNodeAddr = fmt.Errorf("IrohErrorNodeAddr")
 var ErrIrohErrorHash = fmt.Errorf("IrohErrorHash")
@@ -7333,22 +6547,22 @@ func (self IrohErrorIpv6Addr) Is(target error) bool {
 	return target == ErrIrohErrorIpv6Addr
 }
 
-type IrohErrorSocketAddrV4 struct {
+type IrohErrorSocketAddr struct {
 	Description string
 }
 
-func NewIrohErrorSocketAddrV4(
+func NewIrohErrorSocketAddr(
 	description string,
 ) *IrohError {
 	return &IrohError{
-		err: &IrohErrorSocketAddrV4{
+		err: &IrohErrorSocketAddr{
 			Description: description,
 		},
 	}
 }
 
-func (err IrohErrorSocketAddrV4) Error() string {
-	return fmt.Sprint("SocketAddrV4",
+func (err IrohErrorSocketAddr) Error() string {
+	return fmt.Sprint("SocketAddr",
 		": ",
 
 		"Description=",
@@ -7356,35 +6570,8 @@ func (err IrohErrorSocketAddrV4) Error() string {
 	)
 }
 
-func (self IrohErrorSocketAddrV4) Is(target error) bool {
-	return target == ErrIrohErrorSocketAddrV4
-}
-
-type IrohErrorSocketAddrV6 struct {
-	Description string
-}
-
-func NewIrohErrorSocketAddrV6(
-	description string,
-) *IrohError {
-	return &IrohError{
-		err: &IrohErrorSocketAddrV6{
-			Description: description,
-		},
-	}
-}
-
-func (err IrohErrorSocketAddrV6) Error() string {
-	return fmt.Sprint("SocketAddrV6",
-		": ",
-
-		"Description=",
-		err.Description,
-	)
-}
-
-func (self IrohErrorSocketAddrV6) Is(target error) bool {
-	return target == ErrIrohErrorSocketAddrV6
+func (self IrohErrorSocketAddr) Is(target error) bool {
+	return target == ErrIrohErrorSocketAddr
 }
 
 type IrohErrorPublicKey struct {
@@ -7637,38 +6824,34 @@ func (c FfiConverterTypeIrohError) Read(reader io.Reader) error {
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 12:
-		return &IrohError{&IrohErrorSocketAddrV4{
+		return &IrohError{&IrohErrorSocketAddr{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 13:
-		return &IrohError{&IrohErrorSocketAddrV6{
-			Description: FfiConverterStringINSTANCE.Read(reader),
-		}}
-	case 14:
 		return &IrohError{&IrohErrorPublicKey{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
-	case 15:
+	case 14:
 		return &IrohError{&IrohErrorNodeAddr{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
-	case 16:
+	case 15:
 		return &IrohError{&IrohErrorHash{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
-	case 17:
+	case 16:
 		return &IrohError{&IrohErrorFsUtil{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
-	case 18:
+	case 17:
 		return &IrohError{&IrohErrorTags{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
-	case 19:
+	case 18:
 		return &IrohError{&IrohErrorUrl{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
-	case 20:
+	case 19:
 		return &IrohError{&IrohErrorEntry{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
@@ -7712,32 +6895,29 @@ func (c FfiConverterTypeIrohError) Write(writer io.Writer, value *IrohError) {
 	case *IrohErrorIpv6Addr:
 		writeInt32(writer, 11)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorSocketAddrV4:
+	case *IrohErrorSocketAddr:
 		writeInt32(writer, 12)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorSocketAddrV6:
+	case *IrohErrorPublicKey:
 		writeInt32(writer, 13)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorPublicKey:
+	case *IrohErrorNodeAddr:
 		writeInt32(writer, 14)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorNodeAddr:
+	case *IrohErrorHash:
 		writeInt32(writer, 15)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorHash:
+	case *IrohErrorFsUtil:
 		writeInt32(writer, 16)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorFsUtil:
+	case *IrohErrorTags:
 		writeInt32(writer, 17)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorTags:
+	case *IrohErrorUrl:
 		writeInt32(writer, 18)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorUrl:
-		writeInt32(writer, 19)
-		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
 	case *IrohErrorEntry:
-		writeInt32(writer, 20)
+		writeInt32(writer, 19)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
 	default:
 		_ = variantValue
@@ -7908,38 +7088,6 @@ func (FfiConverterTypeShareMode) Write(writer io.Writer, value ShareMode) {
 type FfiDestroyerTypeShareMode struct{}
 
 func (_ FfiDestroyerTypeShareMode) Destroy(value ShareMode) {
-}
-
-type SocketAddrType uint
-
-const (
-	SocketAddrTypeV4 SocketAddrType = 1
-	SocketAddrTypeV6 SocketAddrType = 2
-)
-
-type FfiConverterTypeSocketAddrType struct{}
-
-var FfiConverterTypeSocketAddrTypeINSTANCE = FfiConverterTypeSocketAddrType{}
-
-func (c FfiConverterTypeSocketAddrType) Lift(rb RustBufferI) SocketAddrType {
-	return LiftFromRustBuffer[SocketAddrType](c, rb)
-}
-
-func (c FfiConverterTypeSocketAddrType) Lower(value SocketAddrType) RustBuffer {
-	return LowerIntoRustBuffer[SocketAddrType](c, value)
-}
-func (FfiConverterTypeSocketAddrType) Read(reader io.Reader) SocketAddrType {
-	id := readInt32(reader)
-	return SocketAddrType(id)
-}
-
-func (FfiConverterTypeSocketAddrType) Write(writer io.Writer, value SocketAddrType) {
-	writeInt32(writer, int32(value))
-}
-
-type FfiDestroyerTypeSocketAddrType struct{}
-
-func (_ FfiDestroyerTypeSocketAddrType) Destroy(value SocketAddrType) {
 }
 
 type SortBy uint
@@ -8855,89 +8003,46 @@ func (_ FfiDestroyerOptionalCallbackInterfaceDocImportFileCallback) Destroy(valu
 	}
 }
 
-type FfiConverterSequenceUint8 struct{}
+type FfiConverterSequenceString struct{}
 
-var FfiConverterSequenceUint8INSTANCE = FfiConverterSequenceUint8{}
+var FfiConverterSequenceStringINSTANCE = FfiConverterSequenceString{}
 
-func (c FfiConverterSequenceUint8) Lift(rb RustBufferI) []uint8 {
-	return LiftFromRustBuffer[[]uint8](c, rb)
+func (c FfiConverterSequenceString) Lift(rb RustBufferI) []string {
+	return LiftFromRustBuffer[[]string](c, rb)
 }
 
-func (c FfiConverterSequenceUint8) Read(reader io.Reader) []uint8 {
+func (c FfiConverterSequenceString) Read(reader io.Reader) []string {
 	length := readInt32(reader)
 	if length == 0 {
 		return nil
 	}
-	result := make([]uint8, 0, length)
+	result := make([]string, 0, length)
 	for i := int32(0); i < length; i++ {
-		result = append(result, FfiConverterUint8INSTANCE.Read(reader))
+		result = append(result, FfiConverterStringINSTANCE.Read(reader))
 	}
 	return result
 }
 
-func (c FfiConverterSequenceUint8) Lower(value []uint8) RustBuffer {
-	return LowerIntoRustBuffer[[]uint8](c, value)
+func (c FfiConverterSequenceString) Lower(value []string) RustBuffer {
+	return LowerIntoRustBuffer[[]string](c, value)
 }
 
-func (c FfiConverterSequenceUint8) Write(writer io.Writer, value []uint8) {
+func (c FfiConverterSequenceString) Write(writer io.Writer, value []string) {
 	if len(value) > math.MaxInt32 {
-		panic("[]uint8 is too large to fit into Int32")
+		panic("[]string is too large to fit into Int32")
 	}
 
 	writeInt32(writer, int32(len(value)))
 	for _, item := range value {
-		FfiConverterUint8INSTANCE.Write(writer, item)
+		FfiConverterStringINSTANCE.Write(writer, item)
 	}
 }
 
-type FfiDestroyerSequenceUint8 struct{}
+type FfiDestroyerSequenceString struct{}
 
-func (FfiDestroyerSequenceUint8) Destroy(sequence []uint8) {
+func (FfiDestroyerSequenceString) Destroy(sequence []string) {
 	for _, value := range sequence {
-		FfiDestroyerUint8{}.Destroy(value)
-	}
-}
-
-type FfiConverterSequenceUint16 struct{}
-
-var FfiConverterSequenceUint16INSTANCE = FfiConverterSequenceUint16{}
-
-func (c FfiConverterSequenceUint16) Lift(rb RustBufferI) []uint16 {
-	return LiftFromRustBuffer[[]uint16](c, rb)
-}
-
-func (c FfiConverterSequenceUint16) Read(reader io.Reader) []uint16 {
-	length := readInt32(reader)
-	if length == 0 {
-		return nil
-	}
-	result := make([]uint16, 0, length)
-	for i := int32(0); i < length; i++ {
-		result = append(result, FfiConverterUint16INSTANCE.Read(reader))
-	}
-	return result
-}
-
-func (c FfiConverterSequenceUint16) Lower(value []uint16) RustBuffer {
-	return LowerIntoRustBuffer[[]uint16](c, value)
-}
-
-func (c FfiConverterSequenceUint16) Write(writer io.Writer, value []uint16) {
-	if len(value) > math.MaxInt32 {
-		panic("[]uint16 is too large to fit into Int32")
-	}
-
-	writeInt32(writer, int32(len(value)))
-	for _, item := range value {
-		FfiConverterUint16INSTANCE.Write(writer, item)
-	}
-}
-
-type FfiDestroyerSequenceUint16 struct{}
-
-func (FfiDestroyerSequenceUint16) Destroy(sequence []uint16) {
-	for _, value := range sequence {
-		FfiDestroyerUint16{}.Destroy(value)
+		FfiDestroyerString{}.Destroy(value)
 	}
 }
 
@@ -9196,49 +8301,6 @@ type FfiDestroyerSequenceNodeAddr struct{}
 func (FfiDestroyerSequenceNodeAddr) Destroy(sequence []*NodeAddr) {
 	for _, value := range sequence {
 		FfiDestroyerNodeAddr{}.Destroy(value)
-	}
-}
-
-type FfiConverterSequenceSocketAddr struct{}
-
-var FfiConverterSequenceSocketAddrINSTANCE = FfiConverterSequenceSocketAddr{}
-
-func (c FfiConverterSequenceSocketAddr) Lift(rb RustBufferI) []*SocketAddr {
-	return LiftFromRustBuffer[[]*SocketAddr](c, rb)
-}
-
-func (c FfiConverterSequenceSocketAddr) Read(reader io.Reader) []*SocketAddr {
-	length := readInt32(reader)
-	if length == 0 {
-		return nil
-	}
-	result := make([]*SocketAddr, 0, length)
-	for i := int32(0); i < length; i++ {
-		result = append(result, FfiConverterSocketAddrINSTANCE.Read(reader))
-	}
-	return result
-}
-
-func (c FfiConverterSequenceSocketAddr) Lower(value []*SocketAddr) RustBuffer {
-	return LowerIntoRustBuffer[[]*SocketAddr](c, value)
-}
-
-func (c FfiConverterSequenceSocketAddr) Write(writer io.Writer, value []*SocketAddr) {
-	if len(value) > math.MaxInt32 {
-		panic("[]*SocketAddr is too large to fit into Int32")
-	}
-
-	writeInt32(writer, int32(len(value)))
-	for _, item := range value {
-		FfiConverterSocketAddrINSTANCE.Write(writer, item)
-	}
-}
-
-type FfiDestroyerSequenceSocketAddr struct{}
-
-func (FfiDestroyerSequenceSocketAddr) Destroy(sequence []*SocketAddr) {
-	for _, value := range sequence {
-		FfiDestroyerSocketAddr{}.Destroy(value)
 	}
 }
 

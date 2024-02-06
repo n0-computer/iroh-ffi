@@ -143,7 +143,7 @@ void uniffi_iroh_fn_free_connectiontype(
 	RustCallStatus* out_status
 );
 
-void* uniffi_iroh_fn_method_connectiontype_as_direct(
+RustBuffer uniffi_iroh_fn_method_connectiontype_as_direct(
 	void* ptr,
 	RustCallStatus* out_status
 );
@@ -168,7 +168,7 @@ void uniffi_iroh_fn_free_directaddrinfo(
 	RustCallStatus* out_status
 );
 
-void* uniffi_iroh_fn_method_directaddrinfo_addr(
+RustBuffer uniffi_iroh_fn_method_directaddrinfo_addr(
 	void* ptr,
 	RustCallStatus* out_status
 );
@@ -550,78 +550,6 @@ RustBuffer uniffi_iroh_fn_method_hash_to_string(
 	RustCallStatus* out_status
 );
 
-void uniffi_iroh_fn_free_ipv4addr(
-	void* ptr,
-	RustCallStatus* out_status
-);
-
-void* uniffi_iroh_fn_constructor_ipv4addr_from_string(
-	RustBuffer str,
-	RustCallStatus* out_status
-);
-
-void* uniffi_iroh_fn_constructor_ipv4addr_new(
-	uint8_t a,
-	uint8_t b,
-	uint8_t c,
-	uint8_t d,
-	RustCallStatus* out_status
-);
-
-int8_t uniffi_iroh_fn_method_ipv4addr_equal(
-	void* ptr,
-	void* other,
-	RustCallStatus* out_status
-);
-
-RustBuffer uniffi_iroh_fn_method_ipv4addr_octets(
-	void* ptr,
-	RustCallStatus* out_status
-);
-
-RustBuffer uniffi_iroh_fn_method_ipv4addr_to_string(
-	void* ptr,
-	RustCallStatus* out_status
-);
-
-void uniffi_iroh_fn_free_ipv6addr(
-	void* ptr,
-	RustCallStatus* out_status
-);
-
-void* uniffi_iroh_fn_constructor_ipv6addr_from_string(
-	RustBuffer str,
-	RustCallStatus* out_status
-);
-
-void* uniffi_iroh_fn_constructor_ipv6addr_new(
-	uint16_t a,
-	uint16_t b,
-	uint16_t c,
-	uint16_t d,
-	uint16_t e,
-	uint16_t f,
-	uint16_t g,
-	uint16_t h,
-	RustCallStatus* out_status
-);
-
-int8_t uniffi_iroh_fn_method_ipv6addr_equal(
-	void* ptr,
-	void* other,
-	RustCallStatus* out_status
-);
-
-RustBuffer uniffi_iroh_fn_method_ipv6addr_segments(
-	void* ptr,
-	RustCallStatus* out_status
-);
-
-RustBuffer uniffi_iroh_fn_method_ipv6addr_to_string(
-	void* ptr,
-	RustCallStatus* out_status
-);
-
 void uniffi_iroh_fn_free_irohnode(
 	void* ptr,
 	RustCallStatus* out_status
@@ -977,118 +905,6 @@ void* uniffi_iroh_fn_constructor_settagoption_auto(
 
 void* uniffi_iroh_fn_constructor_settagoption_named(
 	RustBuffer tag,
-	RustCallStatus* out_status
-);
-
-void uniffi_iroh_fn_free_socketaddr(
-	void* ptr,
-	RustCallStatus* out_status
-);
-
-void* uniffi_iroh_fn_constructor_socketaddr_from_ipv4(
-	void* ipv4,
-	uint16_t port,
-	RustCallStatus* out_status
-);
-
-void* uniffi_iroh_fn_constructor_socketaddr_from_ipv6(
-	void* ipv6,
-	uint16_t port,
-	RustCallStatus* out_status
-);
-
-void* uniffi_iroh_fn_method_socketaddr_as_ipv4(
-	void* ptr,
-	RustCallStatus* out_status
-);
-
-void* uniffi_iroh_fn_method_socketaddr_as_ipv6(
-	void* ptr,
-	RustCallStatus* out_status
-);
-
-int8_t uniffi_iroh_fn_method_socketaddr_equal(
-	void* ptr,
-	void* other,
-	RustCallStatus* out_status
-);
-
-RustBuffer uniffi_iroh_fn_method_socketaddr_type(
-	void* ptr,
-	RustCallStatus* out_status
-);
-
-void uniffi_iroh_fn_free_socketaddrv4(
-	void* ptr,
-	RustCallStatus* out_status
-);
-
-void* uniffi_iroh_fn_constructor_socketaddrv4_from_string(
-	RustBuffer str,
-	RustCallStatus* out_status
-);
-
-void* uniffi_iroh_fn_constructor_socketaddrv4_new(
-	void* ipv4,
-	uint16_t port,
-	RustCallStatus* out_status
-);
-
-int8_t uniffi_iroh_fn_method_socketaddrv4_equal(
-	void* ptr,
-	void* other,
-	RustCallStatus* out_status
-);
-
-void* uniffi_iroh_fn_method_socketaddrv4_ip(
-	void* ptr,
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_fn_method_socketaddrv4_port(
-	void* ptr,
-	RustCallStatus* out_status
-);
-
-RustBuffer uniffi_iroh_fn_method_socketaddrv4_to_string(
-	void* ptr,
-	RustCallStatus* out_status
-);
-
-void uniffi_iroh_fn_free_socketaddrv6(
-	void* ptr,
-	RustCallStatus* out_status
-);
-
-void* uniffi_iroh_fn_constructor_socketaddrv6_from_string(
-	RustBuffer str,
-	RustCallStatus* out_status
-);
-
-void* uniffi_iroh_fn_constructor_socketaddrv6_new(
-	void* ipv6,
-	uint16_t port,
-	RustCallStatus* out_status
-);
-
-int8_t uniffi_iroh_fn_method_socketaddrv6_equal(
-	void* ptr,
-	void* other,
-	RustCallStatus* out_status
-);
-
-void* uniffi_iroh_fn_method_socketaddrv6_ip(
-	void* ptr,
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_fn_method_socketaddrv6_port(
-	void* ptr,
-	RustCallStatus* out_status
-);
-
-RustBuffer uniffi_iroh_fn_method_socketaddrv6_to_string(
-	void* ptr,
 	RustCallStatus* out_status
 );
 
@@ -1721,30 +1537,6 @@ uint16_t uniffi_iroh_checksum_method_hash_to_string(
 	RustCallStatus* out_status
 );
 
-uint16_t uniffi_iroh_checksum_method_ipv4addr_equal(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_method_ipv4addr_octets(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_method_ipv4addr_to_string(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_method_ipv6addr_equal(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_method_ipv6addr_segments(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_method_ipv6addr_to_string(
-	RustCallStatus* out_status
-);
-
 uint16_t uniffi_iroh_checksum_method_irohnode_author_create(
 	RustCallStatus* out_status
 );
@@ -1925,54 +1717,6 @@ uint16_t uniffi_iroh_checksum_method_rangespec_is_empty(
 	RustCallStatus* out_status
 );
 
-uint16_t uniffi_iroh_checksum_method_socketaddr_as_ipv4(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_method_socketaddr_as_ipv6(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_method_socketaddr_equal(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_method_socketaddr_type(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_method_socketaddrv4_equal(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_method_socketaddrv4_ip(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_method_socketaddrv4_port(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_method_socketaddrv4_to_string(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_method_socketaddrv6_equal(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_method_socketaddrv6_ip(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_method_socketaddrv6_port(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_method_socketaddrv6_to_string(
-	RustCallStatus* out_status
-);
-
 uint16_t uniffi_iroh_checksum_constructor_authorid_from_string(
 	RustCallStatus* out_status
 );
@@ -2025,22 +1769,6 @@ uint16_t uniffi_iroh_checksum_constructor_hash_new(
 	RustCallStatus* out_status
 );
 
-uint16_t uniffi_iroh_checksum_constructor_ipv4addr_from_string(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_constructor_ipv4addr_new(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_constructor_ipv6addr_from_string(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_constructor_ipv6addr_new(
-	RustCallStatus* out_status
-);
-
 uint16_t uniffi_iroh_checksum_constructor_irohnode_new(
 	RustCallStatus* out_status
 );
@@ -2090,30 +1818,6 @@ uint16_t uniffi_iroh_checksum_constructor_settagoption_auto(
 );
 
 uint16_t uniffi_iroh_checksum_constructor_settagoption_named(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_constructor_socketaddr_from_ipv4(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_constructor_socketaddr_from_ipv6(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_constructor_socketaddrv4_from_string(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_constructor_socketaddrv4_new(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_constructor_socketaddrv6_from_string(
-	RustCallStatus* out_status
-);
-
-uint16_t uniffi_iroh_checksum_constructor_socketaddrv6_new(
 	RustCallStatus* out_status
 );
 

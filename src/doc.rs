@@ -10,7 +10,7 @@ pub use iroh::sync::CapabilityKind;
 
 use quic_rpc::transport::flume::FlumeConnection;
 
-use crate::{block_on, AuthorId, Hash, IrohError, IrohNode, PublicKey, SocketAddr, SocketAddrType};
+use crate::{block_on, AuthorId, Hash, IrohError, IrohNode, PublicKey};
 
 impl IrohNode {
     /// Create a new doc.
@@ -496,16 +496,12 @@ impl From<iroh::sync::actor::OpenState> for OpenState {
 pub struct NodeAddr {
     node_id: Arc<PublicKey>,
     derp_url: Option<String>,
-    addresses: Vec<Arc<SocketAddr>>,
+    addresses: Vec<String>,
 }
 
 impl NodeAddr {
     /// Create a new [`NodeAddr`] with empty [`AddrInfo`].
-    pub fn new(
-        node_id: Arc<PublicKey>,
-        derp_url: Option<String>,
-        addresses: Vec<Arc<SocketAddr>>,
-    ) -> Self {
+    pub fn new(node_id: Arc<PublicKey>, derp_url: Option<String>, addresses: Vec<String>) -> Self {
         Self {
             node_id,
             derp_url,
@@ -514,7 +510,7 @@ impl NodeAddr {
     }
 
     /// Get the direct addresses of this peer.
-    pub fn direct_addresses(&self) -> Vec<Arc<SocketAddr>> {
+    pub fn direct_addresses(&self) -> Vec<String> {
         self.addresses.clone()
     }
 
@@ -533,23 +529,11 @@ impl TryFrom<NodeAddr> for iroh::net::magic_endpoint::NodeAddr {
     type Error = IrohError;
     fn try_from(value: NodeAddr) -> Result<Self, Self::Error> {
         let mut node_addr = iroh::net::magic_endpoint::NodeAddr::new(value.node_id.0);
-        let addresses = value.direct_addresses().into_iter().map(|addr| {
-            let typ = addr.r#type();
-            match typ {
-                SocketAddrType::V4 => {
-                    let addr_str = addr.to_string();
-                    std::net::SocketAddrV4::from_str(&addr_str)
-                        .expect("checked")
-                        .into()
-                }
-                SocketAddrType::V6 => {
-                    let addr_str = addr.to_string();
-                    std::net::SocketAddrV6::from_str(&addr_str)
-                        .expect("checked")
-                        .into()
-                }
-            }
-        });
+        let addresses = value
+            .direct_addresses()
+            .into_iter()
+            .map(|addr| std::net::SocketAddr::from_str(&addr).map_err(IrohError::socket_addr))
+            .collect::<Result<Vec<_>, IrohError>>()?;
 
         if let Some(derp_url) = value.derp_url() {
             let url = url::Url::parse(&derp_url).map_err(IrohError::url)?;
@@ -570,7 +554,7 @@ impl From<iroh::net::magic_endpoint::NodeAddr> for NodeAddr {
                 .info
                 .direct_addresses
                 .into_iter()
-                .map(|d| Arc::new(d.into()))
+                .map(|d| d.to_string())
                 .collect(),
         }
     }
@@ -1369,10 +1353,9 @@ impl DocExportProgress {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Ipv4Addr, Ipv6Addr, PublicKey, SocketAddr};
+    use crate::PublicKey;
     use rand::RngCore;
     use std::io::Write;
-    use uniffi::deps::static_assertions::assert_eq_align;
 
     #[test]
     fn test_doc_create() {
@@ -1445,19 +1428,15 @@ mod tests {
         let node_id = PublicKey::from_string(key_str.into()).unwrap();
         //
         // create socketaddrs
-        let ipv4_ip = Ipv4Addr::from_string("127.0.0.1".into()).unwrap();
-        let ipv6_ip = Ipv6Addr::from_string("::1".into()).unwrap();
         let port = 3000;
-        //
-        // create socket addrs
-        let ipv4 = SocketAddr::from_ipv4(ipv4_ip.into(), port);
-        let ipv6 = SocketAddr::from_ipv6(ipv6_ip.into(), port);
+        let ipv4 = String::from(format!("127.0.0.1:{port}"));
+        let ipv6 = String::from(format!("::1:{port}"));
         //
         // derp region
         let derp_url = String::from("https://derp.url");
         //
         // create a NodeAddr
-        let addrs = vec![Arc::new(ipv4), Arc::new(ipv6)];
+        let addrs = vec![ipv4, ipv6];
         let expect_addrs = addrs.clone();
         let node_addr = NodeAddr::new(node_id.into(), Some(derp_url.clone()), addrs);
         //
@@ -1465,8 +1444,7 @@ mod tests {
         let got_addrs = node_addr.direct_addresses();
         let addrs = expect_addrs.iter().zip(got_addrs.iter());
         for (expect, got) in addrs {
-            assert!(got.equal(expect.clone()));
-            assert!(expect.equal(got.clone()));
+            assert_eq!(got, expect);
         }
 
         let got_derp_url = node_addr.derp_url().unwrap();

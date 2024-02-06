@@ -22,33 +22,20 @@ func TestNodeAddr(t *testing.T) {
 	}
 
 	// create socketaddrs
-	ipv4Ip, err := iroh.Ipv4AddrFromString("127.0.0.1")
-	if err != nil {
-		panic(err)
-	}
-	ipv6Ip, err := iroh.Ipv6AddrFromString("::1")
-	if err != nil {
-		panic(err)
-	}
-
-	var port uint16 = 3000
-
-	// create socket addrs
-	ipv4 := iroh.SocketAddrFromIpv4(ipv4Ip, port)
-	ipv6 := iroh.SocketAddrFromIpv6(ipv6Ip, port)
+	ipv4 := "127.0.0.1:3000"
+	ipv6 := "::1:3000"
 
 	// derp Url
 	derpUrl := "https://example.com"
 
 	// create a NodeAddr
-	expectAddrs := []*iroh.SocketAddr{ipv4, ipv6}
+	expectAddrs := []string{ipv4, ipv6}
 	nodeAddrs := iroh.NewNodeAddr(nodeId, &derpUrl, expectAddrs)
 
 	// test we have returned the expected addresses
 	gotAddrs := nodeAddrs.DirectAddresses()
 	for i := 0; i < len(expectAddrs); i++ {
-		assert.True(t, gotAddrs[i].Equal(expectAddrs[i]))
-		assert.True(t, expectAddrs[i].Equal(gotAddrs[i]))
+		assert.Equal(t, gotAddrs[i], expectAddrs[i])
 	}
 
 	assert.Equal(t, derpUrl, *nodeAddrs.DerpUrl())
