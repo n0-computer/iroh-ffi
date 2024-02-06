@@ -614,14 +614,16 @@ impl BlobDownloadRequest {
         node: Arc<NodeAddr>,
         tag: Arc<SetTagOption>,
         out: Arc<DownloadLocation>,
-    ) -> Self {
-        BlobDownloadRequest(iroh::rpc_protocol::BlobDownloadRequest {
-            hash: hash.0,
-            format: format.into(),
-            peer: (*node).clone().into(),
-            tag: (*tag).clone().into(),
-            out: (*out).clone().into(),
-        })
+    ) -> Result<Self, IrohError> {
+        Ok(BlobDownloadRequest(
+            iroh::rpc_protocol::BlobDownloadRequest {
+                hash: hash.0,
+                format: format.into(),
+                peer: (*node).clone().try_into()?,
+                tag: (*tag).clone().into(),
+                out: (*out).clone().into(),
+            },
+        ))
     }
 }
 

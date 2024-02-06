@@ -38,10 +38,7 @@ func TestNodeAddr(t *testing.T) {
 	ipv6 := iroh.SocketAddrFromIpv6(ipv6Ip, port)
 
 	// derp Url
-	derpUrl, err := iroh.UrlFromString("https://example.com")
-	if err != nil {
-		panic(err)
-	}
+	derpUrl := "https://example.com"
 
 	// create a NodeAddr
 	expectAddrs := []*iroh.SocketAddr{ipv4, ipv6}
@@ -54,7 +51,7 @@ func TestNodeAddr(t *testing.T) {
 		assert.True(t, expectAddrs[i].Equal(gotAddrs[i]))
 	}
 
-	assert.True(t, derpUrl.Equal(*nodeAddrs.DerpUrl()))
+	assert.Equal(t, derpUrl, *nodeAddrs.DerpUrl())
 }
 
 /// Test all AuthorId functionality

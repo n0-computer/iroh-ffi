@@ -1,5 +1,5 @@
 # tests that correspond to the `src/doc.rs` rust api
-from iroh import IrohNode, PublicKey, SocketAddr, NodeAddr, Ipv4Addr, Ipv6Addr, iroh, AuthorId, Query, SortBy, SortDirection, QueryOptions, path_to_key, key_to_path, Url
+from iroh import IrohNode, PublicKey, SocketAddr, NodeAddr, Ipv4Addr, Ipv6Addr, iroh, AuthorId, Query, SortBy, SortDirection, QueryOptions, path_to_key, key_to_path
 import pytest
 import tempfile
 import os
@@ -21,7 +21,7 @@ def test_node_addr():
     ipv6 = SocketAddr.from_ipv6(ipv6_ip, port)
     #
     # derp url 
-    derp_url = Url.from_string("https://example.com")
+    derp_url = "https://example.com"
     #
     # create a NodeAddr
     expect_addrs = [ipv4, ipv6]
@@ -33,7 +33,7 @@ def test_node_addr():
         assert got.equal(expect)
         assert expect.equal(got)
     
-    assert derp_url.equal(node_addr.derp_url())
+    assert derp_url == node_addr.derp_url()
 
 def test_author_id():
     #

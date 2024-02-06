@@ -7,7 +7,7 @@ use iroh::{
 };
 use quic_rpc::transport::flume::FlumeConnection;
 
-use crate::{block_on, IrohError, NodeAddr, PublicKey, SocketAddr, Url};
+use crate::{block_on, IrohError, NodeAddr, PublicKey, SocketAddr};
 
 /// Stats counter
 pub use iroh::rpc_protocol::CounterStats;
@@ -62,7 +62,7 @@ pub struct ConnectionInfo {
     /// The public key of the endpoint.
     pub public_key: Arc<PublicKey>,
     /// Derp url, if available.
-    pub derp_url: Option<Arc<Url>>,
+    pub derp_url: Option<String>,
     /// List of addresses at which this node might be reachable, plus any latency information we
     /// have about that address and the last time the address was used.
     pub addrs: Vec<Arc<DirectAddrInfo>>,
@@ -78,7 +78,7 @@ impl From<iroh::net::magic_endpoint::ConnectionInfo> for ConnectionInfo {
     fn from(value: iroh::net::magic_endpoint::ConnectionInfo) -> Self {
         ConnectionInfo {
             public_key: Arc::new(PublicKey(value.public_key)),
-            derp_url: value.derp_url.map(|url| Url(url).into()),
+            derp_url: value.derp_url.map(|url| url.to_string()),
             addrs: value
                 .addrs
                 .iter()
@@ -97,12 +97,12 @@ pub enum ConnectionType {
     /// Direct UDP connection
     Direct(SocketAddr),
     /// Relay connection over DERP
-    Relay(Url),
+    Relay(String),
     /// Both a UDP and a DERP connection are used.
     ///
     /// This is the case if we do have a UDP address, but are missing a recent confirmation that
     /// the address works.
-    Mixed(SocketAddr, Url),
+    Mixed(SocketAddr, String),
     /// We have no verified connection to this PublicKey
     None,
 }
@@ -139,9 +139,9 @@ impl ConnectionType {
     }
 
     /// Return the derp url if this is a relay connection
-    pub fn as_relay(&self) -> Arc<Url> {
+    pub fn as_relay(&self) -> String {
         match self {
-            ConnectionType::Relay(url) => url.clone().into(),
+            ConnectionType::Relay(url) => url.clone(),
             _ => panic!("ConnectionType is not `Relay`"),
         }
     }
@@ -151,7 +151,7 @@ impl ConnectionType {
         match self {
             ConnectionType::Mixed(addr, url) => ConnectionTypeMixed {
                 addr: Arc::new(addr.clone()),
-                derp_url: Arc::new(url.clone()),
+                derp_url: url.clone(),
             },
             _ => panic!("ConnectionType is not `Relay`"),
         }
@@ -163,7 +163,7 @@ pub struct ConnectionTypeMixed {
     /// Address of the node
     pub addr: Arc<SocketAddr>,
     /// Url of the DERP node to which the node is connected
-    pub derp_url: Arc<Url>,
+    pub derp_url: String,
 }
 
 impl From<iroh::net::magicsock::ConnectionType> for ConnectionType {
@@ -175,7 +175,9 @@ impl From<iroh::net::magicsock::ConnectionType> for ConnectionType {
             iroh::net::magicsock::ConnectionType::Mixed(addr, url) => {
                 ConnectionType::Mixed(addr.into(), url.into())
             }
-            iroh::net::magicsock::ConnectionType::Relay(url) => ConnectionType::Relay(url.into()),
+            iroh::net::magicsock::ConnectionType::Relay(url) => {
+                ConnectionType::Relay(url.to_string())
+            }
             iroh::net::magicsock::ConnectionType::None => ConnectionType::None,
         }
     }

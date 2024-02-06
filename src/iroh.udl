@@ -486,11 +486,11 @@ enum ShareMode {
 /// A peer and it's addressing information.
 interface NodeAddr {
   /// Create a new [`NodeAddr`] with empty [`AddrInfo`].
-  constructor(PublicKey node_id, Url? derp_url, sequence<SocketAddr> addresses);
+  constructor(PublicKey node_id, string? derp_url, sequence<SocketAddr> addresses);
   /// Get the direct addresses of this peer.
   sequence<SocketAddr> direct_addresses();
   /// Get the derp url of this peer.
-  Url? derp_url();
+  string? derp_url();
   /// Returns true if both NodeAddr's have the same values
   boolean equal(NodeAddr other);
 };
@@ -700,7 +700,7 @@ dictionary ConnectionInfo {
   /// The public key of the endpoint.
   PublicKey public_key;
   /// Derp url, if available.
-  Url? derp_url;
+  string? derp_url;
   /// List of addresses at which this node might be reachable, plus any latency information we
   /// have about that address and the last time the address was used.
   sequence<DirectAddrInfo> addrs;
@@ -731,7 +731,7 @@ interface ConnectionType{
   /// Return the [`SocketAddr`] if this is a direct connection
   SocketAddr as_direct();
   /// Return the derp url if this is a relay connection
-  Url as_relay();
+  string as_relay();
   /// Return the [`SocketAddr`] and DERP url if this is a mixed connection
   ConnectionTypeMixed as_mixed();
 };
@@ -742,7 +742,7 @@ dictionary ConnectionTypeMixed {
     /// Address of the node
     SocketAddr addr;
     /// Url of the DERP node to which the node is connected
-    Url derp_url;
+    string derp_url;
 };
 
 /// Type of SocketAddr
@@ -833,17 +833,6 @@ interface SocketAddr {
   SocketAddrV6 as_ipv6();
   /// Returns true if the two SocketAddrs have the same value
   boolean equal(SocketAddr other);
-};
-
-/// A Url
-interface Url {
-  /// Create a Url from a string
-  [Name=from_string, Throws=IrohError]
-  constructor(string s);
-  /// Get a string from a Url
-  string to_string();
-  /// Returns true if the two Urls have the same value
-  boolean equal(Url other);
 };
 
 /// A public key
@@ -1005,6 +994,7 @@ interface DownloadLocation {
 
 /// A request to the node to download and share the data specified by the hash.
 interface BlobDownloadRequest {
+  [Throws=IrohError]
   constructor(Hash hash, BlobFormat format, NodeAddr node, SetTagOption tag, DownloadLocation out);
 };
 

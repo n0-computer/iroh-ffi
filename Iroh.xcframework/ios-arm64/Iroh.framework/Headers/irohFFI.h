@@ -95,7 +95,7 @@ void*_Nonnull uniffi_iroh_fn_method_connectiontype_as_direct(void*_Nonnull ptr, 
 );
 RustBuffer uniffi_iroh_fn_method_connectiontype_as_mixed(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void*_Nonnull uniffi_iroh_fn_method_connectiontype_as_relay(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_iroh_fn_method_connectiontype_as_relay(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_connectiontype_type(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -444,14 +444,6 @@ void*_Nonnull uniffi_iroh_fn_method_socketaddrv6_ip(void*_Nonnull ptr, RustCallS
 uint16_t uniffi_iroh_fn_method_socketaddrv6_port(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_socketaddrv6_to_string(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void uniffi_iroh_fn_free_url(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void*_Nonnull uniffi_iroh_fn_constructor_url_from_string(RustBuffer s, RustCallStatus *_Nonnull out_status
-);
-int8_t uniffi_iroh_fn_method_url_equal(void*_Nonnull ptr, void*_Nonnull other, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_iroh_fn_method_url_to_string(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void uniffi_iroh_fn_free_wrapoption(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -983,12 +975,6 @@ uint16_t uniffi_iroh_checksum_method_socketaddrv6_port(void
 uint16_t uniffi_iroh_checksum_method_socketaddrv6_to_string(void
     
 );
-uint16_t uniffi_iroh_checksum_method_url_equal(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_url_to_string(void
-    
-);
 uint16_t uniffi_iroh_checksum_constructor_authorid_from_string(void
     
 );
@@ -1095,9 +1081,6 @@ uint16_t uniffi_iroh_checksum_constructor_socketaddrv6_from_string(void
     
 );
 uint16_t uniffi_iroh_checksum_constructor_socketaddrv6_new(void
-    
-);
-uint16_t uniffi_iroh_checksum_constructor_url_from_string(void
     
 );
 uint16_t uniffi_iroh_checksum_constructor_wrapoption_no_wrap(void

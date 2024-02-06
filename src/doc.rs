@@ -10,9 +10,7 @@ pub use iroh::sync::CapabilityKind;
 
 use quic_rpc::transport::flume::FlumeConnection;
 
-use crate::{
-    block_on, AuthorId, Hash, IrohError, IrohNode, PublicKey, SocketAddr, SocketAddrType, Url,
-};
+use crate::{block_on, AuthorId, Hash, IrohError, IrohNode, PublicKey, SocketAddr, SocketAddrType};
 
 impl IrohNode {
     /// Create a new doc.
@@ -303,7 +301,12 @@ impl Doc {
     pub fn start_sync(&self, peers: Vec<Arc<NodeAddr>>) -> Result<(), IrohError> {
         block_on(&self.rt, async {
             self.inner
-                .start_sync(peers.into_iter().map(|p| (*p).clone().into()).collect())
+                .start_sync(
+                    peers
+                        .into_iter()
+                        .map(|p| (*p).clone().try_into())
+                        .collect::<Result<Vec<_>, IrohError>>()?,
+                )
                 .await
                 .map_err(IrohError::doc)
         })
@@ -492,7 +495,7 @@ impl From<iroh::sync::actor::OpenState> for OpenState {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NodeAddr {
     node_id: Arc<PublicKey>,
-    derp_url: Option<Arc<Url>>,
+    derp_url: Option<String>,
     addresses: Vec<Arc<SocketAddr>>,
 }
 
@@ -500,7 +503,7 @@ impl NodeAddr {
     /// Create a new [`NodeAddr`] with empty [`AddrInfo`].
     pub fn new(
         node_id: Arc<PublicKey>,
-        derp_url: Option<Arc<Url>>,
+        derp_url: Option<String>,
         addresses: Vec<Arc<SocketAddr>>,
     ) -> Self {
         Self {
@@ -516,7 +519,7 @@ impl NodeAddr {
     }
 
     /// Get the derp region of this peer.
-    pub fn derp_url(&self) -> Option<Arc<Url>> {
+    pub fn derp_url(&self) -> Option<String> {
         self.derp_url.clone()
     }
 
@@ -526,8 +529,9 @@ impl NodeAddr {
     }
 }
 
-impl From<NodeAddr> for iroh::net::magic_endpoint::NodeAddr {
-    fn from(value: NodeAddr) -> Self {
+impl TryFrom<NodeAddr> for iroh::net::magic_endpoint::NodeAddr {
+    type Error = IrohError;
+    fn try_from(value: NodeAddr) -> Result<Self, Self::Error> {
         let mut node_addr = iroh::net::magic_endpoint::NodeAddr::new(value.node_id.0);
         let addresses = value.direct_addresses().into_iter().map(|addr| {
             let typ = addr.r#type();
@@ -546,11 +550,14 @@ impl From<NodeAddr> for iroh::net::magic_endpoint::NodeAddr {
                 }
             }
         });
+
         if let Some(derp_url) = value.derp_url() {
-            node_addr = node_addr.with_derp_url(derp_url.0.clone());
+            let url = url::Url::parse(&derp_url).map_err(IrohError::url)?;
+
+            node_addr = node_addr.with_derp_url(url);
         }
         node_addr = node_addr.with_direct_addresses(addresses);
-        node_addr
+        Ok(node_addr)
     }
 }
 
@@ -558,7 +565,7 @@ impl From<iroh::net::magic_endpoint::NodeAddr> for NodeAddr {
     fn from(value: iroh::net::magic_endpoint::NodeAddr) -> Self {
         NodeAddr {
             node_id: Arc::new(value.node_id.into()),
-            derp_url: value.info.derp_url.map(|url| Arc::new(url.into())),
+            derp_url: value.info.derp_url.map(|url| url.to_string()),
             addresses: value
                 .info
                 .direct_addresses
@@ -1365,6 +1372,7 @@ mod tests {
     use crate::{Ipv4Addr, Ipv6Addr, PublicKey, SocketAddr};
     use rand::RngCore;
     use std::io::Write;
+    use uniffi::deps::static_assertions::assert_eq_align;
 
     #[test]
     fn test_doc_create() {
@@ -1446,7 +1454,7 @@ mod tests {
         let ipv6 = SocketAddr::from_ipv6(ipv6_ip.into(), port);
         //
         // derp region
-        let derp_url = Arc::new(Url::from_string("https://derp.url".to_string()).unwrap());
+        let derp_url = String::from("https://derp.url");
         //
         // create a NodeAddr
         let addrs = vec![Arc::new(ipv4), Arc::new(ipv6)];
@@ -1462,7 +1470,7 @@ mod tests {
         }
 
         let got_derp_url = node_addr.derp_url().unwrap();
-        assert!(derp_url.equal(got_derp_url));
+        assert_eq!(derp_url, got_derp_url);
     }
     #[test]
     fn test_author_id() {
