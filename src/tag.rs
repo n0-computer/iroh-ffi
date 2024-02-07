@@ -6,7 +6,7 @@ use futures::TryStreamExt;
 /// A response to a list collections request
 pub struct ListTagsResponse {
     /// The tag
-    pub name: String,
+    pub name: Vec<u8>,
     /// The format of the associated blob
     pub format: BlobFormat,
     /// The hash of the associated blob
@@ -16,7 +16,7 @@ pub struct ListTagsResponse {
 impl From<iroh::rpc_protocol::ListTagsResponse> for ListTagsResponse {
     fn from(res: iroh::rpc_protocol::ListTagsResponse) -> Self {
         ListTagsResponse {
-            name: res.name.to_string(),
+            name: res.name.0.to_vec(),
             format: res.format.into(),
             hash: Arc::new(res.hash.into()),
         }
@@ -45,8 +45,8 @@ impl IrohNode {
     }
 
     /// Delete a tag
-    pub fn tags_delete(&self, name: String) -> Result<(), IrohError> {
-        let tag = iroh::bytes::Tag::from(name);
+    pub fn tags_delete(&self, name: Vec<u8>) -> Result<(), IrohError> {
+        let tag = iroh::bytes::Tag(bytes::Bytes::from(name));
         block_on(&self.async_runtime, async {
             self.sync_client
                 .tags

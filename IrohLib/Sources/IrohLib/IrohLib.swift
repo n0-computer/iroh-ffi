@@ -2278,7 +2278,7 @@ public protocol IrohNodeProtocol {
     func nodeId() -> String
     func stats() throws -> [String: CounterStats]
     func status() throws -> NodeStatusResponse
-    func tagsDelete(name: String) throws
+    func tagsDelete(name: Data) throws
     func tagsList() throws -> [ListTagsResponse]
 }
 
@@ -2593,11 +2593,11 @@ public class IrohNode: IrohNodeProtocol {
     /**
      * Delete a tag.
      */
-    public func tagsDelete(name: String) throws {
+    public func tagsDelete(name: Data) throws {
         try
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_irohnode_tags_delete(self.pointer,
-                                                           FfiConverterString.lower(name), $0)
+                                                           FfiConverterData.lower(name), $0)
             }
     }
 
@@ -3466,10 +3466,10 @@ public class SetTagOption: SetTagOptionProtocol {
     /**
      * Indicate you want a named tag
      */
-    public static func named(tag: String) -> SetTagOption {
+    public static func named(tag: Data) -> SetTagOption {
         return SetTagOption(unsafeFromRawPointer: try! rustCall {
             uniffi_iroh_fn_constructor_settagoption_named(
-                FfiConverterString.lower(tag), $0
+                FfiConverterData.lower(tag), $0
             )
         })
     }
@@ -3655,11 +3655,11 @@ public struct AddProgressAllDone {
     /**
      * The tag of the added data.
      */
-    public var tag: String
+    public var tag: Data
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(hash: Hash, format: BlobFormat, tag: String) {
+    public init(hash: Hash, format: BlobFormat, tag: Data) {
         self.hash = hash
         self.format = format
         self.tag = tag
@@ -3671,14 +3671,14 @@ public struct FfiConverterTypeAddProgressAllDone: FfiConverterRustBuffer {
         return try AddProgressAllDone(
             hash: FfiConverterTypeHash.read(from: &buf),
             format: FfiConverterTypeBlobFormat.read(from: &buf),
-            tag: FfiConverterString.read(from: &buf)
+            tag: FfiConverterData.read(from: &buf)
         )
     }
 
     public static func write(_ value: AddProgressAllDone, into buf: inout [UInt8]) {
         FfiConverterTypeHash.write(value.hash, into: &buf)
         FfiConverterTypeBlobFormat.write(value.format, into: &buf)
-        FfiConverterString.write(value.tag, into: &buf)
+        FfiConverterData.write(value.tag, into: &buf)
     }
 }
 
@@ -3883,11 +3883,11 @@ public struct BlobAddOutcome {
     /**
      * The tag of the blob
      */
-    public var tag: String
+    public var tag: Data
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(hash: Hash, format: BlobFormat, size: UInt64, tag: String) {
+    public init(hash: Hash, format: BlobFormat, size: UInt64, tag: Data) {
         self.hash = hash
         self.format = format
         self.size = size
@@ -3901,7 +3901,7 @@ public struct FfiConverterTypeBlobAddOutcome: FfiConverterRustBuffer {
             hash: FfiConverterTypeHash.read(from: &buf),
             format: FfiConverterTypeBlobFormat.read(from: &buf),
             size: FfiConverterUInt64.read(from: &buf),
-            tag: FfiConverterString.read(from: &buf)
+            tag: FfiConverterData.read(from: &buf)
         )
     }
 
@@ -3909,7 +3909,7 @@ public struct FfiConverterTypeBlobAddOutcome: FfiConverterRustBuffer {
         FfiConverterTypeHash.write(value.hash, into: &buf)
         FfiConverterTypeBlobFormat.write(value.format, into: &buf)
         FfiConverterUInt64.write(value.size, into: &buf)
-        FfiConverterString.write(value.tag, into: &buf)
+        FfiConverterData.write(value.tag, into: &buf)
     }
 }
 
@@ -3928,7 +3928,7 @@ public struct BlobListCollectionsResponse {
     /**
      * Tag of the collection
      */
-    public var tag: String
+    public var tag: Data
     /**
      * Hash of the collection
      */
@@ -3948,7 +3948,7 @@ public struct BlobListCollectionsResponse {
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(tag: String, hash: Hash, totalBlobsCount: UInt64?, totalBlobsSize: UInt64?) {
+    public init(tag: Data, hash: Hash, totalBlobsCount: UInt64?, totalBlobsSize: UInt64?) {
         self.tag = tag
         self.hash = hash
         self.totalBlobsCount = totalBlobsCount
@@ -3959,7 +3959,7 @@ public struct BlobListCollectionsResponse {
 public struct FfiConverterTypeBlobListCollectionsResponse: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BlobListCollectionsResponse {
         return try BlobListCollectionsResponse(
-            tag: FfiConverterString.read(from: &buf),
+            tag: FfiConverterData.read(from: &buf),
             hash: FfiConverterTypeHash.read(from: &buf),
             totalBlobsCount: FfiConverterOptionUInt64.read(from: &buf),
             totalBlobsSize: FfiConverterOptionUInt64.read(from: &buf)
@@ -3967,7 +3967,7 @@ public struct FfiConverterTypeBlobListCollectionsResponse: FfiConverterRustBuffe
     }
 
     public static func write(_ value: BlobListCollectionsResponse, into buf: inout [UInt8]) {
-        FfiConverterString.write(value.tag, into: &buf)
+        FfiConverterData.write(value.tag, into: &buf)
         FfiConverterTypeHash.write(value.hash, into: &buf)
         FfiConverterOptionUInt64.write(value.totalBlobsCount, into: &buf)
         FfiConverterOptionUInt64.write(value.totalBlobsSize, into: &buf)
@@ -5343,7 +5343,7 @@ public struct ListTagsResponse {
     /**
      * The tag
      */
-    public var name: String
+    public var name: Data
     /**
      * The format of the associated blob
      */
@@ -5355,7 +5355,7 @@ public struct ListTagsResponse {
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(name: String, format: BlobFormat, hash: Hash) {
+    public init(name: Data, format: BlobFormat, hash: Hash) {
         self.name = name
         self.format = format
         self.hash = hash
@@ -5365,14 +5365,14 @@ public struct ListTagsResponse {
 public struct FfiConverterTypeListTagsResponse: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ListTagsResponse {
         return try ListTagsResponse(
-            name: FfiConverterString.read(from: &buf),
+            name: FfiConverterData.read(from: &buf),
             format: FfiConverterTypeBlobFormat.read(from: &buf),
             hash: FfiConverterTypeHash.read(from: &buf)
         )
     }
 
     public static func write(_ value: ListTagsResponse, into buf: inout [UInt8]) {
-        FfiConverterString.write(value.name, into: &buf)
+        FfiConverterData.write(value.name, into: &buf)
         FfiConverterTypeBlobFormat.write(value.format, into: &buf)
         FfiConverterTypeHash.write(value.hash, into: &buf)
     }
@@ -8333,7 +8333,7 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_irohnode_status() != 32660 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_tags_delete() != 23866 {
+    if uniffi_iroh_checksum_method_irohnode_tags_delete() != 19876 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_tags_list() != 6726 {
@@ -8477,7 +8477,7 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_constructor_settagoption_auto() != 13040 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_settagoption_named() != 36253 {
+    if uniffi_iroh_checksum_constructor_settagoption_named() != 61876 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_constructor_wrapoption_no_wrap() != 60952 {

@@ -139,13 +139,13 @@ interface IrohNode {
   sequence<ListTagsResponse> tags_list();
   /// Delete a tag.
   [Throws=IrohError]
-  void tags_delete(string name);
+  void tags_delete(bytes name);
 };
 
 /// A response to a list collections request
 dictionary ListTagsResponse {
   /// The tag
-  string name; 
+  bytes name; 
   /// The format of the associated blob
   BlobFormat format;
   /// The hash of the associated blob
@@ -770,7 +770,7 @@ interface SetTagOption {
   constructor();
   /// Indicate you want a named tag
   [Name=named]
-  constructor(string tag);
+  constructor(bytes tag);
 };
 
 /// Whether to wrap the added data in a collection.
@@ -840,7 +840,7 @@ dictionary AddProgressAllDone {
   /// The format of the added data.
   BlobFormat format;
   /// The tag of the added data.
-  string tag;
+  bytes tag;
 };
 
 /// An AddProgress event indicating we got an error and need to abort
@@ -882,7 +882,7 @@ dictionary BlobAddOutcome {
   /// The size of the blob
   u64 size;
   /// The tag of the blob
-  string tag;
+  bytes tag;
 };
 
 /// Location to store a downloaded blob at.
@@ -1114,7 +1114,7 @@ dictionary BlobListIncompleteResponse {
 /// A response to a list collections request
 dictionary BlobListCollectionsResponse {
   /// Tag of the collection
-  string tag;
+  bytes tag;
   /// Hash of the collection
   Hash hash;
   /// Number of children in the collection

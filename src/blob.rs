@@ -219,7 +219,7 @@ pub struct BlobAddOutcome {
     /// The size of the blob
     pub size: u64,
     /// The tag of the blob
-    pub tag: String,
+    pub tag: Vec<u8>,
 }
 
 impl From<iroh::client::BlobAddOutcome> for BlobAddOutcome {
@@ -228,7 +228,7 @@ impl From<iroh::client::BlobAddOutcome> for BlobAddOutcome {
             hash: Arc::new(value.hash.into()),
             format: value.format.into(),
             size: value.size,
-            tag: value.tag.to_string(),
+            tag: value.tag.0.to_vec(),
         }
     }
 }
@@ -238,8 +238,8 @@ impl From<iroh::client::BlobAddOutcome> for BlobAddOutcome {
 pub enum SetTagOption {
     /// A tag will be automatically generated
     Auto,
-    /// The tag is explicitly named
-    Named(String),
+    /// The tag is explicitly vecnamed
+    Named(Vec<u8>),
 }
 
 impl SetTagOption {
@@ -249,7 +249,7 @@ impl SetTagOption {
     }
 
     /// Indicate you want a named tag
-    pub fn named(tag: String) -> Self {
+    pub fn named(tag: Vec<u8>) -> Self {
         SetTagOption::Named(tag)
     }
 }
@@ -259,7 +259,7 @@ impl From<SetTagOption> for iroh::rpc_protocol::SetTagOption {
         match value {
             SetTagOption::Auto => iroh::rpc_protocol::SetTagOption::Auto,
             SetTagOption::Named(tag) => {
-                iroh::rpc_protocol::SetTagOption::Named(iroh::bytes::Tag::from(tag))
+                iroh::rpc_protocol::SetTagOption::Named(iroh::bytes::Tag(bytes::Bytes::from(tag)))
             }
         }
     }
@@ -419,7 +419,7 @@ pub struct AddProgressAllDone {
     /// The format of the added data.
     pub format: BlobFormat,
     /// The tag of the added data.
-    pub tag: String,
+    pub tag: Vec<u8>,
 }
 
 /// An AddProgress event indicating we got an error and need to abort
@@ -464,7 +464,7 @@ impl From<iroh::rpc_protocol::AddProgress> for AddProgress {
                 AddProgress::AllDone(AddProgressAllDone {
                     hash: Arc::new(hash.into()),
                     format: format.into(),
-                    tag: tag.to_string(),
+                    tag: tag.0.to_vec(),
                 })
             }
             iroh::rpc_protocol::AddProgress::Abort(err) => AddProgress::Abort(AddProgressAbort {
@@ -1004,7 +1004,7 @@ impl From<iroh::rpc_protocol::BlobListIncompleteResponse> for BlobListIncomplete
 #[derive(Debug, Clone)]
 pub struct BlobListCollectionsResponse {
     /// Tag of the collection
-    pub tag: String,
+    pub tag: Vec<u8>,
     /// Hash of the collection
     pub hash: Arc<Hash>,
     /// Number of children in the collection
@@ -1020,7 +1020,7 @@ pub struct BlobListCollectionsResponse {
 impl From<iroh::rpc_protocol::BlobListCollectionsResponse> for BlobListCollectionsResponse {
     fn from(value: iroh::rpc_protocol::BlobListCollectionsResponse) -> Self {
         BlobListCollectionsResponse {
-            tag: value.tag.to_string(),
+            tag: value.tag.0.to_vec(),
             hash: Arc::new(value.hash.into()),
             total_blobs_count: value.total_blobs_count,
             total_blobs_size: value.total_blobs_size,

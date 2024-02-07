@@ -1161,7 +1161,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_irohnode_tags_delete(uniffiStatus)
 		})
-		if checksum != 23866 {
+		if checksum != 19876 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_irohnode_tags_delete: UniFFI API checksum mismatch")
 		}
@@ -1593,7 +1593,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_constructor_settagoption_named(uniffiStatus)
 		})
-		if checksum != 36253 {
+		if checksum != 61876 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_constructor_settagoption_named: UniFFI API checksum mismatch")
 		}
@@ -3670,12 +3670,12 @@ func (_self *IrohNode) Status() (*NodeStatusResponse, error) {
 	}
 }
 
-func (_self *IrohNode) TagsDelete(name string) error {
+func (_self *IrohNode) TagsDelete(name []byte) error {
 	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
 	defer _self.ffiObject.decrementPointer()
 	_, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) bool {
 		C.uniffi_iroh_fn_method_irohnode_tags_delete(
-			_pointer, FfiConverterStringINSTANCE.Lower(name), _uniffiStatus)
+			_pointer, FfiConverterBytesINSTANCE.Lower(name), _uniffiStatus)
 		return false
 	})
 	return _uniffiErr
@@ -4291,9 +4291,9 @@ func SetTagOptionAuto() *SetTagOption {
 		return C.uniffi_iroh_fn_constructor_settagoption_auto(_uniffiStatus)
 	}))
 }
-func SetTagOptionNamed(tag string) *SetTagOption {
+func SetTagOptionNamed(tag []byte) *SetTagOption {
 	return FfiConverterSetTagOptionINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
-		return C.uniffi_iroh_fn_constructor_settagoption_named(FfiConverterStringINSTANCE.Lower(tag), _uniffiStatus)
+		return C.uniffi_iroh_fn_constructor_settagoption_named(FfiConverterBytesINSTANCE.Lower(tag), _uniffiStatus)
 	}))
 }
 
@@ -4439,13 +4439,13 @@ func (_ FfiDestroyerTypeAddProgressAbort) Destroy(value AddProgressAbort) {
 type AddProgressAllDone struct {
 	Hash   *Hash
 	Format BlobFormat
-	Tag    string
+	Tag    []byte
 }
 
 func (r *AddProgressAllDone) Destroy() {
 	FfiDestroyerHash{}.Destroy(r.Hash)
 	FfiDestroyerTypeBlobFormat{}.Destroy(r.Format)
-	FfiDestroyerString{}.Destroy(r.Tag)
+	FfiDestroyerBytes{}.Destroy(r.Tag)
 }
 
 type FfiConverterTypeAddProgressAllDone struct{}
@@ -4460,7 +4460,7 @@ func (c FfiConverterTypeAddProgressAllDone) Read(reader io.Reader) AddProgressAl
 	return AddProgressAllDone{
 		FfiConverterHashINSTANCE.Read(reader),
 		FfiConverterTypeBlobFormatINSTANCE.Read(reader),
-		FfiConverterStringINSTANCE.Read(reader),
+		FfiConverterBytesINSTANCE.Read(reader),
 	}
 }
 
@@ -4471,7 +4471,7 @@ func (c FfiConverterTypeAddProgressAllDone) Lower(value AddProgressAllDone) Rust
 func (c FfiConverterTypeAddProgressAllDone) Write(writer io.Writer, value AddProgressAllDone) {
 	FfiConverterHashINSTANCE.Write(writer, value.Hash)
 	FfiConverterTypeBlobFormatINSTANCE.Write(writer, value.Format)
-	FfiConverterStringINSTANCE.Write(writer, value.Tag)
+	FfiConverterBytesINSTANCE.Write(writer, value.Tag)
 }
 
 type FfiDestroyerTypeAddProgressAllDone struct{}
@@ -4608,14 +4608,14 @@ type BlobAddOutcome struct {
 	Hash   *Hash
 	Format BlobFormat
 	Size   uint64
-	Tag    string
+	Tag    []byte
 }
 
 func (r *BlobAddOutcome) Destroy() {
 	FfiDestroyerHash{}.Destroy(r.Hash)
 	FfiDestroyerTypeBlobFormat{}.Destroy(r.Format)
 	FfiDestroyerUint64{}.Destroy(r.Size)
-	FfiDestroyerString{}.Destroy(r.Tag)
+	FfiDestroyerBytes{}.Destroy(r.Tag)
 }
 
 type FfiConverterTypeBlobAddOutcome struct{}
@@ -4631,7 +4631,7 @@ func (c FfiConverterTypeBlobAddOutcome) Read(reader io.Reader) BlobAddOutcome {
 		FfiConverterHashINSTANCE.Read(reader),
 		FfiConverterTypeBlobFormatINSTANCE.Read(reader),
 		FfiConverterUint64INSTANCE.Read(reader),
-		FfiConverterStringINSTANCE.Read(reader),
+		FfiConverterBytesINSTANCE.Read(reader),
 	}
 }
 
@@ -4643,7 +4643,7 @@ func (c FfiConverterTypeBlobAddOutcome) Write(writer io.Writer, value BlobAddOut
 	FfiConverterHashINSTANCE.Write(writer, value.Hash)
 	FfiConverterTypeBlobFormatINSTANCE.Write(writer, value.Format)
 	FfiConverterUint64INSTANCE.Write(writer, value.Size)
-	FfiConverterStringINSTANCE.Write(writer, value.Tag)
+	FfiConverterBytesINSTANCE.Write(writer, value.Tag)
 }
 
 type FfiDestroyerTypeBlobAddOutcome struct{}
@@ -4653,14 +4653,14 @@ func (_ FfiDestroyerTypeBlobAddOutcome) Destroy(value BlobAddOutcome) {
 }
 
 type BlobListCollectionsResponse struct {
-	Tag             string
+	Tag             []byte
 	Hash            *Hash
 	TotalBlobsCount *uint64
 	TotalBlobsSize  *uint64
 }
 
 func (r *BlobListCollectionsResponse) Destroy() {
-	FfiDestroyerString{}.Destroy(r.Tag)
+	FfiDestroyerBytes{}.Destroy(r.Tag)
 	FfiDestroyerHash{}.Destroy(r.Hash)
 	FfiDestroyerOptionalUint64{}.Destroy(r.TotalBlobsCount)
 	FfiDestroyerOptionalUint64{}.Destroy(r.TotalBlobsSize)
@@ -4676,7 +4676,7 @@ func (c FfiConverterTypeBlobListCollectionsResponse) Lift(rb RustBufferI) BlobLi
 
 func (c FfiConverterTypeBlobListCollectionsResponse) Read(reader io.Reader) BlobListCollectionsResponse {
 	return BlobListCollectionsResponse{
-		FfiConverterStringINSTANCE.Read(reader),
+		FfiConverterBytesINSTANCE.Read(reader),
 		FfiConverterHashINSTANCE.Read(reader),
 		FfiConverterOptionalUint64INSTANCE.Read(reader),
 		FfiConverterOptionalUint64INSTANCE.Read(reader),
@@ -4688,7 +4688,7 @@ func (c FfiConverterTypeBlobListCollectionsResponse) Lower(value BlobListCollect
 }
 
 func (c FfiConverterTypeBlobListCollectionsResponse) Write(writer io.Writer, value BlobListCollectionsResponse) {
-	FfiConverterStringINSTANCE.Write(writer, value.Tag)
+	FfiConverterBytesINSTANCE.Write(writer, value.Tag)
 	FfiConverterHashINSTANCE.Write(writer, value.Hash)
 	FfiConverterOptionalUint64INSTANCE.Write(writer, value.TotalBlobsCount)
 	FfiConverterOptionalUint64INSTANCE.Write(writer, value.TotalBlobsSize)
@@ -5713,13 +5713,13 @@ func (_ FfiDestroyerTypeLatencyAndControlMsg) Destroy(value LatencyAndControlMsg
 }
 
 type ListTagsResponse struct {
-	Name   string
+	Name   []byte
 	Format BlobFormat
 	Hash   *Hash
 }
 
 func (r *ListTagsResponse) Destroy() {
-	FfiDestroyerString{}.Destroy(r.Name)
+	FfiDestroyerBytes{}.Destroy(r.Name)
 	FfiDestroyerTypeBlobFormat{}.Destroy(r.Format)
 	FfiDestroyerHash{}.Destroy(r.Hash)
 }
@@ -5734,7 +5734,7 @@ func (c FfiConverterTypeListTagsResponse) Lift(rb RustBufferI) ListTagsResponse 
 
 func (c FfiConverterTypeListTagsResponse) Read(reader io.Reader) ListTagsResponse {
 	return ListTagsResponse{
-		FfiConverterStringINSTANCE.Read(reader),
+		FfiConverterBytesINSTANCE.Read(reader),
 		FfiConverterTypeBlobFormatINSTANCE.Read(reader),
 		FfiConverterHashINSTANCE.Read(reader),
 	}
@@ -5745,7 +5745,7 @@ func (c FfiConverterTypeListTagsResponse) Lower(value ListTagsResponse) RustBuff
 }
 
 func (c FfiConverterTypeListTagsResponse) Write(writer io.Writer, value ListTagsResponse) {
-	FfiConverterStringINSTANCE.Write(writer, value.Name)
+	FfiConverterBytesINSTANCE.Write(writer, value.Name)
 	FfiConverterTypeBlobFormatINSTANCE.Write(writer, value.Format)
 	FfiConverterHashINSTANCE.Write(writer, value.Hash)
 }
