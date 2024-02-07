@@ -51,7 +51,7 @@ interface IrohNode {
   void doc_drop(string doc_id);
   /// Join and sync with an already existing document.
   [Throws=IrohError]
-  Doc doc_join(DocTicket ticket);
+  Doc doc_join(string ticket);
   /// List all the docs we have access to on this node.
   [Throws=IrohError]
   sequence<NamespaceAndCapability> doc_list();
@@ -139,13 +139,13 @@ interface IrohNode {
   sequence<ListTagsResponse> tags_list();
   /// Delete a tag.
   [Throws=IrohError]
-  void tags_delete(Tag name);
+  void tags_delete(bytes name);
 };
 
 /// A response to a list collections request
 dictionary ListTagsResponse {
   /// The tag
-  Tag name; 
+  bytes name; 
   /// The format of the associated blob
   BlobFormat format;
   /// The hash of the associated blob
@@ -155,7 +155,7 @@ dictionary ListTagsResponse {
 /// Information about a direct address.
 interface DirectAddrInfo {
   /// Get the reported address
-  SocketAddr addr();
+  string addr();
   /// Get the reported latency, if it exists
   duration? latency();
   /// Get the last control message received by this node
@@ -216,7 +216,7 @@ interface Doc {
 
   /// Share this document with peers over a ticket.
   [Throws=IrohError]
-  DocTicket share(ShareMode mode);
+  string share(ShareMode mode);
   /// Start to sync this document with a list of peers.
   [Throws=IrohError]
   void start_sync(sequence<NodeAddr> peers);
@@ -486,11 +486,11 @@ enum ShareMode {
 /// A peer and it's addressing information.
 interface NodeAddr {
   /// Create a new [`NodeAddr`] with empty [`AddrInfo`].
-  constructor(PublicKey node_id, Url? derp_url, sequence<SocketAddr> addresses);
+  constructor(PublicKey node_id, string? derp_url, sequence<string> addresses);
   /// Get the direct addresses of this peer.
-  sequence<SocketAddr> direct_addresses();
+  sequence<string> direct_addresses();
   /// Get the derp url of this peer.
-  Url? derp_url();
+  string? derp_url();
   /// Returns true if both NodeAddr's have the same values
   boolean equal(NodeAddr other);
 };
@@ -499,7 +499,7 @@ interface NodeStatusResponse {
     /// The node id and socket addresses of this node.
     NodeAddr node_addr();
     /// The bound listening addresses of the node
-    sequence<SocketAddr> listen_addrs();
+    sequence<string> listen_addrs();
     /// The version of the node
     string version();
 };
@@ -565,17 +565,6 @@ interface Hash {
   constructor(string s);
   /// Convert the hash to a hex string.
   string to_hex();
-};
-
-/// Contains both a key (either secret or public) to a document, and a list of peers to join.
-interface DocTicket {
-  /// Create a `DocTicket` from a string
-  [Name=from_string, Throws=IrohError]
-  constructor(string content);
-  /// Return a string representation of a `DocTicket`
-  string to_string();
-  /// Returns true if both `DocTicket`'s have the same value
-  boolean equal(DocTicket other);
 };
 
 /// The state for an open replica.
@@ -711,7 +700,7 @@ dictionary ConnectionInfo {
   /// The public key of the endpoint.
   PublicKey public_key;
   /// Derp url, if available.
-  Url? derp_url;
+  string? derp_url;
   /// List of addresses at which this node might be reachable, plus any latency information we
   /// have about that address and the last time the address was used.
   sequence<DirectAddrInfo> addrs;
@@ -739,122 +728,21 @@ enum ConnType {
 interface ConnectionType{
   /// Whether connection is direct, relay, mixed, or none
   ConnType type();
-  /// Return the [`SocketAddr`] if this is a direct connection
-  SocketAddr as_direct();
+  /// Return the socket address if this is a direct connection
+  string as_direct();
   /// Return the derp url if this is a relay connection
-  Url as_relay();
-  /// Return the [`SocketAddr`] and DERP url if this is a mixed connection
+  string as_relay();
+  /// Return the socket address and DERP url if this is a mixed connection
   ConnectionTypeMixed as_mixed();
 };
 
 
-/// The [`SocketAddr`] and url id of the mixed connection
+/// The socket address and url id of the mixed connection
 dictionary ConnectionTypeMixed {
     /// Address of the node
-    SocketAddr addr;
+    string addr;
     /// Url of the DERP node to which the node is connected
-    Url derp_url;
-};
-
-/// Type of SocketAddr
-enum SocketAddrType {
-  /// Ipv4 SocketAddr
-  "V4",
-  /// Ipv6 SocketAddr
-  "V6",
-};
-
-/// Ipv4 address
-interface Ipv4Addr {
-  /// Create a new Ipv4 addr from 4 eight-bit octets
-  constructor(u8 a, u8 b, u8 c, u8 d);
-  /// Create a new Ipv4 addr from a String
-  [Name=from_string, Throws=IrohError]
-  constructor(string str);
-  /// Returns an Ipv4 address as a string
-  string to_string();
-  /// Get the 4 octets as bytes
-  sequence<u8> octets(); 
-  /// Returns true if both Ipv4Addrs have the same value
-  boolean equal(Ipv4Addr other);
-};
-
-/// An Ipv4 socket address
-interface SocketAddrV4 {
-  /// Create a new socket address from an [`Ipv4Addr`] and a port number
-  constructor(Ipv4Addr ipv4, u16 port);
-  /// Create a new Ipv4 addr from a String
-  [Name=from_string, Throws=IrohError]
-  constructor(string str);
-  /// Returns a Ipv4 SocketAddr as string
-  string to_string();
-  /// Returns the IP address associated with this socket address
-  Ipv4Addr ip(); 
-  /// Returns the port number associated with this socket address
-  u16 port();
-  /// Returns true if both SocketAddrV4's have the same value
-  boolean equal(SocketAddrV4 other);
-};
-
-/// Ipv6 address
-interface Ipv6Addr {
-  /// Create a new Ipv6 Addr from eight sixteen-bit segments
-  constructor(u16 a, u16 b, u16 c, u16 d, u16 e, u16 f, u16 g, u16 h);
-  /// Create a new Ipv6 addr from a String
-  [Name=from_string, Throws=IrohError]
-  constructor(string str);
-  /// Returns a Ipv6 Address as a string
-  string to_string();
-  /// Get the 8 sixteen-bit segments as an array
-  sequence<u16> segments(); 
-  /// Returns true if both Ipv6Addr's have the same value
-  boolean equal(Ipv6Addr other);
-};
-
-/// An Ipv6 socket address
-interface SocketAddrV6 {
-  /// Create a new socket address from an [`Ipv6Addr`] and a port number
-  constructor(Ipv6Addr ipv6, u16 port);
-  /// Create a new Ipv6 addr from a String
-  [Name=from_string, Throws=IrohError]
-  constructor(string str);
-  /// Returns the Ipv6 SocketAddr as a string
-  string to_string();
-  /// Returns the IP address associated with this socket address
-  Ipv6Addr ip(); 
-  /// Returns the port number associated with this socket address
-  u16 port();
-  /// Returns true if both SocketAddrV6's have the same value
-  boolean equal(SocketAddrV6 other);
-};
-
-/// An internet socket address, either Ipv4 or Ipv6
-interface SocketAddr {
-  /// Create an Ipv4 SocketAddr
-  [Name=from_ipv4]
-  constructor(Ipv4Addr ipv4, u16 port);
-  /// Create an Ipv6 SocketAddr
-  [Name=from_ipv6]
-  constructor(Ipv6Addr ipv6, u16 port);
-  /// The type of SocketAddr
-  SocketAddrType type();
-  /// Get the IPv4 SocketAddr representation
-  SocketAddrV4 as_ipv4();
-  /// Get the IPv6 SocketAddr representation
-  SocketAddrV6 as_ipv6();
-  /// Returns true if the two SocketAddrs have the same value
-  boolean equal(SocketAddr other);
-};
-
-/// A Url
-interface Url {
-  /// Create a Url from a string
-  [Name=from_string, Throws=IrohError]
-  constructor(string s);
-  /// Get a string from a Url
-  string to_string();
-  /// Returns true if the two Urls have the same value
-  boolean equal(Url other);
+    string derp_url;
 };
 
 /// A public key
@@ -875,30 +763,14 @@ interface PublicKey {
   string fmt_short();
 };
 
-/// A tag
-interface Tag {
-  /// Represent a Tag as a string
-  string to_string();
-  /// Returns trun when the two tags have the same value
-  boolean equal(Tag other);
-  /// Represent a Tag as bytes
-  bytes to_bytes();
-  /// Get a Tag from a string
-  [Name=from_string]
-  constructor(string s); 
-  /// Get a Tag from a slice of bytes
-  [Name=from_bytes]
-  constructor(bytes bytes);
-};
-
-/// An option for commands that allow setting a Tag
+/// An option for commands that allow setting a tag
 interface SetTagOption {
   /// Indicate you want an automatically generated tag
   [Name=auto]
   constructor();
   /// Indicate you want a named tag
   [Name=named]
-  constructor(Tag tag);
+  constructor(bytes tag);
 };
 
 /// Whether to wrap the added data in a collection.
@@ -968,7 +840,7 @@ dictionary AddProgressAllDone {
   /// The format of the added data.
   BlobFormat format;
   /// The tag of the added data.
-  Tag tag;
+  bytes tag;
 };
 
 /// An AddProgress event indicating we got an error and need to abort
@@ -1010,7 +882,7 @@ dictionary BlobAddOutcome {
   /// The size of the blob
   u64 size;
   /// The tag of the blob
-  Tag tag;
+  bytes tag;
 };
 
 /// Location to store a downloaded blob at.
@@ -1032,6 +904,7 @@ interface DownloadLocation {
 
 /// A request to the node to download and share the data specified by the hash.
 interface BlobDownloadRequest {
+  [Throws=IrohError]
   constructor(Hash hash, BlobFormat format, NodeAddr node, SetTagOption tag, DownloadLocation out);
 };
 
@@ -1241,7 +1114,7 @@ dictionary BlobListIncompleteResponse {
 /// A response to a list collections request
 dictionary BlobListCollectionsResponse {
   /// Tag of the collection
-  Tag tag;
+  bytes tag;
   /// Hash of the collection
   Hash hash;
   /// Number of children in the collection
@@ -1268,8 +1141,7 @@ interface IrohError {
   Blobs(string description);
   Ipv4Addr(string description);
   Ipv6Addr(string description);
-  SocketAddrV4(string description);
-  SocketAddrV6(string description);
+  SocketAddr(string description);
   PublicKey(string description);
   NodeAddr(string description);
   Hash(string description);

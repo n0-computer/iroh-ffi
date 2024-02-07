@@ -10,9 +10,7 @@ pub use iroh::sync::CapabilityKind;
 
 use quic_rpc::transport::flume::FlumeConnection;
 
-use crate::{
-    block_on, AuthorId, Hash, IrohError, IrohNode, PublicKey, SocketAddr, SocketAddrType, Url,
-};
+use crate::{block_on, AuthorId, Hash, IrohError, IrohNode, PublicKey};
 
 impl IrohNode {
     /// Create a new doc.
@@ -33,12 +31,14 @@ impl IrohNode {
     }
 
     /// Join and sync with an already existing document.
-    pub fn doc_join(&self, ticket: Arc<DocTicket>) -> Result<Arc<Doc>, IrohError> {
+    pub fn doc_join(&self, ticket: String) -> Result<Arc<Doc>, IrohError> {
         block_on(&self.async_runtime, async {
+            let ticket =
+                iroh::ticket::DocTicket::from_str(&ticket).map_err(IrohError::doc_ticket)?;
             let doc = self
                 .sync_client
                 .docs
-                .import(ticket.0.clone())
+                .import(ticket)
                 .await
                 .map_err(IrohError::doc)?;
 
@@ -287,12 +287,12 @@ impl Doc {
     }
 
     /// Share this document with peers over a ticket.
-    pub fn share(&self, mode: ShareMode) -> Result<Arc<DocTicket>, IrohError> {
+    pub fn share(&self, mode: ShareMode) -> Result<String, IrohError> {
         block_on(&self.rt, async {
             self.inner
                 .share(mode.into())
                 .await
-                .map(|ticket| Arc::new(DocTicket(ticket)))
+                .map(|ticket| ticket.to_string())
                 .map_err(IrohError::doc)
         })
     }
@@ -301,7 +301,12 @@ impl Doc {
     pub fn start_sync(&self, peers: Vec<Arc<NodeAddr>>) -> Result<(), IrohError> {
         block_on(&self.rt, async {
             self.inner
-                .start_sync(peers.into_iter().map(|p| (*p).clone().into()).collect())
+                .start_sync(
+                    peers
+                        .into_iter()
+                        .map(|p| (*p).clone().try_into())
+                        .collect::<Result<Vec<_>, IrohError>>()?,
+                )
                 .await
                 .map_err(IrohError::doc)
         })
@@ -490,17 +495,13 @@ impl From<iroh::sync::actor::OpenState> for OpenState {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NodeAddr {
     node_id: Arc<PublicKey>,
-    derp_url: Option<Arc<Url>>,
-    addresses: Vec<Arc<SocketAddr>>,
+    derp_url: Option<String>,
+    addresses: Vec<String>,
 }
 
 impl NodeAddr {
     /// Create a new [`NodeAddr`] with empty [`AddrInfo`].
-    pub fn new(
-        node_id: Arc<PublicKey>,
-        derp_url: Option<Arc<Url>>,
-        addresses: Vec<Arc<SocketAddr>>,
-    ) -> Self {
+    pub fn new(node_id: Arc<PublicKey>, derp_url: Option<String>, addresses: Vec<String>) -> Self {
         Self {
             node_id,
             derp_url,
@@ -509,12 +510,12 @@ impl NodeAddr {
     }
 
     /// Get the direct addresses of this peer.
-    pub fn direct_addresses(&self) -> Vec<Arc<SocketAddr>> {
+    pub fn direct_addresses(&self) -> Vec<String> {
         self.addresses.clone()
     }
 
     /// Get the derp region of this peer.
-    pub fn derp_url(&self) -> Option<Arc<Url>> {
+    pub fn derp_url(&self) -> Option<String> {
         self.derp_url.clone()
     }
 
@@ -524,31 +525,23 @@ impl NodeAddr {
     }
 }
 
-impl From<NodeAddr> for iroh::net::magic_endpoint::NodeAddr {
-    fn from(value: NodeAddr) -> Self {
+impl TryFrom<NodeAddr> for iroh::net::magic_endpoint::NodeAddr {
+    type Error = IrohError;
+    fn try_from(value: NodeAddr) -> Result<Self, Self::Error> {
         let mut node_addr = iroh::net::magic_endpoint::NodeAddr::new(value.node_id.0);
-        let addresses = value.direct_addresses().into_iter().map(|addr| {
-            let typ = addr.r#type();
-            match typ {
-                SocketAddrType::V4 => {
-                    let addr_str = addr.to_string();
-                    std::net::SocketAddrV4::from_str(&addr_str)
-                        .expect("checked")
-                        .into()
-                }
-                SocketAddrType::V6 => {
-                    let addr_str = addr.to_string();
-                    std::net::SocketAddrV6::from_str(&addr_str)
-                        .expect("checked")
-                        .into()
-                }
-            }
-        });
+        let addresses = value
+            .direct_addresses()
+            .into_iter()
+            .map(|addr| std::net::SocketAddr::from_str(&addr).map_err(IrohError::socket_addr))
+            .collect::<Result<Vec<_>, IrohError>>()?;
+
         if let Some(derp_url) = value.derp_url() {
-            node_addr = node_addr.with_derp_url(derp_url.0.clone());
+            let url = url::Url::parse(&derp_url).map_err(IrohError::url)?;
+
+            node_addr = node_addr.with_derp_url(url);
         }
         node_addr = node_addr.with_direct_addresses(addresses);
-        node_addr
+        Ok(node_addr)
     }
 }
 
@@ -556,12 +549,12 @@ impl From<iroh::net::magic_endpoint::NodeAddr> for NodeAddr {
     fn from(value: iroh::net::magic_endpoint::NodeAddr) -> Self {
         NodeAddr {
             node_id: Arc::new(value.node_id.into()),
-            derp_url: value.info.derp_url.map(|url| Arc::new(url.into())),
+            derp_url: value.info.derp_url.map(|url| url.to_string()),
             addresses: value
                 .info
                 .direct_addresses
                 .into_iter()
-                .map(|d| Arc::new(d.into()))
+                .map(|d| d.to_string())
                 .collect(),
         }
     }
@@ -821,32 +814,6 @@ impl Query {
     /// Get the offset for this query (number of entries to skip at the beginning).
     pub fn offset(&self) -> u64 {
         self.0.offset()
-    }
-}
-
-/// Contains both a key (either secret or public) to a document, and a list of peers to join.
-#[derive(Debug, Clone)]
-pub struct DocTicket(pub(crate) iroh::rpc_protocol::DocTicket);
-
-impl DocTicket {
-    /// Create a `DocTicket` from a string
-    pub fn from_string(content: String) -> Result<Self, IrohError> {
-        let ticket = content
-            .parse::<iroh::rpc_protocol::DocTicket>()
-            .map_err(IrohError::doc_ticket)?;
-        Ok(DocTicket(ticket))
-    }
-
-    /// Returns true if both `DocTicket`'s have the same value
-    pub fn equal(&self, other: Arc<DocTicket>) -> bool {
-        // TODO: implement partialeq and eq on DocTicket
-        self.to_string() == *other.to_string()
-    }
-}
-
-impl std::fmt::Display for DocTicket {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.0)
     }
 }
 
@@ -1386,7 +1353,7 @@ impl DocExportProgress {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Ipv4Addr, Ipv6Addr, PublicKey, SocketAddr};
+    use crate::PublicKey;
     use rand::RngCore;
     use std::io::Write;
 
@@ -1401,10 +1368,7 @@ mod tests {
         println!("doc_id: {}", doc_id);
 
         let doc_ticket = doc.share(crate::doc::ShareMode::Write).unwrap();
-        let doc_ticket_string = doc_ticket.to_string();
-        let dock_ticket_back = DocTicket::from_string(doc_ticket_string.clone()).unwrap();
-        assert_eq!(doc_ticket.0.to_string(), dock_ticket_back.0.to_string());
-        println!("doc_ticket: {}", doc_ticket_string);
+        println!("doc_ticket: {}", doc_ticket);
         node.doc_join(doc_ticket).unwrap();
     }
 
@@ -1464,19 +1428,15 @@ mod tests {
         let node_id = PublicKey::from_string(key_str.into()).unwrap();
         //
         // create socketaddrs
-        let ipv4_ip = Ipv4Addr::from_string("127.0.0.1".into()).unwrap();
-        let ipv6_ip = Ipv6Addr::from_string("::1".into()).unwrap();
         let port = 3000;
-        //
-        // create socket addrs
-        let ipv4 = SocketAddr::from_ipv4(ipv4_ip.into(), port);
-        let ipv6 = SocketAddr::from_ipv6(ipv6_ip.into(), port);
+        let ipv4 = String::from(format!("127.0.0.1:{port}"));
+        let ipv6 = String::from(format!("::1:{port}"));
         //
         // derp region
-        let derp_url = Arc::new(Url::from_string("https://derp.url".to_string()).unwrap());
+        let derp_url = String::from("https://derp.url");
         //
         // create a NodeAddr
-        let addrs = vec![Arc::new(ipv4), Arc::new(ipv6)];
+        let addrs = vec![ipv4, ipv6];
         let expect_addrs = addrs.clone();
         let node_addr = NodeAddr::new(node_id.into(), Some(derp_url.clone()), addrs);
         //
@@ -1484,12 +1444,11 @@ mod tests {
         let got_addrs = node_addr.direct_addresses();
         let addrs = expect_addrs.iter().zip(got_addrs.iter());
         for (expect, got) in addrs {
-            assert!(got.equal(expect.clone()));
-            assert!(expect.equal(got.clone()));
+            assert_eq!(got, expect);
         }
 
         let got_derp_url = node_addr.derp_url().unwrap();
-        assert!(derp_url.equal(got_derp_url));
+        assert_eq!(derp_url, got_derp_url);
     }
     #[test]
     fn test_author_id() {
@@ -1509,24 +1468,7 @@ mod tests {
         assert!(author.equal(author_0.clone()));
         assert!(author_0.equal(author.into()));
     }
-    #[test]
-    fn test_doc_ticket() {
-        //
-        // create id from string
-        let doc_ticket_str = "docaaa7qg6afc6zupqzfxmu5uuueaoei5zlye7a4ahhrfhvzjfrfewozgybl5kkl6u6fqcnjxvdkoihq3nbsqczxeulfsqvatb2qh3bwheoyahacitior2ha4z2f4xxk43fgewtcltemvzhaltjojxwqltomv2ho33snmxc6biajjeteswek4ambkabzpcfoajganyabbz2zplaaaaaaaaaagrjyvlqcjqdoaaioowl2ygi2likyov62rofk4asma3qacdtvs6whqsdbizopsefrrkx";
-        let doc_ticket = DocTicket::from_string(doc_ticket_str.into()).unwrap();
-        //
-        // call to_string, ensure equal
-        assert_eq!(doc_ticket_str, doc_ticket.to_string());
-        //
-        // create another id, same string
-        let doc_ticket_0 = DocTicket::from_string(doc_ticket_str.into()).unwrap();
-        //
-        // ensure equal
-        let doc_ticket_0 = Arc::new(doc_ticket_0);
-        assert!(doc_ticket.equal(doc_ticket_0.clone()));
-        assert!(doc_ticket_0.equal(doc_ticket.into()));
-    }
+
     #[test]
     fn test_query() {
         let mut opts = QueryOptions::default();

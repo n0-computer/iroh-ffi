@@ -91,17 +91,17 @@ void*_Nonnull uniffi_iroh_fn_constructor_blobdownloadrequest_new(void*_Nonnull h
 );
 void uniffi_iroh_fn_free_connectiontype(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void*_Nonnull uniffi_iroh_fn_method_connectiontype_as_direct(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_iroh_fn_method_connectiontype_as_direct(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_connectiontype_as_mixed(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void*_Nonnull uniffi_iroh_fn_method_connectiontype_as_relay(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_iroh_fn_method_connectiontype_as_relay(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_connectiontype_type(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void uniffi_iroh_fn_free_directaddrinfo(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void*_Nonnull uniffi_iroh_fn_method_directaddrinfo_addr(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_iroh_fn_method_directaddrinfo_addr(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_directaddrinfo_last_control(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -137,7 +137,7 @@ void uniffi_iroh_fn_method_doc_set_download_policy(void*_Nonnull ptr, void*_Nonn
 );
 void uniffi_iroh_fn_method_doc_set_hash(void*_Nonnull ptr, void*_Nonnull author, RustBuffer key, void*_Nonnull hash, uint64_t size, RustCallStatus *_Nonnull out_status
 );
-void*_Nonnull uniffi_iroh_fn_method_doc_share(void*_Nonnull ptr, RustBuffer mode, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_iroh_fn_method_doc_share(void*_Nonnull ptr, RustBuffer mode, RustCallStatus *_Nonnull out_status
 );
 void uniffi_iroh_fn_method_doc_start_sync(void*_Nonnull ptr, RustBuffer peers, RustCallStatus *_Nonnull out_status
 );
@@ -168,14 +168,6 @@ RustBuffer uniffi_iroh_fn_method_docimportprogress_as_ingest_done(void*_Nonnull 
 RustBuffer uniffi_iroh_fn_method_docimportprogress_as_progress(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_docimportprogress_type(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void uniffi_iroh_fn_free_docticket(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void*_Nonnull uniffi_iroh_fn_constructor_docticket_from_string(RustBuffer content, RustCallStatus *_Nonnull out_status
-);
-int8_t uniffi_iroh_fn_method_docticket_equal(void*_Nonnull ptr, void*_Nonnull other, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_iroh_fn_method_docticket_to_string(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void uniffi_iroh_fn_free_downloadlocation(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -254,30 +246,6 @@ RustBuffer uniffi_iroh_fn_method_hash_to_hex(void*_Nonnull ptr, RustCallStatus *
 );
 RustBuffer uniffi_iroh_fn_method_hash_to_string(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void uniffi_iroh_fn_free_ipv4addr(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void*_Nonnull uniffi_iroh_fn_constructor_ipv4addr_from_string(RustBuffer str, RustCallStatus *_Nonnull out_status
-);
-void*_Nonnull uniffi_iroh_fn_constructor_ipv4addr_new(uint8_t a, uint8_t b, uint8_t c, uint8_t d, RustCallStatus *_Nonnull out_status
-);
-int8_t uniffi_iroh_fn_method_ipv4addr_equal(void*_Nonnull ptr, void*_Nonnull other, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_iroh_fn_method_ipv4addr_octets(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_iroh_fn_method_ipv4addr_to_string(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void uniffi_iroh_fn_free_ipv6addr(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void*_Nonnull uniffi_iroh_fn_constructor_ipv6addr_from_string(RustBuffer str, RustCallStatus *_Nonnull out_status
-);
-void*_Nonnull uniffi_iroh_fn_constructor_ipv6addr_new(uint16_t a, uint16_t b, uint16_t c, uint16_t d, uint16_t e, uint16_t f, uint16_t g, uint16_t h, RustCallStatus *_Nonnull out_status
-);
-int8_t uniffi_iroh_fn_method_ipv6addr_equal(void*_Nonnull ptr, void*_Nonnull other, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_iroh_fn_method_ipv6addr_segments(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_iroh_fn_method_ipv6addr_to_string(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
 void uniffi_iroh_fn_free_irohnode(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void*_Nonnull uniffi_iroh_fn_constructor_irohnode_new(RustBuffer path, RustCallStatus *_Nonnull out_status
@@ -314,7 +282,7 @@ void*_Nonnull uniffi_iroh_fn_method_irohnode_doc_create(void*_Nonnull ptr, RustC
 );
 void uniffi_iroh_fn_method_irohnode_doc_drop(void*_Nonnull ptr, RustBuffer doc_id, RustCallStatus *_Nonnull out_status
 );
-void*_Nonnull uniffi_iroh_fn_method_irohnode_doc_join(void*_Nonnull ptr, void*_Nonnull ticket, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_iroh_fn_method_irohnode_doc_join(void*_Nonnull ptr, RustBuffer ticket, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_irohnode_doc_list(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -326,7 +294,7 @@ RustBuffer uniffi_iroh_fn_method_irohnode_stats(void*_Nonnull ptr, RustCallStatu
 );
 void*_Nonnull uniffi_iroh_fn_method_irohnode_status(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void uniffi_iroh_fn_method_irohnode_tags_delete(void*_Nonnull ptr, void*_Nonnull name, RustCallStatus *_Nonnull out_status
+void uniffi_iroh_fn_method_irohnode_tags_delete(void*_Nonnull ptr, RustBuffer name, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_irohnode_tags_list(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -409,69 +377,7 @@ void uniffi_iroh_fn_free_settagoption(void*_Nonnull ptr, RustCallStatus *_Nonnul
 void*_Nonnull uniffi_iroh_fn_constructor_settagoption_auto(RustCallStatus *_Nonnull out_status
     
 );
-void*_Nonnull uniffi_iroh_fn_constructor_settagoption_named(void*_Nonnull tag, RustCallStatus *_Nonnull out_status
-);
-void uniffi_iroh_fn_free_socketaddr(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void*_Nonnull uniffi_iroh_fn_constructor_socketaddr_from_ipv4(void*_Nonnull ipv4, uint16_t port, RustCallStatus *_Nonnull out_status
-);
-void*_Nonnull uniffi_iroh_fn_constructor_socketaddr_from_ipv6(void*_Nonnull ipv6, uint16_t port, RustCallStatus *_Nonnull out_status
-);
-void*_Nonnull uniffi_iroh_fn_method_socketaddr_as_ipv4(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void*_Nonnull uniffi_iroh_fn_method_socketaddr_as_ipv6(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-int8_t uniffi_iroh_fn_method_socketaddr_equal(void*_Nonnull ptr, void*_Nonnull other, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_iroh_fn_method_socketaddr_type(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void uniffi_iroh_fn_free_socketaddrv4(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void*_Nonnull uniffi_iroh_fn_constructor_socketaddrv4_from_string(RustBuffer str, RustCallStatus *_Nonnull out_status
-);
-void*_Nonnull uniffi_iroh_fn_constructor_socketaddrv4_new(void*_Nonnull ipv4, uint16_t port, RustCallStatus *_Nonnull out_status
-);
-int8_t uniffi_iroh_fn_method_socketaddrv4_equal(void*_Nonnull ptr, void*_Nonnull other, RustCallStatus *_Nonnull out_status
-);
-void*_Nonnull uniffi_iroh_fn_method_socketaddrv4_ip(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-uint16_t uniffi_iroh_fn_method_socketaddrv4_port(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_iroh_fn_method_socketaddrv4_to_string(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void uniffi_iroh_fn_free_socketaddrv6(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void*_Nonnull uniffi_iroh_fn_constructor_socketaddrv6_from_string(RustBuffer str, RustCallStatus *_Nonnull out_status
-);
-void*_Nonnull uniffi_iroh_fn_constructor_socketaddrv6_new(void*_Nonnull ipv6, uint16_t port, RustCallStatus *_Nonnull out_status
-);
-int8_t uniffi_iroh_fn_method_socketaddrv6_equal(void*_Nonnull ptr, void*_Nonnull other, RustCallStatus *_Nonnull out_status
-);
-void*_Nonnull uniffi_iroh_fn_method_socketaddrv6_ip(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-uint16_t uniffi_iroh_fn_method_socketaddrv6_port(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_iroh_fn_method_socketaddrv6_to_string(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void uniffi_iroh_fn_free_tag(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void*_Nonnull uniffi_iroh_fn_constructor_tag_from_bytes(RustBuffer bytes, RustCallStatus *_Nonnull out_status
-);
-void*_Nonnull uniffi_iroh_fn_constructor_tag_from_string(RustBuffer s, RustCallStatus *_Nonnull out_status
-);
-int8_t uniffi_iroh_fn_method_tag_equal(void*_Nonnull ptr, void*_Nonnull other, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_iroh_fn_method_tag_to_bytes(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_iroh_fn_method_tag_to_string(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void uniffi_iroh_fn_free_url(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void*_Nonnull uniffi_iroh_fn_constructor_url_from_string(RustBuffer s, RustCallStatus *_Nonnull out_status
-);
-int8_t uniffi_iroh_fn_method_url_equal(void*_Nonnull ptr, void*_Nonnull other, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_iroh_fn_method_url_to_string(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_iroh_fn_constructor_settagoption_named(RustBuffer tag, RustCallStatus *_Nonnull out_status
 );
 void uniffi_iroh_fn_free_wrapoption(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -754,12 +660,6 @@ uint16_t uniffi_iroh_checksum_method_docimportprogress_as_progress(void
 uint16_t uniffi_iroh_checksum_method_docimportprogress_type(void
     
 );
-uint16_t uniffi_iroh_checksum_method_docticket_equal(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_docticket_to_string(void
-    
-);
 uint16_t uniffi_iroh_checksum_method_downloadprogress_as_abort(void
     
 );
@@ -818,24 +718,6 @@ uint16_t uniffi_iroh_checksum_method_hash_to_hex(void
     
 );
 uint16_t uniffi_iroh_checksum_method_hash_to_string(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_ipv4addr_equal(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_ipv4addr_octets(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_ipv4addr_to_string(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_ipv6addr_equal(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_ipv6addr_segments(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_ipv6addr_to_string(void
     
 );
 uint16_t uniffi_iroh_checksum_method_irohnode_author_create(void
@@ -973,64 +855,10 @@ uint16_t uniffi_iroh_checksum_method_rangespec_is_all(void
 uint16_t uniffi_iroh_checksum_method_rangespec_is_empty(void
     
 );
-uint16_t uniffi_iroh_checksum_method_socketaddr_as_ipv4(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_socketaddr_as_ipv6(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_socketaddr_equal(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_socketaddr_type(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_socketaddrv4_equal(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_socketaddrv4_ip(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_socketaddrv4_port(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_socketaddrv4_to_string(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_socketaddrv6_equal(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_socketaddrv6_ip(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_socketaddrv6_port(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_socketaddrv6_to_string(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_tag_equal(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_tag_to_bytes(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_tag_to_string(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_url_equal(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_url_to_string(void
-    
-);
 uint16_t uniffi_iroh_checksum_constructor_authorid_from_string(void
     
 );
 uint16_t uniffi_iroh_checksum_constructor_blobdownloadrequest_new(void
-    
-);
-uint16_t uniffi_iroh_checksum_constructor_docticket_from_string(void
     
 );
 uint16_t uniffi_iroh_checksum_constructor_downloadlocation_external(void
@@ -1064,18 +892,6 @@ uint16_t uniffi_iroh_checksum_constructor_hash_from_string(void
     
 );
 uint16_t uniffi_iroh_checksum_constructor_hash_new(void
-    
-);
-uint16_t uniffi_iroh_checksum_constructor_ipv4addr_from_string(void
-    
-);
-uint16_t uniffi_iroh_checksum_constructor_ipv4addr_new(void
-    
-);
-uint16_t uniffi_iroh_checksum_constructor_ipv6addr_from_string(void
-    
-);
-uint16_t uniffi_iroh_checksum_constructor_ipv6addr_new(void
     
 );
 uint16_t uniffi_iroh_checksum_constructor_irohnode_new(void
@@ -1115,33 +931,6 @@ uint16_t uniffi_iroh_checksum_constructor_settagoption_auto(void
     
 );
 uint16_t uniffi_iroh_checksum_constructor_settagoption_named(void
-    
-);
-uint16_t uniffi_iroh_checksum_constructor_socketaddr_from_ipv4(void
-    
-);
-uint16_t uniffi_iroh_checksum_constructor_socketaddr_from_ipv6(void
-    
-);
-uint16_t uniffi_iroh_checksum_constructor_socketaddrv4_from_string(void
-    
-);
-uint16_t uniffi_iroh_checksum_constructor_socketaddrv4_new(void
-    
-);
-uint16_t uniffi_iroh_checksum_constructor_socketaddrv6_from_string(void
-    
-);
-uint16_t uniffi_iroh_checksum_constructor_socketaddrv6_new(void
-    
-);
-uint16_t uniffi_iroh_checksum_constructor_tag_from_bytes(void
-    
-);
-uint16_t uniffi_iroh_checksum_constructor_tag_from_string(void
-    
-);
-uint16_t uniffi_iroh_checksum_constructor_url_from_string(void
     
 );
 uint16_t uniffi_iroh_checksum_constructor_wrapoption_no_wrap(void

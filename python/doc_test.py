@@ -1,5 +1,5 @@
 # tests that correspond to the `src/doc.rs` rust api
-from iroh import IrohNode, PublicKey, SocketAddr, NodeAddr, Ipv4Addr, Ipv6Addr, iroh, AuthorId, DocTicket, Query, SortBy, SortDirection, QueryOptions, path_to_key, key_to_path, Url
+from iroh import IrohNode, PublicKey, NodeAddr, iroh, AuthorId, Query, SortBy, SortDirection, QueryOptions, path_to_key, key_to_path
 import pytest
 import tempfile
 import os
@@ -12,16 +12,12 @@ def test_node_addr():
     node_id = PublicKey.from_string(key_str)
     #
     # create socketaddrs
-    ipv4_ip = Ipv4Addr.from_string("127.0.0.1")
-    ipv6_ip = Ipv6Addr.from_string("::1")
+    ipv4 = "127.0.0.1:3000"
+    ipv6 = "::1:3000"
     port = 3000
     #
-    # create socket addrs
-    ipv4 = SocketAddr.from_ipv4(ipv4_ip, port)
-    ipv6 = SocketAddr.from_ipv6(ipv6_ip, port)
-    #
     # derp url 
-    derp_url = Url.from_string("https://example.com")
+    derp_url = "https://example.com"
     #
     # create a NodeAddr
     expect_addrs = [ipv4, ipv6]
@@ -30,10 +26,9 @@ def test_node_addr():
     # test we have returned the expected addresses
     got_addrs = node_addr.direct_addresses()
     for (got, expect) in zip(got_addrs, expect_addrs):
-        assert got.equal(expect)
-        assert expect.equal(got)
+        assert got == expect 
     
-    assert derp_url.equal(node_addr.derp_url())
+    assert derp_url == node_addr.derp_url()
 
 def test_author_id():
     #
@@ -50,22 +45,6 @@ def test_author_id():
     # ensure equal
     assert author.equal(author_0)
     assert author_0.equal(author)
-
-def test_doc_ticket():
-    #
-    # create id from string
-    doc_ticket_str = "docaaa7qg6afc6zupqzfxmu5uuueaoei5zlye7a4ahhrfhvzjfrfewozgybl5kkl6u6fqcnjxvdkoihq3nbsqczxeulfsqvatb2qh3bwheoyahacitior2ha4z2f4xxk43fgewtcltemvzhaltjojxwqltomv2ho33snmxc6biajjeteswek4ambkabzpcfoajganyabbz2zplaaaaaaaaaagrjyvlqcjqdoaaioowl2ygi2likyov62rofk4asma3qacdtvs6whqsdbizopsefrrkx"
-    doc_ticket = DocTicket.from_string(doc_ticket_str)
-    #
-    # call to_string, ensure equal
-    assert doc_ticket.to_string() == doc_ticket_str
-    #
-    # create another id, same string
-    doc_ticket_0 = DocTicket.from_string(doc_ticket_str)
-    #
-    # ensure equal
-    assert doc_ticket.equal(doc_ticket_0)
-    assert doc_ticket_0.equal(doc_ticket)
 
 def test_query():
     opts = QueryOptions(SortBy.KEY_AUTHOR, SortDirection.ASC, 10, 10)

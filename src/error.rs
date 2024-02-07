@@ -23,12 +23,10 @@ pub enum IrohError {
     Blobs { description: String },
     #[error("Ipv4Addr error: {description}")]
     Ipv4Addr { description: String },
-    #[error("SocketAddrV4 error: {description}")]
-    SocketAddrV4 { description: String },
     #[error("Ipv6Addr error: {description}")]
     Ipv6Addr { description: String },
-    #[error("SocketAddrV6 error: {description}")]
-    SocketAddrV6 { description: String },
+    #[error("SocketAddr error: {description}")]
+    SocketAddr { description: String },
     #[error("PublicKey error: {description}")]
     PublicKey { description: String },
     #[error("NodeAddr error: {description}")]
@@ -106,14 +104,8 @@ impl IrohError {
         }
     }
 
-    pub fn socket_addr_v4(error: impl Display) -> Self {
-        IrohError::SocketAddrV4 {
-            description: error.to_string(),
-        }
-    }
-
-    pub fn socket_addr_v6(error: impl Display) -> Self {
-        IrohError::SocketAddrV6 {
+    pub fn socket_addr(error: impl Display) -> Self {
+        IrohError::SocketAddr {
             description: error.to_string(),
         }
     }

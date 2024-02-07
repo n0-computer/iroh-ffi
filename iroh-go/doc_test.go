@@ -22,39 +22,23 @@ func TestNodeAddr(t *testing.T) {
 	}
 
 	// create socketaddrs
-	ipv4Ip, err := iroh.Ipv4AddrFromString("127.0.0.1")
-	if err != nil {
-		panic(err)
-	}
-	ipv6Ip, err := iroh.Ipv6AddrFromString("::1")
-	if err != nil {
-		panic(err)
-	}
-
-	var port uint16 = 3000
-
-	// create socket addrs
-	ipv4 := iroh.SocketAddrFromIpv4(ipv4Ip, port)
-	ipv6 := iroh.SocketAddrFromIpv6(ipv6Ip, port)
+	ipv4 := "127.0.0.1:3000"
+	ipv6 := "::1:3000"
 
 	// derp Url
-	derpUrl, err := iroh.UrlFromString("https://example.com")
-	if err != nil {
-		panic(err)
-	}
+	derpUrl := "https://example.com"
 
 	// create a NodeAddr
-	expectAddrs := []*iroh.SocketAddr{ipv4, ipv6}
+	expectAddrs := []string{ipv4, ipv6}
 	nodeAddrs := iroh.NewNodeAddr(nodeId, &derpUrl, expectAddrs)
 
 	// test we have returned the expected addresses
 	gotAddrs := nodeAddrs.DirectAddresses()
 	for i := 0; i < len(expectAddrs); i++ {
-		assert.True(t, gotAddrs[i].Equal(expectAddrs[i]))
-		assert.True(t, expectAddrs[i].Equal(gotAddrs[i]))
+		assert.Equal(t, gotAddrs[i], expectAddrs[i])
 	}
 
-	assert.True(t, derpUrl.Equal(*nodeAddrs.DerpUrl()))
+	assert.Equal(t, derpUrl, *nodeAddrs.DerpUrl())
 }
 
 /// Test all AuthorId functionality
@@ -77,28 +61,6 @@ func TestAuthorId(t *testing.T) {
 	// ensure Equal
 	assert.True(t, author.Equal(author0))
 	assert.True(t, author0.Equal(author))
-}
-
-/// Test all DocTicket functionality
-func TestDocTicket(t *testing.T) {
-	// create id from string
-	docTicketStr := "docaaa7qg6afc6zupqzfxmu5uuueaoei5zlye7a4ahhrfhvzjfrfewozgybl5kkl6u6fqcnjxvdkoihq3nbsqczxeulfsqvatb2qh3bwheoyahacitior2ha4z2f4xxk43fgewtcltemvzhaltjojxwqltomv2ho33snmxc6biajjeteswek4ambkabzpcfoajganyabbz2zplaaaaaaaaaagrjyvlqcjqdoaaioowl2ygi2likyov62rofk4asma3qacdtvs6whqsdbizopsefrrkx"
-	docTicket, err := iroh.DocTicketFromString(docTicketStr)
-	if err != nil {
-		panic(err)
-	}
-
-	// call ToString, ensure Equal
-	assert.Equal(t, docTicket.ToString(), docTicketStr)
-	// create another ticket, same string
-	docTicket0, err := iroh.DocTicketFromString(docTicketStr)
-	if err != nil {
-		panic(err)
-	}
-
-	// ensure Equal
-	assert.True(t, docTicket.Equal(docTicket0))
-	assert.True(t, docTicket0.Equal(docTicket))
 }
 
 /// TestQuery tests all the Query builders
