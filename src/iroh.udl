@@ -97,6 +97,13 @@ interface IrohNode {
   /// before calling [`Self::blobs_read_to_bytes`].
   [Throws=IrohError]
   bytes blobs_read_to_bytes(Hash hash);
+  /// Read all bytes of single blob at `offset` for length `len`.
+  ///
+  /// This allocates a buffer for the full length `len`. Use only if you know that the blob you're
+  /// reading is small. If not sure, use [`Self::blobs_size`] and check the size with
+  /// before calling [`Self::blobs_read_at_to_bytes`].
+  [Throws=IrohError]
+  bytes blobs_read_at_to_bytes(Hash hash, u64 offset, u64? len);
   /// Import a blob from a filesystem path.
   ///
   /// `path` should be an absolute path valid for the file system on which
@@ -140,6 +147,24 @@ interface IrohNode {
   /// Delete a tag.
   [Throws=IrohError]
   void tags_delete(bytes name);
+};
+
+/// A `Link` includes a name and a hash for a blob in a collection
+dictionary Link {
+    /// The name associated with this [`Hash`]
+    string name;
+    /// The [`Hash`] of the blob
+    Hash hash;
+};
+
+/// A collection of blobs
+///
+/// Note that the format is subject to change.
+interface Collection {
+  /// Returns a [`Link`] (the name and the hash), for each blob in the collection.
+  sequence<Link> links();
+  /// Returns the number of blobs in this collection
+  u64 len();
 };
 
 /// A response to a list collections request

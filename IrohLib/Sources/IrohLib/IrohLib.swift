@@ -749,6 +749,93 @@ public func FfiConverterTypeBlobDownloadRequest_lower(_ value: BlobDownloadReque
     return FfiConverterTypeBlobDownloadRequest.lower(value)
 }
 
+public protocol CollectionProtocol {
+    func len() -> UInt64
+    func links() -> [Link]
+}
+
+/**
+ * A collection of blobs
+ *
+ * Note that the format is subject to change.
+ */
+public class Collection: CollectionProtocol {
+    fileprivate let pointer: UnsafeMutableRawPointer
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    deinit {
+        try! rustCall { uniffi_iroh_fn_free_collection(pointer, $0) }
+    }
+
+    /**
+     * Returns the number of blobs in this collection
+     */
+    public func len() -> UInt64 {
+        return try! FfiConverterUInt64.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_collection_len(self.pointer, $0)
+                }
+        )
+    }
+
+    /**
+     * Returns a [`Link`] (the name and the hash), for each blob in the collection.
+     */
+    public func links() -> [Link] {
+        return try! FfiConverterSequenceTypeLink.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_collection_links(self.pointer, $0)
+                }
+        )
+    }
+}
+
+public struct FfiConverterTypeCollection: FfiConverter {
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = Collection
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Collection {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: Collection, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> Collection {
+        return Collection(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: Collection) -> UnsafeMutableRawPointer {
+        return value.pointer
+    }
+}
+
+public func FfiConverterTypeCollection_lift(_ pointer: UnsafeMutableRawPointer) throws -> Collection {
+    return try FfiConverterTypeCollection.lift(pointer)
+}
+
+public func FfiConverterTypeCollection_lower(_ value: Collection) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeCollection.lower(value)
+}
+
 public protocol ConnectionTypeProtocol {
     func asDirect() -> String
     func asMixed() -> ConnectionTypeMixed
@@ -2265,6 +2352,7 @@ public protocol IrohNodeProtocol {
     func blobsList() throws -> [Hash]
     func blobsListCollections() throws -> [BlobListCollectionsResponse]
     func blobsListIncomplete() throws -> [BlobListIncompleteResponse]
+    func blobsReadAtToBytes(hash: Hash, offset: UInt64, len: UInt64?) throws -> Data
     func blobsReadToBytes(hash: Hash) throws -> Data
     func blobsSize(hash: Hash) throws -> UInt64
     func blobsWriteToPath(hash: Hash, path: String) throws
@@ -2427,6 +2515,24 @@ public class IrohNode: IrohNodeProtocol {
         return try FfiConverterSequenceTypeBlobListIncompleteResponse.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_irohnode_blobs_list_incomplete(self.pointer, $0)
+            }
+        )
+    }
+
+    /**
+     * Read all bytes of single blob at `offset` for length `len`.
+     *
+     * This allocates a buffer for the full length `len`. Use only if you know that the blob you're
+     * reading is small. If not sure, use [`Self::blobs_size`] and check the size with
+     * before calling [`Self::blobs_read_at_to_bytes`].
+     */
+    public func blobsReadAtToBytes(hash: Hash, offset: UInt64, len: UInt64?) throws -> Data {
+        return try FfiConverterData.lift(
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_irohnode_blobs_read_at_to_bytes(self.pointer,
+                                                                      FfiConverterTypeHash.lower(hash),
+                                                                      FfiConverterUInt64.lower(offset),
+                                                                      FfiConverterOptionUInt64.lower(len), $0)
             }
         )
     }
@@ -5337,6 +5443,49 @@ public func FfiConverterTypeLatencyAndControlMsg_lower(_ value: LatencyAndContro
 }
 
 /**
+ * A `Link` includes a name and a hash for a blob in a collection
+ */
+public struct Link {
+    /**
+     * The name associated with this [`Hash`]
+     */
+    public var name: String
+    /**
+     * The [`Hash`] of the blob
+     */
+    public var hash: Hash
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(name: String, hash: Hash) {
+        self.name = name
+        self.hash = hash
+    }
+}
+
+public struct FfiConverterTypeLink: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Link {
+        return try Link(
+            name: FfiConverterString.read(from: &buf),
+            hash: FfiConverterTypeHash.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: Link, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.name, into: &buf)
+        FfiConverterTypeHash.write(value.hash, into: &buf)
+    }
+}
+
+public func FfiConverterTypeLink_lift(_ buf: RustBuffer) throws -> Link {
+    return try FfiConverterTypeLink.lift(buf)
+}
+
+public func FfiConverterTypeLink_lower(_ value: Link) -> RustBuffer {
+    return FfiConverterTypeLink.lower(value)
+}
+
+/**
  * A response to a list collections request
  */
 public struct ListTagsResponse {
@@ -7926,6 +8075,28 @@ private struct FfiConverterSequenceTypeConnectionInfo: FfiConverterRustBuffer {
     }
 }
 
+private struct FfiConverterSequenceTypeLink: FfiConverterRustBuffer {
+    typealias SwiftType = [Link]
+
+    public static func write(_ value: [Link], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeLink.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [Link] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [Link]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            try seq.append(FfiConverterTypeLink.read(from: &buf))
+        }
+        return seq
+    }
+}
+
 private struct FfiConverterSequenceTypeListTagsResponse: FfiConverterRustBuffer {
     typealias SwiftType = [ListTagsResponse]
 
@@ -8100,6 +8271,12 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_authorid_to_string() != 42389 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_collection_len() != 56574 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_collection_links() != 4043 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_connectiontype_as_direct() != 27175 {
@@ -8292,6 +8469,9 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_blobs_list_incomplete() != 39285 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_irohnode_blobs_read_at_to_bytes() != 40980 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_blobs_read_to_bytes() != 6512 {

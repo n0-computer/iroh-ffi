@@ -466,6 +466,24 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_collection_len(uniffiStatus)
+		})
+		if checksum != 56574 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_collection_len: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_collection_links(uniffiStatus)
+		})
+		if checksum != 4043 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_collection_links: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_connectiontype_as_direct(uniffiStatus)
 		})
 		if checksum != 27175 {
@@ -1038,6 +1056,15 @@ func uniffiCheckChecksums() {
 		if checksum != 39285 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_irohnode_blobs_list_incomplete: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_irohnode_blobs_read_at_to_bytes(uniffiStatus)
+		})
+		if checksum != 40980 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_irohnode_blobs_read_at_to_bytes: UniFFI API checksum mismatch")
 		}
 	}
 	{
@@ -2182,6 +2209,72 @@ func (c FfiConverterBlobDownloadRequest) Write(writer io.Writer, value *BlobDown
 type FfiDestroyerBlobDownloadRequest struct{}
 
 func (_ FfiDestroyerBlobDownloadRequest) Destroy(value *BlobDownloadRequest) {
+	value.Destroy()
+}
+
+type Collection struct {
+	ffiObject FfiObject
+}
+
+func (_self *Collection) Len() uint64 {
+	_pointer := _self.ffiObject.incrementPointer("*Collection")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterUint64INSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) C.uint64_t {
+		return C.uniffi_iroh_fn_method_collection_len(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (_self *Collection) Links() []Link {
+	_pointer := _self.ffiObject.incrementPointer("*Collection")
+	defer _self.ffiObject.decrementPointer()
+	return FfiConverterSequenceTypeLinkINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_collection_links(
+			_pointer, _uniffiStatus)
+	}))
+}
+
+func (object *Collection) Destroy() {
+	runtime.SetFinalizer(object, nil)
+	object.ffiObject.destroy()
+}
+
+type FfiConverterCollection struct{}
+
+var FfiConverterCollectionINSTANCE = FfiConverterCollection{}
+
+func (c FfiConverterCollection) Lift(pointer unsafe.Pointer) *Collection {
+	result := &Collection{
+		newFfiObject(
+			pointer,
+			func(pointer unsafe.Pointer, status *C.RustCallStatus) {
+				C.uniffi_iroh_fn_free_collection(pointer, status)
+			}),
+	}
+	runtime.SetFinalizer(result, (*Collection).Destroy)
+	return result
+}
+
+func (c FfiConverterCollection) Read(reader io.Reader) *Collection {
+	return c.Lift(unsafe.Pointer(uintptr(readUint64(reader))))
+}
+
+func (c FfiConverterCollection) Lower(value *Collection) unsafe.Pointer {
+	// TODO: this is bad - all synchronization from ObjectRuntime.go is discarded here,
+	// because the pointer will be decremented immediately after this function returns,
+	// and someone will be left holding onto a non-locked pointer.
+	pointer := value.ffiObject.incrementPointer("*Collection")
+	defer value.ffiObject.decrementPointer()
+	return pointer
+}
+
+func (c FfiConverterCollection) Write(writer io.Writer, value *Collection) {
+	writeUint64(writer, uint64(uintptr(c.Lower(value))))
+}
+
+type FfiDestroyerCollection struct{}
+
+func (_ FfiDestroyerCollection) Destroy(value *Collection) {
 	value.Destroy()
 }
 
@@ -3486,6 +3579,21 @@ func (_self *IrohNode) BlobsListIncomplete() ([]BlobListIncompleteResponse, erro
 		return _uniffiDefaultValue, _uniffiErr
 	} else {
 		return FfiConverterSequenceTypeBlobListIncompleteResponseINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
+
+func (_self *IrohNode) BlobsReadAtToBytes(hash *Hash, offset uint64, len *uint64) ([]byte, error) {
+	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
+	defer _self.ffiObject.decrementPointer()
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_irohnode_blobs_read_at_to_bytes(
+			_pointer, FfiConverterHashINSTANCE.Lower(hash), FfiConverterUint64INSTANCE.Lower(offset), FfiConverterOptionalUint64INSTANCE.Lower(len), _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue []byte
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterBytesINSTANCE.Lift(_uniffiRV), _uniffiErr
 	}
 }
 
@@ -5709,6 +5817,46 @@ func (c FfiConverterTypeLatencyAndControlMsg) Write(writer io.Writer, value Late
 type FfiDestroyerTypeLatencyAndControlMsg struct{}
 
 func (_ FfiDestroyerTypeLatencyAndControlMsg) Destroy(value LatencyAndControlMsg) {
+	value.Destroy()
+}
+
+type Link struct {
+	Name string
+	Hash *Hash
+}
+
+func (r *Link) Destroy() {
+	FfiDestroyerString{}.Destroy(r.Name)
+	FfiDestroyerHash{}.Destroy(r.Hash)
+}
+
+type FfiConverterTypeLink struct{}
+
+var FfiConverterTypeLinkINSTANCE = FfiConverterTypeLink{}
+
+func (c FfiConverterTypeLink) Lift(rb RustBufferI) Link {
+	return LiftFromRustBuffer[Link](c, rb)
+}
+
+func (c FfiConverterTypeLink) Read(reader io.Reader) Link {
+	return Link{
+		FfiConverterStringINSTANCE.Read(reader),
+		FfiConverterHashINSTANCE.Read(reader),
+	}
+}
+
+func (c FfiConverterTypeLink) Lower(value Link) RustBuffer {
+	return LowerIntoRustBuffer[Link](c, value)
+}
+
+func (c FfiConverterTypeLink) Write(writer io.Writer, value Link) {
+	FfiConverterStringINSTANCE.Write(writer, value.Name)
+	FfiConverterHashINSTANCE.Write(writer, value.Hash)
+}
+
+type FfiDestroyerTypeLink struct{}
+
+func (_ FfiDestroyerTypeLink) Destroy(value Link) {
 	value.Destroy()
 }
 
@@ -8430,6 +8578,49 @@ type FfiDestroyerSequenceTypeConnectionInfo struct{}
 func (FfiDestroyerSequenceTypeConnectionInfo) Destroy(sequence []ConnectionInfo) {
 	for _, value := range sequence {
 		FfiDestroyerTypeConnectionInfo{}.Destroy(value)
+	}
+}
+
+type FfiConverterSequenceTypeLink struct{}
+
+var FfiConverterSequenceTypeLinkINSTANCE = FfiConverterSequenceTypeLink{}
+
+func (c FfiConverterSequenceTypeLink) Lift(rb RustBufferI) []Link {
+	return LiftFromRustBuffer[[]Link](c, rb)
+}
+
+func (c FfiConverterSequenceTypeLink) Read(reader io.Reader) []Link {
+	length := readInt32(reader)
+	if length == 0 {
+		return nil
+	}
+	result := make([]Link, 0, length)
+	for i := int32(0); i < length; i++ {
+		result = append(result, FfiConverterTypeLinkINSTANCE.Read(reader))
+	}
+	return result
+}
+
+func (c FfiConverterSequenceTypeLink) Lower(value []Link) RustBuffer {
+	return LowerIntoRustBuffer[[]Link](c, value)
+}
+
+func (c FfiConverterSequenceTypeLink) Write(writer io.Writer, value []Link) {
+	if len(value) > math.MaxInt32 {
+		panic("[]Link is too large to fit into Int32")
+	}
+
+	writeInt32(writer, int32(len(value)))
+	for _, item := range value {
+		FfiConverterTypeLinkINSTANCE.Write(writer, item)
+	}
+}
+
+type FfiDestroyerSequenceTypeLink struct{}
+
+func (FfiDestroyerSequenceTypeLink) Destroy(sequence []Link) {
+	for _, value := range sequence {
+		FfiDestroyerTypeLink{}.Destroy(value)
 	}
 }
 
