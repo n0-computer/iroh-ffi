@@ -89,6 +89,12 @@ void uniffi_iroh_fn_free_blobdownloadrequest(void*_Nonnull ptr, RustCallStatus *
 );
 void*_Nonnull uniffi_iroh_fn_constructor_blobdownloadrequest_new(void*_Nonnull hash, RustBuffer format, void*_Nonnull node, void*_Nonnull tag, void*_Nonnull out, RustCallStatus *_Nonnull out_status
 );
+void uniffi_iroh_fn_free_collection(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+uint64_t uniffi_iroh_fn_method_collection_len(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_iroh_fn_method_collection_links(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
 void uniffi_iroh_fn_free_connectiontype(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_connectiontype_as_direct(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -267,6 +273,8 @@ RustBuffer uniffi_iroh_fn_method_irohnode_blobs_list(void*_Nonnull ptr, RustCall
 RustBuffer uniffi_iroh_fn_method_irohnode_blobs_list_collections(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_irohnode_blobs_list_incomplete(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_iroh_fn_method_irohnode_blobs_read_at_to_bytes(void*_Nonnull ptr, void*_Nonnull hash, uint64_t offset, RustBuffer len, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_irohnode_blobs_read_to_bytes(void*_Nonnull ptr, void*_Nonnull hash, RustCallStatus *_Nonnull out_status
 );
@@ -555,6 +563,12 @@ uint16_t uniffi_iroh_checksum_method_authorid_equal(void
 uint16_t uniffi_iroh_checksum_method_authorid_to_string(void
     
 );
+uint16_t uniffi_iroh_checksum_method_collection_len(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_collection_links(void
+    
+);
 uint16_t uniffi_iroh_checksum_method_connectiontype_as_direct(void
     
 );
@@ -745,6 +759,9 @@ uint16_t uniffi_iroh_checksum_method_irohnode_blobs_list_collections(void
     
 );
 uint16_t uniffi_iroh_checksum_method_irohnode_blobs_list_incomplete(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_irohnode_blobs_read_at_to_bytes(void
     
 );
 uint16_t uniffi_iroh_checksum_method_irohnode_blobs_read_to_bytes(void

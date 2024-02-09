@@ -540,6 +540,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "acbf1af155f9b9ef647e42cdc158db4b64a1b61f743629225fde6f3e0be2a7c7"
 
 [[package]]
+name = "concurrent-queue"
+version = "2.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d16048cd947b08fa32c24458a22f5dc5e835264f689f4f5653210c69fd107363"
+dependencies = [
+ "crossbeam-utils",
+]
+
+[[package]]
 name = "const-oid"
 version = "0.9.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1028,9 +1037,14 @@ dependencies = [
 
 [[package]]
 name = "event-listener"
-version = "2.5.3"
+version = "4.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0206175f82b8d6bf6652ff7d71a1e27fd2e4efde587fd368662814d6ec1d9ce0"
+checksum = "67b215c49b2b248c855fb73579eb1f4f26c38ffdc12973e20e07b91d78d5646e"
+dependencies = [
+ "concurrent-queue",
+ "parking",
+ "pin-project-lite",
+]
 
 [[package]]
 name = "fallible-iterator"
@@ -1683,8 +1697,7 @@ checksum = "8f518f335dce6725a761382244631d86cf0ccb2863413590b31338feb467f9c3"
 [[package]]
 name = "iroh"
 version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d3aea70a8acc645bc78c388f9412b4ae5f94ddeeea13c946b29af4c2db097c23"
+source = "git+https://github.com/n0-computer/iroh.git#aeee7186894ee6249aa58eac7001d87cb9edf4d7"
 dependencies = [
  "anyhow",
  "bao-tree",
@@ -1727,8 +1740,7 @@ dependencies = [
 [[package]]
 name = "iroh-base"
 version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1b42ef43639a86a49132998f066810b702798818993e34565dd4eea835f626e"
+source = "git+https://github.com/n0-computer/iroh.git#aeee7186894ee6249aa58eac7001d87cb9edf4d7"
 dependencies = [
  "anyhow",
  "bao-tree",
@@ -1757,8 +1769,7 @@ dependencies = [
 [[package]]
 name = "iroh-bytes"
 version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "38213865ec542f82fc4d8a9748b5cdae92da1707c134428e9f60b1cd46ccbe39"
+source = "git+https://github.com/n0-computer/iroh.git#aeee7186894ee6249aa58eac7001d87cb9edf4d7"
 dependencies = [
  "anyhow",
  "bao-tree",
@@ -1772,8 +1783,11 @@ dependencies = [
  "hex",
  "iroh-base",
  "iroh-io",
+ "iroh-metrics",
+ "iroh-net",
  "num_cpus",
  "once_cell",
+ "parking_lot",
  "postcard",
  "quinn",
  "rand",
@@ -1820,8 +1834,7 @@ dependencies = [
 [[package]]
 name = "iroh-gossip"
 version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74fcad132a6ff61ad83fc63203948919d2d77d58deac806bd08580f11e968a24"
+source = "git+https://github.com/n0-computer/iroh.git#aeee7186894ee6249aa58eac7001d87cb9edf4d7"
 dependencies = [
  "anyhow",
  "bytes",
@@ -1862,8 +1875,7 @@ dependencies = [
 [[package]]
 name = "iroh-metrics"
 version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "92a3271df85ec2a18a358d36723039eeacb464d8764531c8fd9f822dac39410d"
+source = "git+https://github.com/n0-computer/iroh.git#aeee7186894ee6249aa58eac7001d87cb9edf4d7"
 dependencies = [
  "anyhow",
  "erased_set",
@@ -1883,8 +1895,7 @@ dependencies = [
 [[package]]
 name = "iroh-net"
 version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0477847a7fe225f71fbdff7b0baccea8fc9c9b33e7755f4b28e19f075bd64499"
+source = "git+https://github.com/n0-computer/iroh.git#aeee7186894ee6249aa58eac7001d87cb9edf4d7"
 dependencies = [
  "aead",
  "anyhow",
@@ -1959,8 +1970,7 @@ dependencies = [
 [[package]]
 name = "iroh-sync"
 version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e27f9c5bf0576ad2786c1e32ee046518144b8f221eef6578c882633b6e27985"
+source = "git+https://github.com/n0-computer/iroh.git#aeee7186894ee6249aa58eac7001d87cb9edf4d7"
 dependencies = [
  "anyhow",
  "bytes",
@@ -2530,6 +2540,12 @@ dependencies = [
  "rand_core",
  "sha2",
 ]
+
+[[package]]
+name = "parking"
+version = "2.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bb813b8af86854136c6922af0598d719255ecb2179515e6e7730d468f05c9cae"
 
 [[package]]
 name = "parking_lot"
@@ -4663,9 +4679,9 @@ checksum = "7ab9b36309365056cd639da3134bf87fa8f3d86008abf99e612384a6eecd459f"
 
 [[package]]
 name = "watchable"
-version = "1.1.1"
+version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff90d0baafb3c0abbeebec1a8a305b4211c356de1d953a0dd77aab006baa8a62"
+checksum = "45b42a2f611916b5965120a9cde2b60f2db4454826dd9ad5e6f47c24a5b3b259"
 dependencies = [
  "event-listener",
  "futures-util",

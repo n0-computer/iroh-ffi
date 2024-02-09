@@ -138,6 +138,21 @@ void* uniffi_iroh_fn_constructor_blobdownloadrequest_new(
 	RustCallStatus* out_status
 );
 
+void uniffi_iroh_fn_free_collection(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+uint64_t uniffi_iroh_fn_method_collection_len(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+RustBuffer uniffi_iroh_fn_method_collection_links(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
 void uniffi_iroh_fn_free_connectiontype(
 	void* ptr,
 	RustCallStatus* out_status
@@ -612,6 +627,14 @@ RustBuffer uniffi_iroh_fn_method_irohnode_blobs_list_collections(
 
 RustBuffer uniffi_iroh_fn_method_irohnode_blobs_list_incomplete(
 	void* ptr,
+	RustCallStatus* out_status
+);
+
+RustBuffer uniffi_iroh_fn_method_irohnode_blobs_read_at_to_bytes(
+	void* ptr,
+	void* hash,
+	uint64_t offset,
+	RustBuffer len,
 	RustCallStatus* out_status
 );
 
@@ -1317,6 +1340,14 @@ uint16_t uniffi_iroh_checksum_method_authorid_to_string(
 	RustCallStatus* out_status
 );
 
+uint16_t uniffi_iroh_checksum_method_collection_len(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_collection_links(
+	RustCallStatus* out_status
+);
+
 uint16_t uniffi_iroh_checksum_method_connectiontype_as_direct(
 	RustCallStatus* out_status
 );
@@ -1570,6 +1601,10 @@ uint16_t uniffi_iroh_checksum_method_irohnode_blobs_list_collections(
 );
 
 uint16_t uniffi_iroh_checksum_method_irohnode_blobs_list_incomplete(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_irohnode_blobs_read_at_to_bytes(
 	RustCallStatus* out_status
 );
 

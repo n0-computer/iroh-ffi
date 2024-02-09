@@ -538,7 +538,7 @@ impl TryFrom<NodeAddr> for iroh::net::magic_endpoint::NodeAddr {
         if let Some(derp_url) = value.derp_url() {
             let url = url::Url::parse(&derp_url).map_err(IrohError::url)?;
 
-            node_addr = node_addr.with_derp_url(url);
+            node_addr = node_addr.with_derp_url(url.into());
         }
         node_addr = node_addr.with_direct_addresses(addresses);
         Ok(node_addr)

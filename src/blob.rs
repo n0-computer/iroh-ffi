@@ -60,6 +60,31 @@ impl IrohNode {
         })
     }
 
+    /// Read all bytes of single blob at `offset` for length `len`.
+    ///
+    /// This allocates a buffer for the full length `len`. Use only if you know that the blob you're
+    /// reading is small. If not sure, use [`Self::blobs_size`] and check the size with
+    /// before calling [`Self::blobs_read_at_to_bytes`].
+    pub fn blobs_read_at_to_bytes(
+        &self,
+        hash: Arc<Hash>,
+        offset: u64,
+        len: Option<u64>,
+    ) -> Result<Vec<u8>, IrohError> {
+        let len = match len {
+            None => None,
+            Some(l) => Some(usize::try_from(l).map_err(IrohError::blobs)?),
+        };
+        block_on(&self.async_runtime, async {
+            self.sync_client
+                .blobs
+                .read_at_to_bytes(hash.0, offset, len)
+                .await
+                .map(|b| b.to_vec())
+                .map_err(IrohError::blobs)
+        })
+    }
+
     /// Import a blob from a filesystem path.
     ///
     /// `path` should be an absolute path valid for the file system on which
@@ -1026,6 +1051,48 @@ impl From<iroh::rpc_protocol::BlobListCollectionsResponse> for BlobListCollectio
             total_blobs_size: value.total_blobs_size,
         }
     }
+}
+
+/// A collection of blobs
+pub struct Collection(iroh::bytes::format::collection::Collection);
+
+impl From<iroh::bytes::format::collection::Collection> for Collection {
+    fn from(value: iroh::bytes::format::collection::Collection) -> Self {
+        Collection(value)
+    }
+}
+
+impl From<Collection> for iroh::bytes::format::collection::Collection {
+    fn from(value: Collection) -> Self {
+        value.0
+    }
+}
+
+impl Collection {
+    /// Returns the links (the name and the hash), for each blob in the collection.
+    pub fn links(&self) -> Vec<Link> {
+        self.0
+            .iter()
+            .map(|(name, hash)| Link {
+                name: name.clone(),
+                hash: Arc::new(Hash(*hash)),
+            })
+            .collect()
+    }
+
+    /// Returns the number of blobs in this collection
+    pub fn len(&self) -> u64 {
+        self.0.len() as u64
+    }
+}
+
+/// A `Link` includes a name and a hash for a blob in a collection
+#[derive(Clone, Debug)]
+pub struct Link {
+    /// The name associated with this [`Hash`]
+    pub name: String,
+    /// The [`Hash`] of the blob
+    pub hash: Arc<Hash>,
 }
 
 #[cfg(test)]
