@@ -91,9 +91,20 @@ void*_Nonnull uniffi_iroh_fn_constructor_blobdownloadrequest_new(void*_Nonnull h
 );
 void uniffi_iroh_fn_free_collection(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+void*_Nonnull uniffi_iroh_fn_constructor_collection_new(RustCallStatus *_Nonnull out_status
+    
+);
+RustBuffer uniffi_iroh_fn_method_collection_blobs(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+int8_t uniffi_iroh_fn_method_collection_is_empty(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
 uint64_t uniffi_iroh_fn_method_collection_len(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_collection_links(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_iroh_fn_method_collection_names(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void uniffi_iroh_fn_method_collection_push(void*_Nonnull ptr, RustBuffer name, void*_Nonnull hash, RustCallStatus *_Nonnull out_status
 );
 void uniffi_iroh_fn_free_connectiontype(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -267,6 +278,8 @@ void uniffi_iroh_fn_method_irohnode_blobs_add_from_path(void*_Nonnull ptr, RustB
 void uniffi_iroh_fn_method_irohnode_blobs_delete_blob(void*_Nonnull ptr, void*_Nonnull hash, RustCallStatus *_Nonnull out_status
 );
 void uniffi_iroh_fn_method_irohnode_blobs_download(void*_Nonnull ptr, void*_Nonnull req, uint64_t cb, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_iroh_fn_method_irohnode_blobs_get_collection(void*_Nonnull ptr, void*_Nonnull hash, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_irohnode_blobs_list(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -563,10 +576,22 @@ uint16_t uniffi_iroh_checksum_method_authorid_equal(void
 uint16_t uniffi_iroh_checksum_method_authorid_to_string(void
     
 );
+uint16_t uniffi_iroh_checksum_method_collection_blobs(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_collection_is_empty(void
+    
+);
 uint16_t uniffi_iroh_checksum_method_collection_len(void
     
 );
 uint16_t uniffi_iroh_checksum_method_collection_links(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_collection_names(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_collection_push(void
     
 );
 uint16_t uniffi_iroh_checksum_method_connectiontype_as_direct(void
@@ -752,6 +777,9 @@ uint16_t uniffi_iroh_checksum_method_irohnode_blobs_delete_blob(void
 uint16_t uniffi_iroh_checksum_method_irohnode_blobs_download(void
     
 );
+uint16_t uniffi_iroh_checksum_method_irohnode_blobs_get_collection(void
+    
+);
 uint16_t uniffi_iroh_checksum_method_irohnode_blobs_list(void
     
 );
@@ -876,6 +904,9 @@ uint16_t uniffi_iroh_checksum_constructor_authorid_from_string(void
     
 );
 uint16_t uniffi_iroh_checksum_constructor_blobdownloadrequest_new(void
+    
+);
+uint16_t uniffi_iroh_checksum_constructor_collection_new(void
     
 );
 uint16_t uniffi_iroh_checksum_constructor_downloadlocation_external(void

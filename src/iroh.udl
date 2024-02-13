@@ -134,6 +134,9 @@ interface IrohNode {
   /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
   [Throws=IrohError]
   sequence<BlobListCollectionsResponse> blobs_list_collections();
+  /// Read the content of a collection
+  [Throws=IrohError]
+  Collection blobs_get_collection(Hash hash);
   /// Delete a blob.
   [Throws=IrohError]
   void blobs_delete_blob(Hash hash);
@@ -149,21 +152,45 @@ interface IrohNode {
   void tags_delete(bytes name);
 };
 
+/// The Hash and associated tag of a newly created collection
+dictionary HashAndTag {
+    /// The hash of the collection
+    Hash hash;
+    /// The tag of the collection
+    bytes tag;
+};
+
 /// A `Link` includes a name and a hash for a blob in a collection
-dictionary Link {
+dictionary LinkAndName {
     /// The name associated with this [`Hash`]
     string name;
     /// The [`Hash`] of the blob
-    Hash hash;
+    Hash link;
 };
 
 /// A collection of blobs
 ///
 /// Note that the format is subject to change.
 interface Collection {
+  /// Create a new empty collection
+  constructor();
+  /// Add the given blob to the collection
+  [Throws=IrohError]
+  void push(string name, Hash hash);
+  /// Check if the collection is empty
+  [Throws=IrohError]
+  boolean is_empty();
+  /// Get the names of the blobs in this collection
+  [Throws=IrohError]
+  sequence<string> names();
+  /// Get the links to the blobs in this collection
+  [Throws=IrohError]
+  sequence<Hash> links();
   /// Returns a [`Link`] (the name and the hash), for each blob in the collection.
-  sequence<Link> links();
+  [Throws=IrohError]
+  sequence<LinkAndName> blobs();
   /// Returns the number of blobs in this collection
+  [Throws=IrohError]
   u64 len();
 };
 
@@ -1164,6 +1191,7 @@ interface IrohError {
   Uniffi(string description);
   Connection(string description);
   Blobs(string description);
+  Collection(string description);
   Ipv4Addr(string description);
   Ipv6Addr(string description);
   SocketAddr(string description);

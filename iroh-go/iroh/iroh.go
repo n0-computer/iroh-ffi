@@ -466,9 +466,27 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_collection_blobs(uniffiStatus)
+		})
+		if checksum != 26191 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_collection_blobs: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_collection_is_empty(uniffiStatus)
+		})
+		if checksum != 46151 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_collection_is_empty: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_collection_len(uniffiStatus)
 		})
-		if checksum != 56574 {
+		if checksum != 3727 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_collection_len: UniFFI API checksum mismatch")
 		}
@@ -477,9 +495,27 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_collection_links(uniffiStatus)
 		})
-		if checksum != 4043 {
+		if checksum != 52333 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_collection_links: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_collection_names(uniffiStatus)
+		})
+		if checksum != 17514 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_collection_names: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_collection_push(uniffiStatus)
+		})
+		if checksum != 37931 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_collection_push: UniFFI API checksum mismatch")
 		}
 	}
 	{
@@ -1033,6 +1069,15 @@ func uniffiCheckChecksums() {
 	}
 	{
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_method_irohnode_blobs_get_collection(uniffiStatus)
+		})
+		if checksum != 45730 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_method_irohnode_blobs_get_collection: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_irohnode_blobs_list(uniffiStatus)
 		})
 		if checksum != 49039 {
@@ -1407,6 +1452,15 @@ func uniffiCheckChecksums() {
 		if checksum != 64034 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_constructor_blobdownloadrequest_new: UniFFI API checksum mismatch")
+		}
+	}
+	{
+		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
+			return C.uniffi_iroh_checksum_constructor_collection_new(uniffiStatus)
+		})
+		if checksum != 41716 {
+			// If this happens try cleaning and rebuilding your project
+			panic("iroh: uniffi_iroh_checksum_constructor_collection_new: UniFFI API checksum mismatch")
 		}
 	}
 	{
@@ -2216,22 +2270,96 @@ type Collection struct {
 	ffiObject FfiObject
 }
 
-func (_self *Collection) Len() uint64 {
-	_pointer := _self.ffiObject.incrementPointer("*Collection")
-	defer _self.ffiObject.decrementPointer()
-	return FfiConverterUint64INSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) C.uint64_t {
-		return C.uniffi_iroh_fn_method_collection_len(
-			_pointer, _uniffiStatus)
+func NewCollection() *Collection {
+	return FfiConverterCollectionINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_constructor_collection_new(_uniffiStatus)
 	}))
 }
 
-func (_self *Collection) Links() []Link {
+func (_self *Collection) Blobs() ([]LinkAndName, error) {
 	_pointer := _self.ffiObject.incrementPointer("*Collection")
 	defer _self.ffiObject.decrementPointer()
-	return FfiConverterSequenceTypeLinkINSTANCE.Lift(rustCall(func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_collection_blobs(
+			_pointer, _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue []LinkAndName
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterSequenceTypeLinkAndNameINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
+
+func (_self *Collection) IsEmpty() (bool, error) {
+	_pointer := _self.ffiObject.incrementPointer("*Collection")
+	defer _self.ffiObject.decrementPointer()
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) C.int8_t {
+		return C.uniffi_iroh_fn_method_collection_is_empty(
+			_pointer, _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue bool
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterBoolINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
+
+func (_self *Collection) Len() (uint64, error) {
+	_pointer := _self.ffiObject.incrementPointer("*Collection")
+	defer _self.ffiObject.decrementPointer()
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) C.uint64_t {
+		return C.uniffi_iroh_fn_method_collection_len(
+			_pointer, _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue uint64
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterUint64INSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
+
+func (_self *Collection) Links() ([]*Hash, error) {
+	_pointer := _self.ffiObject.incrementPointer("*Collection")
+	defer _self.ffiObject.decrementPointer()
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) RustBufferI {
 		return C.uniffi_iroh_fn_method_collection_links(
 			_pointer, _uniffiStatus)
-	}))
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue []*Hash
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterSequenceHashINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
+
+func (_self *Collection) Names() ([]string, error) {
+	_pointer := _self.ffiObject.incrementPointer("*Collection")
+	defer _self.ffiObject.decrementPointer()
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) RustBufferI {
+		return C.uniffi_iroh_fn_method_collection_names(
+			_pointer, _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue []string
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterSequenceStringINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
+}
+
+func (_self *Collection) Push(name string, hash *Hash) error {
+	_pointer := _self.ffiObject.incrementPointer("*Collection")
+	defer _self.ffiObject.decrementPointer()
+	_, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) bool {
+		C.uniffi_iroh_fn_method_collection_push(
+			_pointer, FfiConverterStringINSTANCE.Lower(name), FfiConverterHashINSTANCE.Lower(hash), _uniffiStatus)
+		return false
+	})
+	return _uniffiErr
 }
 
 func (object *Collection) Destroy() {
@@ -3535,6 +3663,21 @@ func (_self *IrohNode) BlobsDownload(req *BlobDownloadRequest, cb DownloadCallba
 		return false
 	})
 	return _uniffiErr
+}
+
+func (_self *IrohNode) BlobsGetCollection(hash *Hash) (*Collection, error) {
+	_pointer := _self.ffiObject.incrementPointer("*IrohNode")
+	defer _self.ffiObject.decrementPointer()
+	_uniffiRV, _uniffiErr := rustCallWithError(FfiConverterTypeIrohError{}, func(_uniffiStatus *C.RustCallStatus) unsafe.Pointer {
+		return C.uniffi_iroh_fn_method_irohnode_blobs_get_collection(
+			_pointer, FfiConverterHashINSTANCE.Lower(hash), _uniffiStatus)
+	})
+	if _uniffiErr != nil {
+		var _uniffiDefaultValue *Collection
+		return _uniffiDefaultValue, _uniffiErr
+	} else {
+		return FfiConverterCollectionINSTANCE.Lift(_uniffiRV), _uniffiErr
+	}
 }
 
 func (_self *IrohNode) BlobsList() ([]*Hash, error) {
@@ -5736,6 +5879,46 @@ func (_ FfiDestroyerTypeDownloadProgressProgress) Destroy(value DownloadProgress
 	value.Destroy()
 }
 
+type HashAndTag struct {
+	Hash *Hash
+	Tag  []byte
+}
+
+func (r *HashAndTag) Destroy() {
+	FfiDestroyerHash{}.Destroy(r.Hash)
+	FfiDestroyerBytes{}.Destroy(r.Tag)
+}
+
+type FfiConverterTypeHashAndTag struct{}
+
+var FfiConverterTypeHashAndTagINSTANCE = FfiConverterTypeHashAndTag{}
+
+func (c FfiConverterTypeHashAndTag) Lift(rb RustBufferI) HashAndTag {
+	return LiftFromRustBuffer[HashAndTag](c, rb)
+}
+
+func (c FfiConverterTypeHashAndTag) Read(reader io.Reader) HashAndTag {
+	return HashAndTag{
+		FfiConverterHashINSTANCE.Read(reader),
+		FfiConverterBytesINSTANCE.Read(reader),
+	}
+}
+
+func (c FfiConverterTypeHashAndTag) Lower(value HashAndTag) RustBuffer {
+	return LowerIntoRustBuffer[HashAndTag](c, value)
+}
+
+func (c FfiConverterTypeHashAndTag) Write(writer io.Writer, value HashAndTag) {
+	FfiConverterHashINSTANCE.Write(writer, value.Hash)
+	FfiConverterBytesINSTANCE.Write(writer, value.Tag)
+}
+
+type FfiDestroyerTypeHashAndTag struct{}
+
+func (_ FfiDestroyerTypeHashAndTag) Destroy(value HashAndTag) {
+	value.Destroy()
+}
+
 type InsertRemoteEvent struct {
 	From          *PublicKey
 	Entry         *Entry
@@ -5820,43 +6003,43 @@ func (_ FfiDestroyerTypeLatencyAndControlMsg) Destroy(value LatencyAndControlMsg
 	value.Destroy()
 }
 
-type Link struct {
+type LinkAndName struct {
 	Name string
-	Hash *Hash
+	Link *Hash
 }
 
-func (r *Link) Destroy() {
+func (r *LinkAndName) Destroy() {
 	FfiDestroyerString{}.Destroy(r.Name)
-	FfiDestroyerHash{}.Destroy(r.Hash)
+	FfiDestroyerHash{}.Destroy(r.Link)
 }
 
-type FfiConverterTypeLink struct{}
+type FfiConverterTypeLinkAndName struct{}
 
-var FfiConverterTypeLinkINSTANCE = FfiConverterTypeLink{}
+var FfiConverterTypeLinkAndNameINSTANCE = FfiConverterTypeLinkAndName{}
 
-func (c FfiConverterTypeLink) Lift(rb RustBufferI) Link {
-	return LiftFromRustBuffer[Link](c, rb)
+func (c FfiConverterTypeLinkAndName) Lift(rb RustBufferI) LinkAndName {
+	return LiftFromRustBuffer[LinkAndName](c, rb)
 }
 
-func (c FfiConverterTypeLink) Read(reader io.Reader) Link {
-	return Link{
+func (c FfiConverterTypeLinkAndName) Read(reader io.Reader) LinkAndName {
+	return LinkAndName{
 		FfiConverterStringINSTANCE.Read(reader),
 		FfiConverterHashINSTANCE.Read(reader),
 	}
 }
 
-func (c FfiConverterTypeLink) Lower(value Link) RustBuffer {
-	return LowerIntoRustBuffer[Link](c, value)
+func (c FfiConverterTypeLinkAndName) Lower(value LinkAndName) RustBuffer {
+	return LowerIntoRustBuffer[LinkAndName](c, value)
 }
 
-func (c FfiConverterTypeLink) Write(writer io.Writer, value Link) {
+func (c FfiConverterTypeLinkAndName) Write(writer io.Writer, value LinkAndName) {
 	FfiConverterStringINSTANCE.Write(writer, value.Name)
-	FfiConverterHashINSTANCE.Write(writer, value.Hash)
+	FfiConverterHashINSTANCE.Write(writer, value.Link)
 }
 
-type FfiDestroyerTypeLink struct{}
+type FfiDestroyerTypeLinkAndName struct{}
 
-func (_ FfiDestroyerTypeLink) Destroy(value Link) {
+func (_ FfiDestroyerTypeLinkAndName) Destroy(value LinkAndName) {
 	value.Destroy()
 }
 
@@ -6386,6 +6569,7 @@ var ErrIrohErrorDocTicket = fmt.Errorf("IrohErrorDocTicket")
 var ErrIrohErrorUniffi = fmt.Errorf("IrohErrorUniffi")
 var ErrIrohErrorConnection = fmt.Errorf("IrohErrorConnection")
 var ErrIrohErrorBlobs = fmt.Errorf("IrohErrorBlobs")
+var ErrIrohErrorCollection = fmt.Errorf("IrohErrorCollection")
 var ErrIrohErrorIpv4Addr = fmt.Errorf("IrohErrorIpv4Addr")
 var ErrIrohErrorIpv6Addr = fmt.Errorf("IrohErrorIpv6Addr")
 var ErrIrohErrorSocketAddr = fmt.Errorf("IrohErrorSocketAddr")
@@ -6639,6 +6823,33 @@ func (err IrohErrorBlobs) Error() string {
 
 func (self IrohErrorBlobs) Is(target error) bool {
 	return target == ErrIrohErrorBlobs
+}
+
+type IrohErrorCollection struct {
+	Description string
+}
+
+func NewIrohErrorCollection(
+	description string,
+) *IrohError {
+	return &IrohError{
+		err: &IrohErrorCollection{
+			Description: description,
+		},
+	}
+}
+
+func (err IrohErrorCollection) Error() string {
+	return fmt.Sprint("Collection",
+		": ",
+
+		"Description=",
+		err.Description,
+	)
+}
+
+func (self IrohErrorCollection) Is(target error) bool {
+	return target == ErrIrohErrorCollection
 }
 
 type IrohErrorIpv4Addr struct {
@@ -6964,42 +7175,46 @@ func (c FfiConverterTypeIrohError) Read(reader io.Reader) error {
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 10:
-		return &IrohError{&IrohErrorIpv4Addr{
+		return &IrohError{&IrohErrorCollection{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 11:
-		return &IrohError{&IrohErrorIpv6Addr{
+		return &IrohError{&IrohErrorIpv4Addr{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 12:
-		return &IrohError{&IrohErrorSocketAddr{
+		return &IrohError{&IrohErrorIpv6Addr{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 13:
-		return &IrohError{&IrohErrorPublicKey{
+		return &IrohError{&IrohErrorSocketAddr{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 14:
-		return &IrohError{&IrohErrorNodeAddr{
+		return &IrohError{&IrohErrorPublicKey{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 15:
-		return &IrohError{&IrohErrorHash{
+		return &IrohError{&IrohErrorNodeAddr{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 16:
-		return &IrohError{&IrohErrorFsUtil{
+		return &IrohError{&IrohErrorHash{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 17:
-		return &IrohError{&IrohErrorTags{
+		return &IrohError{&IrohErrorFsUtil{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 18:
-		return &IrohError{&IrohErrorUrl{
+		return &IrohError{&IrohErrorTags{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
 	case 19:
+		return &IrohError{&IrohErrorUrl{
+			Description: FfiConverterStringINSTANCE.Read(reader),
+		}}
+	case 20:
 		return &IrohError{&IrohErrorEntry{
 			Description: FfiConverterStringINSTANCE.Read(reader),
 		}}
@@ -7037,35 +7252,38 @@ func (c FfiConverterTypeIrohError) Write(writer io.Writer, value *IrohError) {
 	case *IrohErrorBlobs:
 		writeInt32(writer, 9)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorIpv4Addr:
+	case *IrohErrorCollection:
 		writeInt32(writer, 10)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorIpv6Addr:
+	case *IrohErrorIpv4Addr:
 		writeInt32(writer, 11)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorSocketAddr:
+	case *IrohErrorIpv6Addr:
 		writeInt32(writer, 12)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorPublicKey:
+	case *IrohErrorSocketAddr:
 		writeInt32(writer, 13)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorNodeAddr:
+	case *IrohErrorPublicKey:
 		writeInt32(writer, 14)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorHash:
+	case *IrohErrorNodeAddr:
 		writeInt32(writer, 15)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorFsUtil:
+	case *IrohErrorHash:
 		writeInt32(writer, 16)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorTags:
+	case *IrohErrorFsUtil:
 		writeInt32(writer, 17)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorUrl:
+	case *IrohErrorTags:
 		writeInt32(writer, 18)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
-	case *IrohErrorEntry:
+	case *IrohErrorUrl:
 		writeInt32(writer, 19)
+		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
+	case *IrohErrorEntry:
+		writeInt32(writer, 20)
 		FfiConverterStringINSTANCE.Write(writer, variantValue.Description)
 	default:
 		_ = variantValue
@@ -8581,46 +8799,46 @@ func (FfiDestroyerSequenceTypeConnectionInfo) Destroy(sequence []ConnectionInfo)
 	}
 }
 
-type FfiConverterSequenceTypeLink struct{}
+type FfiConverterSequenceTypeLinkAndName struct{}
 
-var FfiConverterSequenceTypeLinkINSTANCE = FfiConverterSequenceTypeLink{}
+var FfiConverterSequenceTypeLinkAndNameINSTANCE = FfiConverterSequenceTypeLinkAndName{}
 
-func (c FfiConverterSequenceTypeLink) Lift(rb RustBufferI) []Link {
-	return LiftFromRustBuffer[[]Link](c, rb)
+func (c FfiConverterSequenceTypeLinkAndName) Lift(rb RustBufferI) []LinkAndName {
+	return LiftFromRustBuffer[[]LinkAndName](c, rb)
 }
 
-func (c FfiConverterSequenceTypeLink) Read(reader io.Reader) []Link {
+func (c FfiConverterSequenceTypeLinkAndName) Read(reader io.Reader) []LinkAndName {
 	length := readInt32(reader)
 	if length == 0 {
 		return nil
 	}
-	result := make([]Link, 0, length)
+	result := make([]LinkAndName, 0, length)
 	for i := int32(0); i < length; i++ {
-		result = append(result, FfiConverterTypeLinkINSTANCE.Read(reader))
+		result = append(result, FfiConverterTypeLinkAndNameINSTANCE.Read(reader))
 	}
 	return result
 }
 
-func (c FfiConverterSequenceTypeLink) Lower(value []Link) RustBuffer {
-	return LowerIntoRustBuffer[[]Link](c, value)
+func (c FfiConverterSequenceTypeLinkAndName) Lower(value []LinkAndName) RustBuffer {
+	return LowerIntoRustBuffer[[]LinkAndName](c, value)
 }
 
-func (c FfiConverterSequenceTypeLink) Write(writer io.Writer, value []Link) {
+func (c FfiConverterSequenceTypeLinkAndName) Write(writer io.Writer, value []LinkAndName) {
 	if len(value) > math.MaxInt32 {
-		panic("[]Link is too large to fit into Int32")
+		panic("[]LinkAndName is too large to fit into Int32")
 	}
 
 	writeInt32(writer, int32(len(value)))
 	for _, item := range value {
-		FfiConverterTypeLinkINSTANCE.Write(writer, item)
+		FfiConverterTypeLinkAndNameINSTANCE.Write(writer, item)
 	}
 }
 
-type FfiDestroyerSequenceTypeLink struct{}
+type FfiDestroyerSequenceTypeLinkAndName struct{}
 
-func (FfiDestroyerSequenceTypeLink) Destroy(sequence []Link) {
+func (FfiDestroyerSequenceTypeLinkAndName) Destroy(sequence []LinkAndName) {
 	for _, value := range sequence {
-		FfiDestroyerTypeLink{}.Destroy(value)
+		FfiDestroyerTypeLinkAndName{}.Destroy(value)
 	}
 }
 

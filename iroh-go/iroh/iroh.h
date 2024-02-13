@@ -143,6 +143,20 @@ void uniffi_iroh_fn_free_collection(
 	RustCallStatus* out_status
 );
 
+void* uniffi_iroh_fn_constructor_collection_new(
+	RustCallStatus* out_status
+);
+
+RustBuffer uniffi_iroh_fn_method_collection_blobs(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+int8_t uniffi_iroh_fn_method_collection_is_empty(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
 uint64_t uniffi_iroh_fn_method_collection_len(
 	void* ptr,
 	RustCallStatus* out_status
@@ -150,6 +164,18 @@ uint64_t uniffi_iroh_fn_method_collection_len(
 
 RustBuffer uniffi_iroh_fn_method_collection_links(
 	void* ptr,
+	RustCallStatus* out_status
+);
+
+RustBuffer uniffi_iroh_fn_method_collection_names(
+	void* ptr,
+	RustCallStatus* out_status
+);
+
+void uniffi_iroh_fn_method_collection_push(
+	void* ptr,
+	RustBuffer name,
+	void* hash,
 	RustCallStatus* out_status
 );
 
@@ -612,6 +638,12 @@ void uniffi_iroh_fn_method_irohnode_blobs_download(
 	void* ptr,
 	void* req,
 	uint64_t cb,
+	RustCallStatus* out_status
+);
+
+void* uniffi_iroh_fn_method_irohnode_blobs_get_collection(
+	void* ptr,
+	void* hash,
 	RustCallStatus* out_status
 );
 
@@ -1340,11 +1372,27 @@ uint16_t uniffi_iroh_checksum_method_authorid_to_string(
 	RustCallStatus* out_status
 );
 
+uint16_t uniffi_iroh_checksum_method_collection_blobs(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_collection_is_empty(
+	RustCallStatus* out_status
+);
+
 uint16_t uniffi_iroh_checksum_method_collection_len(
 	RustCallStatus* out_status
 );
 
 uint16_t uniffi_iroh_checksum_method_collection_links(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_collection_names(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_method_collection_push(
 	RustCallStatus* out_status
 );
 
@@ -1592,6 +1640,10 @@ uint16_t uniffi_iroh_checksum_method_irohnode_blobs_download(
 	RustCallStatus* out_status
 );
 
+uint16_t uniffi_iroh_checksum_method_irohnode_blobs_get_collection(
+	RustCallStatus* out_status
+);
+
 uint16_t uniffi_iroh_checksum_method_irohnode_blobs_list(
 	RustCallStatus* out_status
 );
@@ -1757,6 +1809,10 @@ uint16_t uniffi_iroh_checksum_constructor_authorid_from_string(
 );
 
 uint16_t uniffi_iroh_checksum_constructor_blobdownloadrequest_new(
+	RustCallStatus* out_status
+);
+
+uint16_t uniffi_iroh_checksum_constructor_collection_new(
 	RustCallStatus* out_status
 );
 
