@@ -21,6 +21,8 @@ pub enum IrohError {
     Connection { description: String },
     #[error("blobs: {description}")]
     Blobs { description: String },
+    #[error("collection: {description}")]
+    Collection { description: String },
     #[error("Ipv4Addr error: {description}")]
     Ipv4Addr { description: String },
     #[error("Ipv6Addr error: {description}")]
@@ -88,6 +90,12 @@ impl IrohError {
 
     pub fn blobs(error: impl Display) -> Self {
         IrohError::Blobs {
+            description: error.to_string(),
+        }
+    }
+
+    pub fn collection(error: impl Display) -> Self {
+        IrohError::Collection {
             description: error.to_string(),
         }
     }

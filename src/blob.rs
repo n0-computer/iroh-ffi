@@ -1,4 +1,4 @@
-use std::{path::PathBuf, str::FromStr, sync::Arc, time::Duration};
+use std::{path::PathBuf, str::FromStr, sync::Arc, sync::RwLock, time::Duration};
 
 use futures::{StreamExt, TryStreamExt};
 
@@ -222,6 +222,51 @@ impl IrohNode {
         })
     }
 
+    /// Read the content of a collection
+    pub fn blobs_get_collection(&self, hash: Arc<Hash>) -> Result<Arc<Collection>, IrohError> {
+        block_on(&self.async_runtime, async {
+            let collection = self
+                .sync_client
+                .blobs
+                .get_collection(hash.0)
+                .await
+                .map_err(IrohError::collection)?;
+            Ok(Arc::new(collection.into()))
+        })
+    }
+
+    /// Create a collection from already existing blobs.
+    ///
+    /// To automatically clear the tags for the passed in blobs you can set
+    /// `tags_to_delete` on those tags, and they will be deleted once the collection is created.
+    pub fn blobs_create_collection(
+        &self,
+        collection: Arc<Collection>,
+        tag: Arc<SetTagOption>,
+        tags_to_delete: Vec<String>,
+    ) -> Result<HashAndTag, IrohError> {
+        block_on(&self.async_runtime, async {
+            let collection = collection.0.read().map_err(IrohError::collection)?.clone();
+            let (hash, tag) = self
+                .sync_client
+                .blobs
+                .create_collection(
+                    collection,
+                    (*tag).clone().into(),
+                    tags_to_delete
+                        .into_iter()
+                        .map(iroh::bytes::Tag::from)
+                        .collect(),
+                )
+                .await
+                .map_err(IrohError::blobs)?;
+            Ok(HashAndTag {
+                hash: Arc::new(hash.into()),
+                tag: tag.0.to_vec(),
+            })
+        })
+    }
+
     /// Delete a blob.
     pub fn blobs_delete_blob(&self, hash: Arc<Hash>) -> Result<(), IrohError> {
         block_on(&self.async_runtime, async {
@@ -232,6 +277,15 @@ impl IrohNode {
                 .map_err(IrohError::blobs)
         })
     }
+}
+
+/// The Hash and associated tag of a newly created collection
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HashAndTag {
+    /// The hash of the collection
+    pub hash: Arc<Hash>,
+    /// The tag of the collection
+    pub tag: Vec<u8>,
 }
 
 /// Outcome of a blob add operation.
@@ -1054,45 +1108,94 @@ impl From<iroh::rpc_protocol::BlobListCollectionsResponse> for BlobListCollectio
 }
 
 /// A collection of blobs
-pub struct Collection(iroh::bytes::format::collection::Collection);
+#[derive(Debug)]
+pub struct Collection(RwLock<iroh::bytes::format::collection::Collection>);
 
 impl From<iroh::bytes::format::collection::Collection> for Collection {
     fn from(value: iroh::bytes::format::collection::Collection) -> Self {
-        Collection(value)
+        Collection(RwLock::new(value))
     }
 }
 
 impl From<Collection> for iroh::bytes::format::collection::Collection {
     fn from(value: Collection) -> Self {
-        value.0
+        let col = value.0.read().expect("Collection lock poisoned");
+        col.clone()
     }
 }
 
 impl Collection {
-    /// Returns the links (the name and the hash), for each blob in the collection.
-    pub fn links(&self) -> Vec<Link> {
+    /// Create a new empty collection
+    #[allow(clippy::new_without_default)]
+    pub fn new() -> Self {
+        Collection(RwLock::new(
+            iroh::bytes::format::collection::Collection::default(),
+        ))
+    }
+
+    /// Add the given blob to the collection
+    pub fn push(&self, name: String, hash: Arc<Hash>) -> Result<(), IrohError> {
         self.0
+            .write()
+            .map_err(IrohError::collection)?
+            .push(name, hash.0);
+        Ok(())
+    }
+
+    /// Check if the collection is empty
+    pub fn is_empty(&self) -> Result<bool, IrohError> {
+        Ok(self.0.read().map_err(IrohError::collection)?.is_empty())
+    }
+
+    /// Get the names of the blobs in this collection
+    pub fn names(&self) -> Result<Vec<String>, IrohError> {
+        Ok(self
+            .0
+            .read()
+            .map_err(IrohError::collection)?
             .iter()
-            .map(|(name, hash)| Link {
+            .map(|(name, _)| name.clone())
+            .collect())
+    }
+
+    /// Get the links to the blobs in this collection
+    pub fn links(&self) -> Result<Vec<Arc<Hash>>, IrohError> {
+        Ok(self
+            .0
+            .read()
+            .map_err(IrohError::collection)?
+            .iter()
+            .map(|(_, hash)| Arc::new(Hash(*hash)))
+            .collect())
+    }
+
+    /// Get the blobs associated with this collection
+    pub fn blobs(&self) -> Result<Vec<LinkAndName>, IrohError> {
+        Ok(self
+            .0
+            .read()
+            .map_err(IrohError::collection)?
+            .iter()
+            .map(|(name, hash)| LinkAndName {
                 name: name.clone(),
-                hash: Arc::new(Hash(*hash)),
+                link: Arc::new(Hash(*hash)),
             })
-            .collect()
+            .collect())
     }
 
     /// Returns the number of blobs in this collection
-    pub fn len(&self) -> u64 {
-        self.0.len() as u64
+    pub fn len(&self) -> Result<u64, IrohError> {
+        Ok(self.0.read().map_err(IrohError::collection)?.len() as u64)
     }
 }
 
-/// A `Link` includes a name and a hash for a blob in a collection
+/// `LinkAndName` includes a name and a hash for a blob in a collection
 #[derive(Clone, Debug)]
-pub struct Link {
+pub struct LinkAndName {
     /// The name associated with this [`Hash`]
     pub name: String,
     /// The [`Hash`] of the blob
-    pub hash: Arc<Hash>,
+    pub link: Arc<Hash>,
 }
 
 #[cfg(test)]
