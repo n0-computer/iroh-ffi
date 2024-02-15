@@ -1,21 +1,34 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
+use napi_derive::napi;
+
 use crate::IrohError;
 
 /// A public key.
 ///
 /// The key itself is just a 32 byte array, but a key has associated crypto
 /// information that is cached for performance reasons.
+#[napi]
 #[derive(Debug, Clone, Eq)]
-pub struct PublicKey(pub(crate) iroh::net::key::PublicKey);
+pub struct PublicKey {
+    pub(crate) key: [u8; 32]
+}
 
 impl From<iroh::net::key::PublicKey> for PublicKey {
     fn from(key: iroh::net::key::PublicKey) -> Self {
-        PublicKey(key)
+        PublicKey {
+            key: *key.as_bytes(),
+        }
+    }
+}
+impl From<&PublicKey> for iroh::net::key::PublicKey {
+    fn from(key: &PublicKey) -> Self {
+        iroh::net::key::PublicKey::from_bytes(&key.key).unwrap()
     }
 }
 
+#[napi]
 impl PublicKey {
     /// Returns true if the PublicKeys are equal
     pub fn equal(&self, other: Arc<PublicKey>) -> bool {
@@ -23,11 +36,13 @@ impl PublicKey {
     }
 
     /// Express the PublicKey as a byte array
+    #[napi]
     pub fn to_bytes(&self) -> Vec<u8> {
-        self.0.as_bytes().to_vec()
+        self.key.to_vec()
     }
 
     /// Make a PublicKey from base32 string
+    #[napi]
     pub fn from_string(s: String) -> Result<Self, IrohError> {
         match iroh::net::key::PublicKey::from_str(&s) {
             Ok(key) => Ok(key.into()),
@@ -36,6 +51,7 @@ impl PublicKey {
     }
 
     /// Make a PublicKey from byte array
+    #[napi]
     pub fn from_bytes(bytes: Vec<u8>) -> Result<Self, IrohError> {
         if bytes.len() != 32 {
             return Err(IrohError::PublicKey {
@@ -51,20 +67,21 @@ impl PublicKey {
 
     /// Convert to a base32 string limited to the first 10 bytes for a friendly string
     /// representation of the key.
+    #[napi]
     pub fn fmt_short(&self) -> String {
-        self.0.fmt_short()
+        iroh::net::key::PublicKey::from(self).fmt_short()
     }
 }
 
 impl PartialEq for PublicKey {
     fn eq(&self, other: &PublicKey) -> bool {
-        self.0 == other.0
+        self.key == other.key
     }
 }
 
 impl std::fmt::Display for PublicKey {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.0)
+        iroh::net::key::PublicKey::from(self).fmt(f)
     }
 }
 

@@ -1,4 +1,4 @@
-# iroh-ffi 
+# iroh-ffi
 
 > Foreign Function Interface (FFI) bindings for Iroh
 
@@ -22,12 +22,18 @@ Running `cargo build --release` will produce a dynamic library and a static libr
 
 For builds targeting older versions of MacOS, build with with:  `MACOSX_DEPLOYMENT_TARGET=10.7 && cargo build --target x86_64-apple-darwin --release`.
 
+## Node.js
+
+- Make sure to install a recent version of node.js and npm
+- Run `npm i`
+- Run `npm run build`
+
 ## Swift
 
-### Xcode and IOS 
+### Xcode and IOS
 
-- Run `make_swift.sh`. 
-- Add `IrohLib` as a local package dependency under `Frameworks, Libraries, and Embedded Content` in the `General` settings of your project. 
+- Run `make_swift.sh`.
+- Add `IrohLib` as a local package dependency under `Frameworks, Libraries, and Embedded Content` in the `General` settings of your project.
 - Run `Build`
 - Check that it is now listed under `Frameworks, Libraries, and Embedded Content`, if not click `+` again and add it from the list.
 - Add `SystemConfiguration` as a Framework.
@@ -62,7 +68,7 @@ docker run --rm -v $(pwd):/mnt -w /mnt quay.io/pypa/manylinux2014_x86_64 /mnt/bu
 #### Building
 Ensure you have golang & rust installed.
 
-Install `uniffi-bindgen-go`: 
+Install `uniffi-bindgen-go`:
 
 ```
 cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bindgen-go --tag v0.2.0+v0.25.0
@@ -85,10 +91,10 @@ cd iroh-go
 go test ./...
 ```
 
-### Linux 
+### Linux
 Ensure you have golang & rust installed.
 
-Install `uniffi-bindgen-go`: 
+Install `uniffi-bindgen-go`:
 
 ```
 cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bindgen-go --tag v0.2.0+v0.25.0
@@ -122,7 +128,7 @@ go <actual go command to build or run>
 ### Building
 Ensure you have golang & rust installed.
 
-Install `uniffi-bindgen-go`: 
+Install `uniffi-bindgen-go`:
 
 ```
 cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bindgen-go --tag v0.2.0+v0.25.0

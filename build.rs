@@ -6,6 +6,9 @@ fn main() {
 
     // Unifi
     uniffi::generate_scaffolding("./src/iroh.udl").unwrap();
+
+    // Node
+    napi_build::setup();
 }
 
 fn build_pc() {

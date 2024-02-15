@@ -1,15 +1,18 @@
 use std::{path::PathBuf, str::FromStr, sync::Arc, sync::RwLock, time::Duration};
 
 use futures::{StreamExt, TryStreamExt};
+use napi_derive::napi;
 
 use crate::node::IrohNode;
 use crate::{block_on, IrohError, NodeAddr};
 
+#[napi]
 impl IrohNode {
     /// List all complete blobs.
     ///
     /// Note: this allocates for each `BlobListResponse`, if you have many `BlobListReponse`s this may be a prohibitively large list.
     /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
+    #[napi]
     pub fn blobs_list(&self) -> Result<Vec<Arc<Hash>>, IrohError> {
         block_on(&self.async_runtime, async {
             let response = self
@@ -378,6 +381,7 @@ impl From<WrapOption> for iroh::rpc_protocol::WrapOption {
 }
 
 /// Hash type used throughout Iroh. A blake3 hash.
+#[napi]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Hash(pub(crate) iroh::bytes::Hash);
 
@@ -387,18 +391,22 @@ impl From<iroh::bytes::Hash> for Hash {
     }
 }
 
+#[napi]
 impl Hash {
     /// Calculate the hash of the provide bytes.
+    #[napi]
     pub fn new(buf: Vec<u8>) -> Self {
         Hash(iroh::bytes::Hash::new(buf))
     }
 
     /// Bytes of the hash.
+    #[napi]
     pub fn to_bytes(&self) -> Vec<u8> {
         self.0.as_bytes().to_vec()
     }
 
     /// Create a `Hash` from its raw bytes representation.
+    #[napi]
     pub fn from_bytes(bytes: Vec<u8>) -> Result<Self, IrohError> {
         let bytes: [u8; 32] = bytes.try_into().map_err(|b: Vec<u8>| {
             IrohError::hash(format!("expected byte array of length 32, got {}", b.len()))
@@ -407,6 +415,7 @@ impl Hash {
     }
 
     /// Make a Hash from hex string
+    #[napi]
     pub fn from_string(s: String) -> Result<Self, IrohError> {
         match iroh::bytes::Hash::from_str(&s) {
             Ok(key) => Ok(key.into()),
@@ -415,6 +424,7 @@ impl Hash {
     }
 
     /// Convert the hash to a hex string.
+    #[napi]
     pub fn to_hex(&self) -> String {
         self.0.to_hex()
     }

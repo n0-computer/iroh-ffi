@@ -5,15 +5,35 @@ use iroh::{
     client::Doc as ClientDoc,
     rpc_protocol::{ProviderRequest, ProviderResponse},
 };
+use napi_derive::napi;
 
-pub use iroh::sync::CapabilityKind;
+
+#[napi]
+#[derive(Debug)]
+pub enum CapabilityKind {
+    /// A writable replica.
+    Write = 1,
+    /// A readable replica.
+    Read = 2,
+}
+
+impl From<iroh::sync::CapabilityKind> for CapabilityKind {
+    fn from(value: iroh::sync::CapabilityKind) -> Self {
+        match value {
+            iroh::sync::CapabilityKind::Write => Self::Write,
+            iroh::sync::CapabilityKind::Read => Self::Read,
+        }
+    }
+}
 
 use quic_rpc::transport::flume::FlumeConnection;
 
 use crate::{block_on, AuthorId, Hash, IrohError, IrohNode, PublicKey};
 
+#[napi]
 impl IrohNode {
     /// Create a new doc.
+    #[napi]
     pub fn doc_create(&self) -> Result<Arc<Doc>, IrohError> {
         block_on(&self.async_runtime, async {
             let doc = self
@@ -31,6 +51,7 @@ impl IrohNode {
     }
 
     /// Join and sync with an already existing document.
+    #[napi]
     pub fn doc_join(&self, ticket: String) -> Result<Arc<Doc>, IrohError> {
         block_on(&self.async_runtime, async {
             let ticket =
@@ -50,6 +71,7 @@ impl IrohNode {
     }
 
     /// List all the docs we have access to on this node.
+    #[napi]
     pub fn doc_list(&self) -> Result<Vec<NamespaceAndCapability>, IrohError> {
         block_on(&self.async_runtime, async {
             let docs = self
@@ -60,7 +82,7 @@ impl IrohNode {
                 .map_err(IrohError::doc)?
                 .map_ok(|(namespace, capability)| NamespaceAndCapability {
                     namespace: namespace.to_string(),
-                    capability,
+                    capability: capability.into(),
                 })
                 .try_collect::<Vec<_>>()
                 .await
@@ -73,6 +95,7 @@ impl IrohNode {
     /// Get a [`Doc`].
     ///
     /// Returns None if the document cannot be found.
+    #[napi]
     pub fn doc_open(&self, id: String) -> Result<Option<Arc<Doc>>, IrohError> {
         let namespace_id = iroh::sync::NamespaceId::from_str(&id).map_err(IrohError::namespace)?;
         block_on(&self.async_runtime, async {
@@ -110,6 +133,7 @@ impl IrohNode {
 }
 
 /// The namespace id and CapabilityKind (read/write) of the doc
+#[napi]
 pub struct NamespaceAndCapability {
     /// The namespace id of the doc
     pub namespace: String,
@@ -118,18 +142,23 @@ pub struct NamespaceAndCapability {
 }
 
 /// A representation of a mutable, synchronizable key-value store.
+#[napi]
+#[derive(Clone)]
 pub struct Doc {
     pub(crate) inner: ClientDoc<FlumeConnection<ProviderResponse, ProviderRequest>>,
     pub(crate) rt: tokio::runtime::Handle,
 }
 
+#[napi]
 impl Doc {
     /// Get the document id of this doc.
+    #[napi]
     pub fn id(&self) -> String {
         self.inner.id().to_string()
     }
 
     /// Close the document.
+    #[napi]
     pub fn close(&self) -> Result<(), IrohError> {
         block_on(&self.rt, async {
             self.inner.close().await.map_err(IrohError::doc)
@@ -140,6 +169,24 @@ impl Doc {
     pub fn set_bytes(
         &self,
         author_id: Arc<AuthorId>,
+        key: Vec<u8>,
+        value: Vec<u8>,
+    ) -> Result<Arc<Hash>, IrohError> {
+        block_on(&self.rt, async {
+            let hash = self
+                .inner
+                .set_bytes(author_id.0, key, value)
+                .await
+                .map_err(IrohError::doc)?;
+            Ok(Arc::new(Hash(hash)))
+        })
+    }
+
+    /// Set the content of a key to a byte array.
+    #[napi(js_name = "setBytes")]
+    pub fn set_bytes_js(
+        &self,
+        author_id: &AuthorId,
         key: Vec<u8>,
         value: Vec<u8>,
     ) -> Result<Arc<Hash>, IrohError> {
@@ -164,6 +211,24 @@ impl Doc {
         block_on(&self.rt, async {
             self.inner
                 .set_hash(author_id.0, key, hash.0, size)
+                .await
+                .map_err(IrohError::doc)?;
+            Ok(())
+        })
+    }
+
+    /// Set an entries on the doc via its key, hash, and size.
+    #[napi(js_name = "setHash")]
+    pub fn set_hash_js(
+        &self,
+        author_id: &AuthorId,
+        key: Vec<u8>,
+        hash: &Hash,
+        size: i64,
+    ) -> Result<(), IrohError> {
+        block_on(&self.rt, async {
+            self.inner
+                .set_hash(author_id.0, key, hash.0, size as _)
                 .await
                 .map_err(IrohError::doc)?;
             Ok(())
@@ -287,6 +352,7 @@ impl Doc {
     }
 
     /// Share this document with peers over a ticket.
+    #[napi]
     pub fn share(&self, mode: ShareMode) -> Result<String, IrohError> {
         block_on(&self.rt, async {
             self.inner
@@ -492,6 +558,7 @@ impl From<iroh::sync::actor::OpenState> for OpenState {
 }
 
 /// A peer and it's addressing information.
+#[napi]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NodeAddr {
     node_id: Arc<PublicKey>,
@@ -528,7 +595,7 @@ impl NodeAddr {
 impl TryFrom<NodeAddr> for iroh::net::magic_endpoint::NodeAddr {
     type Error = IrohError;
     fn try_from(value: NodeAddr) -> Result<Self, Self::Error> {
-        let mut node_addr = iroh::net::magic_endpoint::NodeAddr::new(value.node_id.0);
+        let mut node_addr = iroh::net::magic_endpoint::NodeAddr::new((&*value.node_id).into());
         let addresses = value
             .direct_addresses()
             .into_iter()
@@ -561,6 +628,7 @@ impl From<iroh::net::magic_endpoint::NodeAddr> for NodeAddr {
 }
 
 /// Intended capability for document share tickets
+#[napi]
 #[derive(Debug)]
 pub enum ShareMode {
     /// Read-only access
@@ -583,6 +651,7 @@ impl From<ShareMode> for iroh::rpc_protocol::ShareMode {
 /// An entry is identified by a key, its [`AuthorId`], and the [`Doc`]'s
 /// namespace id. Its value is the 32-byte BLAKE3 [`hash`]
 /// of the entry's content data, the size of this content data, and a timestamp.
+#[napi]
 #[derive(Debug, Clone)]
 pub struct Entry(pub(crate) iroh::client::Entry);
 
@@ -592,13 +661,16 @@ impl From<iroh::client::Entry> for Entry {
     }
 }
 
+#[napi]
 impl Entry {
     /// Get the [`AuthorId`] of this entry.
+    #[napi]
     pub fn author(&self) -> Arc<AuthorId> {
         Arc::new(AuthorId(self.0.id().author()))
     }
 
     /// Get the content_hash of this entry.
+    #[napi]
     pub fn content_hash(&self) -> Arc<Hash> {
         Arc::new(Hash(self.0.content_hash()))
     }
@@ -609,11 +681,13 @@ impl Entry {
     }
 
     /// Get the key of this entry.
+    #[napi]
     pub fn key(&self) -> Vec<u8> {
         self.0.id().key().to_vec()
     }
 
     /// Get the namespace id of this entry.
+    #[napi]
     pub fn namespace(&self) -> String {
         self.0.id().namespace().to_string()
     }
@@ -642,6 +716,7 @@ pub use iroh::sync::store::SortDirection;
 /// Build a Query to search for an entry or entries in a doc.
 ///
 /// Use this with `QueryOptions` to determine sorting, grouping, and pagination.
+#[napi]
 #[derive(Clone, Debug)]
 pub struct Query(iroh::sync::store::Query);
 
@@ -760,7 +835,7 @@ impl Query {
     }
 
     /// Create a query for all entries with a given key prefix.
-    ///  
+    ///
     /// If `opts` is `None`, the default values will be used:
     ///     sort_by: SortBy::AuthorKey
     ///     direction: SortDirection::Asc
@@ -782,7 +857,7 @@ impl Query {
     }
 
     /// Create a query for all entries of a single author with a given key prefix.
-    ///  
+    ///
     /// If `opts` is `None`, the default values will be used:
     ///     direction: SortDirection::Asc
     ///     offset: None

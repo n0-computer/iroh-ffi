@@ -1,5 +1,5 @@
 [package]
-name = "iroh-ffi"
+name = "iroh"
 version = "0.12.0"
 edition = "2021"
 publish = false
@@ -24,9 +24,6 @@ crate-type = ["staticlib", "cdylib"]
 name = "uniffi-bindgen"
 path = "uniffi-bindgen.rs"
 
-[features]
-default = []
-
 [dependencies]
 anyhow = "1.0.69"
 blake3 = "1.3.3"
@@ -48,16 +45,35 @@ url = "2.4"
 futures = "0.3.28"
 quic-rpc = "0.6.1"
 tracing-subscriber = { version = "0.3.17" }
+napi = { version = "2", default-features = false, features = [
+  "napi9",
+  "serde-json",
+  "experimental",
+  "latin1",
+  "chrono_date",
+  "tokio",
+  "async",
+  "tokio_rt",
+  "tokio_fs",
+  "tokio_macros",
+  "deferred_trace",
+  "anyhow",
+] }
+napi-derive = { version = "2", features = ["type-def"] }
 
 [dev-dependencies]
 rand = "0.8"
 
 [build-dependencies]
 uniffi = { version = "=0.25.0", features = ["build"] }
+napi-build = "2"
+
+[features]
+default = []
 
 [patch.crates-io]
 # https://github.com/mullvad/system-configuration-rs/pull/42
 system-configuration = { git = "https://github.com/tmpfs/system-configuration-rs", branch = "ios-hack" }
 
 # needs to match the version being used uniffi-bindgen-go
-uniffi = { git = "https://github.com/NordSecurity/uniffi-rs", tag = "v0.25.0-1" } 
+uniffi = { git = "https://github.com/NordSecurity/uniffi-rs", tag = "v0.25.0-1" }

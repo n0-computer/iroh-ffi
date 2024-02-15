@@ -140,7 +140,7 @@ interface IrohNode {
   /// Delete a blob.
   [Throws=IrohError]
   void blobs_delete_blob(Hash hash);
-  
+
   /// List all tags
   ///
   /// Note: this allocates for each `ListTagsResponse`, if you have many `Tags`s this may be a prohibitively large list.
@@ -197,7 +197,7 @@ interface Collection {
 /// A response to a list collections request
 dictionary ListTagsResponse {
   /// The tag
-  bytes name; 
+  bytes name;
   /// The format of the associated blob
   BlobFormat format;
   /// The hash of the associated blob
@@ -230,7 +230,7 @@ interface Doc {
   string id();
   /// Close the document.
   [Throws=IrohError]
-  void close(); 
+  void close();
   /// Set the content of a key to a byte array.
   [Throws=IrohError]
   Hash set_bytes(AuthorId author, bytes key, bytes value);
@@ -481,7 +481,7 @@ interface Query {
   [Name=author_key_exact]
   constructor(AuthorId author, bytes key);
   /// Create a query for all entries with a given key prefix.
-  ///  
+  ///
   /// If `opts` is `None`, the default values will be used:
   ///     sort_by: SortBy::AuthorKey
   ///     direction: SortDirection::Asc
@@ -490,7 +490,7 @@ interface Query {
   [Name=key_prefix]
   constructor(bytes prefix, QueryOptions? opts);
   /// Create a query for all entries of a single author with a given key prefix.
-  ///  
+  ///
   /// If `opts` is `None`, the default values will be used:
   ///     direction: SortDirection::Asc
   ///     offset: None
@@ -632,7 +632,7 @@ dictionary OpenState {
 /// Stats counter
 dictionary CounterStats {
   /// The counter value
-  u64 value;
+  u32 value;
   /// The counter description
   string description;
 };
@@ -807,7 +807,7 @@ interface PublicKey {
   bytes to_bytes();
   /// Get a PublicKey from a string
   [Name=from_string, Throws=IrohError]
-  constructor(string s); 
+  constructor(string s);
   /// Get a PublicKey from a byte slice
   [Name=from_bytes, Throws=IrohError]
   constructor(bytes bytes);
@@ -1152,7 +1152,7 @@ dictionary BlobListResponse {
   /// The size of the blob
   u64 size;
 };
-    
+
 /// A response to a list blobs request
 dictionary BlobListIncompleteResponse {
   /// The size we got

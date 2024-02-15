@@ -581,6 +581,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f7144d30dcf0fafbce74250a3963025d8d52177934239851c917d29f1df280c2"
 
 [[package]]
+name = "convert_case"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ec182b0ca2f35d8fc196cf3404988fd8b8c739a4d270ff118a398feb0cbec1ca"
+dependencies = [
+ "unicode-segmentation",
+]
+
+[[package]]
 name = "core-foundation"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -682,6 +691,16 @@ dependencies = [
  "salsa20",
  "subtle",
  "zeroize",
+]
+
+[[package]]
+name = "ctor"
+version = "0.2.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "30d2b3721e861707777e3195b0158f950ae6dc4a27e4d02ff9f67e3eb3de199e"
+dependencies = [
+ "quote",
+ "syn 2.0.41",
 ]
 
 [[package]]
@@ -1697,6 +1716,36 @@ checksum = "8f518f335dce6725a761382244631d86cf0ccb2863413590b31338feb467f9c3"
 [[package]]
 name = "iroh"
 version = "0.12.0"
+dependencies = [
+ "anyhow",
+ "blake3",
+ "bytes",
+ "data-encoding",
+ "futures",
+ "iroh 0.12.0 (git+https://github.com/n0-computer/iroh.git)",
+ "iroh-io",
+ "libc",
+ "multibase",
+ "napi",
+ "napi-build",
+ "napi-derive",
+ "num_cpus",
+ "quic-rpc",
+ "quinn",
+ "rand",
+ "range-collections",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "tokio-util",
+ "tracing-subscriber",
+ "uniffi",
+ "url",
+]
+
+[[package]]
+name = "iroh"
+version = "0.12.0"
 source = "git+https://github.com/n0-computer/iroh.git#aeee7186894ee6249aa58eac7001d87cb9edf4d7"
 dependencies = [
  "anyhow",
@@ -1802,33 +1851,6 @@ dependencies = [
  "tokio-util",
  "tracing",
  "tracing-futures",
-]
-
-[[package]]
-name = "iroh-ffi"
-version = "0.12.0"
-dependencies = [
- "anyhow",
- "blake3",
- "bytes",
- "data-encoding",
- "futures",
- "iroh",
- "iroh-io",
- "libc",
- "multibase",
- "num_cpus",
- "quic-rpc",
- "quinn",
- "rand",
- "range-collections",
- "tempfile",
- "thiserror",
- "tokio",
- "tokio-util",
- "tracing-subscriber",
- "uniffi",
- "url",
 ]
 
 [[package]]
@@ -2044,6 +2066,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "302d7ab3130588088d277783b1e2d2e10c9e9e4a16dd9050e6ec93fb3e7048f4"
 
 [[package]]
+name = "libloading"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c571b676ddfc9a8c12f1f3d3085a7b163966a8fd8098a90640953ce5f6170161"
+dependencies = [
+ "cfg-if",
+ "windows-sys 0.48.0",
+]
+
+[[package]]
 name = "libm"
 version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2211,6 +2243,69 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a51313c5820b0b02bd422f4b44776fbf47961755c74ce64afc73bfad10226c3"
 dependencies = [
  "getrandom",
+]
+
+[[package]]
+name = "napi"
+version = "2.15.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "43792514b0c95c5beec42996da0c1b39265b02b75c97baa82d163d3ef55cbfa7"
+dependencies = [
+ "anyhow",
+ "bitflags 2.4.1",
+ "chrono",
+ "ctor",
+ "encoding_rs",
+ "napi-derive",
+ "napi-sys",
+ "once_cell",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
+name = "napi-build"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d4b4532cf86bfef556348ac65e561e3123879f0e7566cca6d43a6ff5326f13df"
+
+[[package]]
+name = "napi-derive"
+version = "2.15.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8d56bb899c164ab1be5e542ae7db8b26750c864bf2eef07295f17754e6358777"
+dependencies = [
+ "cfg-if",
+ "convert_case",
+ "napi-derive-backend",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.41",
+]
+
+[[package]]
+name = "napi-derive-backend"
+version = "1.0.60"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6cf2d74ac66fd1cccb646be75fdd1c1dce8acfe20a68f61566a31da0d3eb9786"
+dependencies = [
+ "convert_case",
+ "once_cell",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "semver",
+ "syn 2.0.41",
+]
+
+[[package]]
+name = "napi-sys"
+version = "2.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2503fa6af34dc83fb74888df8b22afe933b58d37daf7d80424b1c60c68196b8b"
+dependencies = [
+ "libloading",
 ]
 
 [[package]]
@@ -4397,6 +4492,12 @@ checksum = "5c5713f0fc4b5db668a2ac63cdb7bb4469d8c9fed047b1d0292cc7b0ce2ba921"
 dependencies = [
  "tinyvec",
 ]
+
+[[package]]
+name = "unicode-segmentation"
+version = "1.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d4c87d22b6e3f4a18d4d40ef354e97c90fcb14dd91d7dc0aa9d8a1172ebf7202"
 
 [[package]]
 name = "unicode-width"

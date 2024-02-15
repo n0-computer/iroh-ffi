@@ -103,3 +103,8 @@ iroh-node-go
 
 # Python
 python/iroh-data
+
+# Node
+node_modules
+*.node
+package-lock.json
