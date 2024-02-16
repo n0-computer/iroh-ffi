@@ -389,6 +389,24 @@ impl IrohNode {
         })
     }
 
+    /// List all incomplete (partial) blobs.
+    ///
+    /// Note: this allocates for each `BlobListIncompleteResponse`, if you have many `BlobListIncompleteResponse`s this may be a prohibitively large list.
+    /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "blobsListIncomplete")]
+    pub async fn blobs_list_incomplete_js(&self) -> Result<Vec<serde_json::Value>, napi::Error> {
+        let blobs = self
+            .sync_client
+            .blobs
+            .list_incomplete()
+            .await?
+            .map_ok(|res| serde_json::to_value(BlobListIncompleteResponse::from(res)).unwrap())
+            .try_collect::<Vec<_>>()
+            .await?;
+        Ok(blobs)
+    }
+
     /// List all collections.
     ///
     /// Note: this allocates for each `BlobListCollectionsResponse`, if you have many `BlobListCollectionsResponse`s this may be a prohibitively large list.
@@ -409,6 +427,24 @@ impl IrohNode {
         })
     }
 
+    /// List all collections.
+    ///
+    /// Note: this allocates for each `BlobListCollectionsResponse`, if you have many `BlobListCollectionsResponse`s this may be a prohibitively large list.
+    /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "blobsListCollection")]
+    pub async fn blobs_list_collection_js(&self) -> Result<Vec<serde_json::Value>, napi::Error> {
+        let blobs = self
+            .sync_client
+            .blobs
+            .list_collections()
+            .await?
+            .map_ok(|res| serde_json::to_value(BlobListCollectionsResponse::from(res)).unwrap())
+            .try_collect::<Vec<_>>()
+            .await?;
+        Ok(blobs)
+    }
+
     /// Read the content of a collection
     pub fn blobs_get_collection(&self, hash: Arc<Hash>) -> Result<Arc<Collection>, IrohError> {
         block_on(&self.rt(), async {
@@ -420,6 +456,15 @@ impl IrohNode {
                 .map_err(IrohError::collection)?;
             Ok(Arc::new(collection.into()))
         })
+    }
+
+    /// Read the content of a collection
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "blobsGetCollection")]
+    pub async fn blobs_get_collection_js(&self, hash: &Hash) -> Result<Collection, napi::Error> {
+        let collection = self.sync_client.blobs.get_collection(hash.0).await?;
+
+        Ok(collection.into())
     }
 
     /// Create a collection from already existing blobs.
@@ -454,6 +499,44 @@ impl IrohNode {
         })
     }
 
+    /// Create a collection from already existing blobs.
+    ///
+    /// To automatically clear the tags for the passed in blobs you can set
+    /// `tags_to_delete` on those tags, and they will be deleted once the collection is created.
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "blobsCreateCollection")]
+    pub async fn blobs_create_collection_js(
+        &self,
+        collection: &Collection,
+        tag: Option<Vec<u8>>,
+        tags_to_delete: Vec<String>,
+    ) -> Result<serde_json::Value, napi::Error> {
+        let collection = collection.0.read().unwrap().clone();
+        let tag = match tag {
+            None => iroh::rpc_protocol::SetTagOption::Auto,
+            Some(name) => iroh::rpc_protocol::SetTagOption::Named(bytes::Bytes::from(name).into()),
+        };
+
+        let (hash, tag) = self
+            .sync_client
+            .blobs
+            .create_collection(
+                collection,
+                tag,
+                tags_to_delete
+                    .into_iter()
+                    .map(iroh::bytes::Tag::from)
+                    .collect(),
+            )
+            .await?;
+
+        Ok(serde_json::to_value(HashAndTag {
+            hash: Arc::new(hash.into()),
+            tag: tag.0.to_vec(),
+        })
+        .unwrap())
+    }
+
     /// Delete a blob.
     pub fn blobs_delete_blob(&self, hash: Arc<Hash>) -> Result<(), IrohError> {
         block_on(&self.rt(), async {
@@ -478,7 +561,7 @@ impl IrohNode {
 }
 
 /// The Hash and associated tag of a newly created collection
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct HashAndTag {
     /// The hash of the collection
     pub hash: Arc<Hash>,
@@ -625,7 +708,8 @@ impl Hash {
     }
 
     /// Returns true if the Hash's have the same value
-    pub fn equal(&self, other: Arc<Hash>) -> bool {
+    #[napi]
+    pub fn equal(&self, other: &Hash) -> bool {
         *self == *other
     }
 }
@@ -1266,7 +1350,7 @@ impl From<iroh::rpc_protocol::BlobListResponse> for BlobListResponse {
 }
 
 /// A response to a list blobs request
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BlobListIncompleteResponse {
     /// The size we got
     pub size: u64,
@@ -1287,7 +1371,7 @@ impl From<iroh::rpc_protocol::BlobListIncompleteResponse> for BlobListIncomplete
 }
 
 /// A response to a list collections request
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BlobListCollectionsResponse {
     /// Tag of the collection
     pub tag: Vec<u8>,
@@ -1479,10 +1563,10 @@ mod tests {
         assert_eq!(hex_str.to_string(), hash_0.to_hex());
 
         // test that the eq function works
-        let hash = Arc::new(hash);
-        let hash_0 = Arc::new(hash_0);
-        assert!(hash.equal(hash_0.clone()));
-        assert!(hash_0.equal(hash.clone()));
+        let hash = hash;
+        let hash_0 = hash_0;
+        assert!(hash.equal(&hash_0));
+        assert!(hash_0.equal(&hash));
     }
 
     #[test]
@@ -1749,7 +1833,7 @@ mod tests {
         hashes_exist(&hashes, &got_hashes);
 
         for hash in got_hashes {
-            if remove_hash.equal(hash) {
+            if remove_hash.equal(&hash) {
                 panic!("blob {} should have been removed", remove_hash);
             }
         }

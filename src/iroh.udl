@@ -606,7 +606,7 @@ interface Hash {
   /// Write the hash to a string
   string to_string();
   /// Returns true if the Hash's have the same value
-  boolean equal(Hash other);
+  boolean equal([ByRef] Hash other);
   /// Bytes of the hash.
   bytes to_bytes();
   /// Create a Hash from its raw bytes representation.

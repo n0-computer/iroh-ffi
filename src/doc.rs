@@ -1612,7 +1612,7 @@ mod tests {
         let query = Query::author_key_exact(&author, key.clone());
         let entry = doc.get_one(query.into()).unwrap().unwrap();
 
-        assert!(hash.equal(entry.content_hash()));
+        assert!(hash.equal(&entry.content_hash()));
 
         let got_val = entry.content_bytes(doc).unwrap();
         assert_eq!(val, got_val);

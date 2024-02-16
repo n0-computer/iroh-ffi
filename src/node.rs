@@ -386,13 +386,18 @@ impl IrohNode {
 
         let path = PathBuf::from(path);
         let node = block_on(&rt, async move {
-            Self::new_inner(path, Some(tokio_rt)).await.map_err(IrohError::node_create)
+            Self::new_inner(path, Some(tokio_rt))
+                .await
+                .map_err(IrohError::node_create)
         })?;
 
         Ok(node)
     }
 
-    async fn new_inner(path: PathBuf, tokio_rt: Option<tokio::runtime::Runtime>) -> Result<Self, anyhow::Error> {
+    async fn new_inner(
+        path: PathBuf,
+        tokio_rt: Option<tokio::runtime::Runtime>,
+    ) -> Result<Self, anyhow::Error> {
         tokio::fs::create_dir_all(&path).await?;
         // create or load secret key
         let secret_key_path = iroh::util::path::IrohPaths::SecretKey.with_root(&path);
@@ -406,7 +411,10 @@ impl IrohNode {
         tokio::fs::create_dir_all(&blob_path).await?;
         let db = iroh::bytes::store::flat::Store::load(&blob_path).await?;
 
-        let node = Node::builder(db, docs).secret_key(secret_key).spawn().await?;
+        let node = Node::builder(db, docs)
+            .secret_key(secret_key)
+            .spawn()
+            .await?;
         let sync_client = node.client();
 
         Ok(IrohNode {
@@ -448,11 +456,7 @@ impl IrohNode {
     #[cfg(feature = "napi")]
     #[napi(js_name = "stats")]
     pub async fn stats_js(&self) -> Result<HashMap<String, CounterStats>, napi::Error> {
-        let stats = self
-            .sync_client
-            .node
-            .stats()
-            .await?;
+        let stats = self.sync_client.node.stats().await?;
         Ok(stats.into_iter().map(|(k, v)| (k, v.into())).collect())
     }
 
@@ -537,11 +541,7 @@ impl IrohNode {
     #[cfg(feature = "napi")]
     #[napi(js_name = "status")]
     pub async fn status_js(&self) -> Result<NodeStatusResponse, napi::Error> {
-        let status = self.sync_client
-            .node
-            .status()
-            .await
-            .map(Into::into)?;
+        let status = self.sync_client.node.status().await.map(Into::into)?;
         Ok(status)
     }
 }

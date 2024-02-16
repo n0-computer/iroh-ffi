@@ -98,6 +98,8 @@ export class Hash {
   static fromString(s: string): this
   /** Convert the hash to a hex string. */
   toString(): string
+  /** Returns true if the Hash's have the same value */
+  equal(other: Hash): boolean
 }
 /** A collection of blobs */
 export class Collection {
@@ -291,6 +293,29 @@ export class IrohNode {
   blobsAddBytes(bytes: Array<number>, tag?: Array<number> | undefined | null): Promise<any>
   /** Download a blob from another node and add it to the local database. */
   blobsDownload(hash: Hash, format: BlobFormat, node: NodeAddr, tag: Array<number> | undefined | null, out: string | undefined | null, inPlace: boolean, cb: (err: Error | null, arg: any) => any): Promise<void>
+  /**
+   * List all incomplete (partial) blobs.
+   *
+   * Note: this allocates for each `BlobListIncompleteResponse`, if you have many `BlobListIncompleteResponse`s this may be a prohibitively large list.
+   * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
+   */
+  blobsListIncomplete(): Promise<Array<any>>
+  /**
+   * List all collections.
+   *
+   * Note: this allocates for each `BlobListCollectionsResponse`, if you have many `BlobListCollectionsResponse`s this may be a prohibitively large list.
+   * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
+   */
+  blobsListCollection(): Promise<Array<any>>
+  /** Read the content of a collection */
+  blobsGetCollection(hash: Hash): Promise<Collection>
+  /**
+   * Create a collection from already existing blobs.
+   *
+   * To automatically clear the tags for the passed in blobs you can set
+   * `tags_to_delete` on those tags, and they will be deleted once the collection is created.
+   */
+  blobsCreateCollection(collection: Collection, tag: Array<number> | undefined | null, tagsToDelete: Array<string>): Promise<any>
   /** Delete a blob. */
   blobsDeleteBlob(hash: Hash): Promise<void>
   /** Create a new doc. */
