@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use napi_derive::napi;
+use serde::{Deserialize, Serialize};
 
 use crate::IrohError;
 
@@ -9,7 +10,7 @@ use crate::IrohError;
 /// The key itself is just a 32 byte array, but a key has associated crypto
 /// information that is cached for performance reasons.
 #[napi]
-#[derive(Debug, Clone, Eq)]
+#[derive(Debug, Clone, Eq, Serialize, Deserialize)]
 pub struct PublicKey {
     pub(crate) key: [u8; 32],
 }

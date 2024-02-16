@@ -133,27 +133,17 @@ export class NamespaceAndCapability {
   /** The capability you have for the doc (read/write) */
   capability: CapabilityKind
 }
+export type JsDoc = Doc
 /** A representation of a mutable, synchronizable key-value store. */
-export class Doc {
-  /** Get the document id of this doc. */
-  get id(): string
-  /** Close the document. */
-  close(): void
-  /** Set the content of a key to a byte array. */
-  setBytes(authorId: AuthorId, key: Array<number>, value: Array<number>): Hash
-  /** Set an entries on the doc via its key, hash, and size. */
-  setHash(authorId: AuthorId, key: Array<number>, hash: Hash, size: number): void
-  /** Share this document with peers over a ticket. */
-  share(mode: ShareMode): string
-}
+export class Doc { }
 /** A peer and it's addressing information. */
 export class NodeAddr {
   /** Create a new [`NodeAddr`] with empty [`AddrInfo`]. */
   constructor(nodeId: PublicKey, derpUrl: string | undefined | null, addresses: Array<string>)
   /** Get the direct addresses of this peer. */
-  directAddresses(): Array<string>
+  get directAddresses(): Array<string>
   /** Get the derp region of this peer. */
-  derpUrl(): string | null
+  get derpUrl(): string | null
   /** Returns true if both NodeAddr's have the same values */
   equal(other: NodeAddr): boolean
 }
@@ -173,6 +163,13 @@ export class Entry {
   key(): Array<number>
   /** Get the namespace id of this entry. */
   namespace(): string
+  /**
+   * Read all content of an [`Entry`] into a buffer.
+   * This allocates a buffer for the full entry. Use only if you know that the entry you're
+   * reading is small. If not sure, use [`Self::content_len`] and check the size with
+   * before calling [`Self::content_bytes`].
+   */
+  contentBytes(doc: Doc): Promise<Array<number>>
 }
 /**
  * Build a Query to search for an entry or entries in a doc.
@@ -318,27 +315,25 @@ export class IrohNode {
   blobsCreateCollection(collection: Collection, tag: Array<number> | undefined | null, tagsToDelete: Array<string>): Promise<any>
   /** Delete a blob. */
   blobsDeleteBlob(hash: Hash): Promise<void>
-  /** Create a new doc. */
-  docCreate(): Doc
+  docCreate(): Promise<JsDoc>
   /** Join and sync with an already existing document. */
-  docJoin(ticket: string): Doc
+  docJoin(ticket: string): Promise<JsDoc>
   /** List all the docs we have access to on this node. */
-  docList(): Array<NamespaceAndCapability>
+  docList(): Promise<Array<NamespaceAndCapability>>
   /**
    * Get a [`Doc`].
    *
    * Returns None if the document cannot be found.
    */
-  docOpen(id: string): Doc | null
+  docOpen(id: string): Promise<JsDoc | null>
   /**
    * Delete a document from the local node.
    *
    * This is a destructive operation. Both the document secret key and all entries in the
-   * document will be permanently deleted from the node's storage. Content blobs will be
-   * deleted.clone()).await.map_err(Iroh::doc)
+   * document will be permanently deleted from the node's storage. Content blobs will be delted
    * through garbage collection unless they are referenced from another document or tag.
    */
-  docDrop(docId: string): void
+  docDrop(docId: string): Promise<void>
   /**
    * Create a new iroh node. The `path` param should be a directory where we can store or load
    * iroh data from a previous session.

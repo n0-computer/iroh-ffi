@@ -7,6 +7,7 @@ use iroh::{
 };
 use napi_derive::napi;
 use quic_rpc::transport::flume::FlumeConnection;
+use serde::{Deserialize, Serialize};
 
 use crate::{block_on, AuthorId, Hash, IrohError, IrohNode, PublicKey};
 
@@ -31,7 +32,6 @@ impl From<iroh::sync::CapabilityKind> for CapabilityKind {
 #[napi]
 impl IrohNode {
     /// Create a new doc.
-    #[napi]
     pub fn doc_create(&self) -> Result<Arc<Doc>, IrohError> {
         block_on(&self.rt(), async {
             let doc = self
@@ -48,8 +48,15 @@ impl IrohNode {
         })
     }
 
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "docCreate")]
+    pub async fn doc_create_js(&self) -> Result<JsDoc, napi::Error> {
+        let doc = self.sync_client.docs.create().await?;
+
+        Ok(JsDoc { inner: doc })
+    }
+
     /// Join and sync with an already existing document.
-    #[napi]
     pub fn doc_join(&self, ticket: String) -> Result<Arc<Doc>, IrohError> {
         block_on(&self.rt(), async {
             let ticket =
@@ -68,8 +75,17 @@ impl IrohNode {
         })
     }
 
+    /// Join and sync with an already existing document.
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "docJoin")]
+    pub async fn doc_join_js(&self, ticket: String) -> Result<JsDoc, napi::Error> {
+        let ticket = iroh::ticket::DocTicket::from_str(&ticket).map_err(anyhow::Error::from)?;
+        let doc = self.sync_client.docs.import(ticket).await?;
+
+        Ok(JsDoc { inner: doc })
+    }
+
     /// List all the docs we have access to on this node.
-    #[napi]
     pub fn doc_list(&self) -> Result<Vec<NamespaceAndCapability>, IrohError> {
         block_on(&self.rt(), async {
             let docs = self
@@ -90,10 +106,28 @@ impl IrohNode {
         })
     }
 
+    /// List all the docs we have access to on this node.
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "docList")]
+    pub async fn doc_list_js(&self) -> Result<Vec<NamespaceAndCapability>, napi::Error> {
+        let docs = self
+            .sync_client
+            .docs
+            .list()
+            .await?
+            .map_ok(|(namespace, capability)| NamespaceAndCapability {
+                namespace: namespace.to_string(),
+                capability: capability.into(),
+            })
+            .try_collect::<Vec<_>>()
+            .await?;
+
+        Ok(docs)
+    }
+
     /// Get a [`Doc`].
     ///
     /// Returns None if the document cannot be found.
-    #[napi]
     pub fn doc_open(&self, id: String) -> Result<Option<Arc<Doc>>, IrohError> {
         let namespace_id = iroh::sync::NamespaceId::from_str(&id).map_err(IrohError::namespace)?;
         block_on(&self.rt(), async {
@@ -112,13 +146,23 @@ impl IrohNode {
         })
     }
 
+    /// Get a [`Doc`].
+    ///
+    /// Returns None if the document cannot be found.
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "docOpen")]
+    pub async fn doc_open_js(&self, id: String) -> Result<Option<JsDoc>, napi::Error> {
+        let namespace_id = iroh::sync::NamespaceId::from_str(&id)?;
+        let doc = self.sync_client.docs.open(namespace_id).await?;
+
+        Ok(doc.map(|d| JsDoc { inner: d }))
+    }
+
     /// Delete a document from the local node.
     ///
     /// This is a destructive operation. Both the document secret key and all entries in the
-    /// document will be permanently deleted from the node's storage. Content blobs will be
-    /// deleted.clone()).await.map_err(Iroh::doc)
+    /// document will be permanently deleted from the node's storage. Content blobs will be deleted
     /// through garbage collection unless they are referenced from another document or tag.
-    #[napi]
     pub fn doc_drop(&self, doc_id: String) -> Result<(), IrohError> {
         let doc_id = iroh::sync::NamespaceId::from_str(&doc_id).map_err(IrohError::namespace)?;
         block_on(&self.rt(), async {
@@ -128,6 +172,19 @@ impl IrohNode {
                 .await
                 .map_err(IrohError::doc)
         })
+    }
+
+    /// Delete a document from the local node.
+    ///
+    /// This is a destructive operation. Both the document secret key and all entries in the
+    /// document will be permanently deleted from the node's storage. Content blobs will be delted
+    /// through garbage collection unless they are referenced from another document or tag.
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "docDrop")]
+    pub async fn doc_drop_js(&self, doc_id: String) -> Result<(), napi::Error> {
+        let doc_id = iroh::sync::NamespaceId::from_str(&doc_id)?;
+        self.sync_client.docs.drop_doc(doc_id).await?;
+        Ok(())
     }
 }
 
@@ -141,23 +198,19 @@ pub struct NamespaceAndCapability {
 }
 
 /// A representation of a mutable, synchronizable key-value store.
-#[napi]
 #[derive(Clone)]
 pub struct Doc {
     pub(crate) inner: ClientDoc<FlumeConnection<ProviderResponse, ProviderRequest>>,
     pub(crate) rt: tokio::runtime::Handle,
 }
 
-#[napi]
 impl Doc {
     /// Get the document id of this doc.
-    #[napi(getter)]
     pub fn id(&self) -> String {
         self.inner.id().to_string()
     }
 
     /// Close the document.
-    #[napi]
     pub fn close(&self) -> Result<(), IrohError> {
         block_on(&self.rt, async {
             self.inner.close().await.map_err(IrohError::doc)
@@ -166,25 +219,6 @@ impl Doc {
 
     /// Set the content of a key to a byte array.
     pub fn set_bytes(
-        &self,
-        author_id: &AuthorId,
-        key: Vec<u8>,
-        value: Vec<u8>,
-    ) -> Result<Arc<Hash>, IrohError> {
-        block_on(&self.rt, async {
-            let hash = self
-                .inner
-                .set_bytes(author_id.0, key, value)
-                .await
-                .map_err(IrohError::doc)?;
-            Ok(Arc::new(Hash(hash)))
-        })
-    }
-
-    /// Set the content of a key to a byte array.
-    #[cfg(feature = "napi")]
-    #[napi(js_name = "setBytes")]
-    pub fn set_bytes_js(
         &self,
         author_id: &AuthorId,
         key: Vec<u8>,
@@ -211,25 +245,6 @@ impl Doc {
         block_on(&self.rt, async {
             self.inner
                 .set_hash(author_id.0, key, hash.0, size)
-                .await
-                .map_err(IrohError::doc)?;
-            Ok(())
-        })
-    }
-
-    /// Set an entries on the doc via its key, hash, and size.
-    #[cfg(feature = "napi")]
-    #[napi(js_name = "setHash")]
-    pub fn set_hash_js(
-        &self,
-        author_id: &AuthorId,
-        key: Vec<u8>,
-        hash: &Hash,
-        size: i64,
-    ) -> Result<(), IrohError> {
-        block_on(&self.rt, async {
-            self.inner
-                .set_hash(author_id.0, key, hash.0, size as _)
                 .await
                 .map_err(IrohError::doc)?;
             Ok(())
@@ -353,7 +368,6 @@ impl Doc {
     }
 
     /// Share this document with peers over a ticket.
-    #[napi]
     pub fn share(&self, mode: ShareMode) -> Result<String, IrohError> {
         block_on(&self.rt, async {
             self.inner
@@ -441,8 +455,240 @@ impl Doc {
     }
 }
 
+/// A representation of a mutable, synchronizable key-value store.
+#[cfg(feature = "napi")]
+#[napi(js_name = "Doc")]
+#[derive(Clone)]
+pub struct JsDoc {
+    pub(crate) inner: ClientDoc<FlumeConnection<ProviderResponse, ProviderRequest>>,
+}
+
+#[cfg(feature = "napi")]
+#[napi]
+impl JsDoc {
+    /// Get the document id of this doc.
+    #[napi(getter)]
+    pub fn id(&self) -> String {
+        self.inner.id().to_string()
+    }
+
+    /// Close the document.
+    #[napi]
+    pub async fn close(&self) -> Result<(), napi::Error> {
+        self.inner.close().await?;
+        Ok(())
+    }
+
+    /// Set the content of a key to a byte array.
+    #[napi]
+    pub async fn set_bytes(
+        &self,
+        author_id: &AuthorId,
+        key: Vec<u8>,
+        value: Vec<u8>,
+    ) -> Result<Hash, napi::Error> {
+        let hash = self.inner.set_bytes(author_id.0, key, value).await?;
+
+        Ok(Hash(hash))
+    }
+
+    /// Set an entries on the doc via its key, hash, and size.
+    #[napi]
+    pub async fn set_hash(
+        &self,
+        author_id: &AuthorId,
+        key: Vec<u8>,
+        hash: &Hash,
+        size: napi::bindgen_prelude::BigInt,
+    ) -> Result<(), napi::Error> {
+        let (_, size, _) = size.get_u64();
+        self.inner.set_hash(author_id.0, key, hash.0, size).await?;
+
+        Ok(())
+    }
+
+    /// Add an entry from an absolute file path
+    #[napi]
+    pub async fn import_file(
+        &self,
+        author: &AuthorId,
+        key: Vec<u8>,
+        path: String,
+        in_place: bool,
+        cb: Option<napi::threadsafe_function::ThreadsafeFunction<serde_json::Value>>,
+    ) -> Result<(), napi::Error> {
+        let mut stream = self
+            .inner
+            .import_file(
+                author.0,
+                bytes::Bytes::from(key),
+                std::path::PathBuf::from(path),
+                in_place,
+            )
+            .await?;
+
+        while let Some(progress) = stream.next().await {
+            if let Some(ref cb) = cb {
+                let progress: DocImportProgress = progress?.into();
+                cb.call_async(Ok(serde_json::to_value(progress)?)).await?
+            }
+        }
+        Ok(())
+    }
+
+    /// Export an entry as a file to a given absolute path
+    pub async fn export_file(
+        &self,
+        entry: &Entry,
+        path: String,
+        cb: Option<napi::threadsafe_function::ThreadsafeFunction<serde_json::Value>>,
+    ) -> Result<(), napi::Error> {
+        let mut stream = self
+            .inner
+            .export_file(entry.0.clone(), std::path::PathBuf::from(path))
+            .await?;
+
+        while let Some(progress) = stream.next().await {
+            if let Some(ref cb) = cb {
+                let progress: DocExportProgress = progress?.into();
+                cb.call_async(Ok(serde_json::to_value(progress)?)).await?;
+            }
+        }
+        Ok(())
+    }
+
+    /// Delete entries that match the given `author` and key `prefix`.
+    ///
+    /// This inserts an empty entry with the key set to `prefix`, effectively clearing all other
+    /// entries whose key starts with or is equal to the given `prefix`.
+    ///
+    /// Returns the number of entries deleted.
+    #[napi]
+    pub async fn del(
+        &self,
+        author_id: &AuthorId,
+        prefix: Vec<u8>,
+    ) -> Result<napi::bindgen_prelude::BigInt, napi::Error> {
+        let num_del = self.inner.del(author_id.0, prefix).await?;
+
+        Ok(u64::try_from(num_del).map_err(anyhow::Error::from)?.into())
+    }
+
+    /// Get an entry for a key and author.
+    #[napi]
+    pub async fn get_exact(
+        &self,
+        author: &AuthorId,
+        key: Vec<u8>,
+        include_empty: bool,
+    ) -> Result<Option<Entry>, napi::Error> {
+        let e = self.inner.get_exact(author.0, key, include_empty).await?;
+        Ok(e.map(Into::into))
+    }
+
+    /// Get entries.
+    ///
+    /// Note: this allocates for each `Entry`, if you have many `Entry`s this may be a prohibitively large list.
+    /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
+    #[napi]
+    pub async fn get_many(&self, query: &Query) -> Result<Vec<Entry>, napi::Error> {
+        let entries = self
+            .inner
+            .get_many(query.0.clone())
+            .await?
+            .map_ok(|e| Entry(e))
+            .try_collect::<Vec<_>>()
+            .await?;
+
+        Ok(entries)
+    }
+
+    /// Get the latest entry for a key and author.
+    #[napi]
+    pub async fn get_one(&self, query: &Query) -> Result<Option<Entry>, napi::Error> {
+        let e = self.inner.get_one((*query).clone().0).await?;
+        Ok(e.map(Into::into))
+    }
+
+    /// Share this document with peers over a ticket.
+    #[napi]
+    pub async fn share(&self, mode: ShareMode) -> Result<String, napi::Error> {
+        let ticket = self.inner.share(mode.into()).await?;
+        Ok(ticket.to_string())
+    }
+
+    /// Start to sync this document with this peer.
+    #[napi]
+    pub async fn start_sync(&self, peer: &NodeAddr) -> Result<(), napi::Error> {
+        let peer = (*peer).clone().try_into().map_err(anyhow::Error::from)?;
+        let peers = vec![peer];
+
+        self.inner.start_sync(peers).await?;
+        Ok(())
+    }
+
+    /// Stop the live sync for this document.
+    #[napi]
+    pub async fn leave(&self) -> Result<(), napi::Error> {
+        self.inner.leave().await?;
+        Ok(())
+    }
+
+    /// Subscribe to events for this document.
+    #[napi]
+    pub async fn subscribe(
+        &self,
+        cb: napi::threadsafe_function::ThreadsafeFunction<serde_json::Value>,
+    ) -> Result<(), napi::Error> {
+        let mut sub = self.inner.subscribe().await.unwrap();
+        while let Some(event) = sub.next().await {
+            match event {
+                Ok(event) => {
+                    let ev = serde_json::to_value(LiveEvent::from(event)).unwrap();
+                    if let Err(err) = cb.call_async::<()>(Ok(ev)).await {
+                        println!("cb error: {:?}", err);
+                    }
+                }
+                Err(err) => {
+                    println!("rpc error: {:?}", err);
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Get status info for this document
+    #[napi]
+    pub async fn status(&self) -> Result<serde_json::Value, napi::Error> {
+        let state = self.inner.status().await.map(|o| OpenState::from(o))?;
+        Ok(serde_json::to_value(state).unwrap())
+    }
+
+    // TODO:
+    // /// Set the download policy for this document
+    // #[napi]
+    // pub async fn set_download_policy(&self, policy: &DownloadPolicy) -> Result<(), napi::Error> {
+    //     self.inner
+    //         .set_download_policy((*policy).clone().into())
+    //         .await?;
+    //     Ok(())
+    // }
+
+    /// Get the download policy for this document
+    #[napi]
+    pub async fn get_download_policy(&self) -> Result<serde_json::Value, napi::Error> {
+        let policy = self
+            .inner
+            .get_download_policy()
+            .await
+            .map(|policy| DownloadPolicy::from(policy))?;
+        Ok(serde_json::to_value(policy).unwrap())
+    }
+}
+
 /// Download policy to decide which content blobs shall be downloaded.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DownloadPolicy {
     /// Do not download any key unless it matches one of the filters.
     NothingExcept(Vec<Arc<FilterKind>>),
@@ -507,7 +753,7 @@ impl From<DownloadPolicy> for iroh::sync::store::DownloadPolicy {
 }
 
 /// Filter strategy used in download policies.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FilterKind(pub(crate) iroh::sync::store::FilterKind);
 
 impl FilterKind {
@@ -538,7 +784,7 @@ impl From<iroh::sync::store::FilterKind> for FilterKind {
 }
 
 /// The state for an open replica.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct OpenState {
     /// Whether to accept sync requests for this replica.
     pub sync: bool,
@@ -580,13 +826,13 @@ impl NodeAddr {
     }
 
     /// Get the direct addresses of this peer.
-    #[napi]
+    #[napi(getter)]
     pub fn direct_addresses(&self) -> Vec<String> {
         self.addresses.clone()
     }
 
     /// Get the derp region of this peer.
-    #[napi]
+    #[napi(getter)]
     pub fn derp_url(&self) -> Option<String> {
         self.derp_url.clone()
     }
@@ -658,7 +904,7 @@ impl From<ShareMode> for iroh::rpc_protocol::ShareMode {
 /// namespace id. Its value is the 32-byte BLAKE3 [`hash`]
 /// of the entry's content data, the size of this content data, and a timestamp.
 #[napi]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Entry(pub(crate) iroh::client::Entry);
 
 impl From<iroh::client::Entry> for Entry {
@@ -710,6 +956,17 @@ impl Entry {
                 .map(|c| c.to_vec())
                 .map_err(IrohError::entry)
         })
+    }
+
+    /// Read all content of an [`Entry`] into a buffer.
+    /// This allocates a buffer for the full entry. Use only if you know that the entry you're
+    /// reading is small. If not sure, use [`Self::content_len`] and check the size with
+    /// before calling [`Self::content_bytes`].
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "contentBytes")]
+    pub async fn content_bytes_js(&self, doc: &JsDoc) -> Result<Vec<u8>, napi::Error> {
+        let content = self.0.content_bytes(&doc.inner).await.map(|c| c.to_vec())?;
+        Ok(content)
     }
 }
 
@@ -906,7 +1163,7 @@ pub trait SubscribeCallback: Send + Sync + 'static {
 }
 
 /// Events informing about actions of the live sync progress
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 #[allow(clippy::large_enum_variant)]
 pub enum LiveEvent {
     /// A local insertion.
@@ -1055,7 +1312,7 @@ impl From<iroh::client::LiveEvent> for LiveEvent {
 }
 
 /// Outcome of a sync operation
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SyncEvent {
     /// Peer we synced with
     pub peer: Arc<PublicKey>,
@@ -1088,7 +1345,7 @@ impl From<iroh::sync_engine::SyncEvent> for SyncEvent {
 pub use iroh::sync_engine::SyncReason;
 
 /// Why we performed a sync exchange
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Origin {
     /// public, use a unit variant
     Connect { reason: SyncReason },
@@ -1106,7 +1363,7 @@ impl From<iroh::sync_engine::Origin> for Origin {
 }
 
 /// Outcome of an InsertRemove event.
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct InsertRemoteEvent {
     /// The peer that sent us the entry.
     pub from: Arc<PublicKey>,
@@ -1117,7 +1374,7 @@ pub struct InsertRemoteEvent {
 }
 
 /// Whether the content status is available on a node.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ContentStatus {
     /// The content is completely available.
     Complete,
@@ -1145,7 +1402,7 @@ pub trait DocImportFileCallback: Send + Sync + 'static {
 }
 
 /// The type of `DocImportProgress` event
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DocImportProgressType {
     /// An item was found with name `name`, from now on referred to via `id`
     Found,
@@ -1162,7 +1419,7 @@ pub enum DocImportProgressType {
 }
 
 /// A DocImportProgress event indicating a file was found with name `name`, from now on referred to via `id`
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DocImportProgressFound {
     /// A new unique id for this entry.
     pub id: u64,
@@ -1173,7 +1430,7 @@ pub struct DocImportProgressFound {
 }
 
 /// A DocImportProgress event indicating we've made progress ingesting item `id`.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DocImportProgressProgress {
     /// The unique id of the entry.
     pub id: u64,
@@ -1182,7 +1439,7 @@ pub struct DocImportProgressProgress {
 }
 
 /// A DocImportProgress event indicating we are finished adding `id` to the data store and the hash is `hash`.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DocImportProgressIngestDone {
     /// The unique id of the entry.
     pub id: u64,
@@ -1191,21 +1448,21 @@ pub struct DocImportProgressIngestDone {
 }
 
 /// A DocImportProgress event indicating we are done setting the entry to the doc
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DocImportProgressAllDone {
     /// The key of the entry
     pub key: Vec<u8>,
 }
 
 /// A DocImportProgress event indicating we got an error and need to abort
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DocImportProgressAbort {
     /// The error message
     pub error: String,
 }
 
 /// Progress updates for the doc import file operation.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DocImportProgress {
     /// An item was found with name `name`, from now on referred to via `id`
     Found(DocImportProgressFound),
@@ -1309,7 +1566,7 @@ pub trait DocExportFileCallback: Send + Sync + 'static {
 }
 
 /// The type of `DocExportProgress` event
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DocExportProgressType {
     /// An item was found with name `name`, from now on referred to via `id`
     Found,
@@ -1324,7 +1581,7 @@ pub enum DocExportProgressType {
 }
 
 /// A DocExportProgress event indicating a file was found with name `name`, from now on referred to via `id`
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DocExportProgressFound {
     /// A new unique id for this entry.
     pub id: u64,
@@ -1339,7 +1596,7 @@ pub struct DocExportProgressFound {
 }
 
 /// A DocExportProgress event indicating we've made progress exporting item `id`.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DocExportProgressProgress {
     /// The unique id of the entry.
     pub id: u64,
@@ -1348,14 +1605,14 @@ pub struct DocExportProgressProgress {
 }
 
 /// A DocExportProgress event indicating we got an error and need to abort
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DocExportProgressAbort {
     /// The error message
     pub error: String,
 }
 
 /// Progress updates for the doc import file operation.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DocExportProgress {
     /// An item was found with name `name`, from now on referred to via `id`
     Found(DocExportProgressFound),
