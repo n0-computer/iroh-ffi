@@ -73,7 +73,7 @@ export class AuthorId {
 /** Hash type used throughout Iroh. A blake3 hash. */
 export class Hash {
   /** Calculate the hash of the provide bytes. */
-  static new(buf: Array<number>): Hash
+  constructor(buf: Array<number>)
   /** Bytes of the hash. */
   toBytes(): Array<number>
   /** Create a `Hash` from its raw bytes representation. */
@@ -192,6 +192,12 @@ export class IrohNode {
    * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
    */
   blobsList(): Array<Hash>
+  /**
+   * Get the size information on a single blob.
+   *
+   * Method only exist in FFI
+   */
+  blobsSize(hash: Hash): bigint
   /** Create a new doc. */
   docCreate(): Doc
   /** Join and sync with an already existing document. */

@@ -17,11 +17,12 @@ pub use self::tag::*;
 use futures::Future;
 use iroh::metrics::try_init_metrics_collection;
 
-use tracing_subscriber::filter::LevelFilter;
+#[cfg(feature = "napi")]
 use napi_derive::napi;
+use tracing_subscriber::filter::LevelFilter;
 
 /// The logging level. See the rust (log crate)[https://docs.rs/log] for more information.
-#[napi(string_enum)]
+#[cfg_attr(feature = "napi", napi(string_enum))]
 #[derive(Debug)]
 pub enum LogLevel {
     Trace,
@@ -46,7 +47,7 @@ impl From<LogLevel> for LevelFilter {
 }
 
 /// Set the logging level.
-#[napi]
+#[cfg_attr(feature = "napi", napi)]
 pub fn set_log_level(level: LogLevel) {
     use tracing_subscriber::{fmt, prelude::*, reload};
     let filter: LevelFilter = level.into();
@@ -60,7 +61,7 @@ pub fn set_log_level(level: LogLevel) {
 }
 
 /// Initialize the global metrics collection.
-#[napi]
+#[cfg_attr(feature = "napi", napi)]
 pub fn start_metrics_collection() -> Result<(), IrohError> {
     try_init_metrics_collection().map_err(IrohError::runtime)
 }
@@ -78,7 +79,7 @@ fn block_on<F: Future<Output = T>, T>(rt: &tokio::runtime::Handle, fut: F) -> T 
 /// If `prefix` exists, it will be stripped before converting back to a path
 /// If `root` exists, will add the root as a parent to the created path
 /// Removes any null byte that has been appened to the key
-#[napi]
+#[cfg_attr(feature = "napi", napi)]
 pub fn key_to_path(
     key: Vec<u8>,
     prefix: Option<String>,
@@ -96,7 +97,7 @@ pub fn key_to_path(
 /// Helper function that creates a document key from a canonicalized path, removing the `root` and adding the `prefix`, if they exist
 ///
 /// Appends the null byte to the end of the key.
-#[napi]
+#[cfg_attr(feature = "napi", napi)]
 pub fn path_to_key(
     path: String,
     prefix: Option<String>,

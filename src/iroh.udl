@@ -89,7 +89,7 @@ interface IrohNode {
   sequence<Hash> blobs_list();
   /// Get the size information on a single blob.
   [Throws=IrohError]
-  u64 blobs_size(Hash hash);
+  u64 blobs_size([ByRef] Hash hash);
   /// Read all bytes of single blob.
   ///
   /// This allocates a buffer for the full blob. Use only if you know that the blob you're
@@ -233,7 +233,7 @@ interface Doc {
   void close();
   /// Set the content of a key to a byte array.
   [Throws=IrohError]
-  Hash set_bytes(AuthorId author, bytes key, bytes value);
+  Hash set_bytes([ByRef] AuthorId author, bytes key, bytes value);
   /// Set an entries on the doc via its key, hash, and size.
   [Throws=IrohError]
   void set_hash(AuthorId author, bytes key, Hash hash, u64 size);
@@ -467,7 +467,7 @@ interface Query {
   ///     offset: None
   ///     limit: None
   [Name=author]
-  constructor(AuthorId author, QueryOptions? opts);
+  constructor([ByRef] AuthorId author, QueryOptions? opts);
   /// Query all entries that have an exact key.
   ///
   /// If `opts` is `None`, the default values will be used:
@@ -479,7 +479,7 @@ interface Query {
   constructor(bytes key, QueryOptions? opts);
   /// Create a Query for a single key and author.
   [Name=author_key_exact]
-  constructor(AuthorId author, bytes key);
+  constructor([ByRef] AuthorId author, bytes key);
   /// Create a query for all entries with a given key prefix.
   ///
   /// If `opts` is `None`, the default values will be used:
@@ -496,7 +496,7 @@ interface Query {
   ///     offset: None
   ///     limit: None
   [Name=author_key_prefix]
-  constructor(AuthorId author, bytes prefix, QueryOptions? opts);
+  constructor([ByRef] AuthorId author, bytes prefix, QueryOptions? opts);
   /// Get the offset for this query (number of entries to skip at the beginning).
   u64 offset();
   /// Get the limit for this query (max. number of entries to emit).
@@ -544,7 +544,7 @@ interface NodeAddr {
   /// Get the derp url of this peer.
   string? derp_url();
   /// Returns true if both NodeAddr's have the same values
-  boolean equal(NodeAddr other);
+  boolean equal([ByRef] NodeAddr other);
 };
 
 interface NodeStatusResponse {

@@ -1,6 +1,7 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
+#[cfg(feature = "napi")]
 use napi_derive::napi;
 
 use crate::IrohError;
@@ -9,10 +10,10 @@ use crate::IrohError;
 ///
 /// The key itself is just a 32 byte array, but a key has associated crypto
 /// information that is cached for performance reasons.
-#[napi]
+#[cfg_attr(feature = "napi", napi)]
 #[derive(Debug, Clone, Eq)]
 pub struct PublicKey {
-    pub(crate) key: [u8; 32]
+    pub(crate) key: [u8; 32],
 }
 
 impl From<iroh::net::key::PublicKey> for PublicKey {
@@ -28,7 +29,7 @@ impl From<&PublicKey> for iroh::net::key::PublicKey {
     }
 }
 
-#[napi]
+#[cfg_attr(feature = "napi", napi)]
 impl PublicKey {
     /// Returns true if the PublicKeys are equal
     pub fn equal(&self, other: Arc<PublicKey>) -> bool {
@@ -36,13 +37,13 @@ impl PublicKey {
     }
 
     /// Express the PublicKey as a byte array
-    #[napi]
+    #[cfg_attr(feature = "napi", napi)]
     pub fn to_bytes(&self) -> Vec<u8> {
         self.key.to_vec()
     }
 
     /// Make a PublicKey from base32 string
-    #[napi]
+    #[cfg_attr(feature = "napi", napi)]
     pub fn from_string(s: String) -> Result<Self, IrohError> {
         match iroh::net::key::PublicKey::from_str(&s) {
             Ok(key) => Ok(key.into()),
@@ -51,7 +52,7 @@ impl PublicKey {
     }
 
     /// Make a PublicKey from byte array
-    #[napi]
+    #[cfg_attr(feature = "napi", napi)]
     pub fn from_bytes(bytes: Vec<u8>) -> Result<Self, IrohError> {
         if bytes.len() != 32 {
             return Err(IrohError::PublicKey {
@@ -67,7 +68,7 @@ impl PublicKey {
 
     /// Convert to a base32 string limited to the first 10 bytes for a friendly string
     /// representation of the key.
-    #[napi]
+    #[cfg_attr(feature = "napi", napi)]
     pub fn fmt_short(&self) -> String {
         iroh::net::key::PublicKey::from(self).fmt_short()
     }

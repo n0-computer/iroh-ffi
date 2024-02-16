@@ -5,10 +5,13 @@ use iroh::{
     client::Doc as ClientDoc,
     rpc_protocol::{ProviderRequest, ProviderResponse},
 };
+#[cfg(feature = "napi")]
 use napi_derive::napi;
+use quic_rpc::transport::flume::FlumeConnection;
 
+use crate::{block_on, AuthorId, Hash, IrohError, IrohNode, PublicKey};
 
-#[napi]
+#[cfg_attr(feature = "napi", napi)]
 #[derive(Debug)]
 pub enum CapabilityKind {
     /// A writable replica.
@@ -26,14 +29,10 @@ impl From<iroh::sync::CapabilityKind> for CapabilityKind {
     }
 }
 
-use quic_rpc::transport::flume::FlumeConnection;
-
-use crate::{block_on, AuthorId, Hash, IrohError, IrohNode, PublicKey};
-
-#[napi]
+#[cfg_attr(feature = "napi", napi)]
 impl IrohNode {
     /// Create a new doc.
-    #[napi]
+    #[cfg_attr(feature = "napi", napi)]
     pub fn doc_create(&self) -> Result<Arc<Doc>, IrohError> {
         block_on(&self.async_runtime, async {
             let doc = self
@@ -51,7 +50,7 @@ impl IrohNode {
     }
 
     /// Join and sync with an already existing document.
-    #[napi]
+    #[cfg_attr(feature = "napi", napi)]
     pub fn doc_join(&self, ticket: String) -> Result<Arc<Doc>, IrohError> {
         block_on(&self.async_runtime, async {
             let ticket =
@@ -71,7 +70,7 @@ impl IrohNode {
     }
 
     /// List all the docs we have access to on this node.
-    #[napi]
+    #[cfg_attr(feature = "napi", napi)]
     pub fn doc_list(&self) -> Result<Vec<NamespaceAndCapability>, IrohError> {
         block_on(&self.async_runtime, async {
             let docs = self
@@ -95,7 +94,7 @@ impl IrohNode {
     /// Get a [`Doc`].
     ///
     /// Returns None if the document cannot be found.
-    #[napi]
+    #[cfg_attr(feature = "napi", napi)]
     pub fn doc_open(&self, id: String) -> Result<Option<Arc<Doc>>, IrohError> {
         let namespace_id = iroh::sync::NamespaceId::from_str(&id).map_err(IrohError::namespace)?;
         block_on(&self.async_runtime, async {
@@ -120,6 +119,7 @@ impl IrohNode {
     /// document will be permanently deleted from the node's storage. Content blobs will be
     /// deleted.clone()).await.map_err(Iroh::doc)
     /// through garbage collection unless they are referenced from another document or tag.
+    #[cfg_attr(feature = "napi", napi)]
     pub fn doc_drop(&self, doc_id: String) -> Result<(), IrohError> {
         let doc_id = iroh::sync::NamespaceId::from_str(&doc_id).map_err(IrohError::namespace)?;
         block_on(&self.async_runtime, async {
@@ -133,7 +133,7 @@ impl IrohNode {
 }
 
 /// The namespace id and CapabilityKind (read/write) of the doc
-#[napi]
+#[cfg_attr(feature = "napi", napi)]
 pub struct NamespaceAndCapability {
     /// The namespace id of the doc
     pub namespace: String,
@@ -142,23 +142,23 @@ pub struct NamespaceAndCapability {
 }
 
 /// A representation of a mutable, synchronizable key-value store.
-#[napi]
+#[cfg_attr(feature = "napi", napi)]
 #[derive(Clone)]
 pub struct Doc {
     pub(crate) inner: ClientDoc<FlumeConnection<ProviderResponse, ProviderRequest>>,
     pub(crate) rt: tokio::runtime::Handle,
 }
 
-#[napi]
+#[cfg_attr(feature = "napi", napi)]
 impl Doc {
     /// Get the document id of this doc.
-    #[napi]
+    #[cfg_attr(feature = "napi", napi)]
     pub fn id(&self) -> String {
         self.inner.id().to_string()
     }
 
     /// Close the document.
-    #[napi]
+    #[cfg_attr(feature = "napi", napi)]
     pub fn close(&self) -> Result<(), IrohError> {
         block_on(&self.rt, async {
             self.inner.close().await.map_err(IrohError::doc)
@@ -168,7 +168,7 @@ impl Doc {
     /// Set the content of a key to a byte array.
     pub fn set_bytes(
         &self,
-        author_id: Arc<AuthorId>,
+        author_id: &AuthorId,
         key: Vec<u8>,
         value: Vec<u8>,
     ) -> Result<Arc<Hash>, IrohError> {
@@ -183,6 +183,7 @@ impl Doc {
     }
 
     /// Set the content of a key to a byte array.
+    #[cfg(feature = "napi")]
     #[napi(js_name = "setBytes")]
     pub fn set_bytes_js(
         &self,
@@ -218,6 +219,7 @@ impl Doc {
     }
 
     /// Set an entries on the doc via its key, hash, and size.
+    #[cfg(feature = "napi")]
     #[napi(js_name = "setHash")]
     pub fn set_hash_js(
         &self,
@@ -352,7 +354,7 @@ impl Doc {
     }
 
     /// Share this document with peers over a ticket.
-    #[napi]
+    #[cfg_attr(feature = "napi", napi)]
     pub fn share(&self, mode: ShareMode) -> Result<String, IrohError> {
         block_on(&self.rt, async {
             self.inner
@@ -558,7 +560,7 @@ impl From<iroh::sync::actor::OpenState> for OpenState {
 }
 
 /// A peer and it's addressing information.
-#[napi]
+#[cfg_attr(feature = "napi", napi)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NodeAddr {
     node_id: Arc<PublicKey>,
@@ -587,8 +589,8 @@ impl NodeAddr {
     }
 
     /// Returns true if both NodeAddr's have the same values
-    pub fn equal(&self, other: Arc<NodeAddr>) -> bool {
-        *self == *other
+    pub fn equal(&self, other: &NodeAddr) -> bool {
+        self == other
     }
 }
 
@@ -628,7 +630,7 @@ impl From<iroh::net::magic_endpoint::NodeAddr> for NodeAddr {
 }
 
 /// Intended capability for document share tickets
-#[napi]
+#[cfg_attr(feature = "napi", napi)]
 #[derive(Debug)]
 pub enum ShareMode {
     /// Read-only access
@@ -651,7 +653,7 @@ impl From<ShareMode> for iroh::rpc_protocol::ShareMode {
 /// An entry is identified by a key, its [`AuthorId`], and the [`Doc`]'s
 /// namespace id. Its value is the 32-byte BLAKE3 [`hash`]
 /// of the entry's content data, the size of this content data, and a timestamp.
-#[napi]
+#[cfg_attr(feature = "napi", napi)]
 #[derive(Debug, Clone)]
 pub struct Entry(pub(crate) iroh::client::Entry);
 
@@ -661,16 +663,16 @@ impl From<iroh::client::Entry> for Entry {
     }
 }
 
-#[napi]
+#[cfg_attr(feature = "napi", napi)]
 impl Entry {
     /// Get the [`AuthorId`] of this entry.
-    #[napi]
+    #[cfg_attr(feature = "napi", napi)]
     pub fn author(&self) -> Arc<AuthorId> {
         Arc::new(AuthorId(self.0.id().author()))
     }
 
     /// Get the content_hash of this entry.
-    #[napi]
+    #[cfg_attr(feature = "napi", napi)]
     pub fn content_hash(&self) -> Arc<Hash> {
         Arc::new(Hash(self.0.content_hash()))
     }
@@ -681,13 +683,13 @@ impl Entry {
     }
 
     /// Get the key of this entry.
-    #[napi]
+    #[cfg_attr(feature = "napi", napi)]
     pub fn key(&self) -> Vec<u8> {
         self.0.id().key().to_vec()
     }
 
     /// Get the namespace id of this entry.
-    #[napi]
+    #[cfg_attr(feature = "napi", napi)]
     pub fn namespace(&self) -> String {
         self.0.id().namespace().to_string()
     }
@@ -716,7 +718,7 @@ pub use iroh::sync::store::SortDirection;
 /// Build a Query to search for an entry or entries in a doc.
 ///
 /// Use this with `QueryOptions` to determine sorting, grouping, and pagination.
-#[napi]
+#[cfg_attr(feature = "napi", napi)]
 #[derive(Clone, Debug)]
 pub struct Query(iroh::sync::store::Query);
 
@@ -791,7 +793,7 @@ impl Query {
     ///     direction: SortDirection::Asc
     ///     offset: None
     ///     limit: None
-    pub fn author(author: Arc<AuthorId>, opts: Option<QueryOptions>) -> Self {
+    pub fn author(author: &AuthorId, opts: Option<QueryOptions>) -> Self {
         let mut builder = iroh::sync::store::Query::author(author.0);
 
         if let Some(opts) = opts {
@@ -829,7 +831,7 @@ impl Query {
     }
 
     /// Create a Query for a single key and author.
-    pub fn author_key_exact(author: Arc<AuthorId>, key: Vec<u8>) -> Self {
+    pub fn author_key_exact(author: &AuthorId, key: Vec<u8>) -> Self {
         let builder = iroh::sync::store::Query::author(author.0).key_exact(key);
         Query(builder.build())
     }
@@ -863,7 +865,7 @@ impl Query {
     ///     offset: None
     ///     limit: None
     pub fn author_key_prefix(
-        author: Arc<AuthorId>,
+        author: &AuthorId,
         prefix: Vec<u8>,
         opts: Option<QueryOptions>,
     ) -> Self {
@@ -1488,7 +1490,7 @@ mod tests {
         // create author on node_1
         let author = node_1.author_create().unwrap();
         doc_1
-            .set_bytes(author, b"hello".to_vec(), b"world".to_vec())
+            .set_bytes(&author, b"hello".to_vec(), b"world".to_vec())
             .unwrap();
         let hash = found_r.recv().unwrap().unwrap();
         let val = node_1.blobs_read_to_bytes(hash.into()).unwrap();
@@ -1563,12 +1565,10 @@ mod tests {
         let mut opts = QueryOptions::default();
         opts.offset = 100;
         let author = Query::author(
-            Arc::new(
-                AuthorId::from_string(
-                    "mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q".to_string(),
-                )
-                .unwrap(),
-            ),
+            &AuthorId::from_string(
+                "mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q".to_string(),
+            )
+            .unwrap(),
             Some(opts),
         );
         assert_eq!(100, author.offset());
@@ -1603,11 +1603,11 @@ mod tests {
         let val = b"hello world!".to_vec();
         let key = b"foo".to_vec();
         let hash = doc
-            .set_bytes(author.clone(), key.clone(), val.clone())
+            .set_bytes(&author, key.clone(), val.clone())
             .unwrap();
 
         // get entry
-        let query = Query::author_key_exact(author, key.clone());
+        let query = Query::author_key_exact(&author, key.clone());
         let entry = doc.get_one(query.into()).unwrap().unwrap();
 
         assert!(hash.equal(entry.content_hash()));
@@ -1650,7 +1650,7 @@ mod tests {
 
         // export file
         let entry = doc
-            .get_one(Query::author_key_exact(author, key).into())
+            .get_one(Query::author_key_exact(&author, key).into())
             .unwrap()
             .unwrap();
         let key = entry.key().to_vec();

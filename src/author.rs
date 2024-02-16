@@ -1,14 +1,15 @@
 use std::{str::FromStr, sync::Arc};
 
-use napi_derive::napi;
 use futures::TryStreamExt;
+#[cfg(feature = "napi")]
+use napi_derive::napi;
 
 use crate::{block_on, IrohError, IrohNode};
 
-#[napi]
+#[cfg_attr(feature = "napi", napi)]
 impl IrohNode {
     /// Create a new author.
-    #[napi]
+    #[cfg_attr(feature = "napi", napi)]
     pub fn author_create(&self) -> Result<Arc<AuthorId>, IrohError> {
         block_on(&self.async_runtime, async {
             let author = self
@@ -23,7 +24,7 @@ impl IrohNode {
     }
 
     /// List all the AuthorIds that exist on this node.
-    #[napi]
+    #[cfg_attr(feature = "napi", napi)]
     pub fn author_list(&self) -> Result<Vec<Arc<AuthorId>>, IrohError> {
         block_on(&self.async_runtime, async {
             let authors = self
@@ -42,7 +43,7 @@ impl IrohNode {
 }
 
 /// Identifier for an [`Author`]
-#[napi]
+#[cfg_attr(feature = "napi", napi)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AuthorId(pub(crate) iroh::sync::AuthorId);
 
@@ -52,10 +53,10 @@ impl std::fmt::Display for AuthorId {
     }
 }
 
-#[napi]
+#[cfg_attr(feature = "napi", napi)]
 impl AuthorId {
     /// Get an [`AuthorId`] from a String
-    #[napi]
+    #[cfg_attr(feature = "napi", napi)]
     pub fn from_string(str: String) -> Result<Self, IrohError> {
         let author = iroh::sync::AuthorId::from_str(&str).map_err(IrohError::author)?;
         Ok(AuthorId(author))

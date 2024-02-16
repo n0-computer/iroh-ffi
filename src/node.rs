@@ -5,14 +5,15 @@ use iroh::{
     node::Node,
     rpc_protocol::{ProviderRequest, ProviderResponse},
 };
-use quic_rpc::transport::flume::FlumeConnection;
+#[cfg(feature = "napi")]
 use napi_derive::napi;
+use quic_rpc::transport::flume::FlumeConnection;
 
 use crate::{block_on, IrohError, NodeAddr, PublicKey};
 
 /// Stats counter
 /// Counter stats
-#[napi(object)]
+#[cfg_attr(feature = "napi", napi(object))]
 #[derive(Debug)]
 pub struct CounterStats {
     /// The counter value
@@ -30,16 +31,15 @@ impl From<iroh::rpc_protocol::CounterStats> for CounterStats {
     }
 }
 
-
 /// Information about a direct address.
-#[napi]
+#[cfg_attr(feature = "napi", napi)]
 #[derive(Debug, Clone)]
 pub struct DirectAddrInfo(iroh::net::magicsock::DirectAddrInfo);
 
-#[napi]
+#[cfg_attr(feature = "napi", napi)]
 impl DirectAddrInfo {
     /// Get the reported address
-    #[napi]
+    #[cfg_attr(feature = "napi", napi)]
     pub fn addr(&self) -> String {
         self.0.addr.to_string()
     }
@@ -50,7 +50,7 @@ impl DirectAddrInfo {
     }
 
     /// Get the reported latency, if it exists, in milliseconds
-    #[napi(js_name = "latency")]
+    #[cfg_attr(feature = "napi", napi(js_name = "latency"))]
     pub fn latency_js(&self) -> Option<u32> {
         self.0.latency.map(|l| l.as_millis() as _)
     }
@@ -66,6 +66,7 @@ impl DirectAddrInfo {
     }
 
     /// Get the last control message received by this node
+    #[cfg(feature = "napi")]
     #[napi(js_name = "lastControl")]
     pub fn last_control_js(&self) -> Option<JsLatencyAndControlMsg> {
         self.0
@@ -82,7 +83,7 @@ impl DirectAddrInfo {
     }
 
     /// Get how long ago the last payload message was received for this node in milliseconds.
-    #[napi(js_name = "lastPayload")]
+    #[cfg_attr(feature = "napi", napi(js_name = "lastPayload"))]
     pub fn last_payload_js(&self) -> Option<u32> {
         self.0.last_payload.map(|d| d.as_millis() as _)
     }
@@ -98,6 +99,7 @@ pub struct LatencyAndControlMsg {
 }
 
 /// The latency and type of the control message
+#[cfg(feature = "napi")]
 #[napi(constructor, js_name = "LatencyAndControlMsg")]
 pub struct JsLatencyAndControlMsg {
     /// The latency of the control message, in milliseconds.
@@ -128,6 +130,7 @@ pub struct ConnectionInfo {
     pub last_used: Option<Duration>,
 }
 
+#[cfg(feature = "napi")]
 #[napi(js_name = "ConnectionInfo")]
 #[derive(Debug, Clone)]
 pub struct JsConnectionInfo {
@@ -163,6 +166,7 @@ impl From<iroh::net::magic_endpoint::ConnectionInfo> for ConnectionInfo {
     }
 }
 
+#[cfg(feature = "napi")]
 impl From<iroh::net::magic_endpoint::ConnectionInfo> for JsConnectionInfo {
     fn from(value: iroh::net::magic_endpoint::ConnectionInfo) -> Self {
         Self {
@@ -196,6 +200,7 @@ pub enum ConnectionType {
     None,
 }
 
+#[cfg(feature = "napi")]
 #[napi(js_name = "ConnectionType")]
 #[derive(Debug, Clone)]
 pub struct JsConnectionType {
@@ -204,41 +209,35 @@ pub struct JsConnectionType {
     data1: Option<String>,
 }
 
+#[cfg(feature = "napi")]
 impl From<iroh::net::magicsock::ConnectionType> for JsConnectionType {
     fn from(value: iroh::net::magicsock::ConnectionType) -> Self {
         match value {
-            iroh::net::magicsock::ConnectionType::Direct(addr) => {
-                Self {
-                    typ: ConnType::Direct,
-                    data0: Some(addr.to_string()),
-                    data1: None,
-                }
-            }
-            iroh::net::magicsock::ConnectionType::Mixed(addr, url) => {
-                Self {
-                    typ: ConnType::Mixed,
-                    data0: Some(addr.to_string()),
-                    data1: Some(url.to_string()),
-                }
-            }
-            iroh::net::magicsock::ConnectionType::Relay(url) => {
-                Self {
-                    typ: ConnType::Relay,
-                    data0: Some(url.to_string()),
-                    data1: None,
-                }
-            }
-            iroh::net::magicsock::ConnectionType::None => {
-                Self {
-                    typ: ConnType::None,
-                    data0: None,
-                    data1: None,
-                }
-            }
+            iroh::net::magicsock::ConnectionType::Direct(addr) => Self {
+                typ: ConnType::Direct,
+                data0: Some(addr.to_string()),
+                data1: None,
+            },
+            iroh::net::magicsock::ConnectionType::Mixed(addr, url) => Self {
+                typ: ConnType::Mixed,
+                data0: Some(addr.to_string()),
+                data1: Some(url.to_string()),
+            },
+            iroh::net::magicsock::ConnectionType::Relay(url) => Self {
+                typ: ConnType::Relay,
+                data0: Some(url.to_string()),
+                data1: None,
+            },
+            iroh::net::magicsock::ConnectionType::None => Self {
+                typ: ConnType::None,
+                data0: None,
+                data1: None,
+            },
         }
     }
 }
 
+#[cfg(feature = "napi")]
 #[napi]
 impl JsConnectionType {
     /// Whether connection is direct, relay, mixed, or none
@@ -278,9 +277,8 @@ impl JsConnectionType {
     }
 }
 
-
 /// The type of the connection
-#[napi(string_enum)]
+#[cfg_attr(feature = "napi", napi(string_enum))]
 #[derive(Debug)]
 pub enum ConnType {
     /// Indicates you have a UDP connection.
@@ -333,7 +331,7 @@ impl ConnectionType {
 }
 
 /// The socket address and url of the mixed connection
-#[napi(constructor)]
+#[cfg_attr(feature = "napi", napi(constructor))]
 pub struct ConnectionTypeMixed {
     /// Address of the node
     pub addr: String,
@@ -359,7 +357,7 @@ impl From<iroh::net::magicsock::ConnectionType> for ConnectionType {
 }
 
 /// An Iroh node. Allows you to sync, store, and transfer data.
-#[napi]
+#[cfg_attr(feature = "napi", napi)]
 pub struct IrohNode {
     pub(crate) node: Node<iroh::bytes::store::flat::Store>,
     pub(crate) async_runtime: tokio::runtime::Handle,
@@ -368,7 +366,7 @@ pub struct IrohNode {
     pub(crate) tokio_rt: tokio::runtime::Runtime,
 }
 
-#[napi]
+#[cfg_attr(feature = "napi", napi)]
 impl IrohNode {
     /// Create a new iroh node. The `path` param should be a directory where we can store or load
     /// iroh data from a previous session.
@@ -412,19 +410,20 @@ impl IrohNode {
 
     /// Create a new iroh node. The `path` param should be a directory where we can store or load
     /// iroh data from a previous session.
+    #[cfg(feature = "napi")]
     #[napi(factory, js_name = "withPath")]
     pub fn new_js(path: String) -> napi::Result<Self> {
         Self::new(path).map_err(|e| napi::Error::from(anyhow::Error::from(e)))
     }
 
     /// The string representation of the PublicKey of this node.
-    #[napi]
+    #[cfg_attr(feature = "napi", napi)]
     pub fn node_id(&self) -> String {
         self.node.node_id().to_string()
     }
 
     /// Get statistics of the running node.
-    #[napi]
+    #[cfg_attr(feature = "napi", napi)]
     pub fn stats(&self) -> Result<HashMap<String, CounterStats>, IrohError> {
         block_on(&self.async_runtime, async {
             let stats = self
@@ -455,6 +454,7 @@ impl IrohNode {
     }
 
     /// Return `ConnectionInfo`s for each connection we have to another iroh node.
+    #[cfg(feature = "napi")]
     #[napi(js_name = "connections")]
     pub fn connections_js(&self) -> Result<Vec<JsConnectionInfo>, IrohError> {
         block_on(&self.async_runtime, async {
@@ -490,6 +490,7 @@ impl IrohNode {
     }
 
     /// Return connection information on the currently running node.
+    #[cfg(feature = "napi")]
     #[napi(js_name = "connectionInfo")]
     pub fn connection_info_js(
         &self,
@@ -520,6 +521,7 @@ impl IrohNode {
     }
 
     /// Get status information about a node
+    #[cfg(feature = "napi")]
     #[napi(js_name = "status")]
     pub fn status_js(&self) -> Result<NodeStatusResponse, IrohError> {
         block_on(&self.async_runtime, async {
@@ -534,7 +536,7 @@ impl IrohNode {
 }
 
 /// The response to a status request
-#[napi]
+#[cfg_attr(feature = "napi", napi)]
 #[derive(Debug)]
 pub struct NodeStatusResponse(iroh::rpc_protocol::NodeStatusResponse);
 
@@ -544,22 +546,16 @@ impl From<iroh::rpc_protocol::NodeStatusResponse> for NodeStatusResponse {
     }
 }
 
-#[napi]
+#[cfg_attr(feature = "napi", napi)]
 impl NodeStatusResponse {
     /// The node id and socket addresses of this node.
-    #[napi]
+    #[cfg_attr(feature = "napi", napi)]
     pub fn node_addr(&self) -> Arc<NodeAddr> {
         Arc::new(self.0.addr.clone().into())
     }
 
-    /// The node id and socket addresses of this node.
-    #[napi(js_name = "nodeAddr")]
-    pub fn node_addr_js(&self) -> NodeAddr {
-        self.0.addr.clone().into()
-    }
-
     /// The bound listening addresses of the node
-    #[napi]
+    #[cfg_attr(feature = "napi", napi)]
     pub fn listen_addrs(&self) -> Vec<String> {
         self.0
             .listen_addrs
@@ -569,7 +565,7 @@ impl NodeStatusResponse {
     }
 
     /// The version of the node
-    #[napi]
+    #[cfg_attr(feature = "napi", napi)]
     pub fn version(&self) -> String {
         self.0.version.clone()
     }
