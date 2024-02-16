@@ -169,15 +169,6 @@ impl From<uniffi::UnexpectedUniFFICallbackError> for IrohError {
     }
 }
 
-impl AsRef<str> for IrohError {
-    fn as_ref(&self) -> &str {
-        match self {
-            Self::Runtime { description } => &description,
-            _ => todo!(),
-        }
-    }
-}
-
 #[cfg(feature = "napi")]
 impl From<IrohError> for napi::JsError {
     fn from(value: IrohError) -> Self {
