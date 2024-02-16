@@ -359,18 +359,23 @@ impl From<iroh::net::magicsock::ConnectionType> for ConnectionType {
 #[napi]
 pub struct IrohNode {
     pub(crate) node: Node<iroh::bytes::store::flat::Store>,
-    pub(crate) async_runtime: tokio::runtime::Handle,
     pub(crate) sync_client: iroh::client::Iroh<FlumeConnection<ProviderResponse, ProviderRequest>>,
     #[allow(dead_code)]
-    pub(crate) tokio_rt: tokio::runtime::Runtime,
+    pub(crate) tokio_rt: Option<tokio::runtime::Runtime>,
 }
 
 #[napi]
 impl IrohNode {
+    pub(crate) fn rt(&self) -> tokio::runtime::Handle {
+        match self.tokio_rt {
+            Some(ref rt) => rt.handle().clone(),
+            None => tokio::runtime::Handle::current(),
+        }
+    }
+
     /// Create a new iroh node. The `path` param should be a directory where we can store or load
     /// iroh data from a previous session.
     pub fn new(path: String) -> Result<Self, IrohError> {
-        let path = PathBuf::from(path);
         let tokio_rt = tokio::runtime::Builder::new_multi_thread()
             .thread_name("main-runtime")
             .worker_threads(2)
@@ -379,29 +384,33 @@ impl IrohNode {
             .map_err(IrohError::runtime)?;
         let rt = tokio_rt.handle().clone();
 
+        let path = PathBuf::from(path);
         let node = block_on(&rt, async move {
-            tokio::fs::create_dir_all(&path).await?;
-            // create or load secret key
-            let secret_key_path = iroh::util::path::IrohPaths::SecretKey.with_root(&path);
-            let secret_key = iroh::util::fs::load_secret_key(secret_key_path).await?;
+            Self::new_inner(path, Some(tokio_rt)).await.map_err(IrohError::node_create)
+        })?;
 
-            let docs_path = iroh::util::path::IrohPaths::DocsDatabase.with_root(&path);
-            let docs = iroh::sync::store::fs::Store::new(&docs_path)?;
+        Ok(node)
+    }
 
-            // create a bao store for the iroh-bytes blobs
-            let blob_path = iroh::util::path::IrohPaths::BaoFlatStoreDir.with_root(&path);
-            tokio::fs::create_dir_all(&blob_path).await?;
-            let db = iroh::bytes::store::flat::Store::load(&blob_path).await?;
+    async fn new_inner(path: PathBuf, tokio_rt: Option<tokio::runtime::Runtime>) -> Result<Self, anyhow::Error> {
+        tokio::fs::create_dir_all(&path).await?;
+        // create or load secret key
+        let secret_key_path = iroh::util::path::IrohPaths::SecretKey.with_root(&path);
+        let secret_key = iroh::util::fs::load_secret_key(secret_key_path).await?;
 
-            Node::builder(db, docs).secret_key(secret_key).spawn().await
-        })
-        .map_err(IrohError::node_create)?;
+        let docs_path = iroh::util::path::IrohPaths::DocsDatabase.with_root(&path);
+        let docs = iroh::sync::store::fs::Store::new(&docs_path)?;
 
+        // create a bao store for the iroh-bytes blobs
+        let blob_path = iroh::util::path::IrohPaths::BaoFlatStoreDir.with_root(&path);
+        tokio::fs::create_dir_all(&blob_path).await?;
+        let db = iroh::bytes::store::flat::Store::load(&blob_path).await?;
+
+        let node = Node::builder(db, docs).secret_key(secret_key).spawn().await?;
         let sync_client = node.client();
 
         Ok(IrohNode {
             node,
-            async_runtime: rt,
             sync_client,
             tokio_rt,
         })
@@ -411,8 +420,9 @@ impl IrohNode {
     /// iroh data from a previous session.
     #[cfg(feature = "napi")]
     #[napi(factory, js_name = "withPath")]
-    pub fn new_js(path: String) -> napi::Result<Self> {
-        Self::new(path).map_err(|e| napi::Error::from(anyhow::Error::from(e)))
+    pub async fn new_js(path: String) -> napi::Result<Self> {
+        let res = Self::new_inner(PathBuf::from(path), None).await?;
+        Ok(res)
     }
 
     /// The string representation of the PublicKey of this node.
@@ -422,9 +432,8 @@ impl IrohNode {
     }
 
     /// Get statistics of the running node.
-    #[napi]
     pub fn stats(&self) -> Result<HashMap<String, CounterStats>, IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let stats = self
                 .sync_client
                 .node
@@ -435,9 +444,20 @@ impl IrohNode {
         })
     }
 
+    /// Get statistics of the running node.
+    #[napi(js_name = "stats")]
+    pub async fn stats_js(&self) -> Result<HashMap<String, CounterStats>, napi::Error> {
+        let stats = self
+            .sync_client
+            .node
+            .stats()
+            .await?;
+        Ok(stats.into_iter().map(|(k, v)| (k, v.into())).collect())
+    }
+
     /// Return `ConnectionInfo`s for each connection we have to another iroh node.
     pub fn connections(&self) -> Result<Vec<ConnectionInfo>, IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let infos = self
                 .sync_client
                 .node
@@ -455,20 +475,16 @@ impl IrohNode {
     /// Return `ConnectionInfo`s for each connection we have to another iroh node.
     #[cfg(feature = "napi")]
     #[napi(js_name = "connections")]
-    pub fn connections_js(&self) -> Result<Vec<JsConnectionInfo>, IrohError> {
-        block_on(&self.async_runtime, async {
-            let infos = self
-                .sync_client
-                .node
-                .connections()
-                .await
-                .map_err(IrohError::connection)?
-                .map_ok(|info| info.into())
-                .try_collect::<Vec<_>>()
-                .await
-                .map_err(IrohError::connection)?;
-            Ok(infos)
-        })
+    pub async fn connections_js(&self) -> Result<Vec<JsConnectionInfo>, napi::Error> {
+        let infos = self
+            .sync_client
+            .node
+            .connections()
+            .await?
+            .map_ok(|info| info.into())
+            .try_collect::<Vec<_>>()
+            .await?;
+        Ok(infos)
     }
 
     /// Return connection information on the currently running node.
@@ -476,7 +492,7 @@ impl IrohNode {
         &self,
         node_id: &PublicKey,
     ) -> Result<Option<ConnectionInfo>, IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let info = self
                 .sync_client
                 .node
@@ -491,25 +507,22 @@ impl IrohNode {
     /// Return connection information on the currently running node.
     #[cfg(feature = "napi")]
     #[napi(js_name = "connectionInfo")]
-    pub fn connection_info_js(
+    pub async fn connection_info_js(
         &self,
         node_id: &PublicKey,
-    ) -> Result<Option<JsConnectionInfo>, IrohError> {
-        block_on(&self.async_runtime, async {
-            let info = self
-                .sync_client
-                .node
-                .connection_info(node_id.into())
-                .await
-                .map(|i| i.map(|i| i.into()))
-                .map_err(IrohError::connection)?;
-            Ok(info)
-        })
+    ) -> Result<Option<JsConnectionInfo>, napi::Error> {
+        let info = self
+            .sync_client
+            .node
+            .connection_info(node_id.into())
+            .await?;
+
+        Ok(info.map(Into::into))
     }
 
     /// Get status information about a node
     pub fn status(&self) -> Result<Arc<NodeStatusResponse>, IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             self.sync_client
                 .node
                 .status()
@@ -522,15 +535,13 @@ impl IrohNode {
     /// Get status information about a node
     #[cfg(feature = "napi")]
     #[napi(js_name = "status")]
-    pub fn status_js(&self) -> Result<NodeStatusResponse, IrohError> {
-        block_on(&self.async_runtime, async {
-            self.sync_client
-                .node
-                .status()
-                .await
-                .map(Into::into)
-                .map_err(IrohError::connection)
-        })
+    pub async fn status_js(&self) -> Result<NodeStatusResponse, napi::Error> {
+        let status = self.sync_client
+            .node
+            .status()
+            .await
+            .map(Into::into)?;
+        Ok(status)
     }
 }
 

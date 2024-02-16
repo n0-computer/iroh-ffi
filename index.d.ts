@@ -81,6 +81,10 @@ export function pathToKey(path: string, prefix?: string | undefined | null, root
 export class AuthorId {
   /** Get an [`AuthorId`] from a String. */
   static fromString(str: string): this
+  /** Returns true when both AuthorId's have the same value */
+  equal(other: AuthorId): boolean
+  /** String representation */
+  toString(): string
 }
 /** Hash type used throughout Iroh. A blake3 hash. */
 export class Hash {
@@ -93,7 +97,7 @@ export class Hash {
   /** Make a Hash from hex string */
   static fromString(s: string): this
   /** Convert the hash to a hex string. */
-  toHex(): string
+  toString(): string
 }
 /** The namespace id and CapabilityKind (read/write) of the doc */
 export class NamespaceAndCapability {
@@ -214,7 +218,7 @@ export class IrohNode {
    * Note: this allocates for each `BlobListResponse`, if you have many `BlobListReponse`s this may be a prohibitively large list.
    * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
    */
-  blobsList(): Promise<Array<Hash>>
+  blobsList(): Promise<Array<string>>
   /**
    * Get the size information on a single blob.
    *
@@ -269,17 +273,17 @@ export class IrohNode {
    * Create a new iroh node. The `path` param should be a directory where we can store or load
    * iroh data from a previous session.
    */
-  static withPath(path: string): IrohNode
+  static withPath(path: string): Promise<IrohNode>
   /** The string representation of the PublicKey of this node. */
   nodeId(): string
   /** Get statistics of the running node. */
-  stats(): Record<string, CounterStats>
+  stats(): Promise<Record<string, CounterStats>>
   /** Return `ConnectionInfo`s for each connection we have to another iroh node. */
-  connections(): Array<ConnectionInfo>
+  connections(): Promise<Array<ConnectionInfo>>
   /** Return connection information on the currently running node. */
-  connectionInfo(nodeId: PublicKey): ConnectionInfo | null
+  connectionInfo(nodeId: PublicKey): Promise<ConnectionInfo | null>
   /** Get status information about a node */
-  status(): NodeStatusResponse
+  status(): Promise<NodeStatusResponse>
 }
 /** The response to a status request */
 export class NodeStatusResponse {

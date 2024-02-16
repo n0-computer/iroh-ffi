@@ -572,7 +572,7 @@ interface AuthorId {
   /// Return the AuthorId as a string
   string to_string();
   /// Returns true when both AuthorId's have the same value
-  boolean equal(AuthorId other);
+  boolean equal([ByRef] AuthorId other);
 };
 
 /// A single entry in a [`Doc`]

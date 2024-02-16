@@ -29,7 +29,7 @@ impl IrohNode {
     /// Note: this allocates for each `ListTagsResponse`, if you have many `Tags`s this may be a prohibitively large list.
     /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
     pub fn tags_list(&self) -> Result<Vec<ListTagsResponse>, IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let tags = self
                 .sync_client
                 .tags
@@ -47,7 +47,7 @@ impl IrohNode {
     /// Delete a tag
     pub fn tags_delete(&self, name: Vec<u8>) -> Result<(), IrohError> {
         let tag = iroh::bytes::Tag(bytes::Bytes::from(name));
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             self.sync_client
                 .tags
                 .delete(tag)

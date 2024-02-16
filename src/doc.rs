@@ -33,7 +33,7 @@ impl IrohNode {
     /// Create a new doc.
     #[napi]
     pub fn doc_create(&self) -> Result<Arc<Doc>, IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let doc = self
                 .sync_client
                 .docs
@@ -43,7 +43,7 @@ impl IrohNode {
 
             Ok(Arc::new(Doc {
                 inner: doc,
-                rt: self.async_runtime.clone(),
+                rt: self.rt().clone(),
             }))
         })
     }
@@ -51,7 +51,7 @@ impl IrohNode {
     /// Join and sync with an already existing document.
     #[napi]
     pub fn doc_join(&self, ticket: String) -> Result<Arc<Doc>, IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let ticket =
                 iroh::ticket::DocTicket::from_str(&ticket).map_err(IrohError::doc_ticket)?;
             let doc = self
@@ -63,7 +63,7 @@ impl IrohNode {
 
             Ok(Arc::new(Doc {
                 inner: doc,
-                rt: self.async_runtime.clone(),
+                rt: self.rt().clone(),
             }))
         })
     }
@@ -71,7 +71,7 @@ impl IrohNode {
     /// List all the docs we have access to on this node.
     #[napi]
     pub fn doc_list(&self) -> Result<Vec<NamespaceAndCapability>, IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let docs = self
                 .sync_client
                 .docs
@@ -96,7 +96,7 @@ impl IrohNode {
     #[napi]
     pub fn doc_open(&self, id: String) -> Result<Option<Arc<Doc>>, IrohError> {
         let namespace_id = iroh::sync::NamespaceId::from_str(&id).map_err(IrohError::namespace)?;
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let doc = self
                 .sync_client
                 .docs
@@ -106,7 +106,7 @@ impl IrohNode {
             Ok(doc.map(|d| {
                 Arc::new(Doc {
                     inner: d,
-                    rt: self.async_runtime.clone(),
+                    rt: self.rt().clone(),
                 })
             }))
         })
@@ -121,7 +121,7 @@ impl IrohNode {
     #[napi]
     pub fn doc_drop(&self, doc_id: String) -> Result<(), IrohError> {
         let doc_id = iroh::sync::NamespaceId::from_str(&doc_id).map_err(IrohError::namespace)?;
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             self.sync_client
                 .docs
                 .drop_doc(doc_id)
@@ -1540,9 +1540,9 @@ mod tests {
         let author_0 = AuthorId::from_string(author_str.into()).unwrap();
         //
         // ensure equal
-        let author_0 = Arc::new(author_0);
-        assert!(author.equal(author_0.clone()));
-        assert!(author_0.equal(author.into()));
+        let author_0 = author_0;
+        assert!(author.equal(&author_0));
+        assert!(author_0.equal(&author));
     }
 
     #[test]

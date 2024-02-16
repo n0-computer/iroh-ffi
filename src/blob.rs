@@ -17,7 +17,7 @@ impl IrohNode {
     /// Note: this allocates for each `BlobListResponse`, if you have many `BlobListReponse`s this may be a prohibitively large list.
     /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
     pub fn blobs_list(&self) -> Result<Vec<Arc<Hash>>, IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let response = self
                 .sync_client
                 .blobs
@@ -41,9 +41,9 @@ impl IrohNode {
     /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
     #[cfg(feature = "napi")]
     #[napi(js_name = "blobsList")]
-    pub async fn blobs_list_js(&self) -> Result<Vec<Hash>, napi::Error> {
+    pub async fn blobs_list_js(&self) -> Result<Vec<String>, napi::Error> {
         let response = self.sync_client.blobs.list().await?;
-        let hashes: Vec<Hash> = response.map_ok(|i| Hash(i.hash)).try_collect().await?;
+        let hashes: Vec<String> = response.map_ok(|i| i.hash.to_hex()).try_collect().await?;
 
         Ok(hashes)
     }
@@ -52,7 +52,7 @@ impl IrohNode {
     ///
     /// Method only exist in FFI
     pub fn blobs_size(&self, hash: &Hash) -> Result<u64, IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let r = self
                 .sync_client
                 .blobs
@@ -79,7 +79,7 @@ impl IrohNode {
     /// reading is small. If not sure, use [`Self::blobs_size`] and check the size with
     /// before calling [`Self::blobs_read_to_bytes`].
     pub fn blobs_read_to_bytes(&self, hash: Arc<Hash>) -> Result<Vec<u8>, IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             self.sync_client
                 .blobs
                 .read_to_bytes(hash.0)
@@ -120,7 +120,7 @@ impl IrohNode {
             None => None,
             Some(l) => Some(usize::try_from(l).map_err(IrohError::blobs)?),
         };
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             self.sync_client
                 .blobs
                 .read_at_to_bytes(hash.0, offset, len)
@@ -166,7 +166,7 @@ impl IrohNode {
         wrap: Arc<WrapOption>,
         cb: Box<dyn AddCallback>,
     ) -> Result<(), IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let mut stream = self
                 .sync_client
                 .blobs
@@ -201,8 +201,7 @@ impl IrohNode {
         tag: Option<Vec<u8>>,
         wrap: bool,
         cb: ThreadsafeFunction<serde_json::Value>,
-    ) -> Result<(), napi::Error>
-    {
+    ) -> Result<(), napi::Error> {
         let tag = match tag {
             None => iroh::rpc_protocol::SetTagOption::Auto,
             Some(name) => iroh::rpc_protocol::SetTagOption::Named(bytes::Bytes::from(name).into()),
@@ -228,7 +227,7 @@ impl IrohNode {
     /// Export the blob contents to a file path
     /// The `path` field is expected to be the absolute path.
     pub fn blobs_write_to_path(&self, hash: Arc<Hash>, path: String) -> Result<(), IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let mut reader = self
                 .sync_client
                 .blobs
@@ -257,7 +256,7 @@ impl IrohNode {
         bytes: Vec<u8>,
         tag: Arc<SetTagOption>,
     ) -> Result<BlobAddOutcome, IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             self.sync_client
                 .blobs
                 .add_bytes(bytes.into(), (*tag).clone().into())
@@ -273,7 +272,7 @@ impl IrohNode {
         req: Arc<BlobDownloadRequest>,
         cb: Box<dyn DownloadCallback>,
     ) -> Result<(), IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let mut stream = self
                 .sync_client
                 .blobs
@@ -293,7 +292,7 @@ impl IrohNode {
     /// Note: this allocates for each `BlobListIncompleteResponse`, if you have many `BlobListIncompleteResponse`s this may be a prohibitively large list.
     /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
     pub fn blobs_list_incomplete(&self) -> Result<Vec<BlobListIncompleteResponse>, IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let blobs = self
                 .sync_client
                 .blobs
@@ -313,7 +312,7 @@ impl IrohNode {
     /// Note: this allocates for each `BlobListCollectionsResponse`, if you have many `BlobListCollectionsResponse`s this may be a prohibitively large list.
     /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
     pub fn blobs_list_collections(&self) -> Result<Vec<BlobListCollectionsResponse>, IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let blobs = self
                 .sync_client
                 .blobs
@@ -330,7 +329,7 @@ impl IrohNode {
 
     /// Read the content of a collection
     pub fn blobs_get_collection(&self, hash: Arc<Hash>) -> Result<Arc<Collection>, IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let collection = self
                 .sync_client
                 .blobs
@@ -351,7 +350,7 @@ impl IrohNode {
         tag: Arc<SetTagOption>,
         tags_to_delete: Vec<String>,
     ) -> Result<HashAndTag, IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let collection = collection.0.read().map_err(IrohError::collection)?.clone();
             let (hash, tag) = self
                 .sync_client
@@ -375,7 +374,7 @@ impl IrohNode {
 
     /// Delete a blob.
     pub fn blobs_delete_blob(&self, hash: Arc<Hash>) -> Result<(), IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             self.sync_client
                 .blobs
                 .delete_blob((*hash).clone().0)
@@ -527,7 +526,7 @@ impl Hash {
     }
 
     /// Convert the hash to a hex string.
-    #[napi]
+    #[napi(js_name = "toString")]
     pub fn to_hex(&self) -> String {
         self.0.to_hex()
     }

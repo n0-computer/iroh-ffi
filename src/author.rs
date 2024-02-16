@@ -20,7 +20,7 @@ impl std::fmt::Display for AuthorId {
 impl IrohNode {
     /// Create a new author.
     pub fn author_create(&self) -> Result<Arc<AuthorId>, IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let author = self
                 .sync_client
                 .authors
@@ -42,7 +42,7 @@ impl IrohNode {
 
     /// List all the AuthorIds that exist on this node.
     pub fn author_list(&self) -> Result<Vec<Arc<AuthorId>>, IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let authors = self
                 .sync_client
                 .authors
@@ -84,7 +84,15 @@ impl AuthorId {
     }
 
     /// Returns true when both AuthorId's have the same value
-    pub fn equal(&self, other: Arc<AuthorId>) -> bool {
+    #[napi]
+    pub fn equal(&self, other: &AuthorId) -> bool {
         *self == *other
+    }
+
+    /// String representation
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "toString")]
+    pub fn to_string_js(&self) -> String {
+        self.to_string()
     }
 }
