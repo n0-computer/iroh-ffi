@@ -567,27 +567,32 @@ pub struct NodeAddr {
     addresses: Vec<String>,
 }
 
+#[napi]
 impl NodeAddr {
     /// Create a new [`NodeAddr`] with empty [`AddrInfo`].
-    pub fn new(node_id: Arc<PublicKey>, derp_url: Option<String>, addresses: Vec<String>) -> Self {
+    #[napi(constructor)]
+    pub fn new(node_id: &PublicKey, derp_url: Option<String>, addresses: Vec<String>) -> Self {
         Self {
-            node_id,
+            node_id: Arc::new(node_id.clone()),
             derp_url,
             addresses,
         }
     }
 
     /// Get the direct addresses of this peer.
+    #[napi]
     pub fn direct_addresses(&self) -> Vec<String> {
         self.addresses.clone()
     }
 
     /// Get the derp region of this peer.
+    #[napi]
     pub fn derp_url(&self) -> Option<String> {
         self.derp_url.clone()
     }
 
     /// Returns true if both NodeAddr's have the same values
+    #[napi]
     pub fn equal(&self, other: &NodeAddr) -> bool {
         self == other
     }
@@ -1514,7 +1519,7 @@ mod tests {
         // create a NodeAddr
         let addrs = vec![ipv4, ipv6];
         let expect_addrs = addrs.clone();
-        let node_addr = NodeAddr::new(node_id.into(), Some(derp_url.clone()), addrs);
+        let node_addr = NodeAddr::new(&node_id, Some(derp_url.clone()), addrs);
         //
         // test we have returned the expected addresses
         let got_addrs = node_addr.direct_addresses();

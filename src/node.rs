@@ -445,6 +445,7 @@ impl IrohNode {
     }
 
     /// Get statistics of the running node.
+    #[cfg(feature = "napi")]
     #[napi(js_name = "stats")]
     pub async fn stats_js(&self) -> Result<HashMap<String, CounterStats>, napi::Error> {
         let stats = self

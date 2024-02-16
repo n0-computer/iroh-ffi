@@ -250,6 +250,27 @@ impl IrohNode {
         })
     }
 
+    /// Export the blob contents to a file path
+    /// The `path` field is expected to be the absolute path.
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "blobsWriteToPath")]
+    pub async fn blobs_write_to_path_js(
+        &self,
+        hash: &Hash,
+        path: String,
+    ) -> Result<(), napi::Error> {
+        let mut reader = self.sync_client.blobs.read(hash.0).await?;
+
+        let path: PathBuf = path.into();
+        if let Some(dir) = path.parent() {
+            tokio::fs::create_dir_all(dir).await?;
+        }
+        let mut file = tokio::fs::File::create(path).await?;
+        tokio::io::copy(&mut reader, &mut file).await?;
+
+        Ok(())
+    }
+
     /// Write a blob by passing bytes.
     pub fn blobs_add_bytes(
         &self,
@@ -264,6 +285,27 @@ impl IrohNode {
                 .map(|outcome| outcome.into())
                 .map_err(IrohError::blobs)
         })
+    }
+
+    /// Write a blob by passing bytes.
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "blobsAddBytes")]
+    pub async fn blobs_add_bytes_js(
+        &self,
+        bytes: Vec<u8>,
+        tag: Option<Vec<u8>>,
+    ) -> Result<serde_json::Value, napi::Error> {
+        let tag = match tag {
+            None => iroh::rpc_protocol::SetTagOption::Auto,
+            Some(name) => iroh::rpc_protocol::SetTagOption::Named(bytes::Bytes::from(name).into()),
+        };
+        let res = self
+            .sync_client
+            .blobs
+            .add_bytes(bytes.into(), tag)
+            .await
+            .map(|outcome| serde_json::to_value(BlobAddOutcome::from(outcome)))??;
+        Ok(res)
     }
 
     /// Download a blob from another node and add it to the local database.
@@ -285,6 +327,46 @@ impl IrohNode {
             }
             Ok(())
         })
+    }
+
+    /// Download a blob from another node and add it to the local database.
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "blobsDownload")]
+    pub async fn blobs_download_js(
+        &self,
+        hash: &Hash,
+        format: BlobFormat,
+        node: &NodeAddr,
+        tag: Option<Vec<u8>>,
+        out: Option<String>,
+        in_place: bool,
+        cb: ThreadsafeFunction<serde_json::Value>,
+    ) -> Result<(), napi::Error> {
+        let tag = match tag {
+            None => iroh::rpc_protocol::SetTagOption::Auto,
+            Some(name) => iroh::rpc_protocol::SetTagOption::Named(bytes::Bytes::from(name).into()),
+        };
+        let out = if let Some(out) = out {
+            iroh::rpc_protocol::DownloadLocation::External {
+                path: PathBuf::from(out),
+                in_place,
+            }
+        } else {
+            iroh::rpc_protocol::DownloadLocation::Internal
+        };
+        let req = iroh::rpc_protocol::BlobDownloadRequest {
+            hash: hash.0,
+            format: format.into(),
+            peer: node.clone().try_into().unwrap(),
+            tag,
+            out,
+        };
+        let mut stream = self.sync_client.blobs.download(req).await?;
+        while let Some(progress) = stream.next().await {
+            let progress: DownloadProgress = progress?.into();
+            cb.call_async(Ok(serde_json::to_value(progress)?)).await?;
+        }
+        Ok(())
     }
 
     /// List all incomplete (partial) blobs.
@@ -382,6 +464,17 @@ impl IrohNode {
                 .map_err(IrohError::blobs)
         })
     }
+
+    /// Delete a blob.
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "blobsDeleteBlob")]
+    pub async fn blobs_delete_blob_js(&self, hash: &Hash) -> Result<(), napi::Error> {
+        self.sync_client
+            .blobs
+            .delete_blob((*hash).clone().0)
+            .await?;
+        Ok(())
+    }
 }
 
 /// The Hash and associated tag of a newly created collection
@@ -394,7 +487,7 @@ pub struct HashAndTag {
 }
 
 /// Outcome of a blob add operation.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BlobAddOutcome {
     /// The hash of the blob
     pub hash: Arc<Hash>,
@@ -718,6 +811,7 @@ impl AddProgress {
 
 /// A format identifier
 #[napi(string_enum)]
+#[cfg_attr(not(feature = "napi"), derive(Clone))]
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum BlobFormat {
     /// Raw blob
@@ -827,7 +921,7 @@ pub trait DownloadCallback: Send + Sync + 'static {
 }
 
 /// The different types of DownloadProgress events
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DownloadProgressType {
     FoundLocal,
     Connected,
@@ -843,7 +937,7 @@ pub enum DownloadProgressType {
 }
 
 /// A DownloadProgress event indicating an item was found with hash `hash`, that can be referred to by `id`
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DownloadProgressFound {
     /// A new unique id for this entry.
     pub id: u64,
@@ -856,7 +950,7 @@ pub struct DownloadProgressFound {
 }
 
 /// A DownloadProgress event indicating an entry was found locally
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DownloadProgressFoundLocal {
     /// child offset
     pub child: u64,
@@ -869,7 +963,7 @@ pub struct DownloadProgressFoundLocal {
 }
 
 /// A DownloadProgress event indicating an item was found with hash `hash`, that can be referred to by `id`
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DownloadProgressFoundHashSeq {
     /// Number of children in the collection, if known.
     pub children: u64,
@@ -878,7 +972,7 @@ pub struct DownloadProgressFoundHashSeq {
 }
 
 /// A DownloadProgress event indicating we got progress ingesting item `id`.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DownloadProgressProgress {
     /// The unique id of the entry.
     pub id: u64,
@@ -887,14 +981,14 @@ pub struct DownloadProgressProgress {
 }
 
 /// A DownloadProgress event indicated we are done with `id`
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DownloadProgressDone {
     /// The unique id of the entry.
     pub id: u64,
 }
 
 /// A DownloadProgress event indicating we are done with the networking portion - all data is local
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DownloadProgressNetworkDone {
     /// The number of bytes written
     pub bytes_written: u64,
@@ -906,7 +1000,7 @@ pub struct DownloadProgressNetworkDone {
 
 /// A DownloadProgress event indicating the download part is done for this id, we are not exporting
 /// the data to the specified path
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DownloadProgressExport {
     /// Unique id of the entry
     pub id: u64,
@@ -921,7 +1015,7 @@ pub struct DownloadProgressExport {
 /// A DownloadProgress event indicating We have made progress exporting the data.
 ///
 /// This is only sent for large blobs.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DownloadProgressExportProgress {
     /// Unique id of the entry that is being exported.
     pub id: u64,
@@ -930,13 +1024,13 @@ pub struct DownloadProgressExportProgress {
 }
 
 /// A DownloadProgress event indicating we got an error and need to abort
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DownloadProgressAbort {
     pub error: String,
 }
 
 /// Progress updates for the get operation.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DownloadProgress {
     /// A new connection was established.
     Connected,
@@ -1129,7 +1223,7 @@ impl DownloadProgress {
 }
 
 /// A chunk range specification as a sequence of chunk offsets
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RangeSpec(pub(crate) iroh::bytes::protocol::RangeSpec);
 
 impl RangeSpec {
@@ -1221,6 +1315,7 @@ impl From<iroh::rpc_protocol::BlobListCollectionsResponse> for BlobListCollectio
 }
 
 /// A collection of blobs
+#[napi]
 #[derive(Debug)]
 pub struct Collection(RwLock<iroh::bytes::format::collection::Collection>);
 
@@ -1237,9 +1332,11 @@ impl From<Collection> for iroh::bytes::format::collection::Collection {
     }
 }
 
+#[napi]
 impl Collection {
     /// Create a new empty collection
     #[allow(clippy::new_without_default)]
+    #[napi(constructor)]
     pub fn new() -> Self {
         Collection(RwLock::new(
             iroh::bytes::format::collection::Collection::default(),
@@ -1247,7 +1344,8 @@ impl Collection {
     }
 
     /// Add the given blob to the collection
-    pub fn push(&self, name: String, hash: Arc<Hash>) -> Result<(), IrohError> {
+    #[napi]
+    pub fn push(&self, name: String, hash: &Hash) -> Result<(), IrohError> {
         self.0
             .write()
             .map_err(IrohError::collection)?
@@ -1256,11 +1354,13 @@ impl Collection {
     }
 
     /// Check if the collection is empty
+    #[napi]
     pub fn is_empty(&self) -> Result<bool, IrohError> {
         Ok(self.0.read().map_err(IrohError::collection)?.is_empty())
     }
 
     /// Get the names of the blobs in this collection
+    #[napi]
     pub fn names(&self) -> Result<Vec<String>, IrohError> {
         Ok(self
             .0
@@ -1272,6 +1372,7 @@ impl Collection {
     }
 
     /// Get the links to the blobs in this collection
+    #[napi]
     pub fn links(&self) -> Result<Vec<Arc<Hash>>, IrohError> {
         Ok(self
             .0
@@ -1296,9 +1397,32 @@ impl Collection {
             .collect())
     }
 
+    /// Get the blobs associated with this collection
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "blobs")]
+    pub fn blobs_js(&self) -> Result<Vec<JsLinkAndName>, IrohError> {
+        Ok(self
+            .0
+            .read()
+            .map_err(IrohError::collection)?
+            .iter()
+            .map(|(name, hash)| JsLinkAndName {
+                name: name.clone(),
+                link: hash.to_hex(),
+            })
+            .collect())
+    }
+
     /// Returns the number of blobs in this collection
     pub fn len(&self) -> Result<u64, IrohError> {
-        Ok(self.0.read().map_err(IrohError::collection)?.len() as u64)
+        Ok(self.0.read().map_err(IrohError::collection)?.len() as _)
+    }
+
+    /// Returns the number of blobs in this collection
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "len")]
+    pub fn len_js(&self) -> u32 {
+        self.0.read().unwrap().len() as _
     }
 }
 
@@ -1309,6 +1433,17 @@ pub struct LinkAndName {
     pub name: String,
     /// The [`Hash`] of the blob
     pub link: Arc<Hash>,
+}
+
+/// `LinkAndName` includes a name and a hash for a blob in a collection
+#[cfg(feature = "napi")]
+#[napi(js_name = "LinkAndName")]
+#[derive(Clone, Debug)]
+pub struct JsLinkAndName {
+    /// The name associated with this [`Hash`].
+    pub name: String,
+    /// The [`Hash`] of the blob.
+    pub link: String,
 }
 
 #[cfg(test)]

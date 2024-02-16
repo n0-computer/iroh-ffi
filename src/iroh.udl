@@ -176,7 +176,7 @@ interface Collection {
   constructor();
   /// Add the given blob to the collection
   [Throws=IrohError]
-  void push(string name, Hash hash);
+  void push(string name, [ByRef] Hash hash);
   /// Check if the collection is empty
   [Throws=IrohError]
   boolean is_empty();
@@ -538,7 +538,7 @@ enum ShareMode {
 /// A peer and it's addressing information.
 interface NodeAddr {
   /// Create a new [`NodeAddr`] with empty [`AddrInfo`].
-  constructor(PublicKey node_id, string? derp_url, sequence<string> addresses);
+  constructor([ByRef] PublicKey node_id, string? derp_url, sequence<string> addresses);
   /// Get the direct addresses of this peer.
   sequence<string> direct_addresses();
   /// Get the derp url of this peer.
