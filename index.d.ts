@@ -99,6 +99,31 @@ export class Hash {
   /** Convert the hash to a hex string. */
   toString(): string
 }
+/** A collection of blobs */
+export class Collection {
+  /** Create a new empty collection */
+  constructor()
+  /** Add the given blob to the collection */
+  push(name: string, hash: Hash): void
+  /** Check if the collection is empty */
+  isEmpty(): boolean
+  /** Get the names of the blobs in this collection */
+  names(): Array<string>
+  /** Get the links to the blobs in this collection */
+  links(): Array<Hash>
+  /** Get the blobs associated with this collection */
+  blobs(): Array<JsLinkAndName>
+  /** Returns the number of blobs in this collection */
+  len(): number
+}
+export type JsLinkAndName = LinkAndName
+/** `LinkAndName` includes a name and a hash for a blob in a collection */
+export class LinkAndName {
+  /** The name associated with this [`Hash`]. */
+  name: string
+  /** The [`Hash`] of the blob. */
+  link: string
+}
 /** The namespace id and CapabilityKind (read/write) of the doc */
 export class NamespaceAndCapability {
   /** The namespace id of the doc */
@@ -120,7 +145,16 @@ export class Doc {
   share(mode: ShareMode): string
 }
 /** A peer and it's addressing information. */
-export class NodeAddr { }
+export class NodeAddr {
+  /** Create a new [`NodeAddr`] with empty [`AddrInfo`]. */
+  constructor(nodeId: PublicKey, derpUrl: string | undefined | null, addresses: Array<string>)
+  /** Get the direct addresses of this peer. */
+  directAddresses(): Array<string>
+  /** Get the derp region of this peer. */
+  derpUrl(): string | null
+  /** Returns true if both NodeAddr's have the same values */
+  equal(other: NodeAddr): boolean
+}
 /**
  * A single entry in a [`Doc`]
  *
@@ -248,6 +282,17 @@ export class IrohNode {
    * place without copying to the Iroh data directory.
    */
   blobsAddFromPath(path: string, inPlace: boolean, tag: Array<number> | undefined | null, wrap: boolean, cb: (err: Error | null, arg: any) => any): Promise<void>
+  /**
+   * Export the blob contents to a file path
+   * The `path` field is expected to be the absolute path.
+   */
+  blobsWriteToPath(hash: Hash, path: string): Promise<void>
+  /** Write a blob by passing bytes. */
+  blobsAddBytes(bytes: Array<number>, tag?: Array<number> | undefined | null): Promise<any>
+  /** Download a blob from another node and add it to the local database. */
+  blobsDownload(hash: Hash, format: BlobFormat, node: NodeAddr, tag: Array<number> | undefined | null, out: string | undefined | null, inPlace: boolean, cb: (err: Error | null, arg: any) => any): Promise<void>
+  /** Delete a blob. */
+  blobsDeleteBlob(hash: Hash): Promise<void>
   /** Create a new doc. */
   docCreate(): Doc
   /** Join and sync with an already existing document. */
