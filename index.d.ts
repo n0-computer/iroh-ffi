@@ -93,7 +93,7 @@ export class NamespaceAndCapability {
 /** A representation of a mutable, synchronizable key-value store. */
 export class Doc {
   /** Get the document id of this doc. */
-  id(): string
+  get id(): string
   /** Close the document. */
   close(): void
   /** Set the content of a key to a byte array. */
@@ -211,6 +211,15 @@ export class IrohNode {
    */
   docOpen(id: string): Doc | null
   /**
+   * Delete a document from the local node.
+   *
+   * This is a destructive operation. Both the document secret key and all entries in the
+   * document will be permanently deleted from the node's storage. Content blobs will be
+   * deleted.clone()).await.map_err(Iroh::doc)
+   * through garbage collection unless they are referenced from another document or tag.
+   */
+  docDrop(docId: string): void
+  /**
    * Create a new iroh node. The `path` param should be a directory where we can store or load
    * iroh data from a previous session.
    */
@@ -228,8 +237,6 @@ export class IrohNode {
 }
 /** The response to a status request */
 export class NodeStatusResponse {
-  /** The node id and socket addresses of this node. */
-  nodeAddr(): NodeAddr
   /** The node id and socket addresses of this node. */
   nodeAddr(): NodeAddr
   /** The bound listening addresses of the node */

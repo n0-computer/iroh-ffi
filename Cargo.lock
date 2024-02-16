@@ -2240,7 +2240,7 @@ dependencies = [
 [[package]]
 name = "napi"
 version = "2.15.1"
-source = "git+https://github.com/napi-rs/napi-rs#5ac153388fff52c70300232b3996ad094aa0882a"
+source = "git+https://github.com/napi-rs/napi-rs#6aae4bac0fc16decf904115b5308f7981c43fca7"
 dependencies = [
  "anyhow",
  "bitflags 2.4.2",
@@ -2258,12 +2258,12 @@ dependencies = [
 [[package]]
 name = "napi-build"
 version = "2.1.0"
-source = "git+https://github.com/napi-rs/napi-rs#5ac153388fff52c70300232b3996ad094aa0882a"
+source = "git+https://github.com/napi-rs/napi-rs#6aae4bac0fc16decf904115b5308f7981c43fca7"
 
 [[package]]
 name = "napi-derive"
 version = "2.15.1"
-source = "git+https://github.com/napi-rs/napi-rs#5ac153388fff52c70300232b3996ad094aa0882a"
+source = "git+https://github.com/napi-rs/napi-rs#6aae4bac0fc16decf904115b5308f7981c43fca7"
 dependencies = [
  "cfg-if",
  "convert_case",
@@ -2276,7 +2276,7 @@ dependencies = [
 [[package]]
 name = "napi-derive-backend"
 version = "1.0.60"
-source = "git+https://github.com/napi-rs/napi-rs#5ac153388fff52c70300232b3996ad094aa0882a"
+source = "git+https://github.com/napi-rs/napi-rs#6aae4bac0fc16decf904115b5308f7981c43fca7"
 dependencies = [
  "convert_case",
  "once_cell",
@@ -2290,7 +2290,7 @@ dependencies = [
 [[package]]
 name = "napi-sys"
 version = "2.3.0"
-source = "git+https://github.com/napi-rs/napi-rs#5ac153388fff52c70300232b3996ad094aa0882a"
+source = "git+https://github.com/napi-rs/napi-rs#6aae4bac0fc16decf904115b5308f7981c43fca7"
 dependencies = [
  "libloading",
 ]

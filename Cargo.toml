@@ -59,7 +59,7 @@ napi = { version = "2", default-features = false, features = [
   "deferred_trace",
   "anyhow",
 ], optional = true }
-napi-derive = { version = "2", features = ["type-def"], optional = true }
+napi-derive = { version = "2", default-features = false }
 
 [dev-dependencies]
 rand = "0.8"
@@ -70,7 +70,8 @@ napi-build = { version = "2", optional = true }
 
 [features]
 default = []
-napi = ["dep:napi", "dep:napi-derive", "dep:napi-build"]
+no_napi = ["napi-derive/noop"]
+napi = ["napi-derive/full", "dep:napi-build", "dep:napi"]
 
 [patch.crates-io]
 # https://github.com/mullvad/system-configuration-rs/pull/42

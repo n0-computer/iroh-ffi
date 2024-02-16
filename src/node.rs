@@ -5,7 +5,6 @@ use iroh::{
     node::Node,
     rpc_protocol::{ProviderRequest, ProviderResponse},
 };
-#[cfg(feature = "napi")]
 use napi_derive::napi;
 use quic_rpc::transport::flume::FlumeConnection;
 
@@ -13,7 +12,7 @@ use crate::{block_on, IrohError, NodeAddr, PublicKey};
 
 /// Stats counter
 /// Counter stats
-#[cfg_attr(feature = "napi", napi(object))]
+#[napi(object)]
 #[derive(Debug)]
 pub struct CounterStats {
     /// The counter value
@@ -32,14 +31,14 @@ impl From<iroh::rpc_protocol::CounterStats> for CounterStats {
 }
 
 /// Information about a direct address.
-#[cfg_attr(feature = "napi", napi)]
+#[napi]
 #[derive(Debug, Clone)]
 pub struct DirectAddrInfo(iroh::net::magicsock::DirectAddrInfo);
 
-#[cfg_attr(feature = "napi", napi)]
+#[napi]
 impl DirectAddrInfo {
     /// Get the reported address
-    #[cfg_attr(feature = "napi", napi)]
+    #[napi]
     pub fn addr(&self) -> String {
         self.0.addr.to_string()
     }
@@ -50,7 +49,7 @@ impl DirectAddrInfo {
     }
 
     /// Get the reported latency, if it exists, in milliseconds
-    #[cfg_attr(feature = "napi", napi(js_name = "latency"))]
+    #[napi(js_name = "latency")]
     pub fn latency_js(&self) -> Option<u32> {
         self.0.latency.map(|l| l.as_millis() as _)
     }
@@ -83,7 +82,7 @@ impl DirectAddrInfo {
     }
 
     /// Get how long ago the last payload message was received for this node in milliseconds.
-    #[cfg_attr(feature = "napi", napi(js_name = "lastPayload"))]
+    #[napi(js_name = "lastPayload")]
     pub fn last_payload_js(&self) -> Option<u32> {
         self.0.last_payload.map(|d| d.as_millis() as _)
     }
@@ -278,7 +277,7 @@ impl JsConnectionType {
 }
 
 /// The type of the connection
-#[cfg_attr(feature = "napi", napi(string_enum))]
+#[napi(string_enum)]
 #[derive(Debug)]
 pub enum ConnType {
     /// Indicates you have a UDP connection.
@@ -331,7 +330,7 @@ impl ConnectionType {
 }
 
 /// The socket address and url of the mixed connection
-#[cfg_attr(feature = "napi", napi(constructor))]
+#[napi(constructor)]
 pub struct ConnectionTypeMixed {
     /// Address of the node
     pub addr: String,
@@ -357,7 +356,7 @@ impl From<iroh::net::magicsock::ConnectionType> for ConnectionType {
 }
 
 /// An Iroh node. Allows you to sync, store, and transfer data.
-#[cfg_attr(feature = "napi", napi)]
+#[napi]
 pub struct IrohNode {
     pub(crate) node: Node<iroh::bytes::store::flat::Store>,
     pub(crate) async_runtime: tokio::runtime::Handle,
@@ -366,7 +365,7 @@ pub struct IrohNode {
     pub(crate) tokio_rt: tokio::runtime::Runtime,
 }
 
-#[cfg_attr(feature = "napi", napi)]
+#[napi]
 impl IrohNode {
     /// Create a new iroh node. The `path` param should be a directory where we can store or load
     /// iroh data from a previous session.
@@ -417,13 +416,13 @@ impl IrohNode {
     }
 
     /// The string representation of the PublicKey of this node.
-    #[cfg_attr(feature = "napi", napi)]
+    #[napi]
     pub fn node_id(&self) -> String {
         self.node.node_id().to_string()
     }
 
     /// Get statistics of the running node.
-    #[cfg_attr(feature = "napi", napi)]
+    #[napi]
     pub fn stats(&self) -> Result<HashMap<String, CounterStats>, IrohError> {
         block_on(&self.async_runtime, async {
             let stats = self
@@ -475,13 +474,13 @@ impl IrohNode {
     /// Return connection information on the currently running node.
     pub fn connection_info(
         &self,
-        node_id: Arc<PublicKey>,
+        node_id: &PublicKey,
     ) -> Result<Option<ConnectionInfo>, IrohError> {
         block_on(&self.async_runtime, async {
             let info = self
                 .sync_client
                 .node
-                .connection_info(node_id.as_ref().into())
+                .connection_info(node_id.into())
                 .await
                 .map(|i| i.map(|i| i.into()))
                 .map_err(IrohError::connection)?;
@@ -536,7 +535,7 @@ impl IrohNode {
 }
 
 /// The response to a status request
-#[cfg_attr(feature = "napi", napi)]
+#[napi]
 #[derive(Debug)]
 pub struct NodeStatusResponse(iroh::rpc_protocol::NodeStatusResponse);
 
@@ -546,16 +545,16 @@ impl From<iroh::rpc_protocol::NodeStatusResponse> for NodeStatusResponse {
     }
 }
 
-#[cfg_attr(feature = "napi", napi)]
+#[napi]
 impl NodeStatusResponse {
     /// The node id and socket addresses of this node.
-    #[cfg_attr(feature = "napi", napi)]
+    #[napi]
     pub fn node_addr(&self) -> Arc<NodeAddr> {
         Arc::new(self.0.addr.clone().into())
     }
 
     /// The bound listening addresses of the node
-    #[cfg_attr(feature = "napi", napi)]
+    #[napi]
     pub fn listen_addrs(&self) -> Vec<String> {
         self.0
             .listen_addrs
@@ -565,7 +564,7 @@ impl NodeStatusResponse {
     }
 
     /// The version of the node
-    #[cfg_attr(feature = "napi", napi)]
+    #[napi]
     pub fn version(&self) -> String {
         self.0.version.clone()
     }

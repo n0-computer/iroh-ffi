@@ -76,7 +76,7 @@ interface IrohNode {
   sequence<ConnectionInfo> connections();
   // Return connection information on the currently running node.
   [Throws=IrohError]
-  ConnectionInfo? connection_info(PublicKey node_id);
+  ConnectionInfo? connection_info([ByRef] PublicKey node_id);
   /// Get status information about a node
   [Throws=IrohError]
   NodeStatusResponse status();

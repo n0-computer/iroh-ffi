@@ -1,19 +1,18 @@
 use std::{path::PathBuf, str::FromStr, sync::Arc, sync::RwLock, time::Duration};
 
 use futures::{StreamExt, TryStreamExt};
-#[cfg(feature = "napi")]
 use napi_derive::napi;
 
 use crate::node::IrohNode;
 use crate::{block_on, IrohError, NodeAddr};
 
-#[cfg_attr(feature = "napi", napi)]
+#[napi]
 impl IrohNode {
     /// List all complete blobs.
     ///
     /// Note: this allocates for each `BlobListResponse`, if you have many `BlobListReponse`s this may be a prohibitively large list.
     /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
-    #[cfg_attr(feature = "napi", napi)]
+    #[napi]
     pub fn blobs_list(&self) -> Result<Vec<Arc<Hash>>, IrohError> {
         block_on(&self.async_runtime, async {
             let response = self
@@ -36,7 +35,7 @@ impl IrohNode {
     /// Get the size information on a single blob.
     ///
     /// Method only exist in FFI
-    #[cfg_attr(feature = "napi", napi)]
+    #[napi]
     pub fn blobs_size(&self, hash: &Hash) -> Result<u64, IrohError> {
         block_on(&self.async_runtime, async {
             let r = self
@@ -383,7 +382,7 @@ impl From<WrapOption> for iroh::rpc_protocol::WrapOption {
 }
 
 /// Hash type used throughout Iroh. A blake3 hash.
-#[cfg_attr(feature = "napi", napi)]
+#[napi]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Hash(pub(crate) iroh::bytes::Hash);
 
@@ -393,22 +392,22 @@ impl From<iroh::bytes::Hash> for Hash {
     }
 }
 
-#[cfg_attr(feature = "napi", napi)]
+#[napi]
 impl Hash {
     /// Calculate the hash of the provide bytes.
-    #[cfg_attr(feature = "napi", napi(constructor))]
+    #[napi(constructor)]
     pub fn new(buf: Vec<u8>) -> Self {
         Hash(iroh::bytes::Hash::new(buf))
     }
 
     /// Bytes of the hash.
-    #[cfg_attr(feature = "napi", napi)]
+    #[napi]
     pub fn to_bytes(&self) -> Vec<u8> {
         self.0.as_bytes().to_vec()
     }
 
     /// Create a `Hash` from its raw bytes representation.
-    #[cfg_attr(feature = "napi", napi)]
+    #[napi]
     pub fn from_bytes(bytes: Vec<u8>) -> Result<Self, IrohError> {
         let bytes: [u8; 32] = bytes.try_into().map_err(|b: Vec<u8>| {
             IrohError::hash(format!("expected byte array of length 32, got {}", b.len()))
@@ -417,7 +416,7 @@ impl Hash {
     }
 
     /// Make a Hash from hex string
-    #[cfg_attr(feature = "napi", napi)]
+    #[napi]
     pub fn from_string(s: String) -> Result<Self, IrohError> {
         match iroh::bytes::Hash::from_str(&s) {
             Ok(key) => Ok(key.into()),
@@ -426,7 +425,7 @@ impl Hash {
     }
 
     /// Convert the hash to a hex string.
-    #[cfg_attr(feature = "napi", napi)]
+    #[napi]
     pub fn to_hex(&self) -> String {
         self.0.to_hex()
     }

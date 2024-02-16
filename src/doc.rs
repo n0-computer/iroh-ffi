@@ -5,13 +5,12 @@ use iroh::{
     client::Doc as ClientDoc,
     rpc_protocol::{ProviderRequest, ProviderResponse},
 };
-#[cfg(feature = "napi")]
 use napi_derive::napi;
 use quic_rpc::transport::flume::FlumeConnection;
 
 use crate::{block_on, AuthorId, Hash, IrohError, IrohNode, PublicKey};
 
-#[cfg_attr(feature = "napi", napi)]
+#[napi]
 #[derive(Debug)]
 pub enum CapabilityKind {
     /// A writable replica.
@@ -29,10 +28,10 @@ impl From<iroh::sync::CapabilityKind> for CapabilityKind {
     }
 }
 
-#[cfg_attr(feature = "napi", napi)]
+#[napi]
 impl IrohNode {
     /// Create a new doc.
-    #[cfg_attr(feature = "napi", napi)]
+    #[napi]
     pub fn doc_create(&self) -> Result<Arc<Doc>, IrohError> {
         block_on(&self.async_runtime, async {
             let doc = self
@@ -50,7 +49,7 @@ impl IrohNode {
     }
 
     /// Join and sync with an already existing document.
-    #[cfg_attr(feature = "napi", napi)]
+    #[napi]
     pub fn doc_join(&self, ticket: String) -> Result<Arc<Doc>, IrohError> {
         block_on(&self.async_runtime, async {
             let ticket =
@@ -70,7 +69,7 @@ impl IrohNode {
     }
 
     /// List all the docs we have access to on this node.
-    #[cfg_attr(feature = "napi", napi)]
+    #[napi]
     pub fn doc_list(&self) -> Result<Vec<NamespaceAndCapability>, IrohError> {
         block_on(&self.async_runtime, async {
             let docs = self
@@ -94,7 +93,7 @@ impl IrohNode {
     /// Get a [`Doc`].
     ///
     /// Returns None if the document cannot be found.
-    #[cfg_attr(feature = "napi", napi)]
+    #[napi]
     pub fn doc_open(&self, id: String) -> Result<Option<Arc<Doc>>, IrohError> {
         let namespace_id = iroh::sync::NamespaceId::from_str(&id).map_err(IrohError::namespace)?;
         block_on(&self.async_runtime, async {
@@ -119,7 +118,7 @@ impl IrohNode {
     /// document will be permanently deleted from the node's storage. Content blobs will be
     /// deleted.clone()).await.map_err(Iroh::doc)
     /// through garbage collection unless they are referenced from another document or tag.
-    #[cfg_attr(feature = "napi", napi)]
+    #[napi]
     pub fn doc_drop(&self, doc_id: String) -> Result<(), IrohError> {
         let doc_id = iroh::sync::NamespaceId::from_str(&doc_id).map_err(IrohError::namespace)?;
         block_on(&self.async_runtime, async {
@@ -133,7 +132,7 @@ impl IrohNode {
 }
 
 /// The namespace id and CapabilityKind (read/write) of the doc
-#[cfg_attr(feature = "napi", napi)]
+#[napi]
 pub struct NamespaceAndCapability {
     /// The namespace id of the doc
     pub namespace: String,
@@ -142,23 +141,23 @@ pub struct NamespaceAndCapability {
 }
 
 /// A representation of a mutable, synchronizable key-value store.
-#[cfg_attr(feature = "napi", napi)]
+#[napi]
 #[derive(Clone)]
 pub struct Doc {
     pub(crate) inner: ClientDoc<FlumeConnection<ProviderResponse, ProviderRequest>>,
     pub(crate) rt: tokio::runtime::Handle,
 }
 
-#[cfg_attr(feature = "napi", napi)]
+#[napi]
 impl Doc {
     /// Get the document id of this doc.
-    #[cfg_attr(feature = "napi", napi)]
+    #[napi(getter)]
     pub fn id(&self) -> String {
         self.inner.id().to_string()
     }
 
     /// Close the document.
-    #[cfg_attr(feature = "napi", napi)]
+    #[napi]
     pub fn close(&self) -> Result<(), IrohError> {
         block_on(&self.rt, async {
             self.inner.close().await.map_err(IrohError::doc)
@@ -354,7 +353,7 @@ impl Doc {
     }
 
     /// Share this document with peers over a ticket.
-    #[cfg_attr(feature = "napi", napi)]
+    #[napi]
     pub fn share(&self, mode: ShareMode) -> Result<String, IrohError> {
         block_on(&self.rt, async {
             self.inner
@@ -560,7 +559,7 @@ impl From<iroh::sync::actor::OpenState> for OpenState {
 }
 
 /// A peer and it's addressing information.
-#[cfg_attr(feature = "napi", napi)]
+#[napi]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NodeAddr {
     node_id: Arc<PublicKey>,
@@ -630,7 +629,7 @@ impl From<iroh::net::magic_endpoint::NodeAddr> for NodeAddr {
 }
 
 /// Intended capability for document share tickets
-#[cfg_attr(feature = "napi", napi)]
+#[napi]
 #[derive(Debug)]
 pub enum ShareMode {
     /// Read-only access
@@ -653,7 +652,7 @@ impl From<ShareMode> for iroh::rpc_protocol::ShareMode {
 /// An entry is identified by a key, its [`AuthorId`], and the [`Doc`]'s
 /// namespace id. Its value is the 32-byte BLAKE3 [`hash`]
 /// of the entry's content data, the size of this content data, and a timestamp.
-#[cfg_attr(feature = "napi", napi)]
+#[napi]
 #[derive(Debug, Clone)]
 pub struct Entry(pub(crate) iroh::client::Entry);
 
@@ -663,16 +662,16 @@ impl From<iroh::client::Entry> for Entry {
     }
 }
 
-#[cfg_attr(feature = "napi", napi)]
+#[napi]
 impl Entry {
     /// Get the [`AuthorId`] of this entry.
-    #[cfg_attr(feature = "napi", napi)]
+    #[napi]
     pub fn author(&self) -> Arc<AuthorId> {
         Arc::new(AuthorId(self.0.id().author()))
     }
 
     /// Get the content_hash of this entry.
-    #[cfg_attr(feature = "napi", napi)]
+    #[napi]
     pub fn content_hash(&self) -> Arc<Hash> {
         Arc::new(Hash(self.0.content_hash()))
     }
@@ -683,13 +682,13 @@ impl Entry {
     }
 
     /// Get the key of this entry.
-    #[cfg_attr(feature = "napi", napi)]
+    #[napi]
     pub fn key(&self) -> Vec<u8> {
         self.0.id().key().to_vec()
     }
 
     /// Get the namespace id of this entry.
-    #[cfg_attr(feature = "napi", napi)]
+    #[napi]
     pub fn namespace(&self) -> String {
         self.0.id().namespace().to_string()
     }
@@ -718,7 +717,7 @@ pub use iroh::sync::store::SortDirection;
 /// Build a Query to search for an entry or entries in a doc.
 ///
 /// Use this with `QueryOptions` to determine sorting, grouping, and pagination.
-#[cfg_attr(feature = "napi", napi)]
+#[napi]
 #[derive(Clone, Debug)]
 pub struct Query(iroh::sync::store::Query);
 
@@ -1602,9 +1601,7 @@ mod tests {
         // add entry
         let val = b"hello world!".to_vec();
         let key = b"foo".to_vec();
-        let hash = doc
-            .set_bytes(&author, key.clone(), val.clone())
-            .unwrap();
+        let hash = doc.set_bytes(&author, key.clone(), val.clone()).unwrap();
 
         // get entry
         let query = Query::author_key_exact(&author, key.clone());
