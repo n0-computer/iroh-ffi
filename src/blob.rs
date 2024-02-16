@@ -2,9 +2,13 @@ use std::{path::PathBuf, str::FromStr, sync::Arc, sync::RwLock, time::Duration};
 
 use futures::{StreamExt, TryStreamExt};
 use napi_derive::napi;
+use serde::{Deserialize, Serialize};
 
 use crate::node::IrohNode;
 use crate::{block_on, IrohError, NodeAddr};
+
+#[cfg(feature = "napi")]
+use napi::threadsafe_function::ThreadsafeFunction;
 
 #[napi]
 impl IrohNode {
@@ -12,7 +16,6 @@ impl IrohNode {
     ///
     /// Note: this allocates for each `BlobListResponse`, if you have many `BlobListReponse`s this may be a prohibitively large list.
     /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
-    #[napi]
     pub fn blobs_list(&self) -> Result<Vec<Arc<Hash>>, IrohError> {
         block_on(&self.async_runtime, async {
             let response = self
@@ -32,10 +35,22 @@ impl IrohNode {
         })
     }
 
+    /// List all complete blobs.
+    ///
+    /// Note: this allocates for each `BlobListResponse`, if you have many `BlobListReponse`s this may be a prohibitively large list.
+    /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "blobsList")]
+    pub async fn blobs_list_js(&self) -> Result<Vec<Hash>, napi::Error> {
+        let response = self.sync_client.blobs.list().await?;
+        let hashes: Vec<Hash> = response.map_ok(|i| Hash(i.hash)).try_collect().await?;
+
+        Ok(hashes)
+    }
+
     /// Get the size information on a single blob.
     ///
     /// Method only exist in FFI
-    #[napi]
     pub fn blobs_size(&self, hash: &Hash) -> Result<u64, IrohError> {
         block_on(&self.async_runtime, async {
             let r = self
@@ -46,6 +61,16 @@ impl IrohNode {
                 .map_err(IrohError::blobs)?;
             Ok(r.size())
         })
+    }
+
+    /// Get the size information on a single blob.
+    ///
+    /// Method only exist in FFI
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "blobsSize")]
+    pub async fn blobs_size_js(&self, hash: &Hash) -> Result<i64, napi::Error> {
+        let r = self.sync_client.blobs.read(hash.0).await?;
+        Ok(r.size() as _)
     }
 
     /// Read all bytes of single blob.
@@ -62,6 +87,22 @@ impl IrohNode {
                 .map(|b| b.to_vec())
                 .map_err(IrohError::blobs)
         })
+    }
+
+    /// Read all bytes of single blob.
+    ///
+    /// This allocates a buffer for the full blob. Use only if you know that the blob you're
+    /// reading is small.
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "blobsReadToBytes")]
+    pub async fn blobs_read_to_bytes_js(&self, hash: &Hash) -> Result<Vec<u8>, napi::Error> {
+        let res = self
+            .sync_client
+            .blobs
+            .read_to_bytes(hash.0)
+            .await
+            .map(|b| b.to_vec())?;
+        Ok(res)
     }
 
     /// Read all bytes of single blob at `offset` for length `len`.
@@ -87,6 +128,28 @@ impl IrohNode {
                 .map(|b| b.to_vec())
                 .map_err(IrohError::blobs)
         })
+    }
+
+    /// Read all bytes of single blob at `offset` for length `len`.
+    ///
+    /// This allocates a buffer for the full length `len`. Use only if you know that the blob you're
+    /// reading is small.
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "blobsReadAtToBytes")]
+    pub async fn blobs_read_at_to_bytes_js(
+        &self,
+        hash: &Hash,
+        offset: u32,
+        len: Option<u32>,
+    ) -> Result<Vec<u8>, napi::Error> {
+        let len = len.map(|l| l as _);
+        let res = self
+            .sync_client
+            .blobs
+            .read_at_to_bytes(hash.0, offset as _, len)
+            .await
+            .map(|b| b.to_vec())?;
+        Ok(res)
     }
 
     /// Import a blob from a filesystem path.
@@ -121,6 +184,45 @@ impl IrohNode {
             }
             Ok(())
         })
+    }
+
+    /// Import a blob from a filesystem path.
+    ///
+    /// `path` should be an absolute path valid for the file system on which
+    /// the node runs.
+    /// If `in_place` is true, Iroh will assume that the data will not change and will share it in
+    /// place without copying to the Iroh data directory.
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "blobsAddFromPath")]
+    pub async fn blobs_add_from_path_js(
+        &self,
+        path: String,
+        in_place: bool,
+        tag: Option<Vec<u8>>,
+        wrap: bool,
+        cb: ThreadsafeFunction<serde_json::Value>,
+    ) -> Result<(), napi::Error>
+    {
+        let tag = match tag {
+            None => iroh::rpc_protocol::SetTagOption::Auto,
+            Some(name) => iroh::rpc_protocol::SetTagOption::Named(bytes::Bytes::from(name).into()),
+        };
+        let wrap = if wrap {
+            iroh::rpc_protocol::WrapOption::Wrap { name: None }
+        } else {
+            iroh::rpc_protocol::WrapOption::NoWrap
+        };
+        let mut stream = self
+            .sync_client
+            .blobs
+            .add_from_path(path.into(), in_place, tag, wrap)
+            .await?;
+
+        while let Some(progress) = stream.next().await {
+            let progress: AddProgress = progress?.into();
+            cb.call_async(Ok(serde_json::to_value(progress)?)).await?;
+        }
+        Ok(())
     }
 
     /// Export the blob contents to a file path
@@ -383,7 +485,7 @@ impl From<WrapOption> for iroh::rpc_protocol::WrapOption {
 
 /// Hash type used throughout Iroh. A blake3 hash.
 #[napi]
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Hash(pub(crate) iroh::bytes::Hash);
 
 impl From<iroh::bytes::Hash> for Hash {
@@ -456,7 +558,7 @@ pub trait AddCallback: Send + Sync + 'static {
 }
 
 /// The different types of AddProgress events
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AddProgressType {
     /// An item was found with name `name`, from now on referred to via `id`
     Found,
@@ -473,7 +575,7 @@ pub enum AddProgressType {
 }
 
 /// An AddProgress event indicating an item was found with name `name`, that can be referred to by `id`
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AddProgressFound {
     /// A new unique id for this entry.
     pub id: u64,
@@ -484,7 +586,7 @@ pub struct AddProgressFound {
 }
 
 /// An AddProgress event indicating we got progress ingesting item `id`.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AddProgressProgress {
     /// The unique id of the entry.
     pub id: u64,
@@ -493,7 +595,7 @@ pub struct AddProgressProgress {
 }
 
 /// An AddProgress event indicated we are done with `id` and now have a hash `hash`
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AddProgressDone {
     /// The unique id of the entry.
     pub id: u64,
@@ -502,7 +604,7 @@ pub struct AddProgressDone {
 }
 
 /// An AddProgress event indicating we are done with the the whole operation
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AddProgressAllDone {
     /// The hash of the created data.
     pub hash: Arc<Hash>,
@@ -513,13 +615,13 @@ pub struct AddProgressAllDone {
 }
 
 /// An AddProgress event indicating we got an error and need to abort
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AddProgressAbort {
     pub error: String,
 }
 
 /// Progress updates for the add operation.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AddProgress {
     /// An item was found with name `name`, from now on referred to via `id`
     Found(AddProgressFound),
@@ -616,7 +718,8 @@ impl AddProgress {
 }
 
 /// A format identifier
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[napi(string_enum)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum BlobFormat {
     /// Raw blob
     Raw,

@@ -1729,6 +1729,8 @@ dependencies = [
  "quinn",
  "rand",
  "range-collections",
+ "serde",
+ "serde_json",
  "tempfile",
  "thiserror",
  "tokio",

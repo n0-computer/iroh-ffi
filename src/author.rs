@@ -19,7 +19,6 @@ impl std::fmt::Display for AuthorId {
 #[napi]
 impl IrohNode {
     /// Create a new author.
-    #[napi]
     pub fn author_create(&self) -> Result<Arc<AuthorId>, IrohError> {
         block_on(&self.async_runtime, async {
             let author = self
@@ -33,8 +32,15 @@ impl IrohNode {
         })
     }
 
+    /// Create a new author.
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "authorCreate")]
+    pub async fn author_create_js(&self) -> Result<AuthorId, napi::Error> {
+        let author = self.sync_client.authors.create().await?;
+        Ok(AuthorId(author))
+    }
+
     /// List all the AuthorIds that exist on this node.
-    #[napi]
     pub fn author_list(&self) -> Result<Vec<Arc<AuthorId>>, IrohError> {
         block_on(&self.async_runtime, async {
             let authors = self
@@ -50,11 +56,27 @@ impl IrohNode {
             Ok(authors)
         })
     }
+
+    /// List all the AuthorIds that exist on this node.
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "authorList")]
+    pub async fn author_list_js(&self) -> Result<Vec<AuthorId>, napi::Error> {
+        let authors = self
+            .sync_client
+            .authors
+            .list()
+            .await?
+            .map_ok(AuthorId)
+            .try_collect::<Vec<_>>()
+            .await?;
+
+        Ok(authors)
+    }
 }
 
 #[napi]
 impl AuthorId {
-    /// Get an [`AuthorId`] from a String
+    /// Get an [`AuthorId`] from a String.
     #[napi]
     pub fn from_string(str: String) -> Result<Self, IrohError> {
         let author = iroh::sync::AuthorId::from_str(&str).map_err(IrohError::author)?;

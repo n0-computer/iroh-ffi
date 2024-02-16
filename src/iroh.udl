@@ -802,7 +802,7 @@ interface PublicKey {
   /// Represent a PublicKey as a string
   string to_string();
   /// Returns true when both PublicKeys have the same value
-  boolean equal(PublicKey other);
+  boolean equal([ByRef] PublicKey other);
   /// Represent a PublicKey as a byte slice
   bytes to_bytes();
   /// Get a PublicKey from a string

@@ -136,16 +136,16 @@ pub struct JsConnectionInfo {
     /// The public key of the endpoint.
     public_key: PublicKey,
     /// Derp url, if available.
-    derp_url: Option<String>,
+    pub derp_url: Option<String>,
     /// List of addresses at which this node might be reachable, plus any latency information we
     /// have about that address and the last time the address was used.
     addrs: Vec<DirectAddrInfo>,
     /// The type of connection we have to the peer, either direct or over relay.
-    conn_type: JsConnectionType,
+    pub conn_type: JsConnectionType,
     /// The latency of the `conn_type` (in milliseconds).
-    latency: Option<u32>,
+    pub latency: Option<u32>,
     /// Duration since the last time this peer was used (in milliseconds).
-    last_used: Option<u32>,
+    pub last_used: Option<u32>,
 }
 
 impl From<iroh::net::magic_endpoint::ConnectionInfo> for ConnectionInfo {
@@ -200,12 +200,12 @@ pub enum ConnectionType {
 }
 
 #[cfg(feature = "napi")]
-#[napi(js_name = "ConnectionType")]
+#[napi(object, js_name = "ConnectionType")]
 #[derive(Debug, Clone)]
 pub struct JsConnectionType {
-    typ: ConnType,
-    data0: Option<String>,
-    data1: Option<String>,
+    pub typ: ConnType,
+    pub data0: Option<String>,
+    pub data1: Option<String>,
 }
 
 #[cfg(feature = "napi")]

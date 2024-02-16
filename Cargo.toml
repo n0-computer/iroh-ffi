@@ -60,6 +60,8 @@ napi = { version = "2", default-features = false, features = [
   "anyhow",
 ], optional = true }
 napi-derive = { version = "2", default-features = false }
+serde = { version = "1.0.196", features = ["derive"] }
+serde_json = "1.0.113"
 
 [dev-dependencies]
 rand = "0.8"
@@ -69,7 +71,7 @@ uniffi = { version = "=0.25.0", features = ["build"] }
 napi-build = { version = "2", optional = true }
 
 [features]
-default = []
+default = ["napi"]
 no_napi = ["napi-derive/noop"]
 napi = ["napi-derive/full", "dep:napi-build", "dep:napi"]
 

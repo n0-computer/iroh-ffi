@@ -15,4 +15,6 @@ classifiers = [
 ]
 readme = "README.python.md"
 
-
+[tool.maturin]
+features = ["no_napi"]
+no-default-features = true

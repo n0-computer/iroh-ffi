@@ -33,8 +33,8 @@
     "access": "public"
   },
   "scripts": {
-    "build": "napi build --platform --release --features napi",
-    "build:debug": "napi build --platform --features napi",
+    "build": "napi build --platform --release",
+    "build:debug": "napi build --platform",
     "prepublishOnly": "napi prepublish -t npm",
     "version": "napi version",
     "test": "node ./js/index.js"

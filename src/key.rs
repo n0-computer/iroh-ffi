@@ -1,5 +1,4 @@
 use std::str::FromStr;
-use std::sync::Arc;
 
 use napi_derive::napi;
 
@@ -31,7 +30,8 @@ impl From<&PublicKey> for iroh::net::key::PublicKey {
 #[napi]
 impl PublicKey {
     /// Returns true if the PublicKeys are equal
-    pub fn equal(&self, other: Arc<PublicKey>) -> bool {
+    #[napi]
+    pub fn equal(&self, other: &PublicKey) -> bool {
         *self == *other
     }
 
@@ -71,6 +71,13 @@ impl PublicKey {
     pub fn fmt_short(&self) -> String {
         iroh::net::key::PublicKey::from(self).fmt_short()
     }
+
+    /// String representation
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "toString")]
+    pub fn to_string_js(&self) -> String {
+        self.to_string()
+    }
 }
 
 impl PartialEq for PublicKey {
@@ -88,6 +95,7 @@ impl std::fmt::Display for PublicKey {
 #[cfg(test)]
 mod tests {
     use super::*;
+
     #[test]
     fn test_public_key() {
         let key_str = String::from("ki6htfv2252cj2lhq3hxu4qfcfjtpjnukzonevigudzjpmmruxva");
@@ -103,7 +111,7 @@ mod tests {
         assert_eq!(fmt_str, key.fmt_short());
         //
         // create key from bytes
-        let key_0 = Arc::new(PublicKey::from_bytes(bytes.to_vec()).unwrap());
+        let key_0 = PublicKey::from_bytes(bytes.to_vec()).unwrap();
         //
         // test methods are as expected
         assert_eq!(key_str, key_0.to_string());
@@ -111,7 +119,7 @@ mod tests {
         assert_eq!(fmt_str, key_0.fmt_short());
         //
         // test that the eq function works
-        assert!(key.equal(key_0.clone()));
-        assert!(key_0.equal(key.into()));
+        assert!(key.equal(&key_0));
+        assert!(key_0.equal(&key));
     }
 }
