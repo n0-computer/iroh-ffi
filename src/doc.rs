@@ -970,9 +970,11 @@ impl Entry {
     }
 }
 
+#[napi]
 /// Fields by which the query can be sorted
 pub use iroh::sync::store::SortBy;
 
+#[napi]
 /// Sort direction
 pub use iroh::sync::store::SortDirection;
 

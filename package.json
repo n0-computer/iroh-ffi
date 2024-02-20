@@ -37,9 +37,11 @@
     "build:debug": "napi build --platform",
     "prepublishOnly": "napi prepublish -t npm",
     "version": "napi version",
-    "test": "node ./js/index.js"
+    "run": "node ./js/index.js",
+    "test": "jest"
   },
   "devDependencies": {
-    "@napi-rs/cli": "^2.16.0"
+    "@napi-rs/cli": "^2.16.0",
+    "jest": "^29.7.0"
   }
 }
