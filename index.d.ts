@@ -135,7 +135,51 @@ export class NamespaceAndCapability {
 }
 export type JsDoc = Doc
 /** A representation of a mutable, synchronizable key-value store. */
-export class Doc { }
+export class Doc {
+  constructor(node: IrohNode)
+  /** Get the document id of this doc. */
+  get id(): string
+  /** Close the document. */
+  close(): Promise<void>
+  /** Set the content of a key to a byte array. */
+  setBytes(authorId: AuthorId, key: Array<number>, value: Array<number>): Promise<Hash>
+  /** Set an entries on the doc via its key, hash, and size. */
+  setHash(authorId: AuthorId, key: Array<number>, hash: Hash, size: bigint): Promise<void>
+  /** Add an entry from an absolute file path */
+  importFile(author: AuthorId, key: Array<number>, path: string, inPlace: boolean, cb?: (err: Error | null, arg: any) => any | undefined | null): Promise<void>
+  /**
+   * Delete entries that match the given `author` and key `prefix`.
+   *
+   * This inserts an empty entry with the key set to `prefix`, effectively clearing all other
+   * entries whose key starts with or is equal to the given `prefix`.
+   *
+   * Returns the number of entries deleted.
+   */
+  del(authorId: AuthorId, prefix: Array<number>): Promise<bigint>
+  /** Get an entry for a key and author. */
+  getExact(author: AuthorId, key: Array<number>, includeEmpty: boolean): Promise<Entry | null>
+  /**
+   * Get entries.
+   *
+   * Note: this allocates for each `Entry`, if you have many `Entry`s this may be a prohibitively large list.
+   * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
+   */
+  getMany(query: Query): Promise<Array<Entry>>
+  /** Get the latest entry for a key and author. */
+  getOne(query: Query): Promise<Entry | null>
+  /** Share this document with peers over a ticket. */
+  share(mode: ShareMode): Promise<string>
+  /** Start to sync this document with this peer. */
+  startSync(peer: NodeAddr): Promise<void>
+  /** Stop the live sync for this document. */
+  leave(): Promise<void>
+  /** Subscribe to events for this document. */
+  subscribe(cb: (err: Error | null, arg: any) => any): Promise<void>
+  /** Get status info for this document */
+  status(): Promise<any>
+  /** Get the download policy for this document */
+  getDownloadPolicy(): Promise<any>
+}
 /** A peer and it's addressing information. */
 export class NodeAddr {
   /** Create a new [`NodeAddr`] with empty [`AddrInfo`]. */

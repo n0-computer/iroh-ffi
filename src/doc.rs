@@ -51,9 +51,7 @@ impl IrohNode {
     #[cfg(feature = "napi")]
     #[napi(js_name = "docCreate")]
     pub async fn doc_create_js(&self) -> Result<JsDoc, napi::Error> {
-        let doc = self.sync_client.docs.create().await?;
-
-        Ok(JsDoc { inner: doc })
+        Ok(JsDoc::new(self).await)
     }
 
     /// Join and sync with an already existing document.
@@ -466,6 +464,14 @@ pub struct JsDoc {
 #[cfg(feature = "napi")]
 #[napi]
 impl JsDoc {
+    #[cfg(feature = "napi")]
+    #[napi(constructor)]
+    pub async fn new(node: &IrohNode) -> JsDoc {
+        let doc = node.sync_client.docs.create().await.unwrap();
+
+        JsDoc { inner: doc }
+    }
+
     /// Get the document id of this doc.
     #[napi(getter)]
     pub fn id(&self) -> String {
@@ -970,11 +976,9 @@ impl Entry {
     }
 }
 
-#[napi]
 /// Fields by which the query can be sorted
 pub use iroh::sync::store::SortBy;
 
-#[napi]
 /// Sort direction
 pub use iroh::sync::store::SortDirection;
 
