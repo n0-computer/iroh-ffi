@@ -107,13 +107,13 @@ export function startMetricsCollection(): void
  * If `root` exists, will add the root as a parent to the created path
  * Removes any null byte that has been appened to the key
  */
-export function keyToPath(key: Array<number>, prefix?: string | undefined | null, root?: string | undefined | null): string
+export function keyToPath(key: Buffer, prefix?: string | undefined | null, root?: string | undefined | null): string
 /**
  * Helper function that creates a document key from a canonicalized path, removing the `root` and adding the `prefix`, if they exist
  *
  * Appends the null byte to the end of the key.
  */
-export function pathToKey(path: string, prefix?: string | undefined | null, root?: string | undefined | null): Array<number>
+export function pathToKey(path: string, prefix?: string | undefined | null, root?: string | undefined | null): Buffer
 /** Identifier for an [`Author`] */
 export class AuthorId {
   /** Get an [`AuthorId`] from a String. */
@@ -134,6 +134,8 @@ export class Hash {
   /** Make a Hash from hex string */
   static fromString(s: string): this
   /** Convert the hash to a hex string. */
+  toHex(): string
+  /** Convert the hash to a string */
   toString(): string
   /** Returns true if the Hash's have the same value */
   equal(other: Hash): boolean
@@ -406,7 +408,7 @@ export class IrohNode {
   /**
    * Get the size information on a single blob.
    *
-   * Method only exist in FFI
+   * Method only exists in FFI
    */
   blobsSize(hash: Hash): Promise<number>
   /**
@@ -415,7 +417,7 @@ export class IrohNode {
    * This allocates a buffer for the full blob. Use only if you know that the blob you're
    * reading is small.
    */
-  blobsReadToBytes(hash: Hash): Promise<Array<number>>
+  blobsReadToBytes(hash: Hash): Promise<Buffer>
   /**
    * Read all bytes of single blob at `offset` for length `len`.
    *
@@ -438,7 +440,7 @@ export class IrohNode {
    */
   blobsWriteToPath(hash: Hash, path: string): Promise<void>
   /** Write a blob by passing bytes. */
-  blobsAddBytes(bytes: Array<number>, tag?: Array<number> | undefined | null): Promise<any>
+  blobsAddBytes(bytes: Buffer, tag?: Buffer | undefined | null): Promise<any>
   /** Download a blob from another node and add it to the local database. */
   blobsDownload(hash: Hash, format: BlobFormat, node: NodeAddr, tag: Array<number> | undefined | null, out: string | undefined | null, inPlace: boolean, cb: (err: Error | null, arg: any) => any): Promise<void>
   /**
