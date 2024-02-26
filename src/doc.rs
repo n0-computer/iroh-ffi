@@ -543,6 +543,7 @@ impl JsDoc {
     }
 
     /// Export an entry as a file to a given absolute path
+    #[napi]
     pub async fn export_file(
         &self,
         entry: &Entry,
@@ -602,7 +603,7 @@ impl JsDoc {
             .inner
             .get_many(query.0.clone())
             .await?
-            .map_ok(|e| Entry(e))
+            .map_ok(Entry)
             .try_collect::<Vec<_>>()
             .await?;
 
@@ -667,7 +668,7 @@ impl JsDoc {
     /// Get status info for this document
     #[napi]
     pub async fn status(&self) -> Result<serde_json::Value, napi::Error> {
-        let state = self.inner.status().await.map(|o| OpenState::from(o))?;
+        let state = self.inner.status().await.map(OpenState::from)?;
         Ok(serde_json::to_value(state).unwrap())
     }
 
@@ -688,7 +689,7 @@ impl JsDoc {
             .inner
             .get_download_policy()
             .await
-            .map(|policy| DownloadPolicy::from(policy))?;
+            .map(DownloadPolicy::from)?;
         Ok(serde_json::to_value(policy).unwrap())
     }
 }
@@ -863,7 +864,7 @@ impl TryFrom<NodeAddr> for iroh::net::magic_endpoint::NodeAddr {
         if let Some(derp_url) = value.derp_url() {
             let url = url::Url::parse(&derp_url).map_err(IrohError::url)?;
 
-            node_addr = node_addr.with_derp_url(url.into());
+            node_addr = node_addr.with_derp_url(url);
         }
         node_addr = node_addr.with_direct_addresses(addresses);
         Ok(node_addr)
@@ -938,6 +939,13 @@ impl Entry {
         self.0.content_len()
     }
 
+    /// Get the content_length of this entry.
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "contentLen")]
+    pub fn content_len_js(&self) -> Option<u32> {
+        u32::try_from(self.0.content_len()).ok()
+    }
+
     /// Get the key of this entry.
     #[napi]
     pub fn key(&self) -> Vec<u8> {
@@ -977,10 +985,62 @@ impl Entry {
 }
 
 /// Fields by which the query can be sorted
-pub use iroh::sync::store::SortBy;
+#[napi]
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub enum SortBy {
+    /// Sort by key, then author.
+    KeyAuthor,
+    /// Sort by author, then key.
+    #[default]
+    AuthorKey,
+}
+
+impl From<iroh::sync::store::SortBy> for SortBy {
+    fn from(value: iroh::sync::store::SortBy) -> Self {
+        match value {
+            iroh::sync::store::SortBy::AuthorKey => SortBy::AuthorKey,
+            iroh::sync::store::SortBy::KeyAuthor => SortBy::KeyAuthor,
+        }
+    }
+}
+
+impl From<SortBy> for iroh::sync::store::SortBy {
+    fn from(value: SortBy) -> Self {
+        match value {
+            SortBy::AuthorKey => iroh::sync::store::SortBy::AuthorKey,
+            SortBy::KeyAuthor => iroh::sync::store::SortBy::KeyAuthor,
+        }
+    }
+}
 
 /// Sort direction
-pub use iroh::sync::store::SortDirection;
+#[napi]
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub enum SortDirection {
+    /// Sort ascending
+    #[default]
+    Asc,
+    /// Sort descending
+    Desc,
+}
+
+impl From<iroh::sync::store::SortDirection> for SortDirection {
+    fn from(value: iroh::sync::store::SortDirection) -> Self {
+        match value {
+            iroh::sync::store::SortDirection::Asc => SortDirection::Asc,
+            iroh::sync::store::SortDirection::Desc => SortDirection::Desc,
+        }
+    }
+}
+
+impl From<SortDirection> for iroh::sync::store::SortDirection {
+    fn from(value: SortDirection) -> Self {
+        match value {
+            SortDirection::Asc => iroh::sync::store::SortDirection::Asc,
+            SortDirection::Desc => iroh::sync::store::SortDirection::Desc,
+        }
+    }
+}
 
 /// Build a Query to search for an entry or entries in a doc.
 ///
@@ -990,6 +1050,7 @@ pub use iroh::sync::store::SortDirection;
 pub struct Query(iroh::sync::store::Query);
 
 /// Options for sorting and pagination for using [`Query`]s.
+#[napi(object)]
 #[derive(Clone, Debug, Default)]
 pub struct QueryOptions {
     /// Sort by author or key first.
@@ -1001,13 +1062,14 @@ pub struct QueryOptions {
     /// Default is [`SortDirection::Asc`]
     pub direction: SortDirection,
     /// Offset
-    pub offset: u64,
+    pub offset: u32,
     /// Limit to limit the pagination.
     ///
     /// When the limit is 0, the limit does not exist.
-    pub limit: u64,
+    pub limit: u32,
 }
 
+#[napi]
 impl Query {
     /// Query all records.
     ///
@@ -1016,17 +1078,18 @@ impl Query {
     ///     direction: SortDirection::Asc
     ///     offset: None
     ///     limit: None
+    #[napi]
     pub fn all(opts: Option<QueryOptions>) -> Self {
         let mut builder = iroh::sync::store::Query::all();
 
         if let Some(opts) = opts {
             if opts.offset != 0 {
-                builder = builder.offset(opts.offset);
+                builder = builder.offset(opts.offset as u64);
             }
             if opts.limit != 0 {
-                builder = builder.limit(opts.limit);
+                builder = builder.limit(opts.limit as u64);
             }
-            builder = builder.sort_by(opts.sort_by, opts.direction);
+            builder = builder.sort_by(opts.sort_by.into(), opts.direction.into());
         }
         Query(builder.build())
     }
@@ -1038,17 +1101,18 @@ impl Query {
     ///     direction: SortDirection::Asc
     ///     offset: None
     ///     limit: None
+    #[napi]
     pub fn single_latest_per_key(opts: Option<QueryOptions>) -> Self {
         let mut builder = iroh::sync::store::Query::single_latest_per_key();
 
         if let Some(opts) = opts {
             if opts.offset != 0 {
-                builder = builder.offset(opts.offset);
+                builder = builder.offset(opts.offset as u64);
             }
             if opts.limit != 0 {
-                builder = builder.limit(opts.limit);
+                builder = builder.limit(opts.limit as u64);
             }
-            builder = builder.sort_direction(opts.direction);
+            builder = builder.sort_direction(opts.direction.into());
         }
         Query(builder.build())
     }
@@ -1060,17 +1124,18 @@ impl Query {
     ///     direction: SortDirection::Asc
     ///     offset: None
     ///     limit: None
+    #[napi]
     pub fn author(author: &AuthorId, opts: Option<QueryOptions>) -> Self {
         let mut builder = iroh::sync::store::Query::author(author.0);
 
         if let Some(opts) = opts {
             if opts.offset != 0 {
-                builder = builder.offset(opts.offset);
+                builder = builder.offset(opts.offset as u64);
             }
             if opts.limit != 0 {
-                builder = builder.limit(opts.limit);
+                builder = builder.limit(opts.limit as u64);
             }
-            builder = builder.sort_by(opts.sort_by, opts.direction);
+            builder = builder.sort_by(opts.sort_by.into(), opts.direction.into());
         }
         Query(builder.build())
     }
@@ -1082,22 +1147,24 @@ impl Query {
     ///     direction: SortDirection::Asc
     ///     offset: None
     ///     limit: None
+    #[napi]
     pub fn key_exact(key: Vec<u8>, opts: Option<QueryOptions>) -> Self {
         let mut builder = iroh::sync::store::Query::key_exact(key);
 
         if let Some(opts) = opts {
             if opts.offset != 0 {
-                builder = builder.offset(opts.offset);
+                builder = builder.offset(opts.offset as u64);
             }
             if opts.limit != 0 {
-                builder = builder.limit(opts.limit);
+                builder = builder.limit(opts.limit as u64);
             }
-            builder = builder.sort_by(opts.sort_by, opts.direction);
+            builder = builder.sort_by(opts.sort_by.into(), opts.direction.into());
         }
         Query(builder.build())
     }
 
     /// Create a Query for a single key and author.
+    #[napi]
     pub fn author_key_exact(author: &AuthorId, key: Vec<u8>) -> Self {
         let builder = iroh::sync::store::Query::author(author.0).key_exact(key);
         Query(builder.build())
@@ -1110,17 +1177,18 @@ impl Query {
     ///     direction: SortDirection::Asc
     ///     offset: None
     ///     limit: None
+    #[napi]
     pub fn key_prefix(prefix: Vec<u8>, opts: Option<QueryOptions>) -> Self {
         let mut builder = iroh::sync::store::Query::key_prefix(prefix);
 
         if let Some(opts) = opts {
             if opts.offset != 0 {
-                builder = builder.offset(opts.offset);
+                builder = builder.offset(opts.offset as u64);
             }
             if opts.limit != 0 {
-                builder = builder.limit(opts.limit);
+                builder = builder.limit(opts.limit as u64);
             }
-            builder = builder.sort_by(opts.sort_by, opts.direction);
+            builder = builder.sort_by(opts.sort_by.into(), opts.direction.into());
         }
         Query(builder.build())
     }
@@ -1131,6 +1199,7 @@ impl Query {
     ///     direction: SortDirection::Asc
     ///     offset: None
     ///     limit: None
+    #[napi]
     pub fn author_key_prefix(
         author: &AuthorId,
         prefix: Vec<u8>,
@@ -1140,12 +1209,12 @@ impl Query {
 
         if let Some(opts) = opts {
             if opts.offset != 0 {
-                builder = builder.offset(opts.offset);
+                builder = builder.offset(opts.offset as u64);
             }
             if opts.limit != 0 {
-                builder = builder.limit(opts.limit);
+                builder = builder.limit(opts.limit as u64);
             }
-            builder = builder.sort_by(opts.sort_by, opts.direction);
+            builder = builder.sort_by(opts.sort_by.into(), opts.direction.into());
         }
         Query(builder.build())
     }
@@ -1155,9 +1224,26 @@ impl Query {
         self.0.limit()
     }
 
+    /// Get the limit for this query (max. number of entries to emit).
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "limit")]
+    pub fn limit_js(&self) -> Option<u32> {
+        match self.0.limit() {
+            None => None,
+            Some(i) => u32::try_from(i).ok(),
+        }
+    }
+
     /// Get the offset for this query (number of entries to skip at the beginning).
     pub fn offset(&self) -> u64 {
         self.0.offset()
+    }
+
+    /// Get the limit for this query (max. number of entries to emit).
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "offset")]
+    pub fn offset_js(&self) -> Option<u32> {
+        u32::try_from(self.offset()).ok()
     }
 }
 
@@ -1737,13 +1823,10 @@ mod tests {
         }
         impl SubscribeCallback for Callback {
             fn event(&self, event: Arc<LiveEvent>) -> Result<(), IrohError> {
-                match *event {
-                    LiveEvent::ContentReady { ref hash } => {
-                        self.found_s
-                            .send(Ok(hash.clone()))
-                            .map_err(IrohError::doc)?;
-                    }
-                    _ => {}
+                if let LiveEvent::ContentReady { ref hash } = *event {
+                    self.found_s
+                        .send(Ok(hash.clone()))
+                        .map_err(IrohError::doc)?;
                 }
                 Ok(())
             }
@@ -1773,8 +1856,8 @@ mod tests {
         //
         // create socketaddrs
         let port = 3000;
-        let ipv4 = String::from(format!("127.0.0.1:{port}"));
-        let ipv6 = String::from(format!("::1:{port}"));
+        let ipv4 = format!("127.0.0.1:{port}");
+        let ipv6 = format!("::1:{port}");
         //
         // derp region
         let derp_url = String::from("https://derp.url");
@@ -1807,30 +1890,34 @@ mod tests {
         // create another id, same string
         let author_0 = AuthorId::from_string(author_str.into()).unwrap();
         //
-        // ensure equal
-        let author_0 = author_0;
         assert!(author.equal(&author_0));
         assert!(author_0.equal(&author));
     }
 
     #[test]
     fn test_query() {
-        let mut opts = QueryOptions::default();
-        opts.offset = 10;
-        opts.limit = 10;
+        let opts = QueryOptions {
+            offset: 10,
+            limit: 10,
+            ..QueryOptions::default()
+        };
         // all
         let all = Query::all(Some(opts));
         assert_eq!(10, all.offset());
         assert_eq!(Some(10), all.limit());
 
-        let mut opts = QueryOptions::default();
-        opts.direction = SortDirection::Desc;
+        let opts = QueryOptions {
+            direction: SortDirection::Desc,
+            ..QueryOptions::default()
+        };
         let single_latest_per_key = Query::single_latest_per_key(Some(opts));
         assert_eq!(0, single_latest_per_key.offset());
         assert_eq!(None, single_latest_per_key.limit());
 
-        let mut opts = QueryOptions::default();
-        opts.offset = 100;
+        let opts = QueryOptions {
+            offset: 100,
+            ..QueryOptions::default()
+        };
         let author = Query::author(
             &AuthorId::from_string(
                 "mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q".to_string(),
@@ -1841,8 +1928,10 @@ mod tests {
         assert_eq!(100, author.offset());
         assert_eq!(None, author.limit());
 
-        let mut opts = QueryOptions::default();
-        opts.limit = 100;
+        let opts = QueryOptions {
+            limit: 100,
+            ..QueryOptions::default()
+        };
         let key_exact = Query::key_exact(b"key".to_vec(), Some(opts));
         assert_eq!(0, key_exact.offset());
         assert_eq!(Some(100), key_exact.limit());

@@ -740,11 +740,11 @@ dictionary QueryOptions {
   /// Default is [`SortDirection::Asc`]
   SortDirection direction;
   /// Offset
-  u64 offset;
+  u32 offset;
   /// Limit to limit the pagination.
   ///
   /// When the limit is 0, the limit does not exist.
-  u64 limit;
+  u32 limit;
 };
 
 /// Information about a connection

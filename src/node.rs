@@ -148,6 +148,20 @@ pub struct JsConnectionInfo {
     pub last_used: Option<u32>,
 }
 
+#[cfg(feature = "napi")]
+#[napi]
+impl JsConnectionInfo {
+    #[napi]
+    pub fn public_key(&self) -> PublicKey {
+        self.public_key.clone()
+    }
+
+    #[napi]
+    pub fn addrs(&self) -> Vec<DirectAddrInfo> {
+        self.addrs.clone()
+    }
+}
+
 impl From<iroh::net::magic_endpoint::ConnectionInfo> for ConnectionInfo {
     fn from(value: iroh::net::magic_endpoint::ConnectionInfo) -> Self {
         ConnectionInfo {

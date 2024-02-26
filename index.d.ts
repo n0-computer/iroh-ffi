@@ -23,6 +23,43 @@ export const enum ShareMode {
   /** Write access */
   Write = 1
 }
+/** Fields by which the query can be sorted */
+export const enum SortBy {
+  /** Sort by key, then author. */
+  KeyAuthor = 0,
+  /** Sort by author, then key. */
+  AuthorKey = 1
+}
+/** Sort direction */
+export const enum SortDirection {
+  /** Sort ascending */
+  Asc = 0,
+  /** Sort descending */
+  Desc = 1
+}
+/** Options for sorting and pagination for using [`Query`]s. */
+export interface QueryOptions {
+  /**
+   * Sort by author or key first.
+   *
+   * Default is [`SortBy::AuthorKey`], so sorting first by author and then by key.
+   */
+  sortBy: SortBy
+  /**
+   * Direction by which to sort the entries
+   *
+   * Default is [`SortDirection::Asc`]
+   */
+  direction: SortDirection
+  /** Offset */
+  offset: number
+  /**
+   * Limit to limit the pagination.
+   *
+   * When the limit is 0, the limit does not exist.
+   */
+  limit: number
+}
 /**
  * Stats counter
  * Counter stats
@@ -147,6 +184,8 @@ export class Doc {
   setHash(authorId: AuthorId, key: Array<number>, hash: Hash, size: bigint): Promise<void>
   /** Add an entry from an absolute file path */
   importFile(author: AuthorId, key: Array<number>, path: string, inPlace: boolean, cb?: (err: Error | null, arg: any) => any | undefined | null): Promise<void>
+  /** Export an entry as a file to a given absolute path */
+  exportFile(entry: Entry, path: string, cb?: (err: Error | null, arg: any) => any | undefined | null): Promise<void>
   /**
    * Delete entries that match the given `author` and key `prefix`.
    *
@@ -203,6 +242,8 @@ export class Entry {
   author(): AuthorId
   /** Get the content_hash of this entry. */
   contentHash(): Hash
+  /** Get the content_length of this entry. */
+  contentLen(): number | null
   /** Get the key of this entry. */
   key(): Array<number>
   /** Get the namespace id of this entry. */
@@ -220,7 +261,73 @@ export class Entry {
  *
  * Use this with `QueryOptions` to determine sorting, grouping, and pagination.
  */
-export class Query { }
+export class Query {
+  /**
+   * Query all records.
+   *
+   * If `opts` is `None`, the default values will be used:
+   *     sort_by: SortBy::AuthorKey
+   *     direction: SortDirection::Asc
+   *     offset: None
+   *     limit: None
+   */
+  static all(opts?: QueryOptions | undefined | null): Query
+  /**
+   * Query only the latest entry for each key, omitting older entries if the entry was written
+   * to by multiple authors.
+   *
+   * If `opts` is `None`, the default values will be used:
+   *     direction: SortDirection::Asc
+   *     offset: None
+   *     limit: None
+   */
+  static singleLatestPerKey(opts?: QueryOptions | undefined | null): Query
+  /**
+   * Query all entries for by a single author.
+   *
+   * If `opts` is `None`, the default values will be used:
+   *     sort_by: SortBy::AuthorKey
+   *     direction: SortDirection::Asc
+   *     offset: None
+   *     limit: None
+   */
+  static author(author: AuthorId, opts?: QueryOptions | undefined | null): Query
+  /**
+   * Query all entries that have an exact key.
+   *
+   * If `opts` is `None`, the default values will be used:
+   *     sort_by: SortBy::AuthorKey
+   *     direction: SortDirection::Asc
+   *     offset: None
+   *     limit: None
+   */
+  static keyExact(key: Array<number>, opts?: QueryOptions | undefined | null): Query
+  /** Create a Query for a single key and author. */
+  static authorKeyExact(author: AuthorId, key: Array<number>): Query
+  /**
+   * Create a query for all entries with a given key prefix.
+   *
+   * If `opts` is `None`, the default values will be used:
+   *     sort_by: SortBy::AuthorKey
+   *     direction: SortDirection::Asc
+   *     offset: None
+   *     limit: None
+   */
+  static keyPrefix(prefix: Array<number>, opts?: QueryOptions | undefined | null): Query
+  /**
+   * Create a query for all entries of a single author with a given key prefix.
+   *
+   * If `opts` is `None`, the default values will be used:
+   *     direction: SortDirection::Asc
+   *     offset: None
+   *     limit: None
+   */
+  static authorKeyPrefix(author: AuthorId, prefix: Array<number>, opts?: QueryOptions | undefined | null): Query
+  /** Get the limit for this query (max. number of entries to emit). */
+  limit(): number | null
+  /** Get the limit for this query (max. number of entries to emit). */
+  offset(): number | null
+}
 /**
  * A public key.
  *

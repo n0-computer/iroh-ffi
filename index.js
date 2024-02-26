@@ -295,7 +295,7 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { AuthorId, Hash, BlobFormat, Collection, LinkAndName, CapabilityKind, NamespaceAndCapability, Doc, NodeAddr, ShareMode, Entry, Query, PublicKey, DirectAddrInfo, LatencyAndControlMsg, ConnectionInfo, ConnType, ConnectionTypeMixed, IrohNode, NodeStatusResponse, LogLevel, setLogLevel, startMetricsCollection, keyToPath, pathToKey } = nativeBinding
+const { AuthorId, Hash, BlobFormat, Collection, LinkAndName, CapabilityKind, NamespaceAndCapability, Doc, NodeAddr, ShareMode, Entry, SortBy, SortDirection, Query, PublicKey, DirectAddrInfo, LatencyAndControlMsg, ConnectionInfo, ConnType, ConnectionTypeMixed, IrohNode, NodeStatusResponse, LogLevel, setLogLevel, startMetricsCollection, keyToPath, pathToKey } = nativeBinding
 
 module.exports.AuthorId = AuthorId
 module.exports.Hash = Hash
@@ -308,6 +308,8 @@ module.exports.Doc = Doc
 module.exports.NodeAddr = NodeAddr
 module.exports.ShareMode = ShareMode
 module.exports.Entry = Entry
+module.exports.SortBy = SortBy
+module.exports.SortDirection = SortDirection
 module.exports.Query = Query
 module.exports.PublicKey = PublicKey
 module.exports.DirectAddrInfo = DirectAddrInfo
