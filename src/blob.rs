@@ -1,12 +1,14 @@
 use std::{path::PathBuf, str::FromStr, sync::Arc, sync::RwLock, time::Duration};
 
 use futures::{StreamExt, TryStreamExt};
+use napi::bindgen_prelude::Buffer;
 use napi_derive::napi;
 use serde::{Deserialize, Serialize};
 
 use crate::node::IrohNode;
 use crate::{block_on, IrohError, NodeAddr};
 
+use anyhow::Context;
 #[cfg(feature = "napi")]
 use napi::threadsafe_function::ThreadsafeFunction;
 
@@ -50,7 +52,7 @@ impl IrohNode {
 
     /// Get the size information on a single blob.
     ///
-    /// Method only exist in FFI
+    /// Method only exists in FFI
     pub fn blobs_size(&self, hash: &Hash) -> Result<u64, IrohError> {
         block_on(&self.rt(), async {
             let r = self
@@ -65,12 +67,13 @@ impl IrohNode {
 
     /// Get the size information on a single blob.
     ///
-    /// Method only exist in FFI
+    /// Method only exists in FFI
     #[cfg(feature = "napi")]
     #[napi(js_name = "blobsSize")]
-    pub async fn blobs_size_js(&self, hash: &Hash) -> Result<i64, napi::Error> {
+    pub async fn blobs_size_js(&self, hash: &Hash) -> Result<u32, napi::Error> {
         let r = self.sync_client.blobs.read(hash.0).await?;
-        Ok(r.size() as _)
+        let size = u32::try_from(r.size()).context("cannot convert blob size to u32")?;
+        Ok(size)
     }
 
     /// Read all bytes of single blob.
@@ -95,14 +98,14 @@ impl IrohNode {
     /// reading is small.
     #[cfg(feature = "napi")]
     #[napi(js_name = "blobsReadToBytes")]
-    pub async fn blobs_read_to_bytes_js(&self, hash: &Hash) -> Result<Vec<u8>, napi::Error> {
+    pub async fn blobs_read_to_bytes_js(&self, hash: &Hash) -> Result<Buffer, napi::Error> {
         let res = self
             .sync_client
             .blobs
             .read_to_bytes(hash.0)
             .await
             .map(|b| b.to_vec())?;
-        Ok(res)
+        Ok(res.into())
     }
 
     /// Read all bytes of single blob at `offset` for length `len`.
@@ -292,13 +295,17 @@ impl IrohNode {
     #[napi(js_name = "blobsAddBytes")]
     pub async fn blobs_add_bytes_js(
         &self,
-        bytes: Vec<u8>,
-        tag: Option<Vec<u8>>,
+        bytes: Buffer,
+        tag: Option<Buffer>,
     ) -> Result<serde_json::Value, napi::Error> {
         let tag = match tag {
             None => iroh::rpc_protocol::SetTagOption::Auto,
-            Some(name) => iroh::rpc_protocol::SetTagOption::Named(bytes::Bytes::from(name).into()),
+            Some(name) => {
+                let name: Vec<_> = name.into();
+                iroh::rpc_protocol::SetTagOption::Named(bytes::Bytes::from(name).into())
+            }
         };
+        let bytes: Vec<_> = bytes.into();
         let res = self
             .sync_client
             .blobs
@@ -702,9 +709,16 @@ impl Hash {
     }
 
     /// Convert the hash to a hex string.
-    #[napi(js_name = "toString")]
+    #[napi]
     pub fn to_hex(&self) -> String {
         self.0.to_hex()
+    }
+
+    /// Convert the hash to a string
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "toString")]
+    pub fn to_string_js(&self) -> String {
+        format!("{}", self.0)
     }
 
     /// Returns true if the Hash's have the same value
