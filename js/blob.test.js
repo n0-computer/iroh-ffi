@@ -1,7 +1,7 @@
 const os = require('os');
 const fs = require('fs');
 const path = require('path');
-const { Hash, IrohNode, SetTagOption, BlobFormat, WrapOption, AddProgressType } = require('../index');
+const { Hash, IrohNode, BlobFormat, AddProgressType } = require('../index');
 
 test('hash', () => {
     const hashStr = "2kbxxbofqx5rau77wzafrj4yntjb4gn4olfpwxmv26js6dvhgjhq";
@@ -45,173 +45,169 @@ test('blob add and get bytes', async () => {
     expect(gotBytes).toEqual(bytes);
 });
 
-// test('blob read and write path', () => {
-//     const irohDir = fs.mkdtempSync(path.join(os.tmpdir(), ''));
-//     const node = new IrohNode(irohDir);
+test('blob read and write path', async () => {
+    const irohDir = fs.mkdtempSync(path.join(os.tmpdir(), ''));
+    const node = await IrohNode.withPath(irohDir);
 
-//     const blobSize = 100;
-//     const bytes = Buffer.alloc(blobSize).map(() => Math.floor(Math.random() * 256));
+    const blobSize = 100;
+    const bytes = Buffer.alloc(blobSize).map(() => Math.floor(Math.random() * 256));
 
-//     const dir = fs.mkdtempSync(path.join(os.tmpdir(), ''));
-//     const filePath = path.join(dir, "in");
-//     fs.writeFileSync(filePath, bytes);
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'read_and_write'));
+    const filePath = path.join(dir, "in");
+    fs.writeFileSync(filePath, bytes);
 
-//     const tag = SetTagOption.auto();
-//     const wrap = WrapOption.noWrap();
+    class AddCallback {
+      hash;
+      format;
+      constructor() {
+        this.hash = null;
+        this.format = null;
+        this.progress = this.progress.bind(this);
+      }
 
-//     class AddCallback {
-//         constructor() {
-//             this.hash = null;
-//             this.format = null;
-//         }
+      async progress(_, progressEvent) {
+        if (progressEvent && progressEvent.hasOwnProperty('AllDone') ) {
+          this.hash = progressEvent.AllDone.hash;
+          this.format = progressEvent.AllDone.format;
+        }
+        if (progressEvent && progressEvent.hasOwnProperty('Abort')) {
+          throw new Error(progressEvent.Abort.error);
+        }
+      }
+    }
+    
+    const cb = new AddCallback();
+    let hash = await node.blobsAddFromPath(filePath, false, null, false, cb.progress);
 
-//         progress(progressEvent) {
-//             if (progressEvent.type() === AddProgressType.ALL_DONE) {
-//                 const allDoneEvent = progressEvent.asAllDone();
-//                 this.hash = allDoneEvent.hash;
-//                 this.format = allDoneEvent.format;
-//             }
-//             if (progressEvent.type() === AddProgressType.ABORT) {
-//                 const abortEvent = progressEvent.asAbort();
-//                 throw new Error(abortEvent.error);
-//             }
-//         }
-//     }
+    expect(hash).not.toBeNull();
+    expect(cb.format).toBe(BlobFormat.Raw);
+    expect(cb.hash).toBe(hash.toString());
 
-//     const cb = new AddCallback();
-//     node.blobsAddFromPath(filePath, false, tag, wrap, cb);
+    const gotSize = await node.blobsSize(hash);
+    expect(gotSize).toBe(blobSize);
 
-//     expect(cb.format).toBe(BlobFormat.RAW);
-//     expect(cb.hash).not.toBeNull();
+    const gotBytes = await node.blobsReadToBytes(hash);
+    expect(gotBytes.length).toBe(blobSize);
+    expect(gotBytes).toEqual(bytes);
 
-//     const gotSize = node.blobsSize(cb.hash);
-//     expect(gotSize).toBe(blobSize);
+    const outPath = path.join(dir, "out");
+    await node.blobsWriteToPath(hash, outPath);
 
-//     const gotBytes = node.blobsReadToBytes(cb.hash);
-//     expect(gotBytes.length).toBe(blobSize);
-//     expect(gotBytes).toEqual(bytes);
+    const gotBytesFromFile = fs.readFileSync(outPath);
+    expect(gotBytesFromFile.length).toBe(blobSize);
+    expect(gotBytesFromFile).toEqual(bytes);
+});
 
-//     const outPath = path.join(dir, "out");
-//     node.blobsWriteToPath(cb.hash, outPath);
+test('blob collections', async () => {
+    const collectionDir = fs.mkdtempSync(path.join(os.tmpdir(), ''));
+    const numFiles = 3;
+    const blobSize = 100;
 
-//     const gotBytesFromFile = fs.readFileSync(outPath);
-//     expect(gotBytesFromFile.length).toBe(blobSize);
-//     expect(gotBytesFromFile).toEqual(bytes);
-// });
+    for (let i = 0; i < numFiles; i++) {
+        const bytes = Buffer.alloc(blobSize).map(() => Math.floor(Math.random() * 256));
+        const filePath = path.join(collectionDir, `${i}`);
+        fs.writeFileSync(filePath, bytes);
+    }
 
-// test('blob collections', () => {
-//     const collectionDir = fs.mkdtempSync(path.join(os.tmpdir(), ''));
-//     const numFiles = 3;
-//     const blobSize = 100;
-//     const blobBytes = Array.from({ length: blobSize }, () => Math.floor(Math.random() * 256));
+    const irohDir = fs.mkdtempSync(path.join(os.tmpdir(), ''));
+    const node = await IrohNode.withPath(irohDir);
 
-//     for (let i = 0; i < numFiles; i++) {
-//         const filePath = path.join(collectionDir, `${i}`);
-//         fs.writeFileSync(filePath, Buffer.from(blobBytes));
-//     }
+    class AddCallback {
+        constructor() {
+            this.collectionHash = null;
+            this.format = null;
+            this.blobHashes = [];
+            this.progress = this.progress.bind(this);
+        }
 
-//     const irohDir = fs.mkdtempSync(path.join(os.tmpdir(), ''));
-//     const node = new IrohNode(irohDir);
+        async progress(_, progressEvent) {
+            if (!progressEvent) { return; }
+            if (progressEvent.hasOwnProperty('AllDone')) {
+                this.collectionHash = progressEvent.AllDone.hash;
+                this.format = progressEvent.AllDone.format;
+            }
+            if (progressEvent.hasOwnProperty('Abort')) {
+                throw new Error(progressEvent.Abort.error);
+            }
+            if (progressEvent.hasOwnProperty('Done')) {
+                this.blobHashes.push(progressEvent.Done.hash);
+            }
+        }
+    }
 
-//     const class AddCallback {
-//         constructor() {
-//             this.collectionHash = null;
-//             this.format = null;
-//             this.blobHashes = [];
-//         }
+    const cb = new AddCallback();
+    await node.blobsAddFromPath(collectionDir, false, null, false, cb.progress);
 
-//         progress(progressEvent) {
-//             if (progressEvent.type() === AddProgressType.ALL_DONE) {
-//                 const allDoneEvent = progressEvent.asAllDone();
-//                 this.collectionHash = allDoneEvent.hash;
-//                 this.format = allDoneEvent.format;
-//             }
-//             if (progressEvent.type() === AddProgressType.ABORT) {
-//                 const abortEvent = progressEvent.asAbort();
-//                 throw new Error(abortEvent.error);
-//             }
-//             if (progressEvent.type() === AddProgressType.DONE) {
-//                 const doneEvent = progressEvent.asDone();
-//                 this.blobHashes.push(doneEvent.hash);
-//             }
-//         }
-//     }
+    expect(cb.collectionHash).not.toBeNull();
+    expect(cb.format).toBe(BlobFormat.HashSeq);
 
-//     const cb = new AddCallback();
-//     const tag = SetTagOption.auto();
-//     const wrap = WrapOption.noWrap();
-//     node.blobsAddFromPath(collectionDir, false, tag, wrap, cb);
+    const collections = await node.blobsListCollections();
+    expect(collections.length).toBe(1);
+    expect(collections[0].hash).toBe(cb.collectionHash);
+    expect(collections[0].total_blobs_count).toBe(4);
 
-//     expect(cb.collectionHash).not.toBeNull();
-//     expect(cb.format).toBe(BlobFormat.HASH_SEQ);
+    const collectionHashes = [...cb.blobHashes, cb.collectionHash];
+    const gotHashes = await node.blobsList();
+    for (const hash of gotHashes) {
+        const blobBytes = await node.blobsReadToBytes(Hash.fromString(hash));
+        console.log("hash", hash.toString(), "has size", blobBytes.length)
+    }
+    expect(collectionHashes.length + 1).toBe(gotHashes.length);
 
-//     const collections = node.blobsListCollections();
-//     expect(collections.length).toBe(1);
-//     expect(collections[0].hash.equal(cb.collectionHash)).toBe(true);
-//     expect(collections[0].totalBlobsCount).toBe(numFiles);
+    for (const expectHash of collectionHashes) {
+        let found = false;
+        for (const gotHash of gotHashes) {
+            if (expectHash == gotHash) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            throw new Error(`Could not find ${expectHash} in list`);
+        }
+    }
+});
 
-//     const collectionHashes = [...cb.blobHashes, cb.collectionHash];
-//     const gotHashes = node.blobsList();
-//     for (const hash of gotHashes) {
-//         const blobBytes = node.blobsReadToBytes(hash);
-//         expect(blobBytes.length).toBe(blobSize);
-//     }
-//     expect(collectionHashes.length + 1).toBe(gotHashes.length);
+test('list and delete', async () => {
+    const irohDir = fs.mkdtempSync(path.join(os.tmpdir(), ''));
+    const node = await IrohNode.withPath(irohDir);
 
-//     for (const expectHash of collectionHashes) {
-//         let found = false;
-//         for (const gotHash of gotHashes) {
-//             if (expectHash.equal(gotHash)) {
-//                 found = true;
-//                 break;
-//             }
-//         }
-//         if (!found) {
-//             throw new Error(`Could not find ${expectHash} in list`);
-//         }
-//     }
-// });
+    const blobSize = 100;
+    const numBlobs = 3;
+    const blobs = Array.from({length: numBlobs }, () => {
+        return Buffer.alloc(blobSize).map(() => Math.floor(Math.random() * 256));
+    });
 
-// test('list and delete', () => {
-//     const irohDir = fs.mkdtempSync(path.join(os.tmpdir(), ''));
-//     const node = new IrohNode(irohDir);
+    const hashes = [];
+    for (const blob of blobs) {
+        const output = await node.blobsAddBytes(blob, null);
+        hashes.push(output.hash);
+    }
 
-//     const blobSize = 100;
-//     const numBlobs = 3;
-//     const blobs = Array.from({ length: numBlobs }, () => {
-//         return Buffer.alloc(blobSize).map(() => Math.floor(Math.random() * 256));
-//     });
+    let gotHashes = await node.blobsList();
+    expect(gotHashes.length).toBe(numBlobs);
+    for (const expectHash of hashes) {
+        let found = false;
+        for (const gotHash of gotHashes) {
+            if (expectHash == gotHash) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            throw new Error(`Could not find ${expectHash} in list`);
+        }
+    }
 
-//     const hashes = [];
-//     for (const blob of blobs) {
-//         const output = node.blobsAddBytes(blob, SetTagOption.auto());
-//         hashes.push(output.hash);
-//     }
+    const removeHash = hashes.shift();
+    await node.blobsDeleteBlob(Hash.fromString(removeHash));
 
-//     let gotHashes = node.blobsList();
-//     expect(gotHashes.length).toBe(numBlobs);
-//     for (const expectHash of hashes) {
-//         let found = false;
-//         for (const gotHash of gotHashes) {
-//             if (expectHash.equal(gotHash)) {
-//                 found = true;
-//                 break;
-//             }
-//         }
-//         if (!found) {
-//             throw new Error(`Could not find ${expectHash} in list`);
-//         }
-//     }
-
-//     const removeHash = hashes.shift();
-//     node.blobsDeleteBlob(removeHash);
-
-//     gotHashes = node.blobsList();
-//     expect(gotHashes.length).toBe(numBlobs - 1);
-//     for (const gotHash of gotHashes) {
-//         if (removeHash.equal(gotHash)) {
-//             throw new Error(`Blob ${removeHash} should have been removed`);
-//         }
-//     }
-// });
+    gotHashes = await node.blobsList();
+    expect(gotHashes.length).toBe(numBlobs - 1);
+    for (const gotHash of gotHashes) {
+        if (removeHash == gotHash) {
+            throw new Error(`Blob ${removeHash} should have been removed`);
+        }
+    }
+});
 

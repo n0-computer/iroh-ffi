@@ -1,16 +1,17 @@
 use std::{path::PathBuf, str::FromStr, sync::Arc, sync::RwLock, time::Duration};
 
 use futures::{StreamExt, TryStreamExt};
-use napi::bindgen_prelude::Buffer;
+
 use napi_derive::napi;
 use serde::{Deserialize, Serialize};
 
 use crate::node::IrohNode;
 use crate::{block_on, IrohError, NodeAddr};
 
+#[cfg(feature = "napi")]
 use anyhow::Context;
 #[cfg(feature = "napi")]
-use napi::threadsafe_function::ThreadsafeFunction;
+use napi::{bindgen_prelude::Buffer, threadsafe_function::ThreadsafeFunction};
 
 #[napi]
 impl IrohNode {
@@ -45,7 +46,10 @@ impl IrohNode {
     #[napi(js_name = "blobsList")]
     pub async fn blobs_list_js(&self) -> Result<Vec<String>, napi::Error> {
         let response = self.sync_client.blobs.list().await?;
-        let hashes: Vec<String> = response.map_ok(|i| i.hash.to_hex()).try_collect().await?;
+        let hashes: Vec<String> = response
+            .map_ok(|i| i.hash.to_string())
+            .try_collect()
+            .await?;
 
         Ok(hashes)
     }
@@ -201,13 +205,16 @@ impl IrohNode {
         &self,
         path: String,
         in_place: bool,
-        tag: Option<Vec<u8>>,
+        tag: Option<Buffer>,
         wrap: bool,
         cb: ThreadsafeFunction<serde_json::Value>,
-    ) -> Result<(), napi::Error> {
+    ) -> Result<Hash, napi::Error> {
         let tag = match tag {
             None => iroh::rpc_protocol::SetTagOption::Auto,
-            Some(name) => iroh::rpc_protocol::SetTagOption::Named(bytes::Bytes::from(name).into()),
+            Some(name) => {
+                let name: Vec<_> = name.into();
+                iroh::rpc_protocol::SetTagOption::Named(bytes::Bytes::from(name).into())
+            }
         };
         let wrap = if wrap {
             iroh::rpc_protocol::WrapOption::Wrap { name: None }
@@ -220,11 +227,17 @@ impl IrohNode {
             .add_from_path(path.into(), in_place, tag, wrap)
             .await?;
 
+        let mut hash = None;
         while let Some(progress) = stream.next().await {
             let progress: AddProgress = progress?.into();
-            cb.call_async(Ok(serde_json::to_value(progress)?)).await?;
+            if AddProgressType::AllDone == progress.r#type() {
+                hash = Some(progress.as_all_done().hash);
+            }
+            cb.call_async::<serde_json::Value>(Ok(serde_json::to_value(progress)?))
+                .await?;
         }
-        Ok(())
+        let hash = (*hash.context("no AddProgressEvent::AllDone encountered")?).clone();
+        Ok(hash)
     }
 
     /// Export the blob contents to a file path
@@ -439,8 +452,8 @@ impl IrohNode {
     /// Note: this allocates for each `BlobListCollectionsResponse`, if you have many `BlobListCollectionsResponse`s this may be a prohibitively large list.
     /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
     #[cfg(feature = "napi")]
-    #[napi(js_name = "blobsListCollection")]
-    pub async fn blobs_list_collection_js(&self) -> Result<Vec<serde_json::Value>, napi::Error> {
+    #[napi(js_name = "blobsListCollections")]
+    pub async fn blobs_list_collections_js(&self) -> Result<Vec<serde_json::Value>, napi::Error> {
         let blobs = self
             .sync_client
             .blobs
@@ -748,7 +761,9 @@ pub trait AddCallback: Send + Sync + 'static {
 }
 
 /// The different types of AddProgress events
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[napi(string_enum)]
+#[cfg_attr(not(feature = "napi"), derive(Clone))]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AddProgressType {
     /// An item was found with name `name`, from now on referred to via `id`
     Found,

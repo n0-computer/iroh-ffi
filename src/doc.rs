@@ -9,6 +9,9 @@ use napi_derive::napi;
 use quic_rpc::transport::flume::FlumeConnection;
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "napi")]
+use napi::bindgen_prelude::Buffer;
+
 use crate::{block_on, AuthorId, Hash, IrohError, IrohNode, PublicKey};
 
 #[napi]
@@ -490,9 +493,11 @@ impl JsDoc {
     pub async fn set_bytes(
         &self,
         author_id: &AuthorId,
-        key: Vec<u8>,
-        value: Vec<u8>,
+        key: Buffer,
+        value: Buffer,
     ) -> Result<Hash, napi::Error> {
+        let key: Vec<_> = key.into();
+        let value: Vec<_> = value.into();
         let hash = self.inner.set_bytes(author_id.0, key, value).await?;
 
         Ok(Hash(hash))
@@ -503,10 +508,11 @@ impl JsDoc {
     pub async fn set_hash(
         &self,
         author_id: &AuthorId,
-        key: Vec<u8>,
+        key: Buffer,
         hash: &Hash,
         size: napi::bindgen_prelude::BigInt,
     ) -> Result<(), napi::Error> {
+        let key: Vec<_> = key.into();
         let (_, size, _) = size.get_u64();
         self.inner.set_hash(author_id.0, key, hash.0, size).await?;
 
@@ -518,11 +524,12 @@ impl JsDoc {
     pub async fn import_file(
         &self,
         author: &AuthorId,
-        key: Vec<u8>,
+        key: Buffer,
         path: String,
         in_place: bool,
         cb: Option<napi::threadsafe_function::ThreadsafeFunction<serde_json::Value>>,
     ) -> Result<(), napi::Error> {
+        let key: Vec<_> = key.into();
         let mut stream = self
             .inner
             .import_file(
@@ -558,7 +565,8 @@ impl JsDoc {
         while let Some(progress) = stream.next().await {
             if let Some(ref cb) = cb {
                 let progress: DocExportProgress = progress?.into();
-                cb.call_async(Ok(serde_json::to_value(progress)?)).await?;
+                cb.call_async::<serde_json::Value>(Ok(serde_json::to_value(progress)?))
+                    .await?;
             }
         }
         Ok(())
@@ -574,8 +582,9 @@ impl JsDoc {
     pub async fn del(
         &self,
         author_id: &AuthorId,
-        prefix: Vec<u8>,
+        prefix: Buffer,
     ) -> Result<napi::bindgen_prelude::BigInt, napi::Error> {
+        let prefix: Vec<_> = prefix.into();
         let num_del = self.inner.del(author_id.0, prefix).await?;
 
         Ok(u64::try_from(num_del).map_err(anyhow::Error::from)?.into())
@@ -586,9 +595,10 @@ impl JsDoc {
     pub async fn get_exact(
         &self,
         author: &AuthorId,
-        key: Vec<u8>,
+        key: Buffer,
         include_empty: bool,
     ) -> Result<Option<Entry>, napi::Error> {
+        let key: Vec<_> = key.into();
         let e = self.inner.get_exact(author.0, key, include_empty).await?;
         Ok(e.map(Into::into))
     }
@@ -978,14 +988,15 @@ impl Entry {
     /// before calling [`Self::content_bytes`].
     #[cfg(feature = "napi")]
     #[napi(js_name = "contentBytes")]
-    pub async fn content_bytes_js(&self, doc: &JsDoc) -> Result<Vec<u8>, napi::Error> {
+    pub async fn content_bytes_js(&self, doc: &JsDoc) -> Result<Buffer, napi::Error> {
         let content = self.0.content_bytes(&doc.inner).await.map(|c| c.to_vec())?;
-        Ok(content)
+        Ok(content.into())
     }
 }
 
-/// Fields by which the query can be sorted
+///d Fields by which the query can be sorted
 #[napi]
+#[cfg_attr(not(feature = "napi"), derive(Clone))]
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub enum SortBy {
     /// Sort by key, then author.
@@ -1015,6 +1026,7 @@ impl From<SortBy> for iroh::sync::store::SortBy {
 
 /// Sort direction
 #[napi]
+#[cfg_attr(not(feature = "napi"), derive(Clone))]
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub enum SortDirection {
     /// Sort ascending
@@ -1050,9 +1062,28 @@ impl From<SortDirection> for iroh::sync::store::SortDirection {
 pub struct Query(iroh::sync::store::Query);
 
 /// Options for sorting and pagination for using [`Query`]s.
-#[napi(object)]
 #[derive(Clone, Debug, Default)]
 pub struct QueryOptions {
+    /// Sort by author or key first.
+    ///
+    /// Default is [`SortBy::AuthorKey`], so sorting first by author and then by key.
+    pub sort_by: SortBy,
+    /// Direction by which to sort the entries
+    ///
+    /// Default is [`SortDirection::Asc`]
+    pub direction: SortDirection,
+    /// Offset
+    pub offset: u64,
+    /// Limit to limit the pagination.
+    ///
+    /// When the limit is 0, the limit does not exist.
+    pub limit: u64,
+}
+
+#[cfg(feature = "napi")]
+#[napi(object, js_name = "QueryOptions")]
+#[derive(Clone, Debug, Default)]
+pub struct JsQueryOptions {
     /// Sort by author or key first.
     ///
     /// Default is [`SortBy::AuthorKey`], so sorting first by author and then by key.
@@ -1069,6 +1100,18 @@ pub struct QueryOptions {
     pub limit: u32,
 }
 
+#[cfg(feature = "napi")]
+impl From<JsQueryOptions> for QueryOptions {
+    fn from(value: JsQueryOptions) -> Self {
+        Self {
+            sort_by: value.sort_by,
+            direction: value.direction,
+            offset: value.offset as u64,
+            limit: value.limit as u64,
+        }
+    }
+}
+
 #[napi]
 impl Query {
     /// Query all records.
@@ -1078,18 +1121,52 @@ impl Query {
     ///     direction: SortDirection::Asc
     ///     offset: None
     ///     limit: None
-    #[napi]
     pub fn all(opts: Option<QueryOptions>) -> Self {
         let mut builder = iroh::sync::store::Query::all();
 
         if let Some(opts) = opts {
             if opts.offset != 0 {
-                builder = builder.offset(opts.offset as u64);
+                builder = builder.offset(opts.offset);
             }
             if opts.limit != 0 {
-                builder = builder.limit(opts.limit as u64);
+                builder = builder.limit(opts.limit);
             }
             builder = builder.sort_by(opts.sort_by.into(), opts.direction.into());
+        }
+        Query(builder.build())
+    }
+
+    /// Query all records.
+    ///
+    /// If `opts` is `None`, the default values will be used:
+    ///     sort_by: SortBy::AuthorKey
+    ///     direction: SortDirection::Asc
+    ///     offset: None
+    ///     limit: None
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "all")]
+    pub fn all_js(opts: Option<JsQueryOptions>) -> Self {
+        Query::all(opts.map(|o| o.into()))
+    }
+
+    /// Query only the latest entry for each key, omitting older entries if the entry was written
+    /// to by multiple authors.
+    ///
+    /// If `opts` is `None`, the default values will be used:
+    ///     direction: SortDirection::Asc
+    ///     offset: None
+    ///     limit: None
+    pub fn single_latest_per_key(opts: Option<QueryOptions>) -> Self {
+        let mut builder = iroh::sync::store::Query::single_latest_per_key();
+
+        if let Some(opts) = opts {
+            if opts.offset != 0 {
+                builder = builder.offset(opts.offset);
+            }
+            if opts.limit != 0 {
+                builder = builder.limit(opts.limit);
+            }
+            builder = builder.sort_direction(opts.direction.into());
         }
         Query(builder.build())
     }
@@ -1101,18 +1178,30 @@ impl Query {
     ///     direction: SortDirection::Asc
     ///     offset: None
     ///     limit: None
-    #[napi]
-    pub fn single_latest_per_key(opts: Option<QueryOptions>) -> Self {
-        let mut builder = iroh::sync::store::Query::single_latest_per_key();
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "singleLatestPerKey")]
+    pub fn single_latest_per_key_js(opts: Option<JsQueryOptions>) -> Self {
+        Query::single_latest_per_key(opts.map(|o| o.into()))
+    }
+
+    /// Query all entries for by a single author.
+    ///
+    /// If `opts` is `None`, the default values will be used:
+    ///     sort_by: SortBy::AuthorKey
+    ///     direction: SortDirection::Asc
+    ///     offset: None
+    ///     limit: None
+    pub fn author(author: &AuthorId, opts: Option<QueryOptions>) -> Self {
+        let mut builder = iroh::sync::store::Query::author(author.0);
 
         if let Some(opts) = opts {
             if opts.offset != 0 {
-                builder = builder.offset(opts.offset as u64);
+                builder = builder.offset(opts.offset);
             }
             if opts.limit != 0 {
-                builder = builder.limit(opts.limit as u64);
+                builder = builder.limit(opts.limit);
             }
-            builder = builder.sort_direction(opts.direction.into());
+            builder = builder.sort_by(opts.sort_by.into(), opts.direction.into());
         }
         Query(builder.build())
     }
@@ -1124,16 +1213,28 @@ impl Query {
     ///     direction: SortDirection::Asc
     ///     offset: None
     ///     limit: None
-    #[napi]
-    pub fn author(author: &AuthorId, opts: Option<QueryOptions>) -> Self {
-        let mut builder = iroh::sync::store::Query::author(author.0);
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "author")]
+    pub fn author_js(author: &AuthorId, opts: Option<JsQueryOptions>) -> Self {
+        Query::author(author, opts.map(|o| o.into()))
+    }
+
+    /// Query all entries that have an exact key.
+    ///
+    /// If `opts` is `None`, the default values will be used:
+    ///     sort_by: SortBy::AuthorKey
+    ///     direction: SortDirection::Asc
+    ///     offset: None
+    ///     limit: None
+    pub fn key_exact(key: Vec<u8>, opts: Option<QueryOptions>) -> Self {
+        let mut builder = iroh::sync::store::Query::key_exact(key);
 
         if let Some(opts) = opts {
             if opts.offset != 0 {
-                builder = builder.offset(opts.offset as u64);
+                builder = builder.offset(opts.offset);
             }
             if opts.limit != 0 {
-                builder = builder.limit(opts.limit as u64);
+                builder = builder.limit(opts.limit);
             }
             builder = builder.sort_by(opts.sort_by.into(), opts.direction.into());
         }
@@ -1147,9 +1248,34 @@ impl Query {
     ///     direction: SortDirection::Asc
     ///     offset: None
     ///     limit: None
-    #[napi]
-    pub fn key_exact(key: Vec<u8>, opts: Option<QueryOptions>) -> Self {
-        let mut builder = iroh::sync::store::Query::key_exact(key);
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "keyExact")]
+    pub fn key_exact_js(key: Buffer, opts: Option<JsQueryOptions>) -> Self {
+        Query::key_exact(key.into(), opts.map(|o| o.into()))
+    }
+
+    /// Create a Query for a single key and author.
+    pub fn author_key_exact(author: &AuthorId, key: Vec<u8>) -> Self {
+        let builder = iroh::sync::store::Query::author(author.0).key_exact(key);
+        Query(builder.build())
+    }
+
+    /// Create a Query for a single key and author.
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "authorKeyExact")]
+    pub fn author_key_exact_js(author: &AuthorId, key: Buffer) -> Self {
+        Query::author_key_exact(author, key.into())
+    }
+
+    /// Create a query for all entries with a given key prefix.
+    ///
+    /// If `opts` is `None`, the default values will be used:
+    ///     sort_by: SortBy::AuthorKey
+    ///     direction: SortDirection::Asc
+    ///     offset: None
+    ///     limit: None
+    pub fn key_prefix(prefix: Vec<u8>, opts: Option<QueryOptions>) -> Self {
+        let mut builder = iroh::sync::store::Query::key_prefix(prefix);
 
         if let Some(opts) = opts {
             if opts.offset != 0 {
@@ -1163,13 +1289,6 @@ impl Query {
         Query(builder.build())
     }
 
-    /// Create a Query for a single key and author.
-    #[napi]
-    pub fn author_key_exact(author: &AuthorId, key: Vec<u8>) -> Self {
-        let builder = iroh::sync::store::Query::author(author.0).key_exact(key);
-        Query(builder.build())
-    }
-
     /// Create a query for all entries with a given key prefix.
     ///
     /// If `opts` is `None`, the default values will be used:
@@ -1177,9 +1296,24 @@ impl Query {
     ///     direction: SortDirection::Asc
     ///     offset: None
     ///     limit: None
-    #[napi]
-    pub fn key_prefix(prefix: Vec<u8>, opts: Option<QueryOptions>) -> Self {
-        let mut builder = iroh::sync::store::Query::key_prefix(prefix);
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "keyPrefix")]
+    pub fn key_prefix_js(prefix: Buffer, opts: Option<JsQueryOptions>) -> Self {
+        Query::key_prefix(prefix.into(), opts.map(|o| o.into()))
+    }
+
+    /// Create a query for all entries of a single author with a given key prefix.
+    ///
+    /// If `opts` is `None`, the default values will be used:
+    ///     direction: SortDirection::Asc
+    ///     offset: None
+    ///     limit: None
+    pub fn author_key_prefix(
+        author: &AuthorId,
+        prefix: Vec<u8>,
+        opts: Option<QueryOptions>,
+    ) -> Self {
+        let mut builder = iroh::sync::store::Query::author(author.0).key_prefix(prefix);
 
         if let Some(opts) = opts {
             if opts.offset != 0 {
@@ -1199,24 +1333,14 @@ impl Query {
     ///     direction: SortDirection::Asc
     ///     offset: None
     ///     limit: None
-    #[napi]
-    pub fn author_key_prefix(
+    #[cfg(feature = "napi")]
+    #[napi(js_name = "authorKeyPrefix")]
+    pub fn author_key_prefix_js(
         author: &AuthorId,
-        prefix: Vec<u8>,
-        opts: Option<QueryOptions>,
+        prefix: Buffer,
+        opts: Option<JsQueryOptions>,
     ) -> Self {
-        let mut builder = iroh::sync::store::Query::author(author.0).key_prefix(prefix);
-
-        if let Some(opts) = opts {
-            if opts.offset != 0 {
-                builder = builder.offset(opts.offset as u64);
-            }
-            if opts.limit != 0 {
-                builder = builder.limit(opts.limit as u64);
-            }
-            builder = builder.sort_by(opts.sort_by.into(), opts.direction.into());
-        }
-        Query(builder.build())
+        Query::author_key_prefix(author, prefix.into(), opts.map(|o| o.into()))
     }
 
     /// Get the limit for this query (max. number of entries to emit).

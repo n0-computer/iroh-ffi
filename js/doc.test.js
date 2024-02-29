@@ -1,4 +1,4 @@
-const { IrohNode, PublicKey, NodeAddr, AuthorId, Query, SortBy, SortDirection, QueryOptions, pathToKey, keyToPath } = require( '../index');
+const { IrohNode, PublicKey, NodeAddr, AuthorId, Query, SortBy, SortDirection, pathToKey, keyToPath } = require( '../index');
 const path = require('path');
 
 test('node address', () => {
@@ -45,11 +45,11 @@ test('query', () => {
     opts.direction = SortDirection.Desc;
     opts.offset = 0;
     opts.limit = 100;
-    const keyExact = Query.keyExact(Array.from('key', char => char.charCodeAt(0)), opts);
+    const keyExact = Query.keyExact(Buffer.from('key'), opts);
     expect(keyExact.offset()).toBe(0);
     expect(keyExact.limit()).toBe(100);
 
-    const keyPrefix = Query.keyPrefix(Array.from('prefix', char => char.charCodeAt(0)), opts);
+    const keyPrefix = Query.keyPrefix(Buffer.from('prefix'), opts);
     expect(keyPrefix.offset()).toBe(0);
     expect(keyPrefix.limit()).toBe(100);
 });
@@ -59,8 +59,8 @@ test('document entry basics', async () => {
     const node = await IrohNode.withPath(dir);
     const author = await node.authorCreate();
     const doc = await node.docCreate();
-    const val = Array.from('hello world!', char => char.charCodeAt(0));
-    const key = Array.from('foo', char => char.charCodeAt(0));
+    const val = Buffer.from('hello world!');
+    const key = Buffer.from('foo');
     const hash = await doc.setBytes(author, key, val);
     const query = Query.authorKeyExact(author, key);
     const entry = await doc.getOne(query);
