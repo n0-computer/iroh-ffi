@@ -5,13 +5,12 @@ use iroh::{
     client::Doc as ClientDoc,
     rpc_protocol::{ProviderRequest, ProviderResponse},
 };
-use napi::iterator::Generator;
 use napi_derive::napi;
 use quic_rpc::transport::flume::FlumeConnection;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "napi")]
-use napi::bindgen_prelude::Buffer;
+use napi::{bindgen_prelude::Buffer, iterator::Generator};
 
 use crate::{block_on, AuthorId, Hash, IrohError, IrohNode, PublicKey};
 
@@ -695,12 +694,14 @@ impl JsDoc {
     }
 }
 
+#[cfg(feature = "napi")]
 #[napi(iterator)]
 pub struct DocSubscriber {
     recv: flume::Receiver<anyhow::Result<iroh::client::LiveEvent>>,
     handle: tokio::task::JoinHandle<()>,
 }
 
+#[cfg(feature = "napi")]
 #[napi]
 impl Generator for DocSubscriber {
     type Yield = serde_json::Value;
