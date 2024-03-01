@@ -231,11 +231,14 @@ export class Doc {
   /** Stop the live sync for this document. */
   leave(): Promise<void>
   /** Subscribe to events for this document. */
-  subscribe(cb: (err: Error | null, arg: any) => any): Promise<void>
+  subscribe(): Promise<DocSubscriber>
   /** Get status info for this document */
   status(): Promise<any>
   /** Get the download policy for this document */
   getDownloadPolicy(): Promise<any>
+}
+export class DocSubscriber {
+  [Symbol.iterator](): Iterator<any, void, any>
 }
 /** A peer and it's addressing information. */
 export class NodeAddr {

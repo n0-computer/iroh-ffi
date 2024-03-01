@@ -5,6 +5,7 @@ use iroh::{
     client::Doc as ClientDoc,
     rpc_protocol::{ProviderRequest, ProviderResponse},
 };
+use napi::iterator::Generator;
 use napi_derive::napi;
 use quic_rpc::transport::flume::FlumeConnection;
 use serde::{Deserialize, Serialize};
@@ -653,26 +654,16 @@ impl JsDoc {
 
     /// Subscribe to events for this document.
     #[napi]
-    pub async fn subscribe(
-        &self,
-        cb: napi::threadsafe_function::ThreadsafeFunction<serde_json::Value>,
-    ) -> Result<(), napi::Error> {
+    pub async fn subscribe(&self) -> Result<DocSubscriber, napi::Error> {
         let mut sub = self.inner.subscribe().await.unwrap();
-        while let Some(event) = sub.next().await {
-            match event {
-                Ok(event) => {
-                    let ev = serde_json::to_value(LiveEvent::from(event)).unwrap();
-                    if let Err(err) = cb.call_async::<()>(Ok(ev)).await {
-                        println!("cb error: {:?}", err);
-                    }
-                }
-                Err(err) => {
-                    println!("rpc error: {:?}", err);
-                }
+        // arbitrary channel size
+        let (send, recv) = flume::bounded(64);
+        let handle = tokio::spawn(async move {
+            while let Some(res) = sub.next().await {
+                send.send(res).expect("receiver dropped");
             }
-        }
-
-        Ok(())
+        });
+        Ok(DocSubscriber { recv, handle })
     }
 
     /// Get status info for this document
@@ -701,6 +692,41 @@ impl JsDoc {
             .await
             .map(DownloadPolicy::from)?;
         Ok(serde_json::to_value(policy).unwrap())
+    }
+}
+
+#[napi(iterator)]
+pub struct DocSubscriber {
+    recv: flume::Receiver<anyhow::Result<iroh::client::LiveEvent>>,
+    handle: tokio::task::JoinHandle<()>,
+}
+
+#[napi]
+impl Generator for DocSubscriber {
+    type Yield = serde_json::Value;
+    type Next = serde_json::Value;
+    type Return = ();
+
+    fn next(&mut self, _value: Option<Self::Next>) -> Option<Self::Yield> {
+        self.recv
+            .recv()
+            .ok()
+            .and_then(|event| event.ok())
+            .and_then(|event| serde_json::to_value(event).ok())
+    }
+
+    fn complete(&mut self, _value: Option<Self::Return>) -> Option<Self::Yield> {
+        self.handle.abort();
+        None
+    }
+
+    fn catch(
+        &mut self,
+        _env: napi::Env,
+        value: napi::JsUnknown,
+    ) -> Result<Option<Self::Yield>, napi::JsUnknown> {
+        self.handle.abort();
+        Err(value)
     }
 }
 
@@ -1279,10 +1305,10 @@ impl Query {
 
         if let Some(opts) = opts {
             if opts.offset != 0 {
-                builder = builder.offset(opts.offset as u64);
+                builder = builder.offset(opts.offset);
             }
             if opts.limit != 0 {
-                builder = builder.limit(opts.limit as u64);
+                builder = builder.limit(opts.limit);
             }
             builder = builder.sort_by(opts.sort_by.into(), opts.direction.into());
         }
@@ -1317,10 +1343,10 @@ impl Query {
 
         if let Some(opts) = opts {
             if opts.offset != 0 {
-                builder = builder.offset(opts.offset as u64);
+                builder = builder.offset(opts.offset);
             }
             if opts.limit != 0 {
-                builder = builder.limit(opts.limit as u64);
+                builder = builder.limit(opts.limit);
             }
             builder = builder.sort_by(opts.sort_by.into(), opts.direction.into());
         }

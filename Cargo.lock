@@ -1716,6 +1716,7 @@ dependencies = [
  "blake3",
  "bytes",
  "data-encoding",
+ "flume 0.11.0",
  "futures",
  "iroh 0.12.0 (git+https://github.com/n0-computer/iroh.git?rev=90a5160d57a3dc601388211303cbd5ce879d9a5d)",
  "iroh-io",
