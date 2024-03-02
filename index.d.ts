@@ -156,6 +156,12 @@ export class Hash {
   /** Returns true if the Hash's have the same value */
   equal(other: Hash): boolean
 }
+export class JsAddProgress {
+  [Symbol.iterator](): Iterator<any, any, any>
+}
+export class JsDownloadProgress {
+  [Symbol.iterator](): Iterator<any, any, any>
+}
 /** A collection of blobs */
 export class Collection {
   /** Create a new empty collection */
@@ -201,9 +207,9 @@ export class Doc {
   /** Set an entries on the doc via its key, hash, and size. */
   setHash(authorId: AuthorId, key: Buffer, hash: Hash, size: bigint): Promise<void>
   /** Add an entry from an absolute file path */
-  importFile(author: AuthorId, key: Buffer, path: string, inPlace: boolean, cb?: (err: Error | null, arg: any) => any | undefined | null): Promise<void>
+  importFile(author: AuthorId, key: Buffer, path: string, inPlace: boolean): Promise<JsDocImportProgress>
   /** Export an entry as a file to a given absolute path */
-  exportFile(entry: Entry, path: string, cb?: (err: Error | null, arg: any) => any | undefined | null): Promise<void>
+  exportFile(entry: Entry, path: string): Promise<JsDocExportProgress>
   /**
    * Delete entries that match the given `author` and key `prefix`.
    *
@@ -239,6 +245,12 @@ export class Doc {
 }
 export class DocSubscriber {
   [Symbol.iterator](): Iterator<any, void, any>
+}
+export class JsDocImportProgress {
+  [Symbol.iterator](): Iterator<any, any, any>
+}
+export class JsDocExportProgress {
+  [Symbol.iterator](): Iterator<any, any, any>
 }
 /** A peer and it's addressing information. */
 export class NodeAddr {
@@ -452,7 +464,7 @@ export class IrohNode {
    * If `in_place` is true, Iroh will assume that the data will not change and will share it in
    * place without copying to the Iroh data directory.
    */
-  blobsAddFromPath(path: string, inPlace: boolean, tag: Buffer | undefined | null, wrap: boolean, cb: (err: Error | null, arg: any) => any): Promise<Hash>
+  blobsAddFromPath(path: string, inPlace: boolean, tag: Buffer | undefined | null, wrap: boolean): Promise<JsAddProgress>
   /**
    * Export the blob contents to a file path
    * The `path` field is expected to be the absolute path.
@@ -461,7 +473,7 @@ export class IrohNode {
   /** Write a blob by passing bytes. */
   blobsAddBytes(bytes: Buffer, tag?: Buffer | undefined | null): Promise<any>
   /** Download a blob from another node and add it to the local database. */
-  blobsDownload(hash: Hash, format: BlobFormat, node: NodeAddr, tag: Array<number> | undefined | null, out: string | undefined | null, inPlace: boolean, cb: (err: Error | null, arg: any) => any): Promise<void>
+  blobsDownload(hash: Hash, format: BlobFormat, node: NodeAddr, tag: Array<number> | undefined | null, out: string | undefined | null, inPlace: boolean): Promise<JsDownloadProgress>
   /**
    * List all incomplete (partial) blobs.
    *

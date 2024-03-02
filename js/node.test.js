@@ -33,8 +33,8 @@ test('basic sync', async () => {
       if (val && val.hasOwnProperty('ContentReady')) {
         hash = val.ContentReady.hash
         break;
+      }
     }
-  }
 
     // Get content from hash
     const got = await node1.blobsReadToBytes(Hash.fromString(hash));

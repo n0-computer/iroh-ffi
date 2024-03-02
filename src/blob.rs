@@ -11,7 +11,7 @@ use crate::{block_on, IrohError, NodeAddr};
 #[cfg(feature = "napi")]
 use anyhow::Context;
 #[cfg(feature = "napi")]
-use napi::{bindgen_prelude::Buffer, threadsafe_function::ThreadsafeFunction};
+use napi::bindgen_prelude::{Buffer, Generator};
 
 #[napi]
 impl IrohNode {
@@ -207,8 +207,7 @@ impl IrohNode {
         in_place: bool,
         tag: Option<Buffer>,
         wrap: bool,
-        cb: ThreadsafeFunction<serde_json::Value>,
-    ) -> Result<Hash, napi::Error> {
+    ) -> Result<JsAddProgress, napi::Error> {
         let tag = match tag {
             None => iroh::rpc_protocol::SetTagOption::Auto,
             Some(name) => {
@@ -227,17 +226,14 @@ impl IrohNode {
             .add_from_path(path.into(), in_place, tag, wrap)
             .await?;
 
-        let mut hash = None;
-        while let Some(progress) = stream.next().await {
-            let progress: AddProgress = progress?.into();
-            if AddProgressType::AllDone == progress.r#type() {
-                hash = Some(progress.as_all_done().hash);
+        // arbitrary channel size
+        let (send, recv) = flume::bounded(64);
+        let handle = tokio::spawn(async move {
+            while let Some(res) = stream.next().await {
+                send.send(res).expect("receiver dropped");
             }
-            cb.call_async::<serde_json::Value>(Ok(serde_json::to_value(progress)?))
-                .await?;
-        }
-        let hash = (*hash.context("no AddProgressEvent::AllDone encountered")?).clone();
-        Ok(hash)
+        });
+        Ok(JsAddProgress { recv, handle })
     }
 
     /// Export the blob contents to a file path
@@ -360,8 +356,7 @@ impl IrohNode {
         tag: Option<Vec<u8>>,
         out: Option<String>,
         in_place: bool,
-        cb: ThreadsafeFunction<serde_json::Value>,
-    ) -> Result<(), napi::Error> {
+    ) -> Result<JsDownloadProgress, napi::Error> {
         let tag = match tag {
             None => iroh::rpc_protocol::SetTagOption::Auto,
             Some(name) => iroh::rpc_protocol::SetTagOption::Named(bytes::Bytes::from(name).into()),
@@ -382,11 +377,14 @@ impl IrohNode {
             out,
         };
         let mut stream = self.sync_client.blobs.download(req).await?;
-        while let Some(progress) = stream.next().await {
-            let progress: DownloadProgress = progress?.into();
-            cb.call_async(Ok(serde_json::to_value(progress)?)).await?;
-        }
-        Ok(())
+        // arbitrary channel size
+        let (send, recv) = flume::bounded(64);
+        let handle = tokio::spawn(async move {
+            while let Some(res) = stream.next().await {
+                send.send(res).expect("receiver dropped");
+            }
+        });
+        Ok(JsDownloadProgress { recv, handle })
     }
 
     /// List all incomplete (partial) blobs.
@@ -750,6 +748,102 @@ impl std::fmt::Display for Hash {
 impl From<Hash> for iroh::bytes::Hash {
     fn from(value: Hash) -> Self {
         value.0
+    }
+}
+
+#[cfg(feature = "napi")]
+#[napi(iterator)]
+pub struct JsAddProgress {
+    recv: flume::Receiver<anyhow::Result<iroh::rpc_protocol::AddProgress>>,
+    handle: tokio::task::JoinHandle<()>,
+}
+
+#[cfg(feature = "napi")]
+#[napi]
+impl Generator for JsAddProgress {
+    type Yield = serde_json::Value;
+    type Next = serde_json::Value;
+    type Return = serde_json::Value;
+
+    fn next(&mut self, _value: Option<Self::Next>) -> Option<Self::Yield> {
+        self.recv
+            .recv()
+            .ok()
+            .and_then(|event| event.ok())
+            .and_then(|event| serde_json::to_value(event).ok())
+    }
+
+    fn complete(&mut self, _value: Option<Self::Return>) -> Option<Self::Yield> {
+        let mut res = None;
+        while let Ok(Ok(progress)) = self.recv.recv() {
+            match progress {
+                iroh::rpc_protocol::AddProgress::AllDone { .. }
+                | iroh::rpc_protocol::AddProgress::Abort(_) => {
+                    res = serde_json::to_value(progress).ok();
+                    break;
+                }
+                _ => {}
+            }
+        }
+        self.handle.abort();
+        res
+    }
+
+    fn catch(
+        &mut self,
+        _env: napi::Env,
+        value: napi::JsUnknown,
+    ) -> Result<Option<Self::Yield>, napi::JsUnknown> {
+        self.handle.abort();
+        Err(value)
+    }
+}
+
+#[cfg(feature = "napi")]
+#[napi(iterator)]
+pub struct JsDownloadProgress {
+    recv: flume::Receiver<anyhow::Result<iroh::rpc_protocol::DownloadProgress>>,
+    handle: tokio::task::JoinHandle<()>,
+}
+
+#[cfg(feature = "napi")]
+#[napi]
+impl Generator for JsDownloadProgress {
+    type Yield = serde_json::Value;
+    type Next = serde_json::Value;
+    type Return = serde_json::Value;
+
+    fn next(&mut self, _value: Option<Self::Next>) -> Option<Self::Yield> {
+        self.recv
+            .recv()
+            .ok()
+            .and_then(|event| event.ok())
+            .and_then(|event| serde_json::to_value(event).ok())
+    }
+
+    fn complete(&mut self, _value: Option<Self::Return>) -> Option<Self::Yield> {
+        let mut res = None;
+        while let Ok(Ok(progress)) = self.recv.recv() {
+            match progress {
+                iroh::rpc_protocol::DownloadProgress::AllDone { .. }
+                | iroh::rpc_protocol::DownloadProgress::Abort(_) => {
+                    res = serde_json::to_value(progress).ok();
+                    break;
+                }
+                _ => {}
+            }
+        }
+        self.handle.abort();
+        res
+    }
+
+    fn catch(
+        &mut self,
+        _env: napi::Env,
+        value: napi::JsUnknown,
+    ) -> Result<Option<Self::Yield>, napi::JsUnknown> {
+        self.handle.abort();
+        Err(value)
     }
 }
 

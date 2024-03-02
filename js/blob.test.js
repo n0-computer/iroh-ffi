@@ -56,32 +56,23 @@ test('blob read and write path', async () => {
     const filePath = path.join(dir, "in");
     fs.writeFileSync(filePath, bytes);
 
-    class AddCallback {
-      hash;
-      format;
-      constructor() {
-        this.hash = null;
-        this.format = null;
-        this.progress = this.progress.bind(this);
-      }
+    const progress = await node.blobsAddFromPath(filePath, false, null, false);
 
-      async progress(_, progressEvent) {
-        if (progressEvent && progressEvent.hasOwnProperty('AllDone') ) {
-          this.hash = progressEvent.AllDone.hash;
-          this.format = progressEvent.AllDone.format;
+    let hash = null;
+    let format = null;
+    for (const val of progress) {
+        if (val && val.hasOwnProperty('AllDone')) {
+            hash = Hash.fromString(val.AllDone.hash);
+            format = val.AllDone.format
+            break;
         }
-        if (progressEvent && progressEvent.hasOwnProperty('Abort')) {
-          throw new Error(progressEvent.Abort.error);
+        if (val && val.hasOwnProperty('Abort')) {
+          throw new Error(val.Abort.error);
         }
-      }
     }
-    
-    const cb = new AddCallback();
-    let hash = await node.blobsAddFromPath(filePath, false, null, false, cb.progress);
 
     expect(hash).not.toBeNull();
-    expect(cb.format).toBe(BlobFormat.Raw);
-    expect(cb.hash).toBe(hash.toString());
+    expect(format).toBe(BlobFormat.Raw);
 
     const gotSize = await node.blobsSize(hash);
     expect(gotSize).toBe(blobSize);
@@ -112,41 +103,34 @@ test('blob collections', async () => {
     const irohDir = fs.mkdtempSync(path.join(os.tmpdir(), ''));
     const node = await IrohNode.withPath(irohDir);
 
-    class AddCallback {
-        constructor() {
-            this.collectionHash = null;
-            this.format = null;
-            this.blobHashes = [];
-            this.progress = this.progress.bind(this);
-        }
+    const addProgress = await node.blobsAddFromPath(collectionDir, false, null, false);
 
-        async progress(_, progressEvent) {
-            if (!progressEvent) { return; }
-            if (progressEvent.hasOwnProperty('AllDone')) {
-                this.collectionHash = progressEvent.AllDone.hash;
-                this.format = progressEvent.AllDone.format;
-            }
-            if (progressEvent.hasOwnProperty('Abort')) {
-                throw new Error(progressEvent.Abort.error);
-            }
-            if (progressEvent.hasOwnProperty('Done')) {
-                this.blobHashes.push(progressEvent.Done.hash);
-            }
+    let collectionHash = null;
+    let format = null;
+    let blobHashes = [];
+    for (const progressEvent of addProgress) {
+        if (!progressEvent) { throw new Error("unexpected empty progress event")}
+        if (progressEvent.hasOwnProperty('AllDone')) {
+            collectionHash = progressEvent.AllDone.hash;
+            format = progressEvent.AllDone.format;
+        }
+        if (progressEvent.hasOwnProperty('Abort')) {
+            throw new Error(progressEvent.Abort.error);
+        }
+        if (progressEvent.hasOwnProperty('Done')) {
+            blobHashes.push(progressEvent.Done.hash);
         }
     }
 
-    const cb = new AddCallback();
-    await node.blobsAddFromPath(collectionDir, false, null, false, cb.progress);
-
-    expect(cb.collectionHash).not.toBeNull();
-    expect(cb.format).toBe(BlobFormat.HashSeq);
+    expect(collectionHash).not.toBeNull();
+    expect(format).toBe(BlobFormat.HashSeq);
 
     const collections = await node.blobsListCollections();
     expect(collections.length).toBe(1);
-    expect(collections[0].hash).toBe(cb.collectionHash);
+    expect(collections[0].hash).toBe(collectionHash);
     expect(collections[0].total_blobs_count).toBe(4);
 
-    const collectionHashes = [...cb.blobHashes, cb.collectionHash];
+    const collectionHashes = [...blobHashes, collectionHash];
     const gotHashes = await node.blobsList();
     for (const hash of gotHashes) {
         const blobBytes = await node.blobsReadToBytes(Hash.fromString(hash));

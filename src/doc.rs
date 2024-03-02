@@ -527,8 +527,7 @@ impl JsDoc {
         key: Buffer,
         path: String,
         in_place: bool,
-        cb: Option<napi::threadsafe_function::ThreadsafeFunction<serde_json::Value>>,
-    ) -> Result<(), napi::Error> {
+    ) -> Result<JsDocImportProgress, napi::Error> {
         let key: Vec<_> = key.into();
         let mut stream = self
             .inner
@@ -540,13 +539,14 @@ impl JsDoc {
             )
             .await?;
 
-        while let Some(progress) = stream.next().await {
-            if let Some(ref cb) = cb {
-                let progress: DocImportProgress = progress?.into();
-                cb.call_async(Ok(serde_json::to_value(progress)?)).await?
+        // arbitrary channel size
+        let (send, recv) = flume::bounded(64);
+        let handle = tokio::spawn(async move {
+            while let Some(res) = stream.next().await {
+                send.send(res).expect("receiver dropped");
             }
-        }
-        Ok(())
+        });
+        Ok(JsDocImportProgress { recv, handle })
     }
 
     /// Export an entry as a file to a given absolute path
@@ -555,21 +555,20 @@ impl JsDoc {
         &self,
         entry: &Entry,
         path: String,
-        cb: Option<napi::threadsafe_function::ThreadsafeFunction<serde_json::Value>>,
-    ) -> Result<(), napi::Error> {
+    ) -> Result<JsDocExportProgress, napi::Error> {
         let mut stream = self
             .inner
             .export_file(entry.0.clone(), std::path::PathBuf::from(path))
             .await?;
 
-        while let Some(progress) = stream.next().await {
-            if let Some(ref cb) = cb {
-                let progress: DocExportProgress = progress?.into();
-                cb.call_async::<serde_json::Value>(Ok(serde_json::to_value(progress)?))
-                    .await?;
+        // arbitrary channel size
+        let (send, recv) = flume::bounded(64);
+        let handle = tokio::spawn(async move {
+            while let Some(res) = stream.next().await {
+                send.send(res).expect("receiver dropped");
             }
-        }
-        Ok(())
+        });
+        Ok(JsDocExportProgress { recv, handle })
     }
 
     /// Delete entries that match the given `author` and key `prefix`.
@@ -719,6 +718,102 @@ impl Generator for DocSubscriber {
     fn complete(&mut self, _value: Option<Self::Return>) -> Option<Self::Yield> {
         self.handle.abort();
         None
+    }
+
+    fn catch(
+        &mut self,
+        _env: napi::Env,
+        value: napi::JsUnknown,
+    ) -> Result<Option<Self::Yield>, napi::JsUnknown> {
+        self.handle.abort();
+        Err(value)
+    }
+}
+
+#[cfg(feature = "napi")]
+#[napi(iterator)]
+pub struct JsDocImportProgress {
+    recv: flume::Receiver<anyhow::Result<iroh::rpc_protocol::DocImportProgress>>,
+    handle: tokio::task::JoinHandle<()>,
+}
+
+#[cfg(feature = "napi")]
+#[napi]
+impl Generator for JsDocImportProgress {
+    type Yield = serde_json::Value;
+    type Next = serde_json::Value;
+    type Return = serde_json::Value;
+
+    fn next(&mut self, _value: Option<Self::Next>) -> Option<Self::Yield> {
+        self.recv
+            .recv()
+            .ok()
+            .and_then(|event| event.ok())
+            .and_then(|event| serde_json::to_value(event).ok())
+    }
+
+    fn complete(&mut self, _value: Option<Self::Return>) -> Option<Self::Yield> {
+        let mut res = None;
+        while let Ok(Ok(progress)) = self.recv.recv() {
+            match progress {
+                iroh::rpc_protocol::DocImportProgress::AllDone { .. }
+                | iroh::rpc_protocol::DocImportProgress::Abort(_) => {
+                    res = serde_json::to_value(progress).ok();
+                    break;
+                }
+                _ => {}
+            }
+        }
+        self.handle.abort();
+        res
+    }
+
+    fn catch(
+        &mut self,
+        _env: napi::Env,
+        value: napi::JsUnknown,
+    ) -> Result<Option<Self::Yield>, napi::JsUnknown> {
+        self.handle.abort();
+        Err(value)
+    }
+}
+
+#[cfg(feature = "napi")]
+#[napi(iterator)]
+pub struct JsDocExportProgress {
+    recv: flume::Receiver<anyhow::Result<iroh::rpc_protocol::DocExportProgress>>,
+    handle: tokio::task::JoinHandle<()>,
+}
+
+#[cfg(feature = "napi")]
+#[napi]
+impl Generator for JsDocExportProgress {
+    type Yield = serde_json::Value;
+    type Next = serde_json::Value;
+    type Return = serde_json::Value;
+
+    fn next(&mut self, _value: Option<Self::Next>) -> Option<Self::Yield> {
+        self.recv
+            .recv()
+            .ok()
+            .and_then(|event| event.ok())
+            .and_then(|event| serde_json::to_value(event).ok())
+    }
+
+    fn complete(&mut self, _value: Option<Self::Return>) -> Option<Self::Yield> {
+        let mut res = None;
+        while let Ok(Ok(progress)) = self.recv.recv() {
+            match progress {
+                iroh::rpc_protocol::DocExportProgress::AllDone { .. }
+                | iroh::rpc_protocol::DocExportProgress::Abort(_) => {
+                    res = serde_json::to_value(progress).ok();
+                    break;
+                }
+                _ => {}
+            }
+        }
+        self.handle.abort();
+        res
     }
 
     fn catch(

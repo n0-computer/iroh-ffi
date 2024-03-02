@@ -85,11 +85,15 @@ test('document import export', async () => {
     const doc = await node.docCreate();
     const author = await node.authorCreate();
     const key = pathToKey(path, null, inRoot);
-    await doc.importFile(author, key, path, true, null);
+    let importProgress = await doc.importFile(author, key, path, true, null);
+    const iter = importProgress[Symbol.iterator]();
+    iter.return();
     const query = Query.authorKeyExact(author, key);
     const entry = await doc.getOne(query);
     const outPath = keyToPath(key, null, outRoot);
-    await doc.exportFile(entry, outPath, null);
+    let exportProgress = await doc.exportFile(entry, outPath);
+    const expIter = exportProgress[Symbol.iterator]();
+    expIter.return();
     const gotBytes = require('fs').readFileSync(outPath);
     expect(gotBytes.equals(bytes)).toBe(true);
 });
