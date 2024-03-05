@@ -6,6 +6,9 @@ mod key;
 mod node;
 mod tag;
 
+#[cfg(feature = "napi")]
+mod js;
+
 pub use self::author::*;
 pub use self::blob::*;
 pub use self::doc::*;
@@ -13,6 +16,9 @@ pub use self::error::IrohError;
 pub use self::key::*;
 pub use self::node::*;
 pub use self::tag::*;
+
+#[cfg(feature = "napi")]
+pub use self::js::*;
 
 use futures::Future;
 use iroh::metrics::try_init_metrics_collection;
@@ -92,23 +98,6 @@ pub fn key_to_path(
     Ok(path)
 }
 
-/// Helper function that translates a key that was derived from the [`path_to_key`] function back
-/// into a path.
-///
-/// If `prefix` exists, it will be stripped before converting back to a path
-/// If `root` exists, will add the root as a parent to the created path
-/// Removes any null byte that has been appened to the key
-#[cfg(feature = "napi")]
-#[napi(js_name = "keyToPath")]
-pub fn key_to_path_js(
-    key: napi::bindgen_prelude::Buffer,
-    prefix: Option<String>,
-    root: Option<String>,
-) -> Result<String, IrohError> {
-    let key: Vec<_> = key.into();
-    key_to_path(key, prefix, root)
-}
-
 /// Helper function that creates a document key from a canonicalized path, removing the `root` and adding the `prefix`, if they exist
 ///
 /// Appends the null byte to the end of the key.
@@ -124,20 +113,6 @@ pub fn path_to_key(
     )
     .map(|k| k.to_vec())
     .map_err(IrohError::fs_util)
-}
-
-/// Helper function that creates a document key from a canonicalized path, removing the `root` and adding the `prefix`, if they exist
-///
-/// Appends the null byte to the end of the key.
-#[cfg(feature = "napi")]
-#[napi(js_name = "pathToKey")]
-pub fn path_to_key_js(
-    path: String,
-    prefix: Option<String>,
-    root: Option<String>,
-) -> Result<napi::bindgen_prelude::Buffer, IrohError> {
-    let key = path_to_key(path, prefix, root)?;
-    Ok(key.into())
 }
 
 uniffi::include_scaffolding!("iroh");

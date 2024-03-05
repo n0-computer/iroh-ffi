@@ -168,10 +168,3 @@ impl From<uniffi::UnexpectedUniFFICallbackError> for IrohError {
         }
     }
 }
-
-#[cfg(feature = "napi")]
-impl From<IrohError> for napi::JsError {
-    fn from(value: IrohError) -> Self {
-        anyhow::Error::from(value).into()
-    }
-}

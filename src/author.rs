@@ -32,14 +32,6 @@ impl IrohNode {
         })
     }
 
-    /// Create a new author.
-    #[cfg(feature = "napi")]
-    #[napi(js_name = "authorCreate")]
-    pub async fn author_create_js(&self) -> Result<AuthorId, napi::Error> {
-        let author = self.sync_client.authors.create().await?;
-        Ok(AuthorId(author))
-    }
-
     /// List all the AuthorIds that exist on this node.
     pub fn author_list(&self) -> Result<Vec<Arc<AuthorId>>, IrohError> {
         block_on(&self.rt(), async {
@@ -56,22 +48,6 @@ impl IrohNode {
             Ok(authors)
         })
     }
-
-    /// List all the AuthorIds that exist on this node.
-    #[cfg(feature = "napi")]
-    #[napi(js_name = "authorList")]
-    pub async fn author_list_js(&self) -> Result<Vec<AuthorId>, napi::Error> {
-        let authors = self
-            .sync_client
-            .authors
-            .list()
-            .await?
-            .map_ok(AuthorId)
-            .try_collect::<Vec<_>>()
-            .await?;
-
-        Ok(authors)
-    }
 }
 
 #[napi]
@@ -87,12 +63,5 @@ impl AuthorId {
     #[napi]
     pub fn equal(&self, other: &AuthorId) -> bool {
         *self == *other
-    }
-
-    /// String representation
-    #[cfg(feature = "napi")]
-    #[napi(js_name = "toString")]
-    pub fn to_string_js(&self) -> String {
-        self.to_string()
     }
 }

@@ -72,13 +72,6 @@ impl PublicKey {
     pub fn fmt_short(&self) -> String {
         iroh::net::key::PublicKey::from(self).fmt_short()
     }
-
-    /// String representation
-    #[cfg(feature = "napi")]
-    #[napi(js_name = "toString")]
-    pub fn to_string_js(&self) -> String {
-        self.to_string()
-    }
 }
 
 impl PartialEq for PublicKey {

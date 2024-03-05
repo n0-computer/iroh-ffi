@@ -8,11 +8,6 @@ use serde::{Deserialize, Serialize};
 use crate::node::IrohNode;
 use crate::{block_on, IrohError, NodeAddr};
 
-#[cfg(feature = "napi")]
-use anyhow::Context;
-#[cfg(feature = "napi")]
-use napi::bindgen_prelude::{Buffer, Generator};
-
 #[napi]
 impl IrohNode {
     /// List all complete blobs.
@@ -38,22 +33,6 @@ impl IrohNode {
         })
     }
 
-    /// List all complete blobs.
-    ///
-    /// Note: this allocates for each `BlobListResponse`, if you have many `BlobListReponse`s this may be a prohibitively large list.
-    /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
-    #[cfg(feature = "napi")]
-    #[napi(js_name = "blobsList")]
-    pub async fn blobs_list_js(&self) -> Result<Vec<String>, napi::Error> {
-        let response = self.sync_client.blobs.list().await?;
-        let hashes: Vec<String> = response
-            .map_ok(|i| i.hash.to_string())
-            .try_collect()
-            .await?;
-
-        Ok(hashes)
-    }
-
     /// Get the size information on a single blob.
     ///
     /// Method only exists in FFI
@@ -67,17 +46,6 @@ impl IrohNode {
                 .map_err(IrohError::blobs)?;
             Ok(r.size())
         })
-    }
-
-    /// Get the size information on a single blob.
-    ///
-    /// Method only exists in FFI
-    #[cfg(feature = "napi")]
-    #[napi(js_name = "blobsSize")]
-    pub async fn blobs_size_js(&self, hash: &Hash) -> Result<u32, napi::Error> {
-        let r = self.sync_client.blobs.read(hash.0).await?;
-        let size = u32::try_from(r.size()).context("cannot convert blob size to u32")?;
-        Ok(size)
     }
 
     /// Read all bytes of single blob.
@@ -94,22 +62,6 @@ impl IrohNode {
                 .map(|b| b.to_vec())
                 .map_err(IrohError::blobs)
         })
-    }
-
-    /// Read all bytes of single blob.
-    ///
-    /// This allocates a buffer for the full blob. Use only if you know that the blob you're
-    /// reading is small.
-    #[cfg(feature = "napi")]
-    #[napi(js_name = "blobsReadToBytes")]
-    pub async fn blobs_read_to_bytes_js(&self, hash: &Hash) -> Result<Buffer, napi::Error> {
-        let res = self
-            .sync_client
-            .blobs
-            .read_to_bytes(hash.0)
-            .await
-            .map(|b| b.to_vec())?;
-        Ok(res.into())
     }
 
     /// Read all bytes of single blob at `offset` for length `len`.
@@ -135,28 +87,6 @@ impl IrohNode {
                 .map(|b| b.to_vec())
                 .map_err(IrohError::blobs)
         })
-    }
-
-    /// Read all bytes of single blob at `offset` for length `len`.
-    ///
-    /// This allocates a buffer for the full length `len`. Use only if you know that the blob you're
-    /// reading is small.
-    #[cfg(feature = "napi")]
-    #[napi(js_name = "blobsReadAtToBytes")]
-    pub async fn blobs_read_at_to_bytes_js(
-        &self,
-        hash: &Hash,
-        offset: u32,
-        len: Option<u32>,
-    ) -> Result<Vec<u8>, napi::Error> {
-        let len = len.map(|l| l as _);
-        let res = self
-            .sync_client
-            .blobs
-            .read_at_to_bytes(hash.0, offset as _, len)
-            .await
-            .map(|b| b.to_vec())?;
-        Ok(res)
     }
 
     /// Import a blob from a filesystem path.
@@ -193,49 +123,6 @@ impl IrohNode {
         })
     }
 
-    /// Import a blob from a filesystem path.
-    ///
-    /// `path` should be an absolute path valid for the file system on which
-    /// the node runs.
-    /// If `in_place` is true, Iroh will assume that the data will not change and will share it in
-    /// place without copying to the Iroh data directory.
-    #[cfg(feature = "napi")]
-    #[napi(js_name = "blobsAddFromPath")]
-    pub async fn blobs_add_from_path_js(
-        &self,
-        path: String,
-        in_place: bool,
-        tag: Option<Buffer>,
-        wrap: bool,
-    ) -> Result<JsAddProgress, napi::Error> {
-        let tag = match tag {
-            None => iroh::rpc_protocol::SetTagOption::Auto,
-            Some(name) => {
-                let name: Vec<_> = name.into();
-                iroh::rpc_protocol::SetTagOption::Named(bytes::Bytes::from(name).into())
-            }
-        };
-        let wrap = if wrap {
-            iroh::rpc_protocol::WrapOption::Wrap { name: None }
-        } else {
-            iroh::rpc_protocol::WrapOption::NoWrap
-        };
-        let mut stream = self
-            .sync_client
-            .blobs
-            .add_from_path(path.into(), in_place, tag, wrap)
-            .await?;
-
-        // arbitrary channel size
-        let (send, recv) = flume::bounded(64);
-        let handle = tokio::spawn(async move {
-            while let Some(res) = stream.next().await {
-                send.send(res).expect("receiver dropped");
-            }
-        });
-        Ok(JsAddProgress { recv, handle })
-    }
-
     /// Export the blob contents to a file path
     /// The `path` field is expected to be the absolute path.
     pub fn blobs_write_to_path(&self, hash: Arc<Hash>, path: String) -> Result<(), IrohError> {
@@ -262,27 +149,6 @@ impl IrohNode {
         })
     }
 
-    /// Export the blob contents to a file path
-    /// The `path` field is expected to be the absolute path.
-    #[cfg(feature = "napi")]
-    #[napi(js_name = "blobsWriteToPath")]
-    pub async fn blobs_write_to_path_js(
-        &self,
-        hash: &Hash,
-        path: String,
-    ) -> Result<(), napi::Error> {
-        let mut reader = self.sync_client.blobs.read(hash.0).await?;
-
-        let path: PathBuf = path.into();
-        if let Some(dir) = path.parent() {
-            tokio::fs::create_dir_all(dir).await?;
-        }
-        let mut file = tokio::fs::File::create(path).await?;
-        tokio::io::copy(&mut reader, &mut file).await?;
-
-        Ok(())
-    }
-
     /// Write a blob by passing bytes.
     pub fn blobs_add_bytes(
         &self,
@@ -297,31 +163,6 @@ impl IrohNode {
                 .map(|outcome| outcome.into())
                 .map_err(IrohError::blobs)
         })
-    }
-
-    /// Write a blob by passing bytes.
-    #[cfg(feature = "napi")]
-    #[napi(js_name = "blobsAddBytes")]
-    pub async fn blobs_add_bytes_js(
-        &self,
-        bytes: Buffer,
-        tag: Option<Buffer>,
-    ) -> Result<serde_json::Value, napi::Error> {
-        let tag = match tag {
-            None => iroh::rpc_protocol::SetTagOption::Auto,
-            Some(name) => {
-                let name: Vec<_> = name.into();
-                iroh::rpc_protocol::SetTagOption::Named(bytes::Bytes::from(name).into())
-            }
-        };
-        let bytes: Vec<_> = bytes.into();
-        let res = self
-            .sync_client
-            .blobs
-            .add_bytes(bytes.into(), tag)
-            .await
-            .map(|outcome| serde_json::to_value(BlobAddOutcome::from(outcome)))??;
-        Ok(res)
     }
 
     /// Download a blob from another node and add it to the local database.
@@ -345,48 +186,6 @@ impl IrohNode {
         })
     }
 
-    /// Download a blob from another node and add it to the local database.
-    #[cfg(feature = "napi")]
-    #[napi(js_name = "blobsDownload")]
-    pub async fn blobs_download_js(
-        &self,
-        hash: &Hash,
-        format: BlobFormat,
-        node: &NodeAddr,
-        tag: Option<Vec<u8>>,
-        out: Option<String>,
-        in_place: bool,
-    ) -> Result<JsDownloadProgress, napi::Error> {
-        let tag = match tag {
-            None => iroh::rpc_protocol::SetTagOption::Auto,
-            Some(name) => iroh::rpc_protocol::SetTagOption::Named(bytes::Bytes::from(name).into()),
-        };
-        let out = if let Some(out) = out {
-            iroh::rpc_protocol::DownloadLocation::External {
-                path: PathBuf::from(out),
-                in_place,
-            }
-        } else {
-            iroh::rpc_protocol::DownloadLocation::Internal
-        };
-        let req = iroh::rpc_protocol::BlobDownloadRequest {
-            hash: hash.0,
-            format: format.into(),
-            peer: node.clone().try_into().unwrap(),
-            tag,
-            out,
-        };
-        let mut stream = self.sync_client.blobs.download(req).await?;
-        // arbitrary channel size
-        let (send, recv) = flume::bounded(64);
-        let handle = tokio::spawn(async move {
-            while let Some(res) = stream.next().await {
-                send.send(res).expect("receiver dropped");
-            }
-        });
-        Ok(JsDownloadProgress { recv, handle })
-    }
-
     /// List all incomplete (partial) blobs.
     ///
     /// Note: this allocates for each `BlobListIncompleteResponse`, if you have many `BlobListIncompleteResponse`s this may be a prohibitively large list.
@@ -405,24 +204,6 @@ impl IrohNode {
                 .map_err(IrohError::blobs)?;
             Ok(blobs)
         })
-    }
-
-    /// List all incomplete (partial) blobs.
-    ///
-    /// Note: this allocates for each `BlobListIncompleteResponse`, if you have many `BlobListIncompleteResponse`s this may be a prohibitively large list.
-    /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
-    #[cfg(feature = "napi")]
-    #[napi(js_name = "blobsListIncomplete")]
-    pub async fn blobs_list_incomplete_js(&self) -> Result<Vec<serde_json::Value>, napi::Error> {
-        let blobs = self
-            .sync_client
-            .blobs
-            .list_incomplete()
-            .await?
-            .map_ok(|res| serde_json::to_value(BlobListIncompleteResponse::from(res)).unwrap())
-            .try_collect::<Vec<_>>()
-            .await?;
-        Ok(blobs)
     }
 
     /// List all collections.
@@ -445,24 +226,6 @@ impl IrohNode {
         })
     }
 
-    /// List all collections.
-    ///
-    /// Note: this allocates for each `BlobListCollectionsResponse`, if you have many `BlobListCollectionsResponse`s this may be a prohibitively large list.
-    /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
-    #[cfg(feature = "napi")]
-    #[napi(js_name = "blobsListCollections")]
-    pub async fn blobs_list_collections_js(&self) -> Result<Vec<serde_json::Value>, napi::Error> {
-        let blobs = self
-            .sync_client
-            .blobs
-            .list_collections()
-            .await?
-            .map_ok(|res| serde_json::to_value(BlobListCollectionsResponse::from(res)).unwrap())
-            .try_collect::<Vec<_>>()
-            .await?;
-        Ok(blobs)
-    }
-
     /// Read the content of a collection
     pub fn blobs_get_collection(&self, hash: Arc<Hash>) -> Result<Arc<Collection>, IrohError> {
         block_on(&self.rt(), async {
@@ -474,15 +237,6 @@ impl IrohNode {
                 .map_err(IrohError::collection)?;
             Ok(Arc::new(collection.into()))
         })
-    }
-
-    /// Read the content of a collection
-    #[cfg(feature = "napi")]
-    #[napi(js_name = "blobsGetCollection")]
-    pub async fn blobs_get_collection_js(&self, hash: &Hash) -> Result<Collection, napi::Error> {
-        let collection = self.sync_client.blobs.get_collection(hash.0).await?;
-
-        Ok(collection.into())
     }
 
     /// Create a collection from already existing blobs.
@@ -517,44 +271,6 @@ impl IrohNode {
         })
     }
 
-    /// Create a collection from already existing blobs.
-    ///
-    /// To automatically clear the tags for the passed in blobs you can set
-    /// `tags_to_delete` on those tags, and they will be deleted once the collection is created.
-    #[cfg(feature = "napi")]
-    #[napi(js_name = "blobsCreateCollection")]
-    pub async fn blobs_create_collection_js(
-        &self,
-        collection: &Collection,
-        tag: Option<Vec<u8>>,
-        tags_to_delete: Vec<String>,
-    ) -> Result<serde_json::Value, napi::Error> {
-        let collection = collection.0.read().unwrap().clone();
-        let tag = match tag {
-            None => iroh::rpc_protocol::SetTagOption::Auto,
-            Some(name) => iroh::rpc_protocol::SetTagOption::Named(bytes::Bytes::from(name).into()),
-        };
-
-        let (hash, tag) = self
-            .sync_client
-            .blobs
-            .create_collection(
-                collection,
-                tag,
-                tags_to_delete
-                    .into_iter()
-                    .map(iroh::bytes::Tag::from)
-                    .collect(),
-            )
-            .await?;
-
-        Ok(serde_json::to_value(HashAndTag {
-            hash: Arc::new(hash.into()),
-            tag: tag.0.to_vec(),
-        })
-        .unwrap())
-    }
-
     /// Delete a blob.
     pub fn blobs_delete_blob(&self, hash: Arc<Hash>) -> Result<(), IrohError> {
         block_on(&self.rt(), async {
@@ -564,17 +280,6 @@ impl IrohNode {
                 .await
                 .map_err(IrohError::blobs)
         })
-    }
-
-    /// Delete a blob.
-    #[cfg(feature = "napi")]
-    #[napi(js_name = "blobsDeleteBlob")]
-    pub async fn blobs_delete_blob_js(&self, hash: &Hash) -> Result<(), napi::Error> {
-        self.sync_client
-            .blobs
-            .delete_blob((*hash).clone().0)
-            .await?;
-        Ok(())
     }
 }
 
@@ -696,7 +401,6 @@ impl Hash {
     }
 
     /// Bytes of the hash.
-    #[napi]
     pub fn to_bytes(&self) -> Vec<u8> {
         self.0.as_bytes().to_vec()
     }
@@ -725,13 +429,6 @@ impl Hash {
         self.0.to_hex()
     }
 
-    /// Convert the hash to a string
-    #[cfg(feature = "napi")]
-    #[napi(js_name = "toString")]
-    pub fn to_string_js(&self) -> String {
-        format!("{}", self.0)
-    }
-
     /// Returns true if the Hash's have the same value
     #[napi]
     pub fn equal(&self, other: &Hash) -> bool {
@@ -748,102 +445,6 @@ impl std::fmt::Display for Hash {
 impl From<Hash> for iroh::bytes::Hash {
     fn from(value: Hash) -> Self {
         value.0
-    }
-}
-
-#[cfg(feature = "napi")]
-#[napi(iterator)]
-pub struct JsAddProgress {
-    recv: flume::Receiver<anyhow::Result<iroh::rpc_protocol::AddProgress>>,
-    handle: tokio::task::JoinHandle<()>,
-}
-
-#[cfg(feature = "napi")]
-#[napi]
-impl Generator for JsAddProgress {
-    type Yield = serde_json::Value;
-    type Next = serde_json::Value;
-    type Return = serde_json::Value;
-
-    fn next(&mut self, _value: Option<Self::Next>) -> Option<Self::Yield> {
-        self.recv
-            .recv()
-            .ok()
-            .and_then(|event| event.ok())
-            .and_then(|event| serde_json::to_value(event).ok())
-    }
-
-    fn complete(&mut self, _value: Option<Self::Return>) -> Option<Self::Yield> {
-        let mut res = None;
-        while let Ok(Ok(progress)) = self.recv.recv() {
-            match progress {
-                iroh::rpc_protocol::AddProgress::AllDone { .. }
-                | iroh::rpc_protocol::AddProgress::Abort(_) => {
-                    res = serde_json::to_value(progress).ok();
-                    break;
-                }
-                _ => {}
-            }
-        }
-        self.handle.abort();
-        res
-    }
-
-    fn catch(
-        &mut self,
-        _env: napi::Env,
-        value: napi::JsUnknown,
-    ) -> Result<Option<Self::Yield>, napi::JsUnknown> {
-        self.handle.abort();
-        Err(value)
-    }
-}
-
-#[cfg(feature = "napi")]
-#[napi(iterator)]
-pub struct JsDownloadProgress {
-    recv: flume::Receiver<anyhow::Result<iroh::rpc_protocol::DownloadProgress>>,
-    handle: tokio::task::JoinHandle<()>,
-}
-
-#[cfg(feature = "napi")]
-#[napi]
-impl Generator for JsDownloadProgress {
-    type Yield = serde_json::Value;
-    type Next = serde_json::Value;
-    type Return = serde_json::Value;
-
-    fn next(&mut self, _value: Option<Self::Next>) -> Option<Self::Yield> {
-        self.recv
-            .recv()
-            .ok()
-            .and_then(|event| event.ok())
-            .and_then(|event| serde_json::to_value(event).ok())
-    }
-
-    fn complete(&mut self, _value: Option<Self::Return>) -> Option<Self::Yield> {
-        let mut res = None;
-        while let Ok(Ok(progress)) = self.recv.recv() {
-            match progress {
-                iroh::rpc_protocol::DownloadProgress::AllDone { .. }
-                | iroh::rpc_protocol::DownloadProgress::Abort(_) => {
-                    res = serde_json::to_value(progress).ok();
-                    break;
-                }
-                _ => {}
-            }
-        }
-        self.handle.abort();
-        res
-    }
-
-    fn catch(
-        &mut self,
-        _env: napi::Env,
-        value: napi::JsUnknown,
-    ) -> Result<Option<Self::Yield>, napi::JsUnknown> {
-        self.handle.abort();
-        Err(value)
     }
 }
 
@@ -1524,7 +1125,7 @@ impl From<iroh::rpc_protocol::BlobListCollectionsResponse> for BlobListCollectio
 /// A collection of blobs
 #[napi]
 #[derive(Debug)]
-pub struct Collection(RwLock<iroh::bytes::format::collection::Collection>);
+pub struct Collection(pub(crate) RwLock<iroh::bytes::format::collection::Collection>);
 
 impl From<iroh::bytes::format::collection::Collection> for Collection {
     fn from(value: iroh::bytes::format::collection::Collection) -> Self {
@@ -1604,32 +1205,9 @@ impl Collection {
             .collect())
     }
 
-    /// Get the blobs associated with this collection
-    #[cfg(feature = "napi")]
-    #[napi(js_name = "blobs")]
-    pub fn blobs_js(&self) -> Result<Vec<JsLinkAndName>, IrohError> {
-        Ok(self
-            .0
-            .read()
-            .map_err(IrohError::collection)?
-            .iter()
-            .map(|(name, hash)| JsLinkAndName {
-                name: name.clone(),
-                link: hash.to_hex(),
-            })
-            .collect())
-    }
-
     /// Returns the number of blobs in this collection
     pub fn len(&self) -> Result<u64, IrohError> {
         Ok(self.0.read().map_err(IrohError::collection)?.len() as _)
-    }
-
-    /// Returns the number of blobs in this collection
-    #[cfg(feature = "napi")]
-    #[napi(js_name = "len")]
-    pub fn len_js(&self) -> u32 {
-        self.0.read().unwrap().len() as _
     }
 }
 
@@ -1640,17 +1218,6 @@ pub struct LinkAndName {
     pub name: String,
     /// The [`Hash`] of the blob
     pub link: Arc<Hash>,
-}
-
-/// `LinkAndName` includes a name and a hash for a blob in a collection
-#[cfg(feature = "napi")]
-#[napi(js_name = "LinkAndName")]
-#[derive(Clone, Debug)]
-pub struct JsLinkAndName {
-    /// The name associated with this [`Hash`].
-    pub name: String,
-    /// The [`Hash`] of the blob.
-    pub link: String,
 }
 
 #[cfg(test)]
@@ -1686,8 +1253,6 @@ mod tests {
         assert_eq!(hex_str.to_string(), hash_0.to_hex());
 
         // test that the eq function works
-        let hash = hash;
-        let hash_0 = hash_0;
         assert!(hash.equal(&hash_0));
         assert!(hash_0.equal(&hash));
     }
@@ -1765,7 +1330,7 @@ mod tests {
                     AddProgress::AllDone(ref d) => {
                         let mut output = self.output.lock().unwrap();
                         output.hash = Some(d.hash.clone());
-                        output.format = Some(d.format.clone());
+                        output.format = Some(d.format);
                     }
                     AddProgress::Abort(ref a) => {
                         return Err(IrohError::blobs(a.error.clone()));
@@ -1790,8 +1355,8 @@ mod tests {
 
         let (hash, format) = {
             let output = output.lock().unwrap();
-            let hash = output.hash.as_ref().map(|h| h.clone()).unwrap();
-            let format = output.format.as_ref().map(|h| h.clone()).unwrap();
+            let hash = output.hash.as_ref().cloned().unwrap();
+            let format = output.format.as_ref().cloned().unwrap();
             (hash, format)
         };
 
@@ -1838,7 +1403,7 @@ mod tests {
 
         // ensure there are no blobs to start
         let blobs = node.blobs_list().unwrap();
-        assert!(blobs.len() == 0);
+        assert!(blobs.is_empty());
 
         struct Output {
             collection_hash: Option<Arc<Hash>>,
@@ -1860,7 +1425,7 @@ mod tests {
                     AddProgress::AllDone(ref d) => {
                         let mut output = self.output.lock().unwrap();
                         output.collection_hash = Some(d.hash.clone());
-                        output.format = Some(d.format.clone());
+                        output.format = Some(d.format);
                     }
                     AddProgress::Abort(ref a) => {
                         return Err(IrohError::blobs(a.error.clone()));
@@ -1892,7 +1457,7 @@ mod tests {
         assert!(collections.len() == 1);
         let (collection_hash, blob_hashes) = {
             let output = output.lock().unwrap();
-            let collection_hash = output.collection_hash.as_ref().map(|h| h.clone()).unwrap();
+            let collection_hash = output.collection_hash.as_ref().cloned().unwrap();
             let mut blob_hashes = output.blob_hashes.clone();
             blob_hashes.push(collection_hash.clone());
             (collection_hash, blob_hashes)
@@ -1908,13 +1473,10 @@ mod tests {
         println!("finished");
     }
 
-    fn hashes_exist(expect: &Vec<Arc<Hash>>, got: &Vec<Arc<Hash>>) {
+    fn hashes_exist(expect: &Vec<Arc<Hash>>, got: &[Arc<Hash>]) {
         for hash in expect {
-            if !got.contains(&hash) {
-                panic!(
-                    "expected to find hash {} in the list of hashes",
-                    hash.to_string()
-                );
+            if !got.contains(hash) {
+                panic!("expected to find hash {} in the list of hashes", hash);
             }
         }
     }
