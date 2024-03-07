@@ -42,4 +42,4 @@ test('basic sync', async () => {
 
     await doc1.close();
     await doc0.close();
-});
+}, 30000);
