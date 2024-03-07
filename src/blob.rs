@@ -2,16 +2,20 @@ use std::{path::PathBuf, str::FromStr, sync::Arc, sync::RwLock, time::Duration};
 
 use futures::{StreamExt, TryStreamExt};
 
+use napi_derive::napi;
+use serde::{Deserialize, Serialize};
+
 use crate::node::IrohNode;
 use crate::{block_on, IrohError, NodeAddr};
 
+#[napi]
 impl IrohNode {
     /// List all complete blobs.
     ///
     /// Note: this allocates for each `BlobListResponse`, if you have many `BlobListReponse`s this may be a prohibitively large list.
     /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
     pub fn blobs_list(&self) -> Result<Vec<Arc<Hash>>, IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let response = self
                 .sync_client
                 .blobs
@@ -31,9 +35,9 @@ impl IrohNode {
 
     /// Get the size information on a single blob.
     ///
-    /// Method only exist in FFI
-    pub fn blobs_size(&self, hash: Arc<Hash>) -> Result<u64, IrohError> {
-        block_on(&self.async_runtime, async {
+    /// Method only exists in FFI
+    pub fn blobs_size(&self, hash: &Hash) -> Result<u64, IrohError> {
+        block_on(&self.rt(), async {
             let r = self
                 .sync_client
                 .blobs
@@ -50,7 +54,7 @@ impl IrohNode {
     /// reading is small. If not sure, use [`Self::blobs_size`] and check the size with
     /// before calling [`Self::blobs_read_to_bytes`].
     pub fn blobs_read_to_bytes(&self, hash: Arc<Hash>) -> Result<Vec<u8>, IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             self.sync_client
                 .blobs
                 .read_to_bytes(hash.0)
@@ -75,7 +79,7 @@ impl IrohNode {
             None => None,
             Some(l) => Some(usize::try_from(l).map_err(IrohError::blobs)?),
         };
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             self.sync_client
                 .blobs
                 .read_at_to_bytes(hash.0, offset, len)
@@ -99,7 +103,7 @@ impl IrohNode {
         wrap: Arc<WrapOption>,
         cb: Box<dyn AddCallback>,
     ) -> Result<(), IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let mut stream = self
                 .sync_client
                 .blobs
@@ -122,7 +126,7 @@ impl IrohNode {
     /// Export the blob contents to a file path
     /// The `path` field is expected to be the absolute path.
     pub fn blobs_write_to_path(&self, hash: Arc<Hash>, path: String) -> Result<(), IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let mut reader = self
                 .sync_client
                 .blobs
@@ -151,7 +155,7 @@ impl IrohNode {
         bytes: Vec<u8>,
         tag: Arc<SetTagOption>,
     ) -> Result<BlobAddOutcome, IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             self.sync_client
                 .blobs
                 .add_bytes(bytes.into(), (*tag).clone().into())
@@ -167,7 +171,7 @@ impl IrohNode {
         req: Arc<BlobDownloadRequest>,
         cb: Box<dyn DownloadCallback>,
     ) -> Result<(), IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let mut stream = self
                 .sync_client
                 .blobs
@@ -187,7 +191,7 @@ impl IrohNode {
     /// Note: this allocates for each `BlobListIncompleteResponse`, if you have many `BlobListIncompleteResponse`s this may be a prohibitively large list.
     /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
     pub fn blobs_list_incomplete(&self) -> Result<Vec<BlobListIncompleteResponse>, IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let blobs = self
                 .sync_client
                 .blobs
@@ -207,7 +211,7 @@ impl IrohNode {
     /// Note: this allocates for each `BlobListCollectionsResponse`, if you have many `BlobListCollectionsResponse`s this may be a prohibitively large list.
     /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
     pub fn blobs_list_collections(&self) -> Result<Vec<BlobListCollectionsResponse>, IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let blobs = self
                 .sync_client
                 .blobs
@@ -224,7 +228,7 @@ impl IrohNode {
 
     /// Read the content of a collection
     pub fn blobs_get_collection(&self, hash: Arc<Hash>) -> Result<Arc<Collection>, IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let collection = self
                 .sync_client
                 .blobs
@@ -245,7 +249,7 @@ impl IrohNode {
         tag: Arc<SetTagOption>,
         tags_to_delete: Vec<String>,
     ) -> Result<HashAndTag, IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let collection = collection.0.read().map_err(IrohError::collection)?.clone();
             let (hash, tag) = self
                 .sync_client
@@ -269,7 +273,7 @@ impl IrohNode {
 
     /// Delete a blob.
     pub fn blobs_delete_blob(&self, hash: Arc<Hash>) -> Result<(), IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             self.sync_client
                 .blobs
                 .delete_blob((*hash).clone().0)
@@ -280,7 +284,7 @@ impl IrohNode {
 }
 
 /// The Hash and associated tag of a newly created collection
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct HashAndTag {
     /// The hash of the collection
     pub hash: Arc<Hash>,
@@ -289,7 +293,7 @@ pub struct HashAndTag {
 }
 
 /// Outcome of a blob add operation.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BlobAddOutcome {
     /// The hash of the blob
     pub hash: Arc<Hash>,
@@ -378,7 +382,8 @@ impl From<WrapOption> for iroh::rpc_protocol::WrapOption {
 }
 
 /// Hash type used throughout Iroh. A blake3 hash.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[napi]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Hash(pub(crate) iroh::bytes::Hash);
 
 impl From<iroh::bytes::Hash> for Hash {
@@ -387,8 +392,10 @@ impl From<iroh::bytes::Hash> for Hash {
     }
 }
 
+#[napi]
 impl Hash {
     /// Calculate the hash of the provide bytes.
+    #[napi(constructor)]
     pub fn new(buf: Vec<u8>) -> Self {
         Hash(iroh::bytes::Hash::new(buf))
     }
@@ -407,6 +414,7 @@ impl Hash {
     }
 
     /// Make a Hash from hex string
+    #[napi]
     pub fn from_string(s: String) -> Result<Self, IrohError> {
         match iroh::bytes::Hash::from_str(&s) {
             Ok(key) => Ok(key.into()),
@@ -415,12 +423,14 @@ impl Hash {
     }
 
     /// Convert the hash to a hex string.
+    #[napi]
     pub fn to_hex(&self) -> String {
         self.0.to_hex()
     }
 
     /// Returns true if the Hash's have the same value
-    pub fn equal(&self, other: Arc<Hash>) -> bool {
+    #[napi]
+    pub fn equal(&self, other: &Hash) -> bool {
         *self == *other
     }
 }
@@ -445,7 +455,9 @@ pub trait AddCallback: Send + Sync + 'static {
 }
 
 /// The different types of AddProgress events
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[napi(string_enum)]
+#[cfg_attr(not(feature = "napi"), derive(Clone))]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AddProgressType {
     /// An item was found with name `name`, from now on referred to via `id`
     Found,
@@ -462,7 +474,7 @@ pub enum AddProgressType {
 }
 
 /// An AddProgress event indicating an item was found with name `name`, that can be referred to by `id`
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AddProgressFound {
     /// A new unique id for this entry.
     pub id: u64,
@@ -473,7 +485,7 @@ pub struct AddProgressFound {
 }
 
 /// An AddProgress event indicating we got progress ingesting item `id`.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AddProgressProgress {
     /// The unique id of the entry.
     pub id: u64,
@@ -482,7 +494,7 @@ pub struct AddProgressProgress {
 }
 
 /// An AddProgress event indicated we are done with `id` and now have a hash `hash`
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AddProgressDone {
     /// The unique id of the entry.
     pub id: u64,
@@ -491,7 +503,7 @@ pub struct AddProgressDone {
 }
 
 /// An AddProgress event indicating we are done with the the whole operation
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AddProgressAllDone {
     /// The hash of the created data.
     pub hash: Arc<Hash>,
@@ -502,13 +514,13 @@ pub struct AddProgressAllDone {
 }
 
 /// An AddProgress event indicating we got an error and need to abort
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AddProgressAbort {
     pub error: String,
 }
 
 /// Progress updates for the add operation.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AddProgress {
     /// An item was found with name `name`, from now on referred to via `id`
     Found(AddProgressFound),
@@ -605,7 +617,9 @@ impl AddProgress {
 }
 
 /// A format identifier
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[napi(string_enum)]
+#[cfg_attr(not(feature = "napi"), derive(Clone))]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum BlobFormat {
     /// Raw blob
     Raw,
@@ -714,7 +728,7 @@ pub trait DownloadCallback: Send + Sync + 'static {
 }
 
 /// The different types of DownloadProgress events
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DownloadProgressType {
     FoundLocal,
     Connected,
@@ -730,7 +744,7 @@ pub enum DownloadProgressType {
 }
 
 /// A DownloadProgress event indicating an item was found with hash `hash`, that can be referred to by `id`
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DownloadProgressFound {
     /// A new unique id for this entry.
     pub id: u64,
@@ -743,7 +757,7 @@ pub struct DownloadProgressFound {
 }
 
 /// A DownloadProgress event indicating an entry was found locally
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DownloadProgressFoundLocal {
     /// child offset
     pub child: u64,
@@ -756,7 +770,7 @@ pub struct DownloadProgressFoundLocal {
 }
 
 /// A DownloadProgress event indicating an item was found with hash `hash`, that can be referred to by `id`
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DownloadProgressFoundHashSeq {
     /// Number of children in the collection, if known.
     pub children: u64,
@@ -765,7 +779,7 @@ pub struct DownloadProgressFoundHashSeq {
 }
 
 /// A DownloadProgress event indicating we got progress ingesting item `id`.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DownloadProgressProgress {
     /// The unique id of the entry.
     pub id: u64,
@@ -774,14 +788,14 @@ pub struct DownloadProgressProgress {
 }
 
 /// A DownloadProgress event indicated we are done with `id`
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DownloadProgressDone {
     /// The unique id of the entry.
     pub id: u64,
 }
 
 /// A DownloadProgress event indicating we are done with the networking portion - all data is local
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DownloadProgressNetworkDone {
     /// The number of bytes written
     pub bytes_written: u64,
@@ -793,7 +807,7 @@ pub struct DownloadProgressNetworkDone {
 
 /// A DownloadProgress event indicating the download part is done for this id, we are not exporting
 /// the data to the specified path
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DownloadProgressExport {
     /// Unique id of the entry
     pub id: u64,
@@ -808,7 +822,7 @@ pub struct DownloadProgressExport {
 /// A DownloadProgress event indicating We have made progress exporting the data.
 ///
 /// This is only sent for large blobs.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DownloadProgressExportProgress {
     /// Unique id of the entry that is being exported.
     pub id: u64,
@@ -817,13 +831,13 @@ pub struct DownloadProgressExportProgress {
 }
 
 /// A DownloadProgress event indicating we got an error and need to abort
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DownloadProgressAbort {
     pub error: String,
 }
 
 /// Progress updates for the get operation.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DownloadProgress {
     /// A new connection was established.
     Connected,
@@ -1016,7 +1030,7 @@ impl DownloadProgress {
 }
 
 /// A chunk range specification as a sequence of chunk offsets
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RangeSpec(pub(crate) iroh::bytes::protocol::RangeSpec);
 
 impl RangeSpec {
@@ -1059,7 +1073,7 @@ impl From<iroh::rpc_protocol::BlobListResponse> for BlobListResponse {
 }
 
 /// A response to a list blobs request
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BlobListIncompleteResponse {
     /// The size we got
     pub size: u64,
@@ -1080,7 +1094,7 @@ impl From<iroh::rpc_protocol::BlobListIncompleteResponse> for BlobListIncomplete
 }
 
 /// A response to a list collections request
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BlobListCollectionsResponse {
     /// Tag of the collection
     pub tag: Vec<u8>,
@@ -1108,8 +1122,9 @@ impl From<iroh::rpc_protocol::BlobListCollectionsResponse> for BlobListCollectio
 }
 
 /// A collection of blobs
+#[napi]
 #[derive(Debug)]
-pub struct Collection(RwLock<iroh::bytes::format::collection::Collection>);
+pub struct Collection(pub(crate) RwLock<iroh::bytes::format::collection::Collection>);
 
 impl From<iroh::bytes::format::collection::Collection> for Collection {
     fn from(value: iroh::bytes::format::collection::Collection) -> Self {
@@ -1124,9 +1139,11 @@ impl From<Collection> for iroh::bytes::format::collection::Collection {
     }
 }
 
+#[napi]
 impl Collection {
     /// Create a new empty collection
     #[allow(clippy::new_without_default)]
+    #[napi(constructor)]
     pub fn new() -> Self {
         Collection(RwLock::new(
             iroh::bytes::format::collection::Collection::default(),
@@ -1134,7 +1151,8 @@ impl Collection {
     }
 
     /// Add the given blob to the collection
-    pub fn push(&self, name: String, hash: Arc<Hash>) -> Result<(), IrohError> {
+    #[napi]
+    pub fn push(&self, name: String, hash: &Hash) -> Result<(), IrohError> {
         self.0
             .write()
             .map_err(IrohError::collection)?
@@ -1143,11 +1161,13 @@ impl Collection {
     }
 
     /// Check if the collection is empty
+    #[napi]
     pub fn is_empty(&self) -> Result<bool, IrohError> {
         Ok(self.0.read().map_err(IrohError::collection)?.is_empty())
     }
 
     /// Get the names of the blobs in this collection
+    #[napi]
     pub fn names(&self) -> Result<Vec<String>, IrohError> {
         Ok(self
             .0
@@ -1159,6 +1179,7 @@ impl Collection {
     }
 
     /// Get the links to the blobs in this collection
+    #[napi]
     pub fn links(&self) -> Result<Vec<Arc<Hash>>, IrohError> {
         Ok(self
             .0
@@ -1185,7 +1206,7 @@ impl Collection {
 
     /// Returns the number of blobs in this collection
     pub fn len(&self) -> Result<u64, IrohError> {
-        Ok(self.0.read().map_err(IrohError::collection)?.len() as u64)
+        Ok(self.0.read().map_err(IrohError::collection)?.len() as _)
     }
 }
 
@@ -1231,10 +1252,8 @@ mod tests {
         assert_eq!(hex_str.to_string(), hash_0.to_hex());
 
         // test that the eq function works
-        let hash = Arc::new(hash);
-        let hash_0 = Arc::new(hash_0);
-        assert!(hash.equal(hash_0.clone()));
-        assert!(hash_0.equal(hash.clone()));
+        assert!(hash.equal(&hash_0));
+        assert!(hash_0.equal(&hash));
     }
 
     #[test]
@@ -1262,7 +1281,7 @@ mod tests {
         assert_eq!(add_outcome.size, size as u64);
         // check size
         let hash = add_outcome.hash;
-        let got_size = node.blobs_size(hash.clone()).unwrap();
+        let got_size = node.blobs_size(&hash).unwrap();
         assert_eq!(got_size, size as u64);
         //
         // get blob
@@ -1310,7 +1329,7 @@ mod tests {
                     AddProgress::AllDone(ref d) => {
                         let mut output = self.output.lock().unwrap();
                         output.hash = Some(d.hash.clone());
-                        output.format = Some(d.format.clone());
+                        output.format = Some(d.format);
                     }
                     AddProgress::Abort(ref a) => {
                         return Err(IrohError::blobs(a.error.clone()));
@@ -1335,8 +1354,8 @@ mod tests {
 
         let (hash, format) = {
             let output = output.lock().unwrap();
-            let hash = output.hash.as_ref().map(|h| h.clone()).unwrap();
-            let format = output.format.as_ref().map(|h| h.clone()).unwrap();
+            let hash = output.hash.as_ref().cloned().unwrap();
+            let format = output.format.as_ref().cloned().unwrap();
             (hash, format)
         };
 
@@ -1344,7 +1363,7 @@ mod tests {
         assert_eq!(BlobFormat::Raw, format);
 
         // check we get the expected size from the hash
-        let got_size = node.blobs_size(hash.clone()).unwrap();
+        let got_size = node.blobs_size(&hash).unwrap();
         assert_eq!(blob_size as u64, got_size);
 
         // get bytes
@@ -1383,7 +1402,7 @@ mod tests {
 
         // ensure there are no blobs to start
         let blobs = node.blobs_list().unwrap();
-        assert!(blobs.len() == 0);
+        assert!(blobs.is_empty());
 
         struct Output {
             collection_hash: Option<Arc<Hash>>,
@@ -1405,7 +1424,7 @@ mod tests {
                     AddProgress::AllDone(ref d) => {
                         let mut output = self.output.lock().unwrap();
                         output.collection_hash = Some(d.hash.clone());
-                        output.format = Some(d.format.clone());
+                        output.format = Some(d.format);
                     }
                     AddProgress::Abort(ref a) => {
                         return Err(IrohError::blobs(a.error.clone()));
@@ -1437,7 +1456,7 @@ mod tests {
         assert!(collections.len() == 1);
         let (collection_hash, blob_hashes) = {
             let output = output.lock().unwrap();
-            let collection_hash = output.collection_hash.as_ref().map(|h| h.clone()).unwrap();
+            let collection_hash = output.collection_hash.as_ref().cloned().unwrap();
             let mut blob_hashes = output.blob_hashes.clone();
             blob_hashes.push(collection_hash.clone());
             (collection_hash, blob_hashes)
@@ -1453,13 +1472,10 @@ mod tests {
         println!("finished");
     }
 
-    fn hashes_exist(expect: &Vec<Arc<Hash>>, got: &Vec<Arc<Hash>>) {
+    fn hashes_exist(expect: &Vec<Arc<Hash>>, got: &[Arc<Hash>]) {
         for hash in expect {
-            if !got.contains(&hash) {
-                panic!(
-                    "expected to find hash {} in the list of hashes",
-                    hash.to_string()
-                );
+            if !got.contains(hash) {
+                panic!("expected to find hash {} in the list of hashes", hash);
             }
         }
     }
@@ -1501,7 +1517,7 @@ mod tests {
         hashes_exist(&hashes, &got_hashes);
 
         for hash in got_hashes {
-            if remove_hash.equal(hash) {
+            if remove_hash.equal(&hash) {
                 panic!("blob {} should have been removed", remove_hash);
             }
         }

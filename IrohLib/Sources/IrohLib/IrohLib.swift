@@ -298,6 +298,19 @@ private func uniffiCheckCallStatus(
 
 // Public interface members begin here.
 
+private struct FfiConverterUInt32: FfiConverterPrimitive {
+    typealias FfiType = UInt32
+    typealias SwiftType = UInt32
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UInt32 {
+        return try lift(readInt(&buf))
+    }
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(value))
+    }
+}
+
 private struct FfiConverterUInt64: FfiConverterPrimitive {
     typealias FfiType = UInt64
     typealias SwiftType = UInt64
@@ -4396,7 +4409,7 @@ public struct CounterStats {
     /**
      * The counter value
      */
-    public var value: UInt64
+    public var value: UInt32
     /**
      * The counter description
      */
@@ -4404,7 +4417,7 @@ public struct CounterStats {
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(value: UInt64, description: String) {
+    public init(value: UInt32, description: String) {
         self.value = value
         self.description = description
     }
@@ -4430,13 +4443,13 @@ extension CounterStats: Equatable, Hashable {
 public struct FfiConverterTypeCounterStats: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CounterStats {
         return try CounterStats(
-            value: FfiConverterUInt64.read(from: &buf),
+            value: FfiConverterUInt32.read(from: &buf),
             description: FfiConverterString.read(from: &buf)
         )
     }
 
     public static func write(_ value: CounterStats, into buf: inout [UInt8]) {
-        FfiConverterUInt64.write(value.value, into: &buf)
+        FfiConverterUInt32.write(value.value, into: &buf)
         FfiConverterString.write(value.description, into: &buf)
     }
 }
@@ -8387,7 +8400,7 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_addprogress_type() != 63416 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_authorid_equal() != 33867 {
+    if uniffi_iroh_checksum_method_authorid_equal() != 53671 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_authorid_to_string() != 42389 {
@@ -8408,7 +8421,7 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_collection_names() != 17514 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_collection_push() != 37931 {
+    if uniffi_iroh_checksum_method_collection_push() != 50200 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_connectiontype_as_direct() != 27175 {
@@ -8465,7 +8478,7 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_doc_leave() != 55816 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_set_bytes() != 15024 {
+    if uniffi_iroh_checksum_method_doc_set_bytes() != 46067 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_doc_set_download_policy() != 13428 {
@@ -8564,7 +8577,7 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_filterkind_matches() != 35187 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_hash_equal() != 65301 {
+    if uniffi_iroh_checksum_method_hash_equal() != 52326 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_hash_to_bytes() != 29465 {
@@ -8612,13 +8625,13 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_irohnode_blobs_read_to_bytes() != 6512 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_blobs_size() != 52941 {
+    if uniffi_iroh_checksum_method_irohnode_blobs_size() != 9420 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_blobs_write_to_path() != 9029 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_connection_info() != 39895 {
+    if uniffi_iroh_checksum_method_irohnode_connection_info() != 31037 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_connections() != 37352 {
@@ -8681,7 +8694,7 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_nodeaddr_direct_addresses() != 44368 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_nodeaddr_equal() != 45841 {
+    if uniffi_iroh_checksum_method_nodeaddr_equal() != 40672 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_nodestatusresponse_listen_addrs() != 43813 {
@@ -8693,7 +8706,7 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_nodestatusresponse_version() != 50257 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_publickey_equal() != 10645 {
+    if uniffi_iroh_checksum_method_publickey_equal() != 13922 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_publickey_fmt_short() != 33947 {
@@ -8762,7 +8775,7 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_constructor_irohnode_new() != 22562 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_nodeaddr_new() != 18892 {
+    if uniffi_iroh_checksum_constructor_nodeaddr_new() != 30484 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_constructor_publickey_from_bytes() != 65104 {
@@ -8774,13 +8787,13 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_constructor_query_all() != 18362 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_query_author() != 6757 {
+    if uniffi_iroh_checksum_constructor_query_author() != 5981 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_query_author_key_exact() != 21618 {
+    if uniffi_iroh_checksum_constructor_query_author_key_exact() != 34711 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_query_author_key_prefix() != 63753 {
+    if uniffi_iroh_checksum_constructor_query_author_key_prefix() != 20638 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_constructor_query_key_exact() != 32100 {

@@ -5,17 +5,35 @@ use iroh::{
     client::Doc as ClientDoc,
     rpc_protocol::{ProviderRequest, ProviderResponse},
 };
-
-pub use iroh::sync::CapabilityKind;
-
+use napi_derive::napi;
 use quic_rpc::transport::flume::FlumeConnection;
+use serde::{Deserialize, Serialize};
 
 use crate::{block_on, AuthorId, Hash, IrohError, IrohNode, PublicKey};
 
+#[napi]
+#[derive(Debug)]
+pub enum CapabilityKind {
+    /// A writable replica.
+    Write = 1,
+    /// A readable replica.
+    Read = 2,
+}
+
+impl From<iroh::sync::CapabilityKind> for CapabilityKind {
+    fn from(value: iroh::sync::CapabilityKind) -> Self {
+        match value {
+            iroh::sync::CapabilityKind::Write => Self::Write,
+            iroh::sync::CapabilityKind::Read => Self::Read,
+        }
+    }
+}
+
+#[napi]
 impl IrohNode {
     /// Create a new doc.
     pub fn doc_create(&self) -> Result<Arc<Doc>, IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let doc = self
                 .sync_client
                 .docs
@@ -25,14 +43,14 @@ impl IrohNode {
 
             Ok(Arc::new(Doc {
                 inner: doc,
-                rt: self.async_runtime.clone(),
+                rt: self.rt().clone(),
             }))
         })
     }
 
     /// Join and sync with an already existing document.
     pub fn doc_join(&self, ticket: String) -> Result<Arc<Doc>, IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let ticket =
                 iroh::ticket::DocTicket::from_str(&ticket).map_err(IrohError::doc_ticket)?;
             let doc = self
@@ -44,14 +62,14 @@ impl IrohNode {
 
             Ok(Arc::new(Doc {
                 inner: doc,
-                rt: self.async_runtime.clone(),
+                rt: self.rt().clone(),
             }))
         })
     }
 
     /// List all the docs we have access to on this node.
     pub fn doc_list(&self) -> Result<Vec<NamespaceAndCapability>, IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let docs = self
                 .sync_client
                 .docs
@@ -60,7 +78,7 @@ impl IrohNode {
                 .map_err(IrohError::doc)?
                 .map_ok(|(namespace, capability)| NamespaceAndCapability {
                     namespace: namespace.to_string(),
-                    capability,
+                    capability: capability.into(),
                 })
                 .try_collect::<Vec<_>>()
                 .await
@@ -75,7 +93,7 @@ impl IrohNode {
     /// Returns None if the document cannot be found.
     pub fn doc_open(&self, id: String) -> Result<Option<Arc<Doc>>, IrohError> {
         let namespace_id = iroh::sync::NamespaceId::from_str(&id).map_err(IrohError::namespace)?;
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let doc = self
                 .sync_client
                 .docs
@@ -85,7 +103,7 @@ impl IrohNode {
             Ok(doc.map(|d| {
                 Arc::new(Doc {
                     inner: d,
-                    rt: self.async_runtime.clone(),
+                    rt: self.rt().clone(),
                 })
             }))
         })
@@ -94,12 +112,11 @@ impl IrohNode {
     /// Delete a document from the local node.
     ///
     /// This is a destructive operation. Both the document secret key and all entries in the
-    /// document will be permanently deleted from the node's storage. Content blobs will be
-    /// deleted.clone()).await.map_err(Iroh::doc)
+    /// document will be permanently deleted from the node's storage. Content blobs will be deleted
     /// through garbage collection unless they are referenced from another document or tag.
     pub fn doc_drop(&self, doc_id: String) -> Result<(), IrohError> {
         let doc_id = iroh::sync::NamespaceId::from_str(&doc_id).map_err(IrohError::namespace)?;
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             self.sync_client
                 .docs
                 .drop_doc(doc_id)
@@ -110,6 +127,7 @@ impl IrohNode {
 }
 
 /// The namespace id and CapabilityKind (read/write) of the doc
+#[napi]
 pub struct NamespaceAndCapability {
     /// The namespace id of the doc
     pub namespace: String,
@@ -118,6 +136,7 @@ pub struct NamespaceAndCapability {
 }
 
 /// A representation of a mutable, synchronizable key-value store.
+#[derive(Clone)]
 pub struct Doc {
     pub(crate) inner: ClientDoc<FlumeConnection<ProviderResponse, ProviderRequest>>,
     pub(crate) rt: tokio::runtime::Handle,
@@ -139,7 +158,7 @@ impl Doc {
     /// Set the content of a key to a byte array.
     pub fn set_bytes(
         &self,
-        author_id: Arc<AuthorId>,
+        author_id: &AuthorId,
         key: Vec<u8>,
         value: Vec<u8>,
     ) -> Result<Arc<Hash>, IrohError> {
@@ -375,7 +394,7 @@ impl Doc {
 }
 
 /// Download policy to decide which content blobs shall be downloaded.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DownloadPolicy {
     /// Do not download any key unless it matches one of the filters.
     NothingExcept(Vec<Arc<FilterKind>>),
@@ -440,7 +459,7 @@ impl From<DownloadPolicy> for iroh::sync::store::DownloadPolicy {
 }
 
 /// Filter strategy used in download policies.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FilterKind(pub(crate) iroh::sync::store::FilterKind);
 
 impl FilterKind {
@@ -471,7 +490,7 @@ impl From<iroh::sync::store::FilterKind> for FilterKind {
 }
 
 /// The state for an open replica.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct OpenState {
     /// Whether to accept sync requests for this replica.
     pub sync: bool,
@@ -492,6 +511,7 @@ impl From<iroh::sync::actor::OpenState> for OpenState {
 }
 
 /// A peer and it's addressing information.
+#[napi]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NodeAddr {
     node_id: Arc<PublicKey>,
@@ -499,36 +519,41 @@ pub struct NodeAddr {
     addresses: Vec<String>,
 }
 
+#[napi]
 impl NodeAddr {
     /// Create a new [`NodeAddr`] with empty [`AddrInfo`].
-    pub fn new(node_id: Arc<PublicKey>, derp_url: Option<String>, addresses: Vec<String>) -> Self {
+    #[napi(constructor)]
+    pub fn new(node_id: &PublicKey, derp_url: Option<String>, addresses: Vec<String>) -> Self {
         Self {
-            node_id,
+            node_id: Arc::new(node_id.clone()),
             derp_url,
             addresses,
         }
     }
 
     /// Get the direct addresses of this peer.
+    #[napi(getter)]
     pub fn direct_addresses(&self) -> Vec<String> {
         self.addresses.clone()
     }
 
     /// Get the derp region of this peer.
+    #[napi(getter)]
     pub fn derp_url(&self) -> Option<String> {
         self.derp_url.clone()
     }
 
     /// Returns true if both NodeAddr's have the same values
-    pub fn equal(&self, other: Arc<NodeAddr>) -> bool {
-        *self == *other
+    #[napi]
+    pub fn equal(&self, other: &NodeAddr) -> bool {
+        self == other
     }
 }
 
 impl TryFrom<NodeAddr> for iroh::net::magic_endpoint::NodeAddr {
     type Error = IrohError;
     fn try_from(value: NodeAddr) -> Result<Self, Self::Error> {
-        let mut node_addr = iroh::net::magic_endpoint::NodeAddr::new(value.node_id.0);
+        let mut node_addr = iroh::net::magic_endpoint::NodeAddr::new((&*value.node_id).into());
         let addresses = value
             .direct_addresses()
             .into_iter()
@@ -538,7 +563,7 @@ impl TryFrom<NodeAddr> for iroh::net::magic_endpoint::NodeAddr {
         if let Some(derp_url) = value.derp_url() {
             let url = url::Url::parse(&derp_url).map_err(IrohError::url)?;
 
-            node_addr = node_addr.with_derp_url(url.into());
+            node_addr = node_addr.with_derp_url(url);
         }
         node_addr = node_addr.with_direct_addresses(addresses);
         Ok(node_addr)
@@ -561,6 +586,7 @@ impl From<iroh::net::magic_endpoint::NodeAddr> for NodeAddr {
 }
 
 /// Intended capability for document share tickets
+#[napi]
 #[derive(Debug)]
 pub enum ShareMode {
     /// Read-only access
@@ -583,7 +609,8 @@ impl From<ShareMode> for iroh::rpc_protocol::ShareMode {
 /// An entry is identified by a key, its [`AuthorId`], and the [`Doc`]'s
 /// namespace id. Its value is the 32-byte BLAKE3 [`hash`]
 /// of the entry's content data, the size of this content data, and a timestamp.
-#[derive(Debug, Clone)]
+#[napi]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Entry(pub(crate) iroh::client::Entry);
 
 impl From<iroh::client::Entry> for Entry {
@@ -592,13 +619,16 @@ impl From<iroh::client::Entry> for Entry {
     }
 }
 
+#[napi]
 impl Entry {
     /// Get the [`AuthorId`] of this entry.
+    #[napi]
     pub fn author(&self) -> Arc<AuthorId> {
         Arc::new(AuthorId(self.0.id().author()))
     }
 
     /// Get the content_hash of this entry.
+    #[napi]
     pub fn content_hash(&self) -> Arc<Hash> {
         Arc::new(Hash(self.0.content_hash()))
     }
@@ -609,11 +639,13 @@ impl Entry {
     }
 
     /// Get the key of this entry.
+    #[napi]
     pub fn key(&self) -> Vec<u8> {
         self.0.id().key().to_vec()
     }
 
     /// Get the namespace id of this entry.
+    #[napi]
     pub fn namespace(&self) -> String {
         self.0.id().namespace().to_string()
     }
@@ -633,17 +665,72 @@ impl Entry {
     }
 }
 
-/// Fields by which the query can be sorted
-pub use iroh::sync::store::SortBy;
+///d Fields by which the query can be sorted
+#[napi]
+#[cfg_attr(not(feature = "napi"), derive(Clone))]
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub enum SortBy {
+    /// Sort by key, then author.
+    KeyAuthor,
+    /// Sort by author, then key.
+    #[default]
+    AuthorKey,
+}
+
+impl From<iroh::sync::store::SortBy> for SortBy {
+    fn from(value: iroh::sync::store::SortBy) -> Self {
+        match value {
+            iroh::sync::store::SortBy::AuthorKey => SortBy::AuthorKey,
+            iroh::sync::store::SortBy::KeyAuthor => SortBy::KeyAuthor,
+        }
+    }
+}
+
+impl From<SortBy> for iroh::sync::store::SortBy {
+    fn from(value: SortBy) -> Self {
+        match value {
+            SortBy::AuthorKey => iroh::sync::store::SortBy::AuthorKey,
+            SortBy::KeyAuthor => iroh::sync::store::SortBy::KeyAuthor,
+        }
+    }
+}
 
 /// Sort direction
-pub use iroh::sync::store::SortDirection;
+#[napi]
+#[cfg_attr(not(feature = "napi"), derive(Clone))]
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub enum SortDirection {
+    /// Sort ascending
+    #[default]
+    Asc,
+    /// Sort descending
+    Desc,
+}
+
+impl From<iroh::sync::store::SortDirection> for SortDirection {
+    fn from(value: iroh::sync::store::SortDirection) -> Self {
+        match value {
+            iroh::sync::store::SortDirection::Asc => SortDirection::Asc,
+            iroh::sync::store::SortDirection::Desc => SortDirection::Desc,
+        }
+    }
+}
+
+impl From<SortDirection> for iroh::sync::store::SortDirection {
+    fn from(value: SortDirection) -> Self {
+        match value {
+            SortDirection::Asc => iroh::sync::store::SortDirection::Asc,
+            SortDirection::Desc => iroh::sync::store::SortDirection::Desc,
+        }
+    }
+}
 
 /// Build a Query to search for an entry or entries in a doc.
 ///
 /// Use this with `QueryOptions` to determine sorting, grouping, and pagination.
+#[napi]
 #[derive(Clone, Debug)]
-pub struct Query(iroh::sync::store::Query);
+pub struct Query(pub(crate) iroh::sync::store::Query);
 
 /// Options for sorting and pagination for using [`Query`]s.
 #[derive(Clone, Debug, Default)]
@@ -664,6 +751,7 @@ pub struct QueryOptions {
     pub limit: u64,
 }
 
+#[napi]
 impl Query {
     /// Query all records.
     ///
@@ -682,7 +770,7 @@ impl Query {
             if opts.limit != 0 {
                 builder = builder.limit(opts.limit);
             }
-            builder = builder.sort_by(opts.sort_by, opts.direction);
+            builder = builder.sort_by(opts.sort_by.into(), opts.direction.into());
         }
         Query(builder.build())
     }
@@ -704,7 +792,7 @@ impl Query {
             if opts.limit != 0 {
                 builder = builder.limit(opts.limit);
             }
-            builder = builder.sort_direction(opts.direction);
+            builder = builder.sort_direction(opts.direction.into());
         }
         Query(builder.build())
     }
@@ -716,7 +804,7 @@ impl Query {
     ///     direction: SortDirection::Asc
     ///     offset: None
     ///     limit: None
-    pub fn author(author: Arc<AuthorId>, opts: Option<QueryOptions>) -> Self {
+    pub fn author(author: &AuthorId, opts: Option<QueryOptions>) -> Self {
         let mut builder = iroh::sync::store::Query::author(author.0);
 
         if let Some(opts) = opts {
@@ -726,7 +814,7 @@ impl Query {
             if opts.limit != 0 {
                 builder = builder.limit(opts.limit);
             }
-            builder = builder.sort_by(opts.sort_by, opts.direction);
+            builder = builder.sort_by(opts.sort_by.into(), opts.direction.into());
         }
         Query(builder.build())
     }
@@ -748,19 +836,19 @@ impl Query {
             if opts.limit != 0 {
                 builder = builder.limit(opts.limit);
             }
-            builder = builder.sort_by(opts.sort_by, opts.direction);
+            builder = builder.sort_by(opts.sort_by.into(), opts.direction.into());
         }
         Query(builder.build())
     }
 
     /// Create a Query for a single key and author.
-    pub fn author_key_exact(author: Arc<AuthorId>, key: Vec<u8>) -> Self {
+    pub fn author_key_exact(author: &AuthorId, key: Vec<u8>) -> Self {
         let builder = iroh::sync::store::Query::author(author.0).key_exact(key);
         Query(builder.build())
     }
 
     /// Create a query for all entries with a given key prefix.
-    ///  
+    ///
     /// If `opts` is `None`, the default values will be used:
     ///     sort_by: SortBy::AuthorKey
     ///     direction: SortDirection::Asc
@@ -776,19 +864,19 @@ impl Query {
             if opts.limit != 0 {
                 builder = builder.limit(opts.limit);
             }
-            builder = builder.sort_by(opts.sort_by, opts.direction);
+            builder = builder.sort_by(opts.sort_by.into(), opts.direction.into());
         }
         Query(builder.build())
     }
 
     /// Create a query for all entries of a single author with a given key prefix.
-    ///  
+    ///
     /// If `opts` is `None`, the default values will be used:
     ///     direction: SortDirection::Asc
     ///     offset: None
     ///     limit: None
     pub fn author_key_prefix(
-        author: Arc<AuthorId>,
+        author: &AuthorId,
         prefix: Vec<u8>,
         opts: Option<QueryOptions>,
     ) -> Self {
@@ -801,17 +889,19 @@ impl Query {
             if opts.limit != 0 {
                 builder = builder.limit(opts.limit);
             }
-            builder = builder.sort_by(opts.sort_by, opts.direction);
+            builder = builder.sort_by(opts.sort_by.into(), opts.direction.into());
         }
         Query(builder.build())
     }
 
     /// Get the limit for this query (max. number of entries to emit).
+    #[napi]
     pub fn limit(&self) -> Option<u64> {
         self.0.limit()
     }
 
     /// Get the offset for this query (number of entries to skip at the beginning).
+    #[napi]
     pub fn offset(&self) -> u64 {
         self.0.offset()
     }
@@ -825,7 +915,7 @@ pub trait SubscribeCallback: Send + Sync + 'static {
 }
 
 /// Events informing about actions of the live sync progress
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 #[allow(clippy::large_enum_variant)]
 pub enum LiveEvent {
     /// A local insertion.
@@ -974,7 +1064,7 @@ impl From<iroh::client::LiveEvent> for LiveEvent {
 }
 
 /// Outcome of a sync operation
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SyncEvent {
     /// Peer we synced with
     pub peer: Arc<PublicKey>,
@@ -1007,7 +1097,7 @@ impl From<iroh::sync_engine::SyncEvent> for SyncEvent {
 pub use iroh::sync_engine::SyncReason;
 
 /// Why we performed a sync exchange
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Origin {
     /// public, use a unit variant
     Connect { reason: SyncReason },
@@ -1025,7 +1115,7 @@ impl From<iroh::sync_engine::Origin> for Origin {
 }
 
 /// Outcome of an InsertRemove event.
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct InsertRemoteEvent {
     /// The peer that sent us the entry.
     pub from: Arc<PublicKey>,
@@ -1036,7 +1126,7 @@ pub struct InsertRemoteEvent {
 }
 
 /// Whether the content status is available on a node.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ContentStatus {
     /// The content is completely available.
     Complete,
@@ -1064,7 +1154,7 @@ pub trait DocImportFileCallback: Send + Sync + 'static {
 }
 
 /// The type of `DocImportProgress` event
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DocImportProgressType {
     /// An item was found with name `name`, from now on referred to via `id`
     Found,
@@ -1081,7 +1171,7 @@ pub enum DocImportProgressType {
 }
 
 /// A DocImportProgress event indicating a file was found with name `name`, from now on referred to via `id`
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DocImportProgressFound {
     /// A new unique id for this entry.
     pub id: u64,
@@ -1092,7 +1182,7 @@ pub struct DocImportProgressFound {
 }
 
 /// A DocImportProgress event indicating we've made progress ingesting item `id`.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DocImportProgressProgress {
     /// The unique id of the entry.
     pub id: u64,
@@ -1101,7 +1191,7 @@ pub struct DocImportProgressProgress {
 }
 
 /// A DocImportProgress event indicating we are finished adding `id` to the data store and the hash is `hash`.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DocImportProgressIngestDone {
     /// The unique id of the entry.
     pub id: u64,
@@ -1110,21 +1200,21 @@ pub struct DocImportProgressIngestDone {
 }
 
 /// A DocImportProgress event indicating we are done setting the entry to the doc
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DocImportProgressAllDone {
     /// The key of the entry
     pub key: Vec<u8>,
 }
 
 /// A DocImportProgress event indicating we got an error and need to abort
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DocImportProgressAbort {
     /// The error message
     pub error: String,
 }
 
 /// Progress updates for the doc import file operation.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DocImportProgress {
     /// An item was found with name `name`, from now on referred to via `id`
     Found(DocImportProgressFound),
@@ -1228,7 +1318,7 @@ pub trait DocExportFileCallback: Send + Sync + 'static {
 }
 
 /// The type of `DocExportProgress` event
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DocExportProgressType {
     /// An item was found with name `name`, from now on referred to via `id`
     Found,
@@ -1243,7 +1333,7 @@ pub enum DocExportProgressType {
 }
 
 /// A DocExportProgress event indicating a file was found with name `name`, from now on referred to via `id`
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DocExportProgressFound {
     /// A new unique id for this entry.
     pub id: u64,
@@ -1258,7 +1348,7 @@ pub struct DocExportProgressFound {
 }
 
 /// A DocExportProgress event indicating we've made progress exporting item `id`.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DocExportProgressProgress {
     /// The unique id of the entry.
     pub id: u64,
@@ -1267,14 +1357,14 @@ pub struct DocExportProgressProgress {
 }
 
 /// A DocExportProgress event indicating we got an error and need to abort
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DocExportProgressAbort {
     /// The error message
     pub error: String,
 }
 
 /// Progress updates for the doc import file operation.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DocExportProgress {
     /// An item was found with name `name`, from now on referred to via `id`
     Found(DocExportProgressFound),
@@ -1393,13 +1483,10 @@ mod tests {
         }
         impl SubscribeCallback for Callback {
             fn event(&self, event: Arc<LiveEvent>) -> Result<(), IrohError> {
-                match *event {
-                    LiveEvent::ContentReady { ref hash } => {
-                        self.found_s
-                            .send(Ok(hash.clone()))
-                            .map_err(IrohError::doc)?;
-                    }
-                    _ => {}
+                if let LiveEvent::ContentReady { ref hash } = *event {
+                    self.found_s
+                        .send(Ok(hash.clone()))
+                        .map_err(IrohError::doc)?;
                 }
                 Ok(())
             }
@@ -1413,7 +1500,7 @@ mod tests {
         // create author on node_1
         let author = node_1.author_create().unwrap();
         doc_1
-            .set_bytes(author, b"hello".to_vec(), b"world".to_vec())
+            .set_bytes(&author, b"hello".to_vec(), b"world".to_vec())
             .unwrap();
         let hash = found_r.recv().unwrap().unwrap();
         let val = node_1.blobs_read_to_bytes(hash.into()).unwrap();
@@ -1429,8 +1516,8 @@ mod tests {
         //
         // create socketaddrs
         let port = 3000;
-        let ipv4 = String::from(format!("127.0.0.1:{port}"));
-        let ipv6 = String::from(format!("::1:{port}"));
+        let ipv4 = format!("127.0.0.1:{port}");
+        let ipv6 = format!("::1:{port}");
         //
         // derp region
         let derp_url = String::from("https://derp.url");
@@ -1438,7 +1525,7 @@ mod tests {
         // create a NodeAddr
         let addrs = vec![ipv4, ipv6];
         let expect_addrs = addrs.clone();
-        let node_addr = NodeAddr::new(node_id.into(), Some(derp_url.clone()), addrs);
+        let node_addr = NodeAddr::new(&node_id, Some(derp_url.clone()), addrs);
         //
         // test we have returned the expected addresses
         let got_addrs = node_addr.direct_addresses();
@@ -1463,44 +1550,48 @@ mod tests {
         // create another id, same string
         let author_0 = AuthorId::from_string(author_str.into()).unwrap();
         //
-        // ensure equal
-        let author_0 = Arc::new(author_0);
-        assert!(author.equal(author_0.clone()));
-        assert!(author_0.equal(author.into()));
+        assert!(author.equal(&author_0));
+        assert!(author_0.equal(&author));
     }
 
     #[test]
     fn test_query() {
-        let mut opts = QueryOptions::default();
-        opts.offset = 10;
-        opts.limit = 10;
+        let opts = QueryOptions {
+            offset: 10,
+            limit: 10,
+            ..QueryOptions::default()
+        };
         // all
         let all = Query::all(Some(opts));
         assert_eq!(10, all.offset());
         assert_eq!(Some(10), all.limit());
 
-        let mut opts = QueryOptions::default();
-        opts.direction = SortDirection::Desc;
+        let opts = QueryOptions {
+            direction: SortDirection::Desc,
+            ..QueryOptions::default()
+        };
         let single_latest_per_key = Query::single_latest_per_key(Some(opts));
         assert_eq!(0, single_latest_per_key.offset());
         assert_eq!(None, single_latest_per_key.limit());
 
-        let mut opts = QueryOptions::default();
-        opts.offset = 100;
+        let opts = QueryOptions {
+            offset: 100,
+            ..QueryOptions::default()
+        };
         let author = Query::author(
-            Arc::new(
-                AuthorId::from_string(
-                    "mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q".to_string(),
-                )
-                .unwrap(),
-            ),
+            &AuthorId::from_string(
+                "mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q".to_string(),
+            )
+            .unwrap(),
             Some(opts),
         );
         assert_eq!(100, author.offset());
         assert_eq!(None, author.limit());
 
-        let mut opts = QueryOptions::default();
-        opts.limit = 100;
+        let opts = QueryOptions {
+            limit: 100,
+            ..QueryOptions::default()
+        };
         let key_exact = Query::key_exact(b"key".to_vec(), Some(opts));
         assert_eq!(0, key_exact.offset());
         assert_eq!(Some(100), key_exact.limit());
@@ -1527,15 +1618,13 @@ mod tests {
         // add entry
         let val = b"hello world!".to_vec();
         let key = b"foo".to_vec();
-        let hash = doc
-            .set_bytes(author.clone(), key.clone(), val.clone())
-            .unwrap();
+        let hash = doc.set_bytes(&author, key.clone(), val.clone()).unwrap();
 
         // get entry
-        let query = Query::author_key_exact(author, key.clone());
+        let query = Query::author_key_exact(&author, key.clone());
         let entry = doc.get_one(query.into()).unwrap().unwrap();
 
-        assert!(hash.equal(entry.content_hash()));
+        assert!(hash.equal(&entry.content_hash()));
 
         let got_val = entry.content_bytes(doc).unwrap();
         assert_eq!(val, got_val);
@@ -1575,7 +1664,7 @@ mod tests {
 
         // export file
         let entry = doc
-            .get_one(Query::author_key_exact(author, key).into())
+            .get_one(Query::author_key_exact(&author, key).into())
             .unwrap()
             .unwrap();
         let key = entry.key().to_vec();

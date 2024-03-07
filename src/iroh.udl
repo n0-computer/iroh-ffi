@@ -76,7 +76,7 @@ interface IrohNode {
   sequence<ConnectionInfo> connections();
   // Return connection information on the currently running node.
   [Throws=IrohError]
-  ConnectionInfo? connection_info(PublicKey node_id);
+  ConnectionInfo? connection_info([ByRef] PublicKey node_id);
   /// Get status information about a node
   [Throws=IrohError]
   NodeStatusResponse status();
@@ -89,7 +89,7 @@ interface IrohNode {
   sequence<Hash> blobs_list();
   /// Get the size information on a single blob.
   [Throws=IrohError]
-  u64 blobs_size(Hash hash);
+  u64 blobs_size([ByRef] Hash hash);
   /// Read all bytes of single blob.
   ///
   /// This allocates a buffer for the full blob. Use only if you know that the blob you're
@@ -140,7 +140,7 @@ interface IrohNode {
   /// Delete a blob.
   [Throws=IrohError]
   void blobs_delete_blob(Hash hash);
-  
+
   /// List all tags
   ///
   /// Note: this allocates for each `ListTagsResponse`, if you have many `Tags`s this may be a prohibitively large list.
@@ -176,7 +176,7 @@ interface Collection {
   constructor();
   /// Add the given blob to the collection
   [Throws=IrohError]
-  void push(string name, Hash hash);
+  void push(string name, [ByRef] Hash hash);
   /// Check if the collection is empty
   [Throws=IrohError]
   boolean is_empty();
@@ -197,7 +197,7 @@ interface Collection {
 /// A response to a list collections request
 dictionary ListTagsResponse {
   /// The tag
-  bytes name; 
+  bytes name;
   /// The format of the associated blob
   BlobFormat format;
   /// The hash of the associated blob
@@ -230,10 +230,10 @@ interface Doc {
   string id();
   /// Close the document.
   [Throws=IrohError]
-  void close(); 
+  void close();
   /// Set the content of a key to a byte array.
   [Throws=IrohError]
-  Hash set_bytes(AuthorId author, bytes key, bytes value);
+  Hash set_bytes([ByRef] AuthorId author, bytes key, bytes value);
   /// Set an entries on the doc via its key, hash, and size.
   [Throws=IrohError]
   void set_hash(AuthorId author, bytes key, Hash hash, u64 size);
@@ -467,7 +467,7 @@ interface Query {
   ///     offset: None
   ///     limit: None
   [Name=author]
-  constructor(AuthorId author, QueryOptions? opts);
+  constructor([ByRef] AuthorId author, QueryOptions? opts);
   /// Query all entries that have an exact key.
   ///
   /// If `opts` is `None`, the default values will be used:
@@ -479,9 +479,9 @@ interface Query {
   constructor(bytes key, QueryOptions? opts);
   /// Create a Query for a single key and author.
   [Name=author_key_exact]
-  constructor(AuthorId author, bytes key);
+  constructor([ByRef] AuthorId author, bytes key);
   /// Create a query for all entries with a given key prefix.
-  ///  
+  ///
   /// If `opts` is `None`, the default values will be used:
   ///     sort_by: SortBy::AuthorKey
   ///     direction: SortDirection::Asc
@@ -490,13 +490,13 @@ interface Query {
   [Name=key_prefix]
   constructor(bytes prefix, QueryOptions? opts);
   /// Create a query for all entries of a single author with a given key prefix.
-  ///  
+  ///
   /// If `opts` is `None`, the default values will be used:
   ///     direction: SortDirection::Asc
   ///     offset: None
   ///     limit: None
   [Name=author_key_prefix]
-  constructor(AuthorId author, bytes prefix, QueryOptions? opts);
+  constructor([ByRef] AuthorId author, bytes prefix, QueryOptions? opts);
   /// Get the offset for this query (number of entries to skip at the beginning).
   u64 offset();
   /// Get the limit for this query (max. number of entries to emit).
@@ -538,13 +538,13 @@ enum ShareMode {
 /// A peer and it's addressing information.
 interface NodeAddr {
   /// Create a new [`NodeAddr`] with empty [`AddrInfo`].
-  constructor(PublicKey node_id, string? derp_url, sequence<string> addresses);
+  constructor([ByRef] PublicKey node_id, string? derp_url, sequence<string> addresses);
   /// Get the direct addresses of this peer.
   sequence<string> direct_addresses();
   /// Get the derp url of this peer.
   string? derp_url();
   /// Returns true if both NodeAddr's have the same values
-  boolean equal(NodeAddr other);
+  boolean equal([ByRef] NodeAddr other);
 };
 
 interface NodeStatusResponse {
@@ -572,7 +572,7 @@ interface AuthorId {
   /// Return the AuthorId as a string
   string to_string();
   /// Returns true when both AuthorId's have the same value
-  boolean equal(AuthorId other);
+  boolean equal([ByRef] AuthorId other);
 };
 
 /// A single entry in a [`Doc`]
@@ -606,7 +606,7 @@ interface Hash {
   /// Write the hash to a string
   string to_string();
   /// Returns true if the Hash's have the same value
-  boolean equal(Hash other);
+  boolean equal([ByRef] Hash other);
   /// Bytes of the hash.
   bytes to_bytes();
   /// Create a Hash from its raw bytes representation.
@@ -632,7 +632,7 @@ dictionary OpenState {
 /// Stats counter
 dictionary CounterStats {
   /// The counter value
-  u64 value;
+  u32 value;
   /// The counter description
   string description;
 };
@@ -802,12 +802,12 @@ interface PublicKey {
   /// Represent a PublicKey as a string
   string to_string();
   /// Returns true when both PublicKeys have the same value
-  boolean equal(PublicKey other);
+  boolean equal([ByRef] PublicKey other);
   /// Represent a PublicKey as a byte slice
   bytes to_bytes();
   /// Get a PublicKey from a string
   [Name=from_string, Throws=IrohError]
-  constructor(string s); 
+  constructor(string s);
   /// Get a PublicKey from a byte slice
   [Name=from_bytes, Throws=IrohError]
   constructor(bytes bytes);
@@ -1152,7 +1152,7 @@ dictionary BlobListResponse {
   /// The size of the blob
   u64 size;
 };
-    
+
 /// A response to a list blobs request
 dictionary BlobListIncompleteResponse {
   /// The size we got

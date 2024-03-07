@@ -1,5 +1,5 @@
 [package]
-name = "iroh-ffi"
+name = "iroh"
 version = "0.12.0"
 edition = "2021"
 publish = false
@@ -24,15 +24,12 @@ crate-type = ["staticlib", "cdylib"]
 name = "uniffi-bindgen"
 path = "uniffi-bindgen.rs"
 
-[features]
-default = []
-
 [dependencies]
 anyhow = "1.0.69"
 blake3 = "1.3.3"
 bytes = "1"
 data-encoding = { version = "2.3.3" }
-iroh = { git="https://github.com/n0-computer/iroh.git", default-features = false, features = [ "flat-db", "metrics" ] }
+iroh = { git="https://github.com/n0-computer/iroh.git", default-features = false, features = [ "flat-db", "metrics" ], rev = "90a5160d57a3dc601388211303cbd5ce879d9a5d" }
 iroh-io = { version = "0.3.0" }
 libc = "0.2.141"
 multibase = { version = "0.9.1" }
@@ -45,19 +42,44 @@ tokio = "1.25.0"
 tokio-util = { version = "0.7", features = ["io-util", "io"] }
 uniffi = { version = "=0.25.0", features = ["cli"] }
 url = "2.4"
+flume = "0.11"
 futures = "0.3.28"
 quic-rpc = "0.6.1"
 tracing-subscriber = { version = "0.3.17" }
+napi = { version = "2", default-features = false, features = [
+  "napi6",
+  "napi9",
+  "serde-json",
+  "experimental",
+  "latin1",
+  "chrono_date",
+  "tokio",
+  "async",
+  "tokio_rt",
+  "tokio_fs",
+  "tokio_macros",
+  "deferred_trace",
+  "anyhow",
+], optional = true }
+napi-derive = { version = "2", default-features = false }
+serde = { version = "1.0.196", features = ["derive"] }
+serde_json = "1.0.113"
 
 [dev-dependencies]
 rand = "0.8"
 
 [build-dependencies]
 uniffi = { version = "=0.25.0", features = ["build"] }
+napi-build = { version = "2", optional = true }
+
+[features]
+default = ["napi"]
+no_napi = ["napi-derive/noop"]
+napi = ["napi-derive/full", "dep:napi-build", "dep:napi"]
 
 [patch.crates-io]
 # https://github.com/mullvad/system-configuration-rs/pull/42
 system-configuration = { git = "https://github.com/tmpfs/system-configuration-rs", branch = "ios-hack" }
 
 # needs to match the version being used uniffi-bindgen-go
-uniffi = { git = "https://github.com/NordSecurity/uniffi-rs", tag = "v0.25.0-1" } 
+uniffi = { git = "https://github.com/NordSecurity/uniffi-rs", tag = "v0.25.0-1" }

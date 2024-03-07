@@ -1,13 +1,26 @@
 use std::{str::FromStr, sync::Arc};
 
 use futures::TryStreamExt;
+use napi_derive::napi;
 
 use crate::{block_on, IrohError, IrohNode};
 
+/// Identifier for an [`Author`]
+#[napi]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AuthorId(pub(crate) iroh::sync::AuthorId);
+
+impl std::fmt::Display for AuthorId {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+#[napi]
 impl IrohNode {
     /// Create a new author.
     pub fn author_create(&self) -> Result<Arc<AuthorId>, IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let author = self
                 .sync_client
                 .authors
@@ -21,7 +34,7 @@ impl IrohNode {
 
     /// List all the AuthorIds that exist on this node.
     pub fn author_list(&self) -> Result<Vec<Arc<AuthorId>>, IrohError> {
-        block_on(&self.async_runtime, async {
+        block_on(&self.rt(), async {
             let authors = self
                 .sync_client
                 .authors
@@ -37,25 +50,18 @@ impl IrohNode {
     }
 }
 
-/// Identifier for an [`Author`]
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AuthorId(pub(crate) iroh::sync::AuthorId);
-
-impl std::fmt::Display for AuthorId {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
+#[napi]
 impl AuthorId {
-    /// Get an [`AuthorId`] from a String
+    /// Get an [`AuthorId`] from a String.
+    #[napi]
     pub fn from_string(str: String) -> Result<Self, IrohError> {
         let author = iroh::sync::AuthorId::from_str(&str).map_err(IrohError::author)?;
         Ok(AuthorId(author))
     }
 
     /// Returns true when both AuthorId's have the same value
-    pub fn equal(&self, other: Arc<AuthorId>) -> bool {
+    #[napi]
+    pub fn equal(&self, other: &AuthorId) -> bool {
         *self == *other
     }
 }

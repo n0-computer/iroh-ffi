@@ -1,5 +1,7 @@
 use std::str::FromStr;
-use std::sync::Arc;
+
+use napi_derive::napi;
+use serde::{Deserialize, Serialize};
 
 use crate::IrohError;
 
@@ -7,27 +9,41 @@ use crate::IrohError;
 ///
 /// The key itself is just a 32 byte array, but a key has associated crypto
 /// information that is cached for performance reasons.
-#[derive(Debug, Clone, Eq)]
-pub struct PublicKey(pub(crate) iroh::net::key::PublicKey);
+#[napi]
+#[derive(Debug, Clone, Eq, Serialize, Deserialize)]
+pub struct PublicKey {
+    pub(crate) key: [u8; 32],
+}
 
 impl From<iroh::net::key::PublicKey> for PublicKey {
     fn from(key: iroh::net::key::PublicKey) -> Self {
-        PublicKey(key)
+        PublicKey {
+            key: *key.as_bytes(),
+        }
+    }
+}
+impl From<&PublicKey> for iroh::net::key::PublicKey {
+    fn from(key: &PublicKey) -> Self {
+        iroh::net::key::PublicKey::from_bytes(&key.key).unwrap()
     }
 }
 
+#[napi]
 impl PublicKey {
     /// Returns true if the PublicKeys are equal
-    pub fn equal(&self, other: Arc<PublicKey>) -> bool {
+    #[napi]
+    pub fn equal(&self, other: &PublicKey) -> bool {
         *self == *other
     }
 
     /// Express the PublicKey as a byte array
+    #[napi]
     pub fn to_bytes(&self) -> Vec<u8> {
-        self.0.as_bytes().to_vec()
+        self.key.to_vec()
     }
 
     /// Make a PublicKey from base32 string
+    #[napi]
     pub fn from_string(s: String) -> Result<Self, IrohError> {
         match iroh::net::key::PublicKey::from_str(&s) {
             Ok(key) => Ok(key.into()),
@@ -36,6 +52,7 @@ impl PublicKey {
     }
 
     /// Make a PublicKey from byte array
+    #[napi]
     pub fn from_bytes(bytes: Vec<u8>) -> Result<Self, IrohError> {
         if bytes.len() != 32 {
             return Err(IrohError::PublicKey {
@@ -51,26 +68,28 @@ impl PublicKey {
 
     /// Convert to a base32 string limited to the first 10 bytes for a friendly string
     /// representation of the key.
+    #[napi]
     pub fn fmt_short(&self) -> String {
-        self.0.fmt_short()
+        iroh::net::key::PublicKey::from(self).fmt_short()
     }
 }
 
 impl PartialEq for PublicKey {
     fn eq(&self, other: &PublicKey) -> bool {
-        self.0 == other.0
+        self.key == other.key
     }
 }
 
 impl std::fmt::Display for PublicKey {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.0)
+        iroh::net::key::PublicKey::from(self).fmt(f)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
     #[test]
     fn test_public_key() {
         let key_str = String::from("ki6htfv2252cj2lhq3hxu4qfcfjtpjnukzonevigudzjpmmruxva");
@@ -86,7 +105,7 @@ mod tests {
         assert_eq!(fmt_str, key.fmt_short());
         //
         // create key from bytes
-        let key_0 = Arc::new(PublicKey::from_bytes(bytes.to_vec()).unwrap());
+        let key_0 = PublicKey::from_bytes(bytes.to_vec()).unwrap();
         //
         // test methods are as expected
         assert_eq!(key_str, key_0.to_string());
@@ -94,7 +113,7 @@ mod tests {
         assert_eq!(fmt_str, key_0.fmt_short());
         //
         // test that the eq function works
-        assert!(key.equal(key_0.clone()));
-        assert!(key_0.equal(key.into()));
+        assert!(key.equal(&key_0));
+        assert!(key_0.equal(&key));
     }
 }

@@ -14,7 +14,6 @@ def test_node_addr():
     # create socketaddrs
     ipv4 = "127.0.0.1:3000"
     ipv6 = "::1:3000"
-    port = 3000
     #
     # derp url 
     derp_url = "https://example.com"

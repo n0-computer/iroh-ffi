@@ -6,6 +6,9 @@ mod key;
 mod node;
 mod tag;
 
+#[cfg(feature = "napi")]
+mod js;
+
 pub use self::author::*;
 pub use self::blob::*;
 pub use self::doc::*;
@@ -14,12 +17,17 @@ pub use self::key::*;
 pub use self::node::*;
 pub use self::tag::*;
 
+#[cfg(feature = "napi")]
+pub use self::js::*;
+
 use futures::Future;
 use iroh::metrics::try_init_metrics_collection;
 
+use napi_derive::napi;
 use tracing_subscriber::filter::LevelFilter;
 
 /// The logging level. See the rust (log crate)[https://docs.rs/log] for more information.
+#[napi(string_enum)]
 #[derive(Debug)]
 pub enum LogLevel {
     Trace,
@@ -44,6 +52,7 @@ impl From<LogLevel> for LevelFilter {
 }
 
 /// Set the logging level.
+#[napi]
 pub fn set_log_level(level: LogLevel) {
     use tracing_subscriber::{fmt, prelude::*, reload};
     let filter: LevelFilter = level.into();
@@ -57,6 +66,7 @@ pub fn set_log_level(level: LogLevel) {
 }
 
 /// Initialize the global metrics collection.
+#[napi]
 pub fn start_metrics_collection() -> Result<(), IrohError> {
     try_init_metrics_collection().map_err(IrohError::runtime)
 }

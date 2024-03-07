@@ -450,7 +450,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_authorid_equal(uniffiStatus)
 		})
-		if checksum != 33867 {
+		if checksum != 53671 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_authorid_equal: UniFFI API checksum mismatch")
 		}
@@ -513,7 +513,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_collection_push(uniffiStatus)
 		})
-		if checksum != 37931 {
+		if checksum != 50200 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_collection_push: UniFFI API checksum mismatch")
 		}
@@ -684,7 +684,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_doc_set_bytes(uniffiStatus)
 		})
-		if checksum != 15024 {
+		if checksum != 46067 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_doc_set_bytes: UniFFI API checksum mismatch")
 		}
@@ -981,7 +981,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_hash_equal(uniffiStatus)
 		})
-		if checksum != 65301 {
+		if checksum != 52326 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_hash_equal: UniFFI API checksum mismatch")
 		}
@@ -1125,7 +1125,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_irohnode_blobs_size(uniffiStatus)
 		})
-		if checksum != 52941 {
+		if checksum != 9420 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_irohnode_blobs_size: UniFFI API checksum mismatch")
 		}
@@ -1143,7 +1143,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_irohnode_connection_info(uniffiStatus)
 		})
-		if checksum != 39895 {
+		if checksum != 31037 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_irohnode_connection_info: UniFFI API checksum mismatch")
 		}
@@ -1332,7 +1332,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_nodeaddr_equal(uniffiStatus)
 		})
-		if checksum != 45841 {
+		if checksum != 40672 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_nodeaddr_equal: UniFFI API checksum mismatch")
 		}
@@ -1368,7 +1368,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_method_publickey_equal(uniffiStatus)
 		})
-		if checksum != 10645 {
+		if checksum != 13922 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_method_publickey_equal: UniFFI API checksum mismatch")
 		}
@@ -1575,7 +1575,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_constructor_nodeaddr_new(uniffiStatus)
 		})
-		if checksum != 18892 {
+		if checksum != 30484 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_constructor_nodeaddr_new: UniFFI API checksum mismatch")
 		}
@@ -1611,7 +1611,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_constructor_query_author(uniffiStatus)
 		})
-		if checksum != 6757 {
+		if checksum != 5981 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_constructor_query_author: UniFFI API checksum mismatch")
 		}
@@ -1620,7 +1620,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_constructor_query_author_key_exact(uniffiStatus)
 		})
-		if checksum != 21618 {
+		if checksum != 34711 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_constructor_query_author_key_exact: UniFFI API checksum mismatch")
 		}
@@ -1629,7 +1629,7 @@ func uniffiCheckChecksums() {
 		checksum := rustCall(func(uniffiStatus *C.RustCallStatus) C.uint16_t {
 			return C.uniffi_iroh_checksum_constructor_query_author_key_prefix(uniffiStatus)
 		})
-		if checksum != 63753 {
+		if checksum != 20638 {
 			// If this happens try cleaning and rebuilding your project
 			panic("iroh: uniffi_iroh_checksum_constructor_query_author_key_prefix: UniFFI API checksum mismatch")
 		}
@@ -1743,6 +1743,30 @@ func uniffiCheckChecksums() {
 		}
 	}
 }
+
+type FfiConverterUint32 struct{}
+
+var FfiConverterUint32INSTANCE = FfiConverterUint32{}
+
+func (FfiConverterUint32) Lower(value uint32) C.uint32_t {
+	return C.uint32_t(value)
+}
+
+func (FfiConverterUint32) Write(writer io.Writer, value uint32) {
+	writeUint32(writer, value)
+}
+
+func (FfiConverterUint32) Lift(value C.uint32_t) uint32 {
+	return uint32(value)
+}
+
+func (FfiConverterUint32) Read(reader io.Reader) uint32 {
+	return readUint32(reader)
+}
+
+type FfiDestroyerUint32 struct{}
+
+func (FfiDestroyerUint32) Destroy(_ uint32) {}
 
 type FfiConverterUint64 struct{}
 
@@ -5136,12 +5160,12 @@ func (_ FfiDestroyerTypeConnectionTypeMixed) Destroy(value ConnectionTypeMixed) 
 }
 
 type CounterStats struct {
-	Value       uint64
+	Value       uint32
 	Description string
 }
 
 func (r *CounterStats) Destroy() {
-	FfiDestroyerUint64{}.Destroy(r.Value)
+	FfiDestroyerUint32{}.Destroy(r.Value)
 	FfiDestroyerString{}.Destroy(r.Description)
 }
 
@@ -5155,7 +5179,7 @@ func (c FfiConverterTypeCounterStats) Lift(rb RustBufferI) CounterStats {
 
 func (c FfiConverterTypeCounterStats) Read(reader io.Reader) CounterStats {
 	return CounterStats{
-		FfiConverterUint64INSTANCE.Read(reader),
+		FfiConverterUint32INSTANCE.Read(reader),
 		FfiConverterStringINSTANCE.Read(reader),
 	}
 }
@@ -5165,7 +5189,7 @@ func (c FfiConverterTypeCounterStats) Lower(value CounterStats) RustBuffer {
 }
 
 func (c FfiConverterTypeCounterStats) Write(writer io.Writer, value CounterStats) {
-	FfiConverterUint64INSTANCE.Write(writer, value.Value)
+	FfiConverterUint32INSTANCE.Write(writer, value.Value)
 	FfiConverterStringINSTANCE.Write(writer, value.Description)
 }
 
