@@ -54,6 +54,27 @@ export const enum SortDirection {
   /** Sort descending */
   Desc = 1
 }
+/**
+ * Stats counter
+ * Counter stats
+ */
+export interface CounterStats {
+  /** The counter value */
+  value: number
+  /** The counter description */
+  description: string
+}
+/** The type of the connection */
+export const enum ConnType {
+  /** Indicates you have a UDP connection. */
+  Direct = 'Direct',
+  /** Indicates you have a DERP relay connection. */
+  Relay = 'Relay',
+  /** Indicates you have an unverified UDP connection, and a relay connection for backup. */
+  Mixed = 'Mixed',
+  /** Indicates you have no proof of connection. */
+  None = 'None'
+}
 export interface QueryOptions {
   /**
    * Sort by author or key first.
@@ -68,53 +89,19 @@ export interface QueryOptions {
    */
   direction: SortDirection
   /** Offset */
-  offset: number
+  offset: bigint
   /**
    * Limit to limit the pagination.
    *
    * When the limit is 0, the limit does not exist.
    */
-  limit: number
-}
-/**
- * Stats counter
- * Counter stats
- */
-export interface CounterStats {
-  /** The counter value */
-  value: number
-  /** The counter description */
-  description: string
+  limit: bigint
 }
 export interface ConnectionType {
   typ: ConnType
   data0?: string
   data1?: string
 }
-/** The type of the connection */
-export const enum ConnType {
-  /** Indicates you have a UDP connection. */
-  Direct = 'Direct',
-  /** Indicates you have a DERP relay connection. */
-  Relay = 'Relay',
-  /** Indicates you have an unverified UDP connection, and a relay connection for backup. */
-  Mixed = 'Mixed',
-  /** Indicates you have no proof of connection. */
-  None = 'None'
-}
-/** The logging level. See the rust (log crate)[https://docs.rs/log] for more information. */
-export const enum LogLevel {
-  Trace = 'Trace',
-  Debug = 'Debug',
-  Info = 'Info',
-  Warn = 'Warn',
-  Error = 'Error',
-  Off = 'Off'
-}
-/** Set the logging level. */
-export function setLogLevel(level: LogLevel): void
-/** Initialize the global metrics collection. */
-export function startMetricsCollection(): void
 /**
  * Helper function that translates a key that was derived from the [`path_to_key`] function back
  * into a path.
@@ -130,6 +117,19 @@ export function keyToPath(key: Buffer, prefix?: string | undefined | null, root?
  * Appends the null byte to the end of the key.
  */
 export function pathToKey(path: string, prefix?: string | undefined | null, root?: string | undefined | null): Buffer
+/** The logging level. See the rust (log crate)[https://docs.rs/log] for more information. */
+export const enum LogLevel {
+  Trace = 'Trace',
+  Debug = 'Debug',
+  Info = 'Info',
+  Warn = 'Warn',
+  Error = 'Error',
+  Off = 'Off'
+}
+/** Set the logging level. */
+export function setLogLevel(level: LogLevel): void
+/** Initialize the global metrics collection. */
+export function startMetricsCollection(): void
 /** Identifier for an [`Author`] */
 export class AuthorId {
   /** Get an [`AuthorId`] from a String. */
@@ -143,24 +143,20 @@ export class AuthorId {
 export class Hash {
   /** Calculate the hash of the provide bytes. */
   constructor(buf: Array<number>)
-  /** Bytes of the hash. */
-  toBytes(): Array<number>
-  /** Create a `Hash` from its raw bytes representation. */
-  static fromBytes(bytes: Array<number>): this
   /** Make a Hash from hex string */
   static fromString(s: string): this
   /** Convert the hash to a hex string. */
   toHex(): string
-  /** Convert the hash to a string */
-  toString(): string
   /** Returns true if the Hash's have the same value */
   equal(other: Hash): boolean
-}
-export class JsAddProgress {
-  [Symbol.iterator](): Iterator<any, any, any>
-}
-export class JsDownloadProgress {
-  [Symbol.iterator](): Iterator<any, any, any>
+  /** Bytes of the hash. */
+  toBytes(): Buffer
+  /**
+   * Convert the hash to a string
+   * Create a `Hash` from its raw bytes representation.
+   */
+  static fromBytes(bytes: Buffer): this
+  toString(): string
 }
 /** A collection of blobs */
 export class Collection {
@@ -177,15 +173,7 @@ export class Collection {
   /** Get the blobs associated with this collection */
   blobs(): Array<JsLinkAndName>
   /** Returns the number of blobs in this collection */
-  len(): number
-}
-export type JsLinkAndName = LinkAndName
-/** `LinkAndName` includes a name and a hash for a blob in a collection */
-export class LinkAndName {
-  /** The name associated with this [`Hash`]. */
-  name: string
-  /** The [`Hash`] of the blob. */
-  link: string
+  len(): bigint
 }
 /** The namespace id and CapabilityKind (read/write) of the doc */
 export class NamespaceAndCapability {
@@ -193,64 +181,6 @@ export class NamespaceAndCapability {
   namespace: string
   /** The capability you have for the doc (read/write) */
   capability: CapabilityKind
-}
-export type JsDoc = Doc
-/** A representation of a mutable, synchronizable key-value store. */
-export class Doc {
-  constructor(node: IrohNode)
-  /** Get the document id of this doc. */
-  get id(): string
-  /** Close the document. */
-  close(): Promise<void>
-  /** Set the content of a key to a byte array. */
-  setBytes(authorId: AuthorId, key: Buffer, value: Buffer): Promise<Hash>
-  /** Set an entries on the doc via its key, hash, and size. */
-  setHash(authorId: AuthorId, key: Buffer, hash: Hash, size: bigint): Promise<void>
-  /** Add an entry from an absolute file path */
-  importFile(author: AuthorId, key: Buffer, path: string, inPlace: boolean): Promise<JsDocImportProgress>
-  /** Export an entry as a file to a given absolute path */
-  exportFile(entry: Entry, path: string): Promise<JsDocExportProgress>
-  /**
-   * Delete entries that match the given `author` and key `prefix`.
-   *
-   * This inserts an empty entry with the key set to `prefix`, effectively clearing all other
-   * entries whose key starts with or is equal to the given `prefix`.
-   *
-   * Returns the number of entries deleted.
-   */
-  del(authorId: AuthorId, prefix: Buffer): Promise<bigint>
-  /** Get an entry for a key and author. */
-  getExact(author: AuthorId, key: Buffer, includeEmpty: boolean): Promise<Entry | null>
-  /**
-   * Get entries.
-   *
-   * Note: this allocates for each `Entry`, if you have many `Entry`s this may be a prohibitively large list.
-   * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
-   */
-  getMany(query: Query): Promise<Array<Entry>>
-  /** Get the latest entry for a key and author. */
-  getOne(query: Query): Promise<Entry | null>
-  /** Share this document with peers over a ticket. */
-  share(mode: ShareMode): Promise<string>
-  /** Start to sync this document with this peer. */
-  startSync(peer: NodeAddr): Promise<void>
-  /** Stop the live sync for this document. */
-  leave(): Promise<void>
-  /** Subscribe to events for this document. */
-  subscribe(): Promise<DocSubscriber>
-  /** Get status info for this document */
-  status(): Promise<any>
-  /** Get the download policy for this document */
-  getDownloadPolicy(): Promise<any>
-}
-export class DocSubscriber {
-  [Symbol.iterator](): Iterator<any, void, any>
-}
-export class JsDocImportProgress {
-  [Symbol.iterator](): Iterator<any, any, any>
-}
-export class JsDocExportProgress {
-  [Symbol.iterator](): Iterator<any, any, any>
 }
 /** A peer and it's addressing information. */
 export class NodeAddr {
@@ -275,8 +205,6 @@ export class Entry {
   author(): AuthorId
   /** Get the content_hash of this entry. */
   contentHash(): Hash
-  /** Get the content_length of this entry. */
-  contentLen(): number | null
   /** Get the key of this entry. */
   key(): Array<number>
   /** Get the namespace id of this entry. */
@@ -288,6 +216,8 @@ export class Entry {
    * before calling [`Self::content_bytes`].
    */
   contentBytes(doc: Doc): Promise<Buffer>
+  /** Get the content_length of this entry. */
+  contentLen(): bigint
 }
 /**
  * Build a Query to search for an entry or entries in a doc.
@@ -295,6 +225,10 @@ export class Entry {
  * Use this with `QueryOptions` to determine sorting, grouping, and pagination.
  */
 export class Query {
+  /** Get the limit for this query (max. number of entries to emit). */
+  limit(): bigint | null
+  /** Get the offset for this query (number of entries to skip at the beginning). */
+  offset(): bigint
   /**
    * Query all records.
    *
@@ -304,7 +238,7 @@ export class Query {
    *     offset: None
    *     limit: None
    */
-  static all(opts?: QueryOptions | undefined | null): Query
+  static all(opts?: QueryOptions | undefined | null): this
   /**
    * Query only the latest entry for each key, omitting older entries if the entry was written
    * to by multiple authors.
@@ -314,7 +248,7 @@ export class Query {
    *     offset: None
    *     limit: None
    */
-  static singleLatestPerKey(opts?: QueryOptions | undefined | null): Query
+  static singleLatestPerKey(opts?: QueryOptions | undefined | null): this
   /**
    * Query all entries for by a single author.
    *
@@ -324,7 +258,7 @@ export class Query {
    *     offset: None
    *     limit: None
    */
-  static author(author: AuthorId, opts?: QueryOptions | undefined | null): Query
+  static author(author: AuthorId, opts?: QueryOptions | undefined | null): this
   /**
    * Query all entries that have an exact key.
    *
@@ -334,7 +268,7 @@ export class Query {
    *     offset: None
    *     limit: None
    */
-  static keyExact(key: Buffer, opts?: QueryOptions | undefined | null): Query
+  static keyExact(key: Buffer, opts?: QueryOptions | undefined | null): this
   /** Create a Query for a single key and author. */
   static authorKeyExact(author: AuthorId, key: Buffer): Query
   /**
@@ -346,7 +280,7 @@ export class Query {
    *     offset: None
    *     limit: None
    */
-  static keyPrefix(prefix: Buffer, opts?: QueryOptions | undefined | null): Query
+  static keyPrefix(prefix: Buffer, opts?: QueryOptions | undefined | null): this
   /**
    * Create a query for all entries of a single author with a given key prefix.
    *
@@ -355,11 +289,7 @@ export class Query {
    *     offset: None
    *     limit: None
    */
-  static authorKeyPrefix(author: AuthorId, prefix: Buffer, opts?: QueryOptions | undefined | null): Query
-  /** Get the limit for this query (max. number of entries to emit). */
-  limit(): number | null
-  /** Get the limit for this query (max. number of entries to emit). */
-  offset(): number | null
+  static authorKeyPrefix(author: AuthorId, prefix: Buffer, opts?: QueryOptions | undefined | null): this
 }
 /**
  * A public key.
@@ -389,31 +319,11 @@ export class DirectAddrInfo {
   /** Get the reported address */
   addr(): string
   /** Get the reported latency, if it exists, in milliseconds */
-  latency(): number | null
+  latency(): bigint | null
   /** Get the last control message received by this node */
   lastControl(): JsLatencyAndControlMsg | null
   /** Get how long ago the last payload message was received for this node in milliseconds. */
-  lastPayload(): number | null
-}
-export type JsLatencyAndControlMsg = LatencyAndControlMsg
-/** The latency and type of the control message */
-export class LatencyAndControlMsg {
-  /** The latency of the control message, in milliseconds. */
-  latency: number
-  /** The type of control message, represented as a string */
-  controlMsg: string
-  constructor(latency: number, controlMsg: string)
-}
-export type JsConnectionInfo = ConnectionInfo
-export class ConnectionInfo {
-  /** Derp url, if available. */
-  derpUrl?: string
-  /** The type of connection we have to the peer, either direct or over relay. */
-  connType: JsConnectionType
-  /** The latency of the `conn_type` (in milliseconds). */
-  latency?: number
-  /** Duration since the last time this peer was used (in milliseconds). */
-  lastUsed?: number
+  lastPayload(): bigint | null
 }
 /** The socket address and url of the mixed connection */
 export class ConnectionTypeMixed {
@@ -425,6 +335,8 @@ export class ConnectionTypeMixed {
 }
 /** An Iroh node. Allows you to sync, store, and transfer data. */
 export class IrohNode {
+  /** The string representation of the PublicKey of this node. */
+  nodeId(): string
   /** Create a new author. */
   authorCreate(): Promise<AuthorId>
   /** List all the AuthorIds that exist on this node. */
@@ -441,7 +353,7 @@ export class IrohNode {
    *
    * Method only exists in FFI
    */
-  blobsSize(hash: Hash): Promise<number>
+  blobsSize(hash: Hash): Promise<bigint>
   /**
    * Read all bytes of single blob.
    *
@@ -455,7 +367,7 @@ export class IrohNode {
    * This allocates a buffer for the full length `len`. Use only if you know that the blob you're
    * reading is small.
    */
-  blobsReadAtToBytes(hash: Hash, offset: number, len?: number | undefined | null): Promise<Array<number>>
+  blobsReadAtToBytes(hash: Hash, offset: bigint, len?: bigint | undefined | null): Promise<Buffer>
   /**
    * Import a blob from a filesystem path.
    *
@@ -523,8 +435,6 @@ export class IrohNode {
    * iroh data from a previous session.
    */
   static withPath(path: string): Promise<IrohNode>
-  /** The string representation of the PublicKey of this node. */
-  nodeId(): string
   /** Get statistics of the running node. */
   stats(): Promise<Record<string, CounterStats>>
   /** Return `ConnectionInfo`s for each connection we have to another iroh node. */
@@ -533,6 +443,8 @@ export class IrohNode {
   connectionInfo(nodeId: PublicKey): Promise<ConnectionInfo | null>
   /** Get status information about a node */
   status(): Promise<NodeStatusResponse>
+  tagsList(): Promise<Array<ListTagsResponse>>
+  tagsDelete(name: Buffer): Promise<void>
 }
 /** The response to a status request */
 export class NodeStatusResponse {
@@ -542,4 +454,106 @@ export class NodeStatusResponse {
   listenAddrs(): Array<string>
   /** The version of the node */
   version(): string
+}
+export class JsAddProgress {
+  [Symbol.iterator](): Iterator<any, any, any>
+}
+export class JsDownloadProgress {
+  [Symbol.iterator](): Iterator<any, any, any>
+}
+export type JsLinkAndName = LinkAndName
+/** `LinkAndName` includes a name and a hash for a blob in a collection */
+export class LinkAndName {
+  /** The name associated with this [`Hash`]. */
+  name: string
+  /** The [`Hash`] of the blob. */
+  link: string
+}
+export type JsDoc = Doc
+/** A representation of a mutable, synchronizable key-value store. */
+export class Doc {
+  constructor(node: IrohNode)
+  /** Get the document id of this doc. */
+  get id(): string
+  /** Close the document. */
+  close(): Promise<void>
+  /** Set the content of a key to a byte array. */
+  setBytes(authorId: AuthorId, key: Buffer, value: Buffer): Promise<Hash>
+  /** Set an entries on the doc via its key, hash, and size. */
+  setHash(authorId: AuthorId, key: Buffer, hash: Hash, size: bigint): Promise<void>
+  /** Add an entry from an absolute file path */
+  importFile(author: AuthorId, key: Buffer, path: string, inPlace: boolean): Promise<JsDocImportProgress>
+  /** Export an entry as a file to a given absolute path */
+  exportFile(entry: Entry, path: string): Promise<JsDocExportProgress>
+  /**
+   * Delete entries that match the given `author` and key `prefix`.
+   *
+   * This inserts an empty entry with the key set to `prefix`, effectively clearing all other
+   * entries whose key starts with or is equal to the given `prefix`.
+   *
+   * Returns the number of entries deleted.
+   */
+  del(authorId: AuthorId, prefix: Buffer): Promise<bigint>
+  /** Get an entry for a key and author. */
+  getExact(author: AuthorId, key: Buffer, includeEmpty: boolean): Promise<Entry | null>
+  /**
+   * Get entries.
+   *
+   * Note: this allocates for each `Entry`, if you have many `Entry`s this may be a prohibitively large list.
+   * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
+   */
+  getMany(query: Query): Promise<Array<Entry>>
+  /** Get the latest entry for a key and author. */
+  getOne(query: Query): Promise<Entry | null>
+  /** Share this document with peers over a ticket. */
+  share(mode: ShareMode): Promise<string>
+  /** Start to sync this document with this peer. */
+  startSync(peer: NodeAddr): Promise<void>
+  /** Stop the live sync for this document. */
+  leave(): Promise<void>
+  /** Subscribe to events for this document. */
+  subscribe(): Promise<DocSubscriber>
+  /** Get status info for this document */
+  status(): Promise<any>
+  /** Get the download policy for this document */
+  getDownloadPolicy(): Promise<any>
+}
+export class DocSubscriber {
+  [Symbol.iterator](): Iterator<any, void, any>
+}
+export class JsDocImportProgress {
+  [Symbol.iterator](): Iterator<any, any, any>
+}
+export class JsDocExportProgress {
+  [Symbol.iterator](): Iterator<any, any, any>
+}
+export type JsLatencyAndControlMsg = LatencyAndControlMsg
+/** The latency and type of the control message */
+export class LatencyAndControlMsg {
+  /** The latency of the control message, in milliseconds. */
+  latency: bigint
+  /** The type of control message, represented as a string */
+  controlMsg: string
+  constructor(latency: bigint, controlMsg: string)
+}
+export type JsConnectionInfo = ConnectionInfo
+export class ConnectionInfo {
+  /** Derp url, if available. */
+  derpUrl?: string
+  /** The type of connection we have to the peer, either direct or over relay. */
+  connType: JsConnectionType
+  /** The latency of the `conn_type` (in milliseconds). */
+  latency?: bigint
+  /** Duration since the last time this peer was used (in milliseconds). */
+  lastUsed?: bigint
+}
+export type JsListTagsResponse = ListTagsResponse
+/** A response to a list collections request */
+export class ListTagsResponse {
+  /** The tag */
+  name: Buffer
+  /** The format of the associated blob */
+  format: BlobFormat
+  /** The hash of the associated blob */
+  hash: string
 }

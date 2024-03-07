@@ -1,12 +1,12 @@
 const os = require('os');
 const fs = require('fs');
 const path = require('path');
-const { Hash, IrohNode, BlobFormat, AddProgressType } = require('../index');
+const { Hash, IrohNode, BlobFormat} = require('../index');
 
 test('hash', () => {
     const hashStr = "2kbxxbofqx5rau77wzafrj4yntjb4gn4olfpwxmv26js6dvhgjhq";
     const hexStr = "d2837b85c585fb1053ffb64058a7986cd21e19bc72cafb5d95d7932f0ea7324f";
-    const bytes = [0xd2, 0x83, 0x7b, 0x85, 0xc5, 0x85, 0xfb, 0x10, 0x53, 0xff, 0xb6, 0x40, 0x58, 0xa7, 0x98, 0x6c, 0xd2, 0x1e, 0x19, 0xbc, 0x72, 0xca, 0xfb, 0x5d, 0x95, 0xd7, 0x93, 0x2f, 0x0e, 0xa7, 0x32, 0x4f];
+    const bytes = Buffer.from([0xd2, 0x83, 0x7b, 0x85, 0xc5, 0x85, 0xfb, 0x10, 0x53, 0xff, 0xb6, 0x40, 0x58, 0xa7, 0x98, 0x6c, 0xd2, 0x1e, 0x19, 0xbc, 0x72, 0xca, 0xfb, 0x5d, 0x95, 0xd7, 0x93, 0x2f, 0x0e, 0xa7, 0x32, 0x4f]);
 
     const hash = Hash.fromString(hashStr);
 
@@ -38,7 +38,7 @@ test('blob add and get bytes', async () => {
 
     const hash = Hash.fromString(addOutcome.hash);
     const gotSize = await node.blobsSize(hash);
-    expect(gotSize).toBe(blobSize);
+    expect(gotSize).toBe(BigInt(blobSize));
 
     const gotBytes = await node.blobsReadToBytes(hash);
     expect(gotBytes.length).toBe(blobSize);
@@ -75,7 +75,7 @@ test('blob read and write path', async () => {
     expect(format).toBe(BlobFormat.Raw);
 
     const gotSize = await node.blobsSize(hash);
-    expect(gotSize).toBe(blobSize);
+    expect(gotSize).toBe(BigInt(blobSize));
 
     const gotBytes = await node.blobsReadToBytes(hash);
     expect(gotBytes.length).toBe(blobSize);
@@ -194,4 +194,3 @@ test('list and delete', async () => {
         }
     }
 });
-

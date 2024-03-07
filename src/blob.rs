@@ -406,7 +406,6 @@ impl Hash {
     }
 
     /// Create a `Hash` from its raw bytes representation.
-    #[napi]
     pub fn from_bytes(bytes: Vec<u8>) -> Result<Self, IrohError> {
         let bytes: [u8; 32] = bytes.try_into().map_err(|b: Vec<u8>| {
             IrohError::hash(format!("expected byte array of length 32, got {}", b.len()))

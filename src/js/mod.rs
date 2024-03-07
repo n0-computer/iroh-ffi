@@ -11,11 +11,18 @@ pub use self::node::*;
 pub use self::tag::*;
 
 use crate::{key_to_path, path_to_key, IrohError};
+use napi::bindgen_prelude::BigInt;
 use napi_derive::napi;
 
 impl From<IrohError> for napi::JsError {
     fn from(value: IrohError) -> Self {
         anyhow::Error::from(value).into()
+    }
+}
+
+impl From<IrohError> for napi::Error {
+    fn from(value: IrohError) -> Self {
+        napi::Error::new(napi::Status::GenericFailure, value.to_string())
     }
 }
 
@@ -46,4 +53,21 @@ pub fn path_to_key_js(
 ) -> Result<napi::bindgen_prelude::Buffer, IrohError> {
     let key = path_to_key(path, prefix, root)?;
     Ok(key.into())
+}
+
+fn u64_from_bigint(i: BigInt) -> napi::Result<u64> {
+    let (signed, num, lossless) = i.get_u64();
+    if signed {
+        return Err(napi::Error::new(
+            napi::Status::GenericFailure,
+            "conversion error: expected unsigned integer",
+        ));
+    }
+    if !lossless {
+        return Err(napi::Error::new(
+            napi::Status::GenericFailure,
+            "conversion error: overflow",
+        ));
+    }
+    Ok(num)
 }

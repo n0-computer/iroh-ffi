@@ -6,14 +6,15 @@ use crate::{
 };
 
 use futures::TryStreamExt;
+use napi::bindgen_prelude::BigInt;
 use napi_derive::napi;
 
 #[napi]
 impl DirectAddrInfo {
     /// Get the reported latency, if it exists, in milliseconds
     #[napi(js_name = "latency")]
-    pub fn latency_js(&self) -> Option<u32> {
-        self.0.latency.map(|l| l.as_millis() as _)
+    pub fn latency_js(&self) -> Option<u128> {
+        self.0.latency.map(|l| l.as_millis())
     }
 
     /// Get the last control message received by this node
@@ -22,15 +23,15 @@ impl DirectAddrInfo {
         self.0
             .last_control
             .map(|(latency, control_msg)| JsLatencyAndControlMsg {
-                latency: latency.as_millis() as _,
+                latency: latency.as_millis().into(),
                 control_msg: control_msg.to_string(),
             })
     }
 
     /// Get how long ago the last payload message was received for this node in milliseconds.
     #[napi(js_name = "lastPayload")]
-    pub fn last_payload_js(&self) -> Option<u32> {
-        self.0.last_payload.map(|d| d.as_millis() as _)
+    pub fn last_payload_js(&self) -> Option<u128> {
+        self.0.last_payload.map(|d| d.as_millis())
     }
 }
 
@@ -38,7 +39,7 @@ impl DirectAddrInfo {
 #[napi(constructor, js_name = "LatencyAndControlMsg")]
 pub struct JsLatencyAndControlMsg {
     /// The latency of the control message, in milliseconds.
-    pub latency: u32,
+    pub latency: BigInt,
     /// The type of control message, represented as a string
     pub control_msg: String,
 }
@@ -56,9 +57,9 @@ pub struct JsConnectionInfo {
     /// The type of connection we have to the peer, either direct or over relay.
     pub conn_type: JsConnectionType,
     /// The latency of the `conn_type` (in milliseconds).
-    pub latency: Option<u32>,
+    pub latency: Option<BigInt>,
     /// Duration since the last time this peer was used (in milliseconds).
-    pub last_used: Option<u32>,
+    pub last_used: Option<BigInt>,
 }
 
 #[napi]
@@ -85,8 +86,8 @@ impl From<iroh::net::magic_endpoint::ConnectionInfo> for JsConnectionInfo {
                 .map(|a| DirectAddrInfo(a.clone()))
                 .collect(),
             conn_type: value.conn_type.into(),
-            latency: value.latency.map(|l| l.as_millis() as _),
-            last_used: value.last_used.map(|l| l.as_millis() as _),
+            latency: value.latency.map(|l| l.as_millis().into()),
+            last_used: value.last_used.map(|l| l.as_millis().into()),
         }
     }
 }

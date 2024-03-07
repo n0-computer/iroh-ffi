@@ -47,6 +47,7 @@ futures = "0.3.28"
 quic-rpc = "0.6.1"
 tracing-subscriber = { version = "0.3.17" }
 napi = { version = "2", default-features = false, features = [
+  "napi6",
   "napi9",
   "serde-json",
   "experimental",
@@ -82,7 +83,3 @@ system-configuration = { git = "https://github.com/tmpfs/system-configuration-rs
 
 # needs to match the version being used uniffi-bindgen-go
 uniffi = { git = "https://github.com/NordSecurity/uniffi-rs", tag = "v0.25.0-1" }
-
-napi = { git = "https://github.com/napi-rs/napi-rs" }
-napi-build = { git = "https://github.com/napi-rs/napi-rs" }
-napi-derive = { git = "https://github.com/napi-rs/napi-rs" }

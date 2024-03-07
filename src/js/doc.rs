@@ -5,7 +5,7 @@ use iroh::{
     client::Doc as ClientDoc,
     rpc_protocol::{ProviderRequest, ProviderResponse},
 };
-use napi::bindgen_prelude::{Buffer, Generator};
+use napi::bindgen_prelude::{BigInt, Buffer, Generator};
 use napi_derive::napi;
 use quic_rpc::transport::flume::FlumeConnection;
 
@@ -13,6 +13,8 @@ use crate::{
     AuthorId, DownloadPolicy, Entry, Hash, IrohNode, NamespaceAndCapability, NodeAddr, OpenState,
     Query, QueryOptions, ShareMode, SortBy, SortDirection,
 };
+
+use super::u64_from_bigint;
 
 #[napi]
 impl IrohNode {
@@ -126,7 +128,7 @@ impl JsDoc {
         size: napi::bindgen_prelude::BigInt,
     ) -> Result<(), napi::Error> {
         let key: Vec<_> = key.into();
-        let (_, size, _) = size.get_u64();
+        let size = super::u64_from_bigint(size)?;
         self.inner.set_hash(author_id.0, key, hash.0, size).await?;
 
         Ok(())
@@ -191,15 +193,10 @@ impl JsDoc {
     ///
     /// Returns the number of entries deleted.
     #[napi]
-    pub async fn del(
-        &self,
-        author_id: &AuthorId,
-        prefix: Buffer,
-    ) -> Result<napi::bindgen_prelude::BigInt, napi::Error> {
+    pub async fn del(&self, author_id: &AuthorId, prefix: Buffer) -> Result<u64, napi::Error> {
         let prefix: Vec<_> = prefix.into();
         let num_del = self.inner.del(author_id.0, prefix).await?;
-
-        Ok(u64::try_from(num_del).map_err(anyhow::Error::from)?.into())
+        Ok(num_del as u64)
     }
 
     /// Get an entry for a key and author.
@@ -447,13 +444,13 @@ impl Entry {
 
     /// Get the content_length of this entry.
     #[napi(js_name = "contentLen")]
-    pub fn content_len_js(&self) -> Option<u32> {
-        u32::try_from(self.0.content_len()).ok()
+    pub fn content_len_js(&self) -> u64 {
+        self.0.content_len()
     }
 }
 
 #[napi(object, js_name = "QueryOptions")]
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct JsQueryOptions {
     /// Sort by author or key first.
     ///
@@ -464,21 +461,25 @@ pub struct JsQueryOptions {
     /// Default is [`SortDirection::Asc`]
     pub direction: SortDirection,
     /// Offset
-    pub offset: u32,
+    pub offset: BigInt,
     /// Limit to limit the pagination.
     ///
     /// When the limit is 0, the limit does not exist.
-    pub limit: u32,
+    pub limit: BigInt,
 }
 
-impl From<JsQueryOptions> for QueryOptions {
-    fn from(value: JsQueryOptions) -> Self {
-        Self {
+impl TryFrom<JsQueryOptions> for QueryOptions {
+    type Error = napi::Error;
+
+    fn try_from(value: JsQueryOptions) -> Result<Self, Self::Error> {
+        let offset = u64_from_bigint(value.offset)?;
+        let limit = u64_from_bigint(value.limit)?;
+        Ok(Self {
             sort_by: value.sort_by,
             direction: value.direction,
-            offset: value.offset as u64,
-            limit: value.limit as u64,
-        }
+            offset,
+            limit,
+        })
     }
 }
 
@@ -492,8 +493,9 @@ impl Query {
     ///     offset: None
     ///     limit: None
     #[napi(js_name = "all")]
-    pub fn all_js(opts: Option<JsQueryOptions>) -> Self {
-        Query::all(opts.map(|o| o.into()))
+    pub fn all_js(opts: Option<JsQueryOptions>) -> napi::Result<Self> {
+        let opts = opts.map(|o| o.try_into()).transpose()?;
+        Ok(Query::all(opts))
     }
 
     /// Query only the latest entry for each key, omitting older entries if the entry was written
@@ -504,8 +506,9 @@ impl Query {
     ///     offset: None
     ///     limit: None
     #[napi(js_name = "singleLatestPerKey")]
-    pub fn single_latest_per_key_js(opts: Option<JsQueryOptions>) -> Self {
-        Query::single_latest_per_key(opts.map(|o| o.into()))
+    pub fn single_latest_per_key_js(opts: Option<JsQueryOptions>) -> napi::Result<Self> {
+        let opts = opts.map(|o| o.try_into()).transpose()?;
+        Ok(Query::single_latest_per_key(opts))
     }
 
     /// Query all entries for by a single author.
@@ -516,8 +519,9 @@ impl Query {
     ///     offset: None
     ///     limit: None
     #[napi(js_name = "author")]
-    pub fn author_js(author: &AuthorId, opts: Option<JsQueryOptions>) -> Self {
-        Query::author(author, opts.map(|o| o.into()))
+    pub fn author_js(author: &AuthorId, opts: Option<JsQueryOptions>) -> napi::Result<Self> {
+        let opts = opts.map(|o| o.try_into()).transpose()?;
+        Ok(Query::author(author, opts))
     }
 
     /// Query all entries that have an exact key.
@@ -528,8 +532,9 @@ impl Query {
     ///     offset: None
     ///     limit: None
     #[napi(js_name = "keyExact")]
-    pub fn key_exact_js(key: Buffer, opts: Option<JsQueryOptions>) -> Self {
-        Query::key_exact(key.into(), opts.map(|o| o.into()))
+    pub fn key_exact_js(key: Buffer, opts: Option<JsQueryOptions>) -> napi::Result<Self> {
+        let opts = opts.map(|o| o.try_into()).transpose()?;
+        Ok(Query::key_exact(key.into(), opts))
     }
 
     /// Create a Query for a single key and author.
@@ -546,8 +551,9 @@ impl Query {
     ///     offset: None
     ///     limit: None
     #[napi(js_name = "keyPrefix")]
-    pub fn key_prefix_js(prefix: Buffer, opts: Option<JsQueryOptions>) -> Self {
-        Query::key_prefix(prefix.into(), opts.map(|o| o.into()))
+    pub fn key_prefix_js(prefix: Buffer, opts: Option<JsQueryOptions>) -> napi::Result<Self> {
+        let opts = opts.map(|o| o.try_into()).transpose()?;
+        Ok(Query::key_prefix(prefix.into(), opts))
     }
 
     /// Create a query for all entries of a single author with a given key prefix.
@@ -561,22 +567,8 @@ impl Query {
         author: &AuthorId,
         prefix: Buffer,
         opts: Option<JsQueryOptions>,
-    ) -> Self {
-        Query::author_key_prefix(author, prefix.into(), opts.map(|o| o.into()))
-    }
-
-    /// Get the limit for this query (max. number of entries to emit).
-    #[napi(js_name = "limit")]
-    pub fn limit_js(&self) -> Option<u32> {
-        match self.0.limit() {
-            None => None,
-            Some(i) => u32::try_from(i).ok(),
-        }
-    }
-
-    /// Get the limit for this query (max. number of entries to emit).
-    #[napi(js_name = "offset")]
-    pub fn offset_js(&self) -> Option<u32> {
-        u32::try_from(self.offset()).ok()
+    ) -> napi::Result<Self> {
+        let opts = opts.map(|o| o.try_into()).transpose()?;
+        Ok(Query::author_key_prefix(author, prefix.into(), opts))
     }
 }

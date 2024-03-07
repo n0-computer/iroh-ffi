@@ -23,35 +23,38 @@ test('author ID', () => {
 });
 
 test('query', () => {
-    const opts = { sortBy: SortBy.KeyAuthor, direction: SortDirection.Asc, offset: 10, limit: 10};
+    const big10 = BigInt(10);
+    const opts = { sortBy: SortBy.KeyAuthor, direction: SortDirection.Asc, offset: big10, limit: big10};
     const all = Query.all(opts);
-    expect(all.offset()).toBe(10);
-    expect(all.limit()).toBe(10);
+    expect(all.offset()).toEqual(big10);
+    expect(all.limit()).toEqual(big10);
 
     opts.direction = SortDirection.Desc;
-    opts.limit = 0;
-    opts.offset = 0;
+    const big0 = BigInt(0);
+    opts.limit = big0;
+    opts.offset = big0;
     const singleLatestPerKey = Query.singleLatestPerKey(opts);
-    expect(singleLatestPerKey.offset()).toBe(0);
+    expect(singleLatestPerKey.offset()).toEqual(big0);
     expect(singleLatestPerKey.limit()).toBe(null);
 
     opts.direction = SortDirection.Asc;
-    opts.offset = 100;
+    const big100 = BigInt(100);
+    opts.offset = big100;
     const author = Query.author(AuthorId.fromString("mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q"), opts);
-    expect(author.offset()).toBe(100);
+    expect(author.offset()).toEqual(big100);
     expect(author.limit()).toBe(null);
 
     opts.sortBy = SortBy.KeyAuthor;
     opts.direction = SortDirection.Desc;
-    opts.offset = 0;
-    opts.limit = 100;
+    opts.offset = big0;
+    opts.limit = big100;
     const keyExact = Query.keyExact(Buffer.from('key'), opts);
-    expect(keyExact.offset()).toBe(0);
-    expect(keyExact.limit()).toBe(100);
+    expect(keyExact.offset()).toEqual(big0);
+    expect(keyExact.limit()).toEqual(big100);
 
     const keyPrefix = Query.keyPrefix(Buffer.from('prefix'), opts);
-    expect(keyPrefix.offset()).toBe(0);
-    expect(keyPrefix.limit()).toBe(100);
+    expect(keyPrefix.offset()).toEqual(big0);
+    expect(keyPrefix.limit()).toEqual(big100);
 });
 
 test('document entry basics', async () => {
@@ -65,7 +68,7 @@ test('document entry basics', async () => {
     const query = Query.authorKeyExact(author, key);
     const entry = await doc.getOne(query);
     expect(hash.equal(entry.contentHash())).toBe(true);
-    expect(val.length).toBe(entry.contentLen());
+    expect(BigInt(val.length)).toEqual(entry.contentLen());
     const gotVal = await entry.contentBytes(doc);
     expect(gotVal).toEqual(val);
 });

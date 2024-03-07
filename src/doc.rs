@@ -895,11 +895,13 @@ impl Query {
     }
 
     /// Get the limit for this query (max. number of entries to emit).
+    #[napi]
     pub fn limit(&self) -> Option<u64> {
         self.0.limit()
     }
 
     /// Get the offset for this query (number of entries to skip at the beginning).
+    #[napi]
     pub fn offset(&self) -> u64 {
         self.0.offset()
     }

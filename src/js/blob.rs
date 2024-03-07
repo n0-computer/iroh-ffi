@@ -2,13 +2,15 @@ use std::{path::PathBuf, sync::Arc};
 
 use anyhow::Context;
 use futures::{StreamExt, TryStreamExt};
-use napi::bindgen_prelude::{Buffer, Generator};
+use napi::bindgen_prelude::{BigInt, Buffer, Generator};
 use napi_derive::napi;
 
 use crate::{
     BlobAddOutcome, BlobFormat, BlobListCollectionsResponse, BlobListIncompleteResponse,
     Collection, Hash, HashAndTag, IrohNode, NodeAddr,
 };
+
+use super::u64_from_bigint;
 
 #[napi]
 impl IrohNode {
@@ -31,10 +33,9 @@ impl IrohNode {
     ///
     /// Method only exists in FFI
     #[napi(js_name = "blobsSize")]
-    pub async fn blobs_size_js(&self, hash: &Hash) -> napi::Result<u32> {
+    pub async fn blobs_size_js(&self, hash: &Hash) -> napi::Result<u64> {
         let r = self.sync_client.blobs.read(hash.0).await?;
-        let size = u32::try_from(r.size()).context("cannot convert blob size to u32")?;
-        Ok(size)
+        Ok(r.size())
     }
 
     /// Read all bytes of single blob.
@@ -60,14 +61,20 @@ impl IrohNode {
     pub async fn blobs_read_at_to_bytes_js(
         &self,
         hash: &Hash,
-        offset: u32,
-        len: Option<u32>,
-    ) -> Result<Buffer, napi::Error> {
-        let len = len.map(|l| l as _);
+        offset: BigInt,
+        len: Option<BigInt>,
+    ) -> napi::Result<Buffer> {
+        let offset = u64_from_bigint(offset)?;
+        let len = len
+            .map(u64_from_bigint)
+            .transpose()?
+            .map(usize::try_from)
+            .transpose()
+            .context("conversion error: overflow")?;
         let res = self
             .sync_client
             .blobs
-            .read_at_to_bytes(hash.0, offset as _, len)
+            .read_at_to_bytes(hash.0, offset, len)
             .await
             .map(|b| b.to_vec())?;
         Ok(res.into())
@@ -299,6 +306,13 @@ impl Hash {
     }
 
     /// Convert the hash to a string
+    /// Create a `Hash` from its raw bytes representation.
+    #[napi(js_name = "fromBytes")]
+    pub fn from_bytes_js(bytes: Buffer) -> napi::Result<Self> {
+        let hash = Hash::from_bytes(bytes.into())?;
+        Ok(hash)
+    }
+
     #[napi(js_name = "toString")]
     pub fn to_string_js(&self) -> String {
         format!("{}", self.0)
@@ -324,8 +338,8 @@ impl Collection {
 
     /// Returns the number of blobs in this collection
     #[napi(js_name = "len")]
-    pub fn len_js(&self) -> u32 {
-        self.0.read().unwrap().len() as _
+    pub fn len_js(&self) -> u64 {
+        self.0.read().unwrap().len() as u64
     }
 }
 

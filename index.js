@@ -295,22 +295,15 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { AuthorId, Hash, JsAddProgress, JsDownloadProgress, AddProgressType, BlobFormat, Collection, LinkAndName, CapabilityKind, NamespaceAndCapability, Doc, DocSubscriber, JsDocImportProgress, JsDocExportProgress, NodeAddr, ShareMode, Entry, SortBy, SortDirection, Query, PublicKey, DirectAddrInfo, LatencyAndControlMsg, ConnectionInfo, ConnType, ConnectionTypeMixed, IrohNode, NodeStatusResponse, LogLevel, setLogLevel, startMetricsCollection, keyToPath, pathToKey } = nativeBinding
+const { AuthorId, Hash, AddProgressType, BlobFormat, Collection, CapabilityKind, NamespaceAndCapability, NodeAddr, ShareMode, Entry, SortBy, SortDirection, Query, PublicKey, DirectAddrInfo, ConnType, ConnectionTypeMixed, IrohNode, NodeStatusResponse, JsAddProgress, JsDownloadProgress, LinkAndName, Doc, DocSubscriber, JsDocImportProgress, JsDocExportProgress, LatencyAndControlMsg, ConnectionInfo, ListTagsResponse, keyToPath, pathToKey, LogLevel, setLogLevel, startMetricsCollection } = nativeBinding
 
 module.exports.AuthorId = AuthorId
 module.exports.Hash = Hash
-module.exports.JsAddProgress = JsAddProgress
-module.exports.JsDownloadProgress = JsDownloadProgress
 module.exports.AddProgressType = AddProgressType
 module.exports.BlobFormat = BlobFormat
 module.exports.Collection = Collection
-module.exports.LinkAndName = LinkAndName
 module.exports.CapabilityKind = CapabilityKind
 module.exports.NamespaceAndCapability = NamespaceAndCapability
-module.exports.Doc = Doc
-module.exports.DocSubscriber = DocSubscriber
-module.exports.JsDocImportProgress = JsDocImportProgress
-module.exports.JsDocExportProgress = JsDocExportProgress
 module.exports.NodeAddr = NodeAddr
 module.exports.ShareMode = ShareMode
 module.exports.Entry = Entry
@@ -319,14 +312,22 @@ module.exports.SortDirection = SortDirection
 module.exports.Query = Query
 module.exports.PublicKey = PublicKey
 module.exports.DirectAddrInfo = DirectAddrInfo
-module.exports.LatencyAndControlMsg = LatencyAndControlMsg
-module.exports.ConnectionInfo = ConnectionInfo
 module.exports.ConnType = ConnType
 module.exports.ConnectionTypeMixed = ConnectionTypeMixed
 module.exports.IrohNode = IrohNode
 module.exports.NodeStatusResponse = NodeStatusResponse
+module.exports.JsAddProgress = JsAddProgress
+module.exports.JsDownloadProgress = JsDownloadProgress
+module.exports.LinkAndName = LinkAndName
+module.exports.Doc = Doc
+module.exports.DocSubscriber = DocSubscriber
+module.exports.JsDocImportProgress = JsDocImportProgress
+module.exports.JsDocExportProgress = JsDocExportProgress
+module.exports.LatencyAndControlMsg = LatencyAndControlMsg
+module.exports.ConnectionInfo = ConnectionInfo
+module.exports.ListTagsResponse = ListTagsResponse
+module.exports.keyToPath = keyToPath
+module.exports.pathToKey = pathToKey
 module.exports.LogLevel = LogLevel
 module.exports.setLogLevel = setLogLevel
 module.exports.startMetricsCollection = startMetricsCollection
-module.exports.keyToPath = keyToPath
-module.exports.pathToKey = pathToKey
