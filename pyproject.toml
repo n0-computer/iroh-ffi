@@ -14,7 +14,3 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
 readme = "README.python.md"
-
-[tool.maturin]
-features = ["no_napi"]
-no-default-features = true

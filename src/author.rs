@@ -1,12 +1,10 @@
 use std::{str::FromStr, sync::Arc};
 
 use futures::TryStreamExt;
-use napi_derive::napi;
 
 use crate::{block_on, IrohError, IrohNode};
 
 /// Identifier for an [`Author`]
-#[napi]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AuthorId(pub(crate) iroh::sync::AuthorId);
 
@@ -16,7 +14,6 @@ impl std::fmt::Display for AuthorId {
     }
 }
 
-#[napi]
 impl IrohNode {
     /// Create a new author.
     pub fn author_create(&self) -> Result<Arc<AuthorId>, IrohError> {
@@ -50,17 +47,14 @@ impl IrohNode {
     }
 }
 
-#[napi]
 impl AuthorId {
     /// Get an [`AuthorId`] from a String.
-    #[napi]
     pub fn from_string(str: String) -> Result<Self, IrohError> {
         let author = iroh::sync::AuthorId::from_str(&str).map_err(IrohError::author)?;
         Ok(AuthorId(author))
     }
 
     /// Returns true when both AuthorId's have the same value
-    #[napi]
     pub fn equal(&self, other: &AuthorId) -> bool {
         *self == *other
     }

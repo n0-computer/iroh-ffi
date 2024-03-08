@@ -2,13 +2,11 @@ use std::{path::PathBuf, str::FromStr, sync::Arc, sync::RwLock, time::Duration};
 
 use futures::{StreamExt, TryStreamExt};
 
-use napi_derive::napi;
 use serde::{Deserialize, Serialize};
 
 use crate::node::IrohNode;
 use crate::{block_on, IrohError, NodeAddr};
 
-#[napi]
 impl IrohNode {
     /// List all complete blobs.
     ///
@@ -382,7 +380,6 @@ impl From<WrapOption> for iroh::rpc_protocol::WrapOption {
 }
 
 /// Hash type used throughout Iroh. A blake3 hash.
-#[napi]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Hash(pub(crate) iroh::bytes::Hash);
 
@@ -392,10 +389,8 @@ impl From<iroh::bytes::Hash> for Hash {
     }
 }
 
-#[napi]
 impl Hash {
     /// Calculate the hash of the provide bytes.
-    #[napi(constructor)]
     pub fn new(buf: Vec<u8>) -> Self {
         Hash(iroh::bytes::Hash::new(buf))
     }
@@ -414,7 +409,6 @@ impl Hash {
     }
 
     /// Make a Hash from hex string
-    #[napi]
     pub fn from_string(s: String) -> Result<Self, IrohError> {
         match iroh::bytes::Hash::from_str(&s) {
             Ok(key) => Ok(key.into()),
@@ -423,13 +417,11 @@ impl Hash {
     }
 
     /// Convert the hash to a hex string.
-    #[napi]
     pub fn to_hex(&self) -> String {
         self.0.to_hex()
     }
 
     /// Returns true if the Hash's have the same value
-    #[napi]
     pub fn equal(&self, other: &Hash) -> bool {
         *self == *other
     }
@@ -455,9 +447,7 @@ pub trait AddCallback: Send + Sync + 'static {
 }
 
 /// The different types of AddProgress events
-#[napi(string_enum)]
-#[cfg_attr(not(feature = "napi"), derive(Clone))]
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone)]
 pub enum AddProgressType {
     /// An item was found with name `name`, from now on referred to via `id`
     Found,
@@ -617,9 +607,7 @@ impl AddProgress {
 }
 
 /// A format identifier
-#[napi(string_enum)]
-#[cfg_attr(not(feature = "napi"), derive(Clone))]
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum BlobFormat {
     /// Raw blob
     Raw,
@@ -1122,7 +1110,6 @@ impl From<iroh::rpc_protocol::BlobListCollectionsResponse> for BlobListCollectio
 }
 
 /// A collection of blobs
-#[napi]
 #[derive(Debug)]
 pub struct Collection(pub(crate) RwLock<iroh::bytes::format::collection::Collection>);
 
@@ -1139,11 +1126,9 @@ impl From<Collection> for iroh::bytes::format::collection::Collection {
     }
 }
 
-#[napi]
 impl Collection {
     /// Create a new empty collection
     #[allow(clippy::new_without_default)]
-    #[napi(constructor)]
     pub fn new() -> Self {
         Collection(RwLock::new(
             iroh::bytes::format::collection::Collection::default(),
@@ -1151,7 +1136,6 @@ impl Collection {
     }
 
     /// Add the given blob to the collection
-    #[napi]
     pub fn push(&self, name: String, hash: &Hash) -> Result<(), IrohError> {
         self.0
             .write()
@@ -1161,13 +1145,11 @@ impl Collection {
     }
 
     /// Check if the collection is empty
-    #[napi]
     pub fn is_empty(&self) -> Result<bool, IrohError> {
         Ok(self.0.read().map_err(IrohError::collection)?.is_empty())
     }
 
     /// Get the names of the blobs in this collection
-    #[napi]
     pub fn names(&self) -> Result<Vec<String>, IrohError> {
         Ok(self
             .0
@@ -1179,7 +1161,6 @@ impl Collection {
     }
 
     /// Get the links to the blobs in this collection
-    #[napi]
     pub fn links(&self) -> Result<Vec<Arc<Hash>>, IrohError> {
         Ok(self
             .0
@@ -1329,7 +1310,7 @@ mod tests {
                     AddProgress::AllDone(ref d) => {
                         let mut output = self.output.lock().unwrap();
                         output.hash = Some(d.hash.clone());
-                        output.format = Some(d.format);
+                        output.format = Some(d.format.clone());
                     }
                     AddProgress::Abort(ref a) => {
                         return Err(IrohError::blobs(a.error.clone()));
@@ -1424,7 +1405,7 @@ mod tests {
                     AddProgress::AllDone(ref d) => {
                         let mut output = self.output.lock().unwrap();
                         output.collection_hash = Some(d.hash.clone());
-                        output.format = Some(d.format);
+                        output.format = Some(d.format.clone());
                     }
                     AddProgress::Abort(ref a) => {
                         return Err(IrohError::blobs(a.error.clone()));

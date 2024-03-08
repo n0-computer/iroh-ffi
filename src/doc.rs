@@ -5,13 +5,11 @@ use iroh::{
     client::Doc as ClientDoc,
     rpc_protocol::{ProviderRequest, ProviderResponse},
 };
-use napi_derive::napi;
 use quic_rpc::transport::flume::FlumeConnection;
 use serde::{Deserialize, Serialize};
 
 use crate::{block_on, AuthorId, Hash, IrohError, IrohNode, PublicKey};
 
-#[napi]
 #[derive(Debug)]
 pub enum CapabilityKind {
     /// A writable replica.
@@ -29,7 +27,6 @@ impl From<iroh::sync::CapabilityKind> for CapabilityKind {
     }
 }
 
-#[napi]
 impl IrohNode {
     /// Create a new doc.
     pub fn doc_create(&self) -> Result<Arc<Doc>, IrohError> {
@@ -127,7 +124,6 @@ impl IrohNode {
 }
 
 /// The namespace id and CapabilityKind (read/write) of the doc
-#[napi]
 pub struct NamespaceAndCapability {
     /// The namespace id of the doc
     pub namespace: String,
@@ -511,7 +507,6 @@ impl From<iroh::sync::actor::OpenState> for OpenState {
 }
 
 /// A peer and it's addressing information.
-#[napi]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NodeAddr {
     node_id: Arc<PublicKey>,
@@ -519,10 +514,8 @@ pub struct NodeAddr {
     addresses: Vec<String>,
 }
 
-#[napi]
 impl NodeAddr {
     /// Create a new [`NodeAddr`] with empty [`AddrInfo`].
-    #[napi(constructor)]
     pub fn new(node_id: &PublicKey, derp_url: Option<String>, addresses: Vec<String>) -> Self {
         Self {
             node_id: Arc::new(node_id.clone()),
@@ -532,19 +525,16 @@ impl NodeAddr {
     }
 
     /// Get the direct addresses of this peer.
-    #[napi(getter)]
     pub fn direct_addresses(&self) -> Vec<String> {
         self.addresses.clone()
     }
 
     /// Get the derp region of this peer.
-    #[napi(getter)]
     pub fn derp_url(&self) -> Option<String> {
         self.derp_url.clone()
     }
 
     /// Returns true if both NodeAddr's have the same values
-    #[napi]
     pub fn equal(&self, other: &NodeAddr) -> bool {
         self == other
     }
@@ -586,7 +576,6 @@ impl From<iroh::net::magic_endpoint::NodeAddr> for NodeAddr {
 }
 
 /// Intended capability for document share tickets
-#[napi]
 #[derive(Debug)]
 pub enum ShareMode {
     /// Read-only access
@@ -609,7 +598,6 @@ impl From<ShareMode> for iroh::rpc_protocol::ShareMode {
 /// An entry is identified by a key, its [`AuthorId`], and the [`Doc`]'s
 /// namespace id. Its value is the 32-byte BLAKE3 [`hash`]
 /// of the entry's content data, the size of this content data, and a timestamp.
-#[napi]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Entry(pub(crate) iroh::client::Entry);
 
@@ -619,16 +607,13 @@ impl From<iroh::client::Entry> for Entry {
     }
 }
 
-#[napi]
 impl Entry {
     /// Get the [`AuthorId`] of this entry.
-    #[napi]
     pub fn author(&self) -> Arc<AuthorId> {
         Arc::new(AuthorId(self.0.id().author()))
     }
 
     /// Get the content_hash of this entry.
-    #[napi]
     pub fn content_hash(&self) -> Arc<Hash> {
         Arc::new(Hash(self.0.content_hash()))
     }
@@ -639,13 +624,11 @@ impl Entry {
     }
 
     /// Get the key of this entry.
-    #[napi]
     pub fn key(&self) -> Vec<u8> {
         self.0.id().key().to_vec()
     }
 
     /// Get the namespace id of this entry.
-    #[napi]
     pub fn namespace(&self) -> String {
         self.0.id().namespace().to_string()
     }
@@ -666,9 +649,7 @@ impl Entry {
 }
 
 ///d Fields by which the query can be sorted
-#[napi]
-#[cfg_attr(not(feature = "napi"), derive(Clone))]
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub enum SortBy {
     /// Sort by key, then author.
     KeyAuthor,
@@ -696,9 +677,7 @@ impl From<SortBy> for iroh::sync::store::SortBy {
 }
 
 /// Sort direction
-#[napi]
-#[cfg_attr(not(feature = "napi"), derive(Clone))]
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub enum SortDirection {
     /// Sort ascending
     #[default]
@@ -728,7 +707,6 @@ impl From<SortDirection> for iroh::sync::store::SortDirection {
 /// Build a Query to search for an entry or entries in a doc.
 ///
 /// Use this with `QueryOptions` to determine sorting, grouping, and pagination.
-#[napi]
 #[derive(Clone, Debug)]
 pub struct Query(pub(crate) iroh::sync::store::Query);
 
@@ -751,7 +729,6 @@ pub struct QueryOptions {
     pub limit: u64,
 }
 
-#[napi]
 impl Query {
     /// Query all records.
     ///
@@ -895,13 +872,11 @@ impl Query {
     }
 
     /// Get the limit for this query (max. number of entries to emit).
-    #[napi]
     pub fn limit(&self) -> Option<u64> {
         self.0.limit()
     }
 
     /// Get the offset for this query (number of entries to skip at the beginning).
-    #[napi]
     pub fn offset(&self) -> u64 {
         self.0.offset()
     }
