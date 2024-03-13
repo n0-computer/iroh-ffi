@@ -121,20 +121,3 @@ jobs:
         pip install pytest 
         maturin develop && \
         python -m pytest
-
-  build_and_test_node:
-    name: Node - Build and test
-    timeout-minutes: 30
-    runs-on: [linux, x64]
-    steps:
-      - uses: actions/checkout@master
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 18
-      - name: Install
-        run: npm i
-      - name: Build
-        run: npm run build
-      - name: Test
-        run: npm test

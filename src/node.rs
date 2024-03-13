@@ -5,14 +5,12 @@ use iroh::{
     node::Node,
     rpc_protocol::{ProviderRequest, ProviderResponse},
 };
-use napi_derive::napi;
 use quic_rpc::transport::flume::FlumeConnection;
 
 use crate::{block_on, IrohError, NodeAddr, PublicKey};
 
 /// Stats counter
 /// Counter stats
-#[napi(object)]
 #[derive(Debug)]
 pub struct CounterStats {
     /// The counter value
@@ -31,14 +29,11 @@ impl From<iroh::rpc_protocol::CounterStats> for CounterStats {
 }
 
 /// Information about a direct address.
-#[napi]
 #[derive(Debug, Clone)]
 pub struct DirectAddrInfo(pub(crate) iroh::net::magicsock::DirectAddrInfo);
 
-#[napi]
 impl DirectAddrInfo {
     /// Get the reported address
-    #[napi]
     pub fn addr(&self) -> String {
         self.0.addr.to_string()
     }
@@ -113,7 +108,6 @@ impl From<iroh::net::magic_endpoint::ConnectionInfo> for ConnectionInfo {
 }
 
 /// The type of the connection
-#[napi(string_enum)]
 #[derive(Debug)]
 pub enum ConnType {
     /// Indicates you have a UDP connection.
@@ -182,7 +176,6 @@ impl ConnectionType {
 }
 
 /// The socket address and url of the mixed connection
-#[napi(constructor)]
 pub struct ConnectionTypeMixed {
     /// Address of the node
     pub addr: String,
@@ -208,7 +201,6 @@ impl From<iroh::net::magicsock::ConnectionType> for ConnectionType {
 }
 
 /// An Iroh node. Allows you to sync, store, and transfer data.
-#[napi]
 pub struct IrohNode {
     pub(crate) node: Node<iroh::bytes::store::flat::Store>,
     pub(crate) sync_client: iroh::client::Iroh<FlumeConnection<ProviderResponse, ProviderRequest>>,
@@ -216,7 +208,6 @@ pub struct IrohNode {
     pub(crate) tokio_rt: Option<tokio::runtime::Runtime>,
 }
 
-#[napi]
 impl IrohNode {
     pub(crate) fn rt(&self) -> tokio::runtime::Handle {
         match self.tokio_rt {
@@ -277,7 +268,6 @@ impl IrohNode {
     }
 
     /// The string representation of the PublicKey of this node.
-    #[napi]
     pub fn node_id(&self) -> String {
         self.node.node_id().to_string()
     }
@@ -343,7 +333,6 @@ impl IrohNode {
 }
 
 /// The response to a status request
-#[napi]
 #[derive(Debug)]
 pub struct NodeStatusResponse(iroh::rpc_protocol::NodeStatusResponse);
 
@@ -353,16 +342,13 @@ impl From<iroh::rpc_protocol::NodeStatusResponse> for NodeStatusResponse {
     }
 }
 
-#[napi]
 impl NodeStatusResponse {
     /// The node id and socket addresses of this node.
-    #[napi]
     pub fn node_addr(&self) -> Arc<NodeAddr> {
         Arc::new(self.0.addr.clone().into())
     }
 
     /// The bound listening addresses of the node
-    #[napi]
     pub fn listen_addrs(&self) -> Vec<String> {
         self.0
             .listen_addrs
@@ -372,7 +358,6 @@ impl NodeStatusResponse {
     }
 
     /// The version of the node
-    #[napi]
     pub fn version(&self) -> String {
         self.0.version.clone()
     }
