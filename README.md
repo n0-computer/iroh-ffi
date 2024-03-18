@@ -1,3 +1,13 @@
+# iroh-ffi: On Hiatus
+
+After careful consideration, we've decided to pause development on the ffi project for the forseeable future. In order to truly meet our standards, we need to focus on tuning the our Rust API to deliver the best possible experience. When that API has settled into a `1.0`, we can re-visit opening up the API for other languages.
+
+## Last Release: 0.12.0
+
+The last release of any iroh FFI language will be version `0.12.0`.
+
+Thank you anyone who has picked up iroh in our ffi languages. If you have any questions or just want to chat, feel free to reach out here or on our [discord](https://discord.gg/ktrtZvTk).
+
 # iroh-ffi
 
 > Foreign Function Interface (FFI) bindings for Iroh
