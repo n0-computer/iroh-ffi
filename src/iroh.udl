@@ -118,7 +118,7 @@ interface IrohNode {
   void blobs_write_to_path(Hash hash, string path);
   /// Write a blob by passing bytes.
   [Throws=IrohError]
-  BlobAddOutcome blobs_add_bytes(bytes bytes, SetTagOption tag);
+  BlobAddOutcome blobs_add_bytes(bytes bytes);
   /// Download a blob from another node and add it to the local database.
   [Throws=IrohError]
   void blobs_download(BlobDownloadRequest req, DownloadCallback cb);
@@ -373,6 +373,8 @@ enum DocExportProgressType {
   "Found",
   /// We got progress exporting item `id`.
   "Progress",
+  /// We are finished writing item `id`.
+  "Done",
   /// We are done writing the entry to the filesystem
   "AllDone",
   /// We got an error and need to abort.
@@ -387,8 +389,6 @@ dictionary DocExportProgressFound {
   u64 id;
   /// The hash of the entry.
   Hash hash;
-  /// The key of the entry.
-  bytes key;
   /// The size of the entry in bytes.
   u64 size;
   /// The path where we are writing the entry
@@ -538,11 +538,11 @@ enum ShareMode {
 /// A peer and it's addressing information.
 interface NodeAddr {
   /// Create a new [`NodeAddr`] with empty [`AddrInfo`].
-  constructor([ByRef] PublicKey node_id, string? derp_url, sequence<string> addresses);
+  constructor([ByRef] PublicKey node_id, string? relay_url, sequence<string> addresses);
   /// Get the direct addresses of this peer.
   sequence<string> direct_addresses();
-  /// Get the derp url of this peer.
-  string? derp_url();
+  /// Get the relay url of this peer.
+  string? relay_url();
   /// Returns true if both NodeAddr's have the same values
   boolean equal([ByRef] NodeAddr other);
 };
@@ -749,10 +749,10 @@ dictionary QueryOptions {
 
 /// Information about a connection
 dictionary ConnectionInfo {
-  /// The public key of the endpoint.
-  PublicKey public_key;
-  /// Derp url, if available.
-  string? derp_url;
+  /// The node identifier of the endpoint. Also a public key.
+  PublicKey node_id;
+  /// Relay url, if available.
+  string? relay_url;
   /// List of addresses at which this node might be reachable, plus any latency information we
   /// have about that address and the last time the address was used.
   sequence<DirectAddrInfo> addrs;
@@ -768,7 +768,7 @@ dictionary ConnectionInfo {
 enum ConnType {
   /// Indicates you have a UDP connection.
   "Direct",
-  /// Indicates you have a DERP relay connection.
+  /// Indicates you have a relayed connection.
   "Relay",
   /// Indicates you have an unverified UDP connection, and a relay connection for backup.
   "Mixed",
@@ -782,9 +782,9 @@ interface ConnectionType{
   ConnType type();
   /// Return the socket address if this is a direct connection
   string as_direct();
-  /// Return the derp url if this is a relay connection
+  /// Return the relay url if this is a relay connection
   string as_relay();
-  /// Return the socket address and DERP url if this is a mixed connection
+  /// Return the socket address and relay url if this is a mixed connection
   ConnectionTypeMixed as_mixed();
 };
 
@@ -793,8 +793,8 @@ interface ConnectionType{
 dictionary ConnectionTypeMixed {
     /// Address of the node
     string addr;
-    /// Url of the DERP node to which the node is connected
-    string derp_url;
+    /// Url of the relay node to which the node is connected
+    string relay_url;
 };
 
 /// A public key
@@ -937,27 +937,11 @@ dictionary BlobAddOutcome {
   bytes tag;
 };
 
-/// Location to store a downloaded blob at.
-interface DownloadLocation {
-  /// Store in the node's blob storage directory.
-  [Name=internal]
-  constructor();
-  /// Store at the provided path.
-  ///
-  /// If `in_place` is true, the data is shared in place, i.e. it is moved to the
-  /// out path instead of being copied. The database itself contains only a
-  /// reference to the out path of the file.
-  ///
-  /// If the data is modified in the location specified by the out path,
-  /// download attempts for the associated hash will fail.
-  [Name=external]
-  constructor(string path, boolean in_place);
-};
 
 /// A request to the node to download and share the data specified by the hash.
 interface BlobDownloadRequest {
   [Throws=IrohError]
-  constructor(Hash hash, BlobFormat format, NodeAddr node, SetTagOption tag, DownloadLocation out);
+  constructor(Hash hash, BlobFormat format, NodeAddr node, SetTagOption tag);
 };
 
 /// The `progress` method will be called for each `DownloadProgress` event that is emitted during
@@ -980,12 +964,6 @@ interface DownloadProgress {
   DownloadProgressProgress as_progress();
   /// Return the `DownloadProgressDone` event
   DownloadProgressDone as_done();
-  /// Return the `DownloadProgressNetworkDone` event
-  DownloadProgressNetworkDone as_network_done();
-  /// Return the `DownloadProgressExport` event
-  DownloadProgressExport as_export();
-  /// Return the `DownloadProgressExportProgress` event
-  DownloadProgressExportProgress as_export_progress();
   /// Return the `DownloadProgressAbort`
   DownloadProgressAbort as_abort();
 };
@@ -1044,40 +1022,6 @@ dictionary DownloadProgressDone {
   u64 id;
 };
 
-/// A DownloadProgress event indicating we are done with the networking portion - all data is local
-dictionary DownloadProgressNetworkDone {
-  /// The number of bytes written
-  u64 bytes_written;
-  /// The number of bytes read
-  u64 bytes_read;
-  /// The time it took to transfer the data
-  duration elapsed;
-};
-
-/// A DownloadProgress event indicating We have made progress exporting the data.
-///
-/// This is only sent for large blobs.
-dictionary DownloadProgressExport {
-  /// Unique id of the entry that is being exported.
-  u64 id;
-  /// The hash of the entry
-  Hash hash;
-  /// The size of the entry in bytes
-  u64 size;
-  /// The path to the file where the data is exported
-  string target;
-};
-
-/// A DownloadProgress event indicating We have made progress exporting the data.
-///
-/// This is only sent for large blobs.
-dictionary DownloadProgressExportProgress {
-  /// Unique id of the entry that is being exported.
-  u64 id;
-  /// The offset of the progress, in bytes.
-  u64 offset;
-};
-
 /// A DownloadProgress event indicating we got an error and need to abort
 dictionary DownloadProgressAbort {
   /// The error message
@@ -1098,14 +1042,6 @@ enum DownloadProgressType {
   "Progress",
   /// We are done with `id`, and the hash is `hash`.
   "Done",
-  /// We are done with the network part - all data is local
-  "NetworkDone",
-  /// The download part is done for this id, we are not exporting the data to the specified outpath
-  "Export",
-  /// We have made progress exporting the data
-  ///
-  /// This is only sent for large blobs"Export",
-  "ExportProgress",
   /// We are done with the whole operation.
   "AllDone",
   /// We got an error and need to abort.

@@ -112,7 +112,7 @@ mod tests {
     use super::*;
     #[test]
     fn test_path_to_key_roundtrip() {
-        let path = std::path::PathBuf::new().join("/").join("foo").join("bar");
+        let path = std::path::PathBuf::from("/").join("foo").join("bar");
         let path = path.to_str().unwrap().to_string();
         let mut key = b"/foo/bar\0".to_vec();
 
@@ -131,7 +131,7 @@ mod tests {
         assert_eq!(path, got_path);
 
         // including root
-        let root = std::path::PathBuf::new().join("/").join("foo");
+        let root = std::path::PathBuf::from("/").join("foo");
         let root = root.to_str().unwrap().to_string();
         key = b"prefix:bar\0".to_vec();
 
