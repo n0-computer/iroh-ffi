@@ -43,8 +43,7 @@ def test_blob_add_get_bytes():
     bytes = bytearray(map(random.getrandbits,(8,)*blob_size))
     #
     # add blob
-    tag = SetTagOption.auto()
-    add_outcome = node.blobs_add_bytes(bytes, tag)
+    add_outcome = node.blobs_add_bytes(bytes)
     #
     # check outcome info is as expected
     assert add_outcome.format == BlobFormat.RAW
@@ -213,7 +212,7 @@ def test_list_and_delete():
 
     hashes = []
     for blob in blobs:
-        output = node.blobs_add_bytes(blob, SetTagOption.auto())
+        output = node.blobs_add_bytes(blob)
         hashes.append(output.hash)
 
     got_hashes = node.blobs_list()

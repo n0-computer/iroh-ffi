@@ -15,19 +15,19 @@ def test_node_addr():
     ipv4 = "127.0.0.1:3000"
     ipv6 = "::1:3000"
     #
-    # derp url 
-    derp_url = "https://example.com"
+    # relay url 
+    relay_url = "https://example.com"
     #
     # create a NodeAddr
     expect_addrs = [ipv4, ipv6]
-    node_addr = NodeAddr(node_id, derp_url, expect_addrs)
+    node_addr = NodeAddr(node_id, relay_url, expect_addrs)
     #
     # test we have returned the expected addresses
     got_addrs = node_addr.direct_addresses()
     for (got, expect) in zip(got_addrs, expect_addrs):
         assert got == expect 
     
-    assert derp_url == node_addr.derp_url()
+    assert relay_url == node_addr.relay_url()
 
 def test_author_id():
     #
