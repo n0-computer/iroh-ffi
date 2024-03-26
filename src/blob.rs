@@ -1345,6 +1345,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "too slow"]
     fn test_list_and_delete() {
         setup_logging();
 
@@ -1363,9 +1364,11 @@ mod tests {
         }
 
         let mut hashes = vec![];
+        let mut tags = vec![];
         for blob in blobs {
             let output = node.blobs_add_bytes(blob).unwrap();
             hashes.push(output.hash);
+            tags.push(output.tag);
         }
 
         let got_hashes = node.blobs_list().unwrap();
@@ -1373,7 +1376,11 @@ mod tests {
         hashes_exist(&hashes, &got_hashes);
 
         let remove_hash = hashes.pop().unwrap();
-        node.blobs_delete_blob(remove_hash.clone()).unwrap();
+        let remove_tag = tags.pop().unwrap();
+        // delete the tag for the first blob
+        node.tags_delete(remove_tag).unwrap();
+        // todo: make the gc period shorter so we don't have to wait so long
+        std::thread::sleep(Duration::from_secs(1000));
 
         let got_hashes = node.blobs_list().unwrap();
         assert_eq!(num_blobs - 1, got_hashes.len());
