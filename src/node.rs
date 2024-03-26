@@ -2,7 +2,7 @@ use std::{collections::HashMap, path::PathBuf, sync::Arc, time::Duration};
 
 use futures::stream::TryStreamExt;
 use iroh::{
-    node::Node,
+    node::{Builder, Node},
     rpc_protocol::{ProviderRequest, ProviderResponse},
 };
 use quic_rpc::transport::flume::FlumeConnection;
@@ -75,10 +75,10 @@ pub struct LatencyAndControlMsg {
 /// Information about a connection
 #[derive(Debug)]
 pub struct ConnectionInfo {
-    /// The public key of the endpoint.
-    pub public_key: Arc<PublicKey>,
-    /// Derp url, if available.
-    pub derp_url: Option<String>,
+    /// The node identifier of the endpoint. Also a public key.
+    pub node_id: Arc<PublicKey>,
+    /// Relay url, if available.
+    pub relay_url: Option<String>,
     /// List of addresses at which this node might be reachable, plus any latency information we
     /// have about that address and the last time the address was used.
     pub addrs: Vec<Arc<DirectAddrInfo>>,
@@ -93,8 +93,8 @@ pub struct ConnectionInfo {
 impl From<iroh::net::magic_endpoint::ConnectionInfo> for ConnectionInfo {
     fn from(value: iroh::net::magic_endpoint::ConnectionInfo) -> Self {
         ConnectionInfo {
-            public_key: Arc::new(value.public_key.into()),
-            derp_url: value.derp_url.map(|url| url.to_string()),
+            node_id: Arc::new(value.node_id.into()),
+            relay_url: value.relay_url.map(|url| url.to_string()),
             addrs: value
                 .addrs
                 .iter()
@@ -112,7 +112,7 @@ impl From<iroh::net::magic_endpoint::ConnectionInfo> for ConnectionInfo {
 pub enum ConnType {
     /// Indicates you have a UDP connection.
     Direct,
-    /// Indicates you have a DERP relay connection.
+    /// Indicates you have a relayed connection.
     Relay,
     /// Indicates you have an unverified UDP connection, and a relay connection for backup.
     Mixed,
@@ -125,9 +125,9 @@ pub enum ConnType {
 pub enum ConnectionType {
     /// Direct UDP connection
     Direct(String),
-    /// Relay connection over DERP
+    /// Relay connection
     Relay(String),
-    /// Both a UDP and a DERP connection are used.
+    /// Both a UDP and a Relay connection are used.
     ///
     /// This is the case if we do have a UDP address, but are missing a recent confirmation that
     /// the address works.
@@ -168,7 +168,7 @@ impl ConnectionType {
         match self {
             ConnectionType::Mixed(addr, url) => ConnectionTypeMixed {
                 addr: addr.clone(),
-                derp_url: url.clone(),
+                relay_url: url.clone(),
             },
             _ => panic!("ConnectionType is not `Relay`"),
         }
@@ -179,8 +179,8 @@ impl ConnectionType {
 pub struct ConnectionTypeMixed {
     /// Address of the node
     pub addr: String,
-    /// Url of the DERP node to which the node is connected
-    pub derp_url: String,
+    /// Url of the relay node to which the node is connected
+    pub relay_url: String,
 }
 
 impl From<iroh::net::magicsock::ConnectionType> for ConnectionType {
@@ -199,10 +199,41 @@ impl From<iroh::net::magicsock::ConnectionType> for ConnectionType {
         }
     }
 }
+/// Options passed to [`IrohNode.new`]. Controls the behaviour of an iroh node.
+pub struct NodeOptions {
+    /// How frequently the blob store should clean up unreferenced blobs, in milliseconds.
+    /// Set to 0 to disable gc
+    pub gc_interval_millis: Option<u64>,
+}
+
+impl From<NodeOptions> for iroh::node::Builder<iroh::bytes::store::mem::Store> {
+    fn from(value: NodeOptions) -> Self {
+        let mut b = Builder::default();
+
+        if let Some(millis) = value.gc_interval_millis {
+            b = match millis {
+                0 => b.gc_policy(iroh::node::GcPolicy::Disabled),
+                millis => b.gc_policy(iroh::node::GcPolicy::Interval(Duration::from_millis(
+                    millis,
+                ))),
+            };
+        }
+
+        b
+    }
+}
+
+impl Default for NodeOptions {
+    fn default() -> Self {
+        NodeOptions {
+            gc_interval_millis: Some(0),
+        }
+    }
+}
 
 /// An Iroh node. Allows you to sync, store, and transfer data.
 pub struct IrohNode {
-    pub(crate) node: Node<iroh::bytes::store::flat::Store>,
+    pub(crate) node: Node<iroh::bytes::store::fs::Store>,
     pub(crate) sync_client: iroh::client::Iroh<FlumeConnection<ProviderResponse, ProviderRequest>>,
     #[allow(dead_code)]
     pub(crate) tokio_rt: Option<tokio::runtime::Runtime>,
@@ -219,6 +250,12 @@ impl IrohNode {
     /// Create a new iroh node. The `path` param should be a directory where we can store or load
     /// iroh data from a previous session.
     pub fn new(path: String) -> Result<Self, IrohError> {
+        let options = NodeOptions::default();
+        Self::with_options(path, options)
+    }
+
+    /// Create a new iroh node with options.
+    pub fn with_options(path: String, options: NodeOptions) -> Result<Self, IrohError> {
         let tokio_rt = tokio::runtime::Builder::new_multi_thread()
             .thread_name("main-runtime")
             .worker_threads(2)
@@ -229,7 +266,7 @@ impl IrohNode {
 
         let path = PathBuf::from(path);
         let node = block_on(&rt, async move {
-            Self::new_inner(path, Some(tokio_rt))
+            Self::new_inner(path, options, Some(tokio_rt))
                 .await
                 .map_err(IrohError::node_create)
         })?;
@@ -239,26 +276,12 @@ impl IrohNode {
 
     pub(crate) async fn new_inner(
         path: PathBuf,
+        options: NodeOptions,
         tokio_rt: Option<tokio::runtime::Runtime>,
     ) -> Result<Self, anyhow::Error> {
-        tokio::fs::create_dir_all(&path).await?;
-        // create or load secret key
-        let secret_key_path = iroh::util::path::IrohPaths::SecretKey.with_root(&path);
-        let secret_key = iroh::util::fs::load_secret_key(secret_key_path).await?;
-
-        let docs_path = iroh::util::path::IrohPaths::DocsDatabase.with_root(&path);
-        let docs = iroh::sync::store::fs::Store::new(&docs_path)?;
-
-        // create a bao store for the iroh-bytes blobs
-        let blob_path = iroh::util::path::IrohPaths::BaoFlatStoreDir.with_root(&path);
-        tokio::fs::create_dir_all(&blob_path).await?;
-        let db = iroh::bytes::store::flat::Store::load(&blob_path).await?;
-
-        let node = Node::builder(db, docs)
-            .secret_key(secret_key)
-            .spawn()
-            .await?;
-        let sync_client = node.client();
+        let builder: Builder<iroh::bytes::store::mem::Store> = options.into();
+        let node = builder.persist(path).await?.spawn().await?;
+        let sync_client = node.clone().client().clone();
 
         Ok(IrohNode {
             node,

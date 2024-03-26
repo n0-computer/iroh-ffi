@@ -225,7 +225,12 @@ impl Doc {
         block_on(&self.rt, async {
             let mut stream = self
                 .inner
-                .export_file(entry.0.clone(), std::path::PathBuf::from(path))
+                .export_file(
+                    entry.0.clone(),
+                    std::path::PathBuf::from(path),
+                    // TODO(b5) - plumb up the export mode, currently it's always copy
+                    iroh::bytes::store::ExportMode::Copy,
+                )
                 .await
                 .map_err(IrohError::doc)?;
             while let Some(progress) = stream.next().await {
@@ -510,7 +515,7 @@ impl From<iroh::sync::actor::OpenState> for OpenState {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NodeAddr {
     node_id: Arc<PublicKey>,
-    derp_url: Option<String>,
+    relay_url: Option<String>,
     addresses: Vec<String>,
 }
 
@@ -519,7 +524,7 @@ impl NodeAddr {
     pub fn new(node_id: &PublicKey, derp_url: Option<String>, addresses: Vec<String>) -> Self {
         Self {
             node_id: Arc::new(node_id.clone()),
-            derp_url,
+            relay_url: derp_url,
             addresses,
         }
     }
@@ -529,9 +534,9 @@ impl NodeAddr {
         self.addresses.clone()
     }
 
-    /// Get the derp region of this peer.
-    pub fn derp_url(&self) -> Option<String> {
-        self.derp_url.clone()
+    /// Get the home relay URL for this peer
+    pub fn relay_url(&self) -> Option<String> {
+        self.relay_url.clone()
     }
 
     /// Returns true if both NodeAddr's have the same values
@@ -550,10 +555,10 @@ impl TryFrom<NodeAddr> for iroh::net::magic_endpoint::NodeAddr {
             .map(|addr| std::net::SocketAddr::from_str(&addr).map_err(IrohError::socket_addr))
             .collect::<Result<Vec<_>, IrohError>>()?;
 
-        if let Some(derp_url) = value.derp_url() {
+        if let Some(derp_url) = value.relay_url() {
             let url = url::Url::parse(&derp_url).map_err(IrohError::url)?;
 
-            node_addr = node_addr.with_derp_url(url);
+            node_addr = node_addr.with_relay_url(url.into());
         }
         node_addr = node_addr.with_direct_addresses(addresses);
         Ok(node_addr)
@@ -564,7 +569,7 @@ impl From<iroh::net::magic_endpoint::NodeAddr> for NodeAddr {
     fn from(value: iroh::net::magic_endpoint::NodeAddr) -> Self {
         NodeAddr {
             node_id: Arc::new(value.node_id.into()),
-            derp_url: value.info.derp_url.map(|url| url.to_string()),
+            relay_url: value.info.relay_url.map(|url| url.to_string()),
             addresses: value
                 .info
                 .direct_addresses
@@ -1299,6 +1304,8 @@ pub enum DocExportProgressType {
     Found,
     /// We got progress exporting item `id`.
     Progress,
+    /// We finished exporting a blob with `id`
+    Done,
     /// We are done writing the entry to the filesystem
     AllDone,
     /// We got an error and need to abort.
@@ -1314,8 +1321,6 @@ pub struct DocExportProgressFound {
     pub id: u64,
     /// The hash of the entry.
     pub hash: Arc<Hash>,
-    /// The key of the entry.
-    pub key: Vec<u8>,
     /// The size of the entry in bytes.
     pub size: u64,
     /// The path where we are writing the entry
@@ -1329,6 +1334,13 @@ pub struct DocExportProgressProgress {
     pub id: u64,
     /// The offset of the progress, in bytes.
     pub offset: u64,
+}
+
+/// A DocExportProgress event indicating a single blob wit `id` is done
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DocExportProgressDone {
+    /// The unique id of the entry.
+    pub id: u64,
 }
 
 /// A DocExportProgress event indicating we got an error and need to abort
@@ -1345,6 +1357,8 @@ pub enum DocExportProgress {
     Found(DocExportProgressFound),
     /// We got progress ingesting item `id`.
     Progress(DocExportProgressProgress),
+    /// We finished exporting a blob
+    Done(DocExportProgressDone),
     /// We are done with the whole operation.
     AllDone,
     /// We got an error and need to abort.
@@ -1353,27 +1367,31 @@ pub enum DocExportProgress {
     Abort(DocExportProgressAbort),
 }
 
-impl From<iroh::rpc_protocol::DocExportProgress> for DocExportProgress {
-    fn from(value: iroh::rpc_protocol::DocExportProgress) -> Self {
+impl From<iroh::bytes::export::ExportProgress> for DocExportProgress {
+    fn from(value: iroh::bytes::export::ExportProgress) -> Self {
         match value {
-            iroh::rpc_protocol::DocExportProgress::Found {
+            iroh::bytes::export::ExportProgress::Found {
                 id,
                 hash,
-                key,
                 size,
                 outpath,
+                // TODO (b5) - currently ignoring meta field. meta is probably the key of the entry that's being exported
+                ..
             } => DocExportProgress::Found(DocExportProgressFound {
                 id,
                 hash: Arc::new(hash.into()),
-                key: key.to_vec(),
-                size,
+                // TODO(b5) - this is ignoring verification status of file size!
+                size: size.value(),
                 outpath: outpath.to_string_lossy().to_string(),
             }),
-            iroh::rpc_protocol::DocExportProgress::Progress { id, offset } => {
+            iroh::bytes::export::ExportProgress::Progress { id, offset } => {
                 DocExportProgress::Progress(DocExportProgressProgress { id, offset })
             }
-            iroh::rpc_protocol::DocExportProgress::AllDone => DocExportProgress::AllDone,
-            iroh::rpc_protocol::DocExportProgress::Abort(err) => {
+            iroh::bytes::export::ExportProgress::Done { id } => {
+                DocExportProgress::Done(DocExportProgressDone { id })
+            }
+            iroh::bytes::export::ExportProgress::AllDone => DocExportProgress::AllDone,
+            iroh::bytes::export::ExportProgress::Abort(err) => {
                 DocExportProgress::Abort(DocExportProgressAbort {
                     error: err.to_string(),
                 })
@@ -1388,6 +1406,7 @@ impl DocExportProgress {
         match self {
             DocExportProgress::Found(_) => DocExportProgressType::Found,
             DocExportProgress::Progress(_) => DocExportProgressType::Progress,
+            DocExportProgress::Done(_) => DocExportProgressType::Done,
             DocExportProgress::AllDone => DocExportProgressType::AllDone,
             DocExportProgress::Abort(_) => DocExportProgressType::Abort,
         }
@@ -1509,7 +1528,7 @@ mod tests {
             assert_eq!(got, expect);
         }
 
-        let got_derp_url = node_addr.derp_url().unwrap();
+        let got_derp_url = node_addr.relay_url().unwrap();
         assert_eq!(derp_url, got_derp_url);
     }
     #[test]

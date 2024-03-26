@@ -1,7 +1,6 @@
 use std::{path::PathBuf, str::FromStr, sync::Arc, sync::RwLock, time::Duration};
 
 use futures::{StreamExt, TryStreamExt};
-
 use serde::{Deserialize, Serialize};
 
 use crate::node::IrohNode;
@@ -148,15 +147,11 @@ impl IrohNode {
     }
 
     /// Write a blob by passing bytes.
-    pub fn blobs_add_bytes(
-        &self,
-        bytes: Vec<u8>,
-        tag: Arc<SetTagOption>,
-    ) -> Result<BlobAddOutcome, IrohError> {
+    pub fn blobs_add_bytes(&self, bytes: Vec<u8>) -> Result<BlobAddOutcome, IrohError> {
         block_on(&self.rt(), async {
             self.sync_client
                 .blobs
-                .add_bytes(bytes.into(), (*tag).clone().into())
+                .add_bytes(bytes)
                 .await
                 .map(|outcome| outcome.into())
                 .map_err(IrohError::blobs)
@@ -272,11 +267,34 @@ impl IrohNode {
     /// Delete a blob.
     pub fn blobs_delete_blob(&self, hash: Arc<Hash>) -> Result<(), IrohError> {
         block_on(&self.rt(), async {
-            self.sync_client
-                .blobs
-                .delete_blob((*hash).clone().0)
+            let mut tags = self
+                .sync_client
+                .tags
+                .list()
                 .await
-                .map_err(IrohError::blobs)
+                .map_err(IrohError::blobs)?;
+            let mut name = None;
+            while let Some(tag) = tags.next().await {
+                let tag = tag.map_err(IrohError::blobs)?;
+                if tag.hash == hash.0 {
+                    name = Some(tag.name);
+                }
+            }
+
+            if let Some(name) = name {
+                self.sync_client
+                    .tags
+                    .delete(name.into())
+                    .await
+                    .map_err(IrohError::blobs)?;
+                self.sync_client
+                    .blobs
+                    .delete_blob((*hash).clone().0)
+                    .await
+                    .map_err(IrohError::blobs)?;
+            }
+
+            Ok(())
         })
     }
 }
@@ -633,58 +651,6 @@ impl From<BlobFormat> for iroh::rpc_protocol::BlobFormat {
     }
 }
 
-/// Location to store a downloaded blob at.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum DownloadLocation {
-    /// Store in the node's blob storage directory.
-    Internal,
-    /// Store at the provided path.
-    External {
-        /// The path to store the data at.
-        path: String,
-        /// If this flag is true, the data is shared in place, i.e. it is moved to the
-        /// out path instead of being copied. The database itself contains only a
-        /// reference to the out path of the file.
-        ///
-        /// If the data is modified in the location specified by the out path,
-        /// download attempts for the associated hash will fail.
-        in_place: bool,
-    },
-}
-
-impl DownloadLocation {
-    /// Store in the node's blob storage directory.
-    pub fn internal() -> Self {
-        DownloadLocation::Internal
-    }
-
-    /// Store at the provided path.
-    ///
-    /// If `in_place` is true, the data is shared in place, i.e. it is moved to the
-    /// out path instead of being copied. The database itself contains only a
-    /// reference to the out path of the file.
-    ///
-    /// If the data is modified in the location specified by the out path,
-    /// download attempts for the associated hash will fail.
-    pub fn external(path: String, in_place: bool) -> Self {
-        DownloadLocation::External { in_place, path }
-    }
-}
-
-impl From<DownloadLocation> for iroh::rpc_protocol::DownloadLocation {
-    fn from(value: DownloadLocation) -> Self {
-        match value {
-            DownloadLocation::Internal => iroh::rpc_protocol::DownloadLocation::Internal,
-            DownloadLocation::External { path, in_place } => {
-                iroh::rpc_protocol::DownloadLocation::External {
-                    path: path.into(),
-                    in_place,
-                }
-            }
-        }
-    }
-}
-
 /// A request to the node to download and share the data specified by the hash.
 pub struct BlobDownloadRequest(iroh::rpc_protocol::BlobDownloadRequest);
 impl BlobDownloadRequest {
@@ -694,7 +660,6 @@ impl BlobDownloadRequest {
         format: BlobFormat,
         node: Arc<NodeAddr>,
         tag: Arc<SetTagOption>,
-        out: Arc<DownloadLocation>,
     ) -> Result<Self, IrohError> {
         Ok(BlobDownloadRequest(
             iroh::rpc_protocol::BlobDownloadRequest {
@@ -702,7 +667,6 @@ impl BlobDownloadRequest {
                 format: format.into(),
                 peer: (*node).clone().try_into()?,
                 tag: (*tag).clone().into(),
-                out: (*out).clone().into(),
             },
         ))
     }
@@ -724,9 +688,6 @@ pub enum DownloadProgressType {
     FoundHashSeq,
     Progress,
     Done,
-    NetworkDone,
-    Export,
-    ExportProgress,
     AllDone,
     Abort,
 }
@@ -782,40 +743,15 @@ pub struct DownloadProgressDone {
     pub id: u64,
 }
 
-/// A DownloadProgress event indicating we are done with the networking portion - all data is local
+/// A DownloadProgress event indicating we are done with the whole operation
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct DownloadProgressNetworkDone {
+pub struct DownloadProgressAllDone {
     /// The number of bytes written
     pub bytes_written: u64,
     /// The number of bytes read
     pub bytes_read: u64,
     /// The time it took to transfer the data
     pub elapsed: Duration,
-}
-
-/// A DownloadProgress event indicating the download part is done for this id, we are not exporting
-/// the data to the specified path
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct DownloadProgressExport {
-    /// Unique id of the entry
-    pub id: u64,
-    /// The hash of the entry
-    pub hash: Arc<Hash>,
-    /// The size of the entry in bytes
-    pub size: u64,
-    /// The path to the file where the data is exported
-    pub target: String,
-}
-
-/// A DownloadProgress event indicating We have made progress exporting the data.
-///
-/// This is only sent for large blobs.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct DownloadProgressExportProgress {
-    /// Unique id of the entry that is being exported.
-    pub id: u64,
-    /// The offset of the progress, in bytes.
-    pub offset: u64,
 }
 
 /// A DownloadProgress event indicating we got an error and need to abort
@@ -839,16 +775,8 @@ pub enum DownloadProgress {
     Progress(DownloadProgressProgress),
     /// We are done with `id`, and the hash is `hash`.
     Done(DownloadProgressDone),
-    /// We are done with the network part - all data is local
-    NetworkDone(DownloadProgressNetworkDone),
-    /// The download part is done for this id, we are not exporting the data to the specified outpath
-    Export(DownloadProgressExport),
-    /// We have made progress exporting the data
-    ///
-    /// This is only sent for large blobs
-    ExportProgress(DownloadProgressExportProgress),
     /// We are done with the whole operation.
-    AllDone,
+    AllDone(DownloadProgressAllDone),
     /// We got an error and need to abort.
     ///
     /// This will be the last message in the stream.
@@ -866,7 +794,8 @@ impl From<iroh::rpc_protocol::DownloadProgress> for DownloadProgress {
             } => DownloadProgress::FoundLocal(DownloadProgressFoundLocal {
                 child,
                 hash: Arc::new(hash.into()),
-                size,
+                // TODO(b5) - this is ignoring verification information!
+                size: size.value(),
                 valid_ranges: Arc::new(valid_ranges.into()),
             }),
             iroh::rpc_protocol::DownloadProgress::Connected => DownloadProgress::Connected,
@@ -893,30 +822,13 @@ impl From<iroh::rpc_protocol::DownloadProgress> for DownloadProgress {
             iroh::rpc_protocol::DownloadProgress::Done { id } => {
                 DownloadProgress::Done(DownloadProgressDone { id })
             }
-            iroh::rpc_protocol::DownloadProgress::NetworkDone {
-                bytes_written,
-                bytes_read,
-                elapsed,
-            } => DownloadProgress::NetworkDone(DownloadProgressNetworkDone {
-                bytes_written,
-                bytes_read,
-                elapsed,
-            }),
-            iroh::rpc_protocol::DownloadProgress::Export {
-                id,
-                hash,
-                size,
-                target,
-            } => DownloadProgress::Export(DownloadProgressExport {
-                id,
-                hash: Arc::new(hash.into()),
-                size,
-                target: target.into_os_string().into_string().unwrap(),
-            }),
-            iroh::rpc_protocol::DownloadProgress::ExportProgress { id, offset } => {
-                DownloadProgress::ExportProgress(DownloadProgressExportProgress { id, offset })
+            iroh::rpc_protocol::DownloadProgress::AllDone(stats) => {
+                DownloadProgress::AllDone(DownloadProgressAllDone {
+                    bytes_written: stats.bytes_written,
+                    bytes_read: stats.bytes_read,
+                    elapsed: stats.elapsed,
+                })
             }
-            iroh::rpc_protocol::DownloadProgress::AllDone => DownloadProgress::AllDone,
             iroh::rpc_protocol::DownloadProgress::Abort(err) => {
                 DownloadProgress::Abort(DownloadProgressAbort {
                     error: err.to_string(),
@@ -936,10 +848,7 @@ impl DownloadProgress {
             DownloadProgress::FoundHashSeq(_) => DownloadProgressType::FoundHashSeq,
             DownloadProgress::Progress(_) => DownloadProgressType::Progress,
             DownloadProgress::Done(_) => DownloadProgressType::Done,
-            DownloadProgress::NetworkDone(_) => DownloadProgressType::NetworkDone,
-            DownloadProgress::Export(_) => DownloadProgressType::Export,
-            DownloadProgress::ExportProgress(_) => DownloadProgressType::ExportProgress,
-            DownloadProgress::AllDone => DownloadProgressType::AllDone,
+            DownloadProgress::AllDone(_) => DownloadProgressType::AllDone,
             DownloadProgress::Abort(_) => DownloadProgressType::Abort,
         }
     }
@@ -981,30 +890,6 @@ impl DownloadProgress {
         match self {
             DownloadProgress::Done(d) => d.clone(),
             _ => panic!("DownloadProgress type is not 'Done'"),
-        }
-    }
-
-    /// Return the `DownloadProgressNetworkDone` event
-    pub fn as_network_done(&self) -> DownloadProgressNetworkDone {
-        match self {
-            DownloadProgress::NetworkDone(n) => n.clone(),
-            _ => panic!("DownloadProgress type is not 'NetworkDone'"),
-        }
-    }
-
-    /// Return the `DownloadProgressExport` event
-    pub fn as_export(&self) -> DownloadProgressExport {
-        match self {
-            DownloadProgress::Export(e) => e.clone(),
-            _ => panic!("DownloadProgress type is not 'Export'"),
-        }
-    }
-
-    /// Return the `DownloadProgressExportProgress` event
-    pub fn as_export_progress(&self) -> DownloadProgressExportProgress {
-        match self {
-            DownloadProgress::ExportProgress(e) => e.clone(),
-            _ => panic!("DownloadProgress type is not 'ExportProgress'"),
         }
     }
 
@@ -1207,8 +1092,10 @@ mod tests {
 
     use super::*;
     use crate::node::IrohNode;
+    use crate::NodeOptions;
     use rand::RngCore;
     use tokio::io::AsyncWriteExt;
+    use tracing_subscriber::FmtSubscriber;
 
     #[test]
     fn test_hash() {
@@ -1239,9 +1126,9 @@ mod tests {
 
     #[test]
     fn test_blobs_add_get_bytes() {
-        // temp dir
         let dir = tempfile::tempdir().unwrap();
         let node = IrohNode::new(dir.into_path().display().to_string()).unwrap();
+
         let sizes = [1, 10, 100, 1000, 10000, 100000];
         let mut hashes = Vec::new();
         for size in sizes.iter() {
@@ -1255,8 +1142,7 @@ mod tests {
         let mut bytes = vec![0; size];
         rand::thread_rng().fill_bytes(&mut bytes);
         // add blob
-        let tag = SetTagOption::auto();
-        let add_outcome = node.blobs_add_bytes(bytes.to_vec(), tag.into()).unwrap();
+        let add_outcome = node.blobs_add_bytes(bytes.to_vec()).unwrap();
         // check outcome
         assert_eq!(add_outcome.format, BlobFormat::Raw);
         assert_eq!(add_outcome.size, size as u64);
@@ -1365,7 +1251,6 @@ mod tests {
 
     #[test]
     fn test_blobs_list_collections() {
-        // temp dir
         let dir = tempfile::tempdir().unwrap();
         let num_blobs = 3;
         let blob_size = 100;
@@ -1377,7 +1262,6 @@ mod tests {
             file.write_all(&bytes).unwrap()
         }
 
-        // temp dir
         let iroh_dir = tempfile::tempdir().unwrap();
         let node = IrohNode::new(iroh_dir.into_path().display().to_string()).unwrap();
 
@@ -1463,9 +1347,15 @@ mod tests {
 
     #[test]
     fn test_list_and_delete() {
-        // temp dir
+        setup_logging();
+
         let iroh_dir = tempfile::tempdir().unwrap();
-        let node = IrohNode::new(iroh_dir.into_path().display().to_string()).unwrap();
+        // we're going to use a very fast GC interval to get this test to delete stuff aggressively
+        let opts = NodeOptions {
+            gc_interval_millis: Some(100),
+        };
+        let node =
+            IrohNode::with_options(iroh_dir.into_path().display().to_string(), opts).unwrap();
 
         // create bytes
         let blob_size = 100;
@@ -1479,11 +1369,11 @@ mod tests {
         }
 
         let mut hashes = vec![];
+        let mut tags = vec![];
         for blob in blobs {
-            let output = node
-                .blobs_add_bytes(blob, Arc::new(SetTagOption::auto()))
-                .unwrap();
+            let output = node.blobs_add_bytes(blob).unwrap();
             hashes.push(output.hash);
+            tags.push(output.tag);
         }
 
         let got_hashes = node.blobs_list().unwrap();
@@ -1491,7 +1381,11 @@ mod tests {
         hashes_exist(&hashes, &got_hashes);
 
         let remove_hash = hashes.pop().unwrap();
-        node.blobs_delete_blob(remove_hash.clone()).unwrap();
+        let remove_tag = tags.pop().unwrap();
+        // delete the tag for the first blob
+        node.tags_delete(remove_tag).unwrap();
+        // wait for GC to clear the blob. windows test runner is slow & needs like 500ms
+        std::thread::sleep(Duration::from_millis(500));
 
         let got_hashes = node.blobs_list().unwrap();
         assert_eq!(num_blobs - 1, got_hashes.len());
@@ -1506,22 +1400,10 @@ mod tests {
 
     async fn build_iroh_core(
         path: &std::path::Path,
-    ) -> iroh::node::Node<iroh::bytes::store::flat::Store> {
-        // TODO: store and load keypair
-        let secret_key = iroh::net::key::SecretKey::generate();
-
-        let docs_path = path.join("docs.db");
-        let docs = iroh::sync::store::fs::Store::new(&docs_path).unwrap();
-
-        // create a bao store for the iroh-bytes blobs
-        let blob_path = path.join("blobs");
-        tokio::fs::create_dir_all(&blob_path).await.unwrap();
-        let db = iroh::bytes::store::flat::Store::load(&blob_path)
+    ) -> iroh::node::Node<iroh::bytes::store::fs::Store> {
+        iroh::node::Node::persistent(path)
             .await
-            .unwrap();
-
-        iroh::node::Node::builder(db, docs)
-            .secret_key(secret_key)
+            .unwrap()
             .spawn()
             .await
             .unwrap()
@@ -1529,7 +1411,6 @@ mod tests {
 
     #[tokio::test]
     async fn iroh_core_blobs_add_get_bytes() {
-        // temp dir
         let dir = tempfile::tempdir().unwrap();
         let node = build_iroh_core(dir.path()).await;
         let sizes = [1, 10, 100, 1000, 10000, 100000];
@@ -1541,7 +1422,7 @@ mod tests {
     }
 
     async fn iroh_core_blobs_add_get_bytes_size(
-        node: &iroh::node::Node<iroh::bytes::store::flat::Store>,
+        node: &iroh::node::Node<iroh::bytes::store::fs::Store>,
         size: usize,
     ) -> iroh::bytes::Hash {
         let client = node.client();
@@ -1550,8 +1431,7 @@ mod tests {
         rand::thread_rng().fill_bytes(&mut bytes);
         let bytes: bytes::Bytes = bytes.into();
         // add blob
-        let tag = iroh::rpc_protocol::SetTagOption::Auto;
-        let add_outcome = client.blobs.add_bytes(bytes.clone(), tag).await.unwrap();
+        let add_outcome = client.blobs.add_bytes(bytes.clone()).await.unwrap();
         // check outcome
         assert_eq!(add_outcome.format, iroh::bytes::BlobFormat::Raw);
         assert_eq!(add_outcome.size, size as u64);
@@ -1570,7 +1450,6 @@ mod tests {
 
     #[tokio::test]
     async fn iroh_core_blobs_list_collections() {
-        // iroh data dir
         let iroh_dir = tempfile::tempdir().unwrap();
         let node = build_iroh_core(iroh_dir.path()).await;
 
@@ -1644,5 +1523,17 @@ mod tests {
         );
         // this is always `None`
         // assert_eq!(collections[0].total_blobs_size.unwrap(), 300 as u64);
+    }
+
+    pub fn setup_logging() {
+        let subscriber = FmtSubscriber::builder()
+            .with_env_filter(format!(
+                "{}=debug",
+                env!("CARGO_PKG_NAME").replace('-', "_")
+            ))
+            .compact()
+            .finish();
+
+        tracing::subscriber::set_global_default(subscriber).ok();
     }
 }
