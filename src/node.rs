@@ -241,27 +241,7 @@ impl IrohNode {
         path: PathBuf,
         tokio_rt: Option<tokio::runtime::Runtime>,
     ) -> Result<Self, anyhow::Error> {
-        tokio::fs::create_dir_all(&path).await?;
-        // create or load secret key
-        let secret_key_path = iroh::util::path::IrohPaths::SecretKey.with_root(&path);
-        let secret_key = iroh::util::fs::load_secret_key(secret_key_path).await?;
-
-        let docs_path = iroh::util::path::IrohPaths::DocsDatabase.with_root(&path);
-        let docs = iroh::sync::store::fs::Store::persistent(&docs_path)?;
-
-        // create a bao store for the iroh-bytes blobs
-        let blob_path = iroh::util::path::IrohPaths::BaoStoreDir.with_root(&path);
-        tokio::fs::create_dir_all(&blob_path).await?;
-        let db = iroh::bytes::store::fs::Store::load(&blob_path).await?;
-
-        let node = iroh::node::Builder::with_db_and_store(
-            db,
-            docs,
-            iroh::node::StorageConfig::Persistent(path.clone()),
-        )
-        .secret_key(secret_key)
-        .spawn()
-        .await?;
+        let node = iroh::node::Node::persistent(path).await?.spawn().await?;
         let sync_client = node.clone().client().clone();
 
         Ok(IrohNode {
