@@ -1022,6 +1022,16 @@ dictionary DownloadProgressDone {
   u64 id;
 };
 
+/// A DownloadProgress event indicating we are done with the whole operation
+dictionary DownloadProgressAllDone {
+  /// The number of bytes written
+  u64 bytes_written;
+  /// The number of bytes read
+  u64 bytes_read;
+  /// The time it took to transfer the data
+  duration elapsed;
+};
+
 /// A DownloadProgress event indicating we got an error and need to abort
 dictionary DownloadProgressAbort {
   /// The error message
