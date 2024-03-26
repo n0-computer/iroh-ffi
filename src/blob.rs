@@ -1,4 +1,4 @@
-use std::{path::PathBuf, str::FromStr, sync::Arc, sync::RwLock};
+use std::{path::PathBuf, str::FromStr, sync::Arc, sync::RwLock, time::Duration};
 
 use futures::{StreamExt, TryStreamExt};
 use serde::{Deserialize, Serialize};
@@ -267,11 +267,34 @@ impl IrohNode {
     /// Delete a blob.
     pub fn blobs_delete_blob(&self, hash: Arc<Hash>) -> Result<(), IrohError> {
         block_on(&self.rt(), async {
-            self.sync_client
-                .blobs
-                .delete_blob((*hash).clone().0)
+            let mut tags = self
+                .sync_client
+                .tags
+                .list()
                 .await
-                .map_err(IrohError::blobs)
+                .map_err(IrohError::blobs)?;
+            let mut name = None;
+            while let Some(tag) = tags.next().await {
+                let tag = tag.map_err(IrohError::blobs)?;
+                if tag.hash == hash.0 {
+                    name = Some(tag.name);
+                }
+            }
+
+            if let Some(name) = name {
+                self.sync_client
+                    .tags
+                    .delete(name.into())
+                    .await
+                    .map_err(IrohError::blobs)?;
+                self.sync_client
+                    .blobs
+                    .delete_blob((*hash).clone().0)
+                    .await
+                    .map_err(IrohError::blobs)?;
+            }
+
+            Ok(())
         })
     }
 }
@@ -720,6 +743,17 @@ pub struct DownloadProgressDone {
     pub id: u64,
 }
 
+/// A DownloadProgress event indicating we are done with the whole operation
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DownloadProgressAllDone {
+    /// The number of bytes written
+    pub bytes_written: u64,
+    /// The number of bytes read
+    pub bytes_read: u64,
+    /// The time it took to transfer the data
+    pub elapsed: Duration,
+}
+
 /// A DownloadProgress event indicating we got an error and need to abort
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DownloadProgressAbort {
@@ -742,7 +776,7 @@ pub enum DownloadProgress {
     /// We are done with `id`, and the hash is `hash`.
     Done(DownloadProgressDone),
     /// We are done with the whole operation.
-    AllDone,
+    AllDone(DownloadProgressAllDone),
     /// We got an error and need to abort.
     ///
     /// This will be the last message in the stream.
@@ -788,8 +822,13 @@ impl From<iroh::rpc_protocol::DownloadProgress> for DownloadProgress {
             iroh::rpc_protocol::DownloadProgress::Done { id } => {
                 DownloadProgress::Done(DownloadProgressDone { id })
             }
-            // TODO(b5): - plumb stats through to FFI AllDone
-            iroh::rpc_protocol::DownloadProgress::AllDone { .. } => DownloadProgress::AllDone,
+            iroh::rpc_protocol::DownloadProgress::AllDone(stats) => {
+                DownloadProgress::AllDone(DownloadProgressAllDone {
+                    bytes_written: stats.bytes_written,
+                    bytes_read: stats.bytes_read,
+                    elapsed: stats.elapsed,
+                })
+            }
             iroh::rpc_protocol::DownloadProgress::Abort(err) => {
                 DownloadProgress::Abort(DownloadProgressAbort {
                     error: err.to_string(),
@@ -809,7 +848,7 @@ impl DownloadProgress {
             DownloadProgress::FoundHashSeq(_) => DownloadProgressType::FoundHashSeq,
             DownloadProgress::Progress(_) => DownloadProgressType::Progress,
             DownloadProgress::Done(_) => DownloadProgressType::Done,
-            DownloadProgress::AllDone => DownloadProgressType::AllDone,
+            DownloadProgress::AllDone(_) => DownloadProgressType::AllDone,
             DownloadProgress::Abort(_) => DownloadProgressType::Abort,
         }
     }
@@ -1053,8 +1092,10 @@ mod tests {
 
     use super::*;
     use crate::node::IrohNode;
+    use crate::NodeOptions;
     use rand::RngCore;
     use tokio::io::AsyncWriteExt;
+    use tracing_subscriber::FmtSubscriber;
 
     #[test]
     fn test_hash() {
@@ -1085,9 +1126,9 @@ mod tests {
 
     #[test]
     fn test_blobs_add_get_bytes() {
-        // temp dir
         let dir = tempfile::tempdir().unwrap();
         let node = IrohNode::new(dir.into_path().display().to_string()).unwrap();
+
         let sizes = [1, 10, 100, 1000, 10000, 100000];
         let mut hashes = Vec::new();
         for size in sizes.iter() {
@@ -1210,7 +1251,6 @@ mod tests {
 
     #[test]
     fn test_blobs_list_collections() {
-        // temp dir
         let dir = tempfile::tempdir().unwrap();
         let num_blobs = 3;
         let blob_size = 100;
@@ -1222,7 +1262,6 @@ mod tests {
             file.write_all(&bytes).unwrap()
         }
 
-        // temp dir
         let iroh_dir = tempfile::tempdir().unwrap();
         let node = IrohNode::new(iroh_dir.into_path().display().to_string()).unwrap();
 
@@ -1308,9 +1347,15 @@ mod tests {
 
     #[test]
     fn test_list_and_delete() {
-        // temp dir
+        setup_logging();
+
         let iroh_dir = tempfile::tempdir().unwrap();
-        let node = IrohNode::new(iroh_dir.into_path().display().to_string()).unwrap();
+        // we're going to use a very fast GC interval to get this test to delete stuff aggressively
+        let opts = NodeOptions {
+            gc_interval_millis: Some(100),
+        };
+        let node =
+            IrohNode::with_options(iroh_dir.into_path().display().to_string(), opts).unwrap();
 
         // create bytes
         let blob_size = 100;
@@ -1324,9 +1369,11 @@ mod tests {
         }
 
         let mut hashes = vec![];
+        let mut tags = vec![];
         for blob in blobs {
             let output = node.blobs_add_bytes(blob).unwrap();
             hashes.push(output.hash);
+            tags.push(output.tag);
         }
 
         let got_hashes = node.blobs_list().unwrap();
@@ -1334,7 +1381,11 @@ mod tests {
         hashes_exist(&hashes, &got_hashes);
 
         let remove_hash = hashes.pop().unwrap();
-        node.blobs_delete_blob(remove_hash.clone()).unwrap();
+        let remove_tag = tags.pop().unwrap();
+        // delete the tag for the first blob
+        node.tags_delete(remove_tag).unwrap();
+        // wait for GC to clear the blob. windows test runner is slow & needs like 500ms
+        std::thread::sleep(Duration::from_millis(500));
 
         let got_hashes = node.blobs_list().unwrap();
         assert_eq!(num_blobs - 1, got_hashes.len());
@@ -1350,33 +1401,16 @@ mod tests {
     async fn build_iroh_core(
         path: &std::path::Path,
     ) -> iroh::node::Node<iroh::bytes::store::fs::Store> {
-        // TODO: store and load keypair
-        let secret_key = iroh::net::key::SecretKey::generate();
-
-        let docs_path = path.join(iroh::util::path::IrohPaths::DocsDatabase);
-        let docs = iroh::sync::store::fs::Store::persistent(&docs_path).unwrap();
-
-        // create a bao store for the iroh-bytes blobs
-        let blob_path = path.join(iroh::util::path::IrohPaths::BaoStoreDir);
-        tokio::fs::create_dir_all(&blob_path).await.unwrap();
-        let db = iroh::bytes::store::fs::Store::load(&blob_path)
+        iroh::node::Node::persistent(path)
             .await
-            .unwrap();
-
-        iroh::node::Builder::with_db_and_store(
-            db,
-            docs,
-            iroh::node::StorageConfig::Persistent(path.to_path_buf()),
-        )
-        .secret_key(secret_key)
-        .spawn()
-        .await
-        .unwrap()
+            .unwrap()
+            .spawn()
+            .await
+            .unwrap()
     }
 
     #[tokio::test]
     async fn iroh_core_blobs_add_get_bytes() {
-        // temp dir
         let dir = tempfile::tempdir().unwrap();
         let node = build_iroh_core(dir.path()).await;
         let sizes = [1, 10, 100, 1000, 10000, 100000];
@@ -1416,7 +1450,6 @@ mod tests {
 
     #[tokio::test]
     async fn iroh_core_blobs_list_collections() {
-        // iroh data dir
         let iroh_dir = tempfile::tempdir().unwrap();
         let node = build_iroh_core(iroh_dir.path()).await;
 
@@ -1490,5 +1523,17 @@ mod tests {
         );
         // this is always `None`
         // assert_eq!(collections[0].total_blobs_size.unwrap(), 300 as u64);
+    }
+
+    pub fn setup_logging() {
+        let subscriber = FmtSubscriber::builder()
+            .with_env_filter(format!(
+                "{}=debug",
+                env!("CARGO_PKG_NAME").replace('-', "_")
+            ))
+            .compact()
+            .finish();
+
+        tracing::subscriber::set_global_default(subscriber).ok();
     }
 }

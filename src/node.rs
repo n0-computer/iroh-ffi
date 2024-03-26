@@ -2,7 +2,7 @@ use std::{collections::HashMap, path::PathBuf, sync::Arc, time::Duration};
 
 use futures::stream::TryStreamExt;
 use iroh::{
-    node::Node,
+    node::{Builder, Node},
     rpc_protocol::{ProviderRequest, ProviderResponse},
 };
 use quic_rpc::transport::flume::FlumeConnection;
@@ -199,6 +199,37 @@ impl From<iroh::net::magicsock::ConnectionType> for ConnectionType {
         }
     }
 }
+/// Options passed to [`IrohNode.new`]. Controls the behaviour of an iroh node.
+pub struct NodeOptions {
+    /// How frequently the blob store should clean up unreferenced blobs, in milliseconds.
+    /// Set to 0 to disable gc
+    pub gc_interval_millis: Option<u64>,
+}
+
+impl From<NodeOptions> for iroh::node::Builder<iroh::bytes::store::mem::Store> {
+    fn from(value: NodeOptions) -> Self {
+        let mut b = Builder::default();
+
+        if let Some(millis) = value.gc_interval_millis {
+            b = match millis {
+                0 => b.gc_policy(iroh::node::GcPolicy::Disabled),
+                millis => b.gc_policy(iroh::node::GcPolicy::Interval(Duration::from_millis(
+                    millis,
+                ))),
+            };
+        }
+
+        b
+    }
+}
+
+impl Default for NodeOptions {
+    fn default() -> Self {
+        NodeOptions {
+            gc_interval_millis: Some(0),
+        }
+    }
+}
 
 /// An Iroh node. Allows you to sync, store, and transfer data.
 pub struct IrohNode {
@@ -219,6 +250,12 @@ impl IrohNode {
     /// Create a new iroh node. The `path` param should be a directory where we can store or load
     /// iroh data from a previous session.
     pub fn new(path: String) -> Result<Self, IrohError> {
+        let options = NodeOptions::default();
+        Self::with_options(path, options)
+    }
+
+    /// Create a new iroh node with options.
+    pub fn with_options(path: String, options: NodeOptions) -> Result<Self, IrohError> {
         let tokio_rt = tokio::runtime::Builder::new_multi_thread()
             .thread_name("main-runtime")
             .worker_threads(2)
@@ -229,7 +266,7 @@ impl IrohNode {
 
         let path = PathBuf::from(path);
         let node = block_on(&rt, async move {
-            Self::new_inner(path, Some(tokio_rt))
+            Self::new_inner(path, options, Some(tokio_rt))
                 .await
                 .map_err(IrohError::node_create)
         })?;
@@ -239,9 +276,11 @@ impl IrohNode {
 
     pub(crate) async fn new_inner(
         path: PathBuf,
+        options: NodeOptions,
         tokio_rt: Option<tokio::runtime::Runtime>,
     ) -> Result<Self, anyhow::Error> {
-        let node = iroh::node::Node::persistent(path).await?.spawn().await?;
+        let builder: Builder<iroh::bytes::store::mem::Store> = options.into();
+        let node = builder.persist(path).await?.spawn().await?;
         let sync_client = node.clone().client().clone();
 
         Ok(IrohNode {

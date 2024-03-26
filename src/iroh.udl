@@ -35,6 +35,9 @@ interface IrohNode {
   /// iroh data from a previous session.
   [Throws=IrohError]
   constructor(string path);
+  /// Create a new iroh node with options.
+  [Name=with_options,Throws=IrohError]
+  constructor(string path, NodeOptions opts);
   /// The string representation of the PublicKey of this node.
   string node_id();
 
@@ -45,8 +48,7 @@ interface IrohNode {
   ///
   /// This is a destructive operation. Both the document secret key and all entries in the
   /// document will be permanently deleted from the node's storage. Content blobs will be
-  /// deleted.clone()).await.map_err(Iroh::doc)
-  /// through garbage collection unless they are referenced from another document or tag.
+  /// deleted through garbage collection unless they are referenced from another document or tag.
   [Throws=IrohError]
   void doc_drop(string doc_id);
   /// Join and sync with an already existing document.
@@ -150,6 +152,13 @@ interface IrohNode {
   /// Delete a tag.
   [Throws=IrohError]
   void tags_delete(bytes name);
+};
+
+/// Options passed to [`IrohNode.new`]. Controls the behaviour of an iroh node.
+dictionary NodeOptions {
+  /// How frequently the blob store should clean up unreferenced blobs, in milliseconds.
+  /// Set to 0 to disable gc
+  u64? gc_interval_millis;
 };
 
 /// The Hash and associated tag of a newly created collection
@@ -1020,6 +1029,16 @@ dictionary DownloadProgressProgress {
 dictionary DownloadProgressDone {
   /// The unique id of the entry.
   u64 id;
+};
+
+/// A DownloadProgress event indicating we are done with the whole operation
+dictionary DownloadProgressAllDone {
+  /// The number of bytes written
+  u64 bytes_written;
+  /// The number of bytes read
+  u64 bytes_read;
+  /// The time it took to transfer the data
+  duration elapsed;
 };
 
 /// A DownloadProgress event indicating we got an error and need to abort

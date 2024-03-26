@@ -3,8 +3,9 @@ import pytest
 import tempfile
 import random
 import os
+import time
 
-from iroh import Hash, IrohNode, SetTagOption, BlobFormat, WrapOption, AddProgressType
+from iroh import Hash, IrohNode, SetTagOption, BlobFormat, WrapOption, AddProgressType, NodeOptions
 
 def test_hash():
     hash_str = "2kbxxbofqx5rau77wzafrj4yntjb4gn4olfpwxmv26js6dvhgjhq"
@@ -198,7 +199,8 @@ def test_blob_collections():
 
 def test_list_and_delete():
     iroh_dir = tempfile.TemporaryDirectory()
-    node = IrohNode(iroh_dir.name)
+    opts = NodeOptions(gc_interval_millis=100)
+    node = IrohNode.with_options(iroh_dir.name, opts)
     #
     # create bytes
     blob_size = 100
@@ -211,16 +213,22 @@ def test_list_and_delete():
         blobs.append(bytes)
 
     hashes = []
+    tags = []
     for blob in blobs:
         output = node.blobs_add_bytes(blob)
         hashes.append(output.hash)
+        tags.append(output.tag)
 
     got_hashes = node.blobs_list()
     assert len(got_hashes) == num_blobs 
     hashes_exist(hashes, got_hashes)
 
     remove_hash = hashes.pop(0)
-    node.blobs_delete_blob(remove_hash)
+    remove_tag = tags.pop(0)
+    # delete the tag for the first blob
+    node.tags_delete(remove_tag)
+    # wait for GC to clear the blob
+    time.sleep(0.25)
 
     got_hashes = node.blobs_list();
     assert len(got_hashes) == num_blobs - 1
