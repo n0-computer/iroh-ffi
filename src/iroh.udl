@@ -92,6 +92,9 @@ interface IrohNode {
   /// Get the size information on a single blob.
   [Throws=IrohError]
   u64 blobs_size([ByRef] Hash hash);
+  /// Create a ticket for sharing a blob or collection from this node.
+  [Throws=IrohError]
+  string blobs_share(Hash hash, BlobFormat blob_format);
   /// Read all bytes of single blob.
   ///
   /// This allocates a buffer for the full blob. Use only if you know that the blob you're
@@ -139,6 +142,12 @@ interface IrohNode {
   /// Read the content of a collection
   [Throws=IrohError]
   Collection blobs_get_collection(Hash hash);
+  /// Create a collection from already existing blobs.
+  ///
+  /// To automatically clear the tags for the passed in blobs you can set
+  /// `tags_to_delete` on those tags, and they will be deleted once the collection is created.
+  [Throws=IrohError]
+  HashAndTag blobs_create_collection(Collection collection, SetTagOption tag, sequence<string> tags_to_delete);
   /// Delete a blob.
   [Throws=IrohError]
   void blobs_delete_blob(Hash hash);
@@ -946,6 +955,23 @@ dictionary BlobAddOutcome {
   bytes tag;
 };
 
+/// A token containing everything to get a file from the provider.
+///
+/// It is a single item which can be easily serialized and deserialized.
+interface BlobTicket {
+  [Throws=IrohError]
+  constructor(string ticket);
+
+  /// The provider to get a file from.
+  NodeAddr node_addr();
+  /// The format of the blob.
+  BlobFormat format();
+  /// The hash to retrieve.
+  Hash hash();
+
+  /// Turn this ticket into parameters for blobs_download.
+  BlobDownloadRequest as_download_request();
+};
 
 /// A request to the node to download and share the data specified by the hash.
 interface BlobDownloadRequest {
@@ -964,15 +990,21 @@ callback interface DownloadCallback {
 /// Progress updates for the get operation.
 interface DownloadProgress {
   /// Get the type of event
+  /// note that there is no `as_connected` method, as the `Connected` event has no associated data
   DownloadProgressType type();
+
   /// Return the `DownloadProgressFound` event
   DownloadProgressFound as_found();
+  /// Return the `DownloadProgressFoundLocal` event
+  DownloadProgressFoundLocal as_found_local();
   /// Return the `DownloadProgressFoundHashSeq` event
   DownloadProgressFoundHashSeq as_found_hash_seq();
   /// Return the `DownloadProgressProgress` event
   DownloadProgressProgress as_progress();
   /// Return the `DownloadProgressDone` event
   DownloadProgressDone as_done();
+  /// Return the `DownloadProgressAllDone` event
+  DownloadProgressAllDone as_all_done();
   /// Return the `DownloadProgressAbort`
   DownloadProgressAbort as_abort();
 };
@@ -1143,6 +1175,7 @@ interface IrohError {
   Author(string description);
   Namespace(string description);
   DocTicket(string description);
+  BlobTicket(string description);
   Uniffi(string description);
   Connection(string description);
   Blobs(string description);

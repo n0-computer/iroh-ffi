@@ -179,6 +179,27 @@ impl IrohNode {
         })
     }
 
+    /// Create a ticket for sharing a blob from this node.
+    pub fn blobs_share(
+        &self,
+        hash: Arc<Hash>,
+        blob_format: BlobFormat,
+    ) -> Result<String, IrohError> {
+        block_on(&self.rt(), async {
+            let ticket = self
+                .sync_client
+                .blobs
+                .share(
+                    hash.0,
+                    blob_format.into(),
+                    iroh::client::ShareTicketOptions::RelayAndAddresses,
+                )
+                .await
+                .map_err(IrohError::blobs)?;
+            Ok(ticket.to_string())
+        })
+    }
+
     /// List all incomplete (partial) blobs.
     ///
     /// Note: this allocates for each `BlobListIncompleteResponse`, if you have many `BlobListIncompleteResponse`s this may be a prohibitively large list.
@@ -672,6 +693,50 @@ impl BlobDownloadRequest {
     }
 }
 
+/// A token containing everything to get a file from the provider.
+///
+/// It is a single item which can be easily serialized and deserialized.
+pub struct BlobTicket(iroh::base::ticket::BlobTicket);
+impl BlobTicket {
+    pub fn new(str: String) -> Result<Self, IrohError> {
+        let ticket =
+            iroh::base::ticket::BlobTicket::from_str(&str).map_err(IrohError::blob_ticket)?;
+        Ok(BlobTicket(ticket))
+    }
+
+    /// The hash of the item this ticket can retrieve.
+    pub fn hash(&self) -> Arc<Hash> {
+        Arc::new(self.0.hash().into())
+    }
+
+    /// The [`NodeAddr`] of the provider for this ticket.
+    pub fn node_addr(&self) -> Arc<NodeAddr> {
+        let addr = self.0.node_addr().clone();
+        Arc::new(addr.into())
+    }
+
+    /// The [`BlobFormat`] for this ticket.
+    pub fn format(&self) -> BlobFormat {
+        self.0.format().into()
+    }
+
+    /// True if the ticket is for a collection and should retrieve all blobs in it.
+    pub fn recursive(&self) -> bool {
+        self.0.format().is_hash_seq()
+    }
+
+    /// Convert this ticket into input parameters for a call to blobs_download
+    pub fn as_download_request(&self) -> Arc<BlobDownloadRequest> {
+        let r = BlobDownloadRequest(iroh::rpc_protocol::BlobDownloadRequest {
+            hash: self.0.hash(),
+            format: self.0.format(),
+            peer: self.0.node_addr().clone(),
+            tag: iroh::rpc_protocol::SetTagOption::Auto,
+        });
+        Arc::new(r)
+    }
+}
+
 /// The `progress` method will be called for each `DownloadProgress` event that is emitted during
 /// a `node.blobs_download`. Use the `DownloadProgress.type()` method to check the
 /// `DownloadProgressType` of the event.
@@ -840,11 +905,12 @@ impl From<iroh::rpc_protocol::DownloadProgress> for DownloadProgress {
 
 impl DownloadProgress {
     /// Get the type of event
+    /// note that there is no `as_connected` method, as the `Connected` event has no associated data
     pub fn r#type(&self) -> DownloadProgressType {
         match self {
-            DownloadProgress::FoundLocal(_) => DownloadProgressType::FoundLocal,
             DownloadProgress::Connected => DownloadProgressType::Connected,
             DownloadProgress::Found(_) => DownloadProgressType::Found,
+            DownloadProgress::FoundLocal(_) => DownloadProgressType::FoundLocal,
             DownloadProgress::FoundHashSeq(_) => DownloadProgressType::FoundHashSeq,
             DownloadProgress::Progress(_) => DownloadProgressType::Progress,
             DownloadProgress::Done(_) => DownloadProgressType::Done,
@@ -853,19 +919,19 @@ impl DownloadProgress {
         }
     }
 
-    /// Return the `DownloadProgressFoundLocal` event
-    pub fn as_found_local(&self) -> DownloadProgressFoundLocal {
-        match self {
-            DownloadProgress::FoundLocal(f) => f.clone(),
-            _ => panic!("DownloadProgress type is not 'FoundLocal'"),
-        }
-    }
-
     /// Return the `DownloadProgressFound` event
     pub fn as_found(&self) -> DownloadProgressFound {
         match self {
             DownloadProgress::Found(f) => f.clone(),
             _ => panic!("DownloadProgress type is not 'Found'"),
+        }
+    }
+
+    /// Return the `DownloadProgressFoundLocal` event
+    pub fn as_found_local(&self) -> DownloadProgressFoundLocal {
+        match self {
+            DownloadProgress::FoundLocal(f) => f.clone(),
+            _ => panic!("DownloadProgress type is not 'FoundLocal'"),
         }
     }
 
@@ -893,7 +959,15 @@ impl DownloadProgress {
         }
     }
 
-    /// Return the `DownloadProgressAbort`
+    /// Return the `DownloadProgressAllDone` event
+    pub fn as_all_done(&self) -> DownloadProgressAllDone {
+        match self {
+            DownloadProgress::AllDone(e) => e.clone(),
+            _ => panic!("DownloadProgress type is not 'AllDone'"),
+        }
+    }
+
+    /// Return the `DownloadProgressAbort` event
     pub fn as_abort(&self) -> DownloadProgressAbort {
         match self {
             DownloadProgress::Abort(a) => a.clone(),
