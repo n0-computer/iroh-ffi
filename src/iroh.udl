@@ -145,6 +145,12 @@ interface IrohNode {
   /// Read the content of a collection
   [Throws=IrohError]
   Collection blobs_get_collection(Hash hash);
+  /// Create a collection from already existing blobs.
+  ///
+  /// To automatically clear the tags for the passed in blobs you can set
+  /// `tags_to_delete` on those tags, and they will be deleted once the collection is created.
+  [Throws=IrohError]
+  HashAndTag blobs_create_collection(Collection collection, SetTagOption tag, sequence<string> tags_to_delete);
   /// Delete a blob.
   [Throws=IrohError]
   void blobs_delete_blob(Hash hash);
