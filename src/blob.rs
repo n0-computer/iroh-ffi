@@ -179,6 +179,43 @@ impl IrohNode {
         })
     }
 
+    /// Export a blob from the internal blob store to a path on the node's filesystem.
+    ///
+    /// `destination` should be a writeable, absolute path on the local node's filesystem.
+    ///
+    /// If `format` is set to [`ExportFormat::Collection`], and the `hash` refers to a collection,
+    /// all children of the collection will be exported. See [`ExportFormat`] for details.
+    ///
+    /// The `mode` argument defines if the blob should be copied to the target location or moved out of
+    /// the internal store into the target location. See [`ExportMode`] for details.
+    pub fn blobs_export(
+        &self,
+        hash: Arc<Hash>,
+        destination: String,
+        format: BlobExportFormat,
+        mode: BlobExportMode,
+    ) -> Result<(), IrohError> {
+        block_on(&self.rt(), async {
+            let destination: PathBuf = destination.into();
+            if let Some(dir) = destination.parent() {
+                tokio::fs::create_dir_all(dir)
+                    .await
+                    .map_err(IrohError::blobs)?;
+            }
+
+            let stream = self
+                .sync_client
+                .blobs
+                .export(hash.0, destination, format.into(), mode.into())
+                .await
+                .map_err(IrohError::blobs)?;
+
+            stream.finish().await.map_err(IrohError::blobs)?;
+
+            Ok(())
+        })
+    }
+
     /// Create a ticket for sharing a blob from this node.
     pub fn blobs_share(
         &self,
@@ -690,6 +727,63 @@ impl BlobDownloadRequest {
                 tag: (*tag).clone().into(),
             },
         ))
+    }
+}
+
+/// The expected format of a hash being exported.
+pub enum BlobExportFormat {
+    /// The hash refers to any blob and will be exported to a single file.
+    Blob,
+    /// The hash refers to a [`crate::format::collection::Collection`] blob
+    /// and all children of the collection shall be exported to one file per child.
+    ///
+    /// If the blob can be parsed as a [`BlobFormat::HashSeq`], and the first child contains
+    /// collection metadata, all other children of the collection will be exported to
+    /// a file each, with their collection name treated as a relative path to the export
+    /// destination path.
+    ///
+    /// If the blob cannot be parsed as a collection, the operation will fail.
+    Collection,
+}
+
+impl From<BlobExportFormat> for iroh::bytes::store::ExportFormat {
+    fn from(value: BlobExportFormat) -> Self {
+        match value {
+            BlobExportFormat::Blob => iroh::bytes::store::ExportFormat::Blob,
+            BlobExportFormat::Collection => iroh::bytes::store::ExportFormat::Collection,
+        }
+    }
+}
+
+/// The export mode describes how files will be exported.
+///
+/// This is a hint to the import trait method. For some implementations, this
+/// does not make any sense. E.g. an in memory implementation will always have
+/// to copy the file into memory. Also, a disk based implementation might choose
+/// to copy small files even if the mode is `Reference`.
+pub enum BlobExportMode {
+    /// This mode will copy the file to the target directory.
+    ///
+    /// This is the safe default because the file can not be accidentally modified
+    /// after it has been exported.
+    Copy,
+    /// This mode will try to move the file to the target directory and then reference it from
+    /// the database.
+    ///
+    /// This has a large performance and storage benefit, but it is less safe since
+    /// the file might be modified in the target directory after it has been exported.
+    ///
+    /// Stores are allowed to ignore this mode and always copy the file, e.g.
+    /// if the file is very small or if the store does not support referencing files.
+    TryReference,
+}
+
+impl From<BlobExportMode> for iroh::bytes::store::ExportMode {
+    fn from(value: BlobExportMode) -> Self {
+        match value {
+            BlobExportMode::Copy => iroh::bytes::store::ExportMode::Copy,
+            BlobExportMode::TryReference => iroh::bytes::store::ExportMode::TryReference,
+        }
     }
 }
 
