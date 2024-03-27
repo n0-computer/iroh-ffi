@@ -92,6 +92,9 @@ interface IrohNode {
   /// Get the size information on a single blob.
   [Throws=IrohError]
   u64 blobs_size([ByRef] Hash hash);
+  /// Create a ticket for sharing a blob from this node.
+  [Throws=IrohError]
+  string blobs_share(Hash hash, BlobFormat blob_format);
   /// Read all bytes of single blob.
   ///
   /// This allocates a buffer for the full blob. Use only if you know that the blob you're
@@ -124,6 +127,9 @@ interface IrohNode {
   /// Download a blob from another node and add it to the local database.
   [Throws=IrohError]
   void blobs_download(BlobDownloadRequest req, DownloadCallback cb);
+  /// Download a blob from another node and add it to the local database, using a ticket.
+  [Throws=IrohError]
+  void blobs_download_ticket(string ticket, DownloadCallback cb);
   /// List all incomplete (partial) blobs.
   ///
   /// Note: this allocates for each `BlobListIncompleteResponse`, if you have many `BlobListIncompleteResponse`s this may be a prohibitively large list.
@@ -1143,6 +1149,7 @@ interface IrohError {
   Author(string description);
   Namespace(string description);
   DocTicket(string description);
+  BlobTicket(string description);
   Uniffi(string description);
   Connection(string description);
   Blobs(string description);

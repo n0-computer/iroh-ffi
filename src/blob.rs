@@ -179,6 +179,59 @@ impl IrohNode {
         })
     }
 
+    /// Download a blob from another node and add it to the local database, using a blob ticket
+    pub fn blobs_download_ticket(
+        &self,
+        ticket: String,
+        cb: Box<dyn DownloadCallback>,
+    ) -> Result<(), IrohError> {
+        block_on(&self.rt(), async {
+            let ticket = iroh::base::ticket::BlobTicket::from_str(&ticket)
+                .map_err(IrohError::blob_ticket)?;
+
+            let req = iroh::rpc_protocol::BlobDownloadRequest {
+                hash: ticket.hash(),
+                format: ticket.format(),
+                peer: ticket.node_addr().clone(),
+                tag: iroh::rpc_protocol::SetTagOption::Auto,
+            };
+
+            let mut stream = self
+                .sync_client
+                .blobs
+                .download(req)
+                .await
+                .map_err(IrohError::blobs)?;
+
+            while let Some(progress) = stream.next().await {
+                let progress = progress.map_err(IrohError::blobs)?;
+                cb.progress(Arc::new(progress.into()))?;
+            }
+            Ok(())
+        })
+    }
+
+    /// Create a ticket for sharing a blob from this node.
+    pub fn blobs_share(
+        &self,
+        hash: Arc<Hash>,
+        blob_format: BlobFormat,
+    ) -> Result<String, IrohError> {
+        block_on(&self.rt(), async {
+            let ticket = self
+                .sync_client
+                .blobs
+                .share(
+                    hash.0,
+                    blob_format.into(),
+                    iroh::client::ShareTicketOptions::RelayAndAddresses,
+                )
+                .await
+                .map_err(IrohError::blobs)?;
+            Ok(ticket.to_string())
+        })
+    }
+
     /// List all incomplete (partial) blobs.
     ///
     /// Note: this allocates for each `BlobListIncompleteResponse`, if you have many `BlobListIncompleteResponse`s this may be a prohibitively large list.

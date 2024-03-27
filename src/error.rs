@@ -13,6 +13,8 @@ pub enum IrohError {
     Author { description: String },
     #[error("namespace error: {description}")]
     Namespace { description: String },
+    #[error("blob ticket error: {description}")]
+    BlobTicket { description: String },
     #[error("doc ticket error: {description}")]
     DocTicket { description: String },
     #[error("uniffi: {description}")]
@@ -78,6 +80,12 @@ impl IrohError {
 
     pub fn doc(error: impl Display) -> Self {
         IrohError::Doc {
+            description: error.to_string(),
+        }
+    }
+
+    pub fn blob_ticket(error: impl Display) -> Self {
+        IrohError::BlobTicket {
             description: error.to_string(),
         }
     }
