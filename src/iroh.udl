@@ -94,7 +94,7 @@ interface IrohNode {
   u64 blobs_size([ByRef] Hash hash);
   /// Create a ticket for sharing a blob or collection from this node.
   [Throws=IrohError]
-  string blobs_share(Hash hash, BlobFormat blob_format);
+  string blobs_share(Hash hash, BlobFormat blob_format, ShareTicketOptions ticket_options);
   /// Read all bytes of single blob.
   ///
   /// This allocates a buffer for the full blob. Use only if you know that the blob you're
@@ -1052,6 +1052,15 @@ enum BlobExportFormat {
     "Collection",
 };
 
+/// Options when creating a ticket
+enum ShareTicketOptions {
+  /// Include both the relay URL and the direct addresses.
+  "RelayAndAddresses",
+  /// Only include the relay URL.
+  "Relay",
+  /// Only include the direct addresses.
+  "Addresses",
+};
 
 /// The export mode describes how files will be exported.
 ///

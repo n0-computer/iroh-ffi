@@ -4,6 +4,7 @@ use futures::{StreamExt, TryStreamExt};
 use serde::{Deserialize, Serialize};
 
 use crate::node::IrohNode;
+use crate::ticket::ShareTicketOptions;
 use crate::{block_on, IrohError, NodeAddr};
 
 impl IrohNode {
@@ -221,16 +222,13 @@ impl IrohNode {
         &self,
         hash: Arc<Hash>,
         blob_format: BlobFormat,
+        ticket_options: ShareTicketOptions,
     ) -> Result<String, IrohError> {
         block_on(&self.rt(), async {
             let ticket = self
                 .sync_client
                 .blobs
-                .share(
-                    hash.0,
-                    blob_format.into(),
-                    iroh::client::ShareTicketOptions::RelayAndAddresses,
-                )
+                .share(hash.0, blob_format.into(), ticket_options.into())
                 .await
                 .map_err(IrohError::blobs)?;
             Ok(ticket.to_string())
@@ -342,7 +340,7 @@ impl IrohNode {
             if let Some(name) = name {
                 self.sync_client
                     .tags
-                    .delete(name.into())
+                    .delete(name)
                     .await
                     .map_err(IrohError::blobs)?;
                 self.sync_client
@@ -730,6 +728,12 @@ impl BlobDownloadRequest {
     }
 }
 
+impl From<iroh::rpc_protocol::BlobDownloadRequest> for BlobDownloadRequest {
+    fn from(value: iroh::rpc_protocol::BlobDownloadRequest) -> Self {
+        BlobDownloadRequest(value)
+    }
+}
+
 /// The expected format of a hash being exported.
 pub enum BlobExportFormat {
     /// The hash refers to any blob and will be exported to a single file.
@@ -784,50 +788,6 @@ impl From<BlobExportMode> for iroh::bytes::store::ExportMode {
             BlobExportMode::Copy => iroh::bytes::store::ExportMode::Copy,
             BlobExportMode::TryReference => iroh::bytes::store::ExportMode::TryReference,
         }
-    }
-}
-
-/// A token containing everything to get a file from the provider.
-///
-/// It is a single item which can be easily serialized and deserialized.
-pub struct BlobTicket(iroh::base::ticket::BlobTicket);
-impl BlobTicket {
-    pub fn new(str: String) -> Result<Self, IrohError> {
-        let ticket =
-            iroh::base::ticket::BlobTicket::from_str(&str).map_err(IrohError::blob_ticket)?;
-        Ok(BlobTicket(ticket))
-    }
-
-    /// The hash of the item this ticket can retrieve.
-    pub fn hash(&self) -> Arc<Hash> {
-        Arc::new(self.0.hash().into())
-    }
-
-    /// The [`NodeAddr`] of the provider for this ticket.
-    pub fn node_addr(&self) -> Arc<NodeAddr> {
-        let addr = self.0.node_addr().clone();
-        Arc::new(addr.into())
-    }
-
-    /// The [`BlobFormat`] for this ticket.
-    pub fn format(&self) -> BlobFormat {
-        self.0.format().into()
-    }
-
-    /// True if the ticket is for a collection and should retrieve all blobs in it.
-    pub fn recursive(&self) -> bool {
-        self.0.format().is_hash_seq()
-    }
-
-    /// Convert this ticket into input parameters for a call to blobs_download
-    pub fn as_download_request(&self) -> Arc<BlobDownloadRequest> {
-        let r = BlobDownloadRequest(iroh::rpc_protocol::BlobDownloadRequest {
-            hash: self.0.hash(),
-            format: self.0.format(),
-            peer: self.0.node_addr().clone(),
-            tag: iroh::rpc_protocol::SetTagOption::Auto,
-        });
-        Arc::new(r)
     }
 }
 
