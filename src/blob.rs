@@ -4,6 +4,7 @@ use futures::{StreamExt, TryStreamExt};
 use serde::{Deserialize, Serialize};
 
 use crate::node::IrohNode;
+use crate::ticket::ShareTicketOptions;
 use crate::{block_on, IrohError, NodeAddr};
 
 impl IrohNode {
@@ -179,21 +180,55 @@ impl IrohNode {
         })
     }
 
+    /// Export a blob from the internal blob store to a path on the node's filesystem.
+    ///
+    /// `destination` should be a writeable, absolute path on the local node's filesystem.
+    ///
+    /// If `format` is set to [`ExportFormat::Collection`], and the `hash` refers to a collection,
+    /// all children of the collection will be exported. See [`ExportFormat`] for details.
+    ///
+    /// The `mode` argument defines if the blob should be copied to the target location or moved out of
+    /// the internal store into the target location. See [`ExportMode`] for details.
+    pub fn blobs_export(
+        &self,
+        hash: Arc<Hash>,
+        destination: String,
+        format: BlobExportFormat,
+        mode: BlobExportMode,
+    ) -> Result<(), IrohError> {
+        block_on(&self.rt(), async {
+            let destination: PathBuf = destination.into();
+            if let Some(dir) = destination.parent() {
+                tokio::fs::create_dir_all(dir)
+                    .await
+                    .map_err(IrohError::blobs)?;
+            }
+
+            let stream = self
+                .sync_client
+                .blobs
+                .export(hash.0, destination, format.into(), mode.into())
+                .await
+                .map_err(IrohError::blobs)?;
+
+            stream.finish().await.map_err(IrohError::blobs)?;
+
+            Ok(())
+        })
+    }
+
     /// Create a ticket for sharing a blob from this node.
     pub fn blobs_share(
         &self,
         hash: Arc<Hash>,
         blob_format: BlobFormat,
+        ticket_options: ShareTicketOptions,
     ) -> Result<String, IrohError> {
         block_on(&self.rt(), async {
             let ticket = self
                 .sync_client
                 .blobs
-                .share(
-                    hash.0,
-                    blob_format.into(),
-                    iroh::client::ShareTicketOptions::RelayAndAddresses,
-                )
+                .share(hash.0, blob_format.into(), ticket_options.into())
                 .await
                 .map_err(IrohError::blobs)?;
             Ok(ticket.to_string())
@@ -305,7 +340,7 @@ impl IrohNode {
             if let Some(name) = name {
                 self.sync_client
                     .tags
-                    .delete(name.into())
+                    .delete(name)
                     .await
                     .map_err(IrohError::blobs)?;
                 self.sync_client
@@ -693,47 +728,66 @@ impl BlobDownloadRequest {
     }
 }
 
-/// A token containing everything to get a file from the provider.
+impl From<iroh::rpc_protocol::BlobDownloadRequest> for BlobDownloadRequest {
+    fn from(value: iroh::rpc_protocol::BlobDownloadRequest) -> Self {
+        BlobDownloadRequest(value)
+    }
+}
+
+/// The expected format of a hash being exported.
+pub enum BlobExportFormat {
+    /// The hash refers to any blob and will be exported to a single file.
+    Blob,
+    /// The hash refers to a [`crate::format::collection::Collection`] blob
+    /// and all children of the collection shall be exported to one file per child.
+    ///
+    /// If the blob can be parsed as a [`BlobFormat::HashSeq`], and the first child contains
+    /// collection metadata, all other children of the collection will be exported to
+    /// a file each, with their collection name treated as a relative path to the export
+    /// destination path.
+    ///
+    /// If the blob cannot be parsed as a collection, the operation will fail.
+    Collection,
+}
+
+impl From<BlobExportFormat> for iroh::bytes::store::ExportFormat {
+    fn from(value: BlobExportFormat) -> Self {
+        match value {
+            BlobExportFormat::Blob => iroh::bytes::store::ExportFormat::Blob,
+            BlobExportFormat::Collection => iroh::bytes::store::ExportFormat::Collection,
+        }
+    }
+}
+
+/// The export mode describes how files will be exported.
 ///
-/// It is a single item which can be easily serialized and deserialized.
-pub struct BlobTicket(iroh::base::ticket::BlobTicket);
-impl BlobTicket {
-    pub fn new(str: String) -> Result<Self, IrohError> {
-        let ticket =
-            iroh::base::ticket::BlobTicket::from_str(&str).map_err(IrohError::blob_ticket)?;
-        Ok(BlobTicket(ticket))
-    }
+/// This is a hint to the import trait method. For some implementations, this
+/// does not make any sense. E.g. an in memory implementation will always have
+/// to copy the file into memory. Also, a disk based implementation might choose
+/// to copy small files even if the mode is `Reference`.
+pub enum BlobExportMode {
+    /// This mode will copy the file to the target directory.
+    ///
+    /// This is the safe default because the file can not be accidentally modified
+    /// after it has been exported.
+    Copy,
+    /// This mode will try to move the file to the target directory and then reference it from
+    /// the database.
+    ///
+    /// This has a large performance and storage benefit, but it is less safe since
+    /// the file might be modified in the target directory after it has been exported.
+    ///
+    /// Stores are allowed to ignore this mode and always copy the file, e.g.
+    /// if the file is very small or if the store does not support referencing files.
+    TryReference,
+}
 
-    /// The hash of the item this ticket can retrieve.
-    pub fn hash(&self) -> Arc<Hash> {
-        Arc::new(self.0.hash().into())
-    }
-
-    /// The [`NodeAddr`] of the provider for this ticket.
-    pub fn node_addr(&self) -> Arc<NodeAddr> {
-        let addr = self.0.node_addr().clone();
-        Arc::new(addr.into())
-    }
-
-    /// The [`BlobFormat`] for this ticket.
-    pub fn format(&self) -> BlobFormat {
-        self.0.format().into()
-    }
-
-    /// True if the ticket is for a collection and should retrieve all blobs in it.
-    pub fn recursive(&self) -> bool {
-        self.0.format().is_hash_seq()
-    }
-
-    /// Convert this ticket into input parameters for a call to blobs_download
-    pub fn as_download_request(&self) -> Arc<BlobDownloadRequest> {
-        let r = BlobDownloadRequest(iroh::rpc_protocol::BlobDownloadRequest {
-            hash: self.0.hash(),
-            format: self.0.format(),
-            peer: self.0.node_addr().clone(),
-            tag: iroh::rpc_protocol::SetTagOption::Auto,
-        });
-        Arc::new(r)
+impl From<BlobExportMode> for iroh::bytes::store::ExportMode {
+    fn from(value: BlobExportMode) -> Self {
+        match value {
+            BlobExportMode::Copy => iroh::bytes::store::ExportMode::Copy,
+            BlobExportMode::TryReference => iroh::bytes::store::ExportMode::TryReference,
+        }
     }
 }
 

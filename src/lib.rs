@@ -5,6 +5,7 @@ mod error;
 mod key;
 mod node;
 mod tag;
+mod ticket;
 
 pub use self::author::*;
 pub use self::blob::*;
@@ -13,11 +14,15 @@ pub use self::error::IrohError;
 pub use self::key::*;
 pub use self::node::*;
 pub use self::tag::*;
+pub use self::ticket::*;
 
 use futures::Future;
 use iroh::metrics::try_init_metrics_collection;
 
 use tracing_subscriber::filter::LevelFilter;
+
+// This macro includes the scaffolding for the Iroh FFI bindings.
+uniffi::include_scaffolding!("iroh");
 
 /// The logging level. See the rust (log crate)[https://docs.rs/log] for more information.
 #[derive(Debug)]
@@ -104,8 +109,6 @@ pub fn path_to_key(
     .map(|k| k.to_vec())
     .map_err(IrohError::fs_util)
 }
-
-uniffi::include_scaffolding!("iroh");
 
 #[cfg(test)]
 mod tests {
