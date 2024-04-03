@@ -1,6 +1,6 @@
 [package]
 name = "iroh"
-version = "0.12.0"
+version = "0.13.0"
 edition = "2021"
 publish = false
 readme = "README.md"
