@@ -45,3 +45,36 @@ let package = Package(
 ```
 
 6. Commit the result & push
+
+## Python
+
+The first time:
+
+1) Create an account on [pypi](https://pypi.org/) & [testpipy](https://test.pypi.org/project/iroh/)
+2) Get invited to the `iroh` project
+3) Install `twine`
+4) Upgrade `pkginfo` to at least `1.10`. For more information check out [this issue on twine](https://github.com/pypa/twine/issues/1070)
+5) Create an API token on pipy and test pipy
+6) Put those tokens into ~/.pypirc:
+```
+# ~/.pypirc
+[pypi]
+username = __token__
+password = pypi-TOKEN
+
+[testpypi]
+username = __token__
+password = pypi-TOKEN
+```
+
+To release iroh python:
+
+1) Download the artifacts from the [wheels ci workflow](https://github.com/n0-computer/iroh-ffi/actions/workflows/wheels.yml), picking the workflow that was run on the latest `main` branch
+2) Extract the artifacts
+3) Upload each to testpypi: `twine upload --repository testpypi iroh-$VERSION-*.whl`
+4) Dogfood by downloading the lastest iroh version from testpipy and using it. The simplest test may be to run the python code in the `iroh-ffi/python` directory.
+    - create & activate a new virtual env
+    - install iroh from testpypi `pip install -i https://test.pypi.org/simple/ iroh`
+    - run `python main.py`
+    - ensure it works (and remove the test env)
+5) Upload each to pypi: `twine upload iroh-$VERSION-*.whl`
