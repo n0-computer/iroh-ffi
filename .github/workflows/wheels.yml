@@ -40,6 +40,7 @@ jobs:
           source $HOME/.cargo/env
           PATH=/opt/python/cp311-cp311/bin:$PATH
           export PATH
+          maturin --version
           maturin build --release --manylinux 2014
       - name: Upload wheel
         uses: actions/upload-artifact@v3
@@ -73,9 +74,10 @@ jobs:
           python-version: ${{ matrix.python }}
       - name: Install maturin & uniffi-bindgen
         run: |
-          pip install maturin uniffi-bindgen
+          pip install -U maturin uniffi-bindgen
       - name: Build wheel
         run: |
+          maturin --version
           maturin build --release
       - name: Upload wheel
         uses: actions/upload-artifact@v3
@@ -93,9 +95,10 @@ jobs:
           python-version: '3.11'
       - name: Install maturin & uniffi-bindgen
         run: |
-          pip install maturin uniffi-bindgen
+          pip install -U maturin uniffi-bindgen
       - name: Build wheel
         run: |
+          maturin --version
           maturin build --release
       - name: Upload wheel
         uses: actions/upload-artifact@v3
