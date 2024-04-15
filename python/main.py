@@ -30,17 +30,17 @@ if __name__ == "__main__":
         print("Started Iroh node: {}".format(node.node_id()))
 
        # create doc
-        doc = node.doc_new();
+        doc = node.doc_create();
         print("Created doc: {}".format(doc.id()))
         
-        doc = node.doc_new();
+        doc = node.doc_create();
         print("Created doc: {}".format(doc.id()))
         
         # list docs
         docs = node.doc_list();
         print("List all {} docs:".format(len(docs)))
         for doc in docs:
-            print("\t{}".format(doc.to_string()))
+            print("\t{}".format(doc))
 
         exit()
 
