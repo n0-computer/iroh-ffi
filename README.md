@@ -2,13 +2,13 @@
 
 After careful consideration, we've decided to pause development on the ffi project for the forseeable future. In order to truly meet our standards, we need to focus on tuning the our Rust API to deliver the best possible experience. When that API has settled into a `1.0`, we can re-visit opening up the API for other languages.
 
-Thank you anyone who has picked up iroh in our ffi languages. If you have any questions or just want to chat, feel free to reach out here or on our [discord](https://discord.gg/ktrtZvTk).
+Thank you anyone who has picked up iroh in our ffi languages. If you have any questions or just want to chat, feel free to reach out here or on our [discord](https://discord.gg/B4pzE3usDC).
 
 # Releases
 
 We are not commited to publishing releases for the FFI on a schedule or in tandem with the latest version of [iroh](https://github.com/n0-computer/iroh). There may be a gap between the latest version of `iroh` (or the latest verison of `iroh-ffi` that is released on github), and the matching versions of the python or swift ffi languages that are published.
 
-If there currently is a gap, and you need a published python or swift package, please file an issue or reach out to us on our [discord](https://discord.gg/ktrtZvTk).
+If there currently is a gap, and you need a published python or swift package, please file an issue or reach out to us on our [discord](https://discord.gg/B4pzE3usDC).
 
 
 # iroh-ffi
