@@ -69,6 +69,22 @@ interface IrohNode {
   /// List all the AuthorIds that exist on this node.
   [Throws=IrohError]
   sequence<AuthorId> author_list();
+  /// Export the given author.
+  ///
+  /// Warning: This contains sensitive data.
+  [Throws=IrohError]
+  Author author_export(AuthorId author);
+  /// Import the given author.
+  ///
+  /// Warning: This contains sensitive data.
+  [Throws=IrohError]
+  AuthorId author_import(Author author);
+  /// Deletes the given author by id.
+  ///
+  /// Warning: This permanently removes this author.
+  [Throws=IrohError]
+  void author_delete(AuthorId author);
+
 
   /// Get statistics of the running node.
   [Throws=IrohError]
@@ -594,6 +610,17 @@ interface AuthorId {
   string to_string();
   /// Returns true when both AuthorId's have the same value
   boolean equal([ByRef] AuthorId other);
+};
+
+/// Author key to insert entries in a document
+///
+/// Internally, an author is a `SigningKey` which is used to sign entries.
+interface Author {
+  /// Get an [`Author`] from a String
+  [Name=from_string, Throws=IrohError]
+  constructor(string str);
+  /// Return the AuthorId as a string
+  string to_string();
 };
 
 /// A single entry in a [`Doc`]
