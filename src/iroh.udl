@@ -1133,6 +1133,8 @@ dictionary DownloadProgressAbort {
 
 /// The kinds of progress events that can occur in a `DownloadProgress`
 enum DownloadProgressType {
+  /// Initial state of the download.
+  "InitialState",
   /// Data was found locally
   "FoundLocal",
   /// A new connection was established.

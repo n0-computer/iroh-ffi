@@ -42,8 +42,9 @@ impl BlobTicket {
         let r: BlobDownloadRequest = iroh::rpc_protocol::BlobDownloadRequest {
             hash: self.0.hash(),
             format: self.0.format(),
-            peer: self.0.node_addr().clone(),
+            nodes: vec![self.0.node_addr().clone()],
             tag: iroh::rpc_protocol::SetTagOption::Auto,
+            mode: iroh::rpc_protocol::DownloadMode::Direct,
         }
         .into();
         Arc::new(r)
@@ -60,14 +61,14 @@ pub enum ShareTicketOptions {
     Addresses,
 }
 
-impl From<ShareTicketOptions> for iroh::client::ShareTicketOptions {
-    fn from(options: ShareTicketOptions) -> iroh::client::ShareTicketOptions {
+impl From<ShareTicketOptions> for iroh::base::node_addr::AddrInfoOptions {
+    fn from(options: ShareTicketOptions) -> iroh::base::node_addr::AddrInfoOptions {
         match options {
             ShareTicketOptions::RelayAndAddresses => {
-                iroh::client::ShareTicketOptions::RelayAndAddresses
+                iroh::base::node_addr::AddrInfoOptions::RelayAndAddresses
             }
-            ShareTicketOptions::Relay => iroh::client::ShareTicketOptions::Relay,
-            ShareTicketOptions::Addresses => iroh::client::ShareTicketOptions::Addresses,
+            ShareTicketOptions::Relay => iroh::base::node_addr::AddrInfoOptions::Relay,
+            ShareTicketOptions::Addresses => iroh::base::node_addr::AddrInfoOptions::Addresses,
         }
     }
 }

@@ -306,11 +306,16 @@ impl Doc {
         })
     }
 
-    /// Share this document with peers over a ticket.
+    /// Share this document with peers over a ticket that includes a relay url
+    /// and any direct addresses
+    // TODO: have the user supply a `AddrInfoOptions`
     pub fn share(&self, mode: ShareMode) -> Result<String, IrohError> {
         block_on(&self.rt, async {
             self.inner
-                .share(mode.into())
+                .share(
+                    mode.into(),
+                    iroh::base::node_addr::AddrInfoOptions::RelayAndAddresses,
+                )
                 .await
                 .map(|ticket| ticket.to_string())
                 .map_err(IrohError::doc)

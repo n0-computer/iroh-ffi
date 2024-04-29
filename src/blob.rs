@@ -721,8 +721,9 @@ impl BlobDownloadRequest {
             iroh::rpc_protocol::BlobDownloadRequest {
                 hash: hash.0,
                 format: format.into(),
-                peer: (*node).clone().try_into()?,
+                nodes: vec![(*node).clone().try_into()?],
                 tag: (*tag).clone().into(),
+                mode: iroh::rpc_protocol::DownloadMode::Direct,
             },
         ))
     }
@@ -801,6 +802,7 @@ pub trait DownloadCallback: Send + Sync + 'static {
 /// The different types of DownloadProgress events
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DownloadProgressType {
+    InitialState,
     FoundLocal,
     Connected,
     Found,
@@ -882,6 +884,9 @@ pub struct DownloadProgressAbort {
 /// Progress updates for the get operation.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum DownloadProgress {
+    /// The initial state of the download.
+    // TODO: write a `DownloadProgressInitialState` struct
+    InitialState,
     /// A new connection was established.
     Connected,
     /// An item was found with hash `hash`, from now on referred to via `id`
@@ -905,13 +910,14 @@ pub enum DownloadProgress {
 impl From<iroh::rpc_protocol::DownloadProgress> for DownloadProgress {
     fn from(value: iroh::rpc_protocol::DownloadProgress) -> Self {
         match value {
+            iroh::rpc_protocol::DownloadProgress::InitialState(_) => DownloadProgress::InitialState,
             iroh::rpc_protocol::DownloadProgress::FoundLocal {
                 child,
                 hash,
                 size,
                 valid_ranges,
             } => DownloadProgress::FoundLocal(DownloadProgressFoundLocal {
-                child,
+                child: child.into(),
                 hash: Arc::new(hash.into()),
                 // TODO(b5) - this is ignoring verification information!
                 size: size.value(),
@@ -926,7 +932,7 @@ impl From<iroh::rpc_protocol::DownloadProgress> for DownloadProgress {
             } => DownloadProgress::Found(DownloadProgressFound {
                 id,
                 hash: Arc::new(hash.into()),
-                child,
+                child: child.into(),
                 size,
             }),
             iroh::rpc_protocol::DownloadProgress::FoundHashSeq { hash, children } => {
@@ -962,6 +968,7 @@ impl DownloadProgress {
     /// note that there is no `as_connected` method, as the `Connected` event has no associated data
     pub fn r#type(&self) -> DownloadProgressType {
         match self {
+            DownloadProgress::InitialState => DownloadProgressType::InitialState,
             DownloadProgress::Connected => DownloadProgressType::Connected,
             DownloadProgress::Found(_) => DownloadProgressType::Found,
             DownloadProgress::FoundLocal(_) => DownloadProgressType::FoundLocal,
