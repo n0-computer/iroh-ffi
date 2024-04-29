@@ -42,8 +42,9 @@ impl BlobTicket {
         let r: BlobDownloadRequest = iroh::rpc_protocol::BlobDownloadRequest {
             hash: self.0.hash(),
             format: self.0.format(),
-            peer: self.0.node_addr().clone(),
+            nodes: vec![self.0.node_addr().clone()],
             tag: iroh::rpc_protocol::SetTagOption::Auto,
+            mode: iroh::rpc_protocol::DownloadMode::Direct,
         }
         .into();
         Arc::new(r)
@@ -51,7 +52,11 @@ impl BlobTicket {
 }
 
 /// Options when creating a ticket
-pub enum ShareTicketOptions {
+pub enum AddrInfoOptions {
+    /// Only the Node ID is added.
+    ///
+    /// This usually means that iroh-dns discovery is used to find address information.
+    Id,
     /// Include both the relay URL and the direct addresses.
     RelayAndAddresses,
     /// Only include the relay URL.
@@ -60,14 +65,15 @@ pub enum ShareTicketOptions {
     Addresses,
 }
 
-impl From<ShareTicketOptions> for iroh::client::ShareTicketOptions {
-    fn from(options: ShareTicketOptions) -> iroh::client::ShareTicketOptions {
+impl From<AddrInfoOptions> for iroh::base::node_addr::AddrInfoOptions {
+    fn from(options: AddrInfoOptions) -> iroh::base::node_addr::AddrInfoOptions {
         match options {
-            ShareTicketOptions::RelayAndAddresses => {
-                iroh::client::ShareTicketOptions::RelayAndAddresses
+            AddrInfoOptions::Id => iroh::base::node_addr::AddrInfoOptions::Id,
+            AddrInfoOptions::RelayAndAddresses => {
+                iroh::base::node_addr::AddrInfoOptions::RelayAndAddresses
             }
-            ShareTicketOptions::Relay => iroh::client::ShareTicketOptions::Relay,
-            ShareTicketOptions::Addresses => iroh::client::ShareTicketOptions::Addresses,
+            AddrInfoOptions::Relay => iroh::base::node_addr::AddrInfoOptions::Relay,
+            AddrInfoOptions::Addresses => iroh::base::node_addr::AddrInfoOptions::Addresses,
         }
     }
 }

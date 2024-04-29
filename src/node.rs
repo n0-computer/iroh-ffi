@@ -30,7 +30,7 @@ impl From<iroh::rpc_protocol::CounterStats> for CounterStats {
 
 /// Information about a direct address.
 #[derive(Debug, Clone)]
-pub struct DirectAddrInfo(pub(crate) iroh::net::magicsock::DirectAddrInfo);
+pub struct DirectAddrInfo(pub(crate) iroh::net::magic_endpoint::DirectAddrInfo);
 
 impl DirectAddrInfo {
     /// Get the reported address
@@ -94,7 +94,7 @@ impl From<iroh::net::magic_endpoint::ConnectionInfo> for ConnectionInfo {
     fn from(value: iroh::net::magic_endpoint::ConnectionInfo) -> Self {
         ConnectionInfo {
             node_id: Arc::new(value.node_id.into()),
-            relay_url: value.relay_url.map(|url| url.to_string()),
+            relay_url: value.relay_url.map(|info| info.relay_url.to_string()),
             addrs: value
                 .addrs
                 .iter()
@@ -183,19 +183,19 @@ pub struct ConnectionTypeMixed {
     pub relay_url: String,
 }
 
-impl From<iroh::net::magicsock::ConnectionType> for ConnectionType {
-    fn from(value: iroh::net::magicsock::ConnectionType) -> Self {
+impl From<iroh::net::magic_endpoint::ConnectionType> for ConnectionType {
+    fn from(value: iroh::net::magic_endpoint::ConnectionType) -> Self {
         match value {
-            iroh::net::magicsock::ConnectionType::Direct(addr) => {
+            iroh::net::magic_endpoint::ConnectionType::Direct(addr) => {
                 ConnectionType::Direct(addr.to_string())
             }
-            iroh::net::magicsock::ConnectionType::Mixed(addr, url) => {
+            iroh::net::magic_endpoint::ConnectionType::Mixed(addr, url) => {
                 ConnectionType::Mixed(addr.to_string(), url.to_string())
             }
-            iroh::net::magicsock::ConnectionType::Relay(url) => {
+            iroh::net::magic_endpoint::ConnectionType::Relay(url) => {
                 ConnectionType::Relay(url.to_string())
             }
-            iroh::net::magicsock::ConnectionType::None => ConnectionType::None,
+            iroh::net::magic_endpoint::ConnectionType::None => ConnectionType::None,
         }
     }
 }
