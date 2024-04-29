@@ -3,7 +3,7 @@ import tempfile
 import queue
 import time
 
-from iroh import IrohNode, ShareMode, LiveEventType
+from iroh import IrohNode, ShareMode, LiveEventType, AddrInfoOptions
 
 def test_basic_sync():
     # Create node_0
@@ -16,7 +16,7 @@ def test_basic_sync():
 
     # Create doc on node_0
     doc_0 = node_0.doc_create()
-    ticket = doc_0.share(ShareMode.WRITE)
+    ticket = doc_0.share(ShareMode.WRITE, AddrInfoOptions.RELAY_AND_ADDRESSES)
 
     class SubscribeCallback:
         def __init__(self, found_s):

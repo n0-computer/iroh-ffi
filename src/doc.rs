@@ -8,7 +8,7 @@ use iroh::{
 use quic_rpc::transport::flume::FlumeConnection;
 use serde::{Deserialize, Serialize};
 
-use crate::{block_on, AuthorId, Hash, IrohError, IrohNode, PublicKey};
+use crate::{block_on, ticket::AddrInfoOptions, AuthorId, Hash, IrohError, IrohNode, PublicKey};
 
 #[derive(Debug)]
 pub enum CapabilityKind {
@@ -307,10 +307,14 @@ impl Doc {
     }
 
     /// Share this document with peers over a ticket.
-    pub fn share(&self, mode: ShareMode) -> Result<String, IrohError> {
+    pub fn share(
+        &self,
+        mode: ShareMode,
+        addr_options: AddrInfoOptions,
+    ) -> Result<String, IrohError> {
         block_on(&self.rt, async {
             self.inner
-                .share(mode.into())
+                .share(mode.into(), addr_options.into())
                 .await
                 .map(|ticket| ticket.to_string())
                 .map_err(IrohError::doc)
@@ -1451,7 +1455,9 @@ mod tests {
         let doc_id = doc.id();
         println!("doc_id: {}", doc_id);
 
-        let doc_ticket = doc.share(crate::doc::ShareMode::Write).unwrap();
+        let doc_ticket = doc
+            .share(crate::doc::ShareMode::Write, AddrInfoOptions::Id)
+            .unwrap();
         println!("doc_ticket: {}", doc_ticket);
         node.doc_join(doc_ticket).unwrap();
     }
@@ -1468,7 +1474,9 @@ mod tests {
 
         // create doc on node_0
         let doc_0 = node_0.doc_create().unwrap();
-        let ticket = doc_0.share(ShareMode::Write).unwrap();
+        let ticket = doc_0
+            .share(ShareMode::Write, AddrInfoOptions::RelayAndAddresses)
+            .unwrap();
 
         // subscribe to sync events
         let (found_s, found_r) = std::sync::mpsc::channel();

@@ -94,7 +94,7 @@ interface IrohNode {
   u64 blobs_size([ByRef] Hash hash);
   /// Create a ticket for sharing a blob or collection from this node.
   [Throws=IrohError]
-  string blobs_share(Hash hash, BlobFormat blob_format, ShareTicketOptions ticket_options);
+  string blobs_share(Hash hash, BlobFormat blob_format, AddrInfoOptions ticket_options);
   /// Read all bytes of single blob.
   ///
   /// This allocates a buffer for the full blob. Use only if you know that the blob you're
@@ -289,7 +289,7 @@ interface Doc {
 
   /// Share this document with peers over a ticket.
   [Throws=IrohError]
-  string share(ShareMode mode);
+  string share(ShareMode mode, AddrInfoOptions addr_options);
   /// Start to sync this document with a list of peers.
   [Throws=IrohError]
   void start_sync(sequence<NodeAddr> peers);
@@ -1053,7 +1053,11 @@ enum BlobExportFormat {
 };
 
 /// Options when creating a ticket
-enum ShareTicketOptions {
+enum AddrInfoOptions {
+  /// Only the Node ID is added.
+  ///
+  /// This usually means that iroh-dns discovery is used to find address information.
+  "Id",
   /// Include both the relay URL and the direct addresses.
   "RelayAndAddresses",
   /// Only include the relay URL.
@@ -1133,6 +1137,8 @@ dictionary DownloadProgressAbort {
 
 /// The kinds of progress events that can occur in a `DownloadProgress`
 enum DownloadProgressType {
+  /// Initial state if subscribing to a running or queued transfer.
+  "InitialState",
   /// Data was found locally
   "FoundLocal",
   /// A new connection was established.
