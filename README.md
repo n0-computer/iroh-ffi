@@ -30,12 +30,6 @@ Running `cargo build --release` will produce a dynamic library and a static libr
 
 For builds targeting older versions of MacOS, build with with:  `MACOSX_DEPLOYMENT_TARGET=10.7 && cargo build --target x86_64-apple-darwin --release`.
 
-## Node.js
-
-- Make sure to install a recent version of node.js and npm
-- Run `npm i`
-- Run `npm run build`
-
 ## Swift
 
 ### Xcode and IOS
