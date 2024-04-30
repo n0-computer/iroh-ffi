@@ -621,6 +621,8 @@ interface Author {
   constructor(string str);
   /// Return the AuthorId as a string
   string to_string();
+  /// Get the [`AuthorId`] of this Author
+  AuthorId id();
 };
 
 /// A single entry in a [`Doc`]

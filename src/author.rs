@@ -36,8 +36,8 @@ impl Author {
         Ok(Author(author))
     }
 
-    pub fn id(&self) -> AuthorId {
-        AuthorId(self.0.id())
+    pub fn id(&self) -> Arc<AuthorId> {
+        Arc::new(AuthorId(self.0.id()))
     }
 }
 
@@ -138,7 +138,7 @@ mod tests {
         let authors = node.author_list().unwrap();
         assert_eq!(authors.len(), 1);
         let author = node.author_export(author_id.clone()).unwrap();
-        assert_eq!(author_id.equal(&author.id()), true);
+        assert!(author_id.equal(&author.id()));
         node.author_delete(author_id).unwrap();
         let authors = node.author_list().unwrap();
         assert_eq!(authors.len(), 0);
