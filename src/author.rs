@@ -27,15 +27,20 @@ impl AuthorId {
     }
 }
 
+/// Author key to insert entries in a document
+///
+/// Internally, an author is a `SigningKey` which is used to sign entries.
 #[derive(Debug, Clone)]
 pub struct Author(pub(crate) iroh::sync::Author);
 
 impl Author {
+    /// Get an [`Author`] from a String
     pub fn from_string(str: String) -> Result<Self, IrohError> {
         let author = iroh::sync::Author::from_str(&str).map_err(IrohError::author)?;
         Ok(Author(author))
     }
 
+    /// Get the [`AuthorId`] of this Author
     pub fn id(&self) -> Arc<AuthorId> {
         Arc::new(AuthorId(self.0.id()))
     }
