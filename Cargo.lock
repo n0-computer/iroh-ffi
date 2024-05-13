@@ -1861,7 +1861,7 @@ checksum = "8f518f335dce6725a761382244631d86cf0ccb2863413590b31338feb467f9c3"
 
 [[package]]
 name = "iroh"
-version = "0.16.0"
+version = "0.16.2"
 dependencies = [
  "anyhow",
  "blake3",
@@ -1869,7 +1869,7 @@ dependencies = [
  "data-encoding",
  "flume",
  "futures",
- "iroh 0.16.2",
+ "iroh 0.16.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "iroh-io",
  "libc",
  "multibase",
