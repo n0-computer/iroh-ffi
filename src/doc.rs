@@ -1,11 +1,8 @@
-use std::{str::FromStr, sync::Arc, time::SystemTime};
+use std::{path::PathBuf, str::FromStr, sync::Arc, time::SystemTime};
 
+use bytes::Bytes;
 use futures::{StreamExt, TryStreamExt};
-use iroh::{
-    client::Doc as ClientDoc,
-    rpc_protocol::{ProviderRequest, ProviderResponse},
-};
-use quic_rpc::transport::flume::FlumeConnection;
+use iroh::client::MemDoc;
 use serde::{Deserialize, Serialize};
 
 use crate::{block_on, ticket::AddrInfoOptions, AuthorId, Hash, IrohError, IrohNode, PublicKey};
@@ -18,11 +15,11 @@ pub enum CapabilityKind {
     Read = 2,
 }
 
-impl From<iroh::sync::CapabilityKind> for CapabilityKind {
-    fn from(value: iroh::sync::CapabilityKind) -> Self {
+impl From<iroh::docs::CapabilityKind> for CapabilityKind {
+    fn from(value: iroh::docs::CapabilityKind) -> Self {
         match value {
-            iroh::sync::CapabilityKind::Write => Self::Write,
-            iroh::sync::CapabilityKind::Read => Self::Read,
+            iroh::docs::CapabilityKind::Write => Self::Write,
+            iroh::docs::CapabilityKind::Read => Self::Read,
         }
     }
 }
@@ -48,8 +45,7 @@ impl IrohNode {
     /// Join and sync with an already existing document.
     pub fn doc_join(&self, ticket: String) -> Result<Arc<Doc>, IrohError> {
         block_on(&self.rt(), async {
-            let ticket =
-                iroh::ticket::DocTicket::from_str(&ticket).map_err(IrohError::doc_ticket)?;
+            let ticket = iroh::docs::DocTicket::from_str(&ticket).map_err(IrohError::doc_ticket)?;
             let doc = self
                 .sync_client
                 .docs
@@ -89,7 +85,7 @@ impl IrohNode {
     ///
     /// Returns None if the document cannot be found.
     pub fn doc_open(&self, id: String) -> Result<Option<Arc<Doc>>, IrohError> {
-        let namespace_id = iroh::sync::NamespaceId::from_str(&id).map_err(IrohError::namespace)?;
+        let namespace_id = iroh::docs::NamespaceId::from_str(&id).map_err(IrohError::namespace)?;
         block_on(&self.rt(), async {
             let doc = self
                 .sync_client
@@ -112,7 +108,7 @@ impl IrohNode {
     /// document will be permanently deleted from the node's storage. Content blobs will be deleted
     /// through garbage collection unless they are referenced from another document or tag.
     pub fn doc_drop(&self, doc_id: String) -> Result<(), IrohError> {
-        let doc_id = iroh::sync::NamespaceId::from_str(&doc_id).map_err(IrohError::namespace)?;
+        let doc_id = iroh::docs::NamespaceId::from_str(&doc_id).map_err(IrohError::namespace)?;
         block_on(&self.rt(), async {
             self.sync_client
                 .docs
@@ -134,7 +130,7 @@ pub struct NamespaceAndCapability {
 /// A representation of a mutable, synchronizable key-value store.
 #[derive(Clone)]
 pub struct Doc {
-    pub(crate) inner: ClientDoc<FlumeConnection<ProviderResponse, ProviderRequest>>,
+    pub(crate) inner: MemDoc,
     pub(crate) rt: tokio::runtime::Handle,
 }
 
@@ -197,12 +193,7 @@ impl Doc {
         block_on(&self.rt, async {
             let mut stream = self
                 .inner
-                .import_file(
-                    author.0,
-                    bytes::Bytes::from(key),
-                    std::path::PathBuf::from(path),
-                    in_place,
-                )
+                .import_file(author.0, Bytes::from(key), PathBuf::from(path), in_place)
                 .await
                 .map_err(IrohError::doc)?;
             while let Some(progress) = stream.next().await {
@@ -229,7 +220,7 @@ impl Doc {
                     entry.0.clone(),
                     std::path::PathBuf::from(path),
                     // TODO(b5) - plumb up the export mode, currently it's always copy
-                    iroh::bytes::store::ExportMode::Copy,
+                    iroh::blobs::store::ExportMode::Copy,
                 )
                 .await
                 .map_err(IrohError::doc)?;
@@ -429,15 +420,15 @@ impl DownloadPolicy {
     }
 }
 
-impl From<iroh::sync::store::DownloadPolicy> for DownloadPolicy {
-    fn from(value: iroh::sync::store::DownloadPolicy) -> Self {
+impl From<iroh::docs::store::DownloadPolicy> for DownloadPolicy {
+    fn from(value: iroh::docs::store::DownloadPolicy) -> Self {
         match value {
-            iroh::sync::store::DownloadPolicy::NothingExcept(filters) => {
+            iroh::docs::store::DownloadPolicy::NothingExcept(filters) => {
                 DownloadPolicy::NothingExcept(
                     filters.into_iter().map(|f| Arc::new(f.into())).collect(),
                 )
             }
-            iroh::sync::store::DownloadPolicy::EverythingExcept(filters) => {
+            iroh::docs::store::DownloadPolicy::EverythingExcept(filters) => {
                 DownloadPolicy::EverythingExcept(
                     filters.into_iter().map(|f| Arc::new(f.into())).collect(),
                 )
@@ -446,16 +437,16 @@ impl From<iroh::sync::store::DownloadPolicy> for DownloadPolicy {
     }
 }
 
-impl From<DownloadPolicy> for iroh::sync::store::DownloadPolicy {
+impl From<DownloadPolicy> for iroh::docs::store::DownloadPolicy {
     fn from(value: DownloadPolicy) -> Self {
         match value {
             DownloadPolicy::NothingExcept(filters) => {
-                iroh::sync::store::DownloadPolicy::NothingExcept(
+                iroh::docs::store::DownloadPolicy::NothingExcept(
                     filters.into_iter().map(|f| f.0.clone()).collect(),
                 )
             }
             DownloadPolicy::EverythingExcept(filters) => {
-                iroh::sync::store::DownloadPolicy::EverythingExcept(
+                iroh::docs::store::DownloadPolicy::EverythingExcept(
                     filters.into_iter().map(|f| f.0.clone()).collect(),
                 )
             }
@@ -465,7 +456,7 @@ impl From<DownloadPolicy> for iroh::sync::store::DownloadPolicy {
 
 /// Filter strategy used in download policies.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct FilterKind(pub(crate) iroh::sync::store::FilterKind);
+pub struct FilterKind(pub(crate) iroh::docs::store::FilterKind);
 
 impl FilterKind {
     /// Verifies whether this filter matches a given key
@@ -475,21 +466,17 @@ impl FilterKind {
 
     /// Returns a FilterKind that matches if the contained bytes are a prefix of the key.
     pub fn prefix(prefix: Vec<u8>) -> FilterKind {
-        FilterKind(iroh::sync::store::FilterKind::Prefix(bytes::Bytes::from(
-            prefix,
-        )))
+        FilterKind(iroh::docs::store::FilterKind::Prefix(Bytes::from(prefix)))
     }
 
     /// Returns a FilterKind that matches if the contained bytes and the key are the same.
     pub fn exact(key: Vec<u8>) -> FilterKind {
-        FilterKind(iroh::sync::store::FilterKind::Exact(bytes::Bytes::from(
-            key,
-        )))
+        FilterKind(iroh::docs::store::FilterKind::Exact(Bytes::from(key)))
     }
 }
 
-impl From<iroh::sync::store::FilterKind> for FilterKind {
-    fn from(value: iroh::sync::store::FilterKind) -> Self {
+impl From<iroh::docs::store::FilterKind> for FilterKind {
+    fn from(value: iroh::docs::store::FilterKind) -> Self {
         FilterKind(value)
     }
 }
@@ -505,8 +492,8 @@ pub struct OpenState {
     pub handles: u64,
 }
 
-impl From<iroh::sync::actor::OpenState> for OpenState {
-    fn from(value: iroh::sync::actor::OpenState) -> Self {
+impl From<iroh::docs::actor::OpenState> for OpenState {
+    fn from(value: iroh::docs::actor::OpenState) -> Self {
         OpenState {
             sync: value.sync,
             subscribers: value.subscribers as u64,
@@ -593,11 +580,11 @@ pub enum ShareMode {
     Write,
 }
 
-impl From<ShareMode> for iroh::rpc_protocol::ShareMode {
+impl From<ShareMode> for iroh::client::docs::ShareMode {
     fn from(mode: ShareMode) -> Self {
         match mode {
-            ShareMode::Read => iroh::rpc_protocol::ShareMode::Read,
-            ShareMode::Write => iroh::rpc_protocol::ShareMode::Write,
+            ShareMode::Read => iroh::client::docs::ShareMode::Read,
+            ShareMode::Write => iroh::client::docs::ShareMode::Write,
         }
     }
 }
@@ -608,10 +595,10 @@ impl From<ShareMode> for iroh::rpc_protocol::ShareMode {
 /// namespace id. Its value is the 32-byte BLAKE3 [`hash`]
 /// of the entry's content data, the size of this content data, and a timestamp.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Entry(pub(crate) iroh::client::Entry);
+pub struct Entry(pub(crate) iroh::client::docs::Entry);
 
-impl From<iroh::client::Entry> for Entry {
-    fn from(e: iroh::client::Entry) -> Self {
+impl From<iroh::client::docs::Entry> for Entry {
+    fn from(e: iroh::client::docs::Entry) -> Self {
         Entry(e)
     }
 }
@@ -667,20 +654,20 @@ pub enum SortBy {
     AuthorKey,
 }
 
-impl From<iroh::sync::store::SortBy> for SortBy {
-    fn from(value: iroh::sync::store::SortBy) -> Self {
+impl From<iroh::docs::store::SortBy> for SortBy {
+    fn from(value: iroh::docs::store::SortBy) -> Self {
         match value {
-            iroh::sync::store::SortBy::AuthorKey => SortBy::AuthorKey,
-            iroh::sync::store::SortBy::KeyAuthor => SortBy::KeyAuthor,
+            iroh::docs::store::SortBy::AuthorKey => SortBy::AuthorKey,
+            iroh::docs::store::SortBy::KeyAuthor => SortBy::KeyAuthor,
         }
     }
 }
 
-impl From<SortBy> for iroh::sync::store::SortBy {
+impl From<SortBy> for iroh::docs::store::SortBy {
     fn from(value: SortBy) -> Self {
         match value {
-            SortBy::AuthorKey => iroh::sync::store::SortBy::AuthorKey,
-            SortBy::KeyAuthor => iroh::sync::store::SortBy::KeyAuthor,
+            SortBy::AuthorKey => iroh::docs::store::SortBy::AuthorKey,
+            SortBy::KeyAuthor => iroh::docs::store::SortBy::KeyAuthor,
         }
     }
 }
@@ -695,20 +682,20 @@ pub enum SortDirection {
     Desc,
 }
 
-impl From<iroh::sync::store::SortDirection> for SortDirection {
-    fn from(value: iroh::sync::store::SortDirection) -> Self {
+impl From<iroh::docs::store::SortDirection> for SortDirection {
+    fn from(value: iroh::docs::store::SortDirection) -> Self {
         match value {
-            iroh::sync::store::SortDirection::Asc => SortDirection::Asc,
-            iroh::sync::store::SortDirection::Desc => SortDirection::Desc,
+            iroh::docs::store::SortDirection::Asc => SortDirection::Asc,
+            iroh::docs::store::SortDirection::Desc => SortDirection::Desc,
         }
     }
 }
 
-impl From<SortDirection> for iroh::sync::store::SortDirection {
+impl From<SortDirection> for iroh::docs::store::SortDirection {
     fn from(value: SortDirection) -> Self {
         match value {
-            SortDirection::Asc => iroh::sync::store::SortDirection::Asc,
-            SortDirection::Desc => iroh::sync::store::SortDirection::Desc,
+            SortDirection::Asc => iroh::docs::store::SortDirection::Asc,
+            SortDirection::Desc => iroh::docs::store::SortDirection::Desc,
         }
     }
 }
@@ -717,7 +704,7 @@ impl From<SortDirection> for iroh::sync::store::SortDirection {
 ///
 /// Use this with `QueryOptions` to determine sorting, grouping, and pagination.
 #[derive(Clone, Debug)]
-pub struct Query(pub(crate) iroh::sync::store::Query);
+pub struct Query(pub(crate) iroh::docs::store::Query);
 
 /// Options for sorting and pagination for using [`Query`]s.
 #[derive(Clone, Debug, Default)]
@@ -747,7 +734,7 @@ impl Query {
     ///     offset: None
     ///     limit: None
     pub fn all(opts: Option<QueryOptions>) -> Self {
-        let mut builder = iroh::sync::store::Query::all();
+        let mut builder = iroh::docs::store::Query::all();
 
         if let Some(opts) = opts {
             if opts.offset != 0 {
@@ -769,7 +756,7 @@ impl Query {
     ///     offset: None
     ///     limit: None
     pub fn single_latest_per_key(opts: Option<QueryOptions>) -> Self {
-        let mut builder = iroh::sync::store::Query::single_latest_per_key();
+        let mut builder = iroh::docs::store::Query::single_latest_per_key();
 
         if let Some(opts) = opts {
             if opts.offset != 0 {
@@ -791,7 +778,7 @@ impl Query {
     ///     offset: None
     ///     limit: None
     pub fn author(author: &AuthorId, opts: Option<QueryOptions>) -> Self {
-        let mut builder = iroh::sync::store::Query::author(author.0);
+        let mut builder = iroh::docs::store::Query::author(author.0);
 
         if let Some(opts) = opts {
             if opts.offset != 0 {
@@ -813,7 +800,7 @@ impl Query {
     ///     offset: None
     ///     limit: None
     pub fn key_exact(key: Vec<u8>, opts: Option<QueryOptions>) -> Self {
-        let mut builder = iroh::sync::store::Query::key_exact(key);
+        let mut builder = iroh::docs::store::Query::key_exact(key);
 
         if let Some(opts) = opts {
             if opts.offset != 0 {
@@ -829,7 +816,7 @@ impl Query {
 
     /// Create a Query for a single key and author.
     pub fn author_key_exact(author: &AuthorId, key: Vec<u8>) -> Self {
-        let builder = iroh::sync::store::Query::author(author.0).key_exact(key);
+        let builder = iroh::docs::store::Query::author(author.0).key_exact(key);
         Query(builder.build())
     }
 
@@ -841,7 +828,7 @@ impl Query {
     ///     offset: None
     ///     limit: None
     pub fn key_prefix(prefix: Vec<u8>, opts: Option<QueryOptions>) -> Self {
-        let mut builder = iroh::sync::store::Query::key_prefix(prefix);
+        let mut builder = iroh::docs::store::Query::key_prefix(prefix);
 
         if let Some(opts) = opts {
             if opts.offset != 0 {
@@ -866,7 +853,7 @@ impl Query {
         prefix: Vec<u8>,
         opts: Option<QueryOptions>,
     ) -> Self {
-        let mut builder = iroh::sync::store::Query::author(author.0).key_prefix(prefix);
+        let mut builder = iroh::docs::store::Query::author(author.0).key_prefix(prefix);
 
         if let Some(opts) = opts {
             if opts.offset != 0 {
@@ -1022,13 +1009,13 @@ impl LiveEvent {
     }
 }
 
-impl From<iroh::client::LiveEvent> for LiveEvent {
-    fn from(value: iroh::client::LiveEvent) -> Self {
+impl From<iroh::client::docs::LiveEvent> for LiveEvent {
+    fn from(value: iroh::client::docs::LiveEvent) -> Self {
         match value {
-            iroh::client::LiveEvent::InsertLocal { entry } => LiveEvent::InsertLocal {
+            iroh::client::docs::LiveEvent::InsertLocal { entry } => LiveEvent::InsertLocal {
                 entry: entry.into(),
             },
-            iroh::client::LiveEvent::InsertRemote {
+            iroh::client::docs::LiveEvent::InsertRemote {
                 from,
                 entry,
                 content_status,
@@ -1037,12 +1024,12 @@ impl From<iroh::client::LiveEvent> for LiveEvent {
                 entry: entry.into(),
                 content_status: content_status.into(),
             },
-            iroh::client::LiveEvent::ContentReady { hash } => {
+            iroh::client::docs::LiveEvent::ContentReady { hash } => {
                 LiveEvent::ContentReady { hash: hash.into() }
             }
-            iroh::client::LiveEvent::NeighborUp(key) => LiveEvent::NeighborUp(key.into()),
-            iroh::client::LiveEvent::NeighborDown(key) => LiveEvent::NeighborDown(key.into()),
-            iroh::client::LiveEvent::SyncFinished(e) => LiveEvent::SyncFinished(e.into()),
+            iroh::client::docs::LiveEvent::NeighborUp(key) => LiveEvent::NeighborUp(key.into()),
+            iroh::client::docs::LiveEvent::NeighborDown(key) => LiveEvent::NeighborDown(key.into()),
+            iroh::client::docs::LiveEvent::SyncFinished(e) => LiveEvent::SyncFinished(e.into()),
         }
     }
 }
@@ -1062,8 +1049,8 @@ pub struct SyncEvent {
     pub result: Option<String>,
 }
 
-impl From<iroh::sync_engine::SyncEvent> for SyncEvent {
-    fn from(value: iroh::sync_engine::SyncEvent) -> Self {
+impl From<iroh::client::docs::SyncEvent> for SyncEvent {
+    fn from(value: iroh::client::docs::SyncEvent) -> Self {
         SyncEvent {
             peer: Arc::new(value.peer.into()),
             origin: value.origin.into(),
@@ -1078,7 +1065,7 @@ impl From<iroh::sync_engine::SyncEvent> for SyncEvent {
 }
 
 /// Why we started a sync request
-pub use iroh::sync_engine::SyncReason;
+pub use iroh::client::docs::SyncReason;
 
 /// Why we performed a sync exchange
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1089,11 +1076,11 @@ pub enum Origin {
     Accept,
 }
 
-impl From<iroh::sync_engine::Origin> for Origin {
-    fn from(value: iroh::sync_engine::Origin) -> Self {
+impl From<iroh::client::docs::Origin> for Origin {
+    fn from(value: iroh::client::docs::Origin) -> Self {
         match value {
-            iroh::sync_engine::Origin::Connect(reason) => Self::Connect { reason },
-            iroh::sync_engine::Origin::Accept => Self::Accept,
+            iroh::client::docs::Origin::Connect(reason) => Self::Connect { reason },
+            iroh::client::docs::Origin::Accept => Self::Accept,
         }
     }
 }
@@ -1120,12 +1107,12 @@ pub enum ContentStatus {
     Missing,
 }
 
-impl From<iroh::sync::ContentStatus> for ContentStatus {
-    fn from(value: iroh::sync::ContentStatus) -> Self {
+impl From<iroh::docs::ContentStatus> for ContentStatus {
+    fn from(value: iroh::docs::ContentStatus) -> Self {
         match value {
-            iroh::sync::ContentStatus::Complete => Self::Complete,
-            iroh::sync::ContentStatus::Incomplete => Self::Incomplete,
-            iroh::sync::ContentStatus::Missing => Self::Missing,
+            iroh::docs::ContentStatus::Complete => Self::Complete,
+            iroh::docs::ContentStatus::Incomplete => Self::Incomplete,
+            iroh::docs::ContentStatus::Missing => Self::Missing,
         }
     }
 }
@@ -1214,25 +1201,25 @@ pub enum DocImportProgress {
     Abort(DocImportProgressAbort),
 }
 
-impl From<iroh::rpc_protocol::DocImportProgress> for DocImportProgress {
-    fn from(value: iroh::rpc_protocol::DocImportProgress) -> Self {
+impl From<iroh::client::docs::ImportProgress> for DocImportProgress {
+    fn from(value: iroh::client::docs::ImportProgress) -> Self {
         match value {
-            iroh::rpc_protocol::DocImportProgress::Found { id, name, size } => {
+            iroh::client::docs::ImportProgress::Found { id, name, size } => {
                 DocImportProgress::Found(DocImportProgressFound { id, name, size })
             }
-            iroh::rpc_protocol::DocImportProgress::Progress { id, offset } => {
+            iroh::client::docs::ImportProgress::Progress { id, offset } => {
                 DocImportProgress::Progress(DocImportProgressProgress { id, offset })
             }
-            iroh::rpc_protocol::DocImportProgress::IngestDone { id, hash } => {
+            iroh::client::docs::ImportProgress::IngestDone { id, hash } => {
                 DocImportProgress::IngestDone(DocImportProgressIngestDone {
                     id,
                     hash: Arc::new(hash.into()),
                 })
             }
-            iroh::rpc_protocol::DocImportProgress::AllDone { key } => {
+            iroh::client::docs::ImportProgress::AllDone { key } => {
                 DocImportProgress::AllDone(DocImportProgressAllDone { key: key.into() })
             }
-            iroh::rpc_protocol::DocImportProgress::Abort(err) => {
+            iroh::client::docs::ImportProgress::Abort(err) => {
                 DocImportProgress::Abort(DocImportProgressAbort {
                     error: err.to_string(),
                 })
@@ -1371,10 +1358,10 @@ pub enum DocExportProgress {
     Abort(DocExportProgressAbort),
 }
 
-impl From<iroh::bytes::export::ExportProgress> for DocExportProgress {
-    fn from(value: iroh::bytes::export::ExportProgress) -> Self {
+impl From<iroh::blobs::export::ExportProgress> for DocExportProgress {
+    fn from(value: iroh::blobs::export::ExportProgress) -> Self {
         match value {
-            iroh::bytes::export::ExportProgress::Found {
+            iroh::blobs::export::ExportProgress::Found {
                 id,
                 hash,
                 size,
@@ -1388,14 +1375,14 @@ impl From<iroh::bytes::export::ExportProgress> for DocExportProgress {
                 size: size.value(),
                 outpath: outpath.to_string_lossy().to_string(),
             }),
-            iroh::bytes::export::ExportProgress::Progress { id, offset } => {
+            iroh::blobs::export::ExportProgress::Progress { id, offset } => {
                 DocExportProgress::Progress(DocExportProgressProgress { id, offset })
             }
-            iroh::bytes::export::ExportProgress::Done { id } => {
+            iroh::blobs::export::ExportProgress::Done { id } => {
                 DocExportProgress::Done(DocExportProgressDone { id })
             }
-            iroh::bytes::export::ExportProgress::AllDone => DocExportProgress::AllDone,
-            iroh::bytes::export::ExportProgress::Abort(err) => {
+            iroh::blobs::export::ExportProgress::AllDone => DocExportProgress::AllDone,
+            iroh::blobs::export::ExportProgress::Abort(err) => {
                 DocExportProgress::Abort(DocExportProgressAbort {
                     error: err.to_string(),
                 })

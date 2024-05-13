@@ -1,10 +1,11 @@
 use std::sync::Arc;
 
 use crate::{block_on, BlobFormat, Hash, IrohError, IrohNode};
+use bytes::Bytes;
 use futures::TryStreamExt;
 
 /// A response to a list collections request
-pub struct ListTagsResponse {
+pub struct TagInfo {
     /// The tag
     pub name: Vec<u8>,
     /// The format of the associated blob
@@ -13,9 +14,9 @@ pub struct ListTagsResponse {
     pub hash: Arc<Hash>,
 }
 
-impl From<iroh::rpc_protocol::ListTagsResponse> for ListTagsResponse {
-    fn from(res: iroh::rpc_protocol::ListTagsResponse) -> Self {
-        ListTagsResponse {
+impl From<iroh::client::tags::TagInfo> for TagInfo {
+    fn from(res: iroh::client::tags::TagInfo) -> Self {
+        TagInfo {
             name: res.name.0.to_vec(),
             format: res.format.into(),
             hash: Arc::new(res.hash.into()),
@@ -28,7 +29,7 @@ impl IrohNode {
     ///
     /// Note: this allocates for each `ListTagsResponse`, if you have many `Tags`s this may be a prohibitively large list.
     /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
-    pub fn tags_list(&self) -> Result<Vec<ListTagsResponse>, IrohError> {
+    pub fn tags_list(&self) -> Result<Vec<TagInfo>, IrohError> {
         block_on(&self.rt(), async {
             let tags = self
                 .sync_client
@@ -46,7 +47,7 @@ impl IrohNode {
 
     /// Delete a tag
     pub fn tags_delete(&self, name: Vec<u8>) -> Result<(), IrohError> {
-        let tag = iroh::bytes::Tag(bytes::Bytes::from(name));
+        let tag = iroh::blobs::Tag(Bytes::from(name));
         block_on(&self.rt(), async {
             self.sync_client
                 .tags

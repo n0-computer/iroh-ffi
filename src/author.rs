@@ -6,7 +6,7 @@ use crate::{block_on, IrohError, IrohNode};
 
 /// Identifier for an [`Author`]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AuthorId(pub(crate) iroh::sync::AuthorId);
+pub struct AuthorId(pub(crate) iroh::docs::AuthorId);
 
 impl std::fmt::Display for AuthorId {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -17,7 +17,7 @@ impl std::fmt::Display for AuthorId {
 impl AuthorId {
     /// Get an [`AuthorId`] from a String.
     pub fn from_string(str: String) -> Result<Self, IrohError> {
-        let author = iroh::sync::AuthorId::from_str(&str).map_err(IrohError::author)?;
+        let author = iroh::docs::AuthorId::from_str(&str).map_err(IrohError::author)?;
         Ok(AuthorId(author))
     }
 
@@ -31,12 +31,12 @@ impl AuthorId {
 ///
 /// Internally, an author is a `SigningKey` which is used to sign entries.
 #[derive(Debug, Clone)]
-pub struct Author(pub(crate) iroh::sync::Author);
+pub struct Author(pub(crate) iroh::docs::Author);
 
 impl Author {
     /// Get an [`Author`] from a String
     pub fn from_string(str: String) -> Result<Self, IrohError> {
-        let author = iroh::sync::Author::from_str(&str).map_err(IrohError::author)?;
+        let author = iroh::docs::Author::from_str(&str).map_err(IrohError::author)?;
         Ok(Author(author))
     }
 

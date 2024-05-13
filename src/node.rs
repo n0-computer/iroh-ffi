@@ -2,10 +2,9 @@ use std::{collections::HashMap, path::PathBuf, sync::Arc, time::Duration};
 
 use futures::stream::TryStreamExt;
 use iroh::{
-    node::{Builder, Node},
-    rpc_protocol::{ProviderRequest, ProviderResponse},
+    client::MemIroh,
+    node::{Builder, FsNode},
 };
-use quic_rpc::transport::flume::FlumeConnection;
 
 use crate::{block_on, IrohError, NodeAddr, PublicKey};
 
@@ -17,15 +16,6 @@ pub struct CounterStats {
     pub value: u32,
     /// The counter description
     pub description: String,
-}
-
-impl From<iroh::rpc_protocol::CounterStats> for CounterStats {
-    fn from(stats: iroh::rpc_protocol::CounterStats) -> Self {
-        CounterStats {
-            value: stats.value as _,
-            description: stats.description,
-        }
-    }
 }
 
 /// Information about a direct address.
@@ -206,7 +196,7 @@ pub struct NodeOptions {
     pub gc_interval_millis: Option<u64>,
 }
 
-impl From<NodeOptions> for iroh::node::Builder<iroh::bytes::store::mem::Store> {
+impl From<NodeOptions> for iroh::node::Builder<iroh::blobs::store::mem::Store> {
     fn from(value: NodeOptions) -> Self {
         let mut b = Builder::default();
 
@@ -233,8 +223,8 @@ impl Default for NodeOptions {
 
 /// An Iroh node. Allows you to sync, store, and transfer data.
 pub struct IrohNode {
-    pub(crate) node: Node<iroh::bytes::store::fs::Store>,
-    pub(crate) sync_client: iroh::client::Iroh<FlumeConnection<ProviderResponse, ProviderRequest>>,
+    pub(crate) node: FsNode,
+    pub(crate) sync_client: MemIroh,
     #[allow(dead_code)]
     pub(crate) tokio_rt: Option<tokio::runtime::Runtime>,
 }
@@ -279,7 +269,7 @@ impl IrohNode {
         options: NodeOptions,
         tokio_rt: Option<tokio::runtime::Runtime>,
     ) -> Result<Self, anyhow::Error> {
-        let builder: Builder<iroh::bytes::store::mem::Store> = options.into();
+        let builder: Builder<iroh::blobs::store::mem::Store> = options.into();
         let node = builder.persist(path).await?.spawn().await?;
         let sync_client = node.clone().client().clone();
 
@@ -298,13 +288,19 @@ impl IrohNode {
     /// Get statistics of the running node.
     pub fn stats(&self) -> Result<HashMap<String, CounterStats>, IrohError> {
         block_on(&self.rt(), async {
-            let stats = self
-                .sync_client
-                .node
-                .stats()
-                .await
-                .map_err(IrohError::doc)?;
-            Ok(stats.into_iter().map(|(k, v)| (k, v.into())).collect())
+            let stats = self.sync_client.stats().await.map_err(IrohError::doc)?;
+            Ok(stats
+                .into_iter()
+                .map(|(k, v)| {
+                    (
+                        k,
+                        CounterStats {
+                            value: u32::try_from(v.value).expect("value too large"),
+                            description: v.description,
+                        },
+                    )
+                })
+                .collect())
         })
     }
 
@@ -313,7 +309,6 @@ impl IrohNode {
         block_on(&self.rt(), async {
             let infos = self
                 .sync_client
-                .node
                 .connections()
                 .await
                 .map_err(IrohError::connection)?
@@ -333,7 +328,6 @@ impl IrohNode {
         block_on(&self.rt(), async {
             let info = self
                 .sync_client
-                .node
                 .connection_info(node_id.into())
                 .await
                 .map(|i| i.map(|i| i.into()))
@@ -343,10 +337,9 @@ impl IrohNode {
     }
 
     /// Get status information about a node
-    pub fn status(&self) -> Result<Arc<NodeStatusResponse>, IrohError> {
+    pub fn status(&self) -> Result<Arc<NodeStatus>, IrohError> {
         block_on(&self.rt(), async {
             self.sync_client
-                .node
                 .status()
                 .await
                 .map(|n| Arc::new(n.into()))
@@ -357,15 +350,15 @@ impl IrohNode {
 
 /// The response to a status request
 #[derive(Debug)]
-pub struct NodeStatusResponse(iroh::rpc_protocol::NodeStatusResponse);
+pub struct NodeStatus(iroh::client::NodeStatus);
 
-impl From<iroh::rpc_protocol::NodeStatusResponse> for NodeStatusResponse {
-    fn from(n: iroh::rpc_protocol::NodeStatusResponse) -> Self {
-        NodeStatusResponse(n)
+impl From<iroh::client::NodeStatus> for NodeStatus {
+    fn from(n: iroh::client::NodeStatus) -> Self {
+        NodeStatus(n)
     }
 }
 
-impl NodeStatusResponse {
+impl NodeStatus {
     /// The node id and socket addresses of this node.
     pub fn node_addr(&self) -> Arc<NodeAddr> {
         Arc::new(self.0.addr.clone().into())
