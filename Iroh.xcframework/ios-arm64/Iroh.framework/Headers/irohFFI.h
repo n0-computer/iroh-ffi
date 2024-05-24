@@ -77,6 +77,14 @@ RustBuffer uniffi_iroh_fn_method_addprogress_as_progress(void*_Nonnull ptr, Rust
 );
 RustBuffer uniffi_iroh_fn_method_addprogress_type(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+void uniffi_iroh_fn_free_author(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_iroh_fn_constructor_author_from_string(RustBuffer str, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_iroh_fn_method_author_id(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_iroh_fn_method_author_to_string(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
 void uniffi_iroh_fn_free_authorid(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void*_Nonnull uniffi_iroh_fn_constructor_authorid_from_string(RustBuffer str, RustCallStatus *_Nonnull out_status
@@ -85,9 +93,21 @@ int8_t uniffi_iroh_fn_method_authorid_equal(void*_Nonnull ptr, void*_Nonnull oth
 );
 RustBuffer uniffi_iroh_fn_method_authorid_to_string(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void uniffi_iroh_fn_free_blobdownloadrequest(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+void uniffi_iroh_fn_free_blobdownloadoptions(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void*_Nonnull uniffi_iroh_fn_constructor_blobdownloadrequest_new(void*_Nonnull hash, RustBuffer format, void*_Nonnull node, void*_Nonnull tag, void*_Nonnull out, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_iroh_fn_constructor_blobdownloadoptions_new(RustBuffer format, void*_Nonnull node, void*_Nonnull tag, RustCallStatus *_Nonnull out_status
+);
+void uniffi_iroh_fn_free_blobticket(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_iroh_fn_constructor_blobticket_new(RustBuffer ticket, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_iroh_fn_method_blobticket_as_download_options(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_iroh_fn_method_blobticket_format(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_iroh_fn_method_blobticket_hash(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_iroh_fn_method_blobticket_node_addr(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void uniffi_iroh_fn_free_collection(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -154,7 +174,7 @@ void uniffi_iroh_fn_method_doc_set_download_policy(void*_Nonnull ptr, void*_Nonn
 );
 void uniffi_iroh_fn_method_doc_set_hash(void*_Nonnull ptr, void*_Nonnull author, RustBuffer key, void*_Nonnull hash, uint64_t size, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_iroh_fn_method_doc_share(void*_Nonnull ptr, RustBuffer mode, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_iroh_fn_method_doc_share(void*_Nonnull ptr, RustBuffer mode, RustBuffer addr_options, RustCallStatus *_Nonnull out_status
 );
 void uniffi_iroh_fn_method_doc_start_sync(void*_Nonnull ptr, RustBuffer peers, RustCallStatus *_Nonnull out_status
 );
@@ -186,13 +206,6 @@ RustBuffer uniffi_iroh_fn_method_docimportprogress_as_progress(void*_Nonnull ptr
 );
 RustBuffer uniffi_iroh_fn_method_docimportprogress_type(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void uniffi_iroh_fn_free_downloadlocation(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void*_Nonnull uniffi_iroh_fn_constructor_downloadlocation_external(RustBuffer path, int8_t in_place, RustCallStatus *_Nonnull out_status
-);
-void*_Nonnull uniffi_iroh_fn_constructor_downloadlocation_internal(RustCallStatus *_Nonnull out_status
-    
-);
 void uniffi_iroh_fn_free_downloadpolicy(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void*_Nonnull uniffi_iroh_fn_constructor_downloadpolicy_everything(RustCallStatus *_Nonnull out_status
@@ -209,17 +222,15 @@ void uniffi_iroh_fn_free_downloadprogress(void*_Nonnull ptr, RustCallStatus *_No
 );
 RustBuffer uniffi_iroh_fn_method_downloadprogress_as_abort(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+RustBuffer uniffi_iroh_fn_method_downloadprogress_as_all_done(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
 RustBuffer uniffi_iroh_fn_method_downloadprogress_as_done(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_iroh_fn_method_downloadprogress_as_export(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_iroh_fn_method_downloadprogress_as_export_progress(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_downloadprogress_as_found(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_downloadprogress_as_found_hash_seq(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_iroh_fn_method_downloadprogress_as_network_done(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_iroh_fn_method_downloadprogress_as_found_local(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_downloadprogress_as_progress(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -267,17 +278,31 @@ void uniffi_iroh_fn_free_irohnode(void*_Nonnull ptr, RustCallStatus *_Nonnull ou
 );
 void*_Nonnull uniffi_iroh_fn_constructor_irohnode_new(RustBuffer path, RustCallStatus *_Nonnull out_status
 );
+void*_Nonnull uniffi_iroh_fn_constructor_irohnode_with_options(RustBuffer path, RustBuffer opts, RustCallStatus *_Nonnull out_status
+);
 void*_Nonnull uniffi_iroh_fn_method_irohnode_author_create(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_iroh_fn_method_irohnode_author_default(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void uniffi_iroh_fn_method_irohnode_author_delete(void*_Nonnull ptr, void*_Nonnull author, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_iroh_fn_method_irohnode_author_export(void*_Nonnull ptr, void*_Nonnull author, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_iroh_fn_method_irohnode_author_import(void*_Nonnull ptr, void*_Nonnull author, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_irohnode_author_list(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_iroh_fn_method_irohnode_blobs_add_bytes(void*_Nonnull ptr, RustBuffer bytes, void*_Nonnull tag, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_iroh_fn_method_irohnode_blobs_add_bytes(void*_Nonnull ptr, RustBuffer bytes, RustCallStatus *_Nonnull out_status
 );
 void uniffi_iroh_fn_method_irohnode_blobs_add_from_path(void*_Nonnull ptr, RustBuffer path, int8_t in_place, void*_Nonnull tag, void*_Nonnull wrap, uint64_t cb, RustCallStatus *_Nonnull out_status
 );
+RustBuffer uniffi_iroh_fn_method_irohnode_blobs_create_collection(void*_Nonnull ptr, void*_Nonnull collection, void*_Nonnull tag, RustBuffer tags_to_delete, RustCallStatus *_Nonnull out_status
+);
 void uniffi_iroh_fn_method_irohnode_blobs_delete_blob(void*_Nonnull ptr, void*_Nonnull hash, RustCallStatus *_Nonnull out_status
 );
-void uniffi_iroh_fn_method_irohnode_blobs_download(void*_Nonnull ptr, void*_Nonnull req, uint64_t cb, RustCallStatus *_Nonnull out_status
+void uniffi_iroh_fn_method_irohnode_blobs_download(void*_Nonnull ptr, void*_Nonnull hash, void*_Nonnull req, uint64_t cb, RustCallStatus *_Nonnull out_status
+);
+void uniffi_iroh_fn_method_irohnode_blobs_export(void*_Nonnull ptr, void*_Nonnull hash, RustBuffer destination, RustBuffer format, RustBuffer mode, RustCallStatus *_Nonnull out_status
 );
 void*_Nonnull uniffi_iroh_fn_method_irohnode_blobs_get_collection(void*_Nonnull ptr, void*_Nonnull hash, RustCallStatus *_Nonnull out_status
 );
@@ -290,6 +315,8 @@ RustBuffer uniffi_iroh_fn_method_irohnode_blobs_list_incomplete(void*_Nonnull pt
 RustBuffer uniffi_iroh_fn_method_irohnode_blobs_read_at_to_bytes(void*_Nonnull ptr, void*_Nonnull hash, uint64_t offset, RustBuffer len, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_irohnode_blobs_read_to_bytes(void*_Nonnull ptr, void*_Nonnull hash, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_iroh_fn_method_irohnode_blobs_share(void*_Nonnull ptr, void*_Nonnull hash, RustBuffer blob_format, RustBuffer ticket_options, RustCallStatus *_Nonnull out_status
 );
 uint64_t uniffi_iroh_fn_method_irohnode_blobs_size(void*_Nonnull ptr, void*_Nonnull hash, RustCallStatus *_Nonnull out_status
 );
@@ -304,6 +331,8 @@ void*_Nonnull uniffi_iroh_fn_method_irohnode_doc_create(void*_Nonnull ptr, RustC
 void uniffi_iroh_fn_method_irohnode_doc_drop(void*_Nonnull ptr, RustBuffer doc_id, RustCallStatus *_Nonnull out_status
 );
 void*_Nonnull uniffi_iroh_fn_method_irohnode_doc_join(void*_Nonnull ptr, RustBuffer ticket, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_iroh_fn_method_irohnode_doc_join_and_subscribe(void*_Nonnull ptr, RustBuffer ticket, uint64_t cb, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_irohnode_doc_list(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -337,21 +366,21 @@ RustBuffer uniffi_iroh_fn_method_liveevent_type(void*_Nonnull ptr, RustCallStatu
 );
 void uniffi_iroh_fn_free_nodeaddr(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void*_Nonnull uniffi_iroh_fn_constructor_nodeaddr_new(void*_Nonnull node_id, RustBuffer derp_url, RustBuffer addresses, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_iroh_fn_method_nodeaddr_derp_url(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_iroh_fn_constructor_nodeaddr_new(void*_Nonnull node_id, RustBuffer relay_url, RustBuffer addresses, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_nodeaddr_direct_addresses(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 int8_t uniffi_iroh_fn_method_nodeaddr_equal(void*_Nonnull ptr, void*_Nonnull other, RustCallStatus *_Nonnull out_status
 );
-void uniffi_iroh_fn_free_nodestatusresponse(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_iroh_fn_method_nodeaddr_relay_url(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_iroh_fn_method_nodestatusresponse_listen_addrs(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+void uniffi_iroh_fn_free_nodestatus(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void*_Nonnull uniffi_iroh_fn_method_nodestatusresponse_node_addr(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_iroh_fn_method_nodestatus_listen_addrs(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_iroh_fn_method_nodestatusresponse_version(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_iroh_fn_method_nodestatus_node_addr(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_iroh_fn_method_nodestatus_version(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void uniffi_iroh_fn_free_publickey(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -570,10 +599,28 @@ uint16_t uniffi_iroh_checksum_method_addprogress_as_progress(void
 uint16_t uniffi_iroh_checksum_method_addprogress_type(void
     
 );
+uint16_t uniffi_iroh_checksum_method_author_id(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_author_to_string(void
+    
+);
 uint16_t uniffi_iroh_checksum_method_authorid_equal(void
     
 );
 uint16_t uniffi_iroh_checksum_method_authorid_to_string(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_blobticket_as_download_options(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_blobticket_format(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_blobticket_hash(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_blobticket_node_addr(void
     
 );
 uint16_t uniffi_iroh_checksum_method_collection_blobs(void
@@ -702,13 +749,10 @@ uint16_t uniffi_iroh_checksum_method_docimportprogress_type(void
 uint16_t uniffi_iroh_checksum_method_downloadprogress_as_abort(void
     
 );
+uint16_t uniffi_iroh_checksum_method_downloadprogress_as_all_done(void
+    
+);
 uint16_t uniffi_iroh_checksum_method_downloadprogress_as_done(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_downloadprogress_as_export(void
-    
-);
-uint16_t uniffi_iroh_checksum_method_downloadprogress_as_export_progress(void
     
 );
 uint16_t uniffi_iroh_checksum_method_downloadprogress_as_found(void
@@ -717,7 +761,7 @@ uint16_t uniffi_iroh_checksum_method_downloadprogress_as_found(void
 uint16_t uniffi_iroh_checksum_method_downloadprogress_as_found_hash_seq(void
     
 );
-uint16_t uniffi_iroh_checksum_method_downloadprogress_as_network_done(void
+uint16_t uniffi_iroh_checksum_method_downloadprogress_as_found_local(void
     
 );
 uint16_t uniffi_iroh_checksum_method_downloadprogress_as_progress(void
@@ -762,6 +806,18 @@ uint16_t uniffi_iroh_checksum_method_hash_to_string(void
 uint16_t uniffi_iroh_checksum_method_irohnode_author_create(void
     
 );
+uint16_t uniffi_iroh_checksum_method_irohnode_author_default(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_irohnode_author_delete(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_irohnode_author_export(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_irohnode_author_import(void
+    
+);
 uint16_t uniffi_iroh_checksum_method_irohnode_author_list(void
     
 );
@@ -771,10 +827,16 @@ uint16_t uniffi_iroh_checksum_method_irohnode_blobs_add_bytes(void
 uint16_t uniffi_iroh_checksum_method_irohnode_blobs_add_from_path(void
     
 );
+uint16_t uniffi_iroh_checksum_method_irohnode_blobs_create_collection(void
+    
+);
 uint16_t uniffi_iroh_checksum_method_irohnode_blobs_delete_blob(void
     
 );
 uint16_t uniffi_iroh_checksum_method_irohnode_blobs_download(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_irohnode_blobs_export(void
     
 );
 uint16_t uniffi_iroh_checksum_method_irohnode_blobs_get_collection(void
@@ -793,6 +855,9 @@ uint16_t uniffi_iroh_checksum_method_irohnode_blobs_read_at_to_bytes(void
     
 );
 uint16_t uniffi_iroh_checksum_method_irohnode_blobs_read_to_bytes(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_irohnode_blobs_share(void
     
 );
 uint16_t uniffi_iroh_checksum_method_irohnode_blobs_size(void
@@ -814,6 +879,9 @@ uint16_t uniffi_iroh_checksum_method_irohnode_doc_drop(void
     
 );
 uint16_t uniffi_iroh_checksum_method_irohnode_doc_join(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_irohnode_doc_join_and_subscribe(void
     
 );
 uint16_t uniffi_iroh_checksum_method_irohnode_doc_list(void
@@ -858,22 +926,22 @@ uint16_t uniffi_iroh_checksum_method_liveevent_as_sync_finished(void
 uint16_t uniffi_iroh_checksum_method_liveevent_type(void
     
 );
-uint16_t uniffi_iroh_checksum_method_nodeaddr_derp_url(void
-    
-);
 uint16_t uniffi_iroh_checksum_method_nodeaddr_direct_addresses(void
     
 );
 uint16_t uniffi_iroh_checksum_method_nodeaddr_equal(void
     
 );
-uint16_t uniffi_iroh_checksum_method_nodestatusresponse_listen_addrs(void
+uint16_t uniffi_iroh_checksum_method_nodeaddr_relay_url(void
     
 );
-uint16_t uniffi_iroh_checksum_method_nodestatusresponse_node_addr(void
+uint16_t uniffi_iroh_checksum_method_nodestatus_listen_addrs(void
     
 );
-uint16_t uniffi_iroh_checksum_method_nodestatusresponse_version(void
+uint16_t uniffi_iroh_checksum_method_nodestatus_node_addr(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_nodestatus_version(void
     
 );
 uint16_t uniffi_iroh_checksum_method_publickey_equal(void
@@ -900,19 +968,19 @@ uint16_t uniffi_iroh_checksum_method_rangespec_is_all(void
 uint16_t uniffi_iroh_checksum_method_rangespec_is_empty(void
     
 );
+uint16_t uniffi_iroh_checksum_constructor_author_from_string(void
+    
+);
 uint16_t uniffi_iroh_checksum_constructor_authorid_from_string(void
     
 );
-uint16_t uniffi_iroh_checksum_constructor_blobdownloadrequest_new(void
+uint16_t uniffi_iroh_checksum_constructor_blobdownloadoptions_new(void
+    
+);
+uint16_t uniffi_iroh_checksum_constructor_blobticket_new(void
     
 );
 uint16_t uniffi_iroh_checksum_constructor_collection_new(void
-    
-);
-uint16_t uniffi_iroh_checksum_constructor_downloadlocation_external(void
-    
-);
-uint16_t uniffi_iroh_checksum_constructor_downloadlocation_internal(void
     
 );
 uint16_t uniffi_iroh_checksum_constructor_downloadpolicy_everything(void
@@ -943,6 +1011,9 @@ uint16_t uniffi_iroh_checksum_constructor_hash_new(void
     
 );
 uint16_t uniffi_iroh_checksum_constructor_irohnode_new(void
+    
+);
+uint16_t uniffi_iroh_checksum_constructor_irohnode_with_options(void
     
 );
 uint16_t uniffi_iroh_checksum_constructor_nodeaddr_new(void

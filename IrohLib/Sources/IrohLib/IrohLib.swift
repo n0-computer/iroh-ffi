@@ -595,6 +595,104 @@ public func FfiConverterTypeAddProgress_lower(_ value: AddProgress) -> UnsafeMut
     return FfiConverterTypeAddProgress.lower(value)
 }
 
+public protocol AuthorProtocol {
+    func id() -> AuthorId
+    func toString() -> String
+}
+
+/**
+ * Author key to insert entries in a document
+ *
+ * Internally, an author is a `SigningKey` which is used to sign entries.
+ */
+public class Author: AuthorProtocol {
+    fileprivate let pointer: UnsafeMutableRawPointer
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    deinit {
+        try! rustCall { uniffi_iroh_fn_free_author(pointer, $0) }
+    }
+
+    /**
+     * Get an [`Author`] from a String
+     */
+    public static func fromString(str: String) throws -> Author {
+        return try Author(unsafeFromRawPointer: rustCallWithError(FfiConverterTypeIrohError.lift) {
+            uniffi_iroh_fn_constructor_author_from_string(
+                FfiConverterString.lower(str), $0
+            )
+        })
+    }
+
+    /**
+     * Get the [`AuthorId`] of this Author
+     */
+    public func id() -> AuthorId {
+        return try! FfiConverterTypeAuthorId.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_author_id(self.pointer, $0)
+                }
+        )
+    }
+
+    /**
+     * Return the AuthorId as a string
+     */
+    public func toString() -> String {
+        return try! FfiConverterString.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_author_to_string(self.pointer, $0)
+                }
+        )
+    }
+}
+
+public struct FfiConverterTypeAuthor: FfiConverter {
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = Author
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Author {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: Author, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> Author {
+        return Author(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: Author) -> UnsafeMutableRawPointer {
+        return value.pointer
+    }
+}
+
+public func FfiConverterTypeAuthor_lift(_ pointer: UnsafeMutableRawPointer) throws -> Author {
+    return try FfiConverterTypeAuthor.lift(pointer)
+}
+
+public func FfiConverterTypeAuthor_lower(_ value: Author) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeAuthor.lower(value)
+}
+
 public protocol AuthorIdProtocol {
     func equal(other: AuthorId) -> Bool
     func toString() -> String
@@ -692,12 +790,12 @@ public func FfiConverterTypeAuthorId_lower(_ value: AuthorId) -> UnsafeMutableRa
     return FfiConverterTypeAuthorId.lower(value)
 }
 
-public protocol BlobDownloadRequestProtocol {}
+public protocol BlobDownloadOptionsProtocol {}
 
 /**
  * A request to the node to download and share the data specified by the hash.
  */
-public class BlobDownloadRequest: BlobDownloadRequestProtocol {
+public class BlobDownloadOptions: BlobDownloadOptionsProtocol {
     fileprivate let pointer: UnsafeMutableRawPointer
 
     // TODO: We'd like this to be `private` but for Swifty reasons,
@@ -707,28 +805,26 @@ public class BlobDownloadRequest: BlobDownloadRequestProtocol {
         self.pointer = pointer
     }
 
-    public convenience init(hash: Hash, format: BlobFormat, node: NodeAddr, tag: SetTagOption, out: DownloadLocation) throws {
+    public convenience init(format: BlobFormat, node: NodeAddr, tag: SetTagOption) throws {
         try self.init(unsafeFromRawPointer: rustCallWithError(FfiConverterTypeIrohError.lift) {
-            uniffi_iroh_fn_constructor_blobdownloadrequest_new(
-                FfiConverterTypeHash.lower(hash),
+            uniffi_iroh_fn_constructor_blobdownloadoptions_new(
                 FfiConverterTypeBlobFormat.lower(format),
                 FfiConverterTypeNodeAddr.lower(node),
-                FfiConverterTypeSetTagOption.lower(tag),
-                FfiConverterTypeDownloadLocation.lower(out), $0
+                FfiConverterTypeSetTagOption.lower(tag), $0
             )
         })
     }
 
     deinit {
-        try! rustCall { uniffi_iroh_fn_free_blobdownloadrequest(pointer, $0) }
+        try! rustCall { uniffi_iroh_fn_free_blobdownloadoptions(pointer, $0) }
     }
 }
 
-public struct FfiConverterTypeBlobDownloadRequest: FfiConverter {
+public struct FfiConverterTypeBlobDownloadOptions: FfiConverter {
     typealias FfiType = UnsafeMutableRawPointer
-    typealias SwiftType = BlobDownloadRequest
+    typealias SwiftType = BlobDownloadOptions
 
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BlobDownloadRequest {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BlobDownloadOptions {
         let v: UInt64 = try readInt(&buf)
         // The Rust code won't compile if a pointer won't fit in a UInt64.
         // We have to go via `UInt` because that's the thing that's the size of a pointer.
@@ -739,27 +835,148 @@ public struct FfiConverterTypeBlobDownloadRequest: FfiConverter {
         return try lift(ptr!)
     }
 
-    public static func write(_ value: BlobDownloadRequest, into buf: inout [UInt8]) {
+    public static func write(_ value: BlobDownloadOptions, into buf: inout [UInt8]) {
         // This fiddling is because `Int` is the thing that's the same size as a pointer.
         // The Rust code won't compile if a pointer won't fit in a `UInt64`.
         writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
     }
 
-    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> BlobDownloadRequest {
-        return BlobDownloadRequest(unsafeFromRawPointer: pointer)
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> BlobDownloadOptions {
+        return BlobDownloadOptions(unsafeFromRawPointer: pointer)
     }
 
-    public static func lower(_ value: BlobDownloadRequest) -> UnsafeMutableRawPointer {
+    public static func lower(_ value: BlobDownloadOptions) -> UnsafeMutableRawPointer {
         return value.pointer
     }
 }
 
-public func FfiConverterTypeBlobDownloadRequest_lift(_ pointer: UnsafeMutableRawPointer) throws -> BlobDownloadRequest {
-    return try FfiConverterTypeBlobDownloadRequest.lift(pointer)
+public func FfiConverterTypeBlobDownloadOptions_lift(_ pointer: UnsafeMutableRawPointer) throws -> BlobDownloadOptions {
+    return try FfiConverterTypeBlobDownloadOptions.lift(pointer)
 }
 
-public func FfiConverterTypeBlobDownloadRequest_lower(_ value: BlobDownloadRequest) -> UnsafeMutableRawPointer {
-    return FfiConverterTypeBlobDownloadRequest.lower(value)
+public func FfiConverterTypeBlobDownloadOptions_lower(_ value: BlobDownloadOptions) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeBlobDownloadOptions.lower(value)
+}
+
+public protocol BlobTicketProtocol {
+    func asDownloadOptions() -> BlobDownloadOptions
+    func format() -> BlobFormat
+    func hash() -> Hash
+    func nodeAddr() -> NodeAddr
+}
+
+/**
+ * A token containing everything to get a file from the provider.
+ *
+ * It is a single item which can be easily serialized and deserialized.
+ */
+public class BlobTicket: BlobTicketProtocol {
+    fileprivate let pointer: UnsafeMutableRawPointer
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    public convenience init(ticket: String) throws {
+        try self.init(unsafeFromRawPointer: rustCallWithError(FfiConverterTypeIrohError.lift) {
+            uniffi_iroh_fn_constructor_blobticket_new(
+                FfiConverterString.lower(ticket), $0
+            )
+        })
+    }
+
+    deinit {
+        try! rustCall { uniffi_iroh_fn_free_blobticket(pointer, $0) }
+    }
+
+    /**
+     * Turn this ticket into parameters for blobs_download.
+     */
+    public func asDownloadOptions() -> BlobDownloadOptions {
+        return try! FfiConverterTypeBlobDownloadOptions.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_blobticket_as_download_options(self.pointer, $0)
+                }
+        )
+    }
+
+    /**
+     * The format of the blob.
+     */
+    public func format() -> BlobFormat {
+        return try! FfiConverterTypeBlobFormat.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_blobticket_format(self.pointer, $0)
+                }
+        )
+    }
+
+    /**
+     * The hash to retrieve.
+     */
+    public func hash() -> Hash {
+        return try! FfiConverterTypeHash.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_blobticket_hash(self.pointer, $0)
+                }
+        )
+    }
+
+    /**
+     * The provider to get a file from.
+     */
+    public func nodeAddr() -> NodeAddr {
+        return try! FfiConverterTypeNodeAddr.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_blobticket_node_addr(self.pointer, $0)
+                }
+        )
+    }
+}
+
+public struct FfiConverterTypeBlobTicket: FfiConverter {
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = BlobTicket
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BlobTicket {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: BlobTicket, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> BlobTicket {
+        return BlobTicket(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: BlobTicket) -> UnsafeMutableRawPointer {
+        return value.pointer
+    }
+}
+
+public func FfiConverterTypeBlobTicket_lift(_ pointer: UnsafeMutableRawPointer) throws -> BlobTicket {
+    return try FfiConverterTypeBlobTicket.lift(pointer)
+}
+
+public func FfiConverterTypeBlobTicket_lower(_ value: BlobTicket) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeBlobTicket.lower(value)
 }
 
 public protocol CollectionProtocol {
@@ -942,7 +1159,7 @@ public class ConnectionType: ConnectionTypeProtocol {
     }
 
     /**
-     * Return the socket address and DERP url if this is a mixed connection
+     * Return the socket address and relay url if this is a mixed connection
      */
     public func asMixed() -> ConnectionTypeMixed {
         return try! FfiConverterTypeConnectionTypeMixed.lift(
@@ -954,7 +1171,7 @@ public class ConnectionType: ConnectionTypeProtocol {
     }
 
     /**
-     * Return the derp url if this is a relay connection
+     * Return the relay url if this is a relay connection
      */
     public func asRelay() -> String {
         return try! FfiConverterString.lift(
@@ -1141,7 +1358,7 @@ public protocol DocProtocol {
     func setBytes(author: AuthorId, key: Data, value: Data) throws -> Hash
     func setDownloadPolicy(policy: DownloadPolicy) throws
     func setHash(author: AuthorId, key: Data, hash: Hash, size: UInt64) throws
-    func share(mode: ShareMode) throws -> String
+    func share(mode: ShareMode, addrOptions: AddrInfoOptions) throws -> String
     func startSync(peers: [NodeAddr]) throws
     func status() throws -> OpenState
     func subscribe(cb: SubscribeCallback) throws
@@ -1338,11 +1555,12 @@ public class Doc: DocProtocol {
     /**
      * Share this document with peers over a ticket.
      */
-    public func share(mode: ShareMode) throws -> String {
+    public func share(mode: ShareMode, addrOptions: AddrInfoOptions) throws -> String {
         return try FfiConverterString.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_doc_share(self.pointer,
-                                                FfiConverterTypeShareMode.lower(mode), $0)
+                                                FfiConverterTypeShareMode.lower(mode),
+                                                FfiConverterTypeAddrInfoOptions.lower(addrOptions), $0)
             }
         )
     }
@@ -1667,92 +1885,6 @@ public func FfiConverterTypeDocImportProgress_lower(_ value: DocImportProgress) 
     return FfiConverterTypeDocImportProgress.lower(value)
 }
 
-public protocol DownloadLocationProtocol {}
-
-/**
- * Location to store a downloaded blob at.
- */
-public class DownloadLocation: DownloadLocationProtocol {
-    fileprivate let pointer: UnsafeMutableRawPointer
-
-    // TODO: We'd like this to be `private` but for Swifty reasons,
-    // we can't implement `FfiConverter` without making this `required` and we can't
-    // make it `required` without making it `public`.
-    required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
-        self.pointer = pointer
-    }
-
-    deinit {
-        try! rustCall { uniffi_iroh_fn_free_downloadlocation(pointer, $0) }
-    }
-
-    /**
-     * Store at the provided path.
-     *
-     * If `in_place` is true, the data is shared in place, i.e. it is moved to the
-     * out path instead of being copied. The database itself contains only a
-     * reference to the out path of the file.
-     *
-     * If the data is modified in the location specified by the out path,
-     * download attempts for the associated hash will fail.
-     */
-    public static func external(path: String, inPlace: Bool) -> DownloadLocation {
-        return DownloadLocation(unsafeFromRawPointer: try! rustCall {
-            uniffi_iroh_fn_constructor_downloadlocation_external(
-                FfiConverterString.lower(path),
-                FfiConverterBool.lower(inPlace), $0
-            )
-        })
-    }
-
-    /**
-     * Store in the node's blob storage directory.
-     */
-    public static func `internal`() -> DownloadLocation {
-        return DownloadLocation(unsafeFromRawPointer: try! rustCall {
-            uniffi_iroh_fn_constructor_downloadlocation_internal($0)
-        })
-    }
-}
-
-public struct FfiConverterTypeDownloadLocation: FfiConverter {
-    typealias FfiType = UnsafeMutableRawPointer
-    typealias SwiftType = DownloadLocation
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DownloadLocation {
-        let v: UInt64 = try readInt(&buf)
-        // The Rust code won't compile if a pointer won't fit in a UInt64.
-        // We have to go via `UInt` because that's the thing that's the size of a pointer.
-        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if ptr == nil {
-            throw UniffiInternalError.unexpectedNullPointer
-        }
-        return try lift(ptr!)
-    }
-
-    public static func write(_ value: DownloadLocation, into buf: inout [UInt8]) {
-        // This fiddling is because `Int` is the thing that's the same size as a pointer.
-        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
-        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
-    }
-
-    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> DownloadLocation {
-        return DownloadLocation(unsafeFromRawPointer: pointer)
-    }
-
-    public static func lower(_ value: DownloadLocation) -> UnsafeMutableRawPointer {
-        return value.pointer
-    }
-}
-
-public func FfiConverterTypeDownloadLocation_lift(_ pointer: UnsafeMutableRawPointer) throws -> DownloadLocation {
-    return try FfiConverterTypeDownloadLocation.lift(pointer)
-}
-
-public func FfiConverterTypeDownloadLocation_lower(_ value: DownloadLocation) -> UnsafeMutableRawPointer {
-    return FfiConverterTypeDownloadLocation.lower(value)
-}
-
 public protocol DownloadPolicyProtocol {}
 
 /**
@@ -1853,12 +1985,11 @@ public func FfiConverterTypeDownloadPolicy_lower(_ value: DownloadPolicy) -> Uns
 
 public protocol DownloadProgressProtocol {
     func asAbort() -> DownloadProgressAbort
+    func asAllDone() -> DownloadProgressAllDone
     func asDone() -> DownloadProgressDone
-    func asExport() -> DownloadProgressExport
-    func asExportProgress() -> DownloadProgressExportProgress
     func asFound() -> DownloadProgressFound
     func asFoundHashSeq() -> DownloadProgressFoundHashSeq
-    func asNetworkDone() -> DownloadProgressNetworkDone
+    func asFoundLocal() -> DownloadProgressFoundLocal
     func asProgress() -> DownloadProgressProgress
     func type() -> DownloadProgressType
 }
@@ -1893,6 +2024,18 @@ public class DownloadProgress: DownloadProgressProtocol {
     }
 
     /**
+     * Return the `DownloadProgressAllDone` event
+     */
+    public func asAllDone() -> DownloadProgressAllDone {
+        return try! FfiConverterTypeDownloadProgressAllDone.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_downloadprogress_as_all_done(self.pointer, $0)
+                }
+        )
+    }
+
+    /**
      * Return the `DownloadProgressDone` event
      */
     public func asDone() -> DownloadProgressDone {
@@ -1900,30 +2043,6 @@ public class DownloadProgress: DownloadProgressProtocol {
             try!
                 rustCall {
                     uniffi_iroh_fn_method_downloadprogress_as_done(self.pointer, $0)
-                }
-        )
-    }
-
-    /**
-     * Return the `DownloadProgressExport` event
-     */
-    public func asExport() -> DownloadProgressExport {
-        return try! FfiConverterTypeDownloadProgressExport.lift(
-            try!
-                rustCall {
-                    uniffi_iroh_fn_method_downloadprogress_as_export(self.pointer, $0)
-                }
-        )
-    }
-
-    /**
-     * Return the `DownloadProgressExportProgress` event
-     */
-    public func asExportProgress() -> DownloadProgressExportProgress {
-        return try! FfiConverterTypeDownloadProgressExportProgress.lift(
-            try!
-                rustCall {
-                    uniffi_iroh_fn_method_downloadprogress_as_export_progress(self.pointer, $0)
                 }
         )
     }
@@ -1953,13 +2072,13 @@ public class DownloadProgress: DownloadProgressProtocol {
     }
 
     /**
-     * Return the `DownloadProgressNetworkDone` event
+     * Return the `DownloadProgressFoundLocal` event
      */
-    public func asNetworkDone() -> DownloadProgressNetworkDone {
-        return try! FfiConverterTypeDownloadProgressNetworkDone.lift(
+    public func asFoundLocal() -> DownloadProgressFoundLocal {
+        return try! FfiConverterTypeDownloadProgressFoundLocal.lift(
             try!
                 rustCall {
-                    uniffi_iroh_fn_method_downloadprogress_as_network_done(self.pointer, $0)
+                    uniffi_iroh_fn_method_downloadprogress_as_found_local(self.pointer, $0)
                 }
         )
     }
@@ -1978,6 +2097,7 @@ public class DownloadProgress: DownloadProgressProtocol {
 
     /**
      * Get the type of event
+     * note that there is no `as_connected` method, as the `Connected` event has no associated data
      */
     public func type() -> DownloadProgressType {
         return try! FfiConverterTypeDownloadProgressType.lift(
@@ -2413,17 +2533,24 @@ public func FfiConverterTypeHash_lower(_ value: Hash) -> UnsafeMutableRawPointer
 
 public protocol IrohNodeProtocol {
     func authorCreate() throws -> AuthorId
+    func authorDefault() throws -> AuthorId
+    func authorDelete(author: AuthorId) throws
+    func authorExport(author: AuthorId) throws -> Author
+    func authorImport(author: Author) throws -> AuthorId
     func authorList() throws -> [AuthorId]
-    func blobsAddBytes(bytes: Data, tag: SetTagOption) throws -> BlobAddOutcome
+    func blobsAddBytes(bytes: Data) throws -> BlobAddOutcome
     func blobsAddFromPath(path: String, inPlace: Bool, tag: SetTagOption, wrap: WrapOption, cb: AddCallback) throws
+    func blobsCreateCollection(collection: Collection, tag: SetTagOption, tagsToDelete: [String]) throws -> HashAndTag
     func blobsDeleteBlob(hash: Hash) throws
-    func blobsDownload(req: BlobDownloadRequest, cb: DownloadCallback) throws
+    func blobsDownload(hash: Hash, req: BlobDownloadOptions, cb: DownloadCallback) throws
+    func blobsExport(hash: Hash, destination: String, format: BlobExportFormat, mode: BlobExportMode) throws
     func blobsGetCollection(hash: Hash) throws -> Collection
     func blobsList() throws -> [Hash]
-    func blobsListCollections() throws -> [BlobListCollectionsResponse]
-    func blobsListIncomplete() throws -> [BlobListIncompleteResponse]
+    func blobsListCollections() throws -> [CollectionInfo]
+    func blobsListIncomplete() throws -> [IncompleteBlobInfo]
     func blobsReadAtToBytes(hash: Hash, offset: UInt64, len: UInt64?) throws -> Data
     func blobsReadToBytes(hash: Hash) throws -> Data
+    func blobsShare(hash: Hash, blobFormat: BlobFormat, ticketOptions: AddrInfoOptions) throws -> String
     func blobsSize(hash: Hash) throws -> UInt64
     func blobsWriteToPath(hash: Hash, path: String) throws
     func connectionInfo(nodeId: PublicKey) throws -> ConnectionInfo?
@@ -2431,13 +2558,14 @@ public protocol IrohNodeProtocol {
     func docCreate() throws -> Doc
     func docDrop(docId: String) throws
     func docJoin(ticket: String) throws -> Doc
+    func docJoinAndSubscribe(ticket: String, cb: SubscribeCallback) throws -> Doc
     func docList() throws -> [NamespaceAndCapability]
     func docOpen(id: String) throws -> Doc?
     func nodeId() -> String
     func stats() throws -> [String: CounterStats]
-    func status() throws -> NodeStatusResponse
+    func status() throws -> NodeStatus
     func tagsDelete(name: Data) throws
-    func tagsList() throws -> [ListTagsResponse]
+    func tagsList() throws -> [TagInfo]
 }
 
 /**
@@ -2470,7 +2598,24 @@ public class IrohNode: IrohNodeProtocol {
     }
 
     /**
-     * Create a new author.
+     * Create a new iroh node with options.
+     */
+    public static func withOptions(path: String, opts: NodeOptions) throws -> IrohNode {
+        return try IrohNode(unsafeFromRawPointer: rustCallWithError(FfiConverterTypeIrohError.lift) {
+            uniffi_iroh_fn_constructor_irohnode_with_options(
+                FfiConverterString.lower(path),
+                FfiConverterTypeNodeOptions.lower(opts), $0
+            )
+        })
+    }
+
+    /**
+     * Create a new document author.
+     *
+     * You likely want to save the returned [`AuthorId`] somewhere so that you can use this author
+     * again.
+     *
+     * If you need only a single author, use [`Self::default`].
      */
     public func authorCreate() throws -> AuthorId {
         return try FfiConverterTypeAuthorId.lift(
@@ -2481,8 +2626,62 @@ public class IrohNode: IrohNodeProtocol {
     }
 
     /**
-     * List all the AuthorIds that exist on this node.
+     * Returns the default document author of this node.
+     *
+     * On persistent nodes, the author is created on first start and its public key is saved
+     * in the data directory.
+     *
+     * The default author can be set with [`Self::set_default`].
      */
+    public func authorDefault() throws -> AuthorId {
+        return try FfiConverterTypeAuthorId.lift(
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_irohnode_author_default(self.pointer, $0)
+            }
+        )
+    }
+
+    /**
+     * Deletes the given author by id.
+     *
+     * Warning: This permanently removes this author.
+     */
+    public func authorDelete(author: AuthorId) throws {
+        try
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_irohnode_author_delete(self.pointer,
+                                                             FfiConverterTypeAuthorId.lower(author), $0)
+            }
+    }
+
+    /**
+     * Export the given author.
+     *
+     * Warning: This contains sensitive data.
+     */
+    public func authorExport(author: AuthorId) throws -> Author {
+        return try FfiConverterTypeAuthor.lift(
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_irohnode_author_export(self.pointer,
+                                                             FfiConverterTypeAuthorId.lower(author), $0)
+            }
+        )
+    }
+
+    /**
+     * Import the given author.
+     *
+     * Warning: This contains sensitive data.
+     */
+    public func authorImport(author: Author) throws -> AuthorId {
+        return try FfiConverterTypeAuthorId.lift(
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_irohnode_author_import(self.pointer,
+                                                             FfiConverterTypeAuthor.lower(author), $0)
+            }
+        )
+    }
+
     public func authorList() throws -> [AuthorId] {
         return try FfiConverterSequenceTypeAuthorId.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
@@ -2494,12 +2693,11 @@ public class IrohNode: IrohNodeProtocol {
     /**
      * Write a blob by passing bytes.
      */
-    public func blobsAddBytes(bytes: Data, tag: SetTagOption) throws -> BlobAddOutcome {
+    public func blobsAddBytes(bytes: Data) throws -> BlobAddOutcome {
         return try FfiConverterTypeBlobAddOutcome.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_irohnode_blobs_add_bytes(self.pointer,
-                                                               FfiConverterData.lower(bytes),
-                                                               FfiConverterTypeSetTagOption.lower(tag), $0)
+                                                               FfiConverterData.lower(bytes), $0)
             }
         )
     }
@@ -2525,6 +2723,23 @@ public class IrohNode: IrohNodeProtocol {
     }
 
     /**
+     * Create a collection from already existing blobs.
+     *
+     * To automatically clear the tags for the passed in blobs you can set
+     * `tags_to_delete` on those tags, and they will be deleted once the collection is created.
+     */
+    public func blobsCreateCollection(collection: Collection, tag: SetTagOption, tagsToDelete: [String]) throws -> HashAndTag {
+        return try FfiConverterTypeHashAndTag.lift(
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_irohnode_blobs_create_collection(self.pointer,
+                                                                       FfiConverterTypeCollection.lower(collection),
+                                                                       FfiConverterTypeSetTagOption.lower(tag),
+                                                                       FfiConverterSequenceString.lower(tagsToDelete), $0)
+            }
+        )
+    }
+
+    /**
      * Delete a blob.
      */
     public func blobsDeleteBlob(hash: Hash) throws {
@@ -2538,12 +2753,27 @@ public class IrohNode: IrohNodeProtocol {
     /**
      * Download a blob from another node and add it to the local database.
      */
-    public func blobsDownload(req: BlobDownloadRequest, cb: DownloadCallback) throws {
+    public func blobsDownload(hash: Hash, req: BlobDownloadOptions, cb: DownloadCallback) throws {
         try
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_irohnode_blobs_download(self.pointer,
-                                                              FfiConverterTypeBlobDownloadRequest.lower(req),
+                                                              FfiConverterTypeHash.lower(hash),
+                                                              FfiConverterTypeBlobDownloadOptions.lower(req),
                                                               FfiConverterCallbackInterfaceDownloadCallback.lower(cb), $0)
+            }
+    }
+
+    /**
+     * Download a blob from another node and add it to the local database.
+     */
+    public func blobsExport(hash: Hash, destination: String, format: BlobExportFormat, mode: BlobExportMode) throws {
+        try
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_irohnode_blobs_export(self.pointer,
+                                                            FfiConverterTypeHash.lower(hash),
+                                                            FfiConverterString.lower(destination),
+                                                            FfiConverterTypeBlobExportFormat.lower(format),
+                                                            FfiConverterTypeBlobExportMode.lower(mode), $0)
             }
     }
 
@@ -2562,7 +2792,7 @@ public class IrohNode: IrohNodeProtocol {
     /**
      * List all complete blobs.
      *
-     * Note: this allocates for each `BlobListResponse`, if you have many `BlobListReponse`s this may be a prohibitively large list.
+     * Note: this allocates for each `BlobInfo`, if you have many `BlobInfo`s this may be a prohibitively large list.
      * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
      */
     public func blobsList() throws -> [Hash] {
@@ -2576,11 +2806,11 @@ public class IrohNode: IrohNodeProtocol {
     /**
      * List all collections.
      *
-     * Note: this allocates for each `BlobListCollectionsResponse`, if you have many `BlobListCollectionsResponse`s this may be a prohibitively large list.
+     * Note: this allocates for each `CollectionInfo`, if you have many `CollectionInfo`s this may be a prohibitively large list.
      * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
      */
-    public func blobsListCollections() throws -> [BlobListCollectionsResponse] {
-        return try FfiConverterSequenceTypeBlobListCollectionsResponse.lift(
+    public func blobsListCollections() throws -> [CollectionInfo] {
+        return try FfiConverterSequenceTypeCollectionInfo.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_irohnode_blobs_list_collections(self.pointer, $0)
             }
@@ -2590,11 +2820,11 @@ public class IrohNode: IrohNodeProtocol {
     /**
      * List all incomplete (partial) blobs.
      *
-     * Note: this allocates for each `BlobListIncompleteResponse`, if you have many `BlobListIncompleteResponse`s this may be a prohibitively large list.
+     * Note: this allocates for each `IncompleteBlobInfo`, if you have many `IncompleteBlobInfo`s this may be a prohibitively large list.
      * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
      */
-    public func blobsListIncomplete() throws -> [BlobListIncompleteResponse] {
-        return try FfiConverterSequenceTypeBlobListIncompleteResponse.lift(
+    public func blobsListIncomplete() throws -> [IncompleteBlobInfo] {
+        return try FfiConverterSequenceTypeIncompleteBlobInfo.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_irohnode_blobs_list_incomplete(self.pointer, $0)
             }
@@ -2631,6 +2861,20 @@ public class IrohNode: IrohNodeProtocol {
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_irohnode_blobs_read_to_bytes(self.pointer,
                                                                    FfiConverterTypeHash.lower(hash), $0)
+            }
+        )
+    }
+
+    /**
+     * Create a ticket for sharing a blob or collection from this node.
+     */
+    public func blobsShare(hash: Hash, blobFormat: BlobFormat, ticketOptions: AddrInfoOptions) throws -> String {
+        return try FfiConverterString.lift(
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_irohnode_blobs_share(self.pointer,
+                                                           FfiConverterTypeHash.lower(hash),
+                                                           FfiConverterTypeBlobFormat.lower(blobFormat),
+                                                           FfiConverterTypeAddrInfoOptions.lower(ticketOptions), $0)
             }
         )
     }
@@ -2696,8 +2940,7 @@ public class IrohNode: IrohNodeProtocol {
      *
      * This is a destructive operation. Both the document secret key and all entries in the
      * document will be permanently deleted from the node's storage. Content blobs will be
-     * deleted.clone()).await.map_err(Iroh::doc)
-     * through garbage collection unless they are referenced from another document or tag.
+     * deleted through garbage collection unless they are referenced from another document or tag.
      */
     public func docDrop(docId: String) throws {
         try
@@ -2715,6 +2958,19 @@ public class IrohNode: IrohNodeProtocol {
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_irohnode_doc_join(self.pointer,
                                                         FfiConverterString.lower(ticket), $0)
+            }
+        )
+    }
+
+    /**
+     * Join and sync with an already existing document and subscribe to events on that document.
+     */
+    public func docJoinAndSubscribe(ticket: String, cb: SubscribeCallback) throws -> Doc {
+        return try FfiConverterTypeDoc.lift(
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_irohnode_doc_join_and_subscribe(self.pointer,
+                                                                      FfiConverterString.lower(ticket),
+                                                                      FfiConverterCallbackInterfaceSubscribeCallback.lower(cb), $0)
             }
         )
     }
@@ -2770,8 +3026,8 @@ public class IrohNode: IrohNodeProtocol {
     /**
      * Get status information about a node
      */
-    public func status() throws -> NodeStatusResponse {
-        return try FfiConverterTypeNodeStatusResponse.lift(
+    public func status() throws -> NodeStatus {
+        return try FfiConverterTypeNodeStatus.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_irohnode_status(self.pointer, $0)
             }
@@ -2792,11 +3048,11 @@ public class IrohNode: IrohNodeProtocol {
     /**
      * List all tags
      *
-     * Note: this allocates for each `ListTagsResponse`, if you have many `Tags`s this may be a prohibitively large list.
+     * Note: this allocates for each `TagInfo`, if you have many `Tags`s this may be a prohibitively large list.
      * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
      */
-    public func tagsList() throws -> [ListTagsResponse] {
-        return try FfiConverterSequenceTypeListTagsResponse.lift(
+    public func tagsList() throws -> [TagInfo] {
+        return try FfiConverterSequenceTypeTagInfo.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_irohnode_tags_list(self.pointer, $0)
             }
@@ -2993,9 +3249,9 @@ public func FfiConverterTypeLiveEvent_lower(_ value: LiveEvent) -> UnsafeMutable
 }
 
 public protocol NodeAddrProtocol {
-    func derpUrl() -> String?
     func directAddresses() -> [String]
     func equal(other: NodeAddr) -> Bool
+    func relayUrl() -> String?
 }
 
 /**
@@ -3014,11 +3270,11 @@ public class NodeAddr: NodeAddrProtocol {
     /**
      * Create a new [`NodeAddr`] with empty [`AddrInfo`].
      */
-    public convenience init(nodeId: PublicKey, derpUrl: String?, addresses: [String]) {
+    public convenience init(nodeId: PublicKey, relayUrl: String?, addresses: [String]) {
         self.init(unsafeFromRawPointer: try! rustCall {
             uniffi_iroh_fn_constructor_nodeaddr_new(
                 FfiConverterTypePublicKey.lower(nodeId),
-                FfiConverterOptionString.lower(derpUrl),
+                FfiConverterOptionString.lower(relayUrl),
                 FfiConverterSequenceString.lower(addresses), $0
             )
         })
@@ -3026,18 +3282,6 @@ public class NodeAddr: NodeAddrProtocol {
 
     deinit {
         try! rustCall { uniffi_iroh_fn_free_nodeaddr(pointer, $0) }
-    }
-
-    /**
-     * Get the derp url of this peer.
-     */
-    public func derpUrl() -> String? {
-        return try! FfiConverterOptionString.lift(
-            try!
-                rustCall {
-                    uniffi_iroh_fn_method_nodeaddr_derp_url(self.pointer, $0)
-                }
-        )
     }
 
     /**
@@ -3061,6 +3305,18 @@ public class NodeAddr: NodeAddrProtocol {
                 rustCall {
                     uniffi_iroh_fn_method_nodeaddr_equal(self.pointer,
                                                          FfiConverterTypeNodeAddr.lower(other), $0)
+                }
+        )
+    }
+
+    /**
+     * Get the relay url of this peer.
+     */
+    public func relayUrl() -> String? {
+        return try! FfiConverterOptionString.lift(
+            try!
+                rustCall {
+                    uniffi_iroh_fn_method_nodeaddr_relay_url(self.pointer, $0)
                 }
         )
     }
@@ -3104,13 +3360,13 @@ public func FfiConverterTypeNodeAddr_lower(_ value: NodeAddr) -> UnsafeMutableRa
     return FfiConverterTypeNodeAddr.lower(value)
 }
 
-public protocol NodeStatusResponseProtocol {
+public protocol NodeStatusProtocol {
     func listenAddrs() -> [String]
     func nodeAddr() -> NodeAddr
     func version() -> String
 }
 
-public class NodeStatusResponse: NodeStatusResponseProtocol {
+public class NodeStatus: NodeStatusProtocol {
     fileprivate let pointer: UnsafeMutableRawPointer
 
     // TODO: We'd like this to be `private` but for Swifty reasons,
@@ -3121,7 +3377,7 @@ public class NodeStatusResponse: NodeStatusResponseProtocol {
     }
 
     deinit {
-        try! rustCall { uniffi_iroh_fn_free_nodestatusresponse(pointer, $0) }
+        try! rustCall { uniffi_iroh_fn_free_nodestatus(pointer, $0) }
     }
 
     /**
@@ -3131,7 +3387,7 @@ public class NodeStatusResponse: NodeStatusResponseProtocol {
         return try! FfiConverterSequenceString.lift(
             try!
                 rustCall {
-                    uniffi_iroh_fn_method_nodestatusresponse_listen_addrs(self.pointer, $0)
+                    uniffi_iroh_fn_method_nodestatus_listen_addrs(self.pointer, $0)
                 }
         )
     }
@@ -3143,7 +3399,7 @@ public class NodeStatusResponse: NodeStatusResponseProtocol {
         return try! FfiConverterTypeNodeAddr.lift(
             try!
                 rustCall {
-                    uniffi_iroh_fn_method_nodestatusresponse_node_addr(self.pointer, $0)
+                    uniffi_iroh_fn_method_nodestatus_node_addr(self.pointer, $0)
                 }
         )
     }
@@ -3155,17 +3411,17 @@ public class NodeStatusResponse: NodeStatusResponseProtocol {
         return try! FfiConverterString.lift(
             try!
                 rustCall {
-                    uniffi_iroh_fn_method_nodestatusresponse_version(self.pointer, $0)
+                    uniffi_iroh_fn_method_nodestatus_version(self.pointer, $0)
                 }
         )
     }
 }
 
-public struct FfiConverterTypeNodeStatusResponse: FfiConverter {
+public struct FfiConverterTypeNodeStatus: FfiConverter {
     typealias FfiType = UnsafeMutableRawPointer
-    typealias SwiftType = NodeStatusResponse
+    typealias SwiftType = NodeStatus
 
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> NodeStatusResponse {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> NodeStatus {
         let v: UInt64 = try readInt(&buf)
         // The Rust code won't compile if a pointer won't fit in a UInt64.
         // We have to go via `UInt` because that's the thing that's the size of a pointer.
@@ -3176,27 +3432,27 @@ public struct FfiConverterTypeNodeStatusResponse: FfiConverter {
         return try lift(ptr!)
     }
 
-    public static func write(_ value: NodeStatusResponse, into buf: inout [UInt8]) {
+    public static func write(_ value: NodeStatus, into buf: inout [UInt8]) {
         // This fiddling is because `Int` is the thing that's the same size as a pointer.
         // The Rust code won't compile if a pointer won't fit in a `UInt64`.
         writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
     }
 
-    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> NodeStatusResponse {
-        return NodeStatusResponse(unsafeFromRawPointer: pointer)
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> NodeStatus {
+        return NodeStatus(unsafeFromRawPointer: pointer)
     }
 
-    public static func lower(_ value: NodeStatusResponse) -> UnsafeMutableRawPointer {
+    public static func lower(_ value: NodeStatus) -> UnsafeMutableRawPointer {
         return value.pointer
     }
 }
 
-public func FfiConverterTypeNodeStatusResponse_lift(_ pointer: UnsafeMutableRawPointer) throws -> NodeStatusResponse {
-    return try FfiConverterTypeNodeStatusResponse.lift(pointer)
+public func FfiConverterTypeNodeStatus_lift(_ pointer: UnsafeMutableRawPointer) throws -> NodeStatus {
+    return try FfiConverterTypeNodeStatus.lift(pointer)
 }
 
-public func FfiConverterTypeNodeStatusResponse_lower(_ value: NodeStatusResponse) -> UnsafeMutableRawPointer {
-    return FfiConverterTypeNodeStatusResponse.lower(value)
+public func FfiConverterTypeNodeStatus_lower(_ value: NodeStatus) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeNodeStatus.lower(value)
 }
 
 public protocol PublicKeyProtocol {
@@ -4110,9 +4366,59 @@ public func FfiConverterTypeBlobAddOutcome_lower(_ value: BlobAddOutcome) -> Rus
 }
 
 /**
+ * A response to a list blobs request
+ */
+public struct BlobInfo {
+    /**
+     * Location of the blob
+     */
+    public var path: String
+    /**
+     * The hash of the blob
+     */
+    public var hash: Hash
+    /**
+     * The size of the blob
+     */
+    public var size: UInt64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(path: String, hash: Hash, size: UInt64) {
+        self.path = path
+        self.hash = hash
+        self.size = size
+    }
+}
+
+public struct FfiConverterTypeBlobInfo: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BlobInfo {
+        return try BlobInfo(
+            path: FfiConverterString.read(from: &buf),
+            hash: FfiConverterTypeHash.read(from: &buf),
+            size: FfiConverterUInt64.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: BlobInfo, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.path, into: &buf)
+        FfiConverterTypeHash.write(value.hash, into: &buf)
+        FfiConverterUInt64.write(value.size, into: &buf)
+    }
+}
+
+public func FfiConverterTypeBlobInfo_lift(_ buf: RustBuffer) throws -> BlobInfo {
+    return try FfiConverterTypeBlobInfo.lift(buf)
+}
+
+public func FfiConverterTypeBlobInfo_lower(_ value: BlobInfo) -> RustBuffer {
+    return FfiConverterTypeBlobInfo.lower(value)
+}
+
+/**
  * A response to a list collections request
  */
-public struct BlobListCollectionsResponse {
+public struct CollectionInfo {
     /**
      * Tag of the collection
      */
@@ -4144,9 +4450,9 @@ public struct BlobListCollectionsResponse {
     }
 }
 
-public struct FfiConverterTypeBlobListCollectionsResponse: FfiConverterRustBuffer {
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BlobListCollectionsResponse {
-        return try BlobListCollectionsResponse(
+public struct FfiConverterTypeCollectionInfo: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CollectionInfo {
+        return try CollectionInfo(
             tag: FfiConverterData.read(from: &buf),
             hash: FfiConverterTypeHash.read(from: &buf),
             totalBlobsCount: FfiConverterOptionUInt64.read(from: &buf),
@@ -4154,7 +4460,7 @@ public struct FfiConverterTypeBlobListCollectionsResponse: FfiConverterRustBuffe
         )
     }
 
-    public static func write(_ value: BlobListCollectionsResponse, into buf: inout [UInt8]) {
+    public static func write(_ value: CollectionInfo, into buf: inout [UInt8]) {
         FfiConverterData.write(value.tag, into: &buf)
         FfiConverterTypeHash.write(value.hash, into: &buf)
         FfiConverterOptionUInt64.write(value.totalBlobsCount, into: &buf)
@@ -4162,112 +4468,12 @@ public struct FfiConverterTypeBlobListCollectionsResponse: FfiConverterRustBuffe
     }
 }
 
-public func FfiConverterTypeBlobListCollectionsResponse_lift(_ buf: RustBuffer) throws -> BlobListCollectionsResponse {
-    return try FfiConverterTypeBlobListCollectionsResponse.lift(buf)
+public func FfiConverterTypeCollectionInfo_lift(_ buf: RustBuffer) throws -> CollectionInfo {
+    return try FfiConverterTypeCollectionInfo.lift(buf)
 }
 
-public func FfiConverterTypeBlobListCollectionsResponse_lower(_ value: BlobListCollectionsResponse) -> RustBuffer {
-    return FfiConverterTypeBlobListCollectionsResponse.lower(value)
-}
-
-/**
- * A response to a list blobs request
- */
-public struct BlobListIncompleteResponse {
-    /**
-     * The size we got
-     */
-    public var size: UInt64
-    /**
-     * The size we expect
-     */
-    public var expectedSize: UInt64
-    /**
-     * The hash of the blob
-     */
-    public var hash: Hash
-
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(size: UInt64, expectedSize: UInt64, hash: Hash) {
-        self.size = size
-        self.expectedSize = expectedSize
-        self.hash = hash
-    }
-}
-
-public struct FfiConverterTypeBlobListIncompleteResponse: FfiConverterRustBuffer {
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BlobListIncompleteResponse {
-        return try BlobListIncompleteResponse(
-            size: FfiConverterUInt64.read(from: &buf),
-            expectedSize: FfiConverterUInt64.read(from: &buf),
-            hash: FfiConverterTypeHash.read(from: &buf)
-        )
-    }
-
-    public static func write(_ value: BlobListIncompleteResponse, into buf: inout [UInt8]) {
-        FfiConverterUInt64.write(value.size, into: &buf)
-        FfiConverterUInt64.write(value.expectedSize, into: &buf)
-        FfiConverterTypeHash.write(value.hash, into: &buf)
-    }
-}
-
-public func FfiConverterTypeBlobListIncompleteResponse_lift(_ buf: RustBuffer) throws -> BlobListIncompleteResponse {
-    return try FfiConverterTypeBlobListIncompleteResponse.lift(buf)
-}
-
-public func FfiConverterTypeBlobListIncompleteResponse_lower(_ value: BlobListIncompleteResponse) -> RustBuffer {
-    return FfiConverterTypeBlobListIncompleteResponse.lower(value)
-}
-
-/**
- * A response to a list blobs request
- */
-public struct BlobListResponse {
-    /**
-     * Location of the blob
-     */
-    public var path: String
-    /**
-     * The hash of the blob
-     */
-    public var hash: Hash
-    /**
-     * The size of the blob
-     */
-    public var size: UInt64
-
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(path: String, hash: Hash, size: UInt64) {
-        self.path = path
-        self.hash = hash
-        self.size = size
-    }
-}
-
-public struct FfiConverterTypeBlobListResponse: FfiConverterRustBuffer {
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BlobListResponse {
-        return try BlobListResponse(
-            path: FfiConverterString.read(from: &buf),
-            hash: FfiConverterTypeHash.read(from: &buf),
-            size: FfiConverterUInt64.read(from: &buf)
-        )
-    }
-
-    public static func write(_ value: BlobListResponse, into buf: inout [UInt8]) {
-        FfiConverterString.write(value.path, into: &buf)
-        FfiConverterTypeHash.write(value.hash, into: &buf)
-        FfiConverterUInt64.write(value.size, into: &buf)
-    }
-}
-
-public func FfiConverterTypeBlobListResponse_lift(_ buf: RustBuffer) throws -> BlobListResponse {
-    return try FfiConverterTypeBlobListResponse.lift(buf)
-}
-
-public func FfiConverterTypeBlobListResponse_lower(_ value: BlobListResponse) -> RustBuffer {
-    return FfiConverterTypeBlobListResponse.lower(value)
+public func FfiConverterTypeCollectionInfo_lower(_ value: CollectionInfo) -> RustBuffer {
+    return FfiConverterTypeCollectionInfo.lower(value)
 }
 
 /**
@@ -4275,13 +4481,13 @@ public func FfiConverterTypeBlobListResponse_lower(_ value: BlobListResponse) ->
  */
 public struct ConnectionInfo {
     /**
-     * The public key of the endpoint.
+     * The node identifier of the endpoint. Also a public key.
      */
-    public var publicKey: PublicKey
+    public var nodeId: PublicKey
     /**
-     * Derp url, if available.
+     * Relay url, if available.
      */
-    public var derpUrl: String?
+    public var relayUrl: String?
     /**
      * List of addresses at which this node might be reachable, plus any latency information we
      * have about that address and the last time the address was used.
@@ -4302,9 +4508,9 @@ public struct ConnectionInfo {
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(publicKey: PublicKey, derpUrl: String?, addrs: [DirectAddrInfo], connType: ConnectionType, latency: TimeInterval?, lastUsed: TimeInterval?) {
-        self.publicKey = publicKey
-        self.derpUrl = derpUrl
+    public init(nodeId: PublicKey, relayUrl: String?, addrs: [DirectAddrInfo], connType: ConnectionType, latency: TimeInterval?, lastUsed: TimeInterval?) {
+        self.nodeId = nodeId
+        self.relayUrl = relayUrl
         self.addrs = addrs
         self.connType = connType
         self.latency = latency
@@ -4315,8 +4521,8 @@ public struct ConnectionInfo {
 public struct FfiConverterTypeConnectionInfo: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ConnectionInfo {
         return try ConnectionInfo(
-            publicKey: FfiConverterTypePublicKey.read(from: &buf),
-            derpUrl: FfiConverterOptionString.read(from: &buf),
+            nodeId: FfiConverterTypePublicKey.read(from: &buf),
+            relayUrl: FfiConverterOptionString.read(from: &buf),
             addrs: FfiConverterSequenceTypeDirectAddrInfo.read(from: &buf),
             connType: FfiConverterTypeConnectionType.read(from: &buf),
             latency: FfiConverterOptionDuration.read(from: &buf),
@@ -4325,8 +4531,8 @@ public struct FfiConverterTypeConnectionInfo: FfiConverterRustBuffer {
     }
 
     public static func write(_ value: ConnectionInfo, into buf: inout [UInt8]) {
-        FfiConverterTypePublicKey.write(value.publicKey, into: &buf)
-        FfiConverterOptionString.write(value.derpUrl, into: &buf)
+        FfiConverterTypePublicKey.write(value.nodeId, into: &buf)
+        FfiConverterOptionString.write(value.relayUrl, into: &buf)
         FfiConverterSequenceTypeDirectAddrInfo.write(value.addrs, into: &buf)
         FfiConverterTypeConnectionType.write(value.connType, into: &buf)
         FfiConverterOptionDuration.write(value.latency, into: &buf)
@@ -4351,15 +4557,15 @@ public struct ConnectionTypeMixed {
      */
     public var addr: String
     /**
-     * Url of the DERP node to which the node is connected
+     * Url of the relay node to which the node is connected
      */
-    public var derpUrl: String
+    public var relayUrl: String
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(addr: String, derpUrl: String) {
+    public init(addr: String, relayUrl: String) {
         self.addr = addr
-        self.derpUrl = derpUrl
+        self.relayUrl = relayUrl
     }
 }
 
@@ -4368,7 +4574,7 @@ extension ConnectionTypeMixed: Equatable, Hashable {
         if lhs.addr != rhs.addr {
             return false
         }
-        if lhs.derpUrl != rhs.derpUrl {
+        if lhs.relayUrl != rhs.relayUrl {
             return false
         }
         return true
@@ -4376,7 +4582,7 @@ extension ConnectionTypeMixed: Equatable, Hashable {
 
     public func hash(into hasher: inout Hasher) {
         hasher.combine(addr)
-        hasher.combine(derpUrl)
+        hasher.combine(relayUrl)
     }
 }
 
@@ -4384,13 +4590,13 @@ public struct FfiConverterTypeConnectionTypeMixed: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ConnectionTypeMixed {
         return try ConnectionTypeMixed(
             addr: FfiConverterString.read(from: &buf),
-            derpUrl: FfiConverterString.read(from: &buf)
+            relayUrl: FfiConverterString.read(from: &buf)
         )
     }
 
     public static func write(_ value: ConnectionTypeMixed, into buf: inout [UInt8]) {
         FfiConverterString.write(value.addr, into: &buf)
-        FfiConverterString.write(value.derpUrl, into: &buf)
+        FfiConverterString.write(value.relayUrl, into: &buf)
     }
 }
 
@@ -4524,10 +4730,6 @@ public struct DocExportProgressFound {
      */
     public var hash: Hash
     /**
-     * The key of the entry.
-     */
-    public var key: Data
-    /**
      * The size of the entry in bytes.
      */
     public var size: UInt64
@@ -4538,10 +4740,9 @@ public struct DocExportProgressFound {
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(id: UInt64, hash: Hash, key: Data, size: UInt64, outpath: String) {
+    public init(id: UInt64, hash: Hash, size: UInt64, outpath: String) {
         self.id = id
         self.hash = hash
-        self.key = key
         self.size = size
         self.outpath = outpath
     }
@@ -4552,7 +4753,6 @@ public struct FfiConverterTypeDocExportProgressFound: FfiConverterRustBuffer {
         return try DocExportProgressFound(
             id: FfiConverterUInt64.read(from: &buf),
             hash: FfiConverterTypeHash.read(from: &buf),
-            key: FfiConverterData.read(from: &buf),
             size: FfiConverterUInt64.read(from: &buf),
             outpath: FfiConverterString.read(from: &buf)
         )
@@ -4561,7 +4761,6 @@ public struct FfiConverterTypeDocExportProgressFound: FfiConverterRustBuffer {
     public static func write(_ value: DocExportProgressFound, into buf: inout [UInt8]) {
         FfiConverterUInt64.write(value.id, into: &buf)
         FfiConverterTypeHash.write(value.hash, into: &buf)
-        FfiConverterData.write(value.key, into: &buf)
         FfiConverterUInt64.write(value.size, into: &buf)
         FfiConverterString.write(value.outpath, into: &buf)
     }
@@ -4957,6 +5156,77 @@ public func FfiConverterTypeDownloadProgressAbort_lower(_ value: DownloadProgres
 }
 
 /**
+ * A DownloadProgress event indicating we are done with the whole operation
+ */
+public struct DownloadProgressAllDone {
+    /**
+     * The number of bytes written
+     */
+    public var bytesWritten: UInt64
+    /**
+     * The number of bytes read
+     */
+    public var bytesRead: UInt64
+    /**
+     * The time it took to transfer the data
+     */
+    public var elapsed: TimeInterval
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(bytesWritten: UInt64, bytesRead: UInt64, elapsed: TimeInterval) {
+        self.bytesWritten = bytesWritten
+        self.bytesRead = bytesRead
+        self.elapsed = elapsed
+    }
+}
+
+extension DownloadProgressAllDone: Equatable, Hashable {
+    public static func == (lhs: DownloadProgressAllDone, rhs: DownloadProgressAllDone) -> Bool {
+        if lhs.bytesWritten != rhs.bytesWritten {
+            return false
+        }
+        if lhs.bytesRead != rhs.bytesRead {
+            return false
+        }
+        if lhs.elapsed != rhs.elapsed {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(bytesWritten)
+        hasher.combine(bytesRead)
+        hasher.combine(elapsed)
+    }
+}
+
+public struct FfiConverterTypeDownloadProgressAllDone: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DownloadProgressAllDone {
+        return try DownloadProgressAllDone(
+            bytesWritten: FfiConverterUInt64.read(from: &buf),
+            bytesRead: FfiConverterUInt64.read(from: &buf),
+            elapsed: FfiConverterDuration.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: DownloadProgressAllDone, into buf: inout [UInt8]) {
+        FfiConverterUInt64.write(value.bytesWritten, into: &buf)
+        FfiConverterUInt64.write(value.bytesRead, into: &buf)
+        FfiConverterDuration.write(value.elapsed, into: &buf)
+    }
+}
+
+public func FfiConverterTypeDownloadProgressAllDone_lift(_ buf: RustBuffer) throws -> DownloadProgressAllDone {
+    return try FfiConverterTypeDownloadProgressAllDone.lift(buf)
+}
+
+public func FfiConverterTypeDownloadProgressAllDone_lower(_ value: DownloadProgressAllDone) -> RustBuffer {
+    return FfiConverterTypeDownloadProgressAllDone.lower(value)
+}
+
+/**
  * A DownloadProgress event indicated we are done with `id`
  */
 public struct DownloadProgressDone {
@@ -5003,127 +5273,6 @@ public func FfiConverterTypeDownloadProgressDone_lift(_ buf: RustBuffer) throws 
 
 public func FfiConverterTypeDownloadProgressDone_lower(_ value: DownloadProgressDone) -> RustBuffer {
     return FfiConverterTypeDownloadProgressDone.lower(value)
-}
-
-/**
- * A DownloadProgress event indicating We have made progress exporting the data.
- *
- * This is only sent for large blobs.
- */
-public struct DownloadProgressExport {
-    /**
-     * Unique id of the entry that is being exported.
-     */
-    public var id: UInt64
-    /**
-     * The hash of the entry
-     */
-    public var hash: Hash
-    /**
-     * The size of the entry in bytes
-     */
-    public var size: UInt64
-    /**
-     * The path to the file where the data is exported
-     */
-    public var target: String
-
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(id: UInt64, hash: Hash, size: UInt64, target: String) {
-        self.id = id
-        self.hash = hash
-        self.size = size
-        self.target = target
-    }
-}
-
-public struct FfiConverterTypeDownloadProgressExport: FfiConverterRustBuffer {
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DownloadProgressExport {
-        return try DownloadProgressExport(
-            id: FfiConverterUInt64.read(from: &buf),
-            hash: FfiConverterTypeHash.read(from: &buf),
-            size: FfiConverterUInt64.read(from: &buf),
-            target: FfiConverterString.read(from: &buf)
-        )
-    }
-
-    public static func write(_ value: DownloadProgressExport, into buf: inout [UInt8]) {
-        FfiConverterUInt64.write(value.id, into: &buf)
-        FfiConverterTypeHash.write(value.hash, into: &buf)
-        FfiConverterUInt64.write(value.size, into: &buf)
-        FfiConverterString.write(value.target, into: &buf)
-    }
-}
-
-public func FfiConverterTypeDownloadProgressExport_lift(_ buf: RustBuffer) throws -> DownloadProgressExport {
-    return try FfiConverterTypeDownloadProgressExport.lift(buf)
-}
-
-public func FfiConverterTypeDownloadProgressExport_lower(_ value: DownloadProgressExport) -> RustBuffer {
-    return FfiConverterTypeDownloadProgressExport.lower(value)
-}
-
-/**
- * A DownloadProgress event indicating We have made progress exporting the data.
- *
- * This is only sent for large blobs.
- */
-public struct DownloadProgressExportProgress {
-    /**
-     * Unique id of the entry that is being exported.
-     */
-    public var id: UInt64
-    /**
-     * The offset of the progress, in bytes.
-     */
-    public var offset: UInt64
-
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(id: UInt64, offset: UInt64) {
-        self.id = id
-        self.offset = offset
-    }
-}
-
-extension DownloadProgressExportProgress: Equatable, Hashable {
-    public static func == (lhs: DownloadProgressExportProgress, rhs: DownloadProgressExportProgress) -> Bool {
-        if lhs.id != rhs.id {
-            return false
-        }
-        if lhs.offset != rhs.offset {
-            return false
-        }
-        return true
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
-        hasher.combine(offset)
-    }
-}
-
-public struct FfiConverterTypeDownloadProgressExportProgress: FfiConverterRustBuffer {
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DownloadProgressExportProgress {
-        return try DownloadProgressExportProgress(
-            id: FfiConverterUInt64.read(from: &buf),
-            offset: FfiConverterUInt64.read(from: &buf)
-        )
-    }
-
-    public static func write(_ value: DownloadProgressExportProgress, into buf: inout [UInt8]) {
-        FfiConverterUInt64.write(value.id, into: &buf)
-        FfiConverterUInt64.write(value.offset, into: &buf)
-    }
-}
-
-public func FfiConverterTypeDownloadProgressExportProgress_lift(_ buf: RustBuffer) throws -> DownloadProgressExportProgress {
-    return try FfiConverterTypeDownloadProgressExportProgress.lift(buf)
-}
-
-public func FfiConverterTypeDownloadProgressExportProgress_lower(_ value: DownloadProgressExportProgress) -> RustBuffer {
-    return FfiConverterTypeDownloadProgressExportProgress.lower(value)
 }
 
 /**
@@ -5284,77 +5433,6 @@ public func FfiConverterTypeDownloadProgressFoundLocal_lower(_ value: DownloadPr
 }
 
 /**
- * A DownloadProgress event indicating we are done with the networking portion - all data is local
- */
-public struct DownloadProgressNetworkDone {
-    /**
-     * The number of bytes written
-     */
-    public var bytesWritten: UInt64
-    /**
-     * The number of bytes read
-     */
-    public var bytesRead: UInt64
-    /**
-     * The time it took to transfer the data
-     */
-    public var elapsed: TimeInterval
-
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(bytesWritten: UInt64, bytesRead: UInt64, elapsed: TimeInterval) {
-        self.bytesWritten = bytesWritten
-        self.bytesRead = bytesRead
-        self.elapsed = elapsed
-    }
-}
-
-extension DownloadProgressNetworkDone: Equatable, Hashable {
-    public static func == (lhs: DownloadProgressNetworkDone, rhs: DownloadProgressNetworkDone) -> Bool {
-        if lhs.bytesWritten != rhs.bytesWritten {
-            return false
-        }
-        if lhs.bytesRead != rhs.bytesRead {
-            return false
-        }
-        if lhs.elapsed != rhs.elapsed {
-            return false
-        }
-        return true
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(bytesWritten)
-        hasher.combine(bytesRead)
-        hasher.combine(elapsed)
-    }
-}
-
-public struct FfiConverterTypeDownloadProgressNetworkDone: FfiConverterRustBuffer {
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DownloadProgressNetworkDone {
-        return try DownloadProgressNetworkDone(
-            bytesWritten: FfiConverterUInt64.read(from: &buf),
-            bytesRead: FfiConverterUInt64.read(from: &buf),
-            elapsed: FfiConverterDuration.read(from: &buf)
-        )
-    }
-
-    public static func write(_ value: DownloadProgressNetworkDone, into buf: inout [UInt8]) {
-        FfiConverterUInt64.write(value.bytesWritten, into: &buf)
-        FfiConverterUInt64.write(value.bytesRead, into: &buf)
-        FfiConverterDuration.write(value.elapsed, into: &buf)
-    }
-}
-
-public func FfiConverterTypeDownloadProgressNetworkDone_lift(_ buf: RustBuffer) throws -> DownloadProgressNetworkDone {
-    return try FfiConverterTypeDownloadProgressNetworkDone.lift(buf)
-}
-
-public func FfiConverterTypeDownloadProgressNetworkDone_lower(_ value: DownloadProgressNetworkDone) -> RustBuffer {
-    return FfiConverterTypeDownloadProgressNetworkDone.lower(value)
-}
-
-/**
  * A DownloadProgress event indicating we got progress ingesting item `id`.
  */
 public struct DownloadProgressProgress {
@@ -5455,6 +5533,56 @@ public func FfiConverterTypeHashAndTag_lift(_ buf: RustBuffer) throws -> HashAnd
 
 public func FfiConverterTypeHashAndTag_lower(_ value: HashAndTag) -> RustBuffer {
     return FfiConverterTypeHashAndTag.lower(value)
+}
+
+/**
+ * A response to a list blobs request
+ */
+public struct IncompleteBlobInfo {
+    /**
+     * The size we got
+     */
+    public var size: UInt64
+    /**
+     * The size we expect
+     */
+    public var expectedSize: UInt64
+    /**
+     * The hash of the blob
+     */
+    public var hash: Hash
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(size: UInt64, expectedSize: UInt64, hash: Hash) {
+        self.size = size
+        self.expectedSize = expectedSize
+        self.hash = hash
+    }
+}
+
+public struct FfiConverterTypeIncompleteBlobInfo: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> IncompleteBlobInfo {
+        return try IncompleteBlobInfo(
+            size: FfiConverterUInt64.read(from: &buf),
+            expectedSize: FfiConverterUInt64.read(from: &buf),
+            hash: FfiConverterTypeHash.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: IncompleteBlobInfo, into buf: inout [UInt8]) {
+        FfiConverterUInt64.write(value.size, into: &buf)
+        FfiConverterUInt64.write(value.expectedSize, into: &buf)
+        FfiConverterTypeHash.write(value.hash, into: &buf)
+    }
+}
+
+public func FfiConverterTypeIncompleteBlobInfo_lift(_ buf: RustBuffer) throws -> IncompleteBlobInfo {
+    return try FfiConverterTypeIncompleteBlobInfo.lift(buf)
+}
+
+public func FfiConverterTypeIncompleteBlobInfo_lower(_ value: IncompleteBlobInfo) -> RustBuffer {
+    return FfiConverterTypeIncompleteBlobInfo.lower(value)
 }
 
 /**
@@ -5611,56 +5739,6 @@ public func FfiConverterTypeLinkAndName_lower(_ value: LinkAndName) -> RustBuffe
 }
 
 /**
- * A response to a list collections request
- */
-public struct ListTagsResponse {
-    /**
-     * The tag
-     */
-    public var name: Data
-    /**
-     * The format of the associated blob
-     */
-    public var format: BlobFormat
-    /**
-     * The hash of the associated blob
-     */
-    public var hash: Hash
-
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(name: Data, format: BlobFormat, hash: Hash) {
-        self.name = name
-        self.format = format
-        self.hash = hash
-    }
-}
-
-public struct FfiConverterTypeListTagsResponse: FfiConverterRustBuffer {
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ListTagsResponse {
-        return try ListTagsResponse(
-            name: FfiConverterData.read(from: &buf),
-            format: FfiConverterTypeBlobFormat.read(from: &buf),
-            hash: FfiConverterTypeHash.read(from: &buf)
-        )
-    }
-
-    public static func write(_ value: ListTagsResponse, into buf: inout [UInt8]) {
-        FfiConverterData.write(value.name, into: &buf)
-        FfiConverterTypeBlobFormat.write(value.format, into: &buf)
-        FfiConverterTypeHash.write(value.hash, into: &buf)
-    }
-}
-
-public func FfiConverterTypeListTagsResponse_lift(_ buf: RustBuffer) throws -> ListTagsResponse {
-    return try FfiConverterTypeListTagsResponse.lift(buf)
-}
-
-public func FfiConverterTypeListTagsResponse_lower(_ value: ListTagsResponse) -> RustBuffer {
-    return FfiConverterTypeListTagsResponse.lower(value)
-}
-
-/**
  * The namespace id and CapabilityKind (read/write) of the doc
  */
 public struct NamespaceAndCapability {
@@ -5718,6 +5796,56 @@ public func FfiConverterTypeNamespaceAndCapability_lift(_ buf: RustBuffer) throw
 
 public func FfiConverterTypeNamespaceAndCapability_lower(_ value: NamespaceAndCapability) -> RustBuffer {
     return FfiConverterTypeNamespaceAndCapability.lower(value)
+}
+
+/**
+ * Options passed to [`IrohNode.new`]. Controls the behaviour of an iroh node.
+ */
+public struct NodeOptions {
+    /**
+     * How frequently the blob store should clean up unreferenced blobs, in milliseconds.
+     * Set to 0 to disable gc
+     */
+    public var gcIntervalMillis: UInt64?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(gcIntervalMillis: UInt64?) {
+        self.gcIntervalMillis = gcIntervalMillis
+    }
+}
+
+extension NodeOptions: Equatable, Hashable {
+    public static func == (lhs: NodeOptions, rhs: NodeOptions) -> Bool {
+        if lhs.gcIntervalMillis != rhs.gcIntervalMillis {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(gcIntervalMillis)
+    }
+}
+
+public struct FfiConverterTypeNodeOptions: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> NodeOptions {
+        return try NodeOptions(
+            gcIntervalMillis: FfiConverterOptionUInt64.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: NodeOptions, into buf: inout [UInt8]) {
+        FfiConverterOptionUInt64.write(value.gcIntervalMillis, into: &buf)
+    }
+}
+
+public func FfiConverterTypeNodeOptions_lift(_ buf: RustBuffer) throws -> NodeOptions {
+    return try FfiConverterTypeNodeOptions.lift(buf)
+}
+
+public func FfiConverterTypeNodeOptions_lower(_ value: NodeOptions) -> RustBuffer {
+    return FfiConverterTypeNodeOptions.lower(value)
 }
 
 /**
@@ -5943,6 +6071,56 @@ public func FfiConverterTypeSyncEvent_lower(_ value: SyncEvent) -> RustBuffer {
     return FfiConverterTypeSyncEvent.lower(value)
 }
 
+/**
+ * A response to a list collections request
+ */
+public struct TagInfo {
+    /**
+     * The tag
+     */
+    public var name: Data
+    /**
+     * The format of the associated blob
+     */
+    public var format: BlobFormat
+    /**
+     * The hash of the associated blob
+     */
+    public var hash: Hash
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(name: Data, format: BlobFormat, hash: Hash) {
+        self.name = name
+        self.format = format
+        self.hash = hash
+    }
+}
+
+public struct FfiConverterTypeTagInfo: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TagInfo {
+        return try TagInfo(
+            name: FfiConverterData.read(from: &buf),
+            format: FfiConverterTypeBlobFormat.read(from: &buf),
+            hash: FfiConverterTypeHash.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: TagInfo, into buf: inout [UInt8]) {
+        FfiConverterData.write(value.name, into: &buf)
+        FfiConverterTypeBlobFormat.write(value.format, into: &buf)
+        FfiConverterTypeHash.write(value.hash, into: &buf)
+    }
+}
+
+public func FfiConverterTypeTagInfo_lift(_ buf: RustBuffer) throws -> TagInfo {
+    return try FfiConverterTypeTagInfo.lift(buf)
+}
+
+public func FfiConverterTypeTagInfo_lower(_ value: TagInfo) -> RustBuffer {
+    return FfiConverterTypeTagInfo.lower(value)
+}
+
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 /**
@@ -6022,6 +6200,202 @@ public func FfiConverterTypeAddProgressType_lower(_ value: AddProgressType) -> R
 }
 
 extension AddProgressType: Equatable, Hashable {}
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+/**
+ * Options when creating a ticket
+ */
+public enum AddrInfoOptions {
+    /**
+     * Only the Node ID is added.
+     *
+     * This usually means that iroh-dns discovery is used to find address information.
+     */
+    case id
+    /**
+     * Include both the relay URL and the direct addresses.
+     */
+    case relayAndAddresses
+    /**
+     * Only include the relay URL.
+     */
+    case relay
+    /**
+     * Only include the direct addresses.
+     */
+    case addresses
+}
+
+public struct FfiConverterTypeAddrInfoOptions: FfiConverterRustBuffer {
+    typealias SwiftType = AddrInfoOptions
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AddrInfoOptions {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        case 1: return .id
+
+        case 2: return .relayAndAddresses
+
+        case 3: return .relay
+
+        case 4: return .addresses
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: AddrInfoOptions, into buf: inout [UInt8]) {
+        switch value {
+        case .id:
+            writeInt(&buf, Int32(1))
+
+        case .relayAndAddresses:
+            writeInt(&buf, Int32(2))
+
+        case .relay:
+            writeInt(&buf, Int32(3))
+
+        case .addresses:
+            writeInt(&buf, Int32(4))
+        }
+    }
+}
+
+public func FfiConverterTypeAddrInfoOptions_lift(_ buf: RustBuffer) throws -> AddrInfoOptions {
+    return try FfiConverterTypeAddrInfoOptions.lift(buf)
+}
+
+public func FfiConverterTypeAddrInfoOptions_lower(_ value: AddrInfoOptions) -> RustBuffer {
+    return FfiConverterTypeAddrInfoOptions.lower(value)
+}
+
+extension AddrInfoOptions: Equatable, Hashable {}
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+/**
+ * The expected format of a hash being exported.
+ */
+public enum BlobExportFormat {
+    /**
+     * The hash refers to any blob and will be exported to a single file.
+     */
+    case blob
+    /**
+     * The hash refers to a [`crate::format::collection::Collection`] blob
+     * and all children of the collection shall be exported to one file per child.
+     *
+     * If the blob can be parsed as a [`BlobFormat::HashSeq`], and the first child contains
+     * collection metadata, all other children of the collection will be exported to
+     * a file each, with their collection name treated as a relative path to the export
+     * destination path.
+     *
+     * If the blob cannot be parsed as a collection, the operation will fail.
+     */
+    case collection
+}
+
+public struct FfiConverterTypeBlobExportFormat: FfiConverterRustBuffer {
+    typealias SwiftType = BlobExportFormat
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BlobExportFormat {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        case 1: return .blob
+
+        case 2: return .collection
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: BlobExportFormat, into buf: inout [UInt8]) {
+        switch value {
+        case .blob:
+            writeInt(&buf, Int32(1))
+
+        case .collection:
+            writeInt(&buf, Int32(2))
+        }
+    }
+}
+
+public func FfiConverterTypeBlobExportFormat_lift(_ buf: RustBuffer) throws -> BlobExportFormat {
+    return try FfiConverterTypeBlobExportFormat.lift(buf)
+}
+
+public func FfiConverterTypeBlobExportFormat_lower(_ value: BlobExportFormat) -> RustBuffer {
+    return FfiConverterTypeBlobExportFormat.lower(value)
+}
+
+extension BlobExportFormat: Equatable, Hashable {}
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+/**
+ * The export mode describes how files will be exported.
+ *
+ * This is a hint to the import trait method. For some implementations, this
+ * does not make any sense. E.g. an in memory implementation will always have
+ * to copy the file into memory. Also, a disk based implementation might choose
+ * to copy small files even if the mode is `Reference`.
+ */
+public enum BlobExportMode {
+    /**
+     * This mode will copy the file to the target directory.
+     *
+     * This is the safe default because the file can not be accidentally modified
+     * after it has been exported.
+     */
+    case copy
+    /**
+     * This mode will try to move the file to the target directory and then reference it from
+     * the database.
+     *
+     * This has a large performance and storage benefit, but it is less safe since
+     * the file might be modified in the target directory after it has been exported.
+     *
+     * Stores are allowed to ignore this mode and always copy the file, e.g.
+     * if the file is very small or if the store does not support referencing files.
+     */
+    case tryReference
+}
+
+public struct FfiConverterTypeBlobExportMode: FfiConverterRustBuffer {
+    typealias SwiftType = BlobExportMode
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BlobExportMode {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        case 1: return .copy
+
+        case 2: return .tryReference
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: BlobExportMode, into buf: inout [UInt8]) {
+        switch value {
+        case .copy:
+            writeInt(&buf, Int32(1))
+
+        case .tryReference:
+            writeInt(&buf, Int32(2))
+        }
+    }
+}
+
+public func FfiConverterTypeBlobExportMode_lift(_ buf: RustBuffer) throws -> BlobExportMode {
+    return try FfiConverterTypeBlobExportMode.lift(buf)
+}
+
+public func FfiConverterTypeBlobExportMode_lower(_ value: BlobExportMode) -> RustBuffer {
+    return FfiConverterTypeBlobExportMode.lower(value)
+}
+
+extension BlobExportMode: Equatable, Hashable {}
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
@@ -6136,7 +6510,7 @@ public enum ConnType {
      */
     case direct
     /**
-     * Indicates you have a DERP relay connection.
+     * Indicates you have a relayed connection.
      */
     case relay
     /**
@@ -6269,6 +6643,10 @@ public enum DocExportProgressType {
      */
     case progress
     /**
+     * We are finished writing item `id`.
+     */
+    case done
+    /**
      * We are done writing the entry to the filesystem
      */
     case allDone
@@ -6290,9 +6668,11 @@ public struct FfiConverterTypeDocExportProgressType: FfiConverterRustBuffer {
 
         case 2: return .progress
 
-        case 3: return .allDone
+        case 3: return .done
 
-        case 4: return .abort
+        case 4: return .allDone
+
+        case 5: return .abort
 
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -6306,11 +6686,14 @@ public struct FfiConverterTypeDocExportProgressType: FfiConverterRustBuffer {
         case .progress:
             writeInt(&buf, Int32(2))
 
-        case .allDone:
+        case .done:
             writeInt(&buf, Int32(3))
 
-        case .abort:
+        case .allDone:
             writeInt(&buf, Int32(4))
+
+        case .abort:
+            writeInt(&buf, Int32(5))
         }
     }
 }
@@ -6412,6 +6795,10 @@ extension DocImportProgressType: Equatable, Hashable {}
  */
 public enum DownloadProgressType {
     /**
+     * Initial state if subscribing to a running or queued transfer.
+     */
+    case initialState
+    /**
      * Data was found locally
      */
     case foundLocal
@@ -6436,20 +6823,6 @@ public enum DownloadProgressType {
      */
     case done
     /**
-     * We are done with the network part - all data is local
-     */
-    case networkDone
-    /**
-     * The download part is done for this id, we are not exporting the data to the specified outpath
-     */
-    case export
-    /**
-     * We have made progress exporting the data
-     *
-     * This is only sent for large blobs"Export",
-     */
-    case exportProgress
-    /**
      * We are done with the whole operation.
      */
     case allDone
@@ -6467,27 +6840,23 @@ public struct FfiConverterTypeDownloadProgressType: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DownloadProgressType {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return .foundLocal
+        case 1: return .initialState
 
-        case 2: return .connected
+        case 2: return .foundLocal
 
-        case 3: return .found
+        case 3: return .connected
 
-        case 4: return .foundHashSeq
+        case 4: return .found
 
-        case 5: return .progress
+        case 5: return .foundHashSeq
 
-        case 6: return .done
+        case 6: return .progress
 
-        case 7: return .networkDone
+        case 7: return .done
 
-        case 8: return .export
+        case 8: return .allDone
 
-        case 9: return .exportProgress
-
-        case 10: return .allDone
-
-        case 11: return .abort
+        case 9: return .abort
 
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -6495,38 +6864,32 @@ public struct FfiConverterTypeDownloadProgressType: FfiConverterRustBuffer {
 
     public static func write(_ value: DownloadProgressType, into buf: inout [UInt8]) {
         switch value {
-        case .foundLocal:
+        case .initialState:
             writeInt(&buf, Int32(1))
 
-        case .connected:
+        case .foundLocal:
             writeInt(&buf, Int32(2))
 
-        case .found:
+        case .connected:
             writeInt(&buf, Int32(3))
 
-        case .foundHashSeq:
+        case .found:
             writeInt(&buf, Int32(4))
 
-        case .progress:
+        case .foundHashSeq:
             writeInt(&buf, Int32(5))
 
-        case .done:
+        case .progress:
             writeInt(&buf, Int32(6))
 
-        case .networkDone:
+        case .done:
             writeInt(&buf, Int32(7))
 
-        case .export:
+        case .allDone:
             writeInt(&buf, Int32(8))
 
-        case .exportProgress:
-            writeInt(&buf, Int32(9))
-
-        case .allDone:
-            writeInt(&buf, Int32(10))
-
         case .abort:
-            writeInt(&buf, Int32(11))
+            writeInt(&buf, Int32(9))
         }
     }
 }
@@ -6551,6 +6914,7 @@ public enum IrohError {
     case Author(description: String)
     case Namespace(description: String)
     case DocTicket(description: String)
+    case BlobTicket(description: String)
     case Uniffi(description: String)
     case Connection(description: String)
     case Blobs(description: String)
@@ -6595,46 +6959,49 @@ public struct FfiConverterTypeIrohError: FfiConverterRustBuffer {
         case 6: return try .DocTicket(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 7: return try .Uniffi(
+        case 7: return try .BlobTicket(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 8: return try .Connection(
+        case 8: return try .Uniffi(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 9: return try .Blobs(
+        case 9: return try .Connection(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 10: return try .Collection(
+        case 10: return try .Blobs(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 11: return try .Ipv4Addr(
+        case 11: return try .Collection(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 12: return try .Ipv6Addr(
+        case 12: return try .Ipv4Addr(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 13: return try .SocketAddr(
+        case 13: return try .Ipv6Addr(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 14: return try .PublicKey(
+        case 14: return try .SocketAddr(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 15: return try .NodeAddr(
+        case 15: return try .PublicKey(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 16: return try .Hash(
+        case 16: return try .NodeAddr(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 17: return try .FsUtil(
+        case 17: return try .Hash(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 18: return try .Tags(
+        case 18: return try .FsUtil(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 19: return try .Url(
+        case 19: return try .Tags(
                 description: FfiConverterString.read(from: &buf)
             )
-        case 20: return try .Entry(
+        case 20: return try .Url(
+                description: FfiConverterString.read(from: &buf)
+            )
+        case 21: return try .Entry(
                 description: FfiConverterString.read(from: &buf)
             )
 
@@ -6668,60 +7035,64 @@ public struct FfiConverterTypeIrohError: FfiConverterRustBuffer {
             writeInt(&buf, Int32(6))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Uniffi(description):
+        case let .BlobTicket(description):
             writeInt(&buf, Int32(7))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Connection(description):
+        case let .Uniffi(description):
             writeInt(&buf, Int32(8))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Blobs(description):
+        case let .Connection(description):
             writeInt(&buf, Int32(9))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Collection(description):
+        case let .Blobs(description):
             writeInt(&buf, Int32(10))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Ipv4Addr(description):
+        case let .Collection(description):
             writeInt(&buf, Int32(11))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Ipv6Addr(description):
+        case let .Ipv4Addr(description):
             writeInt(&buf, Int32(12))
             FfiConverterString.write(description, into: &buf)
 
-        case let .SocketAddr(description):
+        case let .Ipv6Addr(description):
             writeInt(&buf, Int32(13))
             FfiConverterString.write(description, into: &buf)
 
-        case let .PublicKey(description):
+        case let .SocketAddr(description):
             writeInt(&buf, Int32(14))
             FfiConverterString.write(description, into: &buf)
 
-        case let .NodeAddr(description):
+        case let .PublicKey(description):
             writeInt(&buf, Int32(15))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Hash(description):
+        case let .NodeAddr(description):
             writeInt(&buf, Int32(16))
             FfiConverterString.write(description, into: &buf)
 
-        case let .FsUtil(description):
+        case let .Hash(description):
             writeInt(&buf, Int32(17))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Tags(description):
+        case let .FsUtil(description):
             writeInt(&buf, Int32(18))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Url(description):
+        case let .Tags(description):
             writeInt(&buf, Int32(19))
             FfiConverterString.write(description, into: &buf)
 
-        case let .Entry(description):
+        case let .Url(description):
             writeInt(&buf, Int32(20))
+            FfiConverterString.write(description, into: &buf)
+
+        case let .Entry(description):
+            writeInt(&buf, Int32(21))
             FfiConverterString.write(description, into: &buf)
         }
     }
@@ -6761,6 +7132,18 @@ public enum LiveEventType {
      * A set-reconciliation sync finished.
      */
     case syncFinished
+    /**
+     * All pending content is now ready.
+     *
+     * This event signals that all queued content downloads from the last sync run have either
+     * completed or failed.
+     *
+     * It will only be emitted after a [`Self::SyncFinished`] event, never before.
+     *
+     * Receiving this event does not guarantee that all content in the document is available. If
+     * blobs failed to download, this event will still be emitted after all operations completed.
+     */
+    case pendingContentReady
 }
 
 public struct FfiConverterTypeLiveEventType: FfiConverterRustBuffer {
@@ -6780,6 +7163,8 @@ public struct FfiConverterTypeLiveEventType: FfiConverterRustBuffer {
         case 5: return .neighborDown
 
         case 6: return .syncFinished
+
+        case 7: return .pendingContentReady
 
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -6804,6 +7189,9 @@ public struct FfiConverterTypeLiveEventType: FfiConverterRustBuffer {
 
         case .syncFinished:
             writeInt(&buf, Int32(6))
+
+        case .pendingContentReady:
+            writeInt(&buf, Int32(7))
         }
     }
 }
@@ -8142,45 +8530,23 @@ private struct FfiConverterSequenceTypeNodeAddr: FfiConverterRustBuffer {
     }
 }
 
-private struct FfiConverterSequenceTypeBlobListCollectionsResponse: FfiConverterRustBuffer {
-    typealias SwiftType = [BlobListCollectionsResponse]
+private struct FfiConverterSequenceTypeCollectionInfo: FfiConverterRustBuffer {
+    typealias SwiftType = [CollectionInfo]
 
-    public static func write(_ value: [BlobListCollectionsResponse], into buf: inout [UInt8]) {
+    public static func write(_ value: [CollectionInfo], into buf: inout [UInt8]) {
         let len = Int32(value.count)
         writeInt(&buf, len)
         for item in value {
-            FfiConverterTypeBlobListCollectionsResponse.write(item, into: &buf)
+            FfiConverterTypeCollectionInfo.write(item, into: &buf)
         }
     }
 
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [BlobListCollectionsResponse] {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [CollectionInfo] {
         let len: Int32 = try readInt(&buf)
-        var seq = [BlobListCollectionsResponse]()
+        var seq = [CollectionInfo]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            try seq.append(FfiConverterTypeBlobListCollectionsResponse.read(from: &buf))
-        }
-        return seq
-    }
-}
-
-private struct FfiConverterSequenceTypeBlobListIncompleteResponse: FfiConverterRustBuffer {
-    typealias SwiftType = [BlobListIncompleteResponse]
-
-    public static func write(_ value: [BlobListIncompleteResponse], into buf: inout [UInt8]) {
-        let len = Int32(value.count)
-        writeInt(&buf, len)
-        for item in value {
-            FfiConverterTypeBlobListIncompleteResponse.write(item, into: &buf)
-        }
-    }
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [BlobListIncompleteResponse] {
-        let len: Int32 = try readInt(&buf)
-        var seq = [BlobListIncompleteResponse]()
-        seq.reserveCapacity(Int(len))
-        for _ in 0 ..< len {
-            try seq.append(FfiConverterTypeBlobListIncompleteResponse.read(from: &buf))
+            try seq.append(FfiConverterTypeCollectionInfo.read(from: &buf))
         }
         return seq
     }
@@ -8208,6 +8574,28 @@ private struct FfiConverterSequenceTypeConnectionInfo: FfiConverterRustBuffer {
     }
 }
 
+private struct FfiConverterSequenceTypeIncompleteBlobInfo: FfiConverterRustBuffer {
+    typealias SwiftType = [IncompleteBlobInfo]
+
+    public static func write(_ value: [IncompleteBlobInfo], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeIncompleteBlobInfo.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [IncompleteBlobInfo] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [IncompleteBlobInfo]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            try seq.append(FfiConverterTypeIncompleteBlobInfo.read(from: &buf))
+        }
+        return seq
+    }
+}
+
 private struct FfiConverterSequenceTypeLinkAndName: FfiConverterRustBuffer {
     typealias SwiftType = [LinkAndName]
 
@@ -8230,28 +8618,6 @@ private struct FfiConverterSequenceTypeLinkAndName: FfiConverterRustBuffer {
     }
 }
 
-private struct FfiConverterSequenceTypeListTagsResponse: FfiConverterRustBuffer {
-    typealias SwiftType = [ListTagsResponse]
-
-    public static func write(_ value: [ListTagsResponse], into buf: inout [UInt8]) {
-        let len = Int32(value.count)
-        writeInt(&buf, len)
-        for item in value {
-            FfiConverterTypeListTagsResponse.write(item, into: &buf)
-        }
-    }
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [ListTagsResponse] {
-        let len: Int32 = try readInt(&buf)
-        var seq = [ListTagsResponse]()
-        seq.reserveCapacity(Int(len))
-        for _ in 0 ..< len {
-            try seq.append(FfiConverterTypeListTagsResponse.read(from: &buf))
-        }
-        return seq
-    }
-}
-
 private struct FfiConverterSequenceTypeNamespaceAndCapability: FfiConverterRustBuffer {
     typealias SwiftType = [NamespaceAndCapability]
 
@@ -8269,6 +8635,28 @@ private struct FfiConverterSequenceTypeNamespaceAndCapability: FfiConverterRustB
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
             try seq.append(FfiConverterTypeNamespaceAndCapability.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+private struct FfiConverterSequenceTypeTagInfo: FfiConverterRustBuffer {
+    typealias SwiftType = [TagInfo]
+
+    public static func write(_ value: [TagInfo], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeTagInfo.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [TagInfo] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [TagInfo]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            try seq.append(FfiConverterTypeTagInfo.read(from: &buf))
         }
         return seq
     }
@@ -8400,10 +8788,28 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_addprogress_type() != 63416 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_checksum_method_author_id() != 49771 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_author_to_string() != 53120 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_checksum_method_authorid_equal() != 53671 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_authorid_to_string() != 42389 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_blobticket_as_download_options() != 57522 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_blobticket_format() != 22598 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_blobticket_hash() != 5648 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_blobticket_node_addr() != 28080 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_collection_blobs() != 26191 {
@@ -8487,7 +8893,7 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_doc_set_hash() != 20311 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_share() != 19220 {
+    if uniffi_iroh_checksum_method_doc_share() != 32184 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_doc_start_sync() != 54158 {
@@ -8532,13 +8938,10 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_downloadprogress_as_abort() != 13741 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_checksum_method_downloadprogress_as_all_done() != 51121 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_checksum_method_downloadprogress_as_done() != 54270 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_checksum_method_downloadprogress_as_export() != 48739 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_checksum_method_downloadprogress_as_export_progress() != 42097 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_downloadprogress_as_found() != 13482 {
@@ -8547,7 +8950,7 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_downloadprogress_as_found_hash_seq() != 64232 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_downloadprogress_as_network_done() != 49397 {
+    if uniffi_iroh_checksum_method_downloadprogress_as_found_local() != 2930 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_downloadprogress_as_progress() != 7204 {
@@ -8592,19 +8995,37 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_irohnode_author_create() != 31148 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_checksum_method_irohnode_author_default() != 47205 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_irohnode_author_delete() != 38335 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_irohnode_author_export() != 18180 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_irohnode_author_import() != 35274 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_checksum_method_irohnode_author_list() != 12499 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_blobs_add_bytes() != 20668 {
+    if uniffi_iroh_checksum_method_irohnode_blobs_add_bytes() != 39803 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_blobs_add_from_path() != 38440 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_checksum_method_irohnode_blobs_create_collection() != 15721 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_checksum_method_irohnode_blobs_delete_blob() != 24766 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_blobs_download() != 50921 {
+    if uniffi_iroh_checksum_method_irohnode_blobs_download() != 41238 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_irohnode_blobs_export() != 24742 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_blobs_get_collection() != 45730 {
@@ -8613,16 +9034,19 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_irohnode_blobs_list() != 49039 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_blobs_list_collections() != 28497 {
+    if uniffi_iroh_checksum_method_irohnode_blobs_list_collections() != 28291 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_blobs_list_incomplete() != 39285 {
+    if uniffi_iroh_checksum_method_irohnode_blobs_list_incomplete() != 13645 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_blobs_read_at_to_bytes() != 40980 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_blobs_read_to_bytes() != 6512 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_irohnode_blobs_share() != 44444 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_blobs_size() != 9420 {
@@ -8646,6 +9070,9 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_irohnode_doc_join() != 48292 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_checksum_method_irohnode_doc_join_and_subscribe() != 43177 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_checksum_method_irohnode_doc_list() != 44252 {
         return InitializationResult.apiChecksumMismatch
     }
@@ -8658,13 +9085,13 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_irohnode_stats() != 16158 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_status() != 32660 {
+    if uniffi_iroh_checksum_method_irohnode_status() != 9322 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_tags_delete() != 19876 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_tags_list() != 6726 {
+    if uniffi_iroh_checksum_method_irohnode_tags_list() != 4609 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_liveevent_as_content_ready() != 15237 {
@@ -8688,22 +9115,22 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_liveevent_type() != 35533 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_nodeaddr_derp_url() != 44344 {
-        return InitializationResult.apiChecksumMismatch
-    }
     if uniffi_iroh_checksum_method_nodeaddr_direct_addresses() != 44368 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_nodeaddr_equal() != 40672 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_nodestatusresponse_listen_addrs() != 43813 {
+    if uniffi_iroh_checksum_method_nodeaddr_relay_url() != 52692 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_nodestatusresponse_node_addr() != 37017 {
+    if uniffi_iroh_checksum_method_nodestatus_listen_addrs() != 5306 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_nodestatusresponse_version() != 50257 {
+    if uniffi_iroh_checksum_method_nodestatus_node_addr() != 53928 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_nodestatus_version() != 46131 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_publickey_equal() != 13922 {
@@ -8730,19 +9157,19 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_method_rangespec_is_empty() != 55537 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_checksum_constructor_author_from_string() != 52919 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_checksum_constructor_authorid_from_string() != 14210 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_blobdownloadrequest_new() != 64034 {
+    if uniffi_iroh_checksum_constructor_blobdownloadoptions_new() != 30799 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_constructor_blobticket_new() != 38754 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_constructor_collection_new() != 41716 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_checksum_constructor_downloadlocation_external() != 45372 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_checksum_constructor_downloadlocation_internal() != 751 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_constructor_downloadpolicy_everything() != 38497 {
@@ -8775,7 +9202,10 @@ private var initializationResult: InitializationResult {
     if uniffi_iroh_checksum_constructor_irohnode_new() != 22562 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_nodeaddr_new() != 30484 {
+    if uniffi_iroh_checksum_constructor_irohnode_with_options() != 40905 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_constructor_nodeaddr_new() != 30442 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_constructor_publickey_from_bytes() != 65104 {

@@ -54,6 +54,9 @@ interface IrohNode {
   /// Join and sync with an already existing document.
   [Throws=IrohError]
   Doc doc_join(string ticket);
+  /// Join and sync with an already existing document and subscribe to events on that document.
+  [Throws=IrohError]
+  Doc doc_join_and_subscribe(string ticket, SubscribeCallback cb);
   /// List all the docs we have access to on this node.
   [Throws=IrohError]
   sequence<NamespaceAndCapability> doc_list();
@@ -63,10 +66,22 @@ interface IrohNode {
   [Throws=IrohError]
   Doc? doc_open(string id);
 
-  /// Create a new author.
+  /// Create a new document author.
+  ///
+  /// You likely want to save the returned [`AuthorId`] somewhere so that you can use this author
+  /// again.
+  ///
+  /// If you need only a single author, use [`Self::default`].
   [Throws=IrohError]
   AuthorId author_create();
-  /// List all the AuthorIds that exist on this node.
+    /// Returns the default document author of this node.
+  ///
+  /// On persistent nodes, the author is created on first start and its public key is saved
+  /// in the data directory.
+  ///
+  /// The default author can be set with [`Self::set_default`].
+  [Throws=IrohError]
+  AuthorId author_default();
   [Throws=IrohError]
   sequence<AuthorId> author_list();
   /// Export the given author.
@@ -731,6 +746,16 @@ interface LiveEventType {
   NeighborDown();
   /// A set-reconciliation sync finished.
   SyncFinished();
+  /// All pending content is now ready.
+  ///
+  /// This event signals that all queued content downloads from the last sync run have either
+  /// completed or failed.
+  ///
+  /// It will only be emitted after a [`Self::SyncFinished`] event, never before.
+  ///
+  /// Receiving this event does not guarantee that all content in the document is available. If
+  /// blobs failed to download, this event will still be emitted after all operations completed.
+  PendingContentReady();
 };
 
 /// Whether the content status is available on a node.

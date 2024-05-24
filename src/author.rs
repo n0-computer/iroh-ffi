@@ -53,7 +53,12 @@ impl std::fmt::Display for Author {
 }
 
 impl IrohNode {
-    /// Create a new author.
+    /// Create a new document author.
+    ///
+    /// You likely want to save the returned [`AuthorId`] somewhere so that you can use this author
+    /// again.
+    ///
+    /// If you need only a single author, use [`Self::default`].
     pub fn author_create(&self) -> Result<Arc<AuthorId>, IrohError> {
         block_on(&self.rt(), async {
             let author = self
@@ -63,6 +68,24 @@ impl IrohNode {
                 .await
                 .map_err(IrohError::author)?;
 
+            Ok(Arc::new(AuthorId(author)))
+        })
+    }
+
+    /// Returns the default document author of this node.
+    ///
+    /// On persistent nodes, the author is created on first start and its public key is saved
+    /// in the data directory.
+    ///
+    /// The default author can be set with [`Self::set_default`].
+    pub fn author_default(&self) -> Result<Arc<AuthorId>, IrohError> {
+        block_on(&self.rt(), async {
+            let author = self
+                .sync_client
+                .authors
+                .default()
+                .await
+                .map_err(IrohError::author)?;
             Ok(Arc::new(AuthorId(author)))
         })
     }
@@ -139,16 +162,17 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let node = crate::IrohNode::new(dir.into_path().display().to_string()).unwrap();
 
+        assert_eq!(node.author_list().unwrap().len(), 1);
         let author_id = node.author_create().unwrap();
         let authors = node.author_list().unwrap();
-        assert_eq!(authors.len(), 1);
+        assert_eq!(authors.len(), 2);
         let author = node.author_export(author_id.clone()).unwrap();
         assert!(author_id.equal(&author.id()));
         node.author_delete(author_id).unwrap();
         let authors = node.author_list().unwrap();
-        assert_eq!(authors.len(), 0);
+        assert_eq!(authors.len(), 1);
         node.author_import(author).unwrap();
         let authors = node.author_list().unwrap();
-        assert_eq!(authors.len(), 1);
+        assert_eq!(authors.len(), 2);
     }
 }
