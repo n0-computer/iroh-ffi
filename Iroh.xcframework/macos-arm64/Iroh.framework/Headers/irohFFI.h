@@ -282,6 +282,8 @@ void*_Nonnull uniffi_iroh_fn_constructor_irohnode_with_options(RustBuffer path, 
 );
 void*_Nonnull uniffi_iroh_fn_method_irohnode_author_create(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+void*_Nonnull uniffi_iroh_fn_method_irohnode_author_default(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
 void uniffi_iroh_fn_method_irohnode_author_delete(void*_Nonnull ptr, void*_Nonnull author, RustCallStatus *_Nonnull out_status
 );
 void*_Nonnull uniffi_iroh_fn_method_irohnode_author_export(void*_Nonnull ptr, void*_Nonnull author, RustCallStatus *_Nonnull out_status
@@ -802,6 +804,9 @@ uint16_t uniffi_iroh_checksum_method_hash_to_string(void
     
 );
 uint16_t uniffi_iroh_checksum_method_irohnode_author_create(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_irohnode_author_default(void
     
 );
 uint16_t uniffi_iroh_checksum_method_irohnode_author_delete(void

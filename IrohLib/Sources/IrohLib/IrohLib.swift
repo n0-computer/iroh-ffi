@@ -2533,6 +2533,7 @@ public func FfiConverterTypeHash_lower(_ value: Hash) -> UnsafeMutableRawPointer
 
 public protocol IrohNodeProtocol {
     func authorCreate() throws -> AuthorId
+    func authorDefault() throws -> AuthorId
     func authorDelete(author: AuthorId) throws
     func authorExport(author: AuthorId) throws -> Author
     func authorImport(author: Author) throws -> AuthorId
@@ -2609,12 +2610,33 @@ public class IrohNode: IrohNodeProtocol {
     }
 
     /**
-     * Create a new author.
+     * Create a new document author.
+     *
+     * You likely want to save the returned [`AuthorId`] somewhere so that you can use this author
+     * again.
+     *
+     * If you need only a single author, use [`Self::default`].
      */
     public func authorCreate() throws -> AuthorId {
         return try FfiConverterTypeAuthorId.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_irohnode_author_create(self.pointer, $0)
+            }
+        )
+    }
+
+    /**
+     * Returns the default document author of this node.
+     *
+     * On persistent nodes, the author is created on first start and its public key is saved
+     * in the data directory.
+     *
+     * The default author can be set with [`Self::set_default`].
+     */
+    public func authorDefault() throws -> AuthorId {
+        return try FfiConverterTypeAuthorId.lift(
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_irohnode_author_default(self.pointer, $0)
             }
         )
     }
@@ -2660,9 +2682,6 @@ public class IrohNode: IrohNodeProtocol {
         )
     }
 
-    /**
-     * List all the AuthorIds that exist on this node.
-     */
     public func authorList() throws -> [AuthorId] {
         return try FfiConverterSequenceTypeAuthorId.lift(
             rustCallWithError(FfiConverterTypeIrohError.lift) {
@@ -8974,6 +8993,9 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_author_create() != 31148 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_irohnode_author_default() != 47205 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_author_delete() != 38335 {

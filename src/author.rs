@@ -53,7 +53,12 @@ impl std::fmt::Display for Author {
 }
 
 impl IrohNode {
-    /// Create a new author.
+    /// Create a new document author.
+    ///
+    /// You likely want to save the returned [`AuthorId`] somewhere so that you can use this author
+    /// again.
+    ///
+    /// If you need only a single author, use [`Self::default`].
     pub fn author_create(&self) -> Result<Arc<AuthorId>, IrohError> {
         block_on(&self.rt(), async {
             let author = self
@@ -63,6 +68,24 @@ impl IrohNode {
                 .await
                 .map_err(IrohError::author)?;
 
+            Ok(Arc::new(AuthorId(author)))
+        })
+    }
+
+    /// Returns the default document author of this node.
+    ///
+    /// On persistent nodes, the author is created on first start and its public key is saved
+    /// in the data directory.
+    ///
+    /// The default author can be set with [`Self::set_default`].
+    pub fn author_default(&self) -> Result<Arc<AuthorId>, IrohError> {
+        block_on(&self.rt(), async {
+            let author = self
+                .sync_client
+                .authors
+                .default()
+                .await
+                .map_err(IrohError::author)?;
             Ok(Arc::new(AuthorId(author)))
         })
     }
