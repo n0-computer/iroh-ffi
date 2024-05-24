@@ -139,16 +139,17 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let node = crate::IrohNode::new(dir.into_path().display().to_string()).unwrap();
 
+        assert_eq!(node.author_list().unwrap().len(), 1);
         let author_id = node.author_create().unwrap();
         let authors = node.author_list().unwrap();
-        assert_eq!(authors.len(), 1);
+        assert_eq!(authors.len(), 2);
         let author = node.author_export(author_id.clone()).unwrap();
         assert!(author_id.equal(&author.id()));
         node.author_delete(author_id).unwrap();
         let authors = node.author_list().unwrap();
-        assert_eq!(authors.len(), 0);
+        assert_eq!(authors.len(), 1);
         node.author_import(author).unwrap();
         let authors = node.author_list().unwrap();
-        assert_eq!(authors.len(), 1);
+        assert_eq!(authors.len(), 2);
     }
 }
