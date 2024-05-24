@@ -731,6 +731,16 @@ interface LiveEventType {
   NeighborDown();
   /// A set-reconciliation sync finished.
   SyncFinished();
+  /// All pending content is now ready.
+  ///
+  /// This event signals that all queued content downloads from the last sync run have either
+  /// completed or failed.
+  ///
+  /// It will only be emitted after a [`Self::SyncFinished`] event, never before.
+  ///
+  /// Receiving this event does not guarantee that all content in the document is available. If
+  /// blobs failed to download, this event will still be emitted after all operations completed.
+  PendingContentReady();
 };
 
 /// Whether the content status is available on a node.

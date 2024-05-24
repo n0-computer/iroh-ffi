@@ -20,7 +20,7 @@ pub struct CounterStats {
 
 /// Information about a direct address.
 #[derive(Debug, Clone)]
-pub struct DirectAddrInfo(pub(crate) iroh::net::magic_endpoint::DirectAddrInfo);
+pub struct DirectAddrInfo(pub(crate) iroh::net::endpoint::DirectAddrInfo);
 
 impl DirectAddrInfo {
     /// Get the reported address
@@ -80,8 +80,8 @@ pub struct ConnectionInfo {
     pub last_used: Option<Duration>,
 }
 
-impl From<iroh::net::magic_endpoint::ConnectionInfo> for ConnectionInfo {
-    fn from(value: iroh::net::magic_endpoint::ConnectionInfo) -> Self {
+impl From<iroh::net::endpoint::ConnectionInfo> for ConnectionInfo {
+    fn from(value: iroh::net::endpoint::ConnectionInfo) -> Self {
         ConnectionInfo {
             node_id: Arc::new(value.node_id.into()),
             relay_url: value.relay_url.map(|info| info.relay_url.to_string()),
@@ -173,19 +173,19 @@ pub struct ConnectionTypeMixed {
     pub relay_url: String,
 }
 
-impl From<iroh::net::magic_endpoint::ConnectionType> for ConnectionType {
-    fn from(value: iroh::net::magic_endpoint::ConnectionType) -> Self {
+impl From<iroh::net::endpoint::ConnectionType> for ConnectionType {
+    fn from(value: iroh::net::endpoint::ConnectionType) -> Self {
         match value {
-            iroh::net::magic_endpoint::ConnectionType::Direct(addr) => {
+            iroh::net::endpoint::ConnectionType::Direct(addr) => {
                 ConnectionType::Direct(addr.to_string())
             }
-            iroh::net::magic_endpoint::ConnectionType::Mixed(addr, url) => {
+            iroh::net::endpoint::ConnectionType::Mixed(addr, url) => {
                 ConnectionType::Mixed(addr.to_string(), url.to_string())
             }
-            iroh::net::magic_endpoint::ConnectionType::Relay(url) => {
+            iroh::net::endpoint::ConnectionType::Relay(url) => {
                 ConnectionType::Relay(url.to_string())
             }
-            iroh::net::magic_endpoint::ConnectionType::None => ConnectionType::None,
+            iroh::net::endpoint::ConnectionType::None => ConnectionType::None,
         }
     }
 }

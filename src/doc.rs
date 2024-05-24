@@ -536,10 +536,10 @@ impl NodeAddr {
     }
 }
 
-impl TryFrom<NodeAddr> for iroh::net::magic_endpoint::NodeAddr {
+impl TryFrom<NodeAddr> for iroh::net::endpoint::NodeAddr {
     type Error = IrohError;
     fn try_from(value: NodeAddr) -> Result<Self, Self::Error> {
-        let mut node_addr = iroh::net::magic_endpoint::NodeAddr::new((&*value.node_id).into());
+        let mut node_addr = iroh::net::endpoint::NodeAddr::new((&*value.node_id).into());
         let addresses = value
             .direct_addresses()
             .into_iter()
@@ -556,8 +556,8 @@ impl TryFrom<NodeAddr> for iroh::net::magic_endpoint::NodeAddr {
     }
 }
 
-impl From<iroh::net::magic_endpoint::NodeAddr> for NodeAddr {
-    fn from(value: iroh::net::magic_endpoint::NodeAddr) -> Self {
+impl From<iroh::net::endpoint::NodeAddr> for NodeAddr {
+    fn from(value: iroh::net::endpoint::NodeAddr) -> Self {
         NodeAddr {
             node_id: Arc::new(value.node_id.into()),
             relay_url: value.info.relay_url.map(|url| url.to_string()),
@@ -914,6 +914,16 @@ pub enum LiveEvent {
     NeighborDown(PublicKey),
     /// A set-reconciliation sync finished.
     SyncFinished(SyncEvent),
+    /// All pending content is now ready.
+    ///
+    /// This event signals that all queued content downloads from the last sync run have either
+    /// completed or failed.
+    ///
+    /// It will only be emitted after a [`Self::SyncFinished`] event, never before.
+    ///
+    /// Receiving this event does not guarantee that all content in the document is available. If
+    /// blobs failed to download, this event will still be emitted after all operations completed.
+    PendingContentReady,
 }
 
 /// The type of events that can be emitted during the live sync progress
@@ -930,6 +940,16 @@ pub enum LiveEventType {
     NeighborDown,
     /// A set-reconciliation sync finished.
     SyncFinished,
+    /// All pending content is now ready.
+    ///
+    /// This event signals that all queued content downloads from the last sync run have either
+    /// completed or failed.
+    ///
+    /// It will only be emitted after a [`Self::SyncFinished`] event, never before.
+    ///
+    /// Receiving this event does not guarantee that all content in the document is available. If
+    /// blobs failed to download, this event will still be emitted after all operations completed.
+    PendingContentReady,
 }
 
 impl LiveEvent {
@@ -942,6 +962,7 @@ impl LiveEvent {
             Self::NeighborUp(_) => LiveEventType::NeighborUp,
             Self::NeighborDown(_) => LiveEventType::NeighborDown,
             Self::SyncFinished(_) => LiveEventType::SyncFinished,
+            Self::PendingContentReady => LiveEventType::PendingContentReady,
         }
     }
 
@@ -1030,6 +1051,7 @@ impl From<iroh::client::docs::LiveEvent> for LiveEvent {
             iroh::client::docs::LiveEvent::NeighborUp(key) => LiveEvent::NeighborUp(key.into()),
             iroh::client::docs::LiveEvent::NeighborDown(key) => LiveEvent::NeighborDown(key.into()),
             iroh::client::docs::LiveEvent::SyncFinished(e) => LiveEvent::SyncFinished(e.into()),
+            iroh::client::docs::LiveEvent::PendingContentReady => LiveEvent::PendingContentReady,
         }
     }
 }
