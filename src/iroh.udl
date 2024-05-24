@@ -54,6 +54,9 @@ interface IrohNode {
   /// Join and sync with an already existing document.
   [Throws=IrohError]
   Doc doc_join(string ticket);
+  /// Join and sync with an already existing document and subscribe to events on that document.
+  [Throws=IrohError]
+  Doc doc_join_and_subscribe(string ticket, SubscribeCallback cb);
   /// List all the docs we have access to on this node.
   [Throws=IrohError]
   sequence<NamespaceAndCapability> doc_list();

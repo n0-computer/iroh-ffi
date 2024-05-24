@@ -60,6 +60,42 @@ impl IrohNode {
         })
     }
 
+    /// Join and sync with an already existing document and subscribe to events on that document.
+    pub fn doc_join_and_subscribe(
+        &self,
+        ticket: String,
+        cb: Box<dyn SubscribeCallback>,
+    ) -> Result<Arc<Doc>, IrohError> {
+        let (doc, mut stream) = block_on(&self.rt(), async {
+            let ticket = iroh::docs::DocTicket::from_str(&ticket).map_err(IrohError::doc_ticket)?;
+            self.sync_client
+                .docs
+                .import_and_subscribe(ticket)
+                .await
+                .map_err(IrohError::doc)
+        })?;
+
+        self.rt().spawn(async move {
+            while let Some(event) = stream.next().await {
+                match event {
+                    Ok(event) => {
+                        if let Err(err) = cb.event(Arc::new(event.into())) {
+                            println!("cb error: {:?}", err);
+                        }
+                    }
+                    Err(err) => {
+                        println!("rpc error: {:?}", err);
+                    }
+                }
+            }
+        });
+
+        Ok(Arc::new(Doc {
+            inner: doc,
+            rt: self.rt().clone(),
+        }))
+    }
+
     /// List all the docs we have access to on this node.
     pub fn doc_list(&self) -> Result<Vec<NamespaceAndCapability>, IrohError> {
         block_on(&self.rt(), async {

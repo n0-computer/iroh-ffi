@@ -330,6 +330,8 @@ void uniffi_iroh_fn_method_irohnode_doc_drop(void*_Nonnull ptr, RustBuffer doc_i
 );
 void*_Nonnull uniffi_iroh_fn_method_irohnode_doc_join(void*_Nonnull ptr, RustBuffer ticket, RustCallStatus *_Nonnull out_status
 );
+void*_Nonnull uniffi_iroh_fn_method_irohnode_doc_join_and_subscribe(void*_Nonnull ptr, RustBuffer ticket, uint64_t cb, RustCallStatus *_Nonnull out_status
+);
 RustBuffer uniffi_iroh_fn_method_irohnode_doc_list(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_irohnode_doc_open(void*_Nonnull ptr, RustBuffer id, RustCallStatus *_Nonnull out_status
@@ -872,6 +874,9 @@ uint16_t uniffi_iroh_checksum_method_irohnode_doc_drop(void
     
 );
 uint16_t uniffi_iroh_checksum_method_irohnode_doc_join(void
+    
+);
+uint16_t uniffi_iroh_checksum_method_irohnode_doc_join_and_subscribe(void
     
 );
 uint16_t uniffi_iroh_checksum_method_irohnode_doc_list(void

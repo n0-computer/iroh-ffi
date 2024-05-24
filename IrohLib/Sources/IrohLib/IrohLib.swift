@@ -2557,6 +2557,7 @@ public protocol IrohNodeProtocol {
     func docCreate() throws -> Doc
     func docDrop(docId: String) throws
     func docJoin(ticket: String) throws -> Doc
+    func docJoinAndSubscribe(ticket: String, cb: SubscribeCallback) throws -> Doc
     func docList() throws -> [NamespaceAndCapability]
     func docOpen(id: String) throws -> Doc?
     func nodeId() -> String
@@ -2938,6 +2939,19 @@ public class IrohNode: IrohNodeProtocol {
             rustCallWithError(FfiConverterTypeIrohError.lift) {
                 uniffi_iroh_fn_method_irohnode_doc_join(self.pointer,
                                                         FfiConverterString.lower(ticket), $0)
+            }
+        )
+    }
+
+    /**
+     * Join and sync with an already existing document and subscribe to events on that document.
+     */
+    public func docJoinAndSubscribe(ticket: String, cb: SubscribeCallback) throws -> Doc {
+        return try FfiConverterTypeDoc.lift(
+            rustCallWithError(FfiConverterTypeIrohError.lift) {
+                uniffi_iroh_fn_method_irohnode_doc_join_and_subscribe(self.pointer,
+                                                                      FfiConverterString.lower(ticket),
+                                                                      FfiConverterCallbackInterfaceSubscribeCallback.lower(cb), $0)
             }
         )
     }
@@ -9032,6 +9046,9 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_doc_join() != 48292 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_checksum_method_irohnode_doc_join_and_subscribe() != 43177 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_irohnode_doc_list() != 44252 {
