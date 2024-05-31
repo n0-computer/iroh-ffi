@@ -7,7 +7,7 @@ Each release process is broken down per langauge target:
 Swift packages have additional required edits _after_ the release is cut:
 
 1. Cut the release on github.
-2. run `make.sh`. confirm that all `cargo build` invocations are run with the `--release` flag
+2. run `make_swift.sh`. confirm that all `cargo build` invocations are run with the `--release` flag
 3. build a zip archive of `Iroh.xcframework`: `zip -r IrohLib.xcframework.zip Iroh.xcframework/*`
 4. Compute the checksum for the zip archive: `swift package compute-checksum MyLibrary.xcframework.zip`
 4. Upload the resulting zip archive as a release artifact. Copy the URL to the release.
