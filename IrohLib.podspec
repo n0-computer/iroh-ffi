@@ -18,6 +18,6 @@ Pod::Spec.new do |spec|
   spec.source             = { :git => "https://github.com/n0-computer/iroh-ffi.git", :tag => "#{spec.version}" }
   spec.source_files       = "IrohLib/Sources/IrohLib/*.swift"
   spec.framework          = "SystemConfiguration"
-  spec.ios.deployment_target  = '13.0'
+  spec.ios.deployment_target  = '15.0'
   spec.dependency 'IrohLibFramework', "#{spec.version}"
 end
