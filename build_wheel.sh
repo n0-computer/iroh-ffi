@@ -3,7 +3,7 @@
 # This script will build a manylinux2014 wheel if used in the
 # manylinux2014_x86_64 container:
 #
-# docker run --rm -v $(pwd):/mnt -w /mnt quay.io/pypa/manylinux2014_x86_64 /mnt/build-wheel.sh
+# docker run --rm -v $(pwd):/mnt -w /mnt quay.io/pypa/manylinux2014_x86_64 /mnt/build_wheel.sh
 
 # Install rust
 curl --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
