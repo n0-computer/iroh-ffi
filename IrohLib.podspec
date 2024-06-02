@@ -16,7 +16,9 @@ Pod::Spec.new do |spec|
   spec.author             = { "b5" => "sparkle_pony_2000@n0.computer" }
   spec.social_media_url   = "https://twitter.com/iroh_n0"
   spec.source             = { :git => "https://github.com/n0-computer/iroh-ffi.git", :tag => "#{spec.version}" }
+  spec.static_framework   = true
   spec.source_files       = "IrohLib/Sources/IrohLib/*.swift"
+  spec.swift_version      = '5.9'
   spec.framework          = "SystemConfiguration"
   spec.ios.deployment_target  = '15.0'
   spec.dependency 'IrohLibFramework', "#{spec.version}"
