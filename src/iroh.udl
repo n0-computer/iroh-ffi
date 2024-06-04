@@ -511,6 +511,19 @@ interface Query {
   ///     limit: None
   [Name=single_latest_per_key]
   constructor(QueryOptions? opts);
+  /// Query only the latest entry for this exact key, omitting older entries if the entry was written
+  /// to by multiple authors.
+  [Name=single_latest_per_key_exact]
+  constructor(bytes exact);
+  /// Query only the latest entry for each key, with this prefix, omitting older entries if the entry was written
+  /// to by multiple authors.
+  ///
+  /// If `opts` is `None`, the default values will be used:
+  ///     direction: SortDirection::Asc
+  ///     offset: None
+  ///     limit: None
+  [Name=single_latest_per_key_prefix]
+  constructor(bytes prefix, QueryOptions? opts);
   /// Query all entries for by a single author.
   ///
   /// If `opts` is `None`, the default values will be used:
@@ -656,6 +669,8 @@ interface Entry {
   Hash content_hash();
   /// Get the content_length of this entry.
   u64 content_len();
+  /// Get the timestamp when this entry was written.
+  u64 timestamp();
   /// Read all content of an [`Entry`] into a buffer.
   /// This allocates a buffer for the full entry. Use only if you know that the entry you're
   /// reading is small. If not sure, use [`Self::content_len`] and check the size with
