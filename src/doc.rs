@@ -665,6 +665,11 @@ impl Entry {
         self.0.id().namespace().to_string()
     }
 
+    /// Get the timestamp when this entry was written.
+    pub fn timestamp(&self) -> u64 {
+        self.0.timestamp()
+    }
+
     /// Read all content of an [`Entry`] into a buffer.
     /// This allocates a buffer for the full entry. Use only if you know that the entry you're
     /// reading is small. If not sure, use [`Self::content_len`] and check the size with
@@ -802,6 +807,36 @@ impl Query {
                 builder = builder.limit(opts.limit);
             }
             builder = builder.sort_direction(opts.direction.into());
+        }
+        Query(builder.build())
+    }
+
+    /// Query exactly the key, but only the latest entry for it, omitting older entries if the entry was written
+    /// to by multiple authors.
+    pub fn single_latest_per_key_exact(key: Vec<u8>) -> Self {
+        let builder = iroh::docs::store::Query::single_latest_per_key()
+            .key_exact(key)
+            .build();
+        Query(builder)
+    }
+
+    /// Query only the latest entry for each key, with this prefix, omitting older entries if the entry was written
+    /// to by multiple authors.
+    ///
+    /// If `opts` is `None`, the default values will be used:
+    ///     direction: SortDirection::Asc
+    ///     offset: None
+    ///     limit: None
+    pub fn single_latest_per_key_prefix(prefix: Vec<u8>, opts: Option<QueryOptions>) -> Self {
+        let mut builder = iroh::docs::store::Query::single_latest_per_key().key_prefix(prefix);
+
+        if let Some(opts) = opts {
+            if opts.offset != 0 {
+                builder = builder.offset(opts.offset);
+            }
+            if opts.limit != 0 {
+                builder = builder.limit(opts.limit);
+            }
         }
         Query(builder.build())
     }
