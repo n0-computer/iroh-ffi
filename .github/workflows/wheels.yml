@@ -59,7 +59,7 @@ jobs:
             os: macOS-latest
             release-os: darwin
             release-arch: x86_64
-            runner: [macOS-latest]
+            runner: [macOS-13]
           - name: macOS-arm-latest
             python: 3.11
             os: macOS-latest
