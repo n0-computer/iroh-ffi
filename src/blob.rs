@@ -514,7 +514,7 @@ impl From<Hash> for iroh::blobs::Hash {
 }
 
 /// The `progress` method will be called for each `AddProgress` event that is
-/// emitted during a `node.blobs_add_from_path`. Use the `AddProgress.type()`()
+/// emitted during a `node.blobs_add_from_path`. Use the `AddProgress.type()`
 /// method to check the `AddProgressType`
 pub trait AddCallback: Send + Sync + 'static {
     fn progress(&self, progress: Arc<AddProgress>) -> Result<(), IrohError>;
