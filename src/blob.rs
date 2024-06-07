@@ -791,7 +791,7 @@ impl From<BlobExportMode> for iroh::blobs::store::ExportMode {
 }
 
 /// The `progress` method will be called for each `DownloadProgress` event that is emitted during
-/// a `node.blobs_download`. Use the `DownloadProgress.type()` method to check the()
+/// a `node.blobs_download`. Use the `DownloadProgress.type()` method to check the
 /// `DownloadProgressType` of the event.
 pub trait DownloadCallback: Send + Sync + 'static {
     fn progress(&self, progress: Arc<DownloadProgress>) -> Result<(), IrohError>;
