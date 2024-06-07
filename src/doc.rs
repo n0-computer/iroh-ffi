@@ -30,7 +30,7 @@ impl IrohNode {
         block_on(&self.rt(), async {
             let doc = self
                 .sync_client
-                .docs
+                .docs()
                 .create()
                 .await
                 .map_err(IrohError::doc)?;
@@ -48,7 +48,7 @@ impl IrohNode {
             let ticket = iroh::docs::DocTicket::from_str(&ticket).map_err(IrohError::doc_ticket)?;
             let doc = self
                 .sync_client
-                .docs
+                .docs()
                 .import(ticket)
                 .await
                 .map_err(IrohError::doc)?;
@@ -69,7 +69,7 @@ impl IrohNode {
         let (doc, mut stream) = block_on(&self.rt(), async {
             let ticket = iroh::docs::DocTicket::from_str(&ticket).map_err(IrohError::doc_ticket)?;
             self.sync_client
-                .docs
+                .docs()
                 .import_and_subscribe(ticket)
                 .await
                 .map_err(IrohError::doc)
@@ -101,7 +101,7 @@ impl IrohNode {
         block_on(&self.rt(), async {
             let docs = self
                 .sync_client
-                .docs
+                .docs()
                 .list()
                 .await
                 .map_err(IrohError::doc)?
@@ -125,7 +125,7 @@ impl IrohNode {
         block_on(&self.rt(), async {
             let doc = self
                 .sync_client
-                .docs
+                .docs()
                 .open(namespace_id)
                 .await
                 .map_err(IrohError::doc)?;
@@ -147,7 +147,7 @@ impl IrohNode {
         let doc_id = iroh::docs::NamespaceId::from_str(&doc_id).map_err(IrohError::namespace)?;
         block_on(&self.rt(), async {
             self.sync_client
-                .docs
+                .docs()
                 .drop_doc(doc_id)
                 .await
                 .map_err(IrohError::doc)

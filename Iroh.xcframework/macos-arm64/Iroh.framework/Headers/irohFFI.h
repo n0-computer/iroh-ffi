@@ -250,6 +250,8 @@ RustBuffer uniffi_iroh_fn_method_entry_key(void*_Nonnull ptr, RustCallStatus *_N
 );
 RustBuffer uniffi_iroh_fn_method_entry_namespace(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+uint64_t uniffi_iroh_fn_method_entry_timestamp(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
 void uniffi_iroh_fn_free_filterkind(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void*_Nonnull uniffi_iroh_fn_constructor_filterkind_exact(RustBuffer key, RustCallStatus *_Nonnull out_status
@@ -411,6 +413,10 @@ void*_Nonnull uniffi_iroh_fn_constructor_query_key_exact(RustBuffer key, RustBuf
 void*_Nonnull uniffi_iroh_fn_constructor_query_key_prefix(RustBuffer prefix, RustBuffer opts, RustCallStatus *_Nonnull out_status
 );
 void*_Nonnull uniffi_iroh_fn_constructor_query_single_latest_per_key(RustBuffer opts, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_iroh_fn_constructor_query_single_latest_per_key_exact(RustBuffer exact, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_iroh_fn_constructor_query_single_latest_per_key_prefix(RustBuffer prefix, RustBuffer opts, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_iroh_fn_method_query_limit(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -788,6 +794,9 @@ uint16_t uniffi_iroh_checksum_method_entry_key(void
 uint16_t uniffi_iroh_checksum_method_entry_namespace(void
     
 );
+uint16_t uniffi_iroh_checksum_method_entry_timestamp(void
+    
+);
 uint16_t uniffi_iroh_checksum_method_filterkind_matches(void
     
 );
@@ -1044,6 +1053,12 @@ uint16_t uniffi_iroh_checksum_constructor_query_key_prefix(void
     
 );
 uint16_t uniffi_iroh_checksum_constructor_query_single_latest_per_key(void
+    
+);
+uint16_t uniffi_iroh_checksum_constructor_query_single_latest_per_key_exact(void
+    
+);
+uint16_t uniffi_iroh_checksum_constructor_query_single_latest_per_key_prefix(void
     
 );
 uint16_t uniffi_iroh_checksum_constructor_settagoption_auto(void

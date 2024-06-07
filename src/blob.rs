@@ -16,7 +16,7 @@ impl IrohNode {
         block_on(&self.rt(), async {
             let response = self
                 .sync_client
-                .blobs
+                .blobs()
                 .list()
                 .await
                 .map_err(IrohError::blobs)?;
@@ -38,7 +38,7 @@ impl IrohNode {
         block_on(&self.rt(), async {
             let r = self
                 .sync_client
-                .blobs
+                .blobs()
                 .read(hash.0)
                 .await
                 .map_err(IrohError::blobs)?;
@@ -54,7 +54,7 @@ impl IrohNode {
     pub fn blobs_read_to_bytes(&self, hash: Arc<Hash>) -> Result<Vec<u8>, IrohError> {
         block_on(&self.rt(), async {
             self.sync_client
-                .blobs
+                .blobs()
                 .read_to_bytes(hash.0)
                 .await
                 .map(|b| b.to_vec())
@@ -79,7 +79,7 @@ impl IrohNode {
         };
         block_on(&self.rt(), async {
             self.sync_client
-                .blobs
+                .blobs()
                 .read_at_to_bytes(hash.0, offset, len)
                 .await
                 .map(|b| b.to_vec())
@@ -104,7 +104,7 @@ impl IrohNode {
         block_on(&self.rt(), async {
             let mut stream = self
                 .sync_client
-                .blobs
+                .blobs()
                 .add_from_path(
                     path.into(),
                     in_place,
@@ -127,7 +127,7 @@ impl IrohNode {
         block_on(&self.rt(), async {
             let mut reader = self
                 .sync_client
-                .blobs
+                .blobs()
                 .read(hash.0)
                 .await
                 .map_err(IrohError::blobs)?;
@@ -151,7 +151,7 @@ impl IrohNode {
     pub fn blobs_add_bytes(&self, bytes: Vec<u8>) -> Result<BlobAddOutcome, IrohError> {
         block_on(&self.rt(), async {
             self.sync_client
-                .blobs
+                .blobs()
                 .add_bytes(bytes)
                 .await
                 .map(|outcome| outcome.into())
@@ -169,7 +169,7 @@ impl IrohNode {
         block_on(&self.rt(), async {
             let mut stream = self
                 .sync_client
-                .blobs
+                .blobs()
                 .download_with_opts(hash.0, opts.0.clone())
                 .await
                 .map_err(IrohError::blobs)?;
@@ -207,7 +207,7 @@ impl IrohNode {
 
             let stream = self
                 .sync_client
-                .blobs
+                .blobs()
                 .export(hash.0, destination, format.into(), mode.into())
                 .await
                 .map_err(IrohError::blobs)?;
@@ -228,7 +228,7 @@ impl IrohNode {
         block_on(&self.rt(), async {
             let ticket = self
                 .sync_client
-                .blobs
+                .blobs()
                 .share(hash.0, blob_format.into(), ticket_options.into())
                 .await
                 .map_err(IrohError::blobs)?;
@@ -244,7 +244,7 @@ impl IrohNode {
         block_on(&self.rt(), async {
             let blobs = self
                 .sync_client
-                .blobs
+                .blobs()
                 .list_incomplete()
                 .await
                 .map_err(IrohError::blobs)?
@@ -264,9 +264,8 @@ impl IrohNode {
         block_on(&self.rt(), async {
             let blobs = self
                 .sync_client
-                .blobs
+                .blobs()
                 .list_collections()
-                .await
                 .map_err(IrohError::blobs)?
                 .map_ok(|res| res.into())
                 .try_collect::<Vec<_>>()
@@ -281,7 +280,7 @@ impl IrohNode {
         block_on(&self.rt(), async {
             let collection = self
                 .sync_client
-                .blobs
+                .blobs()
                 .get_collection(hash.0)
                 .await
                 .map_err(IrohError::collection)?;
@@ -303,7 +302,7 @@ impl IrohNode {
             let collection = collection.0.read().map_err(IrohError::collection)?.clone();
             let (hash, tag) = self
                 .sync_client
-                .blobs
+                .blobs()
                 .create_collection(
                     collection,
                     (*tag).clone().into(),
@@ -326,7 +325,7 @@ impl IrohNode {
         block_on(&self.rt(), async {
             let mut tags = self
                 .sync_client
-                .tags
+                .tags()
                 .list()
                 .await
                 .map_err(IrohError::blobs)?;
@@ -340,12 +339,12 @@ impl IrohNode {
 
             if let Some(name) = name {
                 self.sync_client
-                    .tags
+                    .tags()
                     .delete(name)
                     .await
                     .map_err(IrohError::blobs)?;
                 self.sync_client
-                    .blobs
+                    .blobs()
                     .delete_blob((*hash).clone().0)
                     .await
                     .map_err(IrohError::blobs)?;
@@ -515,7 +514,7 @@ impl From<Hash> for iroh::blobs::Hash {
 }
 
 /// The `progress` method will be called for each `AddProgress` event that is
-/// emitted during a `node.blobs_add_from_path`. Use the `AddProgress.type()`
+/// emitted during a `node.blobs_add_from_path`. Use the `AddProgress.type()`()
 /// method to check the `AddProgressType`
 pub trait AddCallback: Send + Sync + 'static {
     fn progress(&self, progress: Arc<AddProgress>) -> Result<(), IrohError>;
@@ -792,7 +791,7 @@ impl From<BlobExportMode> for iroh::blobs::store::ExportMode {
 }
 
 /// The `progress` method will be called for each `DownloadProgress` event that is emitted during
-/// a `node.blobs_download`. Use the `DownloadProgress.type()` method to check the
+/// a `node.blobs_download`. Use the `DownloadProgress.type()` method to check the()
 /// `DownloadProgressType` of the event.
 pub trait DownloadCallback: Send + Sync + 'static {
     fn progress(&self, progress: Arc<DownloadProgress>) -> Result<(), IrohError>;
@@ -1584,18 +1583,18 @@ mod tests {
         rand::thread_rng().fill_bytes(&mut bytes);
         let bytes: Bytes = bytes.into();
         // add blob
-        let add_outcome = client.blobs.add_bytes(bytes.clone()).await.unwrap();
+        let add_outcome = client.blobs().add_bytes(bytes.clone()).await.unwrap();
         // check outcome
         assert_eq!(add_outcome.format, iroh::blobs::BlobFormat::Raw);
         assert_eq!(add_outcome.size, size as u64);
         // check size
         let hash = add_outcome.hash;
-        let reader = client.blobs.read(hash).await.unwrap();
+        let reader = client.blobs().read(hash).await.unwrap();
         let got_size = reader.size();
         assert_eq!(got_size, size as u64);
         //
         // get blob
-        let got_bytes = client.blobs.read_to_bytes(hash).await.unwrap();
+        let got_bytes = client.blobs().read_to_bytes(hash).await.unwrap();
         assert_eq!(got_bytes.len(), size);
         assert_eq!(got_bytes, bytes);
         hash
@@ -1620,11 +1619,17 @@ mod tests {
 
         let client = node.client();
         // ensure there are no blobs to start
-        let blobs = client.blobs.list().await.unwrap().collect::<Vec<_>>().await;
+        let blobs = client
+            .blobs()
+            .list()
+            .await
+            .unwrap()
+            .collect::<Vec<_>>()
+            .await;
         assert_eq!(0, blobs.len());
 
         let mut stream = client
-            .blobs
+            .blobs()
             .add_from_path(
                 dir.into_path(),
                 false,
@@ -1659,9 +1664,8 @@ mod tests {
         assert_eq!(iroh::blobs::BlobFormat::HashSeq, collection_format);
 
         let collections = client
-            .blobs
+            .blobs()
             .list_collections()
-            .await
             .unwrap()
             .try_collect::<Vec<_>>()
             .await

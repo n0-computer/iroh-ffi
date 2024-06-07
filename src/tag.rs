@@ -33,7 +33,7 @@ impl IrohNode {
         block_on(&self.rt(), async {
             let tags = self
                 .sync_client
-                .tags
+                .tags()
                 .list()
                 .await
                 .map_err(IrohError::tags)?
@@ -50,7 +50,7 @@ impl IrohNode {
         let tag = iroh::blobs::Tag(Bytes::from(name));
         block_on(&self.rt(), async {
             self.sync_client
-                .tags
+                .tags()
                 .delete(tag)
                 .await
                 .map_err(IrohError::tags)
