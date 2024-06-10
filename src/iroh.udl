@@ -54,9 +54,6 @@ interface IrohNode {
   /// Join and sync with an already existing document.
   [Throws=IrohError]
   Doc doc_join(string ticket);
-  /// Join and sync with an already existing document and subscribe to events on that document.
-  [Throws=IrohError]
-  Doc doc_join_and_subscribe(string ticket, SubscribeCallback cb);
   /// List all the docs we have access to on this node.
   [Throws=IrohError]
   sequence<NamespaceAndCapability> doc_list();
@@ -66,22 +63,10 @@ interface IrohNode {
   [Throws=IrohError]
   Doc? doc_open(string id);
 
-  /// Create a new document author.
-  ///
-  /// You likely want to save the returned [`AuthorId`] somewhere so that you can use this author
-  /// again.
-  ///
-  /// If you need only a single author, use [`Self::default`].
+  /// Create a new author.
   [Throws=IrohError]
   AuthorId author_create();
-    /// Returns the default document author of this node.
-  ///
-  /// On persistent nodes, the author is created on first start and its public key is saved
-  /// in the data directory.
-  ///
-  /// The default author can be set with [`Self::set_default`].
-  [Throws=IrohError]
-  AuthorId author_default();
+  /// List all the AuthorIds that exist on this node.
   [Throws=IrohError]
   sequence<AuthorId> author_list();
   /// Export the given author.
@@ -511,19 +496,6 @@ interface Query {
   ///     limit: None
   [Name=single_latest_per_key]
   constructor(QueryOptions? opts);
-  /// Query only the latest entry for this exact key, omitting older entries if the entry was written
-  /// to by multiple authors.
-  [Name=single_latest_per_key_exact]
-  constructor(bytes exact);
-  /// Query only the latest entry for each key, with this prefix, omitting older entries if the entry was written
-  /// to by multiple authors.
-  ///
-  /// If `opts` is `None`, the default values will be used:
-  ///     direction: SortDirection::Asc
-  ///     offset: None
-  ///     limit: None
-  [Name=single_latest_per_key_prefix]
-  constructor(bytes prefix, QueryOptions? opts);
   /// Query all entries for by a single author.
   ///
   /// If `opts` is `None`, the default values will be used:
@@ -669,8 +641,6 @@ interface Entry {
   Hash content_hash();
   /// Get the content_length of this entry.
   u64 content_len();
-  /// Get the timestamp when this entry was written.
-  u64 timestamp();
   /// Read all content of an [`Entry`] into a buffer.
   /// This allocates a buffer for the full entry. Use only if you know that the entry you're
   /// reading is small. If not sure, use [`Self::content_len`] and check the size with
@@ -761,16 +731,6 @@ interface LiveEventType {
   NeighborDown();
   /// A set-reconciliation sync finished.
   SyncFinished();
-  /// All pending content is now ready.
-  ///
-  /// This event signals that all queued content downloads from the last sync run have either
-  /// completed or failed.
-  ///
-  /// It will only be emitted after a [`Self::SyncFinished`] event, never before.
-  ///
-  /// Receiving this event does not guarantee that all content in the document is available. If
-  /// blobs failed to download, this event will still be emitted after all operations completed.
-  PendingContentReady();
 };
 
 /// Whether the content status is available on a node.
