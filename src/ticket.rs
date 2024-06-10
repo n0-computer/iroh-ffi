@@ -1,7 +1,7 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
-use crate::blob::{BlobDownloadOptions, BlobFormat, Hash};
+use crate::blob::{BlobDownloadRequest, BlobFormat, Hash};
 use crate::doc::NodeAddr;
 use crate::error::IrohError;
 
@@ -38,12 +38,13 @@ impl BlobTicket {
     }
 
     /// Convert this ticket into input parameters for a call to blobs_download
-    pub fn as_download_options(&self) -> Arc<BlobDownloadOptions> {
-        let r: BlobDownloadOptions = iroh::client::blobs::DownloadOptions {
+    pub fn as_download_request(&self) -> Arc<BlobDownloadRequest> {
+        let r: BlobDownloadRequest = iroh::rpc_protocol::BlobDownloadRequest {
+            hash: self.0.hash(),
             format: self.0.format(),
             nodes: vec![self.0.node_addr().clone()],
-            tag: iroh::blobs::util::SetTagOption::Auto,
-            mode: iroh::client::blobs::DownloadMode::Direct,
+            tag: iroh::rpc_protocol::SetTagOption::Auto,
+            mode: iroh::rpc_protocol::DownloadMode::Direct,
         }
         .into();
         Arc::new(r)

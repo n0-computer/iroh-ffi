@@ -54,9 +54,6 @@ interface IrohNode {
   /// Join and sync with an already existing document.
   [Throws=IrohError]
   Doc doc_join(string ticket);
-  /// Join and sync with an already existing document and subscribe to events on that document.
-  [Throws=IrohError]
-  Doc doc_join_and_subscribe(string ticket, SubscribeCallback cb);
   /// List all the docs we have access to on this node.
   [Throws=IrohError]
   sequence<NamespaceAndCapability> doc_list();
@@ -66,22 +63,10 @@ interface IrohNode {
   [Throws=IrohError]
   Doc? doc_open(string id);
 
-  /// Create a new document author.
-  ///
-  /// You likely want to save the returned [`AuthorId`] somewhere so that you can use this author
-  /// again.
-  ///
-  /// If you need only a single author, use [`Self::default`].
+  /// Create a new author.
   [Throws=IrohError]
   AuthorId author_create();
-    /// Returns the default document author of this node.
-  ///
-  /// On persistent nodes, the author is created on first start and its public key is saved
-  /// in the data directory.
-  ///
-  /// The default author can be set with [`Self::set_default`].
-  [Throws=IrohError]
-  AuthorId author_default();
+  /// List all the AuthorIds that exist on this node.
   [Throws=IrohError]
   sequence<AuthorId> author_list();
   /// Export the given author.
@@ -112,11 +97,11 @@ interface IrohNode {
   ConnectionInfo? connection_info([ByRef] PublicKey node_id);
   /// Get status information about a node
   [Throws=IrohError]
-  NodeStatus status();
+  NodeStatusResponse status();
 
   /// List all complete blobs.
   ///
-  /// Note: this allocates for each `BlobInfo`, if you have many `BlobInfo`s this may be a prohibitively large list.
+  /// Note: this allocates for each `BlobListResponse`, if you have many `BlobListReponse`s this may be a prohibitively large list.
   /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
   [Throws=IrohError]
   sequence<Hash> blobs_list();
@@ -157,22 +142,22 @@ interface IrohNode {
   BlobAddOutcome blobs_add_bytes(bytes bytes);
   /// Download a blob from another node and add it to the local database.
   [Throws=IrohError]
-  void blobs_download(Hash hash, BlobDownloadOptions req, DownloadCallback cb);
+  void blobs_download(BlobDownloadRequest req, DownloadCallback cb);
   /// Download a blob from another node and add it to the local database.
   [Throws=IrohError]
   void blobs_export(Hash hash, string destination, BlobExportFormat format, BlobExportMode mode);
   /// List all incomplete (partial) blobs.
   ///
-  /// Note: this allocates for each `IncompleteBlobInfo`, if you have many `IncompleteBlobInfo`s this may be a prohibitively large list.
+  /// Note: this allocates for each `BlobListIncompleteResponse`, if you have many `BlobListIncompleteResponse`s this may be a prohibitively large list.
   /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
   [Throws=IrohError]
-  sequence<IncompleteBlobInfo> blobs_list_incomplete();
+  sequence<BlobListIncompleteResponse> blobs_list_incomplete();
   /// List all collections.
   ///
-  /// Note: this allocates for each `CollectionInfo`, if you have many `CollectionInfo`s this may be a prohibitively large list.
+  /// Note: this allocates for each `BlobListCollectionsResponse`, if you have many `BlobListCollectionsResponse`s this may be a prohibitively large list.
   /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
   [Throws=IrohError]
-  sequence<CollectionInfo> blobs_list_collections();
+  sequence<BlobListCollectionsResponse> blobs_list_collections();
   /// Read the content of a collection
   [Throws=IrohError]
   Collection blobs_get_collection(Hash hash);
@@ -188,10 +173,10 @@ interface IrohNode {
 
   /// List all tags
   ///
-  /// Note: this allocates for each `TagInfo`, if you have many `Tags`s this may be a prohibitively large list.
+  /// Note: this allocates for each `ListTagsResponse`, if you have many `Tags`s this may be a prohibitively large list.
   /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
   [Throws=IrohError]
-  sequence<TagInfo> tags_list();
+  sequence<ListTagsResponse> tags_list();
   /// Delete a tag.
   [Throws=IrohError]
   void tags_delete(bytes name);
@@ -247,7 +232,7 @@ interface Collection {
 };
 
 /// A response to a list collections request
-dictionary TagInfo {
+dictionary ListTagsResponse {
   /// The tag
   bytes name;
   /// The format of the associated blob
@@ -511,19 +496,6 @@ interface Query {
   ///     limit: None
   [Name=single_latest_per_key]
   constructor(QueryOptions? opts);
-  /// Query only the latest entry for this exact key, omitting older entries if the entry was written
-  /// to by multiple authors.
-  [Name=single_latest_per_key_exact]
-  constructor(bytes exact);
-  /// Query only the latest entry for each key, with this prefix, omitting older entries if the entry was written
-  /// to by multiple authors.
-  ///
-  /// If `opts` is `None`, the default values will be used:
-  ///     direction: SortDirection::Asc
-  ///     offset: None
-  ///     limit: None
-  [Name=single_latest_per_key_prefix]
-  constructor(bytes prefix, QueryOptions? opts);
   /// Query all entries for by a single author.
   ///
   /// If `opts` is `None`, the default values will be used:
@@ -612,7 +584,7 @@ interface NodeAddr {
   boolean equal([ByRef] NodeAddr other);
 };
 
-interface NodeStatus {
+interface NodeStatusResponse {
     /// The node id and socket addresses of this node.
     NodeAddr node_addr();
     /// The bound listening addresses of the node
@@ -669,8 +641,6 @@ interface Entry {
   Hash content_hash();
   /// Get the content_length of this entry.
   u64 content_len();
-  /// Get the timestamp when this entry was written.
-  u64 timestamp();
   /// Read all content of an [`Entry`] into a buffer.
   /// This allocates a buffer for the full entry. Use only if you know that the entry you're
   /// reading is small. If not sure, use [`Self::content_len`] and check the size with
@@ -761,16 +731,6 @@ interface LiveEventType {
   NeighborDown();
   /// A set-reconciliation sync finished.
   SyncFinished();
-  /// All pending content is now ready.
-  ///
-  /// This event signals that all queued content downloads from the last sync run have either
-  /// completed or failed.
-  ///
-  /// It will only be emitted after a [`Self::SyncFinished`] event, never before.
-  ///
-  /// Receiving this event does not guarantee that all content in the document is available. If
-  /// blobs failed to download, this event will still be emitted after all operations completed.
-  PendingContentReady();
 };
 
 /// Whether the content status is available on a node.
@@ -1042,13 +1002,13 @@ interface BlobTicket {
   Hash hash();
 
   /// Turn this ticket into parameters for blobs_download.
-  BlobDownloadOptions as_download_options();
+  BlobDownloadRequest as_download_request();
 };
 
 /// A request to the node to download and share the data specified by the hash.
-interface BlobDownloadOptions {
+interface BlobDownloadRequest {
   [Throws=IrohError]
-  constructor(BlobFormat format, NodeAddr node, SetTagOption tag);
+  constructor(Hash hash, BlobFormat format, NodeAddr node, SetTagOption tag);
 };
 
 /// The `progress` method will be called for each `DownloadProgress` event that is emitted during
@@ -1258,7 +1218,7 @@ interface DownloadPolicy {
 };
 
 /// A response to a list blobs request
-dictionary BlobInfo {
+dictionary BlobListResponse {
   /// Location of the blob
   string path;
   /// The hash of the blob
@@ -1268,7 +1228,7 @@ dictionary BlobInfo {
 };
 
 /// A response to a list blobs request
-dictionary IncompleteBlobInfo {
+dictionary BlobListIncompleteResponse {
   /// The size we got
   u64 size;
   /// The size we expect
@@ -1278,7 +1238,7 @@ dictionary IncompleteBlobInfo {
 };
 
 /// A response to a list collections request
-dictionary CollectionInfo {
+dictionary BlobListCollectionsResponse {
   /// Tag of the collection
   bytes tag;
   /// Hash of the collection

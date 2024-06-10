@@ -16,7 +16,7 @@ impl IrohNode {
         block_on(&self.rt(), async {
             let response = self
                 .sync_client
-                .blobs()
+                .blobs
                 .list()
                 .await
                 .map_err(IrohError::blobs)?;
@@ -38,7 +38,7 @@ impl IrohNode {
         block_on(&self.rt(), async {
             let r = self
                 .sync_client
-                .blobs()
+                .blobs
                 .read(hash.0)
                 .await
                 .map_err(IrohError::blobs)?;
@@ -54,7 +54,7 @@ impl IrohNode {
     pub fn blobs_read_to_bytes(&self, hash: Arc<Hash>) -> Result<Vec<u8>, IrohError> {
         block_on(&self.rt(), async {
             self.sync_client
-                .blobs()
+                .blobs
                 .read_to_bytes(hash.0)
                 .await
                 .map(|b| b.to_vec())
@@ -79,7 +79,7 @@ impl IrohNode {
         };
         block_on(&self.rt(), async {
             self.sync_client
-                .blobs()
+                .blobs
                 .read_at_to_bytes(hash.0, offset, len)
                 .await
                 .map(|b| b.to_vec())
@@ -104,7 +104,7 @@ impl IrohNode {
         block_on(&self.rt(), async {
             let mut stream = self
                 .sync_client
-                .blobs()
+                .blobs
                 .add_from_path(
                     path.into(),
                     in_place,
@@ -127,7 +127,7 @@ impl IrohNode {
         block_on(&self.rt(), async {
             let mut reader = self
                 .sync_client
-                .blobs()
+                .blobs
                 .read(hash.0)
                 .await
                 .map_err(IrohError::blobs)?;
@@ -151,7 +151,7 @@ impl IrohNode {
     pub fn blobs_add_bytes(&self, bytes: Vec<u8>) -> Result<BlobAddOutcome, IrohError> {
         block_on(&self.rt(), async {
             self.sync_client
-                .blobs()
+                .blobs
                 .add_bytes(bytes)
                 .await
                 .map(|outcome| outcome.into())
@@ -162,15 +162,14 @@ impl IrohNode {
     /// Download a blob from another node and add it to the local database.
     pub fn blobs_download(
         &self,
-        hash: Arc<Hash>,
-        opts: Arc<BlobDownloadOptions>,
+        req: Arc<BlobDownloadRequest>,
         cb: Box<dyn DownloadCallback>,
     ) -> Result<(), IrohError> {
         block_on(&self.rt(), async {
             let mut stream = self
                 .sync_client
-                .blobs()
-                .download_with_opts(hash.0, opts.0.clone())
+                .blobs
+                .download(req.0.clone())
                 .await
                 .map_err(IrohError::blobs)?;
             while let Some(progress) = stream.next().await {
@@ -207,7 +206,7 @@ impl IrohNode {
 
             let stream = self
                 .sync_client
-                .blobs()
+                .blobs
                 .export(hash.0, destination, format.into(), mode.into())
                 .await
                 .map_err(IrohError::blobs)?;
@@ -228,7 +227,7 @@ impl IrohNode {
         block_on(&self.rt(), async {
             let ticket = self
                 .sync_client
-                .blobs()
+                .blobs
                 .share(hash.0, blob_format.into(), ticket_options.into())
                 .await
                 .map_err(IrohError::blobs)?;
@@ -240,11 +239,11 @@ impl IrohNode {
     ///
     /// Note: this allocates for each `BlobListIncompleteResponse`, if you have many `BlobListIncompleteResponse`s this may be a prohibitively large list.
     /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
-    pub fn blobs_list_incomplete(&self) -> Result<Vec<IncompleteBlobInfo>, IrohError> {
+    pub fn blobs_list_incomplete(&self) -> Result<Vec<BlobListIncompleteResponse>, IrohError> {
         block_on(&self.rt(), async {
             let blobs = self
                 .sync_client
-                .blobs()
+                .blobs
                 .list_incomplete()
                 .await
                 .map_err(IrohError::blobs)?
@@ -260,12 +259,13 @@ impl IrohNode {
     ///
     /// Note: this allocates for each `BlobListCollectionsResponse`, if you have many `BlobListCollectionsResponse`s this may be a prohibitively large list.
     /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
-    pub fn blobs_list_collections(&self) -> Result<Vec<CollectionInfo>, IrohError> {
+    pub fn blobs_list_collections(&self) -> Result<Vec<BlobListCollectionsResponse>, IrohError> {
         block_on(&self.rt(), async {
             let blobs = self
                 .sync_client
-                .blobs()
+                .blobs
                 .list_collections()
+                .await
                 .map_err(IrohError::blobs)?
                 .map_ok(|res| res.into())
                 .try_collect::<Vec<_>>()
@@ -280,7 +280,7 @@ impl IrohNode {
         block_on(&self.rt(), async {
             let collection = self
                 .sync_client
-                .blobs()
+                .blobs
                 .get_collection(hash.0)
                 .await
                 .map_err(IrohError::collection)?;
@@ -302,13 +302,13 @@ impl IrohNode {
             let collection = collection.0.read().map_err(IrohError::collection)?.clone();
             let (hash, tag) = self
                 .sync_client
-                .blobs()
+                .blobs
                 .create_collection(
                     collection,
                     (*tag).clone().into(),
                     tags_to_delete
                         .into_iter()
-                        .map(iroh::blobs::Tag::from)
+                        .map(iroh::bytes::Tag::from)
                         .collect(),
                 )
                 .await
@@ -325,7 +325,7 @@ impl IrohNode {
         block_on(&self.rt(), async {
             let mut tags = self
                 .sync_client
-                .tags()
+                .tags
                 .list()
                 .await
                 .map_err(IrohError::blobs)?;
@@ -339,12 +339,12 @@ impl IrohNode {
 
             if let Some(name) = name {
                 self.sync_client
-                    .tags()
+                    .tags
                     .delete(name)
                     .await
                     .map_err(IrohError::blobs)?;
                 self.sync_client
-                    .blobs()
+                    .blobs
                     .delete_blob((*hash).clone().0)
                     .await
                     .map_err(IrohError::blobs)?;
@@ -377,8 +377,8 @@ pub struct BlobAddOutcome {
     pub tag: Vec<u8>,
 }
 
-impl From<iroh::client::blobs::AddOutcome> for BlobAddOutcome {
-    fn from(value: iroh::client::blobs::AddOutcome) -> Self {
+impl From<iroh::client::BlobAddOutcome> for BlobAddOutcome {
+    fn from(value: iroh::client::BlobAddOutcome) -> Self {
         BlobAddOutcome {
             hash: Arc::new(value.hash.into()),
             format: value.format.into(),
@@ -409,12 +409,12 @@ impl SetTagOption {
     }
 }
 
-impl From<SetTagOption> for iroh::blobs::util::SetTagOption {
+impl From<SetTagOption> for iroh::rpc_protocol::SetTagOption {
     fn from(value: SetTagOption) -> Self {
         match value {
-            SetTagOption::Auto => iroh::blobs::util::SetTagOption::Auto,
+            SetTagOption::Auto => iroh::rpc_protocol::SetTagOption::Auto,
             SetTagOption::Named(tag) => {
-                iroh::blobs::util::SetTagOption::Named(iroh::blobs::Tag(bytes::Bytes::from(tag)))
+                iroh::rpc_protocol::SetTagOption::Named(iroh::bytes::Tag(bytes::Bytes::from(tag)))
             }
         }
     }
@@ -444,21 +444,21 @@ impl WrapOption {
     }
 }
 
-impl From<WrapOption> for iroh::client::blobs::WrapOption {
+impl From<WrapOption> for iroh::rpc_protocol::WrapOption {
     fn from(value: WrapOption) -> Self {
         match value {
-            WrapOption::NoWrap => iroh::client::blobs::WrapOption::NoWrap,
-            WrapOption::Wrap { name } => iroh::client::blobs::WrapOption::Wrap { name },
+            WrapOption::NoWrap => iroh::rpc_protocol::WrapOption::NoWrap,
+            WrapOption::Wrap { name } => iroh::rpc_protocol::WrapOption::Wrap { name },
         }
     }
 }
 
 /// Hash type used throughout Iroh. A blake3 hash.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Hash(pub(crate) iroh::blobs::Hash);
+pub struct Hash(pub(crate) iroh::bytes::Hash);
 
-impl From<iroh::blobs::Hash> for Hash {
-    fn from(h: iroh::blobs::Hash) -> Self {
+impl From<iroh::bytes::Hash> for Hash {
+    fn from(h: iroh::bytes::Hash) -> Self {
         Hash(h)
     }
 }
@@ -466,7 +466,7 @@ impl From<iroh::blobs::Hash> for Hash {
 impl Hash {
     /// Calculate the hash of the provide bytes.
     pub fn new(buf: Vec<u8>) -> Self {
-        Hash(iroh::blobs::Hash::new(buf))
+        Hash(iroh::bytes::Hash::new(buf))
     }
 
     /// Bytes of the hash.
@@ -479,12 +479,12 @@ impl Hash {
         let bytes: [u8; 32] = bytes.try_into().map_err(|b: Vec<u8>| {
             IrohError::hash(format!("expected byte array of length 32, got {}", b.len()))
         })?;
-        Ok(Hash(iroh::blobs::Hash::from_bytes(bytes)))
+        Ok(Hash(iroh::bytes::Hash::from_bytes(bytes)))
     }
 
     /// Make a Hash from hex string
     pub fn from_string(s: String) -> Result<Self, IrohError> {
-        match iroh::blobs::Hash::from_str(&s) {
+        match iroh::bytes::Hash::from_str(&s) {
             Ok(key) => Ok(key.into()),
             Err(err) => Err(IrohError::hash(err)),
         }
@@ -507,7 +507,7 @@ impl std::fmt::Display for Hash {
     }
 }
 
-impl From<Hash> for iroh::blobs::Hash {
+impl From<Hash> for iroh::bytes::Hash {
     fn from(value: Hash) -> Self {
         value.0
     }
@@ -600,33 +600,31 @@ pub enum AddProgress {
     Abort(AddProgressAbort),
 }
 
-impl From<iroh::blobs::provider::AddProgress> for AddProgress {
-    fn from(value: iroh::blobs::provider::AddProgress) -> Self {
+impl From<iroh::rpc_protocol::AddProgress> for AddProgress {
+    fn from(value: iroh::rpc_protocol::AddProgress) -> Self {
         match value {
-            iroh::blobs::provider::AddProgress::Found { id, name, size } => {
+            iroh::rpc_protocol::AddProgress::Found { id, name, size } => {
                 AddProgress::Found(AddProgressFound { id, name, size })
             }
-            iroh::blobs::provider::AddProgress::Progress { id, offset } => {
+            iroh::rpc_protocol::AddProgress::Progress { id, offset } => {
                 AddProgress::Progress(AddProgressProgress { id, offset })
             }
-            iroh::blobs::provider::AddProgress::Done { id, hash } => {
+            iroh::rpc_protocol::AddProgress::Done { id, hash } => {
                 AddProgress::Done(AddProgressDone {
                     id,
                     hash: Arc::new(hash.into()),
                 })
             }
-            iroh::blobs::provider::AddProgress::AllDone { hash, format, tag } => {
+            iroh::rpc_protocol::AddProgress::AllDone { hash, format, tag } => {
                 AddProgress::AllDone(AddProgressAllDone {
                     hash: Arc::new(hash.into()),
                     format: format.into(),
                     tag: tag.0.to_vec(),
                 })
             }
-            iroh::blobs::provider::AddProgress::Abort(err) => {
-                AddProgress::Abort(AddProgressAbort {
-                    error: err.to_string(),
-                })
-            }
+            iroh::rpc_protocol::AddProgress::Abort(err) => AddProgress::Abort(AddProgressAbort {
+                error: err.to_string(),
+            }),
         }
     }
 }
@@ -691,45 +689,49 @@ pub enum BlobFormat {
     HashSeq,
 }
 
-impl From<iroh::blobs::BlobFormat> for BlobFormat {
-    fn from(value: iroh::blobs::BlobFormat) -> Self {
+impl From<iroh::rpc_protocol::BlobFormat> for BlobFormat {
+    fn from(value: iroh::rpc_protocol::BlobFormat) -> Self {
         match value {
-            iroh::blobs::BlobFormat::Raw => BlobFormat::Raw,
-            iroh::blobs::BlobFormat::HashSeq => BlobFormat::HashSeq,
+            iroh::rpc_protocol::BlobFormat::Raw => BlobFormat::Raw,
+            iroh::rpc_protocol::BlobFormat::HashSeq => BlobFormat::HashSeq,
         }
     }
 }
 
-impl From<BlobFormat> for iroh::blobs::BlobFormat {
+impl From<BlobFormat> for iroh::rpc_protocol::BlobFormat {
     fn from(value: BlobFormat) -> Self {
         match value {
-            BlobFormat::Raw => iroh::blobs::BlobFormat::Raw,
-            BlobFormat::HashSeq => iroh::blobs::BlobFormat::HashSeq,
+            BlobFormat::Raw => iroh::rpc_protocol::BlobFormat::Raw,
+            BlobFormat::HashSeq => iroh::rpc_protocol::BlobFormat::HashSeq,
         }
     }
 }
 
-/// Options to download  data specified by the hash.
-pub struct BlobDownloadOptions(iroh::client::blobs::DownloadOptions);
-impl BlobDownloadOptions {
+/// A request to the node to download and share the data specified by the hash.
+pub struct BlobDownloadRequest(iroh::rpc_protocol::BlobDownloadRequest);
+impl BlobDownloadRequest {
     /// Create a BlobDownloadRequest
     pub fn new(
+        hash: Arc<Hash>,
         format: BlobFormat,
         node: Arc<NodeAddr>,
         tag: Arc<SetTagOption>,
     ) -> Result<Self, IrohError> {
-        Ok(BlobDownloadOptions(iroh::client::blobs::DownloadOptions {
-            format: format.into(),
-            nodes: vec![(*node).clone().try_into()?],
-            tag: (*tag).clone().into(),
-            mode: iroh::client::blobs::DownloadMode::Direct,
-        }))
+        Ok(BlobDownloadRequest(
+            iroh::rpc_protocol::BlobDownloadRequest {
+                hash: hash.0,
+                format: format.into(),
+                nodes: vec![(*node).clone().try_into()?],
+                tag: (*tag).clone().into(),
+                mode: iroh::rpc_protocol::DownloadMode::Direct,
+            },
+        ))
     }
 }
 
-impl From<iroh::client::blobs::DownloadOptions> for BlobDownloadOptions {
-    fn from(value: iroh::client::blobs::DownloadOptions) -> Self {
-        BlobDownloadOptions(value)
+impl From<iroh::rpc_protocol::BlobDownloadRequest> for BlobDownloadRequest {
+    fn from(value: iroh::rpc_protocol::BlobDownloadRequest) -> Self {
+        BlobDownloadRequest(value)
     }
 }
 
@@ -749,11 +751,11 @@ pub enum BlobExportFormat {
     Collection,
 }
 
-impl From<BlobExportFormat> for iroh::blobs::store::ExportFormat {
+impl From<BlobExportFormat> for iroh::bytes::store::ExportFormat {
     fn from(value: BlobExportFormat) -> Self {
         match value {
-            BlobExportFormat::Blob => iroh::blobs::store::ExportFormat::Blob,
-            BlobExportFormat::Collection => iroh::blobs::store::ExportFormat::Collection,
+            BlobExportFormat::Blob => iroh::bytes::store::ExportFormat::Blob,
+            BlobExportFormat::Collection => iroh::bytes::store::ExportFormat::Collection,
         }
     }
 }
@@ -781,11 +783,11 @@ pub enum BlobExportMode {
     TryReference,
 }
 
-impl From<BlobExportMode> for iroh::blobs::store::ExportMode {
+impl From<BlobExportMode> for iroh::bytes::store::ExportMode {
     fn from(value: BlobExportMode) -> Self {
         match value {
-            BlobExportMode::Copy => iroh::blobs::store::ExportMode::Copy,
-            BlobExportMode::TryReference => iroh::blobs::store::ExportMode::TryReference,
+            BlobExportMode::Copy => iroh::bytes::store::ExportMode::Copy,
+            BlobExportMode::TryReference => iroh::bytes::store::ExportMode::TryReference,
         }
     }
 }
@@ -919,15 +921,15 @@ pub enum DownloadProgress {
     Abort(DownloadProgressAbort),
 }
 
-impl From<iroh::blobs::get::db::DownloadProgress> for DownloadProgress {
-    fn from(value: iroh::blobs::get::db::DownloadProgress) -> Self {
+impl From<iroh::rpc_protocol::DownloadProgress> for DownloadProgress {
+    fn from(value: iroh::rpc_protocol::DownloadProgress) -> Self {
         match value {
-            iroh::blobs::get::db::DownloadProgress::InitialState(transfer_state) => {
+            iroh::rpc_protocol::DownloadProgress::InitialState(transfer_state) => {
                 DownloadProgress::InitialState(DownloadProgressInitialState {
                     connected: transfer_state.connected,
                 })
             }
-            iroh::blobs::get::db::DownloadProgress::FoundLocal {
+            iroh::rpc_protocol::DownloadProgress::FoundLocal {
                 child,
                 hash,
                 size,
@@ -939,8 +941,8 @@ impl From<iroh::blobs::get::db::DownloadProgress> for DownloadProgress {
                 size: size.value(),
                 valid_ranges: Arc::new(valid_ranges.into()),
             }),
-            iroh::blobs::get::db::DownloadProgress::Connected => DownloadProgress::Connected,
-            iroh::blobs::get::db::DownloadProgress::Found {
+            iroh::rpc_protocol::DownloadProgress::Connected => DownloadProgress::Connected,
+            iroh::rpc_protocol::DownloadProgress::Found {
                 id,
                 hash,
                 child,
@@ -951,26 +953,26 @@ impl From<iroh::blobs::get::db::DownloadProgress> for DownloadProgress {
                 child: child.into(),
                 size,
             }),
-            iroh::blobs::get::db::DownloadProgress::FoundHashSeq { hash, children } => {
+            iroh::rpc_protocol::DownloadProgress::FoundHashSeq { hash, children } => {
                 DownloadProgress::FoundHashSeq(DownloadProgressFoundHashSeq {
                     hash: Arc::new(hash.into()),
                     children,
                 })
             }
-            iroh::blobs::get::db::DownloadProgress::Progress { id, offset } => {
+            iroh::rpc_protocol::DownloadProgress::Progress { id, offset } => {
                 DownloadProgress::Progress(DownloadProgressProgress { id, offset })
             }
-            iroh::blobs::get::db::DownloadProgress::Done { id } => {
+            iroh::rpc_protocol::DownloadProgress::Done { id } => {
                 DownloadProgress::Done(DownloadProgressDone { id })
             }
-            iroh::blobs::get::db::DownloadProgress::AllDone(stats) => {
+            iroh::rpc_protocol::DownloadProgress::AllDone(stats) => {
                 DownloadProgress::AllDone(DownloadProgressAllDone {
                     bytes_written: stats.bytes_written,
                     bytes_read: stats.bytes_read,
                     elapsed: stats.elapsed,
                 })
             }
-            iroh::blobs::get::db::DownloadProgress::Abort(err) => {
+            iroh::rpc_protocol::DownloadProgress::Abort(err) => {
                 DownloadProgress::Abort(DownloadProgressAbort {
                     error: err.to_string(),
                 })
@@ -1055,7 +1057,7 @@ impl DownloadProgress {
 
 /// A chunk range specification as a sequence of chunk offsets
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct RangeSpec(pub(crate) iroh::blobs::protocol::RangeSpec);
+pub struct RangeSpec(pub(crate) iroh::bytes::protocol::RangeSpec);
 
 impl RangeSpec {
     /// Checks if this [`RangeSpec`] does not select any chunks in the blob
@@ -1069,15 +1071,15 @@ impl RangeSpec {
     }
 }
 
-impl From<iroh::blobs::protocol::RangeSpec> for RangeSpec {
-    fn from(h: iroh::blobs::protocol::RangeSpec) -> Self {
+impl From<iroh::bytes::protocol::RangeSpec> for RangeSpec {
+    fn from(h: iroh::bytes::protocol::RangeSpec) -> Self {
         RangeSpec(h)
     }
 }
 
 /// A response to a list blobs request
 #[derive(Debug, Clone)]
-pub struct BlobInfo {
+pub struct BlobListResponse {
     /// Location of the blob
     pub path: String,
     /// The hash of the blob
@@ -1086,9 +1088,9 @@ pub struct BlobInfo {
     pub size: u64,
 }
 
-impl From<iroh::client::blobs::BlobInfo> for BlobInfo {
-    fn from(value: iroh::client::blobs::BlobInfo) -> Self {
-        BlobInfo {
+impl From<iroh::rpc_protocol::BlobListResponse> for BlobListResponse {
+    fn from(value: iroh::rpc_protocol::BlobListResponse) -> Self {
+        BlobListResponse {
             path: value.path,
             hash: Arc::new(value.hash.into()),
             size: value.size,
@@ -1098,7 +1100,7 @@ impl From<iroh::client::blobs::BlobInfo> for BlobInfo {
 
 /// A response to a list blobs request
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct IncompleteBlobInfo {
+pub struct BlobListIncompleteResponse {
     /// The size we got
     pub size: u64,
     /// The size we expect
@@ -1107,9 +1109,9 @@ pub struct IncompleteBlobInfo {
     pub hash: Arc<Hash>,
 }
 
-impl From<iroh::client::blobs::IncompleteBlobInfo> for IncompleteBlobInfo {
-    fn from(value: iroh::client::blobs::IncompleteBlobInfo) -> Self {
-        IncompleteBlobInfo {
+impl From<iroh::rpc_protocol::BlobListIncompleteResponse> for BlobListIncompleteResponse {
+    fn from(value: iroh::rpc_protocol::BlobListIncompleteResponse) -> Self {
+        BlobListIncompleteResponse {
             size: value.size,
             expected_size: value.expected_size,
             hash: Arc::new(value.hash.into()),
@@ -1119,7 +1121,7 @@ impl From<iroh::client::blobs::IncompleteBlobInfo> for IncompleteBlobInfo {
 
 /// A response to a list collections request
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CollectionInfo {
+pub struct BlobListCollectionsResponse {
     /// Tag of the collection
     pub tag: Vec<u8>,
     /// Hash of the collection
@@ -1134,9 +1136,9 @@ pub struct CollectionInfo {
     pub total_blobs_size: Option<u64>,
 }
 
-impl From<iroh::client::blobs::CollectionInfo> for CollectionInfo {
-    fn from(value: iroh::client::blobs::CollectionInfo) -> Self {
-        CollectionInfo {
+impl From<iroh::rpc_protocol::BlobListCollectionsResponse> for BlobListCollectionsResponse {
+    fn from(value: iroh::rpc_protocol::BlobListCollectionsResponse) -> Self {
+        BlobListCollectionsResponse {
             tag: value.tag.0.to_vec(),
             hash: Arc::new(value.hash.into()),
             total_blobs_count: value.total_blobs_count,
@@ -1147,15 +1149,15 @@ impl From<iroh::client::blobs::CollectionInfo> for CollectionInfo {
 
 /// A collection of blobs
 #[derive(Debug)]
-pub struct Collection(pub(crate) RwLock<iroh::blobs::format::collection::Collection>);
+pub struct Collection(pub(crate) RwLock<iroh::bytes::format::collection::Collection>);
 
-impl From<iroh::blobs::format::collection::Collection> for Collection {
-    fn from(value: iroh::blobs::format::collection::Collection) -> Self {
+impl From<iroh::bytes::format::collection::Collection> for Collection {
+    fn from(value: iroh::bytes::format::collection::Collection) -> Self {
         Collection(RwLock::new(value))
     }
 }
 
-impl From<Collection> for iroh::blobs::format::collection::Collection {
+impl From<Collection> for iroh::bytes::format::collection::Collection {
     fn from(value: Collection) -> Self {
         let col = value.0.read().expect("Collection lock poisoned");
         col.clone()
@@ -1167,7 +1169,7 @@ impl Collection {
     #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Collection(RwLock::new(
-            iroh::blobs::format::collection::Collection::default(),
+            iroh::bytes::format::collection::Collection::default(),
         ))
     }
 
@@ -1244,7 +1246,6 @@ mod tests {
     use super::*;
     use crate::node::IrohNode;
     use crate::NodeOptions;
-    use bytes::Bytes;
     use rand::RngCore;
     use tokio::io::AsyncWriteExt;
     use tracing_subscriber::FmtSubscriber;
@@ -1552,7 +1553,7 @@ mod tests {
 
     async fn build_iroh_core(
         path: &std::path::Path,
-    ) -> iroh::node::Node<iroh::blobs::store::fs::Store> {
+    ) -> iroh::node::Node<iroh::bytes::store::fs::Store> {
         iroh::node::Node::persistent(path)
             .await
             .unwrap()
@@ -1574,27 +1575,27 @@ mod tests {
     }
 
     async fn iroh_core_blobs_add_get_bytes_size(
-        node: &iroh::node::Node<iroh::blobs::store::fs::Store>,
+        node: &iroh::node::Node<iroh::bytes::store::fs::Store>,
         size: usize,
-    ) -> iroh::blobs::Hash {
+    ) -> iroh::bytes::Hash {
         let client = node.client();
         // create bytes
         let mut bytes = vec![0; size];
         rand::thread_rng().fill_bytes(&mut bytes);
-        let bytes: Bytes = bytes.into();
+        let bytes: bytes::Bytes = bytes.into();
         // add blob
-        let add_outcome = client.blobs().add_bytes(bytes.clone()).await.unwrap();
+        let add_outcome = client.blobs.add_bytes(bytes.clone()).await.unwrap();
         // check outcome
-        assert_eq!(add_outcome.format, iroh::blobs::BlobFormat::Raw);
+        assert_eq!(add_outcome.format, iroh::bytes::BlobFormat::Raw);
         assert_eq!(add_outcome.size, size as u64);
         // check size
         let hash = add_outcome.hash;
-        let reader = client.blobs().read(hash).await.unwrap();
+        let reader = client.blobs.read(hash).await.unwrap();
         let got_size = reader.size();
         assert_eq!(got_size, size as u64);
         //
         // get blob
-        let got_bytes = client.blobs().read_to_bytes(hash).await.unwrap();
+        let got_bytes = client.blobs.read_to_bytes(hash).await.unwrap();
         assert_eq!(got_bytes.len(), size);
         assert_eq!(got_bytes, bytes);
         hash
@@ -1619,22 +1620,16 @@ mod tests {
 
         let client = node.client();
         // ensure there are no blobs to start
-        let blobs = client
-            .blobs()
-            .list()
-            .await
-            .unwrap()
-            .collect::<Vec<_>>()
-            .await;
+        let blobs = client.blobs.list().await.unwrap().collect::<Vec<_>>().await;
         assert_eq!(0, blobs.len());
 
         let mut stream = client
-            .blobs()
+            .blobs
             .add_from_path(
                 dir.into_path(),
                 false,
-                iroh::blobs::util::SetTagOption::Auto,
-                iroh::client::blobs::WrapOption::NoWrap,
+                iroh::rpc_protocol::SetTagOption::Auto,
+                iroh::rpc_protocol::WrapOption::NoWrap,
             )
             .await
             .unwrap();
@@ -1646,14 +1641,14 @@ mod tests {
         while let Some(progress) = stream.next().await {
             let progress = progress.unwrap();
             match progress {
-                iroh::blobs::provider::AddProgress::AllDone { hash, format, .. } => {
+                iroh::rpc_protocol::AddProgress::AllDone { hash, format, .. } => {
                     collection_hash = Some(hash);
                     collection_format = Some(format);
                 }
-                iroh::blobs::provider::AddProgress::Abort(err) => {
+                iroh::rpc_protocol::AddProgress::Abort(err) => {
                     panic!("{}", err);
                 }
-                iroh::blobs::provider::AddProgress::Done { hash, .. } => hashes.push(hash),
+                iroh::rpc_protocol::AddProgress::Done { hash, .. } => hashes.push(hash),
                 _ => {}
             }
         }
@@ -1661,11 +1656,12 @@ mod tests {
         let collection_hash = collection_hash.unwrap();
         let collection_format = collection_format.unwrap();
 
-        assert_eq!(iroh::blobs::BlobFormat::HashSeq, collection_format);
+        assert_eq!(iroh::rpc_protocol::BlobFormat::HashSeq, collection_format);
 
         let collections = client
-            .blobs()
+            .blobs
             .list_collections()
+            .await
             .unwrap()
             .try_collect::<Vec<_>>()
             .await
