@@ -63,7 +63,7 @@ impl IrohNode {
         block_on(&self.rt(), async {
             let author = self
                 .sync_client
-                .authors()
+                .authors
                 .create()
                 .await
                 .map_err(IrohError::author)?;
@@ -82,7 +82,7 @@ impl IrohNode {
         block_on(&self.rt(), async {
             let author = self
                 .sync_client
-                .authors()
+                .authors
                 .default()
                 .await
                 .map_err(IrohError::author)?;
@@ -95,7 +95,7 @@ impl IrohNode {
         block_on(&self.rt(), async {
             let authors = self
                 .sync_client
-                .authors()
+                .authors
                 .list()
                 .await
                 .map_err(IrohError::author)?
@@ -114,7 +114,7 @@ impl IrohNode {
         block_on(&self.rt(), async {
             let author = self
                 .sync_client
-                .authors()
+                .authors
                 .export(author.0)
                 .await
                 .map_err(IrohError::author)?;
@@ -133,7 +133,7 @@ impl IrohNode {
     pub fn author_import(&self, author: Arc<Author>) -> Result<Arc<AuthorId>, IrohError> {
         block_on(&self.rt(), async {
             self.sync_client
-                .authors()
+                .authors
                 .import(author.0.clone())
                 .await
                 .map_err(IrohError::author)?;
@@ -147,7 +147,7 @@ impl IrohNode {
     pub fn author_delete(&self, author: Arc<AuthorId>) -> Result<(), IrohError> {
         block_on(&self.rt(), async {
             self.sync_client
-                .authors()
+                .authors
                 .delete(author.0)
                 .await
                 .map_err(IrohError::author)?;
