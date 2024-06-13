@@ -17,7 +17,7 @@ impl std::fmt::Display for AuthorId {
 impl AuthorId {
     /// Get an [`AuthorId`] from a String.
     pub fn from_string(str: String) -> Result<Self, IrohError> {
-        let author = iroh::docs::AuthorId::from_str(&str).map_err(IrohError::author)?;
+        let author = iroh::docs::AuthorId::from_str(&str)?;
         Ok(AuthorId(author))
     }
 
@@ -36,7 +36,7 @@ pub struct Author(pub(crate) iroh::docs::Author);
 impl Author {
     /// Get an [`Author`] from a String
     pub fn from_string(str: String) -> Result<Self, IrohError> {
-        let author = iroh::docs::Author::from_str(&str).map_err(IrohError::author)?;
+        let author = iroh::docs::Author::from_str(&str)?;
         Ok(Author(author))
     }
 
@@ -61,12 +61,7 @@ impl IrohNode {
     /// If you need only a single author, use [`Self::default`].
     pub fn author_create(&self) -> Result<Arc<AuthorId>, IrohError> {
         block_on(&self.rt(), async {
-            let author = self
-                .sync_client
-                .authors()
-                .create()
-                .await
-                .map_err(IrohError::author)?;
+            let author = self.sync_client.authors().create().await?;
 
             Ok(Arc::new(AuthorId(author)))
         })
@@ -80,12 +75,7 @@ impl IrohNode {
     /// The default author can be set with [`Self::set_default`].
     pub fn author_default(&self) -> Result<Arc<AuthorId>, IrohError> {
         block_on(&self.rt(), async {
-            let author = self
-                .sync_client
-                .authors()
-                .default()
-                .await
-                .map_err(IrohError::author)?;
+            let author = self.sync_client.authors().default().await?;
             Ok(Arc::new(AuthorId(author)))
         })
     }
@@ -97,12 +87,10 @@ impl IrohNode {
                 .sync_client
                 .authors()
                 .list()
-                .await
-                .map_err(IrohError::author)?
+                .await?
                 .map_ok(|id| Arc::new(AuthorId(id)))
                 .try_collect::<Vec<_>>()
-                .await
-                .map_err(IrohError::author)?;
+                .await?;
             Ok(authors)
         })
     }
@@ -112,17 +100,10 @@ impl IrohNode {
     /// Warning: This contains sensitive data.
     pub fn author_export(&self, author: Arc<AuthorId>) -> Result<Arc<Author>, IrohError> {
         block_on(&self.rt(), async {
-            let author = self
-                .sync_client
-                .authors()
-                .export(author.0)
-                .await
-                .map_err(IrohError::author)?;
+            let author = self.sync_client.authors().export(author.0).await?;
             match author {
                 Some(author) => Ok(Arc::new(Author(author))),
-                None => Err(IrohError::Author {
-                    description: String::from("Author Not Found"),
-                }),
+                None => Err(anyhow::anyhow!("Author Not Found").into()),
             }
         })
     }
@@ -132,11 +113,7 @@ impl IrohNode {
     /// Warning: This contains sensitive data.
     pub fn author_import(&self, author: Arc<Author>) -> Result<Arc<AuthorId>, IrohError> {
         block_on(&self.rt(), async {
-            self.sync_client
-                .authors()
-                .import(author.0.clone())
-                .await
-                .map_err(IrohError::author)?;
+            self.sync_client.authors().import(author.0.clone()).await?;
             Ok(Arc::new(AuthorId(author.0.id())))
         })
     }
@@ -146,11 +123,7 @@ impl IrohNode {
     /// Warning: This permanently removes this author.
     pub fn author_delete(&self, author: Arc<AuthorId>) -> Result<(), IrohError> {
         block_on(&self.rt(), async {
-            self.sync_client
-                .authors()
-                .delete(author.0)
-                .await
-                .map_err(IrohError::author)?;
+            self.sync_client.authors().delete(author.0).await?;
             Ok(())
         })
     }

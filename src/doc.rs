@@ -28,12 +28,7 @@ impl IrohNode {
     /// Create a new doc.
     pub fn doc_create(&self) -> Result<Arc<Doc>, IrohError> {
         block_on(&self.rt(), async {
-            let doc = self
-                .sync_client
-                .docs()
-                .create()
-                .await
-                .map_err(IrohError::doc)?;
+            let doc = self.sync_client.docs().create().await?;
 
             Ok(Arc::new(Doc {
                 inner: doc,
@@ -45,14 +40,8 @@ impl IrohNode {
     /// Join and sync with an already existing document.
     pub fn doc_join(&self, ticket: String) -> Result<Arc<Doc>, IrohError> {
         block_on(&self.rt(), async {
-            let ticket = iroh::docs::DocTicket::from_str(&ticket).map_err(IrohError::doc_ticket)?;
-            let doc = self
-                .sync_client
-                .docs()
-                .import(ticket)
-                .await
-                .map_err(IrohError::doc)?;
-
+            let ticket = iroh::docs::DocTicket::from_str(&ticket).map_err(anyhow::Error::from)?;
+            let doc = self.sync_client.docs().import(ticket).await?;
             Ok(Arc::new(Doc {
                 inner: doc,
                 rt: self.rt().clone(),
@@ -67,12 +56,8 @@ impl IrohNode {
         cb: Box<dyn SubscribeCallback>,
     ) -> Result<Arc<Doc>, IrohError> {
         let (doc, mut stream) = block_on(&self.rt(), async {
-            let ticket = iroh::docs::DocTicket::from_str(&ticket).map_err(IrohError::doc_ticket)?;
-            self.sync_client
-                .docs()
-                .import_and_subscribe(ticket)
-                .await
-                .map_err(IrohError::doc)
+            let ticket = iroh::docs::DocTicket::from_str(&ticket)?;
+            self.sync_client.docs().import_and_subscribe(ticket).await
         })?;
 
         self.rt().spawn(async move {
@@ -103,15 +88,13 @@ impl IrohNode {
                 .sync_client
                 .docs()
                 .list()
-                .await
-                .map_err(IrohError::doc)?
+                .await?
                 .map_ok(|(namespace, capability)| NamespaceAndCapability {
                     namespace: namespace.to_string(),
                     capability: capability.into(),
                 })
                 .try_collect::<Vec<_>>()
-                .await
-                .map_err(IrohError::doc)?;
+                .await?;
 
             Ok(docs)
         })
@@ -121,14 +104,10 @@ impl IrohNode {
     ///
     /// Returns None if the document cannot be found.
     pub fn doc_open(&self, id: String) -> Result<Option<Arc<Doc>>, IrohError> {
-        let namespace_id = iroh::docs::NamespaceId::from_str(&id).map_err(IrohError::namespace)?;
+        let namespace_id = iroh::docs::NamespaceId::from_str(&id)?;
         block_on(&self.rt(), async {
-            let doc = self
-                .sync_client
-                .docs()
-                .open(namespace_id)
-                .await
-                .map_err(IrohError::doc)?;
+            let doc = self.sync_client.docs().open(namespace_id).await?;
+
             Ok(doc.map(|d| {
                 Arc::new(Doc {
                     inner: d,
@@ -144,13 +123,13 @@ impl IrohNode {
     /// document will be permanently deleted from the node's storage. Content blobs will be deleted
     /// through garbage collection unless they are referenced from another document or tag.
     pub fn doc_drop(&self, doc_id: String) -> Result<(), IrohError> {
-        let doc_id = iroh::docs::NamespaceId::from_str(&doc_id).map_err(IrohError::namespace)?;
+        let doc_id = iroh::docs::NamespaceId::from_str(&doc_id)?;
         block_on(&self.rt(), async {
             self.sync_client
                 .docs()
                 .drop_doc(doc_id)
                 .await
-                .map_err(IrohError::doc)
+                .map_err(IrohError::from)
         })
     }
 }
@@ -179,7 +158,7 @@ impl Doc {
     /// Close the document.
     pub fn close(&self) -> Result<(), IrohError> {
         block_on(&self.rt, async {
-            self.inner.close().await.map_err(IrohError::doc)
+            self.inner.close().await.map_err(IrohError::from)
         })
     }
 
@@ -191,11 +170,7 @@ impl Doc {
         value: Vec<u8>,
     ) -> Result<Arc<Hash>, IrohError> {
         block_on(&self.rt, async {
-            let hash = self
-                .inner
-                .set_bytes(author_id.0, key, value)
-                .await
-                .map_err(IrohError::doc)?;
+            let hash = self.inner.set_bytes(author_id.0, key, value).await?;
             Ok(Arc::new(Hash(hash)))
         })
     }
@@ -209,10 +184,7 @@ impl Doc {
         size: u64,
     ) -> Result<(), IrohError> {
         block_on(&self.rt, async {
-            self.inner
-                .set_hash(author_id.0, key, hash.0, size)
-                .await
-                .map_err(IrohError::doc)?;
+            self.inner.set_hash(author_id.0, key, hash.0, size).await?;
             Ok(())
         })
     }
@@ -230,10 +202,10 @@ impl Doc {
             let mut stream = self
                 .inner
                 .import_file(author.0, Bytes::from(key), PathBuf::from(path), in_place)
-                .await
-                .map_err(IrohError::doc)?;
+                .await?;
+
             while let Some(progress) = stream.next().await {
-                let progress = progress.map_err(IrohError::doc)?;
+                let progress = progress?;
                 if let Some(ref cb) = cb {
                     cb.progress(Arc::new(progress.into()))?;
                 }
@@ -258,10 +230,9 @@ impl Doc {
                     // TODO(b5) - plumb up the export mode, currently it's always copy
                     iroh::blobs::store::ExportMode::Copy,
                 )
-                .await
-                .map_err(IrohError::doc)?;
+                .await?;
             while let Some(progress) = stream.next().await {
-                let progress = progress.map_err(IrohError::doc)?;
+                let progress = progress?;
                 if let Some(ref cb) = cb {
                     cb.progress(Arc::new(progress.into()))?
                 }
@@ -278,12 +249,9 @@ impl Doc {
     /// Returns the number of entries deleted.
     pub fn del(&self, author_id: Arc<AuthorId>, prefix: Vec<u8>) -> Result<u64, IrohError> {
         block_on(&self.rt, async {
-            let num_del = self
-                .inner
-                .del(author_id.0, prefix)
-                .await
-                .map_err(IrohError::doc)?;
-            u64::try_from(num_del).map_err(IrohError::doc)
+            let num_del = self.inner.del(author_id.0, prefix).await?;
+
+            u64::try_from(num_del).map_err(|e| anyhow::Error::from(e).into())
         })
     }
 
@@ -299,7 +267,7 @@ impl Doc {
                 .get_exact(author.0, key, include_empty)
                 .await
                 .map(|e| e.map(|e| Arc::new(e.into())))
-                .map_err(IrohError::doc)
+                .map_err(IrohError::from)
         })
     }
 
@@ -312,12 +280,10 @@ impl Doc {
             let entries = self
                 .inner
                 .get_many(query.0.clone())
-                .await
-                .map_err(IrohError::doc)?
+                .await?
                 .map_ok(|e| Arc::new(Entry(e)))
                 .try_collect::<Vec<_>>()
-                .await
-                .map_err(IrohError::doc)?;
+                .await?;
             Ok(entries)
         })
     }
@@ -325,11 +291,12 @@ impl Doc {
     /// Get the latest entry for a key and author.
     pub fn get_one(&self, query: Arc<Query>) -> Result<Option<Arc<Entry>>, IrohError> {
         block_on(&self.rt, async {
-            self.inner
+            let res = self
+                .inner
                 .get_one((*query).clone().0)
                 .await
-                .map(|e| e.map(|e| Arc::new(e.into())))
-                .map_err(IrohError::doc)
+                .map(|e| e.map(|e| Arc::new(e.into())))?;
+            Ok(res)
         })
     }
 
@@ -340,33 +307,36 @@ impl Doc {
         addr_options: AddrInfoOptions,
     ) -> Result<String, IrohError> {
         block_on(&self.rt, async {
-            self.inner
+            let res = self
+                .inner
                 .share(mode.into(), addr_options.into())
                 .await
-                .map(|ticket| ticket.to_string())
-                .map_err(IrohError::doc)
+                .map(|ticket| ticket.to_string())?;
+            Ok(res)
         })
     }
 
     /// Start to sync this document with a list of peers.
     pub fn start_sync(&self, peers: Vec<Arc<NodeAddr>>) -> Result<(), IrohError> {
         block_on(&self.rt, async {
-            self.inner
+            let res = self
+                .inner
                 .start_sync(
                     peers
                         .into_iter()
                         .map(|p| (*p).clone().try_into())
                         .collect::<Result<Vec<_>, IrohError>>()?,
                 )
-                .await
-                .map_err(IrohError::doc)
+                .await?;
+            Ok(res)
         })
     }
 
     /// Stop the live sync for this document.
     pub fn leave(&self) -> Result<(), IrohError> {
         block_on(&self.rt, async {
-            self.inner.leave().await.map_err(IrohError::doc)
+            self.inner.leave().await?;
+            Ok(())
         })
     }
 
@@ -395,32 +365,31 @@ impl Doc {
     /// Get status info for this document
     pub fn status(&self) -> Result<OpenState, IrohError> {
         block_on(&self.rt, async {
-            self.inner
-                .status()
-                .await
-                .map(|o| o.into())
-                .map_err(IrohError::doc)
+            let res = self.inner.status().await.map(|o| o.into())?;
+            Ok(res)
         })
     }
 
     /// Set the download policy for this document
     pub fn set_download_policy(&self, policy: Arc<DownloadPolicy>) -> Result<(), IrohError> {
         block_on(&self.rt, async {
-            self.inner
+            let res = self
+                .inner
                 .set_download_policy((*policy).clone().into())
-                .await
-                .map_err(IrohError::doc)
+                .await?;
+            Ok(res)
         })
     }
 
     /// Get the download policy for this document
     pub fn get_download_policy(&self) -> Result<Arc<DownloadPolicy>, IrohError> {
         block_on(&self.rt, async {
-            self.inner
+            let res = self
+                .inner
                 .get_download_policy()
                 .await
-                .map(|policy| Arc::new(policy.into()))
-                .map_err(IrohError::doc)
+                .map(|policy| Arc::new(policy.into()))?;
+            Ok(res)
         })
     }
 }
@@ -579,11 +548,13 @@ impl TryFrom<NodeAddr> for iroh::net::endpoint::NodeAddr {
         let addresses = value
             .direct_addresses()
             .into_iter()
-            .map(|addr| std::net::SocketAddr::from_str(&addr).map_err(IrohError::socket_addr))
+            .map(|addr| {
+                std::net::SocketAddr::from_str(&addr).map_err(|e| anyhow::Error::from(e).into())
+            })
             .collect::<Result<Vec<_>, IrohError>>()?;
 
         if let Some(derp_url) = value.relay_url() {
-            let url = url::Url::parse(&derp_url).map_err(IrohError::url)?;
+            let url = url::Url::parse(&derp_url).map_err(anyhow::Error::from)?;
 
             node_addr = node_addr.with_relay_url(url.into());
         }
@@ -676,11 +647,8 @@ impl Entry {
     /// before calling [`Self::content_bytes`].
     pub fn content_bytes(&self, doc: Arc<Doc>) -> Result<Vec<u8>, IrohError> {
         block_on(&doc.rt, async {
-            self.0
-                .content_bytes(&doc.inner)
-                .await
-                .map(|c| c.to_vec())
-                .map_err(IrohError::entry)
+            let res = self.0.content_bytes(&doc.inner).await.map(|c| c.to_vec())?;
+            Ok(res)
         })
     }
 }
@@ -953,7 +921,7 @@ impl Query {
 /// emitted during a `node.doc_subscribe`. Use the `SubscribeProgress.type()`
 /// method to check the `LiveEvent`
 pub trait SubscribeCallback: Send + Sync + 'static {
-    fn event(&self, event: Arc<LiveEvent>) -> Result<(), IrohError>;
+    fn event(&self, event: Arc<LiveEvent>) -> Result<(), Arc<IrohError>>;
 }
 
 /// Events informing about actions of the live sync progress
@@ -1564,11 +1532,11 @@ mod tests {
             found_s: std::sync::mpsc::Sender<Result<Hash, IrohError>>,
         }
         impl SubscribeCallback for Callback {
-            fn event(&self, event: Arc<LiveEvent>) -> Result<(), IrohError> {
+            fn event(&self, event: Arc<LiveEvent>) -> Result<(), Arc<IrohError>> {
                 if let LiveEvent::ContentReady { ref hash } = *event {
                     self.found_s
                         .send(Ok(hash.clone()))
-                        .map_err(IrohError::doc)?;
+                        .map_err(|e| Arc::new(anyhow::Error::from(e).into()))?;
                 }
                 Ok(())
             }

@@ -250,15 +250,12 @@ impl IrohNode {
             .thread_name("main-runtime")
             .worker_threads(2)
             .enable_all()
-            .build()
-            .map_err(IrohError::runtime)?;
+            .build().map_err(anyhow::Error::from)?;
         let rt = tokio_rt.handle().clone();
 
         let path = PathBuf::from(path);
         let node = block_on(&rt, async move {
-            Self::new_inner(path, options, Some(tokio_rt))
-                .await
-                .map_err(IrohError::node_create)
+            Self::new_inner(path, options, Some(tokio_rt)).await
         })?;
 
         Ok(node)
@@ -288,7 +285,7 @@ impl IrohNode {
     /// Get statistics of the running node.
     pub fn stats(&self) -> Result<HashMap<String, CounterStats>, IrohError> {
         block_on(&self.rt(), async {
-            let stats = self.sync_client.stats().await.map_err(IrohError::doc)?;
+            let stats = self.sync_client.stats().await?;
             Ok(stats
                 .into_iter()
                 .map(|(k, v)| {
@@ -310,12 +307,10 @@ impl IrohNode {
             let infos = self
                 .sync_client
                 .connections()
-                .await
-                .map_err(IrohError::connection)?
+                .await?
                 .map_ok(|info| info.into())
                 .try_collect::<Vec<_>>()
-                .await
-                .map_err(IrohError::connection)?;
+                .await?;
             Ok(infos)
         })
     }
@@ -330,8 +325,7 @@ impl IrohNode {
                 .sync_client
                 .connection_info(node_id.into())
                 .await
-                .map(|i| i.map(|i| i.into()))
-                .map_err(IrohError::connection)?;
+                .map(|i| i.map(|i| i.into()))?;
             Ok(info)
         })
     }
@@ -339,11 +333,12 @@ impl IrohNode {
     /// Get status information about a node
     pub fn status(&self) -> Result<Arc<NodeStatus>, IrohError> {
         block_on(&self.rt(), async {
-            self.sync_client
+            let res = self
+                .sync_client
                 .status()
                 .await
-                .map(|n| Arc::new(n.into()))
-                .map_err(IrohError::connection)
+                .map(|n| Arc::new(n.into()))?;
+            Ok(res)
         })
     }
 }

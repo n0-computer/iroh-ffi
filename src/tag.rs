@@ -35,12 +35,10 @@ impl IrohNode {
                 .sync_client
                 .tags()
                 .list()
-                .await
-                .map_err(IrohError::tags)?
+                .await?
                 .map_ok(|l| l.into())
                 .try_collect::<Vec<_>>()
-                .await
-                .map_err(IrohError::tags)?;
+                .await?;
             Ok(tags)
         })
     }
@@ -49,11 +47,8 @@ impl IrohNode {
     pub fn tags_delete(&self, name: Vec<u8>) -> Result<(), IrohError> {
         let tag = iroh::blobs::Tag(Bytes::from(name));
         block_on(&self.rt(), async {
-            self.sync_client
-                .tags()
-                .delete(tag)
-                .await
-                .map_err(IrohError::tags)
+            self.sync_client.tags().delete(tag).await?;
+            Ok(())
         })
     }
 }

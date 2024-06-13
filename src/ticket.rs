@@ -11,8 +11,7 @@ use crate::error::IrohError;
 pub struct BlobTicket(iroh::base::ticket::BlobTicket);
 impl BlobTicket {
     pub fn new(str: String) -> Result<Self, IrohError> {
-        let ticket =
-            iroh::base::ticket::BlobTicket::from_str(&str).map_err(IrohError::blob_ticket)?;
+        let ticket = iroh::base::ticket::BlobTicket::from_str(&str).map_err(anyhow::Error::from)?;
         Ok(BlobTicket(ticket))
     }
 

@@ -1293,28 +1293,8 @@ dictionary CollectionInfo {
   u64? total_blobs_size;
 };
 
-/// An iroh error. Each IrohError contains a string description.
-[Error]
+/// An iroh error.
+[Traits=(Debug)]
 interface IrohError {
-  Runtime(string description);
-  NodeCreate(string description);
-  Doc(string description);
-  Author(string description);
-  Namespace(string description);
-  DocTicket(string description);
-  BlobTicket(string description);
-  Uniffi(string description);
-  Connection(string description);
-  Blobs(string description);
-  Collection(string description);
-  Ipv4Addr(string description);
-  Ipv6Addr(string description);
-  SocketAddr(string description);
-  PublicKey(string description);
-  NodeAddr(string description);
-  Hash(string description);
-  FsUtil(string description);
-  Tags(string description);
-  Url(string description);
-  Entry(string description);
+  string message();
 };

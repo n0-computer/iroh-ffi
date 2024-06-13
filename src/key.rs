@@ -39,24 +39,18 @@ impl PublicKey {
 
     /// Make a PublicKey from base32 string
     pub fn from_string(s: String) -> Result<Self, IrohError> {
-        match iroh::net::key::PublicKey::from_str(&s) {
-            Ok(key) => Ok(key.into()),
-            Err(err) => Err(IrohError::public_key(err)),
-        }
+        let key = iroh::net::key::PublicKey::from_str(&s).map_err(anyhow::Error::from)?;
+        Ok(key.into())
     }
 
     /// Make a PublicKey from byte array
     pub fn from_bytes(bytes: Vec<u8>) -> Result<Self, IrohError> {
         if bytes.len() != 32 {
-            return Err(IrohError::PublicKey {
-                description: "the PublicKey must be 32 bytes in length".into(),
-            });
+            return Err(anyhow::anyhow!("the PublicKey must be 32 bytes in length").into());
         }
         let bytes: [u8; 32] = bytes.try_into().expect("checked above");
-        match iroh::net::key::PublicKey::from_bytes(&bytes) {
-            Ok(key) => Ok(key.into()),
-            Err(err) => Err(IrohError::public_key(err)),
-        }
+        let key = iroh::net::key::PublicKey::from_bytes(&bytes).map_err(anyhow::Error::from)?;
+        Ok(key.into())
     }
 
     /// Convert to a base32 string limited to the first 10 bytes for a friendly string
