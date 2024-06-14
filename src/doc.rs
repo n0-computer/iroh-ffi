@@ -53,7 +53,7 @@ impl IrohNode {
     pub fn doc_join_and_subscribe(
         &self,
         ticket: String,
-        cb: Box<dyn SubscribeCallback>,
+        cb: Arc<dyn SubscribeCallback>,
     ) -> Result<Arc<Doc>, IrohError> {
         let (doc, mut stream) = block_on(&self.rt(), async {
             let ticket = iroh::docs::DocTicket::from_str(&ticket)?;
@@ -196,7 +196,7 @@ impl Doc {
         key: Vec<u8>,
         path: String,
         in_place: bool,
-        cb: Option<Box<dyn DocImportFileCallback>>,
+        cb: Option<Arc<dyn DocImportFileCallback>>,
     ) -> Result<(), IrohError> {
         block_on(&self.rt, async {
             let mut stream = self
@@ -207,7 +207,7 @@ impl Doc {
             while let Some(progress) = stream.next().await {
                 let progress = progress?;
                 if let Some(ref cb) = cb {
-                    cb.progress(Arc::new(progress.into()))?;
+                    cb.progress(Arc::new(progress.into())).unwrap(); // TODO
                 }
             }
             Ok(())
@@ -219,7 +219,7 @@ impl Doc {
         &self,
         entry: Arc<Entry>,
         path: String,
-        cb: Option<Box<dyn DocExportFileCallback>>,
+        cb: Option<Arc<dyn DocExportFileCallback>>,
     ) -> Result<(), IrohError> {
         block_on(&self.rt, async {
             let mut stream = self
@@ -234,7 +234,7 @@ impl Doc {
             while let Some(progress) = stream.next().await {
                 let progress = progress?;
                 if let Some(ref cb) = cb {
-                    cb.progress(Arc::new(progress.into()))?
+                    cb.progress(Arc::new(progress.into())).unwrap(); // TODO
                 }
             }
             Ok(())
@@ -341,7 +341,7 @@ impl Doc {
     }
 
     /// Subscribe to events for this document.
-    pub fn subscribe(&self, cb: Box<dyn SubscribeCallback>) -> Result<(), IrohError> {
+    pub fn subscribe(&self, cb: Arc<dyn SubscribeCallback>) -> Result<(), IrohError> {
         let client = self.inner.clone();
         self.rt.spawn(async move {
             let mut sub = client.subscribe().await.unwrap();
@@ -1182,7 +1182,7 @@ impl From<iroh::docs::ContentStatus> for ContentStatus {
 /// emitted during a `doc.import_file()` call. Use the `DocImportProgress.type()`
 /// method to check the `DocImportProgressType`
 pub trait DocImportFileCallback: Send + Sync + 'static {
-    fn progress(&self, progress: Arc<DocImportProgress>) -> Result<(), IrohError>;
+    fn progress(&self, progress: Arc<DocImportProgress>) -> Result<(), Arc<IrohError>>;
 }
 
 /// The type of `DocImportProgress` event
@@ -1346,7 +1346,7 @@ impl DocImportProgress {
 /// emitted during a `doc.export_file()` call. Use the `DocExportProgress.type()`
 /// method to check the `DocExportProgressType`
 pub trait DocExportFileCallback: Send + Sync + 'static {
-    fn progress(&self, progress: Arc<DocExportProgress>) -> Result<(), IrohError>;
+    fn progress(&self, progress: Arc<DocExportProgress>) -> Result<(), Arc<IrohError>>;
 }
 
 /// The type of `DocExportProgress` event
@@ -1542,7 +1542,7 @@ mod tests {
             }
         }
         let cb = Callback { found_s };
-        doc_0.subscribe(Box::new(cb)).unwrap();
+        doc_0.subscribe(Arc::new(cb)).unwrap();
 
         // join the same doc from node_1
         let doc_1 = node_1.doc_join(ticket).unwrap();

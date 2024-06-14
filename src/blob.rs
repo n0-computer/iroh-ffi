@@ -95,7 +95,7 @@ impl IrohNode {
         in_place: bool,
         tag: Arc<SetTagOption>,
         wrap: Arc<WrapOption>,
-        cb: Box<dyn AddCallback>,
+        cb: Arc<dyn AddCallback>,
     ) -> Result<(), IrohError> {
         block_on(&self.rt(), async {
             let mut stream = self
@@ -150,7 +150,7 @@ impl IrohNode {
         &self,
         hash: Arc<Hash>,
         opts: Arc<BlobDownloadOptions>,
-        cb: Box<dyn DownloadCallback>,
+        cb: Arc<dyn DownloadCallback>,
     ) -> Result<(), IrohError> {
         block_on(&self.rt(), async {
             let mut stream = self
@@ -1328,7 +1328,7 @@ mod tests {
             false,
             Arc::new(tag),
             Arc::new(wrap),
-            Box::new(cb),
+            Arc::new(cb),
         )
         .unwrap();
 
@@ -1426,7 +1426,7 @@ mod tests {
             false,
             Arc::new(SetTagOption::Auto),
             Arc::new(WrapOption::NoWrap),
-            Box::new(cb),
+            Arc::new(cb),
         )
         .unwrap();
 

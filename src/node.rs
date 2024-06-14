@@ -250,7 +250,8 @@ impl IrohNode {
             .thread_name("main-runtime")
             .worker_threads(2)
             .enable_all()
-            .build().map_err(anyhow::Error::from)?;
+            .build()
+            .map_err(anyhow::Error::from)?;
         let rt = tokio_rt.handle().clone();
 
         let path = PathBuf::from(path);
