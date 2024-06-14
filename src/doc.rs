@@ -207,7 +207,7 @@ impl Doc {
             while let Some(progress) = stream.next().await {
                 let progress = progress?;
                 if let Some(ref cb) = cb {
-                    cb.progress(Arc::new(progress.into())).unwrap(); // TODO
+                    cb.progress(Arc::new(progress.into()))?;
                 }
             }
             Ok(())
@@ -234,7 +234,7 @@ impl Doc {
             while let Some(progress) = stream.next().await {
                 let progress = progress?;
                 if let Some(ref cb) = cb {
-                    cb.progress(Arc::new(progress.into())).unwrap(); // TODO
+                    cb.progress(Arc::new(progress.into()))?;
                 }
             }
             Ok(())
@@ -319,8 +319,7 @@ impl Doc {
     /// Start to sync this document with a list of peers.
     pub fn start_sync(&self, peers: Vec<Arc<NodeAddr>>) -> Result<(), IrohError> {
         block_on(&self.rt, async {
-            let res = self
-                .inner
+            self.inner
                 .start_sync(
                     peers
                         .into_iter()
@@ -328,7 +327,7 @@ impl Doc {
                         .collect::<Result<Vec<_>, IrohError>>()?,
                 )
                 .await?;
-            Ok(res)
+            Ok(())
         })
     }
 
@@ -373,11 +372,10 @@ impl Doc {
     /// Set the download policy for this document
     pub fn set_download_policy(&self, policy: Arc<DownloadPolicy>) -> Result<(), IrohError> {
         block_on(&self.rt, async {
-            let res = self
-                .inner
+            self.inner
                 .set_download_policy((*policy).clone().into())
                 .await?;
-            Ok(res)
+            Ok(())
         })
     }
 
@@ -921,7 +919,7 @@ impl Query {
 /// emitted during a `node.doc_subscribe`. Use the `SubscribeProgress.type()`
 /// method to check the `LiveEvent`
 pub trait SubscribeCallback: Send + Sync + 'static {
-    fn event(&self, event: Arc<LiveEvent>) -> Result<(), Arc<IrohError>>;
+    fn event(&self, event: Arc<LiveEvent>) -> Result<(), IrohError>;
 }
 
 /// Events informing about actions of the live sync progress
@@ -1182,7 +1180,7 @@ impl From<iroh::docs::ContentStatus> for ContentStatus {
 /// emitted during a `doc.import_file()` call. Use the `DocImportProgress.type()`
 /// method to check the `DocImportProgressType`
 pub trait DocImportFileCallback: Send + Sync + 'static {
-    fn progress(&self, progress: Arc<DocImportProgress>) -> Result<(), Arc<IrohError>>;
+    fn progress(&self, progress: Arc<DocImportProgress>) -> Result<(), IrohError>;
 }
 
 /// The type of `DocImportProgress` event
@@ -1346,7 +1344,7 @@ impl DocImportProgress {
 /// emitted during a `doc.export_file()` call. Use the `DocExportProgress.type()`
 /// method to check the `DocExportProgressType`
 pub trait DocExportFileCallback: Send + Sync + 'static {
-    fn progress(&self, progress: Arc<DocExportProgress>) -> Result<(), Arc<IrohError>>;
+    fn progress(&self, progress: Arc<DocExportProgress>) -> Result<(), IrohError>;
 }
 
 /// The type of `DocExportProgress` event
@@ -1532,11 +1530,11 @@ mod tests {
             found_s: std::sync::mpsc::Sender<Result<Hash, IrohError>>,
         }
         impl SubscribeCallback for Callback {
-            fn event(&self, event: Arc<LiveEvent>) -> Result<(), Arc<IrohError>> {
+            fn event(&self, event: Arc<LiveEvent>) -> Result<(), IrohError> {
                 if let LiveEvent::ContentReady { ref hash } = *event {
                     self.found_s
                         .send(Ok(hash.clone()))
-                        .map_err(|e| Arc::new(anyhow::Error::from(e).into()))?;
+                        .map_err(|e| anyhow::Error::from(e))?;
                 }
                 Ok(())
             }

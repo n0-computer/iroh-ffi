@@ -110,7 +110,7 @@ impl IrohNode {
                 .await?;
             while let Some(progress) = stream.next().await {
                 let progress = progress?;
-                cb.progress(Arc::new(progress.into())).unwrap(); // TODO
+                cb.progress(Arc::new(progress.into()))?;
             }
             Ok(())
         })
@@ -160,7 +160,7 @@ impl IrohNode {
                 .await?;
             while let Some(progress) = stream.next().await {
                 let progress = progress?;
-                cb.progress(Arc::new(progress.into())).unwrap(); // TODO
+                cb.progress(Arc::new(progress.into()))?;
             }
             Ok(())
         })
@@ -481,7 +481,7 @@ impl From<Hash> for iroh::blobs::Hash {
 /// emitted during a `node.blobs_add_from_path`. Use the `AddProgress.type()`
 /// method to check the `AddProgressType`
 pub trait AddCallback: Send + Sync + 'static {
-    fn progress(&self, progress: Arc<AddProgress>) -> Result<(), Arc<IrohError>>;
+    fn progress(&self, progress: Arc<AddProgress>) -> Result<(), IrohError>;
 }
 
 /// The different types of AddProgress events
@@ -758,7 +758,7 @@ impl From<BlobExportMode> for iroh::blobs::store::ExportMode {
 /// a `node.blobs_download`. Use the `DownloadProgress.type()` method to check the
 /// `DownloadProgressType` of the event.
 pub trait DownloadCallback: Send + Sync + 'static {
-    fn progress(&self, progress: Arc<DownloadProgress>) -> Result<(), Arc<IrohError>>;
+    fn progress(&self, progress: Arc<DownloadProgress>) -> Result<(), IrohError>;
 }
 
 /// The different types of DownloadProgress events
@@ -1304,7 +1304,7 @@ mod tests {
         }
 
         impl AddCallback for Callback {
-            fn progress(&self, progress: Arc<AddProgress>) -> Result<(), Arc<IrohError>> {
+            fn progress(&self, progress: Arc<AddProgress>) -> Result<(), IrohError> {
                 match *progress {
                     AddProgress::AllDone(ref d) => {
                         let mut output = self.output.lock().unwrap();
@@ -1312,7 +1312,7 @@ mod tests {
                         output.format = Some(d.format.clone());
                     }
                     AddProgress::Abort(ref a) => {
-                        return Err(Arc::new(anyhow::anyhow!("{}", a.error).into()));
+                        return Err(anyhow::anyhow!("{}", a.error).into());
                     }
                     _ => {}
                 }
@@ -1397,7 +1397,7 @@ mod tests {
         }
 
         impl AddCallback for Callback {
-            fn progress(&self, progress: Arc<AddProgress>) -> Result<(), Arc<IrohError>> {
+            fn progress(&self, progress: Arc<AddProgress>) -> Result<(), IrohError> {
                 match *progress {
                     AddProgress::AllDone(ref d) => {
                         let mut output = self.output.lock().unwrap();
@@ -1405,7 +1405,7 @@ mod tests {
                         output.format = Some(d.format.clone());
                     }
                     AddProgress::Abort(ref a) => {
-                        return Err(Arc::new(anyhow::anyhow!("{}", a.error).into()));
+                        return Err(anyhow::anyhow!("{}", a.error).into());
                     }
                     AddProgress::Done(ref d) => {
                         let mut output = self.output.lock().unwrap();
