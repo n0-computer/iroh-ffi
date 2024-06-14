@@ -5,7 +5,10 @@ use futures::{StreamExt, TryStreamExt};
 use iroh::client::MemDoc;
 use serde::{Deserialize, Serialize};
 
-use crate::{block_on, ticket::AddrInfoOptions, AuthorId, Hash, IrohError, IrohNode, PublicKey};
+use crate::{
+    block_on, ticket::AddrInfoOptions, AuthorId, CallbackError, Hash, IrohError, IrohNode,
+    PublicKey,
+};
 
 #[derive(Debug)]
 pub enum CapabilityKind {
@@ -919,7 +922,7 @@ impl Query {
 /// emitted during a `node.doc_subscribe`. Use the `SubscribeProgress.type()`
 /// method to check the `LiveEvent`
 pub trait SubscribeCallback: Send + Sync + 'static {
-    fn event(&self, event: Arc<LiveEvent>) -> Result<(), IrohError>;
+    fn event(&self, event: Arc<LiveEvent>) -> Result<(), CallbackError>;
 }
 
 /// Events informing about actions of the live sync progress
@@ -1180,7 +1183,7 @@ impl From<iroh::docs::ContentStatus> for ContentStatus {
 /// emitted during a `doc.import_file()` call. Use the `DocImportProgress.type()`
 /// method to check the `DocImportProgressType`
 pub trait DocImportFileCallback: Send + Sync + 'static {
-    fn progress(&self, progress: Arc<DocImportProgress>) -> Result<(), IrohError>;
+    fn progress(&self, progress: Arc<DocImportProgress>) -> Result<(), CallbackError>;
 }
 
 /// The type of `DocImportProgress` event
@@ -1344,7 +1347,7 @@ impl DocImportProgress {
 /// emitted during a `doc.export_file()` call. Use the `DocExportProgress.type()`
 /// method to check the `DocExportProgressType`
 pub trait DocExportFileCallback: Send + Sync + 'static {
-    fn progress(&self, progress: Arc<DocExportProgress>) -> Result<(), IrohError>;
+    fn progress(&self, progress: Arc<DocExportProgress>) -> Result<(), CallbackError>;
 }
 
 /// The type of `DocExportProgress` event
@@ -1530,7 +1533,7 @@ mod tests {
             found_s: std::sync::mpsc::Sender<Result<Hash, IrohError>>,
         }
         impl SubscribeCallback for Callback {
-            fn event(&self, event: Arc<LiveEvent>) -> Result<(), IrohError> {
+            fn event(&self, event: Arc<LiveEvent>) -> Result<(), CallbackError> {
                 if let LiveEvent::ContentReady { ref hash } = *event {
                     self.found_s
                         .send(Ok(hash.clone()))

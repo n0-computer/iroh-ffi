@@ -10,7 +10,7 @@ mod ticket;
 pub use self::author::*;
 pub use self::blob::*;
 pub use self::doc::*;
-pub use self::error::IrohError;
+pub use self::error::*;
 pub use self::key::*;
 pub use self::node::*;
 pub use self::tag::*;

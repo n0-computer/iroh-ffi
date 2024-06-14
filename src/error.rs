@@ -17,10 +17,28 @@ impl From<anyhow::Error> for IrohError {
     }
 }
 
-impl From<uniffi::UnexpectedUniFFICallbackError> for IrohError {
-    fn from(value: uniffi::UnexpectedUniFFICallbackError) -> Self {
+#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+pub enum CallbackError {
+    #[error("Callback failed")]
+    Error,
+}
+
+impl From<CallbackError> for IrohError {
+    fn from(e: CallbackError) -> Self {
         IrohError {
-            e: anyhow::Error::from(value),
+            e: anyhow::anyhow!("{:?}", e),
         }
+    }
+}
+
+impl From<anyhow::Error> for CallbackError {
+    fn from(_e: anyhow::Error) -> Self {
+        CallbackError::Error
+    }
+}
+
+impl From<uniffi::UnexpectedUniFFICallbackError> for CallbackError {
+    fn from(_: uniffi::UnexpectedUniFFICallbackError) -> Self {
+        CallbackError::Error
     }
 }

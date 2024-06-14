@@ -414,9 +414,9 @@ interface DocImportProgress {
 /// The `progress` method will be called for each `DocImportProgress` event that is
 /// emitted during a `doc.import_file()` call. Use the `DocImportProgress.type()`
 /// method to check the `DocImportProgressType`
-[Trait]
+[Trait, WithForeign]
 interface DocImportFileCallback {
-  [Throws=IrohError]
+  [Throws=CallbackError]
   void progress(DocImportProgress progress);
 };
 
@@ -477,9 +477,9 @@ interface DocExportProgress {
 /// The `progress` method will be called for each `DocExportProgress` event that is
 /// emitted during a `doc.export_file()` call. Use the `DocExportProgress.type()`
 /// method to check the `DocExportProgressType`
-[Trait]
+[Trait, WithForeign]
 interface DocExportFileCallback {
-  [Throws=IrohError]
+  [Throws=CallbackError]
   void progress(DocExportProgress progress);
 };
 
@@ -626,9 +626,9 @@ interface NodeStatus {
 /// The `progress` method will be called for each `SubscribeProgress` event that is
 /// emitted during a `node.doc_subscribe`. Use the `SubscribeProgress.type()`
 /// method to check the `LiveEvent`
-[Trait]
+[Trait, WithForeign]
 interface SubscribeCallback {
-  [Throws=IrohError]
+  [Throws=CallbackError]
   void event(LiveEvent event);
 };
 
@@ -1013,9 +1013,9 @@ interface AddProgress {
 /// The `progress` method will be called for each `AddProgress` event that is
 /// emitted during a `node.blobs_add_from_path`. Use the `AddProgress.type()`
 /// method to check the `AddProgressType`
-[Trait]
+[Trait, WithForeign]
 interface AddCallback {
-  [Throws=IrohError]
+  [Throws=CallbackError]
   void progress(AddProgress progress);
 };
 
@@ -1058,9 +1058,9 @@ interface BlobDownloadOptions {
 /// The `progress` method will be called for each `DownloadProgress` event that is emitted during
 /// a `node.blobs_download`. Use the `DownloadProgress.type()` method to check the
 /// `DownloadProgressType` of the event.
-[Trait]
+[Trait, WithForeign]
 interface DownloadCallback {
-  [Throws=IrohError]
+  [Throws=CallbackError]
   void progress(DownloadProgress progress);
 };
 
@@ -1302,4 +1302,9 @@ dictionary CollectionInfo {
 [Traits=(Debug)]
 interface IrohError {
   string message();
+};
+
+[Error]
+enum CallbackError {
+  "Error"
 };

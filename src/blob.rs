@@ -8,9 +8,9 @@ use std::{
 use futures::{StreamExt, TryStreamExt};
 use serde::{Deserialize, Serialize};
 
-use crate::node::IrohNode;
 use crate::ticket::AddrInfoOptions;
 use crate::{block_on, IrohError, NodeAddr};
+use crate::{node::IrohNode, CallbackError};
 
 impl IrohNode {
     /// List all complete blobs.
@@ -70,7 +70,7 @@ impl IrohNode {
     ) -> Result<Vec<u8>, IrohError> {
         let len = match len {
             None => None,
-            Some(l) => Some(usize::try_from(l).map_err(|e| anyhow::Error::from(e))?),
+            Some(l) => Some(usize::try_from(l).map_err(anyhow::Error::from)?),
         };
         block_on(&self.rt(), async {
             let res = self
@@ -481,7 +481,7 @@ impl From<Hash> for iroh::blobs::Hash {
 /// emitted during a `node.blobs_add_from_path`. Use the `AddProgress.type()`
 /// method to check the `AddProgressType`
 pub trait AddCallback: Send + Sync + 'static {
-    fn progress(&self, progress: Arc<AddProgress>) -> Result<(), IrohError>;
+    fn progress(&self, progress: Arc<AddProgress>) -> Result<(), CallbackError>;
 }
 
 /// The different types of AddProgress events
@@ -758,7 +758,7 @@ impl From<BlobExportMode> for iroh::blobs::store::ExportMode {
 /// a `node.blobs_download`. Use the `DownloadProgress.type()` method to check the
 /// `DownloadProgressType` of the event.
 pub trait DownloadCallback: Send + Sync + 'static {
-    fn progress(&self, progress: Arc<DownloadProgress>) -> Result<(), IrohError>;
+    fn progress(&self, progress: Arc<DownloadProgress>) -> Result<(), CallbackError>;
 }
 
 /// The different types of DownloadProgress events
@@ -1204,7 +1204,7 @@ mod tests {
 
     use super::*;
     use crate::node::IrohNode;
-    use crate::NodeOptions;
+    use crate::{CallbackError, NodeOptions};
     use bytes::Bytes;
     use rand::RngCore;
     use tokio::io::AsyncWriteExt;
@@ -1304,15 +1304,16 @@ mod tests {
         }
 
         impl AddCallback for Callback {
-            fn progress(&self, progress: Arc<AddProgress>) -> Result<(), IrohError> {
+            fn progress(&self, progress: Arc<AddProgress>) -> Result<(), CallbackError> {
                 match *progress {
                     AddProgress::AllDone(ref d) => {
                         let mut output = self.output.lock().unwrap();
                         output.hash = Some(d.hash.clone());
                         output.format = Some(d.format.clone());
                     }
-                    AddProgress::Abort(ref a) => {
-                        return Err(anyhow::anyhow!("{}", a.error).into());
+                    AddProgress::Abort(ref _a) => {
+                        // anyhow::anyhow!("{}", a.error).into());
+                        return Err(CallbackError::Error);
                     }
                     _ => {}
                 }
@@ -1397,15 +1398,16 @@ mod tests {
         }
 
         impl AddCallback for Callback {
-            fn progress(&self, progress: Arc<AddProgress>) -> Result<(), IrohError> {
+            fn progress(&self, progress: Arc<AddProgress>) -> Result<(), CallbackError> {
                 match *progress {
                     AddProgress::AllDone(ref d) => {
                         let mut output = self.output.lock().unwrap();
                         output.collection_hash = Some(d.hash.clone());
                         output.format = Some(d.format.clone());
                     }
-                    AddProgress::Abort(ref a) => {
-                        return Err(anyhow::anyhow!("{}", a.error).into());
+                    AddProgress::Abort(ref _a) => {
+                        return Err(CallbackError::Error);
+                        // return Err(anyhow::anyhow!("{}", a.error).into());
                     }
                     AddProgress::Done(ref d) => {
                         let mut output = self.output.lock().unwrap();
