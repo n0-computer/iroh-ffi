@@ -24,128 +24,82 @@ import iroh.*
     assert(relayUrl == nodeAddr.relayUrl())
 }
 
-// // Author Id
+// Author Id
+{
+    // create id from string
+    val authorStr = "mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q"
+    val author = AuthorId.fromString(authorStr)
 
-// // create id from string
-// author_str = "mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q"
-// author = AuthorId.from_string(author_str)
+    // call to_string, ensure equal
+    assert(author.toString() == authorStr)
 
-// // call to_string, ensure equal
-// assert str(author) == author_str
+    // create another id, same string
+    val author0 = AuthorId.fromString(authorStr)
 
-// // create another id, same string
-// author_0 = AuthorId.from_string(author_str)
+    // ensure equal
+    assert(author.equal(author0))
+    assert(author0.equal(author))
+}
 
-// // ensure equal
-// assert author.equal(author_0)
-// assert author_0.equal(author)
+// Query
+{
+    var opts = QueryOptions(SortBy.KEY_AUTHOR, SortDirection.ASC, 10u, 10u)
 
-// // Query
+    // all
+    val all = Query.all(opts)
+    assert(10UL == all.offset())
+    assert(10UL == all.limit())
 
-// opts = QueryOptions(sort_by=SortBy.KEY_AUTHOR, direction=SortDirection.ASC, offset=10, limit=10)
-// // all
-// all = Query.all(opts)
-// assert 10 == all.offset()
-// assert 10 == all.limit()
+    // single_latest_per_key
+    opts.direction = SortDirection.DESC
+    opts.limit = 0u
+    opts.offset = 0u
+    val singleLatestPerKey = Query.singleLatestPerKey(opts)
+    assert(0UL == singleLatestPerKey.offset())
+    assert(null == singleLatestPerKey.limit())
 
-// // single_latest_per_key
-// opts.direction = SortDirection.DESC
-// opts.limit = 0
-// opts.offset = 0
-// single_latest_per_key = Query.single_latest_per_key(opts)
-// assert 0 == single_latest_per_key.offset()
-// assert None == single_latest_per_key.limit()
+    // author
+    opts.direction = SortDirection.ASC
+    opts.offset = 100u
+    val author = Query.author(AuthorId.fromString("mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q"), opts)
+    assert(100UL == author.offset())
+    assert(null == author.limit())
 
-// // author
-// opts.direction = SortDirection.ASC
-// opts.offset = 100
-// author = Query.author(AuthorId.from_string("mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q"), opts)
-// assert 100 == author.offset()
-// assert None == author.limit()
+    // key_exact
+    opts.sortBy = SortBy.KEY_AUTHOR
+    opts.direction = SortDirection.DESC
+    opts.offset = 0u
+    opts.limit = 100u
+    val keyExact = Query.keyExact("key".toByteArray(), opts)
+    assert(0UL == keyExact.offset())
+    assert(100UL == keyExact.limit())
 
-// // key_exact
-// opts.sort_by = SortBy.KEY_AUTHOR
-// opts.direction = SortDirection.DESC
-// opts.offset = 0
-// opts.limit = 100
-// key_exact = Query.key_exact(
-//     b'key',
-//     opts
-// )
-// assert 0 == key_exact.offset()
-// assert 100 == key_exact.limit()
+    // key_prefix
+    val keyPrefix = Query.keyPrefix("prefix".toByteArray(), opts)
+    assert(0UL == keyPrefix.offset())
+    assert(100UL == keyPrefix.limit())
+}
 
-// // key_prefix
-// key_prefix = Query.key_prefix(
-//     b'prefix',
-//     opts
-// );
-// assert 0 == key_prefix.offset()
-// assert 100 == key_prefix.limit()
+// Doc entry basics
+{
+    // create node
+    val irohDir = kotlin.io.path.createTempDirectory("doc-test")
+    val node = IrohNode(irohDir.toString())
 
-// // Doc entry basics
+    // create doc and author
+    val doc = node.docCreate()
+    val author = node.authorCreate()
 
-// // create node
-// dir = tempfile.TemporaryDirectory()
-// node = IrohNode(dir.name)
+    // create entry
+    val v = "hello world!".toByteArray()
+    val key = "foo".toByteArray()
+    val hash = doc.setBytes(author, key, v)
 
-// // create doc and author
-// doc = node.doc_create()
-// author = node.author_create()
-
-// // create entry
-// val = b'hello world!'
-// key = b'foo'
-// hash = doc.set_bytes(author, key, val)
-
-// // get entry
-// query = Query.author_key_exact(author, key)
-// entry = doc.get_one(query)
-// assert hash.equal(entry.content_hash())
-// assert len(val) == entry.content_len()
-// got_val = entry.content_bytes(doc)
-// assert val == got_val
-
-// // Doc import export
-
-// // create file temp der
-// dir = tempfile.TemporaryDirectory()
-// in_root = os.path.join(dir.name, "in")
-// out_root = os.path.join(dir.name, "out")
-// os.makedirs(in_root, exist_ok=True)
-// os.makedirs(out_root, exist_ok=True)
-
-// // create file
-// path = os.path.join(in_root, "test")
-// size = 100
-// bytes = bytearray(map(random.getrandbits,(8,)*size))
-// file = open(path, "wb")
-// file.write(bytes)
-// file.close()
-
-// // create node
-// iroh_dir = tempfile.TemporaryDirectory()
-// node = IrohNode(iroh_dir.name)
-
-// // create doc and author
-// doc = node.doc_create()
-// author = node.author_create()
-
-// // import entry
-// key = path_to_key(path, None, in_root)
-// doc.import_file(author, key, path, True, None)
-
-// // get entry
-// query = Query.author_key_exact(author, key)
-// entry = doc.get_one(query)
-
-// // export entry
-// path = key_to_path(key, None, out_root)
-// doc.export_file(entry, path, None)
-
-// // read file
-// file = open(path, "rb")
-// got_bytes = file.read()
-// file.close()
-
-// assert bytes == got_bytes
+    // get entry
+    val query = Query.authorKeyExact(author, key)
+    val entry = doc.getOne(query)!!
+    assert(hash.equal(entry.contentHash()))
+    assert(v.size as ULong == entry.contentLen())
+    val gotVal = entry.contentBytes(doc)
+    assert(v contentEquals gotVal)
+}

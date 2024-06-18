@@ -4,11 +4,11 @@ import iroh.*
 import java.util.concurrent.ArrayBlockingQueue
 
 // Create node_0
-val irohDir0 = kotlin.io.path.createTempDirectory("doc-test-0")
+val irohDir0 = kotlin.io.path.createTempDirectory("node-test-0")
 val node0 = IrohNode(irohDir0.toString())
 
 // Create node_1
-val irohDir1 = kotlin.io.path.createTempDirectory("doc-test-1")
+val irohDir1 = kotlin.io.path.createTempDirectory("node-test-1")
 val node1 = IrohNode(irohDir1.toString())
 
 // Create doc on node_0
