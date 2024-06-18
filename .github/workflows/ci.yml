@@ -139,10 +139,10 @@ jobs:
         java-version: '21'
     
     - name: install kotlin
-      uses: fwilhe2/setup-kotlin@main
+      uses: arqu/setup-kotlin@main
 
-    - name: "Install ktlint"
-      uses: nbadal/action-ktlint-setup@v1
+    - name: install ktlint
+      uses: arqu/action-ktlint-setup@main
 
     - name: fetch jna
       run: curl -L https://repo1.maven.org/maven2/net/java/dev/jna/jna/5.14.0/jna-5.14.0.jar -o jna.jar
