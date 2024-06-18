@@ -16,22 +16,22 @@ def test_hash():
     hash = Hash.from_string(hash_str)
     #
     # test methods are as expected
-    assert hash.to_string() == hash_str
+    assert str(hash) == hash_str
     assert hash.to_bytes() == bytes
-    assert hash.to_hex() == hex_str 
+    assert hash.to_hex() == hex_str
     #
     # create hash from bytes
     hash_0 = Hash.from_bytes(bytes)
     #
     # test methods are as expected
-    assert hash_0.to_string() == hash_str
+    assert str(hash_0) == hash_str
     assert hash_0.to_bytes() == bytes
-    assert hash_0.to_hex() == hex_str 
+    assert hash_0.to_hex() == hex_str
     #
     # test that the eq function works
     assert hash.equal(hash_0)
     assert hash_0.equal(hash)
- 
+
 # test functionality between adding as bytes and reading to bytes
 def test_blob_add_get_bytes():
     #
@@ -69,7 +69,7 @@ def test_blob_read_write_path():
     # create bytes
     blob_size = 100
     bytes = bytearray(map(random.getrandbits,(8,)*blob_size))
-    # 
+    #
     # write to file
     dir = tempfile.TemporaryDirectory()
     path = os.path.join(dir.name, "in")
@@ -162,7 +162,7 @@ def test_blob_collections():
                 raise Exception(abort_event.error)
             if progress_event.type() == AddProgressType.DONE:
                 done_event = progress_event.as_done()
-                print(done_event.hash.to_string())
+                print(done_event.hash)
                 self.blob_hashes.append(done_event.hash)
 
     cb = AddCallback()
@@ -173,10 +173,10 @@ def test_blob_collections():
 
     assert cb.collection_hash != None
     assert cb.format == BlobFormat.HASH_SEQ
- 
+
     # list collections
     collections = node.blobs_list_collections()
-    print("collection hash ", collections[0].hash.to_string())
+    print("collection hash ", collections[0].hash)
     assert len(collections) == 1
     assert collections[0].hash.equal(cb.collection_hash)
     # should the blobs_count be 4?
@@ -190,10 +190,10 @@ def test_blob_collections():
     got_hashes = node.blobs_list()
     for hash in got_hashes:
         blob = node.blobs_read_to_bytes(hash)
-        print("hash ", hash.to_string(), " has size ", len(blob))
-            
-    hashes_exist(collection_hashes, got_hashes) 
-    # collections also create a metadata hash that is not accounted for 
+        print("hash ", hash, " has size ", len(blob))
+
+    hashes_exist(collection_hashes, got_hashes)
+    # collections also create a metadata hash that is not accounted for
     # in the list of hashes
     assert len(collection_hashes)+1 == len(got_hashes)
 
@@ -220,7 +220,7 @@ def test_list_and_delete():
         tags.append(output.tag)
 
     got_hashes = node.blobs_list()
-    assert len(got_hashes) == num_blobs 
+    assert len(got_hashes) == num_blobs
     hashes_exist(hashes, got_hashes)
 
     remove_hash = hashes.pop(0)
@@ -249,5 +249,4 @@ def hashes_exist(expect, got):
 
 # def test_download():
     # need to wait to refactor IrohNode to take an rpc port, or we remove rpc
-    # ports from the iroh rpc in general 
-
+    # ports from the iroh rpc in general
