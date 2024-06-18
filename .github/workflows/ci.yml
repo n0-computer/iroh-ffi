@@ -108,12 +108,12 @@ jobs:
         rust: [stable]
         include:
           - name: ubuntu-latest
-            os: ubuntu-latest
+            os: linux
             release-os: linux
             release-arch: amd64
             runner: [linux, X64]
           - name: macOS-arm-latest
-            os: macOS-latest
+            os: mac
             release-os: darwin
             release-arch: aarch64
             runner: [macOS, ARM64]
@@ -147,5 +147,6 @@ jobs:
     - name: run kotlin tests
       env:
         CLASSPATH: ./jna.jar
+        TEST_OS: ${{ matrix.os }}
       shell: bash
       run: ./test_kotlin.sh
