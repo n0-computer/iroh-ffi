@@ -9,6 +9,23 @@ fun generateRandomByteArray(size: Int): ByteArray {
     return byteArray
 }
 
+fun hashesExist(
+    ex: List<Hash>,
+    got: List<Hash>,
+) {
+    for (hash in ex) {
+        var exists = false
+        for (h in got) {
+            if (h.equal(hash)) {
+                exists = true
+            }
+        }
+        if (!exists) {
+            throw Exception("could not find " + hash + "in list")
+        }
+    }
+}
+
 // Hash
 fun testHash() {
     val hashStr = "2kbxxbofqx5rau77wzafrj4yntjb4gn4olfpwxmv26js6dvhgjhq"
@@ -165,78 +182,78 @@ fun testReadBytesPath() {
 testReadBytesPath()
 
 // Collections
-// {
-//     collection_dir = tempfile.TemporaryDirectory()
-//     num_files = 3
-//     blob_size = 100
-//     for i in range(num_files):
-//         path = os.path.join(collection_dir.name, str(i))
-//         bytes = bytearray(map(random.getrandbits,(8,)*blob_size))
-//         file = open(path, "wb")
-//         file.write(bytes)
-//         file.close()
-//     print(collection_dir.__sizeof__())
+fun testCollections() {
+    val collectionDir = kotlin.io.path.createTempDirectory("doc-test-collection-dir")
+    val numFiles = 3
+    val blobSize = 100
+    for (i in 1..numFiles) {
+        val path = collectionDir.toString() + "/" + i.toString()
+        println("adding file " + i.toString())
+        val bytes = generateRandomByteArray(blobSize)
+        java.io.File(path).writeBytes(bytes)
+    }
+    // make node
+    val irohDir = kotlin.io.path.createTempDirectory("doc-test-collection")
+    val node = IrohNode(irohDir.toString())
 
-//     // make node
-//     iroh_dir = tempfile.TemporaryDirectory()
-//     node = IrohNode(iroh_dir.name)
+    // ensure zero blobs
+    val blobs = node.blobsList()
+    assert(blobs.size == 0)
 
-//     // ensure zero blobs
-//     blobs = node.blobs_list()
-//     assert len(blobs) == 0
+    // create callback to get blobs and collection hash
+    class Handler : AddCallback {
+        var collectionHash: Hash? = null
+        var format: BlobFormat? = null
+        var blobHashes: MutableList<Hash> = arrayListOf()
 
-//     // create callback to get blobs and collection hash
-//     class AddCallback:
-//         collection_hash = None
-//         format = None
-//         blob_hashes = []
+        override fun progress(progress: AddProgress) {
+            println(progress.type())
+            if (progress.type() == AddProgressType.ALL_DONE) {
+                val event = progress.asAllDone()!!
+                this.collectionHash = event.hash
+                this.format = event.format
+            }
+            if (progress.type() == AddProgressType.ABORT) {
+                val event = progress.asAbort()!!
+                throw Exception(event.error)
+            }
+            if (progress.type() == AddProgressType.DONE) {
+                val event = progress.asDone()!!
+                println(event.hash)
+                this.blobHashes.add(event.hash)
+            }
+        }
+    }
+    val cb = Handler()
+    val tag = SetTagOption.auto()
+    val wrap = WrapOption.noWrap()
+    // add from path
+    node.blobsAddFromPath(collectionDir.toString(), false, tag, wrap, cb)
 
-//         def progress(self, progress_event):
-//             print(progress_event.type())
-//             if progress_event.type() == AddProgressType.ALL_DONE:
-//                 all_done_event = progress_event.as_all_done()
-//                 self.collection_hash = all_done_event.hash
-//                 self.format = all_done_event.format
-//             if progress_event.type() == AddProgressType.ABORT:
-//                 abort_event = progress_event.as_abort()
-//                 raise Exception(abort_event.error)
-//             if progress_event.type() == AddProgressType.DONE:
-//                 done_event = progress_event.as_done()
-//                 print(done_event.hash)
-//                 self.blob_hashes.append(done_event.hash)
+    assert(cb.collectionHash != null)
+    assert(cb.format == BlobFormat.HASH_SEQ)
 
-//     cb = AddCallback()
-//     tag = SetTagOption.auto()
-//     wrap = WrapOption.no_wrap()
-//     // add from path
-//     node.blobs_add_from_path(collection_dir.name, False, tag, wrap, cb)
+    // list collections
+    val collections = node.blobsListCollections()
+    println("collection hash " + collections[0].hash)
+    assert(collections.size == 1)
+    assert(collections[0].hash.equal(cb.collectionHash!!))
+    assert(collections[0].totalBlobsCount == 4.toULong())
 
-//     assert cb.collection_hash != None
-//     assert cb.format == BlobFormat.HASH_SEQ
-
-//     // list collections
-//     collections = node.blobs_list_collections()
-//     print("collection hash ", collections[0].hash)
-//     assert len(collections) == 1
-//     assert collections[0].hash.equal(cb.collection_hash)
-//     // should the blobs_count be 4?
-//     assert collections[0].total_blobs_count == 4
-//     // this always returns as None
-//     // assert collections[0].total_blobs_size == 300
-
-//     // list blobs
-//     collection_hashes = cb.blob_hashes
-//     collection_hashes.append(cb.collection_hash)
-//     got_hashes = node.blobs_list()
-//     for hash in got_hashes:
-//         blob = node.blobs_read_to_bytes(hash)
-//         print("hash ", hash, " has size ", len(blob))
-
-//     hashes_exist(collection_hashes, got_hashes)
-//     // collections also create a metadata hash that is not accounted for
-//     // in the list of hashes
-//     assert len(collection_hashes)+1 == len(got_hashes)
-// }
+    // list blobs
+    val collectionHashes = cb.blobHashes!!
+    collectionHashes.add(cb.collectionHash!!)
+    val gotHashes = node.blobsList()
+    for (hash in gotHashes) {
+        val blob = node.blobsReadToBytes(hash)
+        println("hash " + hash + " has size " + blob.size)
+    }
+    hashesExist(collectionHashes, gotHashes)
+    // collections also create a metadata hash that is not accounted for
+    // in the list of hashes
+    assert(collectionHashes.size + 1 == gotHashes.size)
+}
+testCollections()
 
 // List and delete
 // {
@@ -279,12 +296,3 @@ testReadBytesPath()
 //     for hash in got_hashes:
 //         if remove_hash.equal(hash):
 //             raise Exception("blob {} should have been removed", remove_hash)
-// def hashes_exist(expect, got):
-//     for hash in expect:
-//         exists = False
-//         for h in got:
-//             if h.equal(hash):
-//                 exists = True
-//         if not exists:
-//             raise Exception("could not find ", hash, "in list")
-// }
