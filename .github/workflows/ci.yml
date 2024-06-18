@@ -100,7 +100,7 @@ jobs:
   build_and_test_kotlin:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
-    name: Rust - Build and test 
+    name: Kotlin - Build and test 
     strategy:
       fail-fast: false
       matrix:
