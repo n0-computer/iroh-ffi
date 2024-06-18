@@ -147,4 +147,5 @@ jobs:
     - name: run kotlin tests
       env:
         CLASSPATH: ./jna.jar
+      shell: bash
       run: ./test_kotlin.sh

@@ -6,7 +6,7 @@ val dir = kotlin.io.path.createTempDirectory("author-test")
 val node = IrohNode(dir.toString())
 
 // creating a node also creates an author
-assert(node.authorList().size == 2)
+assert(node.authorList().size == 1)
 
 // create
 val authorId = node.authorCreate()
