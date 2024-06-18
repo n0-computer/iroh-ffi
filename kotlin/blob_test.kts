@@ -256,43 +256,49 @@ fun testCollections() {
 testCollections()
 
 // List and delete
-// {
-//     iroh_dir = tempfile.TemporaryDirectory()
-//     opts = NodeOptions(gc_interval_millis=100)
-//     node = IrohNode.with_options(iroh_dir.name, opts)
-//
-//     // create bytes
-//     blob_size = 100
-//     blobs = []
-//     num_blobs = 3;
+fun testListDelete() {
+    val irohDir = kotlin.io.path.createTempDirectory("doc-test-list-del")
+    val opts = NodeOptions(100UL)
+    val node = IrohNode.withOptions(irohDir.toString(), opts)
 
-//     for x in range(num_blobs):
-//         print(x)
-//         bytes = bytearray(map(random.getrandbits,(8,)*blob_size))
-//         blobs.append(bytes)
+    // create bytes
+    val blobSize = 100
+    val blobs: MutableList<ByteArray> = arrayListOf()
+    val numBlobs = 3
 
-//     hashes = []
-//     tags = []
-//     for blob in blobs:
-//         output = node.blobs_add_bytes(blob)
-//         hashes.append(output.hash)
-//         tags.append(output.tag)
+    for (x in 1..numBlobs) {
+        println(x)
+        val bytes = generateRandomByteArray(blobSize)
+        blobs.add(bytes)
+    }
 
-//     got_hashes = node.blobs_list()
-//     assert len(got_hashes) == num_blobs
-//     hashes_exist(hashes, got_hashes)
+    val hashes: MutableList<Hash> = arrayListOf()
+    val tags: MutableList<ByteArray> = arrayListOf()
+    for (blob in blobs) {
+        val output = node.blobsAddBytes(blob)
+        hashes.add(output.hash)
+        tags.add(output.tag)
+    }
 
-//     remove_hash = hashes.pop(0)
-//     remove_tag = tags.pop(0)
-//     // delete the tag for the first blob
-//     node.tags_delete(remove_tag)
-//     // wait for GC to clear the blob
-//     time.sleep(0.25)
+    val gotHashes = node.blobsList()
+    assert(gotHashes.size == numBlobs)
+    hashesExist(hashes, gotHashes)
 
-//     got_hashes = node.blobs_list();
-//     assert len(got_hashes) == num_blobs - 1
-//     hashes_exist(hashes, got_hashes)
+    val removeHash = hashes.removeAt(0)
+    val removeTag = tags.removeAt(0)
+    // delete the tag for the first blob
+    node.tagsDelete(removeTag)
+    // wait for GC to clear the blob
+    java.lang.Thread.sleep(250)
 
-//     for hash in got_hashes:
-//         if remove_hash.equal(hash):
-//             raise Exception("blob {} should have been removed", remove_hash)
+    val clearedHashes = node.blobsList()
+    assert(clearedHashes.size == numBlobs - 1)
+    hashesExist(hashes, clearedHashes)
+
+    for (hash in clearedHashes) {
+        if (removeHash.equal(hash)) {
+            throw Exception(String.format("blob $removeHash should have been removed"))
+        }
+    }
+}
+testListDelete()
