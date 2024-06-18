@@ -101,69 +101,68 @@ fun testAddBytes() {
 testAddBytes()
 
 // test functionality between reading bytes from a path and writing bytes to a path
-// {
-//     iroh_dir = tempfile.TemporaryDirectory()
-//     node = IrohNode(iroh_dir.name)
-//
-//     // create bytes
-//     blob_size = 100
-//     bytes = bytearray(map(random.getrandbits,(8,)*blob_size))
-//
-//     // write to file
-//     dir = tempfile.TemporaryDirectory()
-//     path = os.path.join(dir.name, "in")
-//     file = open(path, "wb")
-//     file.write(bytes)
-//     file.close()
-//
-//     // add blob
-//     tag = SetTagOption.auto()
-//     wrap = WrapOption.no_wrap()
+fun testReadBytesPath() {
+    val irohDir = kotlin.io.path.createTempDirectory("doc-test-read-bytes")
+    val node = IrohNode(irohDir.toString())
 
-//     class AddCallback:
-//         hash = None
-//         format = None
+    // create bytes
+    val blobSize = 100
+    val bytes = generateRandomByteArray(blobSize)
 
-//         def progress(x, progress_event):
-//             print(progress_event.type())
-//             if progress_event.type() == AddProgressType.ALL_DONE:
-//                 all_done_event = progress_event.as_all_done()
-//                 x.hash = all_done_event.hash
-//                 print(all_done_event.hash)
-//                 print(all_done_event.format)
-//                 x.format = all_done_event.format
-//             if progress_event.type() == AddProgressType.ABORT:
-//                 abort_event = progress_event.as_abort()
-//                 raise Exception(abort_event.error)
+    // write to file
+    val dir = kotlin.io.path.createTempDirectory("doc-test-read-bytes-r-file")
+    val path = dir.toString() + "in"
+    java.io.File(path).writeBytes(bytes)
 
-//     cb = AddCallback()
-//     node.blobs_add_from_path(path, False, tag, wrap, cb)
-//
-//     // check outcome info is as expected
-//     assert cb.format == BlobFormat.RAW
-//     assert cb.hash != None
-//
-//     // check we get the expected size from the hash
-//     got_size = node.blobs_size(cb.hash)
-//     assert got_size == blob_size
-//
-//     // get bytes
-//     got_bytes = node.blobs_read_to_bytes(cb.hash)
-//     print("read_to_bytes {}", got_bytes)
-//     assert len(got_bytes) == blob_size
-//     assert got_bytes == bytes
-//
-//     // write to file
-//     out_path = os.path.join(dir.name, "out")
-//     node.blobs_write_to_path(cb.hash, out_path)
-//     // open file
-//     got_file = open(out_path, "rb")
-//     got_bytes = got_file.read()
-//     got_file.close()
-//     print("write_to_path {}", got_bytes)
-//     assert len(got_bytes) == blob_size
-//     assert got_bytes == bytes
-// }
+    // add blob
+    val tag = SetTagOption.auto()
+    val wrap = WrapOption.noWrap()
+
+    class Handler : AddCallback {
+        var hash: Hash? = null
+        var format: BlobFormat? = null
+
+        override fun progress(progress: AddProgress) {
+            println(progress.type())
+            if (progress.type() == AddProgressType.ALL_DONE) {
+                val event = progress.asAllDone()!!
+                this.hash = event.hash
+                println(event.hash)
+                println(event.format)
+                this.format = event.format
+            }
+            if (progress.type() == AddProgressType.ABORT) {
+                val event = progress.asAbort()!!
+                throw Exception(event.error)
+            }
+        }
+    }
+    val cb = Handler()
+    node.blobsAddFromPath(path, false, tag, wrap, cb)
+
+    // check outcome info is as expected
+    assert(cb.format == BlobFormat.RAW)
+    assert(cb.hash != null)
+
+    // check we get the expected size from the hash
+    val gotSize = node.blobsSize(cb.hash!!)
+    assert(gotSize == blobSize.toULong())
+
+    // get bytes
+    val gotBytes = node.blobsReadToBytes(cb.hash!!)
+    assert(gotBytes.size == blobSize)
+    assert(gotBytes contentEquals bytes)
+
+    // write to file
+    val outPath = dir.toString() + "out"
+    node.blobsWriteToPath(cb.hash!!, outPath)
+
+    // open file
+    val gotBytesFile = java.io.File(outPath).readBytes()
+    assert(gotBytesFile.size == blobSize)
+    assert(gotBytesFile contentEquals bytes)
+}
+testReadBytesPath()
 
 // Collections
 // {
