@@ -1,9 +1,16 @@
 // tests that correspond to the `src/doc.rs` rust api
 
 import iroh.*
+import kotlin.random.Random
+
+fun generateRandomByteArray(size: Int): ByteArray {
+    val byteArray = ByteArray(size)
+    Random.nextBytes(byteArray)
+    return byteArray
+}
 
 // Hash
-{
+fun testHash() {
     val hashStr = "2kbxxbofqx5rau77wzafrj4yntjb4gn4olfpwxmv26js6dvhgjhq"
     val hexStr = "d2837b85c585fb1053ffb64058a7986cd21e19bc72cafb5d95d7932f0ea7324f"
     val bytes =
@@ -47,7 +54,7 @@ import iroh.*
 
     // test methods are as expected
     assert(hash.toString() == hashStr)
-    assert(hash.toBytes() == bytes)
+    assert(hash.toBytes() contentEquals bytes)
     assert(hash.toHex() == hexStr)
 
     // create hash from bytes
@@ -55,44 +62,45 @@ import iroh.*
 
     // test methods are as expected
     assert(hash0.toString() == hashStr)
-    assert(hash0.toBytes() == bytes)
+    assert(hash0.toBytes() contentEquals bytes)
     assert(hash0.toHex() == hexStr)
 
     // test that the eq function works
     assert(hash.equal(hash0))
     assert(hash0.equal(hash))
 }
+testHash()
 
-// // test functionality between adding as bytes and reading to bytes
-// {
-//
-//     // create node
-//     dir = tempfile.TemporaryDirectory()
-//     node = IrohNode(dir.name)
-//
-//     // create bytes
-//     blob_size = 100
-//     bytes = bytearray(map(random.getrandbits,(8,)*blob_size))
-//
-//     // add blob
-//     add_outcome = node.blobs_add_bytes(bytes)
-//
-//     // check outcome info is as expected
-//     assert add_outcome.format == BlobFormat.RAW
-//     assert add_outcome.size == blob_size
-//
-//     // check we get the expected size from the hash
-//     hash = add_outcome.hash
-//     got_size = node.blobs_size(hash)
-//     assert got_size == blob_size
-//
-//     // get bytes
-//     got_bytes = node.blobs_read_to_bytes(hash)
-//     assert len(got_bytes) == blob_size
-//     assert got_bytes == bytes
-// }
+// test functionality between adding as bytes and reading to bytes
+fun testAddBytes() {
+    // create node
+    val irohDir = kotlin.io.path.createTempDirectory("doc-test")
+    val node = IrohNode(irohDir.toString())
 
-// // test functionality between reading bytes from a path and writing bytes to a path
+    // create bytes
+    val blobSize = 100
+    val bytes = generateRandomByteArray(blobSize)
+
+    // add blob
+    val addOutcome = node.blobsAddBytes(bytes)
+
+    // check outcome info is as expected
+    assert(addOutcome.format == BlobFormat.RAW)
+    assert(addOutcome.size == blobSize.toULong())
+
+    // check we get the expected size from the hash
+    val hash = addOutcome.hash
+    val gotSize = node.blobsSize(hash)
+    assert(gotSize == blobSize.toULong())
+
+    // get bytes
+    val gotBytes = node.blobsReadToBytes(hash)
+    assert(gotBytes.size == blobSize)
+    assert(gotBytes contentEquals bytes)
+}
+testAddBytes()
+
+// test functionality between reading bytes from a path and writing bytes to a path
 // {
 //     iroh_dir = tempfile.TemporaryDirectory()
 //     node = IrohNode(iroh_dir.name)
@@ -157,7 +165,7 @@ import iroh.*
 //     assert got_bytes == bytes
 // }
 
-// // Collections
+// Collections
 // {
 //     collection_dir = tempfile.TemporaryDirectory()
 //     num_files = 3
@@ -231,7 +239,7 @@ import iroh.*
 //     assert len(collection_hashes)+1 == len(got_hashes)
 // }
 
-// // List and delete
+// List and delete
 // {
 //     iroh_dir = tempfile.TemporaryDirectory()
 //     opts = NodeOptions(gc_interval_millis=100)
