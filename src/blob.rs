@@ -1,11 +1,16 @@
-use std::{path::PathBuf, str::FromStr, sync::Arc, sync::RwLock, time::Duration};
+use std::{
+    path::PathBuf,
+    str::FromStr,
+    sync::{Arc, RwLock},
+    time::Duration,
+};
 
 use futures::{StreamExt, TryStreamExt};
 use serde::{Deserialize, Serialize};
 
-use crate::node::IrohNode;
 use crate::ticket::AddrInfoOptions;
 use crate::{block_on, IrohError, NodeAddr};
+use crate::{node::IrohNode, CallbackError};
 
 impl IrohNode {
     /// List all complete blobs.
@@ -14,16 +19,10 @@ impl IrohNode {
     /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
     pub fn blobs_list(&self) -> Result<Vec<Arc<Hash>>, IrohError> {
         block_on(&self.rt(), async {
-            let response = self
-                .sync_client
-                .blobs()
-                .list()
-                .await
-                .map_err(IrohError::blobs)?;
+            let response = self.sync_client.blobs().list().await?;
 
             let hashes: Vec<Arc<Hash>> = response
                 .map_ok(|i| Arc::new(Hash(i.hash)))
-                .map_err(IrohError::blobs)
                 .try_collect()
                 .await?;
 
@@ -36,12 +35,7 @@ impl IrohNode {
     /// Method only exists in FFI
     pub fn blobs_size(&self, hash: &Hash) -> Result<u64, IrohError> {
         block_on(&self.rt(), async {
-            let r = self
-                .sync_client
-                .blobs()
-                .read(hash.0)
-                .await
-                .map_err(IrohError::blobs)?;
+            let r = self.sync_client.blobs().read(hash.0).await?;
             Ok(r.size())
         })
     }
@@ -53,12 +47,13 @@ impl IrohNode {
     /// before calling [`Self::blobs_read_to_bytes`].
     pub fn blobs_read_to_bytes(&self, hash: Arc<Hash>) -> Result<Vec<u8>, IrohError> {
         block_on(&self.rt(), async {
-            self.sync_client
+            let res = self
+                .sync_client
                 .blobs()
                 .read_to_bytes(hash.0)
                 .await
-                .map(|b| b.to_vec())
-                .map_err(IrohError::blobs)
+                .map(|b| b.to_vec())?;
+            Ok(res)
         })
     }
 
@@ -75,15 +70,16 @@ impl IrohNode {
     ) -> Result<Vec<u8>, IrohError> {
         let len = match len {
             None => None,
-            Some(l) => Some(usize::try_from(l).map_err(IrohError::blobs)?),
+            Some(l) => Some(usize::try_from(l).map_err(anyhow::Error::from)?),
         };
         block_on(&self.rt(), async {
-            self.sync_client
+            let res = self
+                .sync_client
                 .blobs()
                 .read_at_to_bytes(hash.0, offset, len)
                 .await
-                .map(|b| b.to_vec())
-                .map_err(IrohError::blobs)
+                .map(|b| b.to_vec())?;
+            Ok(res)
         })
     }
 
@@ -99,7 +95,7 @@ impl IrohNode {
         in_place: bool,
         tag: Arc<SetTagOption>,
         wrap: Arc<WrapOption>,
-        cb: Box<dyn AddCallback>,
+        cb: Arc<dyn AddCallback>,
     ) -> Result<(), IrohError> {
         block_on(&self.rt(), async {
             let mut stream = self
@@ -111,10 +107,9 @@ impl IrohNode {
                     (*tag).clone().into(),
                     (*wrap).clone().into(),
                 )
-                .await
-                .map_err(IrohError::blobs)?;
+                .await?;
             while let Some(progress) = stream.next().await {
-                let progress = progress.map_err(IrohError::blobs)?;
+                let progress = progress?;
                 cb.progress(Arc::new(progress.into()))?;
             }
             Ok(())
@@ -125,24 +120,19 @@ impl IrohNode {
     /// The `path` field is expected to be the absolute path.
     pub fn blobs_write_to_path(&self, hash: Arc<Hash>, path: String) -> Result<(), IrohError> {
         block_on(&self.rt(), async {
-            let mut reader = self
-                .sync_client
-                .blobs()
-                .read(hash.0)
-                .await
-                .map_err(IrohError::blobs)?;
+            let mut reader = self.sync_client.blobs().read(hash.0).await?;
             let path: PathBuf = path.into();
             if let Some(dir) = path.parent() {
                 tokio::fs::create_dir_all(dir)
                     .await
-                    .map_err(IrohError::blobs)?;
+                    .map_err(anyhow::Error::from)?;
             }
             let mut file = tokio::fs::File::create(path)
                 .await
-                .map_err(IrohError::blobs)?;
+                .map_err(anyhow::Error::from)?;
             tokio::io::copy(&mut reader, &mut file)
                 .await
-                .map_err(IrohError::blobs)?;
+                .map_err(anyhow::Error::from)?;
             Ok(())
         })
     }
@@ -150,12 +140,8 @@ impl IrohNode {
     /// Write a blob by passing bytes.
     pub fn blobs_add_bytes(&self, bytes: Vec<u8>) -> Result<BlobAddOutcome, IrohError> {
         block_on(&self.rt(), async {
-            self.sync_client
-                .blobs()
-                .add_bytes(bytes)
-                .await
-                .map(|outcome| outcome.into())
-                .map_err(IrohError::blobs)
+            let res = self.sync_client.blobs().add_bytes(bytes).await?;
+            Ok(res.into())
         })
     }
 
@@ -164,17 +150,16 @@ impl IrohNode {
         &self,
         hash: Arc<Hash>,
         opts: Arc<BlobDownloadOptions>,
-        cb: Box<dyn DownloadCallback>,
+        cb: Arc<dyn DownloadCallback>,
     ) -> Result<(), IrohError> {
         block_on(&self.rt(), async {
             let mut stream = self
                 .sync_client
                 .blobs()
                 .download_with_opts(hash.0, opts.0.clone())
-                .await
-                .map_err(IrohError::blobs)?;
+                .await?;
             while let Some(progress) = stream.next().await {
-                let progress = progress.map_err(IrohError::blobs)?;
+                let progress = progress?;
                 cb.progress(Arc::new(progress.into()))?;
             }
             Ok(())
@@ -202,17 +187,16 @@ impl IrohNode {
             if let Some(dir) = destination.parent() {
                 tokio::fs::create_dir_all(dir)
                     .await
-                    .map_err(IrohError::blobs)?;
+                    .map_err(anyhow::Error::from)?;
             }
 
             let stream = self
                 .sync_client
                 .blobs()
                 .export(hash.0, destination, format.into(), mode.into())
-                .await
-                .map_err(IrohError::blobs)?;
+                .await?;
 
-            stream.finish().await.map_err(IrohError::blobs)?;
+            stream.finish().await?;
 
             Ok(())
         })
@@ -230,8 +214,7 @@ impl IrohNode {
                 .sync_client
                 .blobs()
                 .share(hash.0, blob_format.into(), ticket_options.into())
-                .await
-                .map_err(IrohError::blobs)?;
+                .await?;
             Ok(ticket.to_string())
         })
     }
@@ -246,12 +229,10 @@ impl IrohNode {
                 .sync_client
                 .blobs()
                 .list_incomplete()
-                .await
-                .map_err(IrohError::blobs)?
+                .await?
                 .map_ok(|res| res.into())
                 .try_collect::<Vec<_>>()
-                .await
-                .map_err(IrohError::blobs)?;
+                .await?;
             Ok(blobs)
         })
     }
@@ -265,12 +246,10 @@ impl IrohNode {
             let blobs = self
                 .sync_client
                 .blobs()
-                .list_collections()
-                .map_err(IrohError::blobs)?
+                .list_collections()?
                 .map_ok(|res| res.into())
                 .try_collect::<Vec<_>>()
-                .await
-                .map_err(IrohError::blobs)?;
+                .await?;
             Ok(blobs)
         })
     }
@@ -278,12 +257,8 @@ impl IrohNode {
     /// Read the content of a collection
     pub fn blobs_get_collection(&self, hash: Arc<Hash>) -> Result<Arc<Collection>, IrohError> {
         block_on(&self.rt(), async {
-            let collection = self
-                .sync_client
-                .blobs()
-                .get_collection(hash.0)
-                .await
-                .map_err(IrohError::collection)?;
+            let collection = self.sync_client.blobs().get_collection(hash.0).await?;
+
             Ok(Arc::new(collection.into()))
         })
     }
@@ -299,7 +274,7 @@ impl IrohNode {
         tags_to_delete: Vec<String>,
     ) -> Result<HashAndTag, IrohError> {
         block_on(&self.rt(), async {
-            let collection = collection.0.read().map_err(IrohError::collection)?.clone();
+            let collection = collection.0.read().unwrap().clone();
             let (hash, tag) = self
                 .sync_client
                 .blobs()
@@ -311,8 +286,8 @@ impl IrohNode {
                         .map(iroh::blobs::Tag::from)
                         .collect(),
                 )
-                .await
-                .map_err(IrohError::blobs)?;
+                .await?;
+
             Ok(HashAndTag {
                 hash: Arc::new(hash.into()),
                 tag: tag.0.to_vec(),
@@ -323,31 +298,22 @@ impl IrohNode {
     /// Delete a blob.
     pub fn blobs_delete_blob(&self, hash: Arc<Hash>) -> Result<(), IrohError> {
         block_on(&self.rt(), async {
-            let mut tags = self
-                .sync_client
-                .tags()
-                .list()
-                .await
-                .map_err(IrohError::blobs)?;
+            let mut tags = self.sync_client.tags().list().await?;
+
             let mut name = None;
             while let Some(tag) = tags.next().await {
-                let tag = tag.map_err(IrohError::blobs)?;
+                let tag = tag?;
                 if tag.hash == hash.0 {
                     name = Some(tag.name);
                 }
             }
 
             if let Some(name) = name {
-                self.sync_client
-                    .tags()
-                    .delete(name)
-                    .await
-                    .map_err(IrohError::blobs)?;
+                self.sync_client.tags().delete(name).await?;
                 self.sync_client
                     .blobs()
                     .delete_blob((*hash).clone().0)
-                    .await
-                    .map_err(IrohError::blobs)?;
+                    .await?;
             }
 
             Ok(())
@@ -477,17 +443,15 @@ impl Hash {
     /// Create a `Hash` from its raw bytes representation.
     pub fn from_bytes(bytes: Vec<u8>) -> Result<Self, IrohError> {
         let bytes: [u8; 32] = bytes.try_into().map_err(|b: Vec<u8>| {
-            IrohError::hash(format!("expected byte array of length 32, got {}", b.len()))
+            anyhow::anyhow!("expected byte array of length 32, got {}", b.len())
         })?;
         Ok(Hash(iroh::blobs::Hash::from_bytes(bytes)))
     }
 
     /// Make a Hash from hex string
     pub fn from_string(s: String) -> Result<Self, IrohError> {
-        match iroh::blobs::Hash::from_str(&s) {
-            Ok(key) => Ok(key.into()),
-            Err(err) => Err(IrohError::hash(err)),
-        }
+        let key = iroh::blobs::Hash::from_str(&s).map_err(anyhow::Error::from)?;
+        Ok(key.into())
     }
 
     /// Convert the hash to a hex string.
@@ -517,7 +481,7 @@ impl From<Hash> for iroh::blobs::Hash {
 /// emitted during a `node.blobs_add_from_path`. Use the `AddProgress.type()`
 /// method to check the `AddProgressType`
 pub trait AddCallback: Send + Sync + 'static {
-    fn progress(&self, progress: Arc<AddProgress>) -> Result<(), IrohError>;
+    fn progress(&self, progress: Arc<AddProgress>) -> Result<(), CallbackError>;
 }
 
 /// The different types of AddProgress events
@@ -794,7 +758,7 @@ impl From<BlobExportMode> for iroh::blobs::store::ExportMode {
 /// a `node.blobs_download`. Use the `DownloadProgress.type()` method to check the
 /// `DownloadProgressType` of the event.
 pub trait DownloadCallback: Send + Sync + 'static {
-    fn progress(&self, progress: Arc<DownloadProgress>) -> Result<(), IrohError>;
+    fn progress(&self, progress: Arc<DownloadProgress>) -> Result<(), CallbackError>;
 }
 
 /// The different types of DownloadProgress events
@@ -1173,16 +1137,13 @@ impl Collection {
 
     /// Add the given blob to the collection
     pub fn push(&self, name: String, hash: &Hash) -> Result<(), IrohError> {
-        self.0
-            .write()
-            .map_err(IrohError::collection)?
-            .push(name, hash.0);
+        self.0.write().unwrap().push(name, hash.0);
         Ok(())
     }
 
     /// Check if the collection is empty
     pub fn is_empty(&self) -> Result<bool, IrohError> {
-        Ok(self.0.read().map_err(IrohError::collection)?.is_empty())
+        Ok(self.0.read().unwrap().is_empty())
     }
 
     /// Get the names of the blobs in this collection
@@ -1190,7 +1151,7 @@ impl Collection {
         Ok(self
             .0
             .read()
-            .map_err(IrohError::collection)?
+            .unwrap()
             .iter()
             .map(|(name, _)| name.clone())
             .collect())
@@ -1201,7 +1162,7 @@ impl Collection {
         Ok(self
             .0
             .read()
-            .map_err(IrohError::collection)?
+            .unwrap()
             .iter()
             .map(|(_, hash)| Arc::new(Hash(*hash)))
             .collect())
@@ -1212,7 +1173,7 @@ impl Collection {
         Ok(self
             .0
             .read()
-            .map_err(IrohError::collection)?
+            .unwrap()
             .iter()
             .map(|(name, hash)| LinkAndName {
                 name: name.clone(),
@@ -1223,7 +1184,7 @@ impl Collection {
 
     /// Returns the number of blobs in this collection
     pub fn len(&self) -> Result<u64, IrohError> {
-        Ok(self.0.read().map_err(IrohError::collection)?.len() as _)
+        Ok(self.0.read().unwrap().len() as _)
     }
 }
 
@@ -1243,7 +1204,7 @@ mod tests {
 
     use super::*;
     use crate::node::IrohNode;
-    use crate::NodeOptions;
+    use crate::{CallbackError, NodeOptions};
     use bytes::Bytes;
     use rand::RngCore;
     use tokio::io::AsyncWriteExt;
@@ -1343,15 +1304,16 @@ mod tests {
         }
 
         impl AddCallback for Callback {
-            fn progress(&self, progress: Arc<AddProgress>) -> Result<(), IrohError> {
+            fn progress(&self, progress: Arc<AddProgress>) -> Result<(), CallbackError> {
                 match *progress {
                     AddProgress::AllDone(ref d) => {
                         let mut output = self.output.lock().unwrap();
                         output.hash = Some(d.hash.clone());
                         output.format = Some(d.format.clone());
                     }
-                    AddProgress::Abort(ref a) => {
-                        return Err(IrohError::blobs(a.error.clone()));
+                    AddProgress::Abort(ref _a) => {
+                        // anyhow::anyhow!("{}", a.error).into());
+                        return Err(CallbackError::Error);
                     }
                     _ => {}
                 }
@@ -1367,7 +1329,7 @@ mod tests {
             false,
             Arc::new(tag),
             Arc::new(wrap),
-            Box::new(cb),
+            Arc::new(cb),
         )
         .unwrap();
 
@@ -1436,15 +1398,16 @@ mod tests {
         }
 
         impl AddCallback for Callback {
-            fn progress(&self, progress: Arc<AddProgress>) -> Result<(), IrohError> {
+            fn progress(&self, progress: Arc<AddProgress>) -> Result<(), CallbackError> {
                 match *progress {
                     AddProgress::AllDone(ref d) => {
                         let mut output = self.output.lock().unwrap();
                         output.collection_hash = Some(d.hash.clone());
                         output.format = Some(d.format.clone());
                     }
-                    AddProgress::Abort(ref a) => {
-                        return Err(IrohError::blobs(a.error.clone()));
+                    AddProgress::Abort(ref _a) => {
+                        return Err(CallbackError::Error);
+                        // return Err(anyhow::anyhow!("{}", a.error).into());
                     }
                     AddProgress::Done(ref d) => {
                         let mut output = self.output.lock().unwrap();
@@ -1465,7 +1428,7 @@ mod tests {
             false,
             Arc::new(SetTagOption::Auto),
             Arc::new(WrapOption::NoWrap),
-            Box::new(cb),
+            Arc::new(cb),
         )
         .unwrap();
 

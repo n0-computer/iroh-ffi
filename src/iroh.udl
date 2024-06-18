@@ -414,8 +414,9 @@ interface DocImportProgress {
 /// The `progress` method will be called for each `DocImportProgress` event that is
 /// emitted during a `doc.import_file()` call. Use the `DocImportProgress.type()`
 /// method to check the `DocImportProgressType`
-callback interface DocImportFileCallback {
-  [Throws=IrohError]
+[Trait, WithForeign]
+interface DocImportFileCallback {
+  [Throws=CallbackError]
   void progress(DocImportProgress progress);
 };
 
@@ -476,8 +477,9 @@ interface DocExportProgress {
 /// The `progress` method will be called for each `DocExportProgress` event that is
 /// emitted during a `doc.export_file()` call. Use the `DocExportProgress.type()`
 /// method to check the `DocExportProgressType`
-callback interface DocExportFileCallback {
-  [Throws=IrohError]
+[Trait, WithForeign]
+interface DocExportFileCallback {
+  [Throws=CallbackError]
   void progress(DocExportProgress progress);
 };
 
@@ -624,8 +626,9 @@ interface NodeStatus {
 /// The `progress` method will be called for each `SubscribeProgress` event that is
 /// emitted during a `node.doc_subscribe`. Use the `SubscribeProgress.type()`
 /// method to check the `LiveEvent`
-callback interface SubscribeCallback {
-  [Throws=IrohError]
+[Trait, WithForeign]
+interface SubscribeCallback {
+  [Throws=CallbackError]
   void event(LiveEvent event);
 };
 
@@ -1010,8 +1013,9 @@ interface AddProgress {
 /// The `progress` method will be called for each `AddProgress` event that is
 /// emitted during a `node.blobs_add_from_path`. Use the `AddProgress.type()`
 /// method to check the `AddProgressType`
-callback interface AddCallback {
-  [Throws=IrohError]
+[Trait, WithForeign]
+interface AddCallback {
+  [Throws=CallbackError]
   void progress(AddProgress progress);
 };
 
@@ -1054,8 +1058,9 @@ interface BlobDownloadOptions {
 /// The `progress` method will be called for each `DownloadProgress` event that is emitted during
 /// a `node.blobs_download`. Use the `DownloadProgress.type()` method to check the
 /// `DownloadProgressType` of the event.
-callback interface DownloadCallback {
-  [Throws=IrohError]
+[Trait, WithForeign]
+interface DownloadCallback {
+  [Throws=CallbackError]
   void progress(DownloadProgress progress);
 };
 
@@ -1293,28 +1298,13 @@ dictionary CollectionInfo {
   u64? total_blobs_size;
 };
 
-/// An iroh error. Each IrohError contains a string description.
-[Error]
+/// An iroh error.
+[Traits=(Debug)]
 interface IrohError {
-  Runtime(string description);
-  NodeCreate(string description);
-  Doc(string description);
-  Author(string description);
-  Namespace(string description);
-  DocTicket(string description);
-  BlobTicket(string description);
-  Uniffi(string description);
-  Connection(string description);
-  Blobs(string description);
-  Collection(string description);
-  Ipv4Addr(string description);
-  Ipv6Addr(string description);
-  SocketAddr(string description);
-  PublicKey(string description);
-  NodeAddr(string description);
-  Hash(string description);
-  FsUtil(string description);
-  Tags(string description);
-  Url(string description);
-  Entry(string description);
+  string message();
+};
+
+[Error]
+enum CallbackError {
+  "Error"
 };

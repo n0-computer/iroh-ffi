@@ -10,7 +10,7 @@ mod ticket;
 pub use self::author::*;
 pub use self::blob::*;
 pub use self::doc::*;
-pub use self::error::IrohError;
+pub use self::error::*;
 pub use self::key::*;
 pub use self::node::*;
 pub use self::tag::*;
@@ -63,7 +63,7 @@ pub fn set_log_level(level: LogLevel) {
 
 /// Initialize the global metrics collection.
 pub fn start_metrics_collection() -> Result<(), IrohError> {
-    try_init_metrics_collection().map_err(IrohError::runtime)
+    try_init_metrics_collection().map_err(|e| anyhow::Error::from(e).into())
 }
 
 fn block_on<F: Future<Output = T>, T>(rt: &tokio::runtime::Handle, fut: F) -> T {
@@ -84,12 +84,10 @@ pub fn key_to_path(
     prefix: Option<String>,
     root: Option<String>,
 ) -> Result<String, IrohError> {
-    let path = iroh::util::fs::key_to_path(key, prefix, root.map(std::path::PathBuf::from))
-        .map_err(IrohError::fs_util)?;
-    let path = path
-        .to_str()
-        .ok_or_else(|| IrohError::fs_util(format!("Unable to parse path {:?}", path)))
-        .map(|s| s.to_string())?;
+    let path = iroh::util::fs::key_to_path(key, prefix, root.map(std::path::PathBuf::from))?;
+    let path = path.to_str();
+    let path = path.ok_or_else(|| anyhow::anyhow!("Unable to parse path {:?}", path))?;
+    let path = path.to_string();
     Ok(path)
 }
 
@@ -107,7 +105,7 @@ pub fn path_to_key(
         root.map(std::path::PathBuf::from),
     )
     .map(|k| k.to_vec())
-    .map_err(IrohError::fs_util)
+    .map_err(IrohError::from)
 }
 
 #[cfg(test)]

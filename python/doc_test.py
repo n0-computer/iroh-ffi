@@ -15,7 +15,7 @@ def test_node_addr():
     ipv4 = "127.0.0.1:3000"
     ipv6 = "::1:3000"
     #
-    # relay url 
+    # relay url
     relay_url = "https://example.com"
     #
     # create a NodeAddr
@@ -25,8 +25,8 @@ def test_node_addr():
     # test we have returned the expected addresses
     got_addrs = node_addr.direct_addresses()
     for (got, expect) in zip(got_addrs, expect_addrs):
-        assert got == expect 
-    
+        assert got == expect
+
     assert relay_url == node_addr.relay_url()
 
 def test_author_id():
@@ -46,7 +46,7 @@ def test_author_id():
     assert author_0.equal(author)
 
 def test_query():
-    opts = QueryOptions(SortBy.KEY_AUTHOR, SortDirection.ASC, 10, 10)
+    opts = QueryOptions(sort_by=SortBy.KEY_AUTHOR, direction=SortDirection.ASC, offset=10, limit=10)
     # all
     all = Query.all(opts)
     assert 10 == all.offset()
@@ -56,13 +56,13 @@ def test_query():
     opts.direction = SortDirection.DESC
     opts.limit = 0
     opts.offset = 0
-    single_latest_per_key = Query.single_latest_per_key(opts);
+    single_latest_per_key = Query.single_latest_per_key(opts)
     assert 0 == single_latest_per_key.offset()
     assert None == single_latest_per_key.limit()
 
     # author
     opts.direction = SortDirection.ASC
-    opts.offset = 100 
+    opts.offset = 100
     author = Query.author(AuthorId.from_string("mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q"), opts)
     assert 100 == author.offset()
     assert None == author.limit()
@@ -154,4 +154,3 @@ def test_doc_import_export():
     #
     #
     assert bytes == got_bytes
-
