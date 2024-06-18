@@ -6,13 +6,13 @@ LIB_EXTENSION=""
 
 case "$TEST_OS" in
     "mac")
-        LIB_EXTENSION=".dylib"
+        LIB_EXTENSION="dylib"
         ;;
     "linux")
-        LIB_EXTENSION=".so"
+        LIB_EXTENSION="so"
         ;;
     "windows")
-        LIB_EXTENSION=".lib"
+        LIB_EXTENSION="lib"
         ;;
     *)
         echo "Unknown OS specified in TEST_OS"
