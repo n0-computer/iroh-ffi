@@ -108,3 +108,9 @@ python/iroh-data
 node_modules
 *.node
 package-lock.json
+
+
+# Kotlin
+
+kotlin/*.jar
+kotlin/*.dylib
