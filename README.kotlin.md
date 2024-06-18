@@ -2,8 +2,17 @@
 
 ## Requirements
 
+### CLI with `kotlinc`
+
+- [`kotlinc`](https://kotlinlang.org/docs/command-line.html)
+- [`ktlint`](https://github.com/pinterest/ktlint)
+- [`jna`](https://github.com/java-native-access/jna)
+
+### Android Development
+
 - Install the NDK you want to use, using Android Studio.
 - Configure rust to use it (TODO: add example)
-- Install `kotlinc` (needed for tests)
-- Install `ktlint` (needed to generate the bindings)
-- Install `jna` (needed for tests)
+
+## References
+
+- https://sal.dev/android/intro-rust-android-uniffi/
