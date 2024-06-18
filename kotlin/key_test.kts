@@ -1,5 +1,5 @@
 // tests that correspond to the `src/key.rs` rust api
-import uniffi.iroh.*
+import iroh.*
 
 val keyStr = "ki6htfv2252cj2lhq3hxu4qfcfjtpjnukzonevigudzjpmmruxva"
 val fmtStr = "ki6htfv2252cj2lh"
@@ -44,7 +44,7 @@ val bytes = bytesU.toByteArray()
 val key = PublicKey.fromString(keyStr)
 
 // test methods are as expected
-// FIXME: assert(key.toString() == keyStr)
+assert(key.toString() == keyStr)
 assert(key.toBytes() contentEquals bytes)
 assert(key.fmtShort() == fmtStr)
 
@@ -52,7 +52,7 @@ assert(key.fmtShort() == fmtStr)
 val key0 = PublicKey.fromBytes(bytes)
 
 // test methods are as expected
-// FIXME: assert(key0.toString() == keyStr)
+assert(key0.toString() == keyStr)
 assert(key0.toBytes() contentEquals bytes)
 assert(key0.fmtShort() == fmtStr)
 

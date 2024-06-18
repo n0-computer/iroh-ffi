@@ -633,6 +633,7 @@ interface SubscribeCallback {
 };
 
 /// Identifier for an [`Author`]
+[Traits=(Display)]
 interface AuthorId {
   /// Get an [`AuthorId`] from a String
   [Name=from_string, Throws=IrohError]
@@ -644,6 +645,7 @@ interface AuthorId {
 /// Author key to insert entries in a document
 ///
 /// Internally, an author is a `SigningKey` which is used to sign entries.
+[Traits=(Display)]
 interface Author {
   /// Get an [`Author`] from a String
   [Name=from_string, Throws=IrohError]
@@ -679,6 +681,7 @@ interface Entry {
 };
 
 /// Hash type used throughout Iroh. A blake3 hash.
+[Traits=(Display)]
 interface Hash {
   /// Calculate the hash of the provide bytes.
   constructor(bytes buf);
@@ -885,6 +888,7 @@ dictionary ConnectionTypeMixed {
 };
 
 /// A public key
+[Traits=(Display)]
 interface PublicKey {
   /// Returns true when both PublicKeys have the same value
   boolean equal([ByRef] PublicKey other);

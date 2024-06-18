@@ -3,7 +3,7 @@
 
 @file:Suppress("NAME_SHADOWING")
 
-package uniffi.iroh
+package iroh
 
 // Common helper code.
 //
@@ -961,6 +961,11 @@ internal interface UniffiLib : Library {
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
+    fun uniffi_iroh_fn_method_author_uniffi_trait_display(
+        `ptr`: Pointer,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+
     fun uniffi_iroh_fn_clone_authorid(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
@@ -981,6 +986,11 @@ internal interface UniffiLib : Library {
         `other`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Byte
+
+    fun uniffi_iroh_fn_method_authorid_uniffi_trait_display(
+        `ptr`: Pointer,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
 
     fun uniffi_iroh_fn_clone_blobdownloadoptions(
         `ptr`: Pointer,
@@ -1571,6 +1581,11 @@ internal interface UniffiLib : Library {
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
+    fun uniffi_iroh_fn_method_hash_uniffi_trait_display(
+        `ptr`: Pointer,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+
     fun uniffi_iroh_fn_clone_iroherror(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
@@ -1955,6 +1970,11 @@ internal interface UniffiLib : Library {
     ): RustBuffer.ByValue
 
     fun uniffi_iroh_fn_method_publickey_to_bytes(
+        `ptr`: Pointer,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+
+    fun uniffi_iroh_fn_method_publickey_uniffi_trait_display(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
@@ -4384,6 +4404,18 @@ open class Author :
             },
         )
 
+    override fun toString(): String =
+        FfiConverterString.lift(
+            callWithPointer {
+                uniffiRustCall { _status ->
+                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_author_uniffi_trait_display(
+                        it,
+                        _status,
+                    )
+                }
+            },
+        )
+
     companion object {
         /**
          * Get an [`Author`] from a String
@@ -4630,6 +4662,18 @@ open class AuthorId :
                     UniffiLib.INSTANCE.uniffi_iroh_fn_method_authorid_equal(
                         it,
                         FfiConverterTypeAuthorId.lower(`other`),
+                        _status,
+                    )
+                }
+            },
+        )
+
+    override fun toString(): String =
+        FfiConverterString.lift(
+            callWithPointer {
+                uniffiRustCall { _status ->
+                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_authorid_uniffi_trait_display(
+                        it,
                         _status,
                     )
                 }
@@ -9905,6 +9949,18 @@ open class Hash :
             },
         )
 
+    override fun toString(): String =
+        FfiConverterString.lift(
+            callWithPointer {
+                uniffiRustCall { _status ->
+                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_hash_uniffi_trait_display(
+                        it,
+                        _status,
+                    )
+                }
+            },
+        )
+
     companion object {
         /**
          * Create a Hash from its raw bytes representation.
@@ -12569,6 +12625,18 @@ open class PublicKey :
             callWithPointer {
                 uniffiRustCall { _status ->
                     UniffiLib.INSTANCE.uniffi_iroh_fn_method_publickey_to_bytes(
+                        it,
+                        _status,
+                    )
+                }
+            },
+        )
+
+    override fun toString(): String =
+        FfiConverterString.lift(
+            callWithPointer {
+                uniffiRustCall { _status ->
+                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_publickey_uniffi_trait_display(
                         it,
                         _status,
                     )
