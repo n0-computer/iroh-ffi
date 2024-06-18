@@ -104,7 +104,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        name: [ubuntu-latest, macOS-arm-latest, windows-latest]
+        name: [ubuntu-latest, macOS-arm-latest]
         rust: [stable]
         include:
           - name: ubuntu-latest
@@ -117,9 +117,9 @@ jobs:
             release-os: darwin
             release-arch: aarch64
             runner: [macOS, ARM64]
-          - name: windows-latest
-            os: windows
-            runner: [windows-latest]
+          # - name: windows-latest
+          #   os: windows
+          #   runner: [windows-latest]
 
     steps:
     - name: Checkout
