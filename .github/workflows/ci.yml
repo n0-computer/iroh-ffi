@@ -96,3 +96,60 @@ jobs:
         pip install pytest 
         maturin develop && \
         python -m pytest
+
+  build_and_test_kotlin:
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    name: Kotlin - Build and test 
+    strategy:
+      fail-fast: false
+      matrix:
+        name: [ubuntu-latest, macOS-arm-latest]
+        rust: [stable]
+        include:
+          - name: ubuntu-latest
+            os: linux
+            release-os: linux
+            release-arch: amd64
+            runner: [linux, X64]
+          - name: macOS-arm-latest
+            os: mac
+            release-os: darwin
+            release-arch: aarch64
+            runner: [macOS, ARM64]
+          # - name: windows-latest
+          #   os: windows
+          #   runner: [windows-latest]
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@master
+      with:
+        submodules: recursive
+
+    - name: Install ${{ matrix.rust }}
+      uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: ${{ matrix.rust }}
+
+    - name: setup java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin' # See 'Supported distributions' for available options
+        java-version: '21'
+    
+    - name: install kotlin
+      uses: arqu/setup-kotlin@main
+
+    - name: install ktlint
+      uses: arqu/action-ktlint-setup@main
+
+    - name: fetch jna
+      run: curl -L https://repo1.maven.org/maven2/net/java/dev/jna/jna/5.14.0/jna-5.14.0.jar -o jna.jar
+
+    - name: run kotlin tests
+      env:
+        CLASSPATH: ./jna.jar
+        TEST_OS: ${{ matrix.os }}
+      shell: bash
+      run: ./test_kotlin.sh
