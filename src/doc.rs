@@ -159,7 +159,7 @@ impl Doc {
     }
 
     /// Close the document.
-    pub fn close(&self) -> Result<(), IrohError> {
+    pub fn close_me(&self) -> Result<(), IrohError> {
         block_on(&self.rt, async {
             self.inner.close().await.map_err(IrohError::from)
         })

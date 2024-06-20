@@ -282,7 +282,7 @@ interface Doc {
   string id();
   /// Close the document.
   [Throws=IrohError]
-  void close();
+  void close_me();
   /// Set the content of a key to a byte array.
   [Throws=IrohError]
   Hash set_bytes([ByRef] AuthorId author, bytes key, bytes value);
@@ -633,12 +633,11 @@ interface SubscribeCallback {
 };
 
 /// Identifier for an [`Author`]
+[Traits=(Display)]
 interface AuthorId {
   /// Get an [`AuthorId`] from a String
   [Name=from_string, Throws=IrohError]
   constructor(string str);
-  /// Return the AuthorId as a string
-  string to_string();
   /// Returns true when both AuthorId's have the same value
   boolean equal([ByRef] AuthorId other);
 };
@@ -646,12 +645,11 @@ interface AuthorId {
 /// Author key to insert entries in a document
 ///
 /// Internally, an author is a `SigningKey` which is used to sign entries.
+[Traits=(Display)]
 interface Author {
   /// Get an [`Author`] from a String
   [Name=from_string, Throws=IrohError]
   constructor(string str);
-  /// Return the AuthorId as a string
-  string to_string();
   /// Get the [`AuthorId`] of this Author
   AuthorId id();
 };
@@ -683,11 +681,10 @@ interface Entry {
 };
 
 /// Hash type used throughout Iroh. A blake3 hash.
+[Traits=(Display)]
 interface Hash {
   /// Calculate the hash of the provide bytes.
   constructor(bytes buf);
-  /// Write the hash to a string
-  string to_string();
   /// Returns true if the Hash's have the same value
   boolean equal([ByRef] Hash other);
   /// Bytes of the hash.
@@ -891,9 +888,8 @@ dictionary ConnectionTypeMixed {
 };
 
 /// A public key
+[Traits=(Display)]
 interface PublicKey {
-  /// Represent a PublicKey as a string
-  string to_string();
   /// Returns true when both PublicKeys have the same value
   boolean equal([ByRef] PublicKey other);
   /// Represent a PublicKey as a byte slice

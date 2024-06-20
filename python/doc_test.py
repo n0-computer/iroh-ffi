@@ -36,7 +36,7 @@ def test_author_id():
     author = AuthorId.from_string(author_str)
     #
     # call to_string, ensure equal
-    assert author.to_string() == author_str
+    assert str(author) == author_str
     #
     # create another id, same string
     author_0 = AuthorId.from_string(author_str)
