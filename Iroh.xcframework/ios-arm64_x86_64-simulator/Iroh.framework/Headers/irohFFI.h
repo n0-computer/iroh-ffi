@@ -406,9 +406,9 @@ void*_Nonnull uniffi_iroh_fn_constructor_author_from_string(RustBuffer str, Rust
 void*_Nonnull uniffi_iroh_fn_method_author_id(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FN_METHOD_AUTHOR_TO_STRING
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FN_METHOD_AUTHOR_TO_STRING
-RustBuffer uniffi_iroh_fn_method_author_to_string(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FN_METHOD_AUTHOR_UNIFFI_TRAIT_DISPLAY
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FN_METHOD_AUTHOR_UNIFFI_TRAIT_DISPLAY
+RustBuffer uniffi_iroh_fn_method_author_uniffi_trait_display(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FN_CLONE_AUTHORID
@@ -431,9 +431,9 @@ void*_Nonnull uniffi_iroh_fn_constructor_authorid_from_string(RustBuffer str, Ru
 int8_t uniffi_iroh_fn_method_authorid_equal(void*_Nonnull ptr, void*_Nonnull other, RustCallStatus *_Nonnull out_status
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FN_METHOD_AUTHORID_TO_STRING
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FN_METHOD_AUTHORID_TO_STRING
-RustBuffer uniffi_iroh_fn_method_authorid_to_string(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FN_METHOD_AUTHORID_UNIFFI_TRAIT_DISPLAY
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FN_METHOD_AUTHORID_UNIFFI_TRAIT_DISPLAY
+RustBuffer uniffi_iroh_fn_method_authorid_uniffi_trait_display(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FN_CLONE_BLOBDOWNLOADOPTIONS
@@ -602,9 +602,9 @@ void*_Nonnull uniffi_iroh_fn_clone_doc(void*_Nonnull ptr, RustCallStatus *_Nonnu
 void uniffi_iroh_fn_free_doc(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FN_METHOD_DOC_CLOSE
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FN_METHOD_DOC_CLOSE
-void uniffi_iroh_fn_method_doc_close(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FN_METHOD_DOC_CLOSE_ME
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FN_METHOD_DOC_CLOSE_ME
+void uniffi_iroh_fn_method_doc_close_me(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FN_METHOD_DOC_DEL
@@ -1009,9 +1009,9 @@ RustBuffer uniffi_iroh_fn_method_hash_to_bytes(void*_Nonnull ptr, RustCallStatus
 RustBuffer uniffi_iroh_fn_method_hash_to_hex(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FN_METHOD_HASH_TO_STRING
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FN_METHOD_HASH_TO_STRING
-RustBuffer uniffi_iroh_fn_method_hash_to_string(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FN_METHOD_HASH_UNIFFI_TRAIT_DISPLAY
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FN_METHOD_HASH_UNIFFI_TRAIT_DISPLAY
+RustBuffer uniffi_iroh_fn_method_hash_uniffi_trait_display(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FN_CLONE_IROHERROR
@@ -1359,9 +1359,9 @@ RustBuffer uniffi_iroh_fn_method_publickey_fmt_short(void*_Nonnull ptr, RustCall
 RustBuffer uniffi_iroh_fn_method_publickey_to_bytes(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FN_METHOD_PUBLICKEY_TO_STRING
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FN_METHOD_PUBLICKEY_TO_STRING
-RustBuffer uniffi_iroh_fn_method_publickey_to_string(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FN_METHOD_PUBLICKEY_UNIFFI_TRAIT_DISPLAY
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FN_METHOD_PUBLICKEY_UNIFFI_TRAIT_DISPLAY
+RustBuffer uniffi_iroh_fn_method_publickey_uniffi_trait_display(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FN_CLONE_QUERY
@@ -1884,21 +1884,9 @@ uint16_t uniffi_iroh_checksum_method_author_id(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_CHECKSUM_METHOD_AUTHOR_TO_STRING
-#define UNIFFI_FFIDEF_UNIFFI_IROH_CHECKSUM_METHOD_AUTHOR_TO_STRING
-uint16_t uniffi_iroh_checksum_method_author_to_string(void
-    
-);
-#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_CHECKSUM_METHOD_AUTHORID_EQUAL
 #define UNIFFI_FFIDEF_UNIFFI_IROH_CHECKSUM_METHOD_AUTHORID_EQUAL
 uint16_t uniffi_iroh_checksum_method_authorid_equal(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_CHECKSUM_METHOD_AUTHORID_TO_STRING
-#define UNIFFI_FFIDEF_UNIFFI_IROH_CHECKSUM_METHOD_AUTHORID_TO_STRING
-uint16_t uniffi_iroh_checksum_method_authorid_to_string(void
     
 );
 #endif
@@ -2010,9 +1998,9 @@ uint16_t uniffi_iroh_checksum_method_directaddrinfo_latency(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_CHECKSUM_METHOD_DOC_CLOSE
-#define UNIFFI_FFIDEF_UNIFFI_IROH_CHECKSUM_METHOD_DOC_CLOSE
-uint16_t uniffi_iroh_checksum_method_doc_close(void
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_CHECKSUM_METHOD_DOC_CLOSE_ME
+#define UNIFFI_FFIDEF_UNIFFI_IROH_CHECKSUM_METHOD_DOC_CLOSE_ME
+uint16_t uniffi_iroh_checksum_method_doc_close_me(void
     
 );
 #endif
@@ -2301,12 +2289,6 @@ uint16_t uniffi_iroh_checksum_method_hash_to_bytes(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_CHECKSUM_METHOD_HASH_TO_HEX
 #define UNIFFI_FFIDEF_UNIFFI_IROH_CHECKSUM_METHOD_HASH_TO_HEX
 uint16_t uniffi_iroh_checksum_method_hash_to_hex(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_CHECKSUM_METHOD_HASH_TO_STRING
-#define UNIFFI_FFIDEF_UNIFFI_IROH_CHECKSUM_METHOD_HASH_TO_STRING
-uint16_t uniffi_iroh_checksum_method_hash_to_string(void
     
 );
 #endif
@@ -2613,12 +2595,6 @@ uint16_t uniffi_iroh_checksum_method_publickey_fmt_short(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_CHECKSUM_METHOD_PUBLICKEY_TO_BYTES
 #define UNIFFI_FFIDEF_UNIFFI_IROH_CHECKSUM_METHOD_PUBLICKEY_TO_BYTES
 uint16_t uniffi_iroh_checksum_method_publickey_to_bytes(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_CHECKSUM_METHOD_PUBLICKEY_TO_STRING
-#define UNIFFI_FFIDEF_UNIFFI_IROH_CHECKSUM_METHOD_PUBLICKEY_TO_STRING
-uint16_t uniffi_iroh_checksum_method_publickey_to_string(void
     
 );
 #endif

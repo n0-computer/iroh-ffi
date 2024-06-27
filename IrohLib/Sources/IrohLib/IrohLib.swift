@@ -876,11 +876,6 @@ public protocol AuthorProtocol: AnyObject {
      * Get the [`AuthorId`] of this Author
      */
     func id() -> AuthorId
-
-    /**
-     * Return the AuthorId as a string
-     */
-    func toString() -> String
 }
 
 /**
@@ -889,6 +884,7 @@ public protocol AuthorProtocol: AnyObject {
  * Internally, an author is a `SigningKey` which is used to sign entries.
  */
 open class Author:
+    CustomStringConvertible,
     AuthorProtocol
 {
     fileprivate let pointer: UnsafeMutableRawPointer!
@@ -948,13 +944,12 @@ open class Author:
         })
     }
 
-    /**
-     * Return the AuthorId as a string
-     */
-    open func toString() -> String {
-        return try! FfiConverterString.lift(try! rustCall {
-            uniffi_iroh_fn_method_author_to_string(self.uniffiClonePointer(), $0)
-        })
+    open var description: String {
+        return try! FfiConverterString.lift(
+            try! rustCall {
+                uniffi_iroh_fn_method_author_uniffi_trait_display(self.uniffiClonePointer(), $0)
+            }
+        )
     }
 }
 
@@ -1004,17 +999,13 @@ public protocol AuthorIdProtocol: AnyObject {
      * Returns true when both AuthorId's have the same value
      */
     func equal(other: AuthorId) -> Bool
-
-    /**
-     * Return the AuthorId as a string
-     */
-    func toString() -> String
 }
 
 /**
  * Identifier for an [`Author`]
  */
 open class AuthorId:
+    CustomStringConvertible,
     AuthorIdProtocol
 {
     fileprivate let pointer: UnsafeMutableRawPointer!
@@ -1075,13 +1066,12 @@ open class AuthorId:
         })
     }
 
-    /**
-     * Return the AuthorId as a string
-     */
-    open func toString() -> String {
-        return try! FfiConverterString.lift(try! rustCall {
-            uniffi_iroh_fn_method_authorid_to_string(self.uniffiClonePointer(), $0)
-        })
+    open var description: String {
+        return try! FfiConverterString.lift(
+            try! rustCall {
+                uniffi_iroh_fn_method_authorid_uniffi_trait_display(self.uniffiClonePointer(), $0)
+            }
+        )
     }
 }
 
@@ -1854,7 +1844,7 @@ public protocol DocProtocol: AnyObject {
     /**
      * Close the document.
      */
-    func close() throws
+    func closeMe() throws
 
     /**
      * Delete entries that match the given `author` and key `prefix`.
@@ -1993,8 +1983,8 @@ open class Doc:
     /**
      * Close the document.
      */
-    open func close() throws { try rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-        uniffi_iroh_fn_method_doc_close(self.uniffiClonePointer(), $0)
+    open func closeMe() throws { try rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
+        uniffi_iroh_fn_method_doc_close_me(self.uniffiClonePointer(), $0)
     }
     }
 
@@ -3635,17 +3625,13 @@ public protocol HashProtocol: AnyObject {
      * Convert the hash to a hex string.
      */
     func toHex() -> String
-
-    /**
-     * Write the hash to a string
-     */
-    func toString() -> String
 }
 
 /**
  * Hash type used throughout Iroh. A blake3 hash.
  */
 open class Hash:
+    CustomStringConvertible,
     HashProtocol
 {
     fileprivate let pointer: UnsafeMutableRawPointer!
@@ -3746,13 +3732,12 @@ open class Hash:
         })
     }
 
-    /**
-     * Write the hash to a string
-     */
-    open func toString() -> String {
-        return try! FfiConverterString.lift(try! rustCall {
-            uniffi_iroh_fn_method_hash_to_string(self.uniffiClonePointer(), $0)
-        })
+    open var description: String {
+        return try! FfiConverterString.lift(
+            try! rustCall {
+                uniffi_iroh_fn_method_hash_uniffi_trait_display(self.uniffiClonePointer(), $0)
+            }
+        )
     }
 }
 
@@ -5101,17 +5086,13 @@ public protocol PublicKeyProtocol: AnyObject {
      * Represent a PublicKey as a byte slice
      */
     func toBytes() -> Data
-
-    /**
-     * Represent a PublicKey as a string
-     */
-    func toString() -> String
 }
 
 /**
  * A public key
  */
 open class PublicKey:
+    CustomStringConvertible,
     PublicKeyProtocol
 {
     fileprivate let pointer: UnsafeMutableRawPointer!
@@ -5201,13 +5182,12 @@ open class PublicKey:
         })
     }
 
-    /**
-     * Represent a PublicKey as a string
-     */
-    open func toString() -> String {
-        return try! FfiConverterString.lift(try! rustCall {
-            uniffi_iroh_fn_method_publickey_to_string(self.uniffiClonePointer(), $0)
-        })
+    open var description: String {
+        return try! FfiConverterString.lift(
+            try! rustCall {
+                uniffi_iroh_fn_method_publickey_uniffi_trait_display(self.uniffiClonePointer(), $0)
+            }
+        )
     }
 }
 
@@ -10357,13 +10337,7 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_checksum_method_author_id() != 49771 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_author_to_string() != 53120 {
-        return InitializationResult.apiChecksumMismatch
-    }
     if uniffi_iroh_checksum_method_authorid_equal() != 53671 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_checksum_method_authorid_to_string() != 42389 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_blobticket_as_download_options() != 57522 {
@@ -10420,7 +10394,7 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_checksum_method_directaddrinfo_latency() != 9423 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_close() != 14451 {
+    if uniffi_iroh_checksum_method_doc_close_me() != 59191 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_doc_del() != 43294 {
@@ -10565,9 +10539,6 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_hash_to_hex() != 27622 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_checksum_method_hash_to_string() != 61408 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_iroherror_message() != 42005 {
@@ -10721,9 +10692,6 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_publickey_to_bytes() != 54334 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_checksum_method_publickey_to_string() != 48998 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_checksum_method_query_limit() != 13803 {
