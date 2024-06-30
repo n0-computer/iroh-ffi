@@ -1,6 +1,7 @@
 /// An Error.
 #[derive(Debug, thiserror::Error)]
 #[error("{e:?}")]
+#[uniffi::export(Debug)]
 pub struct IrohError {
     e: anyhow::Error,
 }

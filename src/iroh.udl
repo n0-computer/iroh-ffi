@@ -34,55 +34,6 @@ interface IrohNode {
   /// The string representation of the PublicKey of this node.
   string node_id();
 
-  /// Create a new doc.
-  [Throws=IrohError]
-  Doc doc_create();
-  /// Delete a document from the local node.
-  ///
-  /// This is a destructive operation. Both the document secret key and all entries in the
-  /// document will be permanently deleted from the node's storage. Content blobs will be
-  /// deleted through garbage collection unless they are referenced from another document or tag.
-  [Throws=IrohError]
-  void doc_drop(string doc_id);
-  /// Join and sync with an already existing document.
-  [Throws=IrohError]
-  Doc doc_join(string ticket);
-  /// Join and sync with an already existing document and subscribe to events on that document.
-  [Throws=IrohError]
-  Doc doc_join_and_subscribe(string ticket, SubscribeCallback cb);
-  /// List all the docs we have access to on this node.
-  [Throws=IrohError]
-  sequence<NamespaceAndCapability> doc_list();
-  /// Get a [`Doc`].
-  ///
-  /// Returns None if the document cannot be found.
-  [Throws=IrohError]
-  Doc? doc_open(string id);
-
-  /// Create a new document author.
-  ///
-  /// You likely want to save the returned [`AuthorId`] somewhere so that you can use this author
-  /// again.
-  ///
-  /// If you need only a single author, use [`Self::default`].
-  [Throws=IrohError]
-  AuthorId author_create();
-  /// Export the given author.
-  ///
-  /// Warning: This contains sensitive data.
-  [Throws=IrohError]
-  Author author_export(AuthorId author);
-  /// Import the given author.
-  ///
-  /// Warning: This contains sensitive data.
-  [Throws=IrohError]
-  AuthorId author_import(Author author);
-  /// Deletes the given author by id.
-  ///
-  /// Warning: This permanently removes this author.
-  [Throws=IrohError]
-  void author_delete(AuthorId author);
-
   /// List all complete blobs.
   ///
   /// Note: this allocates for each `BlobInfo`, if you have many `BlobInfo`s this may be a prohibitively large list.

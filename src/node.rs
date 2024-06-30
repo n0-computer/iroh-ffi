@@ -6,7 +6,7 @@ use iroh::{
     node::{Builder, FsNode},
 };
 
-use crate::{block_on, IrohError, NodeAddr, PublicKey};
+use crate::{IrohError, NodeAddr, PublicKey};
 
 /// Stats counter
 /// Counter stats
@@ -295,14 +295,12 @@ impl IrohNode {
     /// Get status information about a node
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn status(&self) -> Result<Arc<NodeStatus>, IrohError> {
-        block_on(&self.rt(), async {
-            let res = self
-                .sync_client
-                .status()
-                .await
-                .map(|n| Arc::new(n.into()))?;
-            Ok(res)
-        })
+        let res = self
+            .sync_client
+            .status()
+            .await
+            .map(|n| Arc::new(n.into()))?;
+        Ok(res)
     }
 }
 

@@ -23,6 +23,8 @@ import com.sun.jna.Native
 import com.sun.jna.Pointer
 import com.sun.jna.Structure
 import com.sun.jna.ptr.*
+import kotlinx.coroutines.CancellableContinuation
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.CharBuffer
@@ -30,6 +32,7 @@ import java.nio.charset.CodingErrorAction
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.coroutines.resume
 
 // This is a helper for safely working with byte buffers returned from the Rust code.
 // A rust-owned buffer is represented by its capacity, its current length, and a
@@ -381,7 +384,7 @@ private fun findLibraryName(componentName: String): String {
     if (libOverride != null) {
         return libOverride
     }
-    return "uniffi_iroh"
+    return "iroh"
 }
 
 private inline fun <reified Lib : Library> loadIndirect(componentName: String): Lib =
@@ -1616,49 +1619,12 @@ internal interface UniffiLib : Library {
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_constructor_irohnode_new(
-        `path`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Pointer
+    fun uniffi_iroh_fn_constructor_irohnode_new(`path`: RustBuffer.ByValue): Long
 
     fun uniffi_iroh_fn_constructor_irohnode_with_options(
         `path`: RustBuffer.ByValue,
-        `opts`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Pointer
-
-    fun uniffi_iroh_fn_method_irohnode_author_create(
-        `ptr`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Pointer
-
-    fun uniffi_iroh_fn_method_irohnode_author_default(
-        `ptr`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Pointer
-
-    fun uniffi_iroh_fn_method_irohnode_author_delete(
-        `ptr`: Pointer,
-        `author`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    fun uniffi_iroh_fn_method_irohnode_author_export(
-        `ptr`: Pointer,
-        `author`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Pointer
-
-    fun uniffi_iroh_fn_method_irohnode_author_import(
-        `ptr`: Pointer,
-        `author`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Pointer
-
-    fun uniffi_iroh_fn_method_irohnode_author_list(
-        `ptr`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
+        `options`: RustBuffer.ByValue,
+    ): Long
 
     fun uniffi_iroh_fn_method_irohnode_blobs_add_bytes(
         `ptr`: Pointer,
@@ -1763,66 +1729,10 @@ internal interface UniffiLib : Library {
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_method_irohnode_connection_info(
-        `ptr`: Pointer,
-        `nodeId`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    fun uniffi_iroh_fn_method_irohnode_connections(
-        `ptr`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    fun uniffi_iroh_fn_method_irohnode_doc_create(
-        `ptr`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Pointer
-
-    fun uniffi_iroh_fn_method_irohnode_doc_drop(
-        `ptr`: Pointer,
-        `docId`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    fun uniffi_iroh_fn_method_irohnode_doc_join(
-        `ptr`: Pointer,
-        `ticket`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Pointer
-
-    fun uniffi_iroh_fn_method_irohnode_doc_join_and_subscribe(
-        `ptr`: Pointer,
-        `ticket`: RustBuffer.ByValue,
-        `cb`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Pointer
-
-    fun uniffi_iroh_fn_method_irohnode_doc_list(
-        `ptr`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    fun uniffi_iroh_fn_method_irohnode_doc_open(
-        `ptr`: Pointer,
-        `id`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
     fun uniffi_iroh_fn_method_irohnode_node_id(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
-
-    fun uniffi_iroh_fn_method_irohnode_stats(
-        `ptr`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    fun uniffi_iroh_fn_method_irohnode_status(
-        `ptr`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Pointer
 
     fun uniffi_iroh_fn_method_irohnode_tags_delete(
         `ptr`: Pointer,
@@ -1834,6 +1744,63 @@ internal interface UniffiLib : Library {
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
+
+    fun uniffi_iroh_fn_method_irohnode_author_create(`ptr`: Pointer): Long
+
+    fun uniffi_iroh_fn_method_irohnode_author_default(`ptr`: Pointer): Long
+
+    fun uniffi_iroh_fn_method_irohnode_author_delete(
+        `ptr`: Pointer,
+        `author`: Pointer,
+    ): Long
+
+    fun uniffi_iroh_fn_method_irohnode_author_export(
+        `ptr`: Pointer,
+        `author`: Pointer,
+    ): Long
+
+    fun uniffi_iroh_fn_method_irohnode_author_import(
+        `ptr`: Pointer,
+        `author`: Pointer,
+    ): Long
+
+    fun uniffi_iroh_fn_method_irohnode_author_list(`ptr`: Pointer): Long
+
+    fun uniffi_iroh_fn_method_irohnode_connection_info(
+        `ptr`: Pointer,
+        `nodeId`: Pointer,
+    ): Long
+
+    fun uniffi_iroh_fn_method_irohnode_connections(`ptr`: Pointer): Long
+
+    fun uniffi_iroh_fn_method_irohnode_doc_create(`ptr`: Pointer): Long
+
+    fun uniffi_iroh_fn_method_irohnode_doc_drop(
+        `ptr`: Pointer,
+        `docId`: RustBuffer.ByValue,
+    ): Long
+
+    fun uniffi_iroh_fn_method_irohnode_doc_join(
+        `ptr`: Pointer,
+        `ticket`: RustBuffer.ByValue,
+    ): Long
+
+    fun uniffi_iroh_fn_method_irohnode_doc_join_and_subscribe(
+        `ptr`: Pointer,
+        `ticket`: RustBuffer.ByValue,
+        `cb`: Pointer,
+    ): Long
+
+    fun uniffi_iroh_fn_method_irohnode_doc_list(`ptr`: Pointer): Long
+
+    fun uniffi_iroh_fn_method_irohnode_doc_open(
+        `ptr`: Pointer,
+        `id`: RustBuffer.ByValue,
+    ): Long
+
+    fun uniffi_iroh_fn_method_irohnode_stats(`ptr`: Pointer): Long
+
+    fun uniffi_iroh_fn_method_irohnode_status(`ptr`: Pointer): Long
 
     fun uniffi_iroh_fn_clone_liveevent(
         `ptr`: Pointer,
@@ -2522,18 +2489,6 @@ internal interface UniffiLib : Library {
 
     fun uniffi_iroh_checksum_method_iroherror_message(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_author_create(): Short
-
-    fun uniffi_iroh_checksum_method_irohnode_author_default(): Short
-
-    fun uniffi_iroh_checksum_method_irohnode_author_delete(): Short
-
-    fun uniffi_iroh_checksum_method_irohnode_author_export(): Short
-
-    fun uniffi_iroh_checksum_method_irohnode_author_import(): Short
-
-    fun uniffi_iroh_checksum_method_irohnode_author_list(): Short
-
     fun uniffi_iroh_checksum_method_irohnode_blobs_add_bytes(): Short
 
     fun uniffi_iroh_checksum_method_irohnode_blobs_add_from_path(): Short
@@ -2564,6 +2519,24 @@ internal interface UniffiLib : Library {
 
     fun uniffi_iroh_checksum_method_irohnode_blobs_write_to_path(): Short
 
+    fun uniffi_iroh_checksum_method_irohnode_node_id(): Short
+
+    fun uniffi_iroh_checksum_method_irohnode_tags_delete(): Short
+
+    fun uniffi_iroh_checksum_method_irohnode_tags_list(): Short
+
+    fun uniffi_iroh_checksum_method_irohnode_author_create(): Short
+
+    fun uniffi_iroh_checksum_method_irohnode_author_default(): Short
+
+    fun uniffi_iroh_checksum_method_irohnode_author_delete(): Short
+
+    fun uniffi_iroh_checksum_method_irohnode_author_export(): Short
+
+    fun uniffi_iroh_checksum_method_irohnode_author_import(): Short
+
+    fun uniffi_iroh_checksum_method_irohnode_author_list(): Short
+
     fun uniffi_iroh_checksum_method_irohnode_connection_info(): Short
 
     fun uniffi_iroh_checksum_method_irohnode_connections(): Short
@@ -2580,15 +2553,9 @@ internal interface UniffiLib : Library {
 
     fun uniffi_iroh_checksum_method_irohnode_doc_open(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_node_id(): Short
-
     fun uniffi_iroh_checksum_method_irohnode_stats(): Short
 
     fun uniffi_iroh_checksum_method_irohnode_status(): Short
-
-    fun uniffi_iroh_checksum_method_irohnode_tags_delete(): Short
-
-    fun uniffi_iroh_checksum_method_irohnode_tags_list(): Short
 
     fun uniffi_iroh_checksum_method_liveevent_as_content_ready(): Short
 
@@ -2954,24 +2921,6 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_iroh_checksum_method_iroherror_message() != 42005.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_author_create() != 33498.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_checksum_method_irohnode_author_default() != 41725.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_checksum_method_irohnode_author_delete() != 31070.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_checksum_method_irohnode_author_export() != 61624.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_checksum_method_irohnode_author_import() != 34851.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_checksum_method_irohnode_author_list() != 12810.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
     if (lib.uniffi_iroh_checksum_method_irohnode_blobs_add_bytes() != 19868.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -3017,43 +2966,61 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_iroh_checksum_method_irohnode_blobs_write_to_path() != 9079.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_connection_info() != 3180.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_checksum_method_irohnode_connections() != 64940.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_checksum_method_irohnode_doc_create() != 1646.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_checksum_method_irohnode_doc_drop() != 4401.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_checksum_method_irohnode_doc_join() != 7221.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_checksum_method_irohnode_doc_join_and_subscribe() != 37938.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_checksum_method_irohnode_doc_list() != 48371.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_checksum_method_irohnode_doc_open() != 50051.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
     if (lib.uniffi_iroh_checksum_method_irohnode_node_id() != 31962.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_checksum_method_irohnode_stats() != 49644.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_checksum_method_irohnode_status() != 56342.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_checksum_method_irohnode_tags_delete() != 49837.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_checksum_method_irohnode_tags_list() != 47102.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_author_create() != 58991.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_author_default() != 7904.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_author_delete() != 43436.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_author_export() != 60995.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_author_import() != 2472.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_author_list() != 14690.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_connection_info() != 17326.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_connections() != 5115.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_doc_create() != 62501.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_doc_drop() != 6368.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_doc_join() != 20276.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_doc_join_and_subscribe() != 21569.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_doc_list() != 10922.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_doc_open() != 47990.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_stats() != 45923.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_status() != 402.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_checksum_method_liveevent_as_content_ready() != 15237.toShort()) {
@@ -3161,10 +3128,10 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_iroh_checksum_constructor_hash_new() != 25525.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_irohnode_new() != 55095.toShort()) {
+    if (lib.uniffi_iroh_checksum_constructor_irohnode_new() != 5720.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_irohnode_with_options() != 31863.toShort()) {
+    if (lib.uniffi_iroh_checksum_constructor_irohnode_with_options() != 31921.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_checksum_constructor_nodeaddr_new() != 31240.toShort()) {
@@ -3218,6 +3185,50 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
 }
 
 // Async support
+// Async return type handlers
+
+internal const val UNIFFI_RUST_FUTURE_POLL_READY = 0.toByte()
+internal const val UNIFFI_RUST_FUTURE_POLL_MAYBE_READY = 1.toByte()
+
+internal val uniffiContinuationHandleMap = UniffiHandleMap<CancellableContinuation<Byte>>()
+
+// FFI type for Rust future continuations
+internal object uniffiRustFutureContinuationCallbackImpl : UniffiRustFutureContinuationCallback {
+    override fun callback(
+        data: Long,
+        pollResult: Byte,
+    ) {
+        uniffiContinuationHandleMap.remove(data).resume(pollResult)
+    }
+}
+
+internal suspend fun <T, F, E : kotlin.Exception> uniffiRustCallAsync(
+    rustFuture: Long,
+    pollFunc: (Long, UniffiRustFutureContinuationCallback, Long) -> Unit,
+    completeFunc: (Long, UniffiRustCallStatus) -> F,
+    freeFunc: (Long) -> Unit,
+    liftFunc: (F) -> T,
+    errorHandler: UniffiRustCallStatusErrorHandler<E>,
+): T {
+    try {
+        do {
+            val pollResult =
+                suspendCancellableCoroutine<Byte> { continuation ->
+                    pollFunc(
+                        rustFuture,
+                        uniffiRustFutureContinuationCallbackImpl,
+                        uniffiContinuationHandleMap.insert(continuation),
+                    )
+                }
+        } while (pollResult != UNIFFI_RUST_FUTURE_POLL_READY)
+
+        return liftFunc(
+            uniffiRustCallWithError(errorHandler, { status -> completeFunc(rustFuture, status) }),
+        )
+    } finally {
+        freeFunc(rustFuture)
+    }
+}
 
 // Public interface members begin here.
 
@@ -10359,49 +10370,6 @@ public object FfiConverterTypeIrohError : FfiConverter<IrohException, Pointer> {
  */
 public interface IrohNodeInterface {
     /**
-     * Create a new document author.
-     *
-     * You likely want to save the returned [`AuthorId`] somewhere so that you can use this author
-     * again.
-     *
-     * If you need only a single author, use [`Self::default`].
-     */
-    fun `authorCreate`(): AuthorId
-
-    /**
-     * Returns the default document author of this node.
-     *
-     * On persistent nodes, the author is created on first start and its public key is saved
-     * in the data directory.
-     *
-     * The default author can be set with [`Self::set_default`].
-     */
-    fun `authorDefault`(): AuthorId
-
-    /**
-     * Deletes the given author by id.
-     *
-     * Warning: This permanently removes this author.
-     */
-    fun `authorDelete`(`author`: AuthorId)
-
-    /**
-     * Export the given author.
-     *
-     * Warning: This contains sensitive data.
-     */
-    fun `authorExport`(`author`: AuthorId): Author
-
-    /**
-     * Import the given author.
-     *
-     * Warning: This contains sensitive data.
-     */
-    fun `authorImport`(`author`: Author): AuthorId
-
-    fun `authorList`(): List<AuthorId>
-
-    /**
      * Write a blob by passing bytes.
      */
     fun `blobsAddBytes`(`bytes`: kotlin.ByteArray): BlobAddOutcome
@@ -10532,66 +10500,10 @@ public interface IrohNodeInterface {
         `path`: kotlin.String,
     )
 
-    fun `connectionInfo`(`nodeId`: PublicKey): ConnectionInfo?
-
-    /**
-     * Return `ConnectionInfo`s for each connection we have to another iroh node.
-     */
-    fun `connections`(): List<ConnectionInfo>
-
-    /**
-     * Create a new doc.
-     */
-    fun `docCreate`(): Doc
-
-    /**
-     * Delete a document from the local node.
-     *
-     * This is a destructive operation. Both the document secret key and all entries in the
-     * document will be permanently deleted from the node's storage. Content blobs will be
-     * deleted through garbage collection unless they are referenced from another document or tag.
-     */
-    fun `docDrop`(`docId`: kotlin.String)
-
-    /**
-     * Join and sync with an already existing document.
-     */
-    fun `docJoin`(`ticket`: kotlin.String): Doc
-
-    /**
-     * Join and sync with an already existing document and subscribe to events on that document.
-     */
-    fun `docJoinAndSubscribe`(
-        `ticket`: kotlin.String,
-        `cb`: SubscribeCallback,
-    ): Doc
-
-    /**
-     * List all the docs we have access to on this node.
-     */
-    fun `docList`(): List<NamespaceAndCapability>
-
-    /**
-     * Get a [`Doc`].
-     *
-     * Returns None if the document cannot be found.
-     */
-    fun `docOpen`(`id`: kotlin.String): Doc?
-
     /**
      * The string representation of the PublicKey of this node.
      */
     fun `nodeId`(): kotlin.String
-
-    /**
-     * Get statistics of the running node.
-     */
-    fun `stats`(): Map<kotlin.String, CounterStats>
-
-    /**
-     * Get status information about a node
-     */
-    fun `status`(): NodeStatus
 
     /**
      * Delete a tag.
@@ -10605,6 +10517,111 @@ public interface IrohNodeInterface {
      * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
      */
     fun `tagsList`(): List<TagInfo>
+
+    /**
+     * Create a new document author.
+     *
+     * You likely want to save the returned [`AuthorId`] somewhere so that you can use this author
+     * again.
+     *
+     * If you need only a single author, use [`Self::default`].
+     */
+    suspend fun `authorCreate`(): AuthorId
+
+    /**
+     * Returns the default document author of this node.
+     *
+     * On persistent nodes, the author is created on first start and its public key is saved
+     * in the data directory.
+     *
+     * The default author can be set with [`Self::set_default`].
+     */
+    suspend fun `authorDefault`(): AuthorId
+
+    /**
+     * Deletes the given author by id.
+     *
+     * Warning: This permanently removes this author.
+     */
+    suspend fun `authorDelete`(`author`: AuthorId)
+
+    /**
+     * Export the given author.
+     *
+     * Warning: This contains sensitive data.
+     */
+    suspend fun `authorExport`(`author`: AuthorId): Author
+
+    /**
+     * Import the given author.
+     *
+     * Warning: This contains sensitive data.
+     */
+    suspend fun `authorImport`(`author`: Author): AuthorId
+
+    /**
+     * List all the AuthorIds that exist on this node.
+     */
+    suspend fun `authorList`(): List<AuthorId>
+
+    /**
+     * Return connection information on the currently running node.
+     */
+    suspend fun `connectionInfo`(`nodeId`: PublicKey): ConnectionInfo?
+
+    /**
+     * Return `ConnectionInfo`s for each connection we have to another iroh node.
+     */
+    suspend fun `connections`(): List<ConnectionInfo>
+
+    /**
+     * Create a new doc.
+     */
+    suspend fun `docCreate`(): Doc
+
+    /**
+     * Delete a document from the local node.
+     *
+     * This is a destructive operation. Both the document secret key and all entries in the
+     * document will be permanently deleted from the node's storage. Content blobs will be deleted
+     * through garbage collection unless they are referenced from another document or tag.
+     */
+    suspend fun `docDrop`(`docId`: kotlin.String)
+
+    /**
+     * Join and sync with an already existing document.
+     */
+    suspend fun `docJoin`(`ticket`: kotlin.String): Doc
+
+    /**
+     * Join and sync with an already existing document and subscribe to events on that document.
+     */
+    suspend fun `docJoinAndSubscribe`(
+        `ticket`: kotlin.String,
+        `cb`: SubscribeCallback,
+    ): Doc
+
+    /**
+     * List all the docs we have access to on this node.
+     */
+    suspend fun `docList`(): List<NamespaceAndCapability>
+
+    /**
+     * Get a [`Doc`].
+     *
+     * Returns None if the document cannot be found.
+     */
+    suspend fun `docOpen`(`id`: kotlin.String): Doc?
+
+    /**
+     * Get statistics of the running node.
+     */
+    suspend fun `stats`(): Map<kotlin.String, CounterStats>
+
+    /**
+     * Get status information about a node
+     */
+    suspend fun `status`(): NodeStatus
 
     companion object
 }
@@ -10631,20 +10648,7 @@ open class IrohNode :
         this.pointer = null
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(pointer))
     }
-
-    /**
-     * Create a new iroh node. The `path` param should be a directory where we can store or load
-     * iroh data from a previous session.
-     */
-    constructor(`path`: kotlin.String) :
-        this(
-            uniffiRustCallWithError(IrohException) { _status ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_irohnode_new(
-                    FfiConverterString.lower(`path`),
-                    _status,
-                )
-            },
-        )
+    // Note no constructor generated for this object as it is async.
 
     protected val pointer: Pointer?
     protected val cleanable: UniffiCleaner.Cleanable
@@ -10709,128 +10713,6 @@ open class IrohNode :
         uniffiRustCall { status ->
             UniffiLib.INSTANCE.uniffi_iroh_fn_clone_irohnode(pointer!!, status)
         }
-
-    /**
-     * Create a new document author.
-     *
-     * You likely want to save the returned [`AuthorId`] somewhere so that you can use this author
-     * again.
-     *
-     * If you need only a single author, use [`Self::default`].
-     */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `authorCreate`(): AuthorId =
-        FfiConverterTypeAuthorId.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_author_create(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
-
-    /**
-     * Returns the default document author of this node.
-     *
-     * On persistent nodes, the author is created on first start and its public key is saved
-     * in the data directory.
-     *
-     * The default author can be set with [`Self::set_default`].
-     */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `authorDefault`(): AuthorId =
-        FfiConverterTypeAuthorId.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_author_default(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
-
-    /**
-     * Deletes the given author by id.
-     *
-     * Warning: This permanently removes this author.
-     */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `authorDelete`(`author`: AuthorId) =
-        callWithPointer {
-            uniffiRustCallWithError(IrohException) { _status ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_author_delete(
-                    it,
-                    FfiConverterTypeAuthorId.lower(`author`),
-                    _status,
-                )
-            }
-        }
-
-    /**
-     * Export the given author.
-     *
-     * Warning: This contains sensitive data.
-     */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `authorExport`(`author`: AuthorId): Author =
-        FfiConverterTypeAuthor.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_author_export(
-                        it,
-                        FfiConverterTypeAuthorId.lower(`author`),
-                        _status,
-                    )
-                }
-            },
-        )
-
-    /**
-     * Import the given author.
-     *
-     * Warning: This contains sensitive data.
-     */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `authorImport`(`author`: Author): AuthorId =
-        FfiConverterTypeAuthorId.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_author_import(
-                        it,
-                        FfiConverterTypeAuthor.lower(`author`),
-                        _status,
-                    )
-                }
-            },
-        )
-
-    @Throws(
-        IrohException::class,
-        )
-    override fun `authorList`(): List<AuthorId> =
-        FfiConverterSequenceTypeAuthorId.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_author_list(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
 
     /**
      * Write a blob by passing bytes.
@@ -11172,160 +11054,6 @@ open class IrohNode :
         }
     }
 
-    @Throws(
-        IrohException::class,
-        )
-    override fun `connectionInfo`(`nodeId`: PublicKey): ConnectionInfo? =
-        FfiConverterOptionalTypeConnectionInfo.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_connection_info(
-                        it,
-                        FfiConverterTypePublicKey.lower(`nodeId`),
-                        _status,
-                    )
-                }
-            },
-        )
-
-    /**
-     * Return `ConnectionInfo`s for each connection we have to another iroh node.
-     */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `connections`(): List<ConnectionInfo> =
-        FfiConverterSequenceTypeConnectionInfo.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_connections(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
-
-    /**
-     * Create a new doc.
-     */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `docCreate`(): Doc =
-        FfiConverterTypeDoc.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_doc_create(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
-
-    /**
-     * Delete a document from the local node.
-     *
-     * This is a destructive operation. Both the document secret key and all entries in the
-     * document will be permanently deleted from the node's storage. Content blobs will be
-     * deleted through garbage collection unless they are referenced from another document or tag.
-     */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `docDrop`(`docId`: kotlin.String) =
-        callWithPointer {
-            uniffiRustCallWithError(IrohException) { _status ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_doc_drop(
-                    it,
-                    FfiConverterString.lower(`docId`),
-                    _status,
-                )
-            }
-        }
-
-    /**
-     * Join and sync with an already existing document.
-     */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `docJoin`(`ticket`: kotlin.String): Doc =
-        FfiConverterTypeDoc.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_doc_join(
-                        it,
-                        FfiConverterString.lower(`ticket`),
-                        _status,
-                    )
-                }
-            },
-        )
-
-    /**
-     * Join and sync with an already existing document and subscribe to events on that document.
-     */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `docJoinAndSubscribe`(
-        `ticket`: kotlin.String,
-        `cb`: SubscribeCallback,
-    ): Doc =
-        FfiConverterTypeDoc.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_doc_join_and_subscribe(
-                        it,
-                        FfiConverterString.lower(`ticket`),
-                        FfiConverterTypeSubscribeCallback.lower(`cb`),
-                        _status,
-                    )
-                }
-            },
-        )
-
-    /**
-     * List all the docs we have access to on this node.
-     */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `docList`(): List<NamespaceAndCapability> =
-        FfiConverterSequenceTypeNamespaceAndCapability.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_doc_list(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
-
-    /**
-     * Get a [`Doc`].
-     *
-     * Returns None if the document cannot be found.
-     */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `docOpen`(`id`: kotlin.String): Doc? =
-        FfiConverterOptionalTypeDoc.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_doc_open(
-                        it,
-                        FfiConverterString.lower(`id`),
-                        _status,
-                    )
-                }
-            },
-        )
-
     /**
      * The string representation of the PublicKey of this node.
      */
@@ -11334,42 +11062,6 @@ open class IrohNode :
             callWithPointer {
                 uniffiRustCall { _status ->
                     UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_node_id(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
-
-    /**
-     * Get statistics of the running node.
-     */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `stats`(): Map<kotlin.String, CounterStats> =
-        FfiConverterMapStringTypeCounterStats.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_stats(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
-
-    /**
-     * Get status information about a node
-     */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `status`(): NodeStatus =
-        FfiConverterTypeNodeStatus.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_status(
                         it,
                         _status,
                     )
@@ -11415,23 +11107,398 @@ open class IrohNode :
             },
         )
 
+    /**
+     * Create a new document author.
+     *
+     * You likely want to save the returned [`AuthorId`] somewhere so that you can use this author
+     * again.
+     *
+     * If you need only a single author, use [`Self::default`].
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `authorCreate`(): AuthorId =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_author_create(
+                    thisPtr,
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_pointer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_pointer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_pointer(future) },
+            // lift function
+            { FfiConverterTypeAuthorId.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * Returns the default document author of this node.
+     *
+     * On persistent nodes, the author is created on first start and its public key is saved
+     * in the data directory.
+     *
+     * The default author can be set with [`Self::set_default`].
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `authorDefault`(): AuthorId =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_author_default(
+                    thisPtr,
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_pointer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_pointer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_pointer(future) },
+            // lift function
+            { FfiConverterTypeAuthorId.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * Deletes the given author by id.
+     *
+     * Warning: This permanently removes this author.
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `authorDelete`(`author`: AuthorId) =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_author_delete(
+                    thisPtr,
+                    FfiConverterTypeAuthorId.lower(`author`),
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+            // lift function
+            { Unit },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * Export the given author.
+     *
+     * Warning: This contains sensitive data.
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `authorExport`(`author`: AuthorId): Author =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_author_export(
+                    thisPtr,
+                    FfiConverterTypeAuthorId.lower(`author`),
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_pointer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_pointer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_pointer(future) },
+            // lift function
+            { FfiConverterTypeAuthor.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * Import the given author.
+     *
+     * Warning: This contains sensitive data.
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `authorImport`(`author`: Author): AuthorId =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_author_import(
+                    thisPtr,
+                    FfiConverterTypeAuthor.lower(`author`),
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_pointer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_pointer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_pointer(future) },
+            // lift function
+            { FfiConverterTypeAuthorId.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * List all the AuthorIds that exist on this node.
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `authorList`(): List<AuthorId> =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_author_list(
+                    thisPtr,
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            // lift function
+            { FfiConverterSequenceTypeAuthorId.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * Return connection information on the currently running node.
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `connectionInfo`(`nodeId`: PublicKey): ConnectionInfo? =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_connection_info(
+                    thisPtr,
+                    FfiConverterTypePublicKey.lower(`nodeId`),
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            // lift function
+            { FfiConverterOptionalTypeConnectionInfo.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * Return `ConnectionInfo`s for each connection we have to another iroh node.
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `connections`(): List<ConnectionInfo> =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_connections(
+                    thisPtr,
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            // lift function
+            { FfiConverterSequenceTypeConnectionInfo.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * Create a new doc.
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `docCreate`(): Doc =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_doc_create(
+                    thisPtr,
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_pointer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_pointer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_pointer(future) },
+            // lift function
+            { FfiConverterTypeDoc.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * Delete a document from the local node.
+     *
+     * This is a destructive operation. Both the document secret key and all entries in the
+     * document will be permanently deleted from the node's storage. Content blobs will be deleted
+     * through garbage collection unless they are referenced from another document or tag.
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `docDrop`(`docId`: kotlin.String) =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_doc_drop(
+                    thisPtr,
+                    FfiConverterString.lower(`docId`),
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+            // lift function
+            { Unit },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * Join and sync with an already existing document.
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `docJoin`(`ticket`: kotlin.String): Doc =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_doc_join(
+                    thisPtr,
+                    FfiConverterString.lower(`ticket`),
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_pointer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_pointer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_pointer(future) },
+            // lift function
+            { FfiConverterTypeDoc.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * Join and sync with an already existing document and subscribe to events on that document.
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `docJoinAndSubscribe`(
+        `ticket`: kotlin.String,
+        `cb`: SubscribeCallback,
+    ): Doc =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_doc_join_and_subscribe(
+                    thisPtr,
+                    FfiConverterString.lower(`ticket`),
+                    FfiConverterTypeSubscribeCallback.lower(`cb`),
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_pointer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_pointer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_pointer(future) },
+            // lift function
+            { FfiConverterTypeDoc.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * List all the docs we have access to on this node.
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `docList`(): List<NamespaceAndCapability> =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_doc_list(
+                    thisPtr,
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            // lift function
+            { FfiConverterSequenceTypeNamespaceAndCapability.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * Get a [`Doc`].
+     *
+     * Returns None if the document cannot be found.
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `docOpen`(`id`: kotlin.String): Doc? =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_doc_open(
+                    thisPtr,
+                    FfiConverterString.lower(`id`),
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            // lift function
+            { FfiConverterOptionalTypeDoc.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * Get statistics of the running node.
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `stats`(): Map<kotlin.String, CounterStats> =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_stats(
+                    thisPtr,
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            // lift function
+            { FfiConverterMapStringTypeCounterStats.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * Get status information about a node
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `status`(): NodeStatus =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_status(
+                    thisPtr,
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_pointer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_pointer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_pointer(future) },
+            // lift function
+            { FfiConverterTypeNodeStatus.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
     companion object {
         /**
          * Create a new iroh node with options.
          */
         @Throws(IrohException::class)
-        fun `withOptions`(
+        @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+        suspend fun `withOptions`(
             `path`: kotlin.String,
-            `opts`: NodeOptions,
+            `options`: NodeOptions,
         ): IrohNode =
-            FfiConverterTypeIrohNode.lift(
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_irohnode_with_options(
-                        FfiConverterString.lower(`path`),
-                        FfiConverterTypeNodeOptions.lower(`opts`),
-                        _status,
-                    )
-                },
+            uniffiRustCallAsync(
+                UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_irohnode_with_options(
+                    FfiConverterString.lower(`path`),
+                    FfiConverterTypeNodeOptions.lower(`options`),
+                ),
+                { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_pointer(future, callback, continuation) },
+                { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_pointer(future, continuation) },
+                { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_pointer(future) },
+                // lift function
+                { FfiConverterTypeIrohNode.lift(it) },
+                // Error FFI converter
+                IrohException.ErrorHandler,
             )
     }
 }

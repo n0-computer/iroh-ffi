@@ -2,10 +2,11 @@ use std::{str::FromStr, sync::Arc};
 
 use futures::TryStreamExt;
 
-use crate::{block_on, IrohError, IrohNode};
+use crate::{IrohError, IrohNode};
 
 /// Identifier for an [`Author`]
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[uniffi::export(Display)]
 pub struct AuthorId(pub(crate) iroh::docs::AuthorId);
 
 impl std::fmt::Display for AuthorId {
@@ -31,6 +32,7 @@ impl AuthorId {
 ///
 /// Internally, an author is a `SigningKey` which is used to sign entries.
 #[derive(Debug, Clone)]
+#[uniffi::export(Display)]
 pub struct Author(pub(crate) iroh::docs::Author);
 
 impl Author {
@@ -81,6 +83,7 @@ impl IrohNode {
     }
 }
 
+#[uniffi::export]
 impl IrohNode {
     /// Create a new document author.
     ///
@@ -88,45 +91,41 @@ impl IrohNode {
     /// again.
     ///
     /// If you need only a single author, use [`Self::default`].
-    pub fn author_create(&self) -> Result<Arc<AuthorId>, IrohError> {
-        block_on(&self.rt(), async {
-            let author = self.sync_client.authors().create().await?;
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn author_create(&self) -> Result<Arc<AuthorId>, IrohError> {
+        let author = self.sync_client.authors().create().await?;
 
-            Ok(Arc::new(AuthorId(author)))
-        })
+        Ok(Arc::new(AuthorId(author)))
     }
 
     /// Export the given author.
     ///
     /// Warning: This contains sensitive data.
-    pub fn author_export(&self, author: Arc<AuthorId>) -> Result<Arc<Author>, IrohError> {
-        block_on(&self.rt(), async {
-            let author = self.sync_client.authors().export(author.0).await?;
-            match author {
-                Some(author) => Ok(Arc::new(Author(author))),
-                None => Err(anyhow::anyhow!("Author Not Found").into()),
-            }
-        })
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn author_export(&self, author: Arc<AuthorId>) -> Result<Arc<Author>, IrohError> {
+        let author = self.sync_client.authors().export(author.0).await?;
+        match author {
+            Some(author) => Ok(Arc::new(Author(author))),
+            None => Err(anyhow::anyhow!("Author Not Found").into()),
+        }
     }
 
     /// Import the given author.
     ///
     /// Warning: This contains sensitive data.
-    pub fn author_import(&self, author: Arc<Author>) -> Result<Arc<AuthorId>, IrohError> {
-        block_on(&self.rt(), async {
-            self.sync_client.authors().import(author.0.clone()).await?;
-            Ok(Arc::new(AuthorId(author.0.id())))
-        })
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn author_import(&self, author: Arc<Author>) -> Result<Arc<AuthorId>, IrohError> {
+        self.sync_client.authors().import(author.0.clone()).await?;
+        Ok(Arc::new(AuthorId(author.0.id())))
     }
 
     /// Deletes the given author by id.
     ///
     /// Warning: This permanently removes this author.
-    pub fn author_delete(&self, author: Arc<AuthorId>) -> Result<(), IrohError> {
-        block_on(&self.rt(), async {
-            self.sync_client.authors().delete(author.0).await?;
-            Ok(())
-        })
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn author_delete(&self, author: Arc<AuthorId>) -> Result<(), IrohError> {
+        self.sync_client.authors().delete(author.0).await?;
+        Ok(())
     }
 }
 

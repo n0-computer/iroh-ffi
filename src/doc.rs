@@ -27,43 +27,41 @@ impl From<iroh::docs::CapabilityKind> for CapabilityKind {
     }
 }
 
+#[uniffi::export]
 impl IrohNode {
     /// Create a new doc.
-    pub fn doc_create(&self) -> Result<Arc<Doc>, IrohError> {
-        block_on(&self.rt(), async {
-            let doc = self.sync_client.docs().create().await?;
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn doc_create(&self) -> Result<Arc<Doc>, IrohError> {
+        let doc = self.sync_client.docs().create().await?;
 
-            Ok(Arc::new(Doc {
-                inner: doc,
-                rt: self.rt().clone(),
-            }))
-        })
+        Ok(Arc::new(Doc {
+            inner: doc,
+            rt: self.rt().clone(),
+        }))
     }
 
     /// Join and sync with an already existing document.
-    pub fn doc_join(&self, ticket: String) -> Result<Arc<Doc>, IrohError> {
-        block_on(&self.rt(), async {
-            let ticket = iroh::docs::DocTicket::from_str(&ticket).map_err(anyhow::Error::from)?;
-            let doc = self.sync_client.docs().import(ticket).await?;
-            Ok(Arc::new(Doc {
-                inner: doc,
-                rt: self.rt().clone(),
-            }))
-        })
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn doc_join(&self, ticket: String) -> Result<Arc<Doc>, IrohError> {
+        let ticket = iroh::docs::DocTicket::from_str(&ticket).map_err(anyhow::Error::from)?;
+        let doc = self.sync_client.docs().import(ticket).await?;
+        Ok(Arc::new(Doc {
+            inner: doc,
+            rt: self.rt().clone(),
+        }))
     }
 
     /// Join and sync with an already existing document and subscribe to events on that document.
-    pub fn doc_join_and_subscribe(
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn doc_join_and_subscribe(
         &self,
         ticket: String,
         cb: Arc<dyn SubscribeCallback>,
     ) -> Result<Arc<Doc>, IrohError> {
-        let (doc, mut stream) = block_on(&self.rt(), async {
-            let ticket = iroh::docs::DocTicket::from_str(&ticket)?;
-            self.sync_client.docs().import_and_subscribe(ticket).await
-        })?;
+        let ticket = iroh::docs::DocTicket::from_str(&ticket).map_err(anyhow::Error::from)?;
+        let (doc, mut stream) = self.sync_client.docs().import_and_subscribe(ticket).await?;
 
-        self.rt().spawn(async move {
+        tokio::spawn(async move {
             while let Some(event) = stream.next().await {
                 match event {
                     Ok(event) => {
@@ -85,39 +83,37 @@ impl IrohNode {
     }
 
     /// List all the docs we have access to on this node.
-    pub fn doc_list(&self) -> Result<Vec<NamespaceAndCapability>, IrohError> {
-        block_on(&self.rt(), async {
-            let docs = self
-                .sync_client
-                .docs()
-                .list()
-                .await?
-                .map_ok(|(namespace, capability)| NamespaceAndCapability {
-                    namespace: namespace.to_string(),
-                    capability: capability.into(),
-                })
-                .try_collect::<Vec<_>>()
-                .await?;
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn doc_list(&self) -> Result<Vec<NamespaceAndCapability>, IrohError> {
+        let docs = self
+            .sync_client
+            .docs()
+            .list()
+            .await?
+            .map_ok(|(namespace, capability)| NamespaceAndCapability {
+                namespace: namespace.to_string(),
+                capability: capability.into(),
+            })
+            .try_collect::<Vec<_>>()
+            .await?;
 
-            Ok(docs)
-        })
+        Ok(docs)
     }
 
     /// Get a [`Doc`].
     ///
     /// Returns None if the document cannot be found.
-    pub fn doc_open(&self, id: String) -> Result<Option<Arc<Doc>>, IrohError> {
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn doc_open(&self, id: String) -> Result<Option<Arc<Doc>>, IrohError> {
         let namespace_id = iroh::docs::NamespaceId::from_str(&id)?;
-        block_on(&self.rt(), async {
-            let doc = self.sync_client.docs().open(namespace_id).await?;
+        let doc = self.sync_client.docs().open(namespace_id).await?;
 
-            Ok(doc.map(|d| {
-                Arc::new(Doc {
-                    inner: d,
-                    rt: self.rt().clone(),
-                })
-            }))
-        })
+        Ok(doc.map(|d| {
+            Arc::new(Doc {
+                inner: d,
+                rt: self.rt().clone(),
+            })
+        }))
     }
 
     /// Delete a document from the local node.
@@ -125,15 +121,14 @@ impl IrohNode {
     /// This is a destructive operation. Both the document secret key and all entries in the
     /// document will be permanently deleted from the node's storage. Content blobs will be deleted
     /// through garbage collection unless they are referenced from another document or tag.
-    pub fn doc_drop(&self, doc_id: String) -> Result<(), IrohError> {
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn doc_drop(&self, doc_id: String) -> Result<(), IrohError> {
         let doc_id = iroh::docs::NamespaceId::from_str(&doc_id)?;
-        block_on(&self.rt(), async {
-            self.sync_client
-                .docs()
-                .drop_doc(doc_id)
-                .await
-                .map_err(IrohError::from)
-        })
+        self.sync_client
+            .docs()
+            .drop_doc(doc_id)
+            .await
+            .map_err(IrohError::from)
     }
 }
 
