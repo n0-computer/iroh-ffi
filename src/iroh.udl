@@ -31,13 +31,6 @@ enum LogLevel {
 
 /// An Iroh node. Allows you to sync, store, and transfer data.
 interface IrohNode {
-  /// Create a new iroh node. The `path` param should be a directory where we can store or load
-  /// iroh data from a previous session.
-  [Throws=IrohError]
-  constructor(string path);
-  /// Create a new iroh node with options.
-  [Name=with_options,Throws=IrohError]
-  constructor(string path, NodeOptions opts);
   /// The string representation of the PublicKey of this node.
   string node_id();
 
@@ -74,16 +67,6 @@ interface IrohNode {
   /// If you need only a single author, use [`Self::default`].
   [Throws=IrohError]
   AuthorId author_create();
-    /// Returns the default document author of this node.
-  ///
-  /// On persistent nodes, the author is created on first start and its public key is saved
-  /// in the data directory.
-  ///
-  /// The default author can be set with [`Self::set_default`].
-  [Throws=IrohError]
-  AuthorId author_default();
-  [Throws=IrohError]
-  sequence<AuthorId> author_list();
   /// Export the given author.
   ///
   /// Warning: This contains sensitive data.
@@ -99,20 +82,6 @@ interface IrohNode {
   /// Warning: This permanently removes this author.
   [Throws=IrohError]
   void author_delete(AuthorId author);
-
-
-  /// Get statistics of the running node.
-  [Throws=IrohError]
-  record<string, CounterStats> stats();
-  /// Return `ConnectionInfo`s for each connection we have to another iroh node.
-  [Throws=IrohError]
-  sequence<ConnectionInfo> connections();
-  // Return connection information on the currently running node.
-  [Throws=IrohError]
-  ConnectionInfo? connection_info([ByRef] PublicKey node_id);
-  /// Get status information about a node
-  [Throws=IrohError]
-  NodeStatus status();
 
   /// List all complete blobs.
   ///
@@ -633,7 +602,6 @@ interface SubscribeCallback {
 };
 
 /// Identifier for an [`Author`]
-[Traits=(Display)]
 interface AuthorId {
   /// Get an [`AuthorId`] from a String
   [Name=from_string, Throws=IrohError]
@@ -645,7 +613,6 @@ interface AuthorId {
 /// Author key to insert entries in a document
 ///
 /// Internally, an author is a `SigningKey` which is used to sign entries.
-[Traits=(Display)]
 interface Author {
   /// Get an [`Author`] from a String
   [Name=from_string, Throws=IrohError]
@@ -681,7 +648,6 @@ interface Entry {
 };
 
 /// Hash type used throughout Iroh. A blake3 hash.
-[Traits=(Display)]
 interface Hash {
   /// Calculate the hash of the provide bytes.
   constructor(bytes buf);
@@ -888,7 +854,6 @@ dictionary ConnectionTypeMixed {
 };
 
 /// A public key
-[Traits=(Display)]
 interface PublicKey {
   /// Returns true when both PublicKeys have the same value
   boolean equal([ByRef] PublicKey other);
@@ -1295,7 +1260,6 @@ dictionary CollectionInfo {
 };
 
 /// An iroh error.
-[Traits=(Debug)]
 interface IrohError {
   string message();
 };

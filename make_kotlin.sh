@@ -23,4 +23,4 @@ cargo build --lib --target aarch64-linux-android
 
 # UniFfi bindgen
 echo "generating binding"
-cargo run --bin uniffi-bindgen generate "src/$UDL_NAME.udl" --language kotlin --out-dir ./kotlin --config uniffi.toml
+cargo run --bin uniffi-bindgen generate "src/$UDL_NAME.udl" --language kotlin --out-dir ./kotlin --config uniffi.toml --lib-file  target/debug/libiroh.so

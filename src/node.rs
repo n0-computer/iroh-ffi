@@ -229,37 +229,89 @@ pub struct IrohNode {
     pub(crate) tokio_rt: Option<tokio::runtime::Runtime>,
 }
 
+#[uniffi::export]
+impl IrohNode {
+    /// Create a new iroh node. The `path` param should be a directory where we can store or load
+    /// iroh data from a previous session.
+    #[uniffi::constructor(async_runtime = "tokio")]
+    pub async fn new(path: String) -> Result<Self, IrohError> {
+        let options = NodeOptions::default();
+        Self::with_options(path, options).await
+    }
+
+    /// Create a new iroh node with options.
+    #[uniffi::constructor(async_runtime = "tokio")]
+    pub async fn with_options(path: String, options: NodeOptions) -> Result<Self, IrohError> {
+        let path = PathBuf::from(path);
+        let node = Self::new_inner(path, options, None).await?;
+        Ok(node)
+    }
+
+    /// Get statistics of the running node.
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn stats(&self) -> Result<HashMap<String, CounterStats>, IrohError> {
+        let stats = self.sync_client.stats().await?;
+        Ok(stats
+            .into_iter()
+            .map(|(k, v)| {
+                (
+                    k,
+                    CounterStats {
+                        value: u32::try_from(v.value).expect("value too large"),
+                        description: v.description,
+                    },
+                )
+            })
+            .collect())
+    }
+
+    /// Return `ConnectionInfo`s for each connection we have to another iroh node.
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn connections(&self) -> Result<Vec<ConnectionInfo>, IrohError> {
+        let infos = self
+            .sync_client
+            .connections()
+            .await?
+            .map_ok(|info| info.into())
+            .try_collect::<Vec<_>>()
+            .await?;
+        Ok(infos)
+    }
+
+    /// Return connection information on the currently running node.
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn connection_info(
+        &self,
+        node_id: &PublicKey,
+    ) -> Result<Option<ConnectionInfo>, IrohError> {
+        let info = self
+            .sync_client
+            .connection_info(node_id.into())
+            .await
+            .map(|i| i.map(|i| i.into()))?;
+        Ok(info)
+    }
+
+    /// Get status information about a node
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn status(&self) -> Result<Arc<NodeStatus>, IrohError> {
+        block_on(&self.rt(), async {
+            let res = self
+                .sync_client
+                .status()
+                .await
+                .map(|n| Arc::new(n.into()))?;
+            Ok(res)
+        })
+    }
+}
+
 impl IrohNode {
     pub(crate) fn rt(&self) -> tokio::runtime::Handle {
         match self.tokio_rt {
             Some(ref rt) => rt.handle().clone(),
             None => tokio::runtime::Handle::current(),
         }
-    }
-
-    /// Create a new iroh node. The `path` param should be a directory where we can store or load
-    /// iroh data from a previous session.
-    pub fn new(path: String) -> Result<Self, IrohError> {
-        let options = NodeOptions::default();
-        Self::with_options(path, options)
-    }
-
-    /// Create a new iroh node with options.
-    pub fn with_options(path: String, options: NodeOptions) -> Result<Self, IrohError> {
-        let tokio_rt = tokio::runtime::Builder::new_multi_thread()
-            .thread_name("main-runtime")
-            .worker_threads(2)
-            .enable_all()
-            .build()
-            .map_err(anyhow::Error::from)?;
-        let rt = tokio_rt.handle().clone();
-
-        let path = PathBuf::from(path);
-        let node = block_on(&rt, async move {
-            Self::new_inner(path, options, Some(tokio_rt)).await
-        })?;
-
-        Ok(node)
     }
 
     pub(crate) async fn new_inner(
@@ -281,66 +333,6 @@ impl IrohNode {
     /// The string representation of the PublicKey of this node.
     pub fn node_id(&self) -> String {
         self.node.node_id().to_string()
-    }
-
-    /// Get statistics of the running node.
-    pub fn stats(&self) -> Result<HashMap<String, CounterStats>, IrohError> {
-        block_on(&self.rt(), async {
-            let stats = self.sync_client.stats().await?;
-            Ok(stats
-                .into_iter()
-                .map(|(k, v)| {
-                    (
-                        k,
-                        CounterStats {
-                            value: u32::try_from(v.value).expect("value too large"),
-                            description: v.description,
-                        },
-                    )
-                })
-                .collect())
-        })
-    }
-
-    /// Return `ConnectionInfo`s for each connection we have to another iroh node.
-    pub fn connections(&self) -> Result<Vec<ConnectionInfo>, IrohError> {
-        block_on(&self.rt(), async {
-            let infos = self
-                .sync_client
-                .connections()
-                .await?
-                .map_ok(|info| info.into())
-                .try_collect::<Vec<_>>()
-                .await?;
-            Ok(infos)
-        })
-    }
-
-    /// Return connection information on the currently running node.
-    pub fn connection_info(
-        &self,
-        node_id: &PublicKey,
-    ) -> Result<Option<ConnectionInfo>, IrohError> {
-        block_on(&self.rt(), async {
-            let info = self
-                .sync_client
-                .connection_info(node_id.into())
-                .await
-                .map(|i| i.map(|i| i.into()))?;
-            Ok(info)
-        })
-    }
-
-    /// Get status information about a node
-    pub fn status(&self) -> Result<Arc<NodeStatus>, IrohError> {
-        block_on(&self.rt(), async {
-            let res = self
-                .sync_client
-                .status()
-                .await
-                .map(|n| Arc::new(n.into()))?;
-            Ok(res)
-        })
     }
 }
 

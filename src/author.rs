@@ -52,6 +52,35 @@ impl std::fmt::Display for Author {
     }
 }
 
+#[uniffi::export]
+impl IrohNode {
+    /// Returns the default document author of this node.
+    ///
+    /// On persistent nodes, the author is created on first start and its public key is saved
+    /// in the data directory.
+    ///
+    /// The default author can be set with [`Self::set_default`].
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn author_default(&self) -> Result<Arc<AuthorId>, IrohError> {
+        let author = self.sync_client.authors().default().await?;
+        Ok(Arc::new(AuthorId(author)))
+    }
+
+    /// List all the AuthorIds that exist on this node.
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn author_list(&self) -> Result<Vec<Arc<AuthorId>>, IrohError> {
+        let authors = self
+            .sync_client
+            .authors()
+            .list()
+            .await?
+            .map_ok(|id| Arc::new(AuthorId(id)))
+            .try_collect::<Vec<_>>()
+            .await?;
+        Ok(authors)
+    }
+}
+
 impl IrohNode {
     /// Create a new document author.
     ///
@@ -64,34 +93,6 @@ impl IrohNode {
             let author = self.sync_client.authors().create().await?;
 
             Ok(Arc::new(AuthorId(author)))
-        })
-    }
-
-    /// Returns the default document author of this node.
-    ///
-    /// On persistent nodes, the author is created on first start and its public key is saved
-    /// in the data directory.
-    ///
-    /// The default author can be set with [`Self::set_default`].
-    pub fn author_default(&self) -> Result<Arc<AuthorId>, IrohError> {
-        block_on(&self.rt(), async {
-            let author = self.sync_client.authors().default().await?;
-            Ok(Arc::new(AuthorId(author)))
-        })
-    }
-
-    /// List all the AuthorIds that exist on this node.
-    pub fn author_list(&self) -> Result<Vec<Arc<AuthorId>>, IrohError> {
-        block_on(&self.rt(), async {
-            let authors = self
-                .sync_client
-                .authors()
-                .list()
-                .await?
-                .map_ok(|id| Arc::new(AuthorId(id)))
-                .try_collect::<Vec<_>>()
-                .await?;
-            Ok(authors)
         })
     }
 
