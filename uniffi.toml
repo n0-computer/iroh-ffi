@@ -2,3 +2,11 @@
 package_name = "iroh"
 cdylib_name = "iroh_ffi"
 # android = true
+
+[bindings.python]
+package_name = "iroh"
+cdylib_name = "iroh_ffi"
+
+[bindings.swift]
+module_name = "iroh"
+cdylib_name = "iroh_ffi"

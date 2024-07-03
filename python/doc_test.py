@@ -1,5 +1,5 @@
 # tests that correspond to the `src/doc.rs` rust api
-from iroh import IrohNode, PublicKey, NodeAddr, iroh, AuthorId, Query, SortBy, SortDirection, QueryOptions, path_to_key, key_to_path
+from iroh import IrohNode, PublicKey, NodeAddr, AuthorId, Query, SortBy, SortDirection, QueryOptions, path_to_key, key_to_path
 import pytest
 import tempfile
 import os
