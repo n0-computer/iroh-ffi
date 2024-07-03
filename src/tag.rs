@@ -33,7 +33,7 @@ impl IrohNode {
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn tags_list(&self) -> Result<Vec<TagInfo>, IrohError> {
         let tags = self
-            .sync_client
+            .node
             .tags()
             .list()
             .await?
@@ -47,7 +47,7 @@ impl IrohNode {
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn tags_delete(&self, name: Vec<u8>) -> Result<(), IrohError> {
         let tag = iroh::blobs::Tag(Bytes::from(name));
-        self.sync_client.tags().delete(tag).await?;
+        self.node.tags().delete(tag).await?;
         Ok(())
     }
 }

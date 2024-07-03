@@ -70,7 +70,7 @@ impl IrohNode {
     /// The default author can be set with [`Self::set_default`].
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn author_default(&self) -> Result<Arc<AuthorId>, IrohError> {
-        let author = self.sync_client.authors().default().await?;
+        let author = self.node.authors().default().await?;
         Ok(Arc::new(AuthorId(author)))
     }
 
@@ -78,7 +78,7 @@ impl IrohNode {
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn author_list(&self) -> Result<Vec<Arc<AuthorId>>, IrohError> {
         let authors = self
-            .sync_client
+            .node
             .authors()
             .list()
             .await?
@@ -99,7 +99,7 @@ impl IrohNode {
     /// If you need only a single author, use [`Self::default`].
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn author_create(&self) -> Result<Arc<AuthorId>, IrohError> {
-        let author = self.sync_client.authors().create().await?;
+        let author = self.node.authors().create().await?;
 
         Ok(Arc::new(AuthorId(author)))
     }
@@ -109,7 +109,7 @@ impl IrohNode {
     /// Warning: This contains sensitive data.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn author_export(&self, author: Arc<AuthorId>) -> Result<Arc<Author>, IrohError> {
-        let author = self.sync_client.authors().export(author.0).await?;
+        let author = self.node.authors().export(author.0).await?;
         match author {
             Some(author) => Ok(Arc::new(Author(author))),
             None => Err(anyhow::anyhow!("Author Not Found").into()),
@@ -121,7 +121,7 @@ impl IrohNode {
     /// Warning: This contains sensitive data.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn author_import(&self, author: Arc<Author>) -> Result<Arc<AuthorId>, IrohError> {
-        self.sync_client.authors().import(author.0.clone()).await?;
+        self.node.authors().import(author.0.clone()).await?;
         Ok(Arc::new(AuthorId(author.0.id())))
     }
 
@@ -130,7 +130,7 @@ impl IrohNode {
     /// Warning: This permanently removes this author.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn author_delete(&self, author: Arc<AuthorId>) -> Result<(), IrohError> {
-        self.sync_client.authors().delete(author.0).await?;
+        self.node.authors().delete(author.0).await?;
         Ok(())
     }
 }

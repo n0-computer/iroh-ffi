@@ -112,69 +112,7 @@ dictionary LatencyAndControlMsg {
 };
 
 /// A representation of a mutable, synchronizable key-value store.
-interface Doc {
-  /// Get the document id of this doc.
-  string id();
-  /// Close the document.
-  [Throws=IrohError]
-  void close_me();
-  /// Set the content of a key to a byte array.
-  [Throws=IrohError]
-  Hash set_bytes([ByRef] AuthorId author, bytes key, bytes value);
-  /// Set an entries on the doc via its key, hash, and size.
-  [Throws=IrohError]
-  void set_hash(AuthorId author, bytes key, Hash hash, u64 size);
-  /// Add an entry from an absolute file path
-  [Throws=IrohError]
-  void import_file(AuthorId author, bytes key, string path, boolean in_place, DocImportFileCallback? cb);
-  /// Export an entry as a file to a given absolute path
-  [Throws=IrohError]
-  void export_file(Entry entry, string path, DocExportFileCallback? cb);
-  /// Delete entries that match the given `author` and key `prefix`.
-  ///
-  /// This inserts an empty entry with the key set to `prefix`, effectively clearing all other
-  /// entries whose key starts with or is equal to the given `prefix`.
-  ///
-  /// Returns the number of entries deleted.
-  [Throws=IrohError]
-  u64 del(AuthorId author_id, bytes prefix);
-  /// Get the latest entry for a key and author.
-  [Throws=IrohError]
-  Entry? get_one(Query query);
-  /// Get entries.
-  ///
-  /// Note: this allocates for each `Entry`, if you have many `Entry`s this may be a prohibitively large list.
-  /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
-  [Throws=IrohError]
-  sequence<Entry> get_many(Query query);
-  /// Get an entry for a key and author.
-  ///
-  /// Optionally also get the entry if it is empty (i.e. a deletion marker)
-  [Throws=IrohError]
-  Entry? get_exact(AuthorId author, bytes key, boolean include_empty);
-
-  /// Share this document with peers over a ticket.
-  [Throws=IrohError]
-  string share(ShareMode mode, AddrInfoOptions addr_options);
-  /// Start to sync this document with a list of peers.
-  [Throws=IrohError]
-  void start_sync(sequence<NodeAddr> peers);
-  /// Stop the live sync for this document.
-  [Throws=IrohError]
-  void leave();
-  /// Subscribe to events for this document.
-  [Throws=IrohError]
-  void subscribe(SubscribeCallback cb);
-  /// Get status info for this document
-  [Throws=IrohError]
-  OpenState status();
-  /// Set the download policy for this document
-  [Throws=IrohError]
-  void set_download_policy(DownloadPolicy policy);
-  /// Get the download policy for this document
-  [Throws=IrohError]
-  DownloadPolicy get_download_policy();
-};
+interface Doc {};
 
 /// The type of `DocImportProgress` event
 enum DocImportProgressType {
@@ -480,26 +418,7 @@ interface Author {};
 /// An entry is identified by a key, its [`AuthorId`], and the [`Doc`]'s
 /// namespace id. Its value is the 32-byte BLAKE3 [`hash`]
 /// of the entry's content data, the size of this content data, and a timestamp.
-interface Entry {
-  /// Get the [`AuthorId`] of this entry.
-  AuthorId author();
-  /// Get the key of this entry.
-  bytes key();
-  /// Get the namespace id of this entry.
-  string namespace();
-  /// Get the content_hash of this entry.
-  Hash content_hash();
-  /// Get the content_length of this entry.
-  u64 content_len();
-  /// Get the timestamp when this entry was written.
-  u64 timestamp();
-  /// Read all content of an [`Entry`] into a buffer.
-  /// This allocates a buffer for the full entry. Use only if you know that the entry you're
-  /// reading is small. If not sure, use [`Self::content_len`] and check the size with
-  /// before calling [`Self::content_bytes`].
-  [Throws=IrohError]
-  bytes content_bytes(Doc doc);
-};
+interface Entry {};
 
 /// Hash type used throughout Iroh. A blake3 hash.
 interface Hash {

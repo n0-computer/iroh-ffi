@@ -20,7 +20,7 @@ impl IrohNode {
     /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn blobs_list(&self) -> Result<Vec<Arc<Hash>>, IrohError> {
-        let response = self.sync_client.blobs().list().await?;
+        let response = self.node.blobs().list().await?;
 
         let hashes: Vec<Arc<Hash>> = response
             .map_ok(|i| Arc::new(Hash(i.hash)))
@@ -35,7 +35,7 @@ impl IrohNode {
     /// Method only exists in FFI
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn blobs_size(&self, hash: &Hash) -> Result<u64, IrohError> {
-        let r = self.sync_client.blobs().read(hash.0).await?;
+        let r = self.node.blobs().read(hash.0).await?;
         Ok(r.size())
     }
 
@@ -47,7 +47,7 @@ impl IrohNode {
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn blobs_read_to_bytes(&self, hash: Arc<Hash>) -> Result<Vec<u8>, IrohError> {
         let res = self
-            .sync_client
+            .node
             .blobs()
             .read_to_bytes(hash.0)
             .await
@@ -72,7 +72,7 @@ impl IrohNode {
             Some(l) => Some(usize::try_from(l).map_err(anyhow::Error::from)?),
         };
         let res = self
-            .sync_client
+            .node
             .blobs()
             .read_at_to_bytes(hash.0, offset, len)
             .await
@@ -96,7 +96,7 @@ impl IrohNode {
         cb: Arc<dyn AddCallback>,
     ) -> Result<(), IrohError> {
         let mut stream = self
-            .sync_client
+            .node
             .blobs()
             .add_from_path(
                 path.into(),
@@ -120,7 +120,7 @@ impl IrohNode {
         hash: Arc<Hash>,
         path: String,
     ) -> Result<(), IrohError> {
-        let mut reader = self.sync_client.blobs().read(hash.0).await?;
+        let mut reader = self.node.blobs().read(hash.0).await?;
         let path: PathBuf = path.into();
         if let Some(dir) = path.parent() {
             tokio::fs::create_dir_all(dir)
@@ -139,7 +139,7 @@ impl IrohNode {
     /// Write a blob by passing bytes.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn blobs_add_bytes(&self, bytes: Vec<u8>) -> Result<BlobAddOutcome, IrohError> {
-        let res = self.sync_client.blobs().add_bytes(bytes).await?;
+        let res = self.node.blobs().add_bytes(bytes).await?;
         Ok(res.into())
     }
 
@@ -152,7 +152,7 @@ impl IrohNode {
         cb: Arc<dyn DownloadCallback>,
     ) -> Result<(), IrohError> {
         let mut stream = self
-            .sync_client
+            .node
             .blobs()
             .download_with_opts(hash.0, opts.0.clone())
             .await?;
@@ -188,7 +188,7 @@ impl IrohNode {
         }
 
         let stream = self
-            .sync_client
+            .node
             .blobs()
             .export(hash.0, destination, format.into(), mode.into())
             .await?;
@@ -207,7 +207,7 @@ impl IrohNode {
         ticket_options: AddrInfoOptions,
     ) -> Result<String, IrohError> {
         let ticket = self
-            .sync_client
+            .node
             .blobs()
             .share(hash.0, blob_format.into(), ticket_options.into())
             .await?;
@@ -221,7 +221,7 @@ impl IrohNode {
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn blobs_list_incomplete(&self) -> Result<Vec<IncompleteBlobInfo>, IrohError> {
         let blobs = self
-            .sync_client
+            .node
             .blobs()
             .list_incomplete()
             .await?
@@ -238,7 +238,7 @@ impl IrohNode {
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn blobs_list_collections(&self) -> Result<Vec<CollectionInfo>, IrohError> {
         let blobs = self
-            .sync_client
+            .node
             .blobs()
             .list_collections()?
             .map_ok(|res| res.into())
@@ -253,7 +253,7 @@ impl IrohNode {
         &self,
         hash: Arc<Hash>,
     ) -> Result<Arc<Collection>, IrohError> {
-        let collection = self.sync_client.blobs().get_collection(hash.0).await?;
+        let collection = self.node.blobs().get_collection(hash.0).await?;
 
         Ok(Arc::new(collection.into()))
     }
@@ -271,7 +271,7 @@ impl IrohNode {
     ) -> Result<HashAndTag, IrohError> {
         let collection = collection.0.read().unwrap().clone();
         let (hash, tag) = self
-            .sync_client
+            .node
             .blobs()
             .create_collection(
                 collection,
@@ -292,7 +292,7 @@ impl IrohNode {
     /// Delete a blob.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn blobs_delete_blob(&self, hash: Arc<Hash>) -> Result<(), IrohError> {
-        let mut tags = self.sync_client.tags().list().await?;
+        let mut tags = self.node.tags().list().await?;
 
         let mut name = None;
         while let Some(tag) = tags.next().await {
@@ -303,11 +303,8 @@ impl IrohNode {
         }
 
         if let Some(name) = name {
-            self.sync_client.tags().delete(name).await?;
-            self.sync_client
-                .blobs()
-                .delete_blob((*hash).clone().0)
-                .await?;
+            self.node.tags().delete(name).await?;
+            self.node.blobs().delete_blob((*hash).clone().0).await?;
         }
 
         Ok(())

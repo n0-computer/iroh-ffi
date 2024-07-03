@@ -16,7 +16,6 @@ pub use self::node::*;
 pub use self::tag::*;
 pub use self::ticket::*;
 
-use futures::Future;
 use iroh::metrics::try_init_metrics_collection;
 
 use tracing_subscriber::filter::LevelFilter;
@@ -64,13 +63,6 @@ pub fn set_log_level(level: LogLevel) {
 /// Initialize the global metrics collection.
 pub fn start_metrics_collection() -> Result<(), IrohError> {
     try_init_metrics_collection().map_err(|e| anyhow::Error::from(e).into())
-}
-
-fn block_on<F: Future<Output = T>, T>(rt: &tokio::runtime::Handle, fut: F) -> T {
-    tokio::task::block_in_place(move || match tokio::runtime::Handle::try_current() {
-        Ok(handle) => handle.block_on(fut),
-        Err(_) => rt.block_on(fut),
-    })
 }
 
 /// Helper function that translates a key that was derived from the [`path_to_key`] function back
