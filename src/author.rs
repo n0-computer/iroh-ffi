@@ -6,6 +6,7 @@ use crate::{IrohError, IrohNode};
 
 /// Identifier for an [`Author`]
 #[derive(Debug, Clone, PartialEq, Eq, uniffi::Object)]
+#[uniffi::export(Display)]
 pub struct AuthorId(pub(crate) iroh::docs::AuthorId);
 
 impl std::fmt::Display for AuthorId {
@@ -34,6 +35,7 @@ impl AuthorId {
 ///
 /// Internally, an author is a `SigningKey` which is used to sign entries.
 #[derive(Debug, Clone, uniffi::Object)]
+#[uniffi::export(Display)]
 pub struct Author(pub(crate) iroh::docs::Author);
 
 #[uniffi::export]

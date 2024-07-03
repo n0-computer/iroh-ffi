@@ -417,6 +417,7 @@ impl From<WrapOption> for iroh::client::blobs::WrapOption {
 
 /// Hash type used throughout Iroh. A blake3 hash.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Object)]
+#[uniffi::export(Display)]
 pub struct Hash(pub(crate) iroh::blobs::Hash);
 
 impl From<iroh::blobs::Hash> for Hash {

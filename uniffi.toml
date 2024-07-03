@@ -1,3 +1,4 @@
 [bindings.kotlin]
-package_name = "iroh_ffi"
+package_name = "iroh"
+cdylib_name = "iroh_ffi"
 # android = true
