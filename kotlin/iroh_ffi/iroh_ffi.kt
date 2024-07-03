@@ -3,7 +3,7 @@
 
 @file:Suppress("NAME_SHADOWING")
 
-package iroh
+package iroh_ffi
 
 // Common helper code.
 //
@@ -66,7 +66,7 @@ open class RustBuffer : Structure() {
         internal fun alloc(size: ULong = 0UL) =
             uniffiRustCall { status ->
                 // Note: need to convert the size to a `Long` value to make this work with JVM.
-                UniffiLib.INSTANCE.ffi_iroh_rustbuffer_alloc(size.toLong(), status)
+                UniffiLib.INSTANCE.ffi_iroh_ffi_rustbuffer_alloc(size.toLong(), status)
             }.also {
                 if (it.data == null) {
                     throw RuntimeException("RustBuffer.alloc() returned null data pointer (size=$size)")
@@ -87,7 +87,7 @@ open class RustBuffer : Structure() {
 
         internal fun free(buf: RustBuffer.ByValue) =
             uniffiRustCall { status ->
-                UniffiLib.INSTANCE.ffi_iroh_rustbuffer_free(buf, status)
+                UniffiLib.INSTANCE.ffi_iroh_ffi_rustbuffer_free(buf, status)
             }
     }
 
@@ -384,7 +384,7 @@ private fun findLibraryName(componentName: String): String {
     if (libOverride != null) {
         return libOverride
     }
-    return "iroh"
+    return "iroh_ffi"
 }
 
 private inline fun <reified Lib : Library> loadIndirect(componentName: String): Lib =
@@ -868,7 +868,7 @@ internal open class UniffiVTableCallbackInterfaceSubscribeCallback(
 internal interface UniffiLib : Library {
     companion object {
         internal val INSTANCE: UniffiLib by lazy {
-            loadIndirect<UniffiLib>(componentName = "iroh")
+            loadIndirect<UniffiLib>(componentName = "iroh_ffi")
                 .also { lib: UniffiLib ->
                     uniffiCheckContractApiVersion(lib)
                     uniffiCheckApiChecksums(lib)
@@ -886,321 +886,316 @@ internal interface UniffiLib : Library {
         }
     }
 
-    fun uniffi_iroh_fn_clone_addcallback(
+    fun uniffi_iroh_ffi_fn_clone_addcallback(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_free_addcallback(
+    fun uniffi_iroh_ffi_fn_free_addcallback(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_init_callback_vtable_addcallback(`vtable`: UniffiVTableCallbackInterfaceAddCallback): Unit
+    fun uniffi_iroh_ffi_fn_init_callback_vtable_addcallback(`vtable`: UniffiVTableCallbackInterfaceAddCallback): Unit
 
-    fun uniffi_iroh_fn_method_addcallback_progress(
+    fun uniffi_iroh_ffi_fn_method_addcallback_progress(
         `ptr`: Pointer,
         `progress`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_clone_addprogress(
+    fun uniffi_iroh_ffi_fn_clone_addprogress(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_free_addprogress(
+    fun uniffi_iroh_ffi_fn_free_addprogress(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_method_addprogress_as_abort(
+    fun uniffi_iroh_ffi_fn_method_addprogress_as_abort(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_addprogress_as_all_done(
+    fun uniffi_iroh_ffi_fn_method_addprogress_as_all_done(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_addprogress_as_done(
+    fun uniffi_iroh_ffi_fn_method_addprogress_as_done(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_addprogress_as_found(
+    fun uniffi_iroh_ffi_fn_method_addprogress_as_found(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_addprogress_as_progress(
+    fun uniffi_iroh_ffi_fn_method_addprogress_as_progress(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_addprogress_type(
+    fun uniffi_iroh_ffi_fn_method_addprogress_type(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_clone_author(
+    fun uniffi_iroh_ffi_fn_clone_author(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_free_author(
+    fun uniffi_iroh_ffi_fn_free_author(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_constructor_author_from_string(
+    fun uniffi_iroh_ffi_fn_constructor_author_from_string(
         `str`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_method_author_id(
+    fun uniffi_iroh_ffi_fn_method_author_id(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_method_author_uniffi_trait_display(
-        `ptr`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    fun uniffi_iroh_fn_clone_authorid(
+    fun uniffi_iroh_ffi_fn_clone_authorid(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_free_authorid(
+    fun uniffi_iroh_ffi_fn_free_authorid(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_constructor_authorid_from_string(
+    fun uniffi_iroh_ffi_fn_constructor_authorid_from_string(
         `str`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_method_authorid_equal(
+    fun uniffi_iroh_ffi_fn_method_authorid_equal(
         `ptr`: Pointer,
         `other`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Byte
 
-    fun uniffi_iroh_fn_method_authorid_uniffi_trait_display(
-        `ptr`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    fun uniffi_iroh_fn_clone_blobdownloadoptions(
+    fun uniffi_iroh_ffi_fn_clone_blobdownloadoptions(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_free_blobdownloadoptions(
+    fun uniffi_iroh_ffi_fn_free_blobdownloadoptions(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_constructor_blobdownloadoptions_new(
+    fun uniffi_iroh_ffi_fn_constructor_blobdownloadoptions_new(
         `format`: RustBuffer.ByValue,
         `node`: Pointer,
         `tag`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_clone_blobticket(
+    fun uniffi_iroh_ffi_fn_clone_blobticket(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_free_blobticket(
+    fun uniffi_iroh_ffi_fn_free_blobticket(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_constructor_blobticket_new(
-        `ticket`: RustBuffer.ByValue,
+    fun uniffi_iroh_ffi_fn_constructor_blobticket_new(
+        `str`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_method_blobticket_as_download_options(
+    fun uniffi_iroh_ffi_fn_method_blobticket_as_download_options(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_method_blobticket_format(
+    fun uniffi_iroh_ffi_fn_method_blobticket_format(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_blobticket_hash(
+    fun uniffi_iroh_ffi_fn_method_blobticket_hash(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_method_blobticket_node_addr(
+    fun uniffi_iroh_ffi_fn_method_blobticket_node_addr(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_clone_collection(
-        `ptr`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Pointer
-
-    fun uniffi_iroh_fn_free_collection(
-        `ptr`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    fun uniffi_iroh_fn_constructor_collection_new(uniffi_out_err: UniffiRustCallStatus): Pointer
-
-    fun uniffi_iroh_fn_method_collection_blobs(
-        `ptr`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    fun uniffi_iroh_fn_method_collection_is_empty(
+    fun uniffi_iroh_ffi_fn_method_blobticket_recursive(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Byte
 
-    fun uniffi_iroh_fn_method_collection_len(
+    fun uniffi_iroh_ffi_fn_clone_collection(
+        `ptr`: Pointer,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): Pointer
+
+    fun uniffi_iroh_ffi_fn_free_collection(
+        `ptr`: Pointer,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): Unit
+
+    fun uniffi_iroh_ffi_fn_constructor_collection_new(uniffi_out_err: UniffiRustCallStatus): Pointer
+
+    fun uniffi_iroh_ffi_fn_method_collection_blobs(
+        `ptr`: Pointer,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+
+    fun uniffi_iroh_ffi_fn_method_collection_is_empty(
+        `ptr`: Pointer,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): Byte
+
+    fun uniffi_iroh_ffi_fn_method_collection_len(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    fun uniffi_iroh_fn_method_collection_links(
+    fun uniffi_iroh_ffi_fn_method_collection_links(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_collection_names(
+    fun uniffi_iroh_ffi_fn_method_collection_names(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_collection_push(
+    fun uniffi_iroh_ffi_fn_method_collection_push(
         `ptr`: Pointer,
         `name`: RustBuffer.ByValue,
         `hash`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_clone_connectiontype(
+    fun uniffi_iroh_ffi_fn_clone_connectiontype(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_free_connectiontype(
+    fun uniffi_iroh_ffi_fn_free_connectiontype(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_method_connectiontype_as_direct(
+    fun uniffi_iroh_ffi_fn_method_connectiontype_as_direct(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_connectiontype_as_mixed(
+    fun uniffi_iroh_ffi_fn_method_connectiontype_as_mixed(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_connectiontype_as_relay(
+    fun uniffi_iroh_ffi_fn_method_connectiontype_as_relay(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_connectiontype_type(
+    fun uniffi_iroh_ffi_fn_method_connectiontype_type(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_clone_directaddrinfo(
+    fun uniffi_iroh_ffi_fn_clone_directaddrinfo(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_free_directaddrinfo(
+    fun uniffi_iroh_ffi_fn_free_directaddrinfo(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_method_directaddrinfo_addr(
+    fun uniffi_iroh_ffi_fn_method_directaddrinfo_addr(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_directaddrinfo_last_control(
+    fun uniffi_iroh_ffi_fn_method_directaddrinfo_last_control(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_directaddrinfo_last_payload(
+    fun uniffi_iroh_ffi_fn_method_directaddrinfo_last_payload(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_directaddrinfo_latency(
+    fun uniffi_iroh_ffi_fn_method_directaddrinfo_latency(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_clone_doc(
+    fun uniffi_iroh_ffi_fn_clone_doc(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_free_doc(
+    fun uniffi_iroh_ffi_fn_free_doc(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_method_doc_close_me(`ptr`: Pointer): Long
+    fun uniffi_iroh_ffi_fn_method_doc_close_me(`ptr`: Pointer): Long
 
-    fun uniffi_iroh_fn_method_doc_del(
+    fun uniffi_iroh_ffi_fn_method_doc_del(
         `ptr`: Pointer,
         `authorId`: Pointer,
         `prefix`: RustBuffer.ByValue,
     ): Long
 
-    fun uniffi_iroh_fn_method_doc_export_file(
+    fun uniffi_iroh_ffi_fn_method_doc_export_file(
         `ptr`: Pointer,
         `entry`: Pointer,
         `path`: RustBuffer.ByValue,
         `cb`: RustBuffer.ByValue,
     ): Long
 
-    fun uniffi_iroh_fn_method_doc_get_download_policy(`ptr`: Pointer): Long
+    fun uniffi_iroh_ffi_fn_method_doc_get_download_policy(`ptr`: Pointer): Long
 
-    fun uniffi_iroh_fn_method_doc_get_exact(
+    fun uniffi_iroh_ffi_fn_method_doc_get_exact(
         `ptr`: Pointer,
         `author`: Pointer,
         `key`: RustBuffer.ByValue,
         `includeEmpty`: Byte,
     ): Long
 
-    fun uniffi_iroh_fn_method_doc_get_many(
+    fun uniffi_iroh_ffi_fn_method_doc_get_many(
         `ptr`: Pointer,
         `query`: Pointer,
     ): Long
 
-    fun uniffi_iroh_fn_method_doc_get_one(
+    fun uniffi_iroh_ffi_fn_method_doc_get_one(
         `ptr`: Pointer,
         `query`: Pointer,
     ): Long
 
-    fun uniffi_iroh_fn_method_doc_id(
+    fun uniffi_iroh_ffi_fn_method_doc_id(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_doc_import_file(
+    fun uniffi_iroh_ffi_fn_method_doc_import_file(
         `ptr`: Pointer,
         `author`: Pointer,
         `key`: RustBuffer.ByValue,
@@ -1209,21 +1204,21 @@ internal interface UniffiLib : Library {
         `cb`: RustBuffer.ByValue,
     ): Long
 
-    fun uniffi_iroh_fn_method_doc_leave(`ptr`: Pointer): Long
+    fun uniffi_iroh_ffi_fn_method_doc_leave(`ptr`: Pointer): Long
 
-    fun uniffi_iroh_fn_method_doc_set_bytes(
+    fun uniffi_iroh_ffi_fn_method_doc_set_bytes(
         `ptr`: Pointer,
         `authorId`: Pointer,
         `key`: RustBuffer.ByValue,
         `value`: RustBuffer.ByValue,
     ): Long
 
-    fun uniffi_iroh_fn_method_doc_set_download_policy(
+    fun uniffi_iroh_ffi_fn_method_doc_set_download_policy(
         `ptr`: Pointer,
         `policy`: Pointer,
     ): Long
 
-    fun uniffi_iroh_fn_method_doc_set_hash(
+    fun uniffi_iroh_ffi_fn_method_doc_set_hash(
         `ptr`: Pointer,
         `authorId`: Pointer,
         `key`: RustBuffer.ByValue,
@@ -1231,405 +1226,400 @@ internal interface UniffiLib : Library {
         `size`: Long,
     ): Long
 
-    fun uniffi_iroh_fn_method_doc_share(
+    fun uniffi_iroh_ffi_fn_method_doc_share(
         `ptr`: Pointer,
         `mode`: RustBuffer.ByValue,
         `addrOptions`: RustBuffer.ByValue,
     ): Long
 
-    fun uniffi_iroh_fn_method_doc_start_sync(
+    fun uniffi_iroh_ffi_fn_method_doc_start_sync(
         `ptr`: Pointer,
         `peers`: RustBuffer.ByValue,
     ): Long
 
-    fun uniffi_iroh_fn_method_doc_status(`ptr`: Pointer): Long
+    fun uniffi_iroh_ffi_fn_method_doc_status(`ptr`: Pointer): Long
 
-    fun uniffi_iroh_fn_method_doc_subscribe(
+    fun uniffi_iroh_ffi_fn_method_doc_subscribe(
         `ptr`: Pointer,
         `cb`: Pointer,
     ): Long
 
-    fun uniffi_iroh_fn_clone_docexportfilecallback(
+    fun uniffi_iroh_ffi_fn_clone_docexportfilecallback(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_free_docexportfilecallback(
+    fun uniffi_iroh_ffi_fn_free_docexportfilecallback(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_init_callback_vtable_docexportfilecallback(`vtable`: UniffiVTableCallbackInterfaceDocExportFileCallback): Unit
+    fun uniffi_iroh_ffi_fn_init_callback_vtable_docexportfilecallback(`vtable`: UniffiVTableCallbackInterfaceDocExportFileCallback): Unit
 
-    fun uniffi_iroh_fn_method_docexportfilecallback_progress(
+    fun uniffi_iroh_ffi_fn_method_docexportfilecallback_progress(
         `ptr`: Pointer,
         `progress`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_clone_docexportprogress(
+    fun uniffi_iroh_ffi_fn_clone_docexportprogress(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_free_docexportprogress(
+    fun uniffi_iroh_ffi_fn_free_docexportprogress(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_method_docexportprogress_as_abort(
+    fun uniffi_iroh_ffi_fn_method_docexportprogress_as_abort(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_docexportprogress_as_found(
+    fun uniffi_iroh_ffi_fn_method_docexportprogress_as_found(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_docexportprogress_as_progress(
+    fun uniffi_iroh_ffi_fn_method_docexportprogress_as_progress(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_docexportprogress_type(
+    fun uniffi_iroh_ffi_fn_method_docexportprogress_type(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_clone_docimportfilecallback(
+    fun uniffi_iroh_ffi_fn_clone_docimportfilecallback(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_free_docimportfilecallback(
+    fun uniffi_iroh_ffi_fn_free_docimportfilecallback(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_init_callback_vtable_docimportfilecallback(`vtable`: UniffiVTableCallbackInterfaceDocImportFileCallback): Unit
+    fun uniffi_iroh_ffi_fn_init_callback_vtable_docimportfilecallback(`vtable`: UniffiVTableCallbackInterfaceDocImportFileCallback): Unit
 
-    fun uniffi_iroh_fn_method_docimportfilecallback_progress(
+    fun uniffi_iroh_ffi_fn_method_docimportfilecallback_progress(
         `ptr`: Pointer,
         `progress`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_clone_docimportprogress(
+    fun uniffi_iroh_ffi_fn_clone_docimportprogress(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_free_docimportprogress(
+    fun uniffi_iroh_ffi_fn_free_docimportprogress(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_method_docimportprogress_as_abort(
+    fun uniffi_iroh_ffi_fn_method_docimportprogress_as_abort(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_docimportprogress_as_all_done(
+    fun uniffi_iroh_ffi_fn_method_docimportprogress_as_all_done(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_docimportprogress_as_found(
+    fun uniffi_iroh_ffi_fn_method_docimportprogress_as_found(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_docimportprogress_as_ingest_done(
+    fun uniffi_iroh_ffi_fn_method_docimportprogress_as_ingest_done(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_docimportprogress_as_progress(
+    fun uniffi_iroh_ffi_fn_method_docimportprogress_as_progress(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_docimportprogress_type(
+    fun uniffi_iroh_ffi_fn_method_docimportprogress_type(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_clone_downloadcallback(
+    fun uniffi_iroh_ffi_fn_clone_downloadcallback(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_free_downloadcallback(
+    fun uniffi_iroh_ffi_fn_free_downloadcallback(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_init_callback_vtable_downloadcallback(`vtable`: UniffiVTableCallbackInterfaceDownloadCallback): Unit
+    fun uniffi_iroh_ffi_fn_init_callback_vtable_downloadcallback(`vtable`: UniffiVTableCallbackInterfaceDownloadCallback): Unit
 
-    fun uniffi_iroh_fn_method_downloadcallback_progress(
+    fun uniffi_iroh_ffi_fn_method_downloadcallback_progress(
         `ptr`: Pointer,
         `progress`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_clone_downloadpolicy(
+    fun uniffi_iroh_ffi_fn_clone_downloadpolicy(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_free_downloadpolicy(
+    fun uniffi_iroh_ffi_fn_free_downloadpolicy(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_constructor_downloadpolicy_everything(uniffi_out_err: UniffiRustCallStatus): Pointer
+    fun uniffi_iroh_ffi_fn_constructor_downloadpolicy_everything(uniffi_out_err: UniffiRustCallStatus): Pointer
 
-    fun uniffi_iroh_fn_constructor_downloadpolicy_everything_except(
+    fun uniffi_iroh_ffi_fn_constructor_downloadpolicy_everything_except(
         `filters`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_constructor_downloadpolicy_nothing(uniffi_out_err: UniffiRustCallStatus): Pointer
+    fun uniffi_iroh_ffi_fn_constructor_downloadpolicy_nothing(uniffi_out_err: UniffiRustCallStatus): Pointer
 
-    fun uniffi_iroh_fn_constructor_downloadpolicy_nothing_except(
+    fun uniffi_iroh_ffi_fn_constructor_downloadpolicy_nothing_except(
         `filters`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_clone_downloadprogress(
+    fun uniffi_iroh_ffi_fn_clone_downloadprogress(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_free_downloadprogress(
+    fun uniffi_iroh_ffi_fn_free_downloadprogress(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_method_downloadprogress_as_abort(
+    fun uniffi_iroh_ffi_fn_method_downloadprogress_as_abort(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_downloadprogress_as_all_done(
+    fun uniffi_iroh_ffi_fn_method_downloadprogress_as_all_done(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_downloadprogress_as_done(
+    fun uniffi_iroh_ffi_fn_method_downloadprogress_as_done(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_downloadprogress_as_found(
+    fun uniffi_iroh_ffi_fn_method_downloadprogress_as_found(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_downloadprogress_as_found_hash_seq(
+    fun uniffi_iroh_ffi_fn_method_downloadprogress_as_found_hash_seq(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_downloadprogress_as_found_local(
+    fun uniffi_iroh_ffi_fn_method_downloadprogress_as_found_local(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_downloadprogress_as_progress(
+    fun uniffi_iroh_ffi_fn_method_downloadprogress_as_progress(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_downloadprogress_type(
+    fun uniffi_iroh_ffi_fn_method_downloadprogress_type(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_clone_entry(
+    fun uniffi_iroh_ffi_fn_clone_entry(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_free_entry(
+    fun uniffi_iroh_ffi_fn_free_entry(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_method_entry_author(
+    fun uniffi_iroh_ffi_fn_method_entry_author(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_method_entry_content_bytes(
+    fun uniffi_iroh_ffi_fn_method_entry_content_bytes(
         `ptr`: Pointer,
         `doc`: Pointer,
     ): Long
 
-    fun uniffi_iroh_fn_method_entry_content_hash(
+    fun uniffi_iroh_ffi_fn_method_entry_content_hash(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_method_entry_content_len(
+    fun uniffi_iroh_ffi_fn_method_entry_content_len(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    fun uniffi_iroh_fn_method_entry_key(
+    fun uniffi_iroh_ffi_fn_method_entry_key(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_entry_namespace(
+    fun uniffi_iroh_ffi_fn_method_entry_namespace(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_entry_timestamp(
+    fun uniffi_iroh_ffi_fn_method_entry_timestamp(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    fun uniffi_iroh_fn_clone_filterkind(
+    fun uniffi_iroh_ffi_fn_clone_filterkind(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_free_filterkind(
+    fun uniffi_iroh_ffi_fn_free_filterkind(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_constructor_filterkind_exact(
+    fun uniffi_iroh_ffi_fn_constructor_filterkind_exact(
         `key`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_constructor_filterkind_prefix(
+    fun uniffi_iroh_ffi_fn_constructor_filterkind_prefix(
         `prefix`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_method_filterkind_matches(
+    fun uniffi_iroh_ffi_fn_method_filterkind_matches(
         `ptr`: Pointer,
         `key`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): Byte
 
-    fun uniffi_iroh_fn_clone_hash(
+    fun uniffi_iroh_ffi_fn_clone_hash(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_free_hash(
+    fun uniffi_iroh_ffi_fn_free_hash(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_constructor_hash_from_bytes(
+    fun uniffi_iroh_ffi_fn_constructor_hash_from_bytes(
         `bytes`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_constructor_hash_from_string(
+    fun uniffi_iroh_ffi_fn_constructor_hash_from_string(
         `s`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_constructor_hash_new(
+    fun uniffi_iroh_ffi_fn_constructor_hash_new(
         `buf`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_method_hash_equal(
+    fun uniffi_iroh_ffi_fn_method_hash_equal(
         `ptr`: Pointer,
         `other`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Byte
 
-    fun uniffi_iroh_fn_method_hash_to_bytes(
+    fun uniffi_iroh_ffi_fn_method_hash_to_bytes(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_hash_to_hex(
+    fun uniffi_iroh_ffi_fn_method_hash_to_hex(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_hash_uniffi_trait_display(
-        `ptr`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    fun uniffi_iroh_fn_clone_iroherror(
+    fun uniffi_iroh_ffi_fn_clone_iroherror(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_free_iroherror(
+    fun uniffi_iroh_ffi_fn_free_iroherror(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_method_iroherror_message(
+    fun uniffi_iroh_ffi_fn_method_iroherror_message(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_iroherror_uniffi_trait_debug(
+    fun uniffi_iroh_ffi_fn_method_iroherror_uniffi_trait_debug(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_clone_irohnode(
+    fun uniffi_iroh_ffi_fn_clone_irohnode(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_free_irohnode(
+    fun uniffi_iroh_ffi_fn_free_irohnode(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_constructor_irohnode_create(`path`: RustBuffer.ByValue): Long
+    fun uniffi_iroh_ffi_fn_constructor_irohnode_create(`path`: RustBuffer.ByValue): Long
 
-    fun uniffi_iroh_fn_constructor_irohnode_new(`path`: RustBuffer.ByValue): Long
+    fun uniffi_iroh_ffi_fn_constructor_irohnode_new(`path`: RustBuffer.ByValue): Long
 
-    fun uniffi_iroh_fn_constructor_irohnode_with_options(
+    fun uniffi_iroh_ffi_fn_constructor_irohnode_with_options(
         `path`: RustBuffer.ByValue,
         `options`: RustBuffer.ByValue,
     ): Long
 
-    fun uniffi_iroh_fn_method_irohnode_author_create(`ptr`: Pointer): Long
+    fun uniffi_iroh_ffi_fn_method_irohnode_author_create(`ptr`: Pointer): Long
 
-    fun uniffi_iroh_fn_method_irohnode_author_default(`ptr`: Pointer): Long
+    fun uniffi_iroh_ffi_fn_method_irohnode_author_default(`ptr`: Pointer): Long
 
-    fun uniffi_iroh_fn_method_irohnode_author_delete(
+    fun uniffi_iroh_ffi_fn_method_irohnode_author_delete(
         `ptr`: Pointer,
         `author`: Pointer,
     ): Long
 
-    fun uniffi_iroh_fn_method_irohnode_author_export(
+    fun uniffi_iroh_ffi_fn_method_irohnode_author_export(
         `ptr`: Pointer,
         `author`: Pointer,
     ): Long
 
-    fun uniffi_iroh_fn_method_irohnode_author_import(
+    fun uniffi_iroh_ffi_fn_method_irohnode_author_import(
         `ptr`: Pointer,
         `author`: Pointer,
     ): Long
 
-    fun uniffi_iroh_fn_method_irohnode_author_list(`ptr`: Pointer): Long
+    fun uniffi_iroh_ffi_fn_method_irohnode_author_list(`ptr`: Pointer): Long
 
-    fun uniffi_iroh_fn_method_irohnode_blobs_add_bytes(
+    fun uniffi_iroh_ffi_fn_method_irohnode_blobs_add_bytes(
         `ptr`: Pointer,
         `bytes`: RustBuffer.ByValue,
     ): Long
 
-    fun uniffi_iroh_fn_method_irohnode_blobs_add_from_path(
+    fun uniffi_iroh_ffi_fn_method_irohnode_blobs_add_from_path(
         `ptr`: Pointer,
         `path`: RustBuffer.ByValue,
         `inPlace`: Byte,
@@ -1638,26 +1628,26 @@ internal interface UniffiLib : Library {
         `cb`: Pointer,
     ): Long
 
-    fun uniffi_iroh_fn_method_irohnode_blobs_create_collection(
+    fun uniffi_iroh_ffi_fn_method_irohnode_blobs_create_collection(
         `ptr`: Pointer,
         `collection`: Pointer,
         `tag`: Pointer,
         `tagsToDelete`: RustBuffer.ByValue,
     ): Long
 
-    fun uniffi_iroh_fn_method_irohnode_blobs_delete_blob(
+    fun uniffi_iroh_ffi_fn_method_irohnode_blobs_delete_blob(
         `ptr`: Pointer,
         `hash`: Pointer,
     ): Long
 
-    fun uniffi_iroh_fn_method_irohnode_blobs_download(
+    fun uniffi_iroh_ffi_fn_method_irohnode_blobs_download(
         `ptr`: Pointer,
         `hash`: Pointer,
         `opts`: Pointer,
         `cb`: Pointer,
     ): Long
 
-    fun uniffi_iroh_fn_method_irohnode_blobs_export(
+    fun uniffi_iroh_ffi_fn_method_irohnode_blobs_export(
         `ptr`: Pointer,
         `hash`: Pointer,
         `destination`: RustBuffer.ByValue,
@@ -1665,966 +1655,963 @@ internal interface UniffiLib : Library {
         `mode`: RustBuffer.ByValue,
     ): Long
 
-    fun uniffi_iroh_fn_method_irohnode_blobs_get_collection(
+    fun uniffi_iroh_ffi_fn_method_irohnode_blobs_get_collection(
         `ptr`: Pointer,
         `hash`: Pointer,
     ): Long
 
-    fun uniffi_iroh_fn_method_irohnode_blobs_list(`ptr`: Pointer): Long
+    fun uniffi_iroh_ffi_fn_method_irohnode_blobs_list(`ptr`: Pointer): Long
 
-    fun uniffi_iroh_fn_method_irohnode_blobs_list_collections(`ptr`: Pointer): Long
+    fun uniffi_iroh_ffi_fn_method_irohnode_blobs_list_collections(`ptr`: Pointer): Long
 
-    fun uniffi_iroh_fn_method_irohnode_blobs_list_incomplete(`ptr`: Pointer): Long
+    fun uniffi_iroh_ffi_fn_method_irohnode_blobs_list_incomplete(`ptr`: Pointer): Long
 
-    fun uniffi_iroh_fn_method_irohnode_blobs_read_at_to_bytes(
+    fun uniffi_iroh_ffi_fn_method_irohnode_blobs_read_at_to_bytes(
         `ptr`: Pointer,
         `hash`: Pointer,
         `offset`: Long,
         `len`: RustBuffer.ByValue,
     ): Long
 
-    fun uniffi_iroh_fn_method_irohnode_blobs_read_to_bytes(
+    fun uniffi_iroh_ffi_fn_method_irohnode_blobs_read_to_bytes(
         `ptr`: Pointer,
         `hash`: Pointer,
     ): Long
 
-    fun uniffi_iroh_fn_method_irohnode_blobs_share(
+    fun uniffi_iroh_ffi_fn_method_irohnode_blobs_share(
         `ptr`: Pointer,
         `hash`: Pointer,
         `blobFormat`: RustBuffer.ByValue,
         `ticketOptions`: RustBuffer.ByValue,
     ): Long
 
-    fun uniffi_iroh_fn_method_irohnode_blobs_size(
+    fun uniffi_iroh_ffi_fn_method_irohnode_blobs_size(
         `ptr`: Pointer,
         `hash`: Pointer,
     ): Long
 
-    fun uniffi_iroh_fn_method_irohnode_blobs_write_to_path(
+    fun uniffi_iroh_ffi_fn_method_irohnode_blobs_write_to_path(
         `ptr`: Pointer,
         `hash`: Pointer,
         `path`: RustBuffer.ByValue,
     ): Long
 
-    fun uniffi_iroh_fn_method_irohnode_connection_info(
+    fun uniffi_iroh_ffi_fn_method_irohnode_connection_info(
         `ptr`: Pointer,
         `nodeId`: Pointer,
     ): Long
 
-    fun uniffi_iroh_fn_method_irohnode_connections(`ptr`: Pointer): Long
+    fun uniffi_iroh_ffi_fn_method_irohnode_connections(`ptr`: Pointer): Long
 
-    fun uniffi_iroh_fn_method_irohnode_doc_create(`ptr`: Pointer): Long
+    fun uniffi_iroh_ffi_fn_method_irohnode_doc_create(`ptr`: Pointer): Long
 
-    fun uniffi_iroh_fn_method_irohnode_doc_drop(
+    fun uniffi_iroh_ffi_fn_method_irohnode_doc_drop(
         `ptr`: Pointer,
         `docId`: RustBuffer.ByValue,
     ): Long
 
-    fun uniffi_iroh_fn_method_irohnode_doc_join(
+    fun uniffi_iroh_ffi_fn_method_irohnode_doc_join(
         `ptr`: Pointer,
         `ticket`: RustBuffer.ByValue,
     ): Long
 
-    fun uniffi_iroh_fn_method_irohnode_doc_join_and_subscribe(
+    fun uniffi_iroh_ffi_fn_method_irohnode_doc_join_and_subscribe(
         `ptr`: Pointer,
         `ticket`: RustBuffer.ByValue,
         `cb`: Pointer,
     ): Long
 
-    fun uniffi_iroh_fn_method_irohnode_doc_list(`ptr`: Pointer): Long
+    fun uniffi_iroh_ffi_fn_method_irohnode_doc_list(`ptr`: Pointer): Long
 
-    fun uniffi_iroh_fn_method_irohnode_doc_open(
+    fun uniffi_iroh_ffi_fn_method_irohnode_doc_open(
         `ptr`: Pointer,
         `id`: RustBuffer.ByValue,
     ): Long
 
-    fun uniffi_iroh_fn_method_irohnode_node_id(
+    fun uniffi_iroh_ffi_fn_method_irohnode_node_id(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_irohnode_stats(`ptr`: Pointer): Long
+    fun uniffi_iroh_ffi_fn_method_irohnode_stats(`ptr`: Pointer): Long
 
-    fun uniffi_iroh_fn_method_irohnode_status(`ptr`: Pointer): Long
+    fun uniffi_iroh_ffi_fn_method_irohnode_status(`ptr`: Pointer): Long
 
-    fun uniffi_iroh_fn_method_irohnode_tags_delete(
+    fun uniffi_iroh_ffi_fn_method_irohnode_tags_delete(
         `ptr`: Pointer,
         `name`: RustBuffer.ByValue,
     ): Long
 
-    fun uniffi_iroh_fn_method_irohnode_tags_list(`ptr`: Pointer): Long
+    fun uniffi_iroh_ffi_fn_method_irohnode_tags_list(`ptr`: Pointer): Long
 
-    fun uniffi_iroh_fn_clone_liveevent(
+    fun uniffi_iroh_ffi_fn_clone_liveevent(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_free_liveevent(
+    fun uniffi_iroh_ffi_fn_free_liveevent(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_method_liveevent_as_content_ready(
+    fun uniffi_iroh_ffi_fn_method_liveevent_as_content_ready(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_method_liveevent_as_insert_local(
+    fun uniffi_iroh_ffi_fn_method_liveevent_as_insert_local(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_method_liveevent_as_insert_remote(
+    fun uniffi_iroh_ffi_fn_method_liveevent_as_insert_remote(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_liveevent_as_neighbor_down(
+    fun uniffi_iroh_ffi_fn_method_liveevent_as_neighbor_down(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_method_liveevent_as_neighbor_up(
+    fun uniffi_iroh_ffi_fn_method_liveevent_as_neighbor_up(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_method_liveevent_as_sync_finished(
+    fun uniffi_iroh_ffi_fn_method_liveevent_as_sync_finished(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_liveevent_type(
+    fun uniffi_iroh_ffi_fn_method_liveevent_type(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_clone_nodeaddr(
+    fun uniffi_iroh_ffi_fn_clone_nodeaddr(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_free_nodeaddr(
+    fun uniffi_iroh_ffi_fn_free_nodeaddr(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_constructor_nodeaddr_new(
+    fun uniffi_iroh_ffi_fn_constructor_nodeaddr_new(
         `nodeId`: Pointer,
-        `relayUrl`: RustBuffer.ByValue,
+        `derpUrl`: RustBuffer.ByValue,
         `addresses`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_method_nodeaddr_direct_addresses(
+    fun uniffi_iroh_ffi_fn_method_nodeaddr_direct_addresses(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_nodeaddr_equal(
+    fun uniffi_iroh_ffi_fn_method_nodeaddr_equal(
         `ptr`: Pointer,
         `other`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Byte
 
-    fun uniffi_iroh_fn_method_nodeaddr_relay_url(
+    fun uniffi_iroh_ffi_fn_method_nodeaddr_relay_url(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_clone_nodestatus(
+    fun uniffi_iroh_ffi_fn_clone_nodestatus(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_free_nodestatus(
+    fun uniffi_iroh_ffi_fn_free_nodestatus(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_method_nodestatus_listen_addrs(
+    fun uniffi_iroh_ffi_fn_method_nodestatus_listen_addrs(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_nodestatus_node_addr(
+    fun uniffi_iroh_ffi_fn_method_nodestatus_node_addr(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_method_nodestatus_version(
+    fun uniffi_iroh_ffi_fn_method_nodestatus_version(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_clone_publickey(
+    fun uniffi_iroh_ffi_fn_clone_publickey(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_free_publickey(
+    fun uniffi_iroh_ffi_fn_free_publickey(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_constructor_publickey_from_bytes(
+    fun uniffi_iroh_ffi_fn_constructor_publickey_from_bytes(
         `bytes`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_constructor_publickey_from_string(
+    fun uniffi_iroh_ffi_fn_constructor_publickey_from_string(
         `s`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_method_publickey_equal(
+    fun uniffi_iroh_ffi_fn_method_publickey_equal(
         `ptr`: Pointer,
         `other`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Byte
 
-    fun uniffi_iroh_fn_method_publickey_fmt_short(
+    fun uniffi_iroh_ffi_fn_method_publickey_fmt_short(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_publickey_to_bytes(
+    fun uniffi_iroh_ffi_fn_method_publickey_to_bytes(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_publickey_uniffi_trait_display(
-        `ptr`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    fun uniffi_iroh_fn_clone_query(
+    fun uniffi_iroh_ffi_fn_clone_query(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_free_query(
+    fun uniffi_iroh_ffi_fn_free_query(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_constructor_query_all(
+    fun uniffi_iroh_ffi_fn_constructor_query_all(
         `opts`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_constructor_query_author(
+    fun uniffi_iroh_ffi_fn_constructor_query_author(
         `author`: Pointer,
         `opts`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_constructor_query_author_key_exact(
+    fun uniffi_iroh_ffi_fn_constructor_query_author_key_exact(
         `author`: Pointer,
         `key`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_constructor_query_author_key_prefix(
+    fun uniffi_iroh_ffi_fn_constructor_query_author_key_prefix(
         `author`: Pointer,
         `prefix`: RustBuffer.ByValue,
         `opts`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_constructor_query_key_exact(
+    fun uniffi_iroh_ffi_fn_constructor_query_key_exact(
         `key`: RustBuffer.ByValue,
         `opts`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_constructor_query_key_prefix(
+    fun uniffi_iroh_ffi_fn_constructor_query_key_prefix(
         `prefix`: RustBuffer.ByValue,
         `opts`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_constructor_query_single_latest_per_key(
+    fun uniffi_iroh_ffi_fn_constructor_query_single_latest_per_key(
         `opts`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_constructor_query_single_latest_per_key_exact(
-        `exact`: RustBuffer.ByValue,
+    fun uniffi_iroh_ffi_fn_constructor_query_single_latest_per_key_exact(
+        `key`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_constructor_query_single_latest_per_key_prefix(
+    fun uniffi_iroh_ffi_fn_constructor_query_single_latest_per_key_prefix(
         `prefix`: RustBuffer.ByValue,
         `opts`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_method_query_limit(
+    fun uniffi_iroh_ffi_fn_method_query_limit(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_method_query_offset(
+    fun uniffi_iroh_ffi_fn_method_query_offset(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    fun uniffi_iroh_fn_clone_rangespec(
+    fun uniffi_iroh_ffi_fn_clone_rangespec(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_free_rangespec(
+    fun uniffi_iroh_ffi_fn_free_rangespec(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_method_rangespec_is_all(
+    fun uniffi_iroh_ffi_fn_method_rangespec_is_all(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Byte
 
-    fun uniffi_iroh_fn_method_rangespec_is_empty(
+    fun uniffi_iroh_ffi_fn_method_rangespec_is_empty(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Byte
 
-    fun uniffi_iroh_fn_clone_settagoption(
+    fun uniffi_iroh_ffi_fn_clone_settagoption(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_free_settagoption(
+    fun uniffi_iroh_ffi_fn_free_settagoption(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_constructor_settagoption_auto(uniffi_out_err: UniffiRustCallStatus): Pointer
+    fun uniffi_iroh_ffi_fn_constructor_settagoption_auto(uniffi_out_err: UniffiRustCallStatus): Pointer
 
-    fun uniffi_iroh_fn_constructor_settagoption_named(
+    fun uniffi_iroh_ffi_fn_constructor_settagoption_named(
         `tag`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_clone_subscribecallback(
+    fun uniffi_iroh_ffi_fn_clone_subscribecallback(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_free_subscribecallback(
+    fun uniffi_iroh_ffi_fn_free_subscribecallback(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_init_callback_vtable_subscribecallback(`vtable`: UniffiVTableCallbackInterfaceSubscribeCallback): Unit
+    fun uniffi_iroh_ffi_fn_init_callback_vtable_subscribecallback(`vtable`: UniffiVTableCallbackInterfaceSubscribeCallback): Unit
 
-    fun uniffi_iroh_fn_method_subscribecallback_event(
+    fun uniffi_iroh_ffi_fn_method_subscribecallback_event(
         `ptr`: Pointer,
         `event`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_clone_wrapoption(
+    fun uniffi_iroh_ffi_fn_clone_wrapoption(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_free_wrapoption(
+    fun uniffi_iroh_ffi_fn_free_wrapoption(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_constructor_wrapoption_no_wrap(uniffi_out_err: UniffiRustCallStatus): Pointer
+    fun uniffi_iroh_ffi_fn_constructor_wrapoption_no_wrap(uniffi_out_err: UniffiRustCallStatus): Pointer
 
-    fun uniffi_iroh_fn_constructor_wrapoption_wrap(
+    fun uniffi_iroh_ffi_fn_constructor_wrapoption_wrap(
         `name`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun uniffi_iroh_fn_func_key_to_path(
+    fun uniffi_iroh_ffi_fn_func_key_to_path(
         `key`: RustBuffer.ByValue,
         `prefix`: RustBuffer.ByValue,
         `root`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_func_path_to_key(
+    fun uniffi_iroh_ffi_fn_func_path_to_key(
         `path`: RustBuffer.ByValue,
         `prefix`: RustBuffer.ByValue,
         `root`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_fn_func_set_log_level(
+    fun uniffi_iroh_ffi_fn_func_set_log_level(
         `level`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_func_start_metrics_collection(uniffi_out_err: UniffiRustCallStatus): Unit
+    fun uniffi_iroh_ffi_fn_func_start_metrics_collection(uniffi_out_err: UniffiRustCallStatus): Unit
 
-    fun ffi_iroh_rustbuffer_alloc(
+    fun ffi_iroh_ffi_rustbuffer_alloc(
         `size`: Long,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun ffi_iroh_rustbuffer_from_bytes(
+    fun ffi_iroh_ffi_rustbuffer_from_bytes(
         `bytes`: ForeignBytes.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun ffi_iroh_rustbuffer_free(
+    fun ffi_iroh_ffi_rustbuffer_free(
         `buf`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun ffi_iroh_rustbuffer_reserve(
+    fun ffi_iroh_ffi_rustbuffer_reserve(
         `buf`: RustBuffer.ByValue,
         `additional`: Long,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun ffi_iroh_rust_future_poll_u8(
+    fun ffi_iroh_ffi_rust_future_poll_u8(
         `handle`: Long,
         `callback`: UniffiRustFutureContinuationCallback,
         `callbackData`: Long,
     ): Unit
 
-    fun ffi_iroh_rust_future_cancel_u8(`handle`: Long): Unit
+    fun ffi_iroh_ffi_rust_future_cancel_u8(`handle`: Long): Unit
 
-    fun ffi_iroh_rust_future_free_u8(`handle`: Long): Unit
+    fun ffi_iroh_ffi_rust_future_free_u8(`handle`: Long): Unit
 
-    fun ffi_iroh_rust_future_complete_u8(
+    fun ffi_iroh_ffi_rust_future_complete_u8(
         `handle`: Long,
         uniffi_out_err: UniffiRustCallStatus,
     ): Byte
 
-    fun ffi_iroh_rust_future_poll_i8(
+    fun ffi_iroh_ffi_rust_future_poll_i8(
         `handle`: Long,
         `callback`: UniffiRustFutureContinuationCallback,
         `callbackData`: Long,
     ): Unit
 
-    fun ffi_iroh_rust_future_cancel_i8(`handle`: Long): Unit
+    fun ffi_iroh_ffi_rust_future_cancel_i8(`handle`: Long): Unit
 
-    fun ffi_iroh_rust_future_free_i8(`handle`: Long): Unit
+    fun ffi_iroh_ffi_rust_future_free_i8(`handle`: Long): Unit
 
-    fun ffi_iroh_rust_future_complete_i8(
+    fun ffi_iroh_ffi_rust_future_complete_i8(
         `handle`: Long,
         uniffi_out_err: UniffiRustCallStatus,
     ): Byte
 
-    fun ffi_iroh_rust_future_poll_u16(
+    fun ffi_iroh_ffi_rust_future_poll_u16(
         `handle`: Long,
         `callback`: UniffiRustFutureContinuationCallback,
         `callbackData`: Long,
     ): Unit
 
-    fun ffi_iroh_rust_future_cancel_u16(`handle`: Long): Unit
+    fun ffi_iroh_ffi_rust_future_cancel_u16(`handle`: Long): Unit
 
-    fun ffi_iroh_rust_future_free_u16(`handle`: Long): Unit
+    fun ffi_iroh_ffi_rust_future_free_u16(`handle`: Long): Unit
 
-    fun ffi_iroh_rust_future_complete_u16(
+    fun ffi_iroh_ffi_rust_future_complete_u16(
         `handle`: Long,
         uniffi_out_err: UniffiRustCallStatus,
     ): Short
 
-    fun ffi_iroh_rust_future_poll_i16(
+    fun ffi_iroh_ffi_rust_future_poll_i16(
         `handle`: Long,
         `callback`: UniffiRustFutureContinuationCallback,
         `callbackData`: Long,
     ): Unit
 
-    fun ffi_iroh_rust_future_cancel_i16(`handle`: Long): Unit
+    fun ffi_iroh_ffi_rust_future_cancel_i16(`handle`: Long): Unit
 
-    fun ffi_iroh_rust_future_free_i16(`handle`: Long): Unit
+    fun ffi_iroh_ffi_rust_future_free_i16(`handle`: Long): Unit
 
-    fun ffi_iroh_rust_future_complete_i16(
+    fun ffi_iroh_ffi_rust_future_complete_i16(
         `handle`: Long,
         uniffi_out_err: UniffiRustCallStatus,
     ): Short
 
-    fun ffi_iroh_rust_future_poll_u32(
+    fun ffi_iroh_ffi_rust_future_poll_u32(
         `handle`: Long,
         `callback`: UniffiRustFutureContinuationCallback,
         `callbackData`: Long,
     ): Unit
 
-    fun ffi_iroh_rust_future_cancel_u32(`handle`: Long): Unit
+    fun ffi_iroh_ffi_rust_future_cancel_u32(`handle`: Long): Unit
 
-    fun ffi_iroh_rust_future_free_u32(`handle`: Long): Unit
+    fun ffi_iroh_ffi_rust_future_free_u32(`handle`: Long): Unit
 
-    fun ffi_iroh_rust_future_complete_u32(
+    fun ffi_iroh_ffi_rust_future_complete_u32(
         `handle`: Long,
         uniffi_out_err: UniffiRustCallStatus,
     ): Int
 
-    fun ffi_iroh_rust_future_poll_i32(
+    fun ffi_iroh_ffi_rust_future_poll_i32(
         `handle`: Long,
         `callback`: UniffiRustFutureContinuationCallback,
         `callbackData`: Long,
     ): Unit
 
-    fun ffi_iroh_rust_future_cancel_i32(`handle`: Long): Unit
+    fun ffi_iroh_ffi_rust_future_cancel_i32(`handle`: Long): Unit
 
-    fun ffi_iroh_rust_future_free_i32(`handle`: Long): Unit
+    fun ffi_iroh_ffi_rust_future_free_i32(`handle`: Long): Unit
 
-    fun ffi_iroh_rust_future_complete_i32(
+    fun ffi_iroh_ffi_rust_future_complete_i32(
         `handle`: Long,
         uniffi_out_err: UniffiRustCallStatus,
     ): Int
 
-    fun ffi_iroh_rust_future_poll_u64(
+    fun ffi_iroh_ffi_rust_future_poll_u64(
         `handle`: Long,
         `callback`: UniffiRustFutureContinuationCallback,
         `callbackData`: Long,
     ): Unit
 
-    fun ffi_iroh_rust_future_cancel_u64(`handle`: Long): Unit
+    fun ffi_iroh_ffi_rust_future_cancel_u64(`handle`: Long): Unit
 
-    fun ffi_iroh_rust_future_free_u64(`handle`: Long): Unit
+    fun ffi_iroh_ffi_rust_future_free_u64(`handle`: Long): Unit
 
-    fun ffi_iroh_rust_future_complete_u64(
+    fun ffi_iroh_ffi_rust_future_complete_u64(
         `handle`: Long,
         uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    fun ffi_iroh_rust_future_poll_i64(
+    fun ffi_iroh_ffi_rust_future_poll_i64(
         `handle`: Long,
         `callback`: UniffiRustFutureContinuationCallback,
         `callbackData`: Long,
     ): Unit
 
-    fun ffi_iroh_rust_future_cancel_i64(`handle`: Long): Unit
+    fun ffi_iroh_ffi_rust_future_cancel_i64(`handle`: Long): Unit
 
-    fun ffi_iroh_rust_future_free_i64(`handle`: Long): Unit
+    fun ffi_iroh_ffi_rust_future_free_i64(`handle`: Long): Unit
 
-    fun ffi_iroh_rust_future_complete_i64(
+    fun ffi_iroh_ffi_rust_future_complete_i64(
         `handle`: Long,
         uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    fun ffi_iroh_rust_future_poll_f32(
+    fun ffi_iroh_ffi_rust_future_poll_f32(
         `handle`: Long,
         `callback`: UniffiRustFutureContinuationCallback,
         `callbackData`: Long,
     ): Unit
 
-    fun ffi_iroh_rust_future_cancel_f32(`handle`: Long): Unit
+    fun ffi_iroh_ffi_rust_future_cancel_f32(`handle`: Long): Unit
 
-    fun ffi_iroh_rust_future_free_f32(`handle`: Long): Unit
+    fun ffi_iroh_ffi_rust_future_free_f32(`handle`: Long): Unit
 
-    fun ffi_iroh_rust_future_complete_f32(
+    fun ffi_iroh_ffi_rust_future_complete_f32(
         `handle`: Long,
         uniffi_out_err: UniffiRustCallStatus,
     ): Float
 
-    fun ffi_iroh_rust_future_poll_f64(
+    fun ffi_iroh_ffi_rust_future_poll_f64(
         `handle`: Long,
         `callback`: UniffiRustFutureContinuationCallback,
         `callbackData`: Long,
     ): Unit
 
-    fun ffi_iroh_rust_future_cancel_f64(`handle`: Long): Unit
+    fun ffi_iroh_ffi_rust_future_cancel_f64(`handle`: Long): Unit
 
-    fun ffi_iroh_rust_future_free_f64(`handle`: Long): Unit
+    fun ffi_iroh_ffi_rust_future_free_f64(`handle`: Long): Unit
 
-    fun ffi_iroh_rust_future_complete_f64(
+    fun ffi_iroh_ffi_rust_future_complete_f64(
         `handle`: Long,
         uniffi_out_err: UniffiRustCallStatus,
     ): Double
 
-    fun ffi_iroh_rust_future_poll_pointer(
+    fun ffi_iroh_ffi_rust_future_poll_pointer(
         `handle`: Long,
         `callback`: UniffiRustFutureContinuationCallback,
         `callbackData`: Long,
     ): Unit
 
-    fun ffi_iroh_rust_future_cancel_pointer(`handle`: Long): Unit
+    fun ffi_iroh_ffi_rust_future_cancel_pointer(`handle`: Long): Unit
 
-    fun ffi_iroh_rust_future_free_pointer(`handle`: Long): Unit
+    fun ffi_iroh_ffi_rust_future_free_pointer(`handle`: Long): Unit
 
-    fun ffi_iroh_rust_future_complete_pointer(
+    fun ffi_iroh_ffi_rust_future_complete_pointer(
         `handle`: Long,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
 
-    fun ffi_iroh_rust_future_poll_rust_buffer(
+    fun ffi_iroh_ffi_rust_future_poll_rust_buffer(
         `handle`: Long,
         `callback`: UniffiRustFutureContinuationCallback,
         `callbackData`: Long,
     ): Unit
 
-    fun ffi_iroh_rust_future_cancel_rust_buffer(`handle`: Long): Unit
+    fun ffi_iroh_ffi_rust_future_cancel_rust_buffer(`handle`: Long): Unit
 
-    fun ffi_iroh_rust_future_free_rust_buffer(`handle`: Long): Unit
+    fun ffi_iroh_ffi_rust_future_free_rust_buffer(`handle`: Long): Unit
 
-    fun ffi_iroh_rust_future_complete_rust_buffer(
+    fun ffi_iroh_ffi_rust_future_complete_rust_buffer(
         `handle`: Long,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun ffi_iroh_rust_future_poll_void(
+    fun ffi_iroh_ffi_rust_future_poll_void(
         `handle`: Long,
         `callback`: UniffiRustFutureContinuationCallback,
         `callbackData`: Long,
     ): Unit
 
-    fun ffi_iroh_rust_future_cancel_void(`handle`: Long): Unit
+    fun ffi_iroh_ffi_rust_future_cancel_void(`handle`: Long): Unit
 
-    fun ffi_iroh_rust_future_free_void(`handle`: Long): Unit
+    fun ffi_iroh_ffi_rust_future_free_void(`handle`: Long): Unit
 
-    fun ffi_iroh_rust_future_complete_void(
+    fun ffi_iroh_ffi_rust_future_complete_void(
         `handle`: Long,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_checksum_func_key_to_path(): Short
+    fun uniffi_iroh_ffi_checksum_func_key_to_path(): Short
 
-    fun uniffi_iroh_checksum_func_path_to_key(): Short
+    fun uniffi_iroh_ffi_checksum_func_path_to_key(): Short
 
-    fun uniffi_iroh_checksum_func_set_log_level(): Short
+    fun uniffi_iroh_ffi_checksum_func_set_log_level(): Short
 
-    fun uniffi_iroh_checksum_func_start_metrics_collection(): Short
+    fun uniffi_iroh_ffi_checksum_func_start_metrics_collection(): Short
 
-    fun uniffi_iroh_checksum_method_addcallback_progress(): Short
+    fun uniffi_iroh_ffi_checksum_method_addcallback_progress(): Short
 
-    fun uniffi_iroh_checksum_method_addprogress_as_abort(): Short
+    fun uniffi_iroh_ffi_checksum_method_addprogress_as_abort(): Short
 
-    fun uniffi_iroh_checksum_method_addprogress_as_all_done(): Short
+    fun uniffi_iroh_ffi_checksum_method_addprogress_as_all_done(): Short
 
-    fun uniffi_iroh_checksum_method_addprogress_as_done(): Short
+    fun uniffi_iroh_ffi_checksum_method_addprogress_as_done(): Short
 
-    fun uniffi_iroh_checksum_method_addprogress_as_found(): Short
+    fun uniffi_iroh_ffi_checksum_method_addprogress_as_found(): Short
 
-    fun uniffi_iroh_checksum_method_addprogress_as_progress(): Short
+    fun uniffi_iroh_ffi_checksum_method_addprogress_as_progress(): Short
 
-    fun uniffi_iroh_checksum_method_addprogress_type(): Short
+    fun uniffi_iroh_ffi_checksum_method_addprogress_type(): Short
 
-    fun uniffi_iroh_checksum_method_author_id(): Short
+    fun uniffi_iroh_ffi_checksum_method_author_id(): Short
 
-    fun uniffi_iroh_checksum_method_authorid_equal(): Short
+    fun uniffi_iroh_ffi_checksum_method_authorid_equal(): Short
 
-    fun uniffi_iroh_checksum_method_blobticket_as_download_options(): Short
+    fun uniffi_iroh_ffi_checksum_method_blobticket_as_download_options(): Short
 
-    fun uniffi_iroh_checksum_method_blobticket_format(): Short
+    fun uniffi_iroh_ffi_checksum_method_blobticket_format(): Short
 
-    fun uniffi_iroh_checksum_method_blobticket_hash(): Short
+    fun uniffi_iroh_ffi_checksum_method_blobticket_hash(): Short
 
-    fun uniffi_iroh_checksum_method_blobticket_node_addr(): Short
+    fun uniffi_iroh_ffi_checksum_method_blobticket_node_addr(): Short
 
-    fun uniffi_iroh_checksum_method_collection_blobs(): Short
+    fun uniffi_iroh_ffi_checksum_method_blobticket_recursive(): Short
 
-    fun uniffi_iroh_checksum_method_collection_is_empty(): Short
+    fun uniffi_iroh_ffi_checksum_method_collection_blobs(): Short
 
-    fun uniffi_iroh_checksum_method_collection_len(): Short
+    fun uniffi_iroh_ffi_checksum_method_collection_is_empty(): Short
 
-    fun uniffi_iroh_checksum_method_collection_links(): Short
+    fun uniffi_iroh_ffi_checksum_method_collection_len(): Short
 
-    fun uniffi_iroh_checksum_method_collection_names(): Short
+    fun uniffi_iroh_ffi_checksum_method_collection_links(): Short
 
-    fun uniffi_iroh_checksum_method_collection_push(): Short
+    fun uniffi_iroh_ffi_checksum_method_collection_names(): Short
 
-    fun uniffi_iroh_checksum_method_connectiontype_as_direct(): Short
+    fun uniffi_iroh_ffi_checksum_method_collection_push(): Short
 
-    fun uniffi_iroh_checksum_method_connectiontype_as_mixed(): Short
+    fun uniffi_iroh_ffi_checksum_method_connectiontype_as_direct(): Short
 
-    fun uniffi_iroh_checksum_method_connectiontype_as_relay(): Short
+    fun uniffi_iroh_ffi_checksum_method_connectiontype_as_mixed(): Short
 
-    fun uniffi_iroh_checksum_method_connectiontype_type(): Short
+    fun uniffi_iroh_ffi_checksum_method_connectiontype_as_relay(): Short
 
-    fun uniffi_iroh_checksum_method_directaddrinfo_addr(): Short
+    fun uniffi_iroh_ffi_checksum_method_connectiontype_type(): Short
 
-    fun uniffi_iroh_checksum_method_directaddrinfo_last_control(): Short
+    fun uniffi_iroh_ffi_checksum_method_directaddrinfo_addr(): Short
 
-    fun uniffi_iroh_checksum_method_directaddrinfo_last_payload(): Short
+    fun uniffi_iroh_ffi_checksum_method_directaddrinfo_last_control(): Short
 
-    fun uniffi_iroh_checksum_method_directaddrinfo_latency(): Short
+    fun uniffi_iroh_ffi_checksum_method_directaddrinfo_last_payload(): Short
 
-    fun uniffi_iroh_checksum_method_doc_close_me(): Short
+    fun uniffi_iroh_ffi_checksum_method_directaddrinfo_latency(): Short
 
-    fun uniffi_iroh_checksum_method_doc_del(): Short
+    fun uniffi_iroh_ffi_checksum_method_doc_close_me(): Short
 
-    fun uniffi_iroh_checksum_method_doc_export_file(): Short
+    fun uniffi_iroh_ffi_checksum_method_doc_del(): Short
 
-    fun uniffi_iroh_checksum_method_doc_get_download_policy(): Short
+    fun uniffi_iroh_ffi_checksum_method_doc_export_file(): Short
 
-    fun uniffi_iroh_checksum_method_doc_get_exact(): Short
+    fun uniffi_iroh_ffi_checksum_method_doc_get_download_policy(): Short
 
-    fun uniffi_iroh_checksum_method_doc_get_many(): Short
+    fun uniffi_iroh_ffi_checksum_method_doc_get_exact(): Short
 
-    fun uniffi_iroh_checksum_method_doc_get_one(): Short
+    fun uniffi_iroh_ffi_checksum_method_doc_get_many(): Short
 
-    fun uniffi_iroh_checksum_method_doc_id(): Short
+    fun uniffi_iroh_ffi_checksum_method_doc_get_one(): Short
 
-    fun uniffi_iroh_checksum_method_doc_import_file(): Short
+    fun uniffi_iroh_ffi_checksum_method_doc_id(): Short
 
-    fun uniffi_iroh_checksum_method_doc_leave(): Short
+    fun uniffi_iroh_ffi_checksum_method_doc_import_file(): Short
 
-    fun uniffi_iroh_checksum_method_doc_set_bytes(): Short
+    fun uniffi_iroh_ffi_checksum_method_doc_leave(): Short
 
-    fun uniffi_iroh_checksum_method_doc_set_download_policy(): Short
+    fun uniffi_iroh_ffi_checksum_method_doc_set_bytes(): Short
 
-    fun uniffi_iroh_checksum_method_doc_set_hash(): Short
+    fun uniffi_iroh_ffi_checksum_method_doc_set_download_policy(): Short
 
-    fun uniffi_iroh_checksum_method_doc_share(): Short
+    fun uniffi_iroh_ffi_checksum_method_doc_set_hash(): Short
 
-    fun uniffi_iroh_checksum_method_doc_start_sync(): Short
+    fun uniffi_iroh_ffi_checksum_method_doc_share(): Short
 
-    fun uniffi_iroh_checksum_method_doc_status(): Short
+    fun uniffi_iroh_ffi_checksum_method_doc_start_sync(): Short
 
-    fun uniffi_iroh_checksum_method_doc_subscribe(): Short
+    fun uniffi_iroh_ffi_checksum_method_doc_status(): Short
 
-    fun uniffi_iroh_checksum_method_docexportfilecallback_progress(): Short
+    fun uniffi_iroh_ffi_checksum_method_doc_subscribe(): Short
 
-    fun uniffi_iroh_checksum_method_docexportprogress_as_abort(): Short
+    fun uniffi_iroh_ffi_checksum_method_docexportfilecallback_progress(): Short
 
-    fun uniffi_iroh_checksum_method_docexportprogress_as_found(): Short
+    fun uniffi_iroh_ffi_checksum_method_docexportprogress_as_abort(): Short
 
-    fun uniffi_iroh_checksum_method_docexportprogress_as_progress(): Short
+    fun uniffi_iroh_ffi_checksum_method_docexportprogress_as_found(): Short
 
-    fun uniffi_iroh_checksum_method_docexportprogress_type(): Short
+    fun uniffi_iroh_ffi_checksum_method_docexportprogress_as_progress(): Short
 
-    fun uniffi_iroh_checksum_method_docimportfilecallback_progress(): Short
+    fun uniffi_iroh_ffi_checksum_method_docexportprogress_type(): Short
 
-    fun uniffi_iroh_checksum_method_docimportprogress_as_abort(): Short
+    fun uniffi_iroh_ffi_checksum_method_docimportfilecallback_progress(): Short
 
-    fun uniffi_iroh_checksum_method_docimportprogress_as_all_done(): Short
+    fun uniffi_iroh_ffi_checksum_method_docimportprogress_as_abort(): Short
 
-    fun uniffi_iroh_checksum_method_docimportprogress_as_found(): Short
+    fun uniffi_iroh_ffi_checksum_method_docimportprogress_as_all_done(): Short
 
-    fun uniffi_iroh_checksum_method_docimportprogress_as_ingest_done(): Short
+    fun uniffi_iroh_ffi_checksum_method_docimportprogress_as_found(): Short
 
-    fun uniffi_iroh_checksum_method_docimportprogress_as_progress(): Short
+    fun uniffi_iroh_ffi_checksum_method_docimportprogress_as_ingest_done(): Short
 
-    fun uniffi_iroh_checksum_method_docimportprogress_type(): Short
+    fun uniffi_iroh_ffi_checksum_method_docimportprogress_as_progress(): Short
 
-    fun uniffi_iroh_checksum_method_downloadcallback_progress(): Short
+    fun uniffi_iroh_ffi_checksum_method_docimportprogress_type(): Short
 
-    fun uniffi_iroh_checksum_method_downloadprogress_as_abort(): Short
+    fun uniffi_iroh_ffi_checksum_method_downloadcallback_progress(): Short
 
-    fun uniffi_iroh_checksum_method_downloadprogress_as_all_done(): Short
+    fun uniffi_iroh_ffi_checksum_method_downloadprogress_as_abort(): Short
 
-    fun uniffi_iroh_checksum_method_downloadprogress_as_done(): Short
+    fun uniffi_iroh_ffi_checksum_method_downloadprogress_as_all_done(): Short
 
-    fun uniffi_iroh_checksum_method_downloadprogress_as_found(): Short
+    fun uniffi_iroh_ffi_checksum_method_downloadprogress_as_done(): Short
 
-    fun uniffi_iroh_checksum_method_downloadprogress_as_found_hash_seq(): Short
+    fun uniffi_iroh_ffi_checksum_method_downloadprogress_as_found(): Short
 
-    fun uniffi_iroh_checksum_method_downloadprogress_as_found_local(): Short
+    fun uniffi_iroh_ffi_checksum_method_downloadprogress_as_found_hash_seq(): Short
 
-    fun uniffi_iroh_checksum_method_downloadprogress_as_progress(): Short
+    fun uniffi_iroh_ffi_checksum_method_downloadprogress_as_found_local(): Short
 
-    fun uniffi_iroh_checksum_method_downloadprogress_type(): Short
+    fun uniffi_iroh_ffi_checksum_method_downloadprogress_as_progress(): Short
 
-    fun uniffi_iroh_checksum_method_entry_author(): Short
+    fun uniffi_iroh_ffi_checksum_method_downloadprogress_type(): Short
 
-    fun uniffi_iroh_checksum_method_entry_content_bytes(): Short
+    fun uniffi_iroh_ffi_checksum_method_entry_author(): Short
 
-    fun uniffi_iroh_checksum_method_entry_content_hash(): Short
+    fun uniffi_iroh_ffi_checksum_method_entry_content_bytes(): Short
 
-    fun uniffi_iroh_checksum_method_entry_content_len(): Short
+    fun uniffi_iroh_ffi_checksum_method_entry_content_hash(): Short
 
-    fun uniffi_iroh_checksum_method_entry_key(): Short
+    fun uniffi_iroh_ffi_checksum_method_entry_content_len(): Short
 
-    fun uniffi_iroh_checksum_method_entry_namespace(): Short
+    fun uniffi_iroh_ffi_checksum_method_entry_key(): Short
 
-    fun uniffi_iroh_checksum_method_entry_timestamp(): Short
+    fun uniffi_iroh_ffi_checksum_method_entry_namespace(): Short
 
-    fun uniffi_iroh_checksum_method_filterkind_matches(): Short
+    fun uniffi_iroh_ffi_checksum_method_entry_timestamp(): Short
 
-    fun uniffi_iroh_checksum_method_hash_equal(): Short
+    fun uniffi_iroh_ffi_checksum_method_filterkind_matches(): Short
 
-    fun uniffi_iroh_checksum_method_hash_to_bytes(): Short
+    fun uniffi_iroh_ffi_checksum_method_hash_equal(): Short
 
-    fun uniffi_iroh_checksum_method_hash_to_hex(): Short
+    fun uniffi_iroh_ffi_checksum_method_hash_to_bytes(): Short
 
-    fun uniffi_iroh_checksum_method_iroherror_message(): Short
+    fun uniffi_iroh_ffi_checksum_method_hash_to_hex(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_author_create(): Short
+    fun uniffi_iroh_ffi_checksum_method_iroherror_message(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_author_default(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_author_create(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_author_delete(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_author_default(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_author_export(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_author_delete(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_author_import(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_author_export(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_author_list(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_author_import(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_blobs_add_bytes(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_author_list(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_blobs_add_from_path(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_blobs_add_bytes(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_blobs_create_collection(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_blobs_add_from_path(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_blobs_delete_blob(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_blobs_create_collection(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_blobs_download(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_blobs_delete_blob(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_blobs_export(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_blobs_download(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_blobs_get_collection(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_blobs_export(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_blobs_list(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_blobs_get_collection(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_blobs_list_collections(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_blobs_list(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_blobs_list_incomplete(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_blobs_list_collections(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_blobs_read_at_to_bytes(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_blobs_list_incomplete(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_blobs_read_to_bytes(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_blobs_read_at_to_bytes(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_blobs_share(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_blobs_read_to_bytes(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_blobs_size(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_blobs_share(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_blobs_write_to_path(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_blobs_size(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_connection_info(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_blobs_write_to_path(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_connections(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_connection_info(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_doc_create(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_connections(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_doc_drop(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_doc_create(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_doc_join(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_doc_drop(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_doc_join_and_subscribe(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_doc_join(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_doc_list(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_doc_join_and_subscribe(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_doc_open(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_doc_list(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_node_id(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_doc_open(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_stats(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_node_id(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_status(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_stats(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_tags_delete(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_status(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_tags_list(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_tags_delete(): Short
 
-    fun uniffi_iroh_checksum_method_liveevent_as_content_ready(): Short
+    fun uniffi_iroh_ffi_checksum_method_irohnode_tags_list(): Short
 
-    fun uniffi_iroh_checksum_method_liveevent_as_insert_local(): Short
+    fun uniffi_iroh_ffi_checksum_method_liveevent_as_content_ready(): Short
 
-    fun uniffi_iroh_checksum_method_liveevent_as_insert_remote(): Short
+    fun uniffi_iroh_ffi_checksum_method_liveevent_as_insert_local(): Short
 
-    fun uniffi_iroh_checksum_method_liveevent_as_neighbor_down(): Short
+    fun uniffi_iroh_ffi_checksum_method_liveevent_as_insert_remote(): Short
 
-    fun uniffi_iroh_checksum_method_liveevent_as_neighbor_up(): Short
+    fun uniffi_iroh_ffi_checksum_method_liveevent_as_neighbor_down(): Short
 
-    fun uniffi_iroh_checksum_method_liveevent_as_sync_finished(): Short
+    fun uniffi_iroh_ffi_checksum_method_liveevent_as_neighbor_up(): Short
 
-    fun uniffi_iroh_checksum_method_liveevent_type(): Short
+    fun uniffi_iroh_ffi_checksum_method_liveevent_as_sync_finished(): Short
 
-    fun uniffi_iroh_checksum_method_nodeaddr_direct_addresses(): Short
+    fun uniffi_iroh_ffi_checksum_method_liveevent_type(): Short
 
-    fun uniffi_iroh_checksum_method_nodeaddr_equal(): Short
+    fun uniffi_iroh_ffi_checksum_method_nodeaddr_direct_addresses(): Short
 
-    fun uniffi_iroh_checksum_method_nodeaddr_relay_url(): Short
+    fun uniffi_iroh_ffi_checksum_method_nodeaddr_equal(): Short
 
-    fun uniffi_iroh_checksum_method_nodestatus_listen_addrs(): Short
+    fun uniffi_iroh_ffi_checksum_method_nodeaddr_relay_url(): Short
 
-    fun uniffi_iroh_checksum_method_nodestatus_node_addr(): Short
+    fun uniffi_iroh_ffi_checksum_method_nodestatus_listen_addrs(): Short
 
-    fun uniffi_iroh_checksum_method_nodestatus_version(): Short
+    fun uniffi_iroh_ffi_checksum_method_nodestatus_node_addr(): Short
 
-    fun uniffi_iroh_checksum_method_publickey_equal(): Short
+    fun uniffi_iroh_ffi_checksum_method_nodestatus_version(): Short
 
-    fun uniffi_iroh_checksum_method_publickey_fmt_short(): Short
+    fun uniffi_iroh_ffi_checksum_method_publickey_equal(): Short
 
-    fun uniffi_iroh_checksum_method_publickey_to_bytes(): Short
+    fun uniffi_iroh_ffi_checksum_method_publickey_fmt_short(): Short
 
-    fun uniffi_iroh_checksum_method_query_limit(): Short
+    fun uniffi_iroh_ffi_checksum_method_publickey_to_bytes(): Short
 
-    fun uniffi_iroh_checksum_method_query_offset(): Short
+    fun uniffi_iroh_ffi_checksum_method_query_limit(): Short
 
-    fun uniffi_iroh_checksum_method_rangespec_is_all(): Short
+    fun uniffi_iroh_ffi_checksum_method_query_offset(): Short
 
-    fun uniffi_iroh_checksum_method_rangespec_is_empty(): Short
+    fun uniffi_iroh_ffi_checksum_method_rangespec_is_all(): Short
 
-    fun uniffi_iroh_checksum_method_subscribecallback_event(): Short
+    fun uniffi_iroh_ffi_checksum_method_rangespec_is_empty(): Short
 
-    fun uniffi_iroh_checksum_constructor_author_from_string(): Short
+    fun uniffi_iroh_ffi_checksum_method_subscribecallback_event(): Short
 
-    fun uniffi_iroh_checksum_constructor_authorid_from_string(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_author_from_string(): Short
 
-    fun uniffi_iroh_checksum_constructor_blobdownloadoptions_new(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_authorid_from_string(): Short
 
-    fun uniffi_iroh_checksum_constructor_blobticket_new(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_blobdownloadoptions_new(): Short
 
-    fun uniffi_iroh_checksum_constructor_collection_new(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_blobticket_new(): Short
 
-    fun uniffi_iroh_checksum_constructor_downloadpolicy_everything(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_collection_new(): Short
 
-    fun uniffi_iroh_checksum_constructor_downloadpolicy_everything_except(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_downloadpolicy_everything(): Short
 
-    fun uniffi_iroh_checksum_constructor_downloadpolicy_nothing(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_downloadpolicy_everything_except(): Short
 
-    fun uniffi_iroh_checksum_constructor_downloadpolicy_nothing_except(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_downloadpolicy_nothing(): Short
 
-    fun uniffi_iroh_checksum_constructor_filterkind_exact(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_downloadpolicy_nothing_except(): Short
 
-    fun uniffi_iroh_checksum_constructor_filterkind_prefix(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_filterkind_exact(): Short
 
-    fun uniffi_iroh_checksum_constructor_hash_from_bytes(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_filterkind_prefix(): Short
 
-    fun uniffi_iroh_checksum_constructor_hash_from_string(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_hash_from_bytes(): Short
 
-    fun uniffi_iroh_checksum_constructor_hash_new(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_hash_from_string(): Short
 
-    fun uniffi_iroh_checksum_constructor_irohnode_create(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_hash_new(): Short
 
-    fun uniffi_iroh_checksum_constructor_irohnode_new(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_irohnode_create(): Short
 
-    fun uniffi_iroh_checksum_constructor_irohnode_with_options(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_irohnode_new(): Short
 
-    fun uniffi_iroh_checksum_constructor_nodeaddr_new(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_irohnode_with_options(): Short
 
-    fun uniffi_iroh_checksum_constructor_publickey_from_bytes(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_nodeaddr_new(): Short
 
-    fun uniffi_iroh_checksum_constructor_publickey_from_string(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_publickey_from_bytes(): Short
 
-    fun uniffi_iroh_checksum_constructor_query_all(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_publickey_from_string(): Short
 
-    fun uniffi_iroh_checksum_constructor_query_author(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_query_all(): Short
 
-    fun uniffi_iroh_checksum_constructor_query_author_key_exact(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_query_author(): Short
 
-    fun uniffi_iroh_checksum_constructor_query_author_key_prefix(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_query_author_key_exact(): Short
 
-    fun uniffi_iroh_checksum_constructor_query_key_exact(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_query_author_key_prefix(): Short
 
-    fun uniffi_iroh_checksum_constructor_query_key_prefix(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_query_key_exact(): Short
 
-    fun uniffi_iroh_checksum_constructor_query_single_latest_per_key(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_query_key_prefix(): Short
 
-    fun uniffi_iroh_checksum_constructor_query_single_latest_per_key_exact(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_query_single_latest_per_key(): Short
 
-    fun uniffi_iroh_checksum_constructor_query_single_latest_per_key_prefix(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_query_single_latest_per_key_exact(): Short
 
-    fun uniffi_iroh_checksum_constructor_settagoption_auto(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_query_single_latest_per_key_prefix(): Short
 
-    fun uniffi_iroh_checksum_constructor_settagoption_named(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_settagoption_auto(): Short
 
-    fun uniffi_iroh_checksum_constructor_wrapoption_no_wrap(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_settagoption_named(): Short
 
-    fun uniffi_iroh_checksum_constructor_wrapoption_wrap(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_wrapoption_no_wrap(): Short
 
-    fun ffi_iroh_uniffi_contract_version(): Int
+    fun uniffi_iroh_ffi_checksum_constructor_wrapoption_wrap(): Short
+
+    fun ffi_iroh_ffi_uniffi_contract_version(): Int
 }
 
 private fun uniffiCheckContractApiVersion(lib: UniffiLib) {
     // Get the bindings contract version from our ComponentInterface
     val bindings_contract_version = 26
     // Get the scaffolding contract version by calling the into the dylib
-    val scaffolding_contract_version = lib.ffi_iroh_uniffi_contract_version()
+    val scaffolding_contract_version = lib.ffi_iroh_ffi_uniffi_contract_version()
     if (bindings_contract_version != scaffolding_contract_version) {
         throw RuntimeException("UniFFI contract version mismatch: try cleaning and rebuilding your project")
     }
@@ -2632,511 +2619,514 @@ private fun uniffiCheckContractApiVersion(lib: UniffiLib) {
 
 @Suppress("UNUSED_PARAMETER")
 private fun uniffiCheckApiChecksums(lib: UniffiLib) {
-    if (lib.uniffi_iroh_checksum_func_key_to_path() != 8362.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_func_key_to_path() != 28001.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_func_path_to_key() != 56143.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_func_path_to_key() != 4438.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_func_set_log_level() != 23842.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_func_set_log_level() != 52619.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_func_start_metrics_collection() != 52092.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_func_start_metrics_collection() != 23413.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_addcallback_progress() != 5192.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_addcallback_progress() != 49379.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_addprogress_as_abort() != 10096.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_addprogress_as_abort() != 44667.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_addprogress_as_all_done() != 25945.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_addprogress_as_all_done() != 62551.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_addprogress_as_done() != 63498.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_addprogress_as_done() != 58505.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_addprogress_as_found() != 8323.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_addprogress_as_found() != 8172.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_addprogress_as_progress() != 9008.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_addprogress_as_progress() != 36155.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_addprogress_type() != 38695.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_addprogress_type() != 46221.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_author_id() != 17949.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_author_id() != 39022.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_authorid_equal() != 29460.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_authorid_equal() != 56356.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_blobticket_as_download_options() != 57522.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_blobticket_as_download_options() != 18713.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_blobticket_format() != 20220.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_blobticket_format() != 35808.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_blobticket_hash() != 5648.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_blobticket_hash() != 54061.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_blobticket_node_addr() != 28080.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_blobticket_node_addr() != 30662.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_collection_blobs() != 43031.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_blobticket_recursive() != 53797.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_collection_is_empty() != 129.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_collection_blobs() != 52509.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_collection_len() != 6546.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_collection_is_empty() != 40621.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_collection_links() != 17782.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_collection_len() != 10206.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_collection_names() != 61681.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_collection_links() != 56034.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_collection_push() != 49442.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_collection_names() != 28871.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_connectiontype_as_direct() != 27175.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_collection_push() != 22031.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_connectiontype_as_mixed() != 7226.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connectiontype_as_direct() != 47530.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_connectiontype_as_relay() != 40210.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connectiontype_as_mixed() != 49068.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_connectiontype_type() != 27732.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connectiontype_as_relay() != 6121.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_directaddrinfo_addr() != 41252.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connectiontype_type() != 54998.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_directaddrinfo_last_control() != 9385.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_directaddrinfo_addr() != 20100.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_directaddrinfo_last_payload() != 50926.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_directaddrinfo_last_control() != 35048.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_directaddrinfo_latency() != 9423.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_directaddrinfo_last_payload() != 12406.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_close_me() != 54799.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_directaddrinfo_latency() != 7414.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_del() != 49795.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_doc_close_me() != 13449.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_export_file() != 22113.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_doc_del() != 7367.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_get_download_policy() != 45605.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_doc_export_file() != 16067.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_get_exact() != 38233.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_doc_get_download_policy() != 44884.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_get_many() != 49236.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_doc_get_exact() != 20423.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_get_one() != 31252.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_doc_get_many() != 53909.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_id() != 12997.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_doc_get_one() != 18797.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_import_file() != 50950.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_doc_id() != 53450.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_leave() != 59433.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_doc_import_file() != 52327.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_set_bytes() != 42498.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_doc_leave() != 40204.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_set_download_policy() != 8578.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_doc_set_bytes() != 32483.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_set_hash() != 56768.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_doc_set_download_policy() != 18200.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_share() != 40601.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_doc_set_hash() != 30875.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_start_sync() != 48661.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_doc_share() != 30398.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_status() != 50074.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_doc_start_sync() != 54450.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_subscribe() != 56381.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_doc_status() != 30558.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_docexportfilecallback_progress() != 40275.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_doc_subscribe() != 59807.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_docexportprogress_as_abort() != 15488.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_docexportfilecallback_progress() != 38008.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_docexportprogress_as_found() != 32325.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_docexportprogress_as_abort() != 34476.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_docexportprogress_as_progress() != 41090.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_docexportprogress_as_found() != 23982.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_docexportprogress_type() != 29258.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_docexportprogress_as_progress() != 44802.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_docimportfilecallback_progress() != 2905.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_docexportprogress_type() != 11215.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_docimportprogress_as_abort() != 55128.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_docimportfilecallback_progress() != 37343.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_docimportprogress_as_all_done() != 49275.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_docimportprogress_as_abort() != 35952.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_docimportprogress_as_found() != 47675.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_docimportprogress_as_all_done() != 35787.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_docimportprogress_as_ingest_done() != 21810.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_docimportprogress_as_found() != 6030.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_docimportprogress_as_progress() != 30153.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_docimportprogress_as_ingest_done() != 36.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_docimportprogress_type() != 39562.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_docimportprogress_as_progress() != 19927.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_downloadcallback_progress() != 64420.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_docimportprogress_type() != 48401.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_downloadprogress_as_abort() != 63609.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_downloadcallback_progress() != 15880.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_downloadprogress_as_all_done() != 26844.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_downloadprogress_as_abort() != 6879.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_downloadprogress_as_done() != 57406.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_downloadprogress_as_all_done() != 4219.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_downloadprogress_as_found() != 46027.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_downloadprogress_as_done() != 21859.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_downloadprogress_as_found_hash_seq() != 120.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_downloadprogress_as_found() != 47836.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_downloadprogress_as_found_local() != 34679.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_downloadprogress_as_found_hash_seq() != 14451.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_downloadprogress_as_progress() != 28818.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_downloadprogress_as_found_local() != 47262.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_downloadprogress_type() != 61660.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_downloadprogress_as_progress() != 16155.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_entry_author() != 37327.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_downloadprogress_type() != 60534.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_entry_content_bytes() != 61164.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_entry_author() != 39787.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_entry_content_hash() != 62733.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_entry_content_bytes() != 18583.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_entry_content_len() != 47354.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_entry_content_hash() != 26949.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_entry_key() != 25617.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_entry_content_len() != 40073.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_entry_namespace() != 9082.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_entry_key() != 10200.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_entry_timestamp() != 7806.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_entry_namespace() != 25213.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_filterkind_matches() != 35187.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_entry_timestamp() != 38377.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_hash_equal() != 52326.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_filterkind_matches() != 24522.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_hash_to_bytes() != 29465.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_hash_equal() != 28210.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_hash_to_hex() != 27622.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_hash_to_bytes() != 26394.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_iroherror_message() != 42005.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_hash_to_hex() != 52108.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_author_create() != 58991.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_iroherror_message() != 31085.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_author_default() != 7904.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_author_create() != 28895.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_author_delete() != 43436.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_author_default() != 42499.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_author_export() != 60995.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_author_delete() != 4225.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_author_import() != 2472.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_author_export() != 37686.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_author_list() != 14690.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_author_import() != 5607.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_add_bytes() != 25287.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_author_list() != 62761.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_add_from_path() != 5196.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_blobs_add_bytes() != 17203.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_create_collection() != 29932.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_blobs_add_from_path() != 37809.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_delete_blob() != 36095.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_blobs_create_collection() != 52712.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_download() != 6876.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_blobs_delete_blob() != 37832.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_export() != 19311.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_blobs_download() != 54471.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_get_collection() != 33956.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_blobs_export() != 19194.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_list() != 40896.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_blobs_get_collection() != 22036.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_list_collections() != 53294.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_blobs_list() != 31880.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_list_incomplete() != 1444.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_blobs_list_collections() != 189.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_read_at_to_bytes() != 33959.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_blobs_list_incomplete() != 31752.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_read_to_bytes() != 15740.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_blobs_read_at_to_bytes() != 11107.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_share() != 13012.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_blobs_read_to_bytes() != 15494.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_size() != 588.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_blobs_share() != 38899.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_write_to_path() != 32014.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_blobs_size() != 39132.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_connection_info() != 17326.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_blobs_write_to_path() != 43769.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_connections() != 5115.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_connection_info() != 64141.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_doc_create() != 62501.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_connections() != 55452.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_doc_drop() != 6368.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_doc_create() != 25418.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_doc_join() != 20276.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_doc_drop() != 41240.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_doc_join_and_subscribe() != 21569.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_doc_join() != 61748.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_doc_list() != 10922.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_doc_join_and_subscribe() != 992.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_doc_open() != 47990.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_doc_list() != 63026.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_node_id() != 22360.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_doc_open() != 16291.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_stats() != 45923.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_node_id() != 155.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_status() != 402.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_stats() != 11985.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_tags_delete() != 64578.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_status() != 3356.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_tags_list() != 57793.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_tags_delete() != 46770.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_liveevent_as_content_ready() != 15237.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_tags_list() != 567.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_liveevent_as_insert_local() != 431.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_liveevent_as_content_ready() != 6578.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_liveevent_as_insert_remote() != 19916.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_liveevent_as_insert_local() != 27496.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_liveevent_as_neighbor_down() != 154.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_liveevent_as_insert_remote() != 38454.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_liveevent_as_neighbor_up() != 25727.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_liveevent_as_neighbor_down() != 27752.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_liveevent_as_sync_finished() != 62733.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_liveevent_as_neighbor_up() != 44203.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_liveevent_type() != 63032.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_liveevent_as_sync_finished() != 27893.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_nodeaddr_direct_addresses() != 13100.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_liveevent_type() != 30099.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_nodeaddr_equal() != 40672.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_nodeaddr_direct_addresses() != 23787.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_nodeaddr_relay_url() != 33747.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_nodeaddr_equal() != 19664.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_nodestatus_listen_addrs() != 52977.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_nodeaddr_relay_url() != 34772.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_nodestatus_node_addr() != 53928.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_nodestatus_listen_addrs() != 54436.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_nodestatus_version() != 46131.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_nodestatus_node_addr() != 12507.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_publickey_equal() != 13922.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_nodestatus_version() != 3183.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_publickey_fmt_short() != 33947.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_publickey_equal() != 8690.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_publickey_to_bytes() != 54334.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_publickey_fmt_short() != 31871.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_query_limit() != 13803.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_publickey_to_bytes() != 22449.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_query_offset() != 5309.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_query_limit() != 23235.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_rangespec_is_all() != 17079.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_query_offset() != 14460.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_rangespec_is_empty() != 55537.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_rangespec_is_all() != 51737.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_subscribecallback_event() != 53405.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_rangespec_is_empty() != 38175.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_author_from_string() != 30389.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_subscribecallback_event() != 35027.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_authorid_from_string() != 38117.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_author_from_string() != 63158.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_blobdownloadoptions_new() != 47667.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_authorid_from_string() != 47849.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_blobticket_new() != 36162.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_blobdownloadoptions_new() != 19425.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_collection_new() != 10699.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_blobticket_new() != 29763.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_downloadpolicy_everything() != 33704.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_collection_new() != 3798.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_downloadpolicy_everything_except() != 48193.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_downloadpolicy_everything() != 35143.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_downloadpolicy_nothing() != 44731.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_downloadpolicy_everything_except() != 21211.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_downloadpolicy_nothing_except() != 12480.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_downloadpolicy_nothing() != 16928.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_filterkind_exact() != 3557.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_downloadpolicy_nothing_except() != 12041.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_filterkind_prefix() != 58174.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_filterkind_exact() != 13432.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_hash_from_bytes() != 29694.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_filterkind_prefix() != 42338.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_hash_from_string() != 9376.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_hash_from_bytes() != 13104.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_hash_new() != 25525.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_hash_from_string() != 23453.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_irohnode_create() != 56881.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_hash_new() != 30613.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_irohnode_new() != 5720.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_irohnode_create() != 17798.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_irohnode_with_options() != 31921.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_irohnode_new() != 19618.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_nodeaddr_new() != 31240.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_irohnode_with_options() != 6808.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_publickey_from_bytes() != 13946.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_nodeaddr_new() != 5759.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_publickey_from_string() != 19439.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_publickey_from_bytes() != 64011.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_query_all() != 14156.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_publickey_from_string() != 42207.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_query_author() != 59964.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_query_all() != 34328.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_query_author_key_exact() != 59955.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_query_author() != 17803.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_query_author_key_prefix() != 43283.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_query_author_key_exact() != 38571.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_query_key_exact() != 35442.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_query_author_key_prefix() != 48731.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_query_key_prefix() != 40767.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_query_key_exact() != 17481.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_query_single_latest_per_key() != 14952.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_query_key_prefix() != 35279.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_query_single_latest_per_key_exact() != 30329.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_query_single_latest_per_key() != 58221.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_query_single_latest_per_key_prefix() != 60943.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_query_single_latest_per_key_exact() != 6734.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_settagoption_auto() != 17797.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_query_single_latest_per_key_prefix() != 8914.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_settagoption_named() != 6167.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_settagoption_auto() != 50496.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_wrapoption_no_wrap() != 60071.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_settagoption_named() != 33009.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_wrapoption_wrap() != 15641.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_wrapoption_no_wrap() != 59800.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_ffi_checksum_constructor_wrapoption_wrap() != 6667.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
 }
@@ -3692,7 +3682,7 @@ open class AddCallbackImpl :
         override fun run() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_free_addcallback(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_addcallback(ptr, status)
                 }
             }
         }
@@ -3700,7 +3690,7 @@ open class AddCallbackImpl :
 
     fun uniffiClonePointer(): Pointer =
         uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_clone_addcallback(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_addcallback(pointer!!, status)
         }
 
     @Throws(
@@ -3709,7 +3699,7 @@ open class AddCallbackImpl :
     override fun `progress`(`progress`: AddProgress) =
         callWithPointer {
             uniffiRustCallWithError(CallbackException) { _status ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_addcallback_progress(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_addcallback_progress(
                     it,
                     FfiConverterTypeAddProgress.lower(`progress`),
                     _status,
@@ -3791,7 +3781,7 @@ internal object uniffiCallbackInterfaceAddCallback {
     // Registers the foreign callback with the Rust side.
     // This method is generated for each callback interface.
     internal fun register(lib: UniffiLib) {
-        lib.uniffi_iroh_fn_init_callback_vtable_addcallback(vtable)
+        lib.uniffi_iroh_ffi_fn_init_callback_vtable_addcallback(vtable)
     }
 }
 
@@ -4030,7 +4020,7 @@ open class AddProgress :
         override fun run() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_free_addprogress(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_addprogress(ptr, status)
                 }
             }
         }
@@ -4038,7 +4028,7 @@ open class AddProgress :
 
     fun uniffiClonePointer(): Pointer =
         uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_clone_addprogress(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_addprogress(pointer!!, status)
         }
 
     /**
@@ -4048,7 +4038,7 @@ open class AddProgress :
         FfiConverterTypeAddProgressAbort.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_addprogress_as_abort(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_addprogress_as_abort(
                         it,
                         _status,
                     )
@@ -4063,7 +4053,7 @@ open class AddProgress :
         FfiConverterTypeAddProgressAllDone.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_addprogress_as_all_done(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_addprogress_as_all_done(
                         it,
                         _status,
                     )
@@ -4078,7 +4068,7 @@ open class AddProgress :
         FfiConverterTypeAddProgressDone.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_addprogress_as_done(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_addprogress_as_done(
                         it,
                         _status,
                     )
@@ -4093,7 +4083,7 @@ open class AddProgress :
         FfiConverterTypeAddProgressFound.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_addprogress_as_found(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_addprogress_as_found(
                         it,
                         _status,
                     )
@@ -4108,7 +4098,7 @@ open class AddProgress :
         FfiConverterTypeAddProgressProgress.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_addprogress_as_progress(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_addprogress_as_progress(
                         it,
                         _status,
                     )
@@ -4123,7 +4113,7 @@ open class AddProgress :
         FfiConverterTypeAddProgressType.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_addprogress_type(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_addprogress_type(
                         it,
                         _status,
                     )
@@ -4346,7 +4336,7 @@ open class Author :
         override fun run() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_free_author(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_author(ptr, status)
                 }
             }
         }
@@ -4354,7 +4344,7 @@ open class Author :
 
     fun uniffiClonePointer(): Pointer =
         uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_clone_author(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_author(pointer!!, status)
         }
 
     /**
@@ -4364,19 +4354,7 @@ open class Author :
         FfiConverterTypeAuthorId.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_author_id(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
-
-    override fun toString(): String =
-        FfiConverterString.lift(
-            callWithPointer {
-                uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_author_uniffi_trait_display(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_author_id(
                         it,
                         _status,
                     )
@@ -4392,7 +4370,7 @@ open class Author :
         fun `fromString`(`str`: kotlin.String): Author =
             FfiConverterTypeAuthor.lift(
                 uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_author_from_string(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_author_from_string(
                         FfiConverterString.lower(`str`),
                         _status,
                     )
@@ -4609,7 +4587,7 @@ open class AuthorId :
         override fun run() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_free_authorid(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_authorid(ptr, status)
                 }
             }
         }
@@ -4617,7 +4595,7 @@ open class AuthorId :
 
     fun uniffiClonePointer(): Pointer =
         uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_clone_authorid(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_authorid(pointer!!, status)
         }
 
     /**
@@ -4627,21 +4605,9 @@ open class AuthorId :
         FfiConverterBoolean.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_authorid_equal(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_authorid_equal(
                         it,
                         FfiConverterTypeAuthorId.lower(`other`),
-                        _status,
-                    )
-                }
-            },
-        )
-
-    override fun toString(): String =
-        FfiConverterString.lift(
-            callWithPointer {
-                uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_authorid_uniffi_trait_display(
-                        it,
                         _status,
                     )
                 }
@@ -4656,7 +4622,7 @@ open class AuthorId :
         fun `fromString`(`str`: kotlin.String): AuthorId =
             FfiConverterTypeAuthorId.lift(
                 uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_authorid_from_string(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_authorid_from_string(
                         FfiConverterString.lower(`str`),
                         _status,
                     )
@@ -4786,14 +4752,14 @@ public object FfiConverterTypeAuthorId : FfiConverter<AuthorId, Pointer> {
 //
 
 /**
- * A request to the node to download and share the data specified by the hash.
+ * Options to download  data specified by the hash.
  */
 public interface BlobDownloadOptionsInterface {
     companion object
 }
 
 /**
- * A request to the node to download and share the data specified by the hash.
+ * Options to download  data specified by the hash.
  */
 open class BlobDownloadOptions :
     Disposable,
@@ -4814,10 +4780,14 @@ open class BlobDownloadOptions :
         this.pointer = null
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(pointer))
     }
+
+    /**
+     * Create a BlobDownloadRequest
+     */
     constructor(`format`: BlobFormat, `node`: NodeAddr, `tag`: SetTagOption) :
         this(
             uniffiRustCallWithError(IrohException) { _status ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_blobdownloadoptions_new(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_blobdownloadoptions_new(
                     FfiConverterTypeBlobFormat.lower(`format`),
                     FfiConverterTypeNodeAddr.lower(`node`),
                     FfiConverterTypeSetTagOption.lower(`tag`),
@@ -4879,7 +4849,7 @@ open class BlobDownloadOptions :
         override fun run() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_free_blobdownloadoptions(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_blobdownloadoptions(ptr, status)
                 }
             }
         }
@@ -4887,7 +4857,7 @@ open class BlobDownloadOptions :
 
     fun uniffiClonePointer(): Pointer =
         uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_clone_blobdownloadoptions(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_blobdownloadoptions(pointer!!, status)
         }
 
     companion object
@@ -5020,24 +4990,29 @@ public object FfiConverterTypeBlobDownloadOptions : FfiConverter<BlobDownloadOpt
  */
 public interface BlobTicketInterface {
     /**
-     * Turn this ticket into parameters for blobs_download.
+     * Convert this ticket into input parameters for a call to blobs_download
      */
     fun `asDownloadOptions`(): BlobDownloadOptions
 
     /**
-     * The format of the blob.
+     * The [`BlobFormat`] for this ticket.
      */
     fun `format`(): BlobFormat
 
     /**
-     * The hash to retrieve.
+     * The hash of the item this ticket can retrieve.
      */
     fun `hash`(): Hash
 
     /**
-     * The provider to get a file from.
+     * The [`NodeAddr`] of the provider for this ticket.
      */
     fun `nodeAddr`(): NodeAddr
+
+    /**
+     * True if the ticket is for a collection and should retrieve all blobs in it.
+     */
+    fun `recursive`(): kotlin.Boolean
 
     companion object
 }
@@ -5066,11 +5041,11 @@ open class BlobTicket :
         this.pointer = null
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(pointer))
     }
-    constructor(`ticket`: kotlin.String) :
+    constructor(`str`: kotlin.String) :
         this(
             uniffiRustCallWithError(IrohException) { _status ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_blobticket_new(
-                    FfiConverterString.lower(`ticket`),
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_blobticket_new(
+                    FfiConverterString.lower(`str`),
                     _status,
                 )
             },
@@ -5129,7 +5104,7 @@ open class BlobTicket :
         override fun run() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_free_blobticket(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_blobticket(ptr, status)
                 }
             }
         }
@@ -5137,17 +5112,17 @@ open class BlobTicket :
 
     fun uniffiClonePointer(): Pointer =
         uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_clone_blobticket(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_blobticket(pointer!!, status)
         }
 
     /**
-     * Turn this ticket into parameters for blobs_download.
+     * Convert this ticket into input parameters for a call to blobs_download
      */
     override fun `asDownloadOptions`(): BlobDownloadOptions =
         FfiConverterTypeBlobDownloadOptions.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_blobticket_as_download_options(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_blobticket_as_download_options(
                         it,
                         _status,
                     )
@@ -5156,13 +5131,13 @@ open class BlobTicket :
         )
 
     /**
-     * The format of the blob.
+     * The [`BlobFormat`] for this ticket.
      */
     override fun `format`(): BlobFormat =
         FfiConverterTypeBlobFormat.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_blobticket_format(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_blobticket_format(
                         it,
                         _status,
                     )
@@ -5171,13 +5146,13 @@ open class BlobTicket :
         )
 
     /**
-     * The hash to retrieve.
+     * The hash of the item this ticket can retrieve.
      */
     override fun `hash`(): Hash =
         FfiConverterTypeHash.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_blobticket_hash(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_blobticket_hash(
                         it,
                         _status,
                     )
@@ -5186,13 +5161,28 @@ open class BlobTicket :
         )
 
     /**
-     * The provider to get a file from.
+     * The [`NodeAddr`] of the provider for this ticket.
      */
     override fun `nodeAddr`(): NodeAddr =
         FfiConverterTypeNodeAddr.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_blobticket_node_addr(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_blobticket_node_addr(
+                        it,
+                        _status,
+                    )
+                }
+            },
+        )
+
+    /**
+     * True if the ticket is for a collection and should retrieve all blobs in it.
+     */
+    override fun `recursive`(): kotlin.Boolean =
+        FfiConverterBoolean.lift(
+            callWithPointer {
+                uniffiRustCall { _status ->
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_blobticket_recursive(
                         it,
                         _status,
                     )
@@ -5325,12 +5315,10 @@ public object FfiConverterTypeBlobTicket : FfiConverter<BlobTicket, Pointer> {
 
 /**
  * A collection of blobs
- *
- * Note that the format is subject to change.
  */
 public interface CollectionInterface {
     /**
-     * Returns a [`Link`] (the name and the hash), for each blob in the collection.
+     * Get the blobs associated with this collection
      */
     fun `blobs`(): List<LinkAndName>
 
@@ -5367,8 +5355,6 @@ public interface CollectionInterface {
 
 /**
  * A collection of blobs
- *
- * Note that the format is subject to change.
  */
 open class Collection :
     Disposable,
@@ -5396,7 +5382,7 @@ open class Collection :
     constructor() :
         this(
             uniffiRustCall { _status ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_collection_new(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_collection_new(
                     _status,
                 )
             },
@@ -5455,7 +5441,7 @@ open class Collection :
         override fun run() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_free_collection(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_collection(ptr, status)
                 }
             }
         }
@@ -5463,11 +5449,11 @@ open class Collection :
 
     fun uniffiClonePointer(): Pointer =
         uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_clone_collection(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_collection(pointer!!, status)
         }
 
     /**
-     * Returns a [`Link`] (the name and the hash), for each blob in the collection.
+     * Get the blobs associated with this collection
      */
     @Throws(
         IrohException::class,
@@ -5476,7 +5462,7 @@ open class Collection :
         FfiConverterSequenceTypeLinkAndName.lift(
             callWithPointer {
                 uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_collection_blobs(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_collection_blobs(
                         it,
                         _status,
                     )
@@ -5494,7 +5480,7 @@ open class Collection :
         FfiConverterBoolean.lift(
             callWithPointer {
                 uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_collection_is_empty(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_collection_is_empty(
                         it,
                         _status,
                     )
@@ -5512,7 +5498,7 @@ open class Collection :
         FfiConverterULong.lift(
             callWithPointer {
                 uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_collection_len(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_collection_len(
                         it,
                         _status,
                     )
@@ -5530,7 +5516,7 @@ open class Collection :
         FfiConverterSequenceTypeHash.lift(
             callWithPointer {
                 uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_collection_links(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_collection_links(
                         it,
                         _status,
                     )
@@ -5548,7 +5534,7 @@ open class Collection :
         FfiConverterSequenceString.lift(
             callWithPointer {
                 uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_collection_names(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_collection_names(
                         it,
                         _status,
                     )
@@ -5567,7 +5553,7 @@ open class Collection :
         `hash`: Hash,
     ) = callWithPointer {
         uniffiRustCallWithError(IrohException) { _status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_method_collection_push(
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_collection_push(
                 it,
                 FfiConverterString.lower(`name`),
                 FfiConverterTypeHash.lower(`hash`),
@@ -5709,12 +5695,12 @@ public interface ConnectionTypeInterface {
     fun `asDirect`(): kotlin.String
 
     /**
-     * Return the socket address and relay url if this is a mixed connection
+     * Return the socket address and DERP url if this is a mixed connection
      */
     fun `asMixed`(): ConnectionTypeMixed
 
     /**
-     * Return the relay url if this is a relay connection
+     * Return the derp url if this is a relay connection
      */
     fun `asRelay`(): kotlin.String
 
@@ -5802,7 +5788,7 @@ open class ConnectionType :
         override fun run() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_free_connectiontype(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_connectiontype(ptr, status)
                 }
             }
         }
@@ -5810,7 +5796,7 @@ open class ConnectionType :
 
     fun uniffiClonePointer(): Pointer =
         uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_clone_connectiontype(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_connectiontype(pointer!!, status)
         }
 
     /**
@@ -5820,7 +5806,7 @@ open class ConnectionType :
         FfiConverterString.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_connectiontype_as_direct(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_connectiontype_as_direct(
                         it,
                         _status,
                     )
@@ -5829,13 +5815,13 @@ open class ConnectionType :
         )
 
     /**
-     * Return the socket address and relay url if this is a mixed connection
+     * Return the socket address and DERP url if this is a mixed connection
      */
     override fun `asMixed`(): ConnectionTypeMixed =
         FfiConverterTypeConnectionTypeMixed.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_connectiontype_as_mixed(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_connectiontype_as_mixed(
                         it,
                         _status,
                     )
@@ -5844,13 +5830,13 @@ open class ConnectionType :
         )
 
     /**
-     * Return the relay url if this is a relay connection
+     * Return the derp url if this is a relay connection
      */
     override fun `asRelay`(): kotlin.String =
         FfiConverterString.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_connectiontype_as_relay(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_connectiontype_as_relay(
                         it,
                         _status,
                     )
@@ -5865,7 +5851,7 @@ open class ConnectionType :
         FfiConverterTypeConnType.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_connectiontype_type(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_connectiontype_type(
                         it,
                         _status,
                     )
@@ -6099,7 +6085,7 @@ open class DirectAddrInfo :
         override fun run() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_free_directaddrinfo(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_directaddrinfo(ptr, status)
                 }
             }
         }
@@ -6107,7 +6093,7 @@ open class DirectAddrInfo :
 
     fun uniffiClonePointer(): Pointer =
         uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_clone_directaddrinfo(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_directaddrinfo(pointer!!, status)
         }
 
     /**
@@ -6117,7 +6103,7 @@ open class DirectAddrInfo :
         FfiConverterString.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_directaddrinfo_addr(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_directaddrinfo_addr(
                         it,
                         _status,
                     )
@@ -6132,7 +6118,7 @@ open class DirectAddrInfo :
         FfiConverterOptionalTypeLatencyAndControlMsg.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_directaddrinfo_last_control(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_directaddrinfo_last_control(
                         it,
                         _status,
                     )
@@ -6147,7 +6133,7 @@ open class DirectAddrInfo :
         FfiConverterOptionalDuration.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_directaddrinfo_last_payload(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_directaddrinfo_last_payload(
                         it,
                         _status,
                     )
@@ -6162,7 +6148,7 @@ open class DirectAddrInfo :
         FfiConverterOptionalDuration.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_directaddrinfo_latency(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_directaddrinfo_latency(
                         it,
                         _status,
                     )
@@ -6498,7 +6484,7 @@ open class Doc :
         override fun run() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_free_doc(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_doc(ptr, status)
                 }
             }
         }
@@ -6506,7 +6492,7 @@ open class Doc :
 
     fun uniffiClonePointer(): Pointer =
         uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_clone_doc(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_doc(pointer!!, status)
         }
 
     /**
@@ -6517,13 +6503,13 @@ open class Doc :
     override suspend fun `closeMe`() =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_close_me(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_doc_close_me(
                     thisPtr,
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_void(future) },
             // lift function
             { Unit },
             // Error FFI converter
@@ -6546,15 +6532,15 @@ open class Doc :
     ): kotlin.ULong =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_del(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_doc_del(
                     thisPtr,
                     FfiConverterTypeAuthorId.lower(`authorId`),
                     FfiConverterByteArray.lower(`prefix`),
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_u64(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_u64(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_u64(future) },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_u64(future) },
             // lift function
             { FfiConverterULong.lift(it) },
             // Error FFI converter
@@ -6572,16 +6558,16 @@ open class Doc :
         `cb`: DocExportFileCallback?,
     ) = uniffiRustCallAsync(
         callWithPointer { thisPtr ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_export_file(
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_doc_export_file(
                 thisPtr,
                 FfiConverterTypeEntry.lower(`entry`),
                 FfiConverterString.lower(`path`),
                 FfiConverterOptionalTypeDocExportFileCallback.lower(`cb`),
             )
         },
-        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
-        { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
-        { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_void(future) },
         // lift function
         { Unit },
         // Error FFI converter
@@ -6596,13 +6582,13 @@ open class Doc :
     override suspend fun `getDownloadPolicy`(): DownloadPolicy =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_get_download_policy(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_doc_get_download_policy(
                     thisPtr,
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_pointer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_pointer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_pointer(future) },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_pointer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_pointer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_pointer(future) },
             // lift function
             { FfiConverterTypeDownloadPolicy.lift(it) },
             // Error FFI converter
@@ -6621,16 +6607,22 @@ open class Doc :
     ): Entry? =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_get_exact(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_doc_get_exact(
                     thisPtr,
                     FfiConverterTypeAuthorId.lower(`author`),
                     FfiConverterByteArray.lower(`key`),
                     FfiConverterBoolean.lower(`includeEmpty`),
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            {
+                    future,
+                    callback,
+                    continuation,
+                ->
+                UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
+            },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
             // lift function
             { FfiConverterOptionalTypeEntry.lift(it) },
             // Error FFI converter
@@ -6648,14 +6640,20 @@ open class Doc :
     override suspend fun `getMany`(`query`: Query): List<Entry> =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_get_many(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_doc_get_many(
                     thisPtr,
                     FfiConverterTypeQuery.lower(`query`),
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            {
+                    future,
+                    callback,
+                    continuation,
+                ->
+                UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
+            },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
             // lift function
             { FfiConverterSequenceTypeEntry.lift(it) },
             // Error FFI converter
@@ -6670,14 +6668,20 @@ open class Doc :
     override suspend fun `getOne`(`query`: Query): Entry? =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_get_one(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_doc_get_one(
                     thisPtr,
                     FfiConverterTypeQuery.lower(`query`),
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            {
+                    future,
+                    callback,
+                    continuation,
+                ->
+                UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
+            },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
             // lift function
             { FfiConverterOptionalTypeEntry.lift(it) },
             // Error FFI converter
@@ -6691,7 +6695,7 @@ open class Doc :
         FfiConverterString.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_id(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_doc_id(
                         it,
                         _status,
                     )
@@ -6712,7 +6716,7 @@ open class Doc :
         `cb`: DocImportFileCallback?,
     ) = uniffiRustCallAsync(
         callWithPointer { thisPtr ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_import_file(
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_doc_import_file(
                 thisPtr,
                 FfiConverterTypeAuthorId.lower(`author`),
                 FfiConverterByteArray.lower(`key`),
@@ -6721,9 +6725,9 @@ open class Doc :
                 FfiConverterOptionalTypeDocImportFileCallback.lower(`cb`),
             )
         },
-        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
-        { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
-        { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_void(future) },
         // lift function
         { Unit },
         // Error FFI converter
@@ -6738,13 +6742,13 @@ open class Doc :
     override suspend fun `leave`() =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_leave(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_doc_leave(
                     thisPtr,
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_void(future) },
             // lift function
             { Unit },
             // Error FFI converter
@@ -6763,16 +6767,16 @@ open class Doc :
     ): Hash =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_set_bytes(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_doc_set_bytes(
                     thisPtr,
                     FfiConverterTypeAuthorId.lower(`authorId`),
                     FfiConverterByteArray.lower(`key`),
                     FfiConverterByteArray.lower(`value`),
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_pointer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_pointer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_pointer(future) },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_pointer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_pointer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_pointer(future) },
             // lift function
             { FfiConverterTypeHash.lift(it) },
             // Error FFI converter
@@ -6787,14 +6791,14 @@ open class Doc :
     override suspend fun `setDownloadPolicy`(`policy`: DownloadPolicy) =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_set_download_policy(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_doc_set_download_policy(
                     thisPtr,
                     FfiConverterTypeDownloadPolicy.lower(`policy`),
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_void(future) },
             // lift function
             { Unit },
             // Error FFI converter
@@ -6813,7 +6817,7 @@ open class Doc :
         `size`: kotlin.ULong,
     ) = uniffiRustCallAsync(
         callWithPointer { thisPtr ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_set_hash(
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_doc_set_hash(
                 thisPtr,
                 FfiConverterTypeAuthorId.lower(`authorId`),
                 FfiConverterByteArray.lower(`key`),
@@ -6821,9 +6825,9 @@ open class Doc :
                 FfiConverterULong.lower(`size`),
             )
         },
-        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
-        { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
-        { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_void(future) },
         // lift function
         { Unit },
         // Error FFI converter
@@ -6841,15 +6845,21 @@ open class Doc :
     ): kotlin.String =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_share(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_doc_share(
                     thisPtr,
                     FfiConverterTypeShareMode.lower(`mode`),
                     FfiConverterTypeAddrInfoOptions.lower(`addrOptions`),
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            {
+                    future,
+                    callback,
+                    continuation,
+                ->
+                UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
+            },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
             // lift function
             { FfiConverterString.lift(it) },
             // Error FFI converter
@@ -6864,14 +6874,14 @@ open class Doc :
     override suspend fun `startSync`(`peers`: List<NodeAddr>) =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_start_sync(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_doc_start_sync(
                     thisPtr,
                     FfiConverterSequenceTypeNodeAddr.lower(`peers`),
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_void(future) },
             // lift function
             { Unit },
             // Error FFI converter
@@ -6886,13 +6896,19 @@ open class Doc :
     override suspend fun `status`(): OpenState =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_status(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_doc_status(
                     thisPtr,
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            {
+                    future,
+                    callback,
+                    continuation,
+                ->
+                UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
+            },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
             // lift function
             { FfiConverterTypeOpenState.lift(it) },
             // Error FFI converter
@@ -6907,14 +6923,14 @@ open class Doc :
     override suspend fun `subscribe`(`cb`: SubscribeCallback) =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_subscribe(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_doc_subscribe(
                     thisPtr,
                     FfiConverterTypeSubscribeCallback.lower(`cb`),
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_void(future) },
             // lift function
             { Unit },
             // Error FFI converter
@@ -7133,7 +7149,7 @@ open class DocExportFileCallbackImpl :
         override fun run() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_free_docexportfilecallback(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_docexportfilecallback(ptr, status)
                 }
             }
         }
@@ -7141,7 +7157,7 @@ open class DocExportFileCallbackImpl :
 
     fun uniffiClonePointer(): Pointer =
         uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_clone_docexportfilecallback(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_docexportfilecallback(pointer!!, status)
         }
 
     @Throws(
@@ -7150,7 +7166,7 @@ open class DocExportFileCallbackImpl :
     override fun `progress`(`progress`: DocExportProgress) =
         callWithPointer {
             uniffiRustCallWithError(CallbackException) { _status ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_docexportfilecallback_progress(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_docexportfilecallback_progress(
                     it,
                     FfiConverterTypeDocExportProgress.lower(`progress`),
                     _status,
@@ -7200,7 +7216,7 @@ internal object uniffiCallbackInterfaceDocExportFileCallback {
     // Registers the foreign callback with the Rust side.
     // This method is generated for each callback interface.
     internal fun register(lib: UniffiLib) {
-        lib.uniffi_iroh_fn_init_callback_vtable_docexportfilecallback(vtable)
+        lib.uniffi_iroh_ffi_fn_init_callback_vtable_docexportfilecallback(vtable)
     }
 }
 
@@ -7429,7 +7445,7 @@ open class DocExportProgress :
         override fun run() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_free_docexportprogress(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_docexportprogress(ptr, status)
                 }
             }
         }
@@ -7437,7 +7453,7 @@ open class DocExportProgress :
 
     fun uniffiClonePointer(): Pointer =
         uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_clone_docexportprogress(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_docexportprogress(pointer!!, status)
         }
 
     /**
@@ -7447,7 +7463,7 @@ open class DocExportProgress :
         FfiConverterTypeDocExportProgressAbort.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_docexportprogress_as_abort(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_docexportprogress_as_abort(
                         it,
                         _status,
                     )
@@ -7462,7 +7478,7 @@ open class DocExportProgress :
         FfiConverterTypeDocExportProgressFound.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_docexportprogress_as_found(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_docexportprogress_as_found(
                         it,
                         _status,
                     )
@@ -7477,7 +7493,7 @@ open class DocExportProgress :
         FfiConverterTypeDocExportProgressProgress.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_docexportprogress_as_progress(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_docexportprogress_as_progress(
                         it,
                         _status,
                     )
@@ -7492,7 +7508,7 @@ open class DocExportProgress :
         FfiConverterTypeDocExportProgressType.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_docexportprogress_type(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_docexportprogress_type(
                         it,
                         _status,
                     )
@@ -7712,7 +7728,7 @@ open class DocImportFileCallbackImpl :
         override fun run() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_free_docimportfilecallback(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_docimportfilecallback(ptr, status)
                 }
             }
         }
@@ -7720,7 +7736,7 @@ open class DocImportFileCallbackImpl :
 
     fun uniffiClonePointer(): Pointer =
         uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_clone_docimportfilecallback(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_docimportfilecallback(pointer!!, status)
         }
 
     @Throws(
@@ -7729,7 +7745,7 @@ open class DocImportFileCallbackImpl :
     override fun `progress`(`progress`: DocImportProgress) =
         callWithPointer {
             uniffiRustCallWithError(CallbackException) { _status ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_docimportfilecallback_progress(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_docimportfilecallback_progress(
                     it,
                     FfiConverterTypeDocImportProgress.lower(`progress`),
                     _status,
@@ -7779,7 +7795,7 @@ internal object uniffiCallbackInterfaceDocImportFileCallback {
     // Registers the foreign callback with the Rust side.
     // This method is generated for each callback interface.
     internal fun register(lib: UniffiLib) {
-        lib.uniffi_iroh_fn_init_callback_vtable_docimportfilecallback(vtable)
+        lib.uniffi_iroh_ffi_fn_init_callback_vtable_docimportfilecallback(vtable)
     }
 }
 
@@ -8018,7 +8034,7 @@ open class DocImportProgress :
         override fun run() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_free_docimportprogress(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_docimportprogress(ptr, status)
                 }
             }
         }
@@ -8026,7 +8042,7 @@ open class DocImportProgress :
 
     fun uniffiClonePointer(): Pointer =
         uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_clone_docimportprogress(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_docimportprogress(pointer!!, status)
         }
 
     /**
@@ -8036,7 +8052,7 @@ open class DocImportProgress :
         FfiConverterTypeDocImportProgressAbort.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_docimportprogress_as_abort(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_docimportprogress_as_abort(
                         it,
                         _status,
                     )
@@ -8051,7 +8067,7 @@ open class DocImportProgress :
         FfiConverterTypeDocImportProgressAllDone.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_docimportprogress_as_all_done(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_docimportprogress_as_all_done(
                         it,
                         _status,
                     )
@@ -8066,7 +8082,7 @@ open class DocImportProgress :
         FfiConverterTypeDocImportProgressFound.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_docimportprogress_as_found(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_docimportprogress_as_found(
                         it,
                         _status,
                     )
@@ -8081,7 +8097,7 @@ open class DocImportProgress :
         FfiConverterTypeDocImportProgressIngestDone.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_docimportprogress_as_ingest_done(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_docimportprogress_as_ingest_done(
                         it,
                         _status,
                     )
@@ -8096,7 +8112,7 @@ open class DocImportProgress :
         FfiConverterTypeDocImportProgressProgress.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_docimportprogress_as_progress(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_docimportprogress_as_progress(
                         it,
                         _status,
                     )
@@ -8111,7 +8127,7 @@ open class DocImportProgress :
         FfiConverterTypeDocImportProgressType.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_docimportprogress_type(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_docimportprogress_type(
                         it,
                         _status,
                     )
@@ -8331,7 +8347,7 @@ open class DownloadCallbackImpl :
         override fun run() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_free_downloadcallback(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_downloadcallback(ptr, status)
                 }
             }
         }
@@ -8339,7 +8355,7 @@ open class DownloadCallbackImpl :
 
     fun uniffiClonePointer(): Pointer =
         uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_clone_downloadcallback(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_downloadcallback(pointer!!, status)
         }
 
     @Throws(
@@ -8348,7 +8364,7 @@ open class DownloadCallbackImpl :
     override fun `progress`(`progress`: DownloadProgress) =
         callWithPointer {
             uniffiRustCallWithError(CallbackException) { _status ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_downloadcallback_progress(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_downloadcallback_progress(
                     it,
                     FfiConverterTypeDownloadProgress.lower(`progress`),
                     _status,
@@ -8398,7 +8414,7 @@ internal object uniffiCallbackInterfaceDownloadCallback {
     // Registers the foreign callback with the Rust side.
     // This method is generated for each callback interface.
     internal fun register(lib: UniffiLib) {
-        lib.uniffi_iroh_fn_init_callback_vtable_downloadcallback(vtable)
+        lib.uniffi_iroh_ffi_fn_init_callback_vtable_downloadcallback(vtable)
     }
 }
 
@@ -8607,7 +8623,7 @@ open class DownloadPolicy :
         override fun run() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_free_downloadpolicy(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_downloadpolicy(ptr, status)
                 }
             }
         }
@@ -8615,7 +8631,7 @@ open class DownloadPolicy :
 
     fun uniffiClonePointer(): Pointer =
         uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_clone_downloadpolicy(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_downloadpolicy(pointer!!, status)
         }
 
     companion object {
@@ -8625,7 +8641,7 @@ open class DownloadPolicy :
         fun `everything`(): DownloadPolicy =
             FfiConverterTypeDownloadPolicy.lift(
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_downloadpolicy_everything(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_downloadpolicy_everything(
                         _status,
                     )
                 },
@@ -8637,7 +8653,7 @@ open class DownloadPolicy :
         fun `everythingExcept`(`filters`: List<FilterKind>): DownloadPolicy =
             FfiConverterTypeDownloadPolicy.lift(
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_downloadpolicy_everything_except(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_downloadpolicy_everything_except(
                         FfiConverterSequenceTypeFilterKind.lower(`filters`),
                         _status,
                     )
@@ -8650,7 +8666,7 @@ open class DownloadPolicy :
         fun `nothing`(): DownloadPolicy =
             FfiConverterTypeDownloadPolicy.lift(
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_downloadpolicy_nothing(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_downloadpolicy_nothing(
                         _status,
                     )
                 },
@@ -8662,7 +8678,7 @@ open class DownloadPolicy :
         fun `nothingExcept`(`filters`: List<FilterKind>): DownloadPolicy =
             FfiConverterTypeDownloadPolicy.lift(
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_downloadpolicy_nothing_except(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_downloadpolicy_nothing_except(
                         FfiConverterSequenceTypeFilterKind.lower(`filters`),
                         _status,
                     )
@@ -8796,7 +8812,7 @@ public object FfiConverterTypeDownloadPolicy : FfiConverter<DownloadPolicy, Poin
  */
 public interface DownloadProgressInterface {
     /**
-     * Return the `DownloadProgressAbort`
+     * Return the `DownloadProgressAbort` event
      */
     fun `asAbort`(): DownloadProgressAbort
 
@@ -8915,7 +8931,7 @@ open class DownloadProgress :
         override fun run() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_free_downloadprogress(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_downloadprogress(ptr, status)
                 }
             }
         }
@@ -8923,17 +8939,17 @@ open class DownloadProgress :
 
     fun uniffiClonePointer(): Pointer =
         uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_clone_downloadprogress(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_downloadprogress(pointer!!, status)
         }
 
     /**
-     * Return the `DownloadProgressAbort`
+     * Return the `DownloadProgressAbort` event
      */
     override fun `asAbort`(): DownloadProgressAbort =
         FfiConverterTypeDownloadProgressAbort.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_downloadprogress_as_abort(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_downloadprogress_as_abort(
                         it,
                         _status,
                     )
@@ -8948,7 +8964,7 @@ open class DownloadProgress :
         FfiConverterTypeDownloadProgressAllDone.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_downloadprogress_as_all_done(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_downloadprogress_as_all_done(
                         it,
                         _status,
                     )
@@ -8963,7 +8979,7 @@ open class DownloadProgress :
         FfiConverterTypeDownloadProgressDone.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_downloadprogress_as_done(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_downloadprogress_as_done(
                         it,
                         _status,
                     )
@@ -8978,7 +8994,7 @@ open class DownloadProgress :
         FfiConverterTypeDownloadProgressFound.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_downloadprogress_as_found(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_downloadprogress_as_found(
                         it,
                         _status,
                     )
@@ -8993,7 +9009,7 @@ open class DownloadProgress :
         FfiConverterTypeDownloadProgressFoundHashSeq.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_downloadprogress_as_found_hash_seq(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_downloadprogress_as_found_hash_seq(
                         it,
                         _status,
                     )
@@ -9008,7 +9024,7 @@ open class DownloadProgress :
         FfiConverterTypeDownloadProgressFoundLocal.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_downloadprogress_as_found_local(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_downloadprogress_as_found_local(
                         it,
                         _status,
                     )
@@ -9023,7 +9039,7 @@ open class DownloadProgress :
         FfiConverterTypeDownloadProgressProgress.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_downloadprogress_as_progress(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_downloadprogress_as_progress(
                         it,
                         _status,
                     )
@@ -9039,7 +9055,7 @@ open class DownloadProgress :
         FfiConverterTypeDownloadProgressType.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_downloadprogress_type(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_downloadprogress_type(
                         it,
                         _status,
                     )
@@ -9299,7 +9315,7 @@ open class Entry :
         override fun run() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_free_entry(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_entry(ptr, status)
                 }
             }
         }
@@ -9307,7 +9323,7 @@ open class Entry :
 
     fun uniffiClonePointer(): Pointer =
         uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_clone_entry(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_entry(pointer!!, status)
         }
 
     /**
@@ -9317,7 +9333,7 @@ open class Entry :
         FfiConverterTypeAuthorId.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_entry_author(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_entry_author(
                         it,
                         _status,
                     )
@@ -9336,14 +9352,20 @@ open class Entry :
     override suspend fun `contentBytes`(`doc`: Doc): kotlin.ByteArray =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_entry_content_bytes(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_entry_content_bytes(
                     thisPtr,
                     FfiConverterTypeDoc.lower(`doc`),
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            {
+                    future,
+                    callback,
+                    continuation,
+                ->
+                UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
+            },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
             // lift function
             { FfiConverterByteArray.lift(it) },
             // Error FFI converter
@@ -9357,7 +9379,7 @@ open class Entry :
         FfiConverterTypeHash.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_entry_content_hash(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_entry_content_hash(
                         it,
                         _status,
                     )
@@ -9372,7 +9394,7 @@ open class Entry :
         FfiConverterULong.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_entry_content_len(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_entry_content_len(
                         it,
                         _status,
                     )
@@ -9387,7 +9409,7 @@ open class Entry :
         FfiConverterByteArray.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_entry_key(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_entry_key(
                         it,
                         _status,
                     )
@@ -9402,7 +9424,7 @@ open class Entry :
         FfiConverterString.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_entry_namespace(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_entry_namespace(
                         it,
                         _status,
                     )
@@ -9417,7 +9439,7 @@ open class Entry :
         FfiConverterULong.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_entry_timestamp(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_entry_timestamp(
                         it,
                         _status,
                     )
@@ -9636,7 +9658,7 @@ open class FilterKind :
         override fun run() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_free_filterkind(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_filterkind(ptr, status)
                 }
             }
         }
@@ -9644,7 +9666,7 @@ open class FilterKind :
 
     fun uniffiClonePointer(): Pointer =
         uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_clone_filterkind(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_filterkind(pointer!!, status)
         }
 
     /**
@@ -9654,7 +9676,7 @@ open class FilterKind :
         FfiConverterBoolean.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_filterkind_matches(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_filterkind_matches(
                         it,
                         FfiConverterByteArray.lower(`key`),
                         _status,
@@ -9670,7 +9692,7 @@ open class FilterKind :
         fun `exact`(`key`: kotlin.ByteArray): FilterKind =
             FfiConverterTypeFilterKind.lift(
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_filterkind_exact(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_filterkind_exact(
                         FfiConverterByteArray.lower(`key`),
                         _status,
                     )
@@ -9683,7 +9705,7 @@ open class FilterKind :
         fun `prefix`(`prefix`: kotlin.ByteArray): FilterKind =
             FfiConverterTypeFilterKind.lift(
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_filterkind_prefix(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_filterkind_prefix(
                         FfiConverterByteArray.lower(`prefix`),
                         _status,
                     )
@@ -9863,7 +9885,7 @@ open class Hash :
     constructor(`buf`: kotlin.ByteArray) :
         this(
             uniffiRustCall { _status ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_hash_new(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_hash_new(
                     FfiConverterByteArray.lower(`buf`),
                     _status,
                 )
@@ -9923,7 +9945,7 @@ open class Hash :
         override fun run() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_free_hash(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_hash(ptr, status)
                 }
             }
         }
@@ -9931,7 +9953,7 @@ open class Hash :
 
     fun uniffiClonePointer(): Pointer =
         uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_clone_hash(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_hash(pointer!!, status)
         }
 
     /**
@@ -9941,7 +9963,7 @@ open class Hash :
         FfiConverterBoolean.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_hash_equal(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_hash_equal(
                         it,
                         FfiConverterTypeHash.lower(`other`),
                         _status,
@@ -9957,7 +9979,7 @@ open class Hash :
         FfiConverterByteArray.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_hash_to_bytes(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_hash_to_bytes(
                         it,
                         _status,
                     )
@@ -9972,19 +9994,7 @@ open class Hash :
         FfiConverterString.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_hash_to_hex(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
-
-    override fun toString(): String =
-        FfiConverterString.lift(
-            callWithPointer {
-                uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_hash_uniffi_trait_display(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_hash_to_hex(
                         it,
                         _status,
                     )
@@ -9994,13 +10004,13 @@ open class Hash :
 
     companion object {
         /**
-         * Create a Hash from its raw bytes representation.
+         * Create a `Hash` from its raw bytes representation.
          */
         @Throws(IrohException::class)
         fun `fromBytes`(`bytes`: kotlin.ByteArray): Hash =
             FfiConverterTypeHash.lift(
                 uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_hash_from_bytes(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_hash_from_bytes(
                         FfiConverterByteArray.lower(`bytes`),
                         _status,
                     )
@@ -10014,7 +10024,7 @@ open class Hash :
         fun `fromString`(`s`: kotlin.String): Hash =
             FfiConverterTypeHash.lift(
                 uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_hash_from_string(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_hash_from_string(
                         FfiConverterString.lower(`s`),
                         _status,
                     )
@@ -10144,7 +10154,7 @@ public object FfiConverterTypeHash : FfiConverter<Hash, Pointer> {
 //
 
 /**
- * An iroh error.
+ * An Error.
  */
 public interface IrohExceptionInterface {
     fun `message`(): kotlin.String
@@ -10153,7 +10163,7 @@ public interface IrohExceptionInterface {
 }
 
 /**
- * An iroh error.
+ * An Error.
  */
 
 open class IrohException :
@@ -10230,7 +10240,7 @@ open class IrohException :
         override fun run() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_free_iroherror(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_iroherror(ptr, status)
                 }
             }
         }
@@ -10238,14 +10248,14 @@ open class IrohException :
 
     fun uniffiClonePointer(): Pointer =
         uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_clone_iroherror(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_iroherror(pointer!!, status)
         }
 
     override fun `message`(): kotlin.String =
         FfiConverterString.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_iroherror_message(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_iroherror_message(
                         it,
                         _status,
                     )
@@ -10733,7 +10743,7 @@ open class IrohNode :
         override fun run() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_free_irohnode(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_irohnode(ptr, status)
                 }
             }
         }
@@ -10741,7 +10751,7 @@ open class IrohNode :
 
     fun uniffiClonePointer(): Pointer =
         uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_clone_irohnode(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_irohnode(pointer!!, status)
         }
 
     /**
@@ -10757,13 +10767,13 @@ open class IrohNode :
     override suspend fun `authorCreate`(): AuthorId =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_author_create(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_author_create(
                     thisPtr,
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_pointer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_pointer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_pointer(future) },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_pointer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_pointer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_pointer(future) },
             // lift function
             { FfiConverterTypeAuthorId.lift(it) },
             // Error FFI converter
@@ -10783,13 +10793,13 @@ open class IrohNode :
     override suspend fun `authorDefault`(): AuthorId =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_author_default(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_author_default(
                     thisPtr,
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_pointer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_pointer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_pointer(future) },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_pointer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_pointer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_pointer(future) },
             // lift function
             { FfiConverterTypeAuthorId.lift(it) },
             // Error FFI converter
@@ -10806,14 +10816,14 @@ open class IrohNode :
     override suspend fun `authorDelete`(`author`: AuthorId) =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_author_delete(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_author_delete(
                     thisPtr,
                     FfiConverterTypeAuthorId.lower(`author`),
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_void(future) },
             // lift function
             { Unit },
             // Error FFI converter
@@ -10830,14 +10840,14 @@ open class IrohNode :
     override suspend fun `authorExport`(`author`: AuthorId): Author =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_author_export(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_author_export(
                     thisPtr,
                     FfiConverterTypeAuthorId.lower(`author`),
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_pointer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_pointer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_pointer(future) },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_pointer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_pointer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_pointer(future) },
             // lift function
             { FfiConverterTypeAuthor.lift(it) },
             // Error FFI converter
@@ -10854,14 +10864,14 @@ open class IrohNode :
     override suspend fun `authorImport`(`author`: Author): AuthorId =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_author_import(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_author_import(
                     thisPtr,
                     FfiConverterTypeAuthor.lower(`author`),
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_pointer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_pointer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_pointer(future) },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_pointer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_pointer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_pointer(future) },
             // lift function
             { FfiConverterTypeAuthorId.lift(it) },
             // Error FFI converter
@@ -10876,13 +10886,19 @@ open class IrohNode :
     override suspend fun `authorList`(): List<AuthorId> =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_author_list(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_author_list(
                     thisPtr,
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            {
+                    future,
+                    callback,
+                    continuation,
+                ->
+                UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
+            },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
             // lift function
             { FfiConverterSequenceTypeAuthorId.lift(it) },
             // Error FFI converter
@@ -10897,14 +10913,20 @@ open class IrohNode :
     override suspend fun `blobsAddBytes`(`bytes`: kotlin.ByteArray): BlobAddOutcome =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_add_bytes(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_blobs_add_bytes(
                     thisPtr,
                     FfiConverterByteArray.lower(`bytes`),
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            {
+                    future,
+                    callback,
+                    continuation,
+                ->
+                UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
+            },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
             // lift function
             { FfiConverterTypeBlobAddOutcome.lift(it) },
             // Error FFI converter
@@ -10929,7 +10951,7 @@ open class IrohNode :
         `cb`: AddCallback,
     ) = uniffiRustCallAsync(
         callWithPointer { thisPtr ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_add_from_path(
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_blobs_add_from_path(
                 thisPtr,
                 FfiConverterString.lower(`path`),
                 FfiConverterBoolean.lower(`inPlace`),
@@ -10938,9 +10960,9 @@ open class IrohNode :
                 FfiConverterTypeAddCallback.lower(`cb`),
             )
         },
-        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
-        { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
-        { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_void(future) },
         // lift function
         { Unit },
         // Error FFI converter
@@ -10962,16 +10984,22 @@ open class IrohNode :
     ): HashAndTag =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_create_collection(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_blobs_create_collection(
                     thisPtr,
                     FfiConverterTypeCollection.lower(`collection`),
                     FfiConverterTypeSetTagOption.lower(`tag`),
                     FfiConverterSequenceString.lower(`tagsToDelete`),
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            {
+                    future,
+                    callback,
+                    continuation,
+                ->
+                UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
+            },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
             // lift function
             { FfiConverterTypeHashAndTag.lift(it) },
             // Error FFI converter
@@ -10986,14 +11014,14 @@ open class IrohNode :
     override suspend fun `blobsDeleteBlob`(`hash`: Hash) =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_delete_blob(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_blobs_delete_blob(
                     thisPtr,
                     FfiConverterTypeHash.lower(`hash`),
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_void(future) },
             // lift function
             { Unit },
             // Error FFI converter
@@ -11011,16 +11039,16 @@ open class IrohNode :
         `cb`: DownloadCallback,
     ) = uniffiRustCallAsync(
         callWithPointer { thisPtr ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_download(
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_blobs_download(
                 thisPtr,
                 FfiConverterTypeHash.lower(`hash`),
                 FfiConverterTypeBlobDownloadOptions.lower(`opts`),
                 FfiConverterTypeDownloadCallback.lower(`cb`),
             )
         },
-        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
-        { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
-        { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_void(future) },
         // lift function
         { Unit },
         // Error FFI converter
@@ -11047,7 +11075,7 @@ open class IrohNode :
         `mode`: BlobExportMode,
     ) = uniffiRustCallAsync(
         callWithPointer { thisPtr ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_export(
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_blobs_export(
                 thisPtr,
                 FfiConverterTypeHash.lower(`hash`),
                 FfiConverterString.lower(`destination`),
@@ -11055,9 +11083,9 @@ open class IrohNode :
                 FfiConverterTypeBlobExportMode.lower(`mode`),
             )
         },
-        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
-        { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
-        { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_void(future) },
         // lift function
         { Unit },
         // Error FFI converter
@@ -11072,14 +11100,14 @@ open class IrohNode :
     override suspend fun `blobsGetCollection`(`hash`: Hash): Collection =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_get_collection(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_blobs_get_collection(
                     thisPtr,
                     FfiConverterTypeHash.lower(`hash`),
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_pointer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_pointer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_pointer(future) },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_pointer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_pointer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_pointer(future) },
             // lift function
             { FfiConverterTypeCollection.lift(it) },
             // Error FFI converter
@@ -11097,13 +11125,19 @@ open class IrohNode :
     override suspend fun `blobsList`(): List<Hash> =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_list(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_blobs_list(
                     thisPtr,
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            {
+                    future,
+                    callback,
+                    continuation,
+                ->
+                UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
+            },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
             // lift function
             { FfiConverterSequenceTypeHash.lift(it) },
             // Error FFI converter
@@ -11121,13 +11155,19 @@ open class IrohNode :
     override suspend fun `blobsListCollections`(): List<CollectionInfo> =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_list_collections(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_blobs_list_collections(
                     thisPtr,
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            {
+                    future,
+                    callback,
+                    continuation,
+                ->
+                UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
+            },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
             // lift function
             { FfiConverterSequenceTypeCollectionInfo.lift(it) },
             // Error FFI converter
@@ -11145,13 +11185,19 @@ open class IrohNode :
     override suspend fun `blobsListIncomplete`(): List<IncompleteBlobInfo> =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_list_incomplete(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_blobs_list_incomplete(
                     thisPtr,
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            {
+                    future,
+                    callback,
+                    continuation,
+                ->
+                UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
+            },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
             // lift function
             { FfiConverterSequenceTypeIncompleteBlobInfo.lift(it) },
             // Error FFI converter
@@ -11174,16 +11220,22 @@ open class IrohNode :
     ): kotlin.ByteArray =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_read_at_to_bytes(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_blobs_read_at_to_bytes(
                     thisPtr,
                     FfiConverterTypeHash.lower(`hash`),
                     FfiConverterULong.lower(`offset`),
                     FfiConverterOptionalULong.lower(`len`),
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            {
+                    future,
+                    callback,
+                    continuation,
+                ->
+                UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
+            },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
             // lift function
             { FfiConverterByteArray.lift(it) },
             // Error FFI converter
@@ -11202,14 +11254,20 @@ open class IrohNode :
     override suspend fun `blobsReadToBytes`(`hash`: Hash): kotlin.ByteArray =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_read_to_bytes(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_blobs_read_to_bytes(
                     thisPtr,
                     FfiConverterTypeHash.lower(`hash`),
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            {
+                    future,
+                    callback,
+                    continuation,
+                ->
+                UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
+            },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
             // lift function
             { FfiConverterByteArray.lift(it) },
             // Error FFI converter
@@ -11228,16 +11286,22 @@ open class IrohNode :
     ): kotlin.String =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_share(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_blobs_share(
                     thisPtr,
                     FfiConverterTypeHash.lower(`hash`),
                     FfiConverterTypeBlobFormat.lower(`blobFormat`),
                     FfiConverterTypeAddrInfoOptions.lower(`ticketOptions`),
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            {
+                    future,
+                    callback,
+                    continuation,
+                ->
+                UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
+            },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
             // lift function
             { FfiConverterString.lift(it) },
             // Error FFI converter
@@ -11254,14 +11318,14 @@ open class IrohNode :
     override suspend fun `blobsSize`(`hash`: Hash): kotlin.ULong =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_size(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_blobs_size(
                     thisPtr,
                     FfiConverterTypeHash.lower(`hash`),
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_u64(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_u64(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_u64(future) },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_u64(future) },
             // lift function
             { FfiConverterULong.lift(it) },
             // Error FFI converter
@@ -11279,15 +11343,15 @@ open class IrohNode :
         `path`: kotlin.String,
     ) = uniffiRustCallAsync(
         callWithPointer { thisPtr ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_write_to_path(
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_blobs_write_to_path(
                 thisPtr,
                 FfiConverterTypeHash.lower(`hash`),
                 FfiConverterString.lower(`path`),
             )
         },
-        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
-        { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
-        { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_void(future) },
         // lift function
         { Unit },
         // Error FFI converter
@@ -11302,14 +11366,20 @@ open class IrohNode :
     override suspend fun `connectionInfo`(`nodeId`: PublicKey): ConnectionInfo? =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_connection_info(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_connection_info(
                     thisPtr,
                     FfiConverterTypePublicKey.lower(`nodeId`),
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            {
+                    future,
+                    callback,
+                    continuation,
+                ->
+                UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
+            },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
             // lift function
             { FfiConverterOptionalTypeConnectionInfo.lift(it) },
             // Error FFI converter
@@ -11324,13 +11394,19 @@ open class IrohNode :
     override suspend fun `connections`(): List<ConnectionInfo> =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_connections(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_connections(
                     thisPtr,
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            {
+                    future,
+                    callback,
+                    continuation,
+                ->
+                UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
+            },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
             // lift function
             { FfiConverterSequenceTypeConnectionInfo.lift(it) },
             // Error FFI converter
@@ -11345,13 +11421,13 @@ open class IrohNode :
     override suspend fun `docCreate`(): Doc =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_doc_create(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_doc_create(
                     thisPtr,
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_pointer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_pointer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_pointer(future) },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_pointer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_pointer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_pointer(future) },
             // lift function
             { FfiConverterTypeDoc.lift(it) },
             // Error FFI converter
@@ -11370,14 +11446,14 @@ open class IrohNode :
     override suspend fun `docDrop`(`docId`: kotlin.String) =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_doc_drop(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_doc_drop(
                     thisPtr,
                     FfiConverterString.lower(`docId`),
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_void(future) },
             // lift function
             { Unit },
             // Error FFI converter
@@ -11392,14 +11468,14 @@ open class IrohNode :
     override suspend fun `docJoin`(`ticket`: kotlin.String): Doc =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_doc_join(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_doc_join(
                     thisPtr,
                     FfiConverterString.lower(`ticket`),
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_pointer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_pointer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_pointer(future) },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_pointer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_pointer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_pointer(future) },
             // lift function
             { FfiConverterTypeDoc.lift(it) },
             // Error FFI converter
@@ -11417,15 +11493,15 @@ open class IrohNode :
     ): Doc =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_doc_join_and_subscribe(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_doc_join_and_subscribe(
                     thisPtr,
                     FfiConverterString.lower(`ticket`),
                     FfiConverterTypeSubscribeCallback.lower(`cb`),
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_pointer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_pointer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_pointer(future) },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_pointer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_pointer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_pointer(future) },
             // lift function
             { FfiConverterTypeDoc.lift(it) },
             // Error FFI converter
@@ -11440,13 +11516,19 @@ open class IrohNode :
     override suspend fun `docList`(): List<NamespaceAndCapability> =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_doc_list(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_doc_list(
                     thisPtr,
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            {
+                    future,
+                    callback,
+                    continuation,
+                ->
+                UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
+            },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
             // lift function
             { FfiConverterSequenceTypeNamespaceAndCapability.lift(it) },
             // Error FFI converter
@@ -11463,14 +11545,20 @@ open class IrohNode :
     override suspend fun `docOpen`(`id`: kotlin.String): Doc? =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_doc_open(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_doc_open(
                     thisPtr,
                     FfiConverterString.lower(`id`),
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            {
+                    future,
+                    callback,
+                    continuation,
+                ->
+                UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
+            },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
             // lift function
             { FfiConverterOptionalTypeDoc.lift(it) },
             // Error FFI converter
@@ -11484,7 +11572,7 @@ open class IrohNode :
         FfiConverterString.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_node_id(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_node_id(
                         it,
                         _status,
                     )
@@ -11500,13 +11588,19 @@ open class IrohNode :
     override suspend fun `stats`(): Map<kotlin.String, CounterStats> =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_stats(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_stats(
                     thisPtr,
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            {
+                    future,
+                    callback,
+                    continuation,
+                ->
+                UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
+            },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
             // lift function
             { FfiConverterMapStringTypeCounterStats.lift(it) },
             // Error FFI converter
@@ -11521,13 +11615,13 @@ open class IrohNode :
     override suspend fun `status`(): NodeStatus =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_status(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_status(
                     thisPtr,
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_pointer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_pointer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_pointer(future) },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_pointer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_pointer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_pointer(future) },
             // lift function
             { FfiConverterTypeNodeStatus.lift(it) },
             // Error FFI converter
@@ -11542,14 +11636,14 @@ open class IrohNode :
     override suspend fun `tagsDelete`(`name`: kotlin.ByteArray) =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_tags_delete(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_tags_delete(
                     thisPtr,
                     FfiConverterByteArray.lower(`name`),
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_void(future) },
             // lift function
             { Unit },
             // Error FFI converter
@@ -11567,13 +11661,19 @@ open class IrohNode :
     override suspend fun `tagsList`(): List<TagInfo> =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_tags_list(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_tags_list(
                     thisPtr,
                 )
             },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            {
+                    future,
+                    callback,
+                    continuation,
+                ->
+                UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
+            },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
             // lift function
             { FfiConverterSequenceTypeTagInfo.lift(it) },
             // Error FFI converter
@@ -11589,10 +11689,16 @@ open class IrohNode :
         @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
         suspend fun `create`(`path`: kotlin.String): IrohNode =
             uniffiRustCallAsync(
-                UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_irohnode_create(FfiConverterString.lower(`path`)),
-                { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_pointer(future, callback, continuation) },
-                { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_pointer(future, continuation) },
-                { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_pointer(future) },
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_irohnode_create(FfiConverterString.lower(`path`)),
+                {
+                        future,
+                        callback,
+                        continuation,
+                    ->
+                    UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_pointer(future, callback, continuation)
+                },
+                { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_pointer(future, continuation) },
+                { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_pointer(future) },
                 // lift function
                 { FfiConverterTypeIrohNode.lift(it) },
                 // Error FFI converter
@@ -11609,13 +11715,19 @@ open class IrohNode :
             `options`: NodeOptions,
         ): IrohNode =
             uniffiRustCallAsync(
-                UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_irohnode_with_options(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_irohnode_with_options(
                     FfiConverterString.lower(`path`),
                     FfiConverterTypeNodeOptions.lower(`options`),
                 ),
-                { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_pointer(future, callback, continuation) },
-                { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_pointer(future, continuation) },
-                { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_pointer(future) },
+                {
+                        future,
+                        callback,
+                        continuation,
+                    ->
+                    UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_pointer(future, callback, continuation)
+                },
+                { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_pointer(future, continuation) },
+                { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_pointer(future) },
                 // lift function
                 { FfiConverterTypeIrohNode.lift(it) },
                 // Error FFI converter
@@ -11862,7 +11974,7 @@ open class LiveEvent :
         override fun run() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_free_liveevent(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_liveevent(ptr, status)
                 }
             }
         }
@@ -11870,7 +11982,7 @@ open class LiveEvent :
 
     fun uniffiClonePointer(): Pointer =
         uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_clone_liveevent(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_liveevent(pointer!!, status)
         }
 
     /**
@@ -11880,7 +11992,7 @@ open class LiveEvent :
         FfiConverterTypeHash.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_liveevent_as_content_ready(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_liveevent_as_content_ready(
                         it,
                         _status,
                     )
@@ -11895,7 +12007,7 @@ open class LiveEvent :
         FfiConverterTypeEntry.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_liveevent_as_insert_local(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_liveevent_as_insert_local(
                         it,
                         _status,
                     )
@@ -11910,7 +12022,7 @@ open class LiveEvent :
         FfiConverterTypeInsertRemoteEvent.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_liveevent_as_insert_remote(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_liveevent_as_insert_remote(
                         it,
                         _status,
                     )
@@ -11925,7 +12037,7 @@ open class LiveEvent :
         FfiConverterTypePublicKey.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_liveevent_as_neighbor_down(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_liveevent_as_neighbor_down(
                         it,
                         _status,
                     )
@@ -11940,7 +12052,7 @@ open class LiveEvent :
         FfiConverterTypePublicKey.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_liveevent_as_neighbor_up(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_liveevent_as_neighbor_up(
                         it,
                         _status,
                     )
@@ -11955,7 +12067,7 @@ open class LiveEvent :
         FfiConverterTypeSyncEvent.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_liveevent_as_sync_finished(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_liveevent_as_sync_finished(
                         it,
                         _status,
                     )
@@ -11970,7 +12082,7 @@ open class LiveEvent :
         FfiConverterTypeLiveEventType.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_liveevent_type(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_liveevent_type(
                         it,
                         _status,
                     )
@@ -12116,7 +12228,7 @@ public interface NodeAddrInterface {
     fun `equal`(`other`: NodeAddr): kotlin.Boolean
 
     /**
-     * Get the relay url of this peer.
+     * Get the home relay URL for this peer
      */
     fun `relayUrl`(): kotlin.String?
 
@@ -12149,12 +12261,12 @@ open class NodeAddr :
     /**
      * Create a new [`NodeAddr`] with empty [`AddrInfo`].
      */
-    constructor(`nodeId`: PublicKey, `relayUrl`: kotlin.String?, `addresses`: List<kotlin.String>) :
+    constructor(`nodeId`: PublicKey, `derpUrl`: kotlin.String?, `addresses`: List<kotlin.String>) :
         this(
             uniffiRustCall { _status ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_nodeaddr_new(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_nodeaddr_new(
                     FfiConverterTypePublicKey.lower(`nodeId`),
-                    FfiConverterOptionalString.lower(`relayUrl`),
+                    FfiConverterOptionalString.lower(`derpUrl`),
                     FfiConverterSequenceString.lower(`addresses`),
                     _status,
                 )
@@ -12214,7 +12326,7 @@ open class NodeAddr :
         override fun run() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_free_nodeaddr(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_nodeaddr(ptr, status)
                 }
             }
         }
@@ -12222,7 +12334,7 @@ open class NodeAddr :
 
     fun uniffiClonePointer(): Pointer =
         uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_clone_nodeaddr(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_nodeaddr(pointer!!, status)
         }
 
     /**
@@ -12232,7 +12344,7 @@ open class NodeAddr :
         FfiConverterSequenceString.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_nodeaddr_direct_addresses(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_nodeaddr_direct_addresses(
                         it,
                         _status,
                     )
@@ -12247,7 +12359,7 @@ open class NodeAddr :
         FfiConverterBoolean.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_nodeaddr_equal(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_nodeaddr_equal(
                         it,
                         FfiConverterTypeNodeAddr.lower(`other`),
                         _status,
@@ -12257,13 +12369,13 @@ open class NodeAddr :
         )
 
     /**
-     * Get the relay url of this peer.
+     * Get the home relay URL for this peer
      */
     override fun `relayUrl`(): kotlin.String? =
         FfiConverterOptionalString.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_nodeaddr_relay_url(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_nodeaddr_relay_url(
                         it,
                         _status,
                     )
@@ -12394,6 +12506,9 @@ public object FfiConverterTypeNodeAddr : FfiConverter<NodeAddr, Pointer> {
 // [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
 //
 
+/**
+ * The response to a status request
+ */
 public interface NodeStatusInterface {
     /**
      * The bound listening addresses of the node
@@ -12413,6 +12528,9 @@ public interface NodeStatusInterface {
     companion object
 }
 
+/**
+ * The response to a status request
+ */
 open class NodeStatus :
     Disposable,
     AutoCloseable,
@@ -12486,7 +12604,7 @@ open class NodeStatus :
         override fun run() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_free_nodestatus(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_nodestatus(ptr, status)
                 }
             }
         }
@@ -12494,7 +12612,7 @@ open class NodeStatus :
 
     fun uniffiClonePointer(): Pointer =
         uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_clone_nodestatus(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_nodestatus(pointer!!, status)
         }
 
     /**
@@ -12504,7 +12622,7 @@ open class NodeStatus :
         FfiConverterSequenceString.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_nodestatus_listen_addrs(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_nodestatus_listen_addrs(
                         it,
                         _status,
                     )
@@ -12519,7 +12637,7 @@ open class NodeStatus :
         FfiConverterTypeNodeAddr.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_nodestatus_node_addr(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_nodestatus_node_addr(
                         it,
                         _status,
                     )
@@ -12534,7 +12652,7 @@ open class NodeStatus :
         FfiConverterString.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_nodestatus_version(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_nodestatus_version(
                         it,
                         _status,
                     )
@@ -12666,21 +12784,25 @@ public object FfiConverterTypeNodeStatus : FfiConverter<NodeStatus, Pointer> {
 //
 
 /**
- * A public key
+ * A public key.
+ *
+ * The key itself is just a 32 byte array, but a key has associated crypto
+ * information that is cached for performance reasons.
  */
 public interface PublicKeyInterface {
     /**
-     * Returns true when both PublicKeys have the same value
+     * Returns true if the PublicKeys are equal
      */
     fun `equal`(`other`: PublicKey): kotlin.Boolean
 
     /**
-     * The first 10 bytes of the PublicKey represented as a string
+     * Convert to a base32 string limited to the first 10 bytes for a friendly string
+     * representation of the key.
      */
     fun `fmtShort`(): kotlin.String
 
     /**
-     * Represent a PublicKey as a byte slice
+     * Express the PublicKey as a byte array
      */
     fun `toBytes`(): kotlin.ByteArray
 
@@ -12688,7 +12810,10 @@ public interface PublicKeyInterface {
 }
 
 /**
- * A public key
+ * A public key.
+ *
+ * The key itself is just a 32 byte array, but a key has associated crypto
+ * information that is cached for performance reasons.
  */
 open class PublicKey :
     Disposable,
@@ -12763,7 +12888,7 @@ open class PublicKey :
         override fun run() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_free_publickey(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_publickey(ptr, status)
                 }
             }
         }
@@ -12771,17 +12896,17 @@ open class PublicKey :
 
     fun uniffiClonePointer(): Pointer =
         uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_clone_publickey(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_publickey(pointer!!, status)
         }
 
     /**
-     * Returns true when both PublicKeys have the same value
+     * Returns true if the PublicKeys are equal
      */
     override fun `equal`(`other`: PublicKey): kotlin.Boolean =
         FfiConverterBoolean.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_publickey_equal(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_publickey_equal(
                         it,
                         FfiConverterTypePublicKey.lower(`other`),
                         _status,
@@ -12791,13 +12916,14 @@ open class PublicKey :
         )
 
     /**
-     * The first 10 bytes of the PublicKey represented as a string
+     * Convert to a base32 string limited to the first 10 bytes for a friendly string
+     * representation of the key.
      */
     override fun `fmtShort`(): kotlin.String =
         FfiConverterString.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_publickey_fmt_short(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_publickey_fmt_short(
                         it,
                         _status,
                     )
@@ -12806,25 +12932,13 @@ open class PublicKey :
         )
 
     /**
-     * Represent a PublicKey as a byte slice
+     * Express the PublicKey as a byte array
      */
     override fun `toBytes`(): kotlin.ByteArray =
         FfiConverterByteArray.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_publickey_to_bytes(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
-
-    override fun toString(): String =
-        FfiConverterString.lift(
-            callWithPointer {
-                uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_publickey_uniffi_trait_display(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_publickey_to_bytes(
                         it,
                         _status,
                     )
@@ -12834,13 +12948,13 @@ open class PublicKey :
 
     companion object {
         /**
-         * Get a PublicKey from a byte slice
+         * Make a PublicKey from byte array
          */
         @Throws(IrohException::class)
         fun `fromBytes`(`bytes`: kotlin.ByteArray): PublicKey =
             FfiConverterTypePublicKey.lift(
                 uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_publickey_from_bytes(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_publickey_from_bytes(
                         FfiConverterByteArray.lower(`bytes`),
                         _status,
                     )
@@ -12848,13 +12962,13 @@ open class PublicKey :
             )
 
         /**
-         * Get a PublicKey from a string
+         * Make a PublicKey from base32 string
          */
         @Throws(IrohException::class)
         fun `fromString`(`s`: kotlin.String): PublicKey =
             FfiConverterTypePublicKey.lift(
                 uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_publickey_from_string(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_publickey_from_string(
                         FfiConverterString.lower(`s`),
                         _status,
                     )
@@ -13080,7 +13194,7 @@ open class Query :
         override fun run() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_free_query(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_query(ptr, status)
                 }
             }
         }
@@ -13088,7 +13202,7 @@ open class Query :
 
     fun uniffiClonePointer(): Pointer =
         uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_clone_query(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_query(pointer!!, status)
         }
 
     /**
@@ -13098,7 +13212,7 @@ open class Query :
         FfiConverterOptionalULong.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_query_limit(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_query_limit(
                         it,
                         _status,
                     )
@@ -13113,7 +13227,7 @@ open class Query :
         FfiConverterULong.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_query_offset(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_query_offset(
                         it,
                         _status,
                     )
@@ -13126,15 +13240,15 @@ open class Query :
          * Query all records.
          *
          * If `opts` is `None`, the default values will be used:
-         *     sort_by: SortBy::AuthorKey
-         *     direction: SortDirection::Asc
-         *     offset: None
-         *     limit: None
+         * sort_by: SortBy::AuthorKey
+         * direction: SortDirection::Asc
+         * offset: None
+         * limit: None
          */
         fun `all`(`opts`: QueryOptions?): Query =
             FfiConverterTypeQuery.lift(
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_query_all(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_query_all(
                         FfiConverterOptionalTypeQueryOptions.lower(`opts`),
                         _status,
                     )
@@ -13145,10 +13259,10 @@ open class Query :
          * Query all entries for by a single author.
          *
          * If `opts` is `None`, the default values will be used:
-         *     sort_by: SortBy::AuthorKey
-         *     direction: SortDirection::Asc
-         *     offset: None
-         *     limit: None
+         * sort_by: SortBy::AuthorKey
+         * direction: SortDirection::Asc
+         * offset: None
+         * limit: None
          */
         fun `author`(
             `author`: AuthorId,
@@ -13156,7 +13270,7 @@ open class Query :
         ): Query =
             FfiConverterTypeQuery.lift(
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_query_author(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_query_author(
                         FfiConverterTypeAuthorId.lower(`author`),
                         FfiConverterOptionalTypeQueryOptions.lower(`opts`),
                         _status,
@@ -13173,7 +13287,7 @@ open class Query :
         ): Query =
             FfiConverterTypeQuery.lift(
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_query_author_key_exact(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_query_author_key_exact(
                         FfiConverterTypeAuthorId.lower(`author`),
                         FfiConverterByteArray.lower(`key`),
                         _status,
@@ -13185,9 +13299,9 @@ open class Query :
          * Create a query for all entries of a single author with a given key prefix.
          *
          * If `opts` is `None`, the default values will be used:
-         *     direction: SortDirection::Asc
-         *     offset: None
-         *     limit: None
+         * direction: SortDirection::Asc
+         * offset: None
+         * limit: None
          */
         fun `authorKeyPrefix`(
             `author`: AuthorId,
@@ -13196,7 +13310,7 @@ open class Query :
         ): Query =
             FfiConverterTypeQuery.lift(
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_query_author_key_prefix(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_query_author_key_prefix(
                         FfiConverterTypeAuthorId.lower(`author`),
                         FfiConverterByteArray.lower(`prefix`),
                         FfiConverterOptionalTypeQueryOptions.lower(`opts`),
@@ -13209,10 +13323,10 @@ open class Query :
          * Query all entries that have an exact key.
          *
          * If `opts` is `None`, the default values will be used:
-         *     sort_by: SortBy::AuthorKey
-         *     direction: SortDirection::Asc
-         *     offset: None
-         *     limit: None
+         * sort_by: SortBy::AuthorKey
+         * direction: SortDirection::Asc
+         * offset: None
+         * limit: None
          */
         fun `keyExact`(
             `key`: kotlin.ByteArray,
@@ -13220,7 +13334,7 @@ open class Query :
         ): Query =
             FfiConverterTypeQuery.lift(
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_query_key_exact(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_query_key_exact(
                         FfiConverterByteArray.lower(`key`),
                         FfiConverterOptionalTypeQueryOptions.lower(`opts`),
                         _status,
@@ -13232,10 +13346,10 @@ open class Query :
          * Create a query for all entries with a given key prefix.
          *
          * If `opts` is `None`, the default values will be used:
-         *     sort_by: SortBy::AuthorKey
-         *     direction: SortDirection::Asc
-         *     offset: None
-         *     limit: None
+         * sort_by: SortBy::AuthorKey
+         * direction: SortDirection::Asc
+         * offset: None
+         * limit: None
          */
         fun `keyPrefix`(
             `prefix`: kotlin.ByteArray,
@@ -13243,7 +13357,7 @@ open class Query :
         ): Query =
             FfiConverterTypeQuery.lift(
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_query_key_prefix(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_query_key_prefix(
                         FfiConverterByteArray.lower(`prefix`),
                         FfiConverterOptionalTypeQueryOptions.lower(`opts`),
                         _status,
@@ -13256,14 +13370,14 @@ open class Query :
          * to by multiple authors.
          *
          * If `opts` is `None`, the default values will be used:
-         *     direction: SortDirection::Asc
-         *     offset: None
-         *     limit: None
+         * direction: SortDirection::Asc
+         * offset: None
+         * limit: None
          */
         fun `singleLatestPerKey`(`opts`: QueryOptions?): Query =
             FfiConverterTypeQuery.lift(
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_query_single_latest_per_key(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_query_single_latest_per_key(
                         FfiConverterOptionalTypeQueryOptions.lower(`opts`),
                         _status,
                     )
@@ -13271,14 +13385,14 @@ open class Query :
             )
 
         /**
-         * Query only the latest entry for this exact key, omitting older entries if the entry was written
+         * Query exactly the key, but only the latest entry for it, omitting older entries if the entry was written
          * to by multiple authors.
          */
-        fun `singleLatestPerKeyExact`(`exact`: kotlin.ByteArray): Query =
+        fun `singleLatestPerKeyExact`(`key`: kotlin.ByteArray): Query =
             FfiConverterTypeQuery.lift(
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_query_single_latest_per_key_exact(
-                        FfiConverterByteArray.lower(`exact`),
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_query_single_latest_per_key_exact(
+                        FfiConverterByteArray.lower(`key`),
                         _status,
                     )
                 },
@@ -13289,9 +13403,9 @@ open class Query :
          * to by multiple authors.
          *
          * If `opts` is `None`, the default values will be used:
-         *     direction: SortDirection::Asc
-         *     offset: None
-         *     limit: None
+         * direction: SortDirection::Asc
+         * offset: None
+         * limit: None
          */
         fun `singleLatestPerKeyPrefix`(
             `prefix`: kotlin.ByteArray,
@@ -13299,7 +13413,7 @@ open class Query :
         ): Query =
             FfiConverterTypeQuery.lift(
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_query_single_latest_per_key_prefix(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_query_single_latest_per_key_prefix(
                         FfiConverterByteArray.lower(`prefix`),
                         FfiConverterOptionalTypeQueryOptions.lower(`opts`),
                         _status,
@@ -13522,7 +13636,7 @@ open class RangeSpec :
         override fun run() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_free_rangespec(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_rangespec(ptr, status)
                 }
             }
         }
@@ -13530,7 +13644,7 @@ open class RangeSpec :
 
     fun uniffiClonePointer(): Pointer =
         uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_clone_rangespec(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_rangespec(pointer!!, status)
         }
 
     /**
@@ -13540,7 +13654,7 @@ open class RangeSpec :
         FfiConverterBoolean.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_rangespec_is_all(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_rangespec_is_all(
                         it,
                         _status,
                     )
@@ -13555,7 +13669,7 @@ open class RangeSpec :
         FfiConverterBoolean.lift(
             callWithPointer {
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_rangespec_is_empty(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_rangespec_is_empty(
                         it,
                         _status,
                     )
@@ -13687,14 +13801,14 @@ public object FfiConverterTypeRangeSpec : FfiConverter<RangeSpec, Pointer> {
 //
 
 /**
- * An option for commands that allow setting a tag
+ * An option for commands that allow setting a Tag
  */
 public interface SetTagOptionInterface {
     companion object
 }
 
 /**
- * An option for commands that allow setting a tag
+ * An option for commands that allow setting a Tag
  */
 open class SetTagOption :
     Disposable,
@@ -13769,7 +13883,7 @@ open class SetTagOption :
         override fun run() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_free_settagoption(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_settagoption(ptr, status)
                 }
             }
         }
@@ -13777,7 +13891,7 @@ open class SetTagOption :
 
     fun uniffiClonePointer(): Pointer =
         uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_clone_settagoption(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_settagoption(pointer!!, status)
         }
 
     companion object {
@@ -13787,7 +13901,7 @@ open class SetTagOption :
         fun `auto`(): SetTagOption =
             FfiConverterTypeSetTagOption.lift(
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_settagoption_auto(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_settagoption_auto(
                         _status,
                     )
                 },
@@ -13799,7 +13913,7 @@ open class SetTagOption :
         fun `named`(`tag`: kotlin.ByteArray): SetTagOption =
             FfiConverterTypeSetTagOption.lift(
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_settagoption_named(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_settagoption_named(
                         FfiConverterByteArray.lower(`tag`),
                         _status,
                     )
@@ -14017,7 +14131,7 @@ open class SubscribeCallbackImpl :
         override fun run() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_free_subscribecallback(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_subscribecallback(ptr, status)
                 }
             }
         }
@@ -14025,7 +14139,7 @@ open class SubscribeCallbackImpl :
 
     fun uniffiClonePointer(): Pointer =
         uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_clone_subscribecallback(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_subscribecallback(pointer!!, status)
         }
 
     @Throws(
@@ -14034,7 +14148,7 @@ open class SubscribeCallbackImpl :
     override fun `event`(`event`: LiveEvent) =
         callWithPointer {
             uniffiRustCallWithError(CallbackException) { _status ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_subscribecallback_event(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_subscribecallback_event(
                     it,
                     FfiConverterTypeLiveEvent.lower(`event`),
                     _status,
@@ -14084,7 +14198,7 @@ internal object uniffiCallbackInterfaceSubscribeCallback {
     // Registers the foreign callback with the Rust side.
     // This method is generated for each callback interface.
     internal fun register(lib: UniffiLib) {
-        lib.uniffi_iroh_fn_init_callback_vtable_subscribecallback(vtable)
+        lib.uniffi_iroh_ffi_fn_init_callback_vtable_subscribecallback(vtable)
     }
 }
 
@@ -14293,7 +14407,7 @@ open class WrapOption :
         override fun run() {
             pointer?.let { ptr ->
                 uniffiRustCall { status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_free_wrapoption(ptr, status)
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_wrapoption(ptr, status)
                 }
             }
         }
@@ -14301,7 +14415,7 @@ open class WrapOption :
 
     fun uniffiClonePointer(): Pointer =
         uniffiRustCall { status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_clone_wrapoption(pointer!!, status)
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_wrapoption(pointer!!, status)
         }
 
     companion object {
@@ -14311,7 +14425,7 @@ open class WrapOption :
         fun `noWrap`(): WrapOption =
             FfiConverterTypeWrapOption.lift(
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_wrapoption_no_wrap(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_wrapoption_no_wrap(
                         _status,
                     )
                 },
@@ -14323,7 +14437,7 @@ open class WrapOption :
         fun `wrap`(`name`: kotlin.String?): WrapOption =
             FfiConverterTypeWrapOption.lift(
                 uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_wrapoption_wrap(
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_wrapoption_wrap(
                         FfiConverterOptionalString.lower(`name`),
                         _status,
                     )
@@ -14359,9 +14473,6 @@ public object FfiConverterTypeWrapOption : FfiConverter<WrapOption, Pointer> {
  * An AddProgress event indicating we got an error and need to abort
  */
 data class AddProgressAbort(
-    /**
-     * The error message
-     */
     var `error`: kotlin.String,
 ) {
     companion object
@@ -14753,6 +14864,7 @@ public object FfiConverterTypeCollectionInfo : FfiConverterRustBuffer<Collection
 }
 
 /**
+ * The kinds of control messages that can be sent
  * Information about a connection
  */
 data class ConnectionInfo(
@@ -14835,7 +14947,7 @@ public object FfiConverterTypeConnectionInfo : FfiConverterRustBuffer<Connection
 }
 
 /**
- * The socket address and url id of the mixed connection
+ * The socket address and url of the mixed connection
  */
 data class ConnectionTypeMixed(
     /**
@@ -14938,6 +15050,37 @@ public object FfiConverterTypeDocExportProgressAbort : FfiConverterRustBuffer<Do
         buf: ByteBuffer,
     ) {
         FfiConverterString.write(value.`error`, buf)
+    }
+}
+
+/**
+ * A DocExportProgress event indicating a single blob wit `id` is done
+ */
+data class DocExportProgressDone(
+    /**
+     * The unique id of the entry.
+     */
+    var `id`: kotlin.ULong,
+) {
+    companion object
+}
+
+public object FfiConverterTypeDocExportProgressDone : FfiConverterRustBuffer<DocExportProgressDone> {
+    override fun read(buf: ByteBuffer): DocExportProgressDone =
+        DocExportProgressDone(
+            FfiConverterULong.read(buf),
+        )
+
+    override fun allocationSize(value: DocExportProgressDone) =
+        (
+            FfiConverterULong.allocationSize(value.`id`)
+        )
+
+    override fun write(
+        value: DocExportProgressDone,
+        buf: ByteBuffer,
+    ) {
+        FfiConverterULong.write(value.`id`, buf)
     }
 }
 
@@ -15236,9 +15379,6 @@ public object FfiConverterTypeDocImportProgressProgress : FfiConverterRustBuffer
  * A DownloadProgress event indicating we got an error and need to abort
  */
 data class DownloadProgressAbort(
-    /**
-     * The error message
-     */
     var `error`: kotlin.String,
 ) {
     companion object
@@ -15510,6 +15650,34 @@ public object FfiConverterTypeDownloadProgressFoundLocal : FfiConverterRustBuffe
     }
 }
 
+data class DownloadProgressInitialState(
+    /**
+     * Whether we are connected to a node
+     */
+    var `connected`: kotlin.Boolean,
+) {
+    companion object
+}
+
+public object FfiConverterTypeDownloadProgressInitialState : FfiConverterRustBuffer<DownloadProgressInitialState> {
+    override fun read(buf: ByteBuffer): DownloadProgressInitialState =
+        DownloadProgressInitialState(
+            FfiConverterBoolean.read(buf),
+        )
+
+    override fun allocationSize(value: DownloadProgressInitialState) =
+        (
+            FfiConverterBoolean.allocationSize(value.`connected`)
+        )
+
+    override fun write(
+        value: DownloadProgressInitialState,
+        buf: ByteBuffer,
+    ) {
+        FfiConverterBoolean.write(value.`connected`, buf)
+    }
+}
+
 /**
  * A DownloadProgress event indicating we got progress ingesting item `id`.
  */
@@ -15740,7 +15908,7 @@ public object FfiConverterTypeLatencyAndControlMsg : FfiConverterRustBuffer<Late
 }
 
 /**
- * A `Link` includes a name and a hash for a blob in a collection
+ * `LinkAndName` includes a name and a hash for a blob in a collection
  */
 data class LinkAndName(
     /**
@@ -15972,11 +16140,11 @@ data class SyncEvent(
     /**
      * Timestamp when the sync finished
      */
-    var `started`: java.time.Instant,
+    var `finished`: java.time.Instant,
     /**
      * Timestamp when the sync started
      */
-    var `finished`: java.time.Instant,
+    var `started`: java.time.Instant,
     /**
      * Result of the sync operation. `None` if successfull.
      */
@@ -15988,9 +16156,9 @@ data class SyncEvent(
 
         Disposable.destroy(this.`origin`)
 
-        Disposable.destroy(this.`started`)
-
         Disposable.destroy(this.`finished`)
+
+        Disposable.destroy(this.`started`)
 
         Disposable.destroy(this.`result`)
     }
@@ -16012,8 +16180,8 @@ public object FfiConverterTypeSyncEvent : FfiConverterRustBuffer<SyncEvent> {
         (
             FfiConverterTypePublicKey.allocationSize(value.`peer`) +
                 FfiConverterTypeOrigin.allocationSize(value.`origin`) +
-                FfiConverterTimestamp.allocationSize(value.`started`) +
                 FfiConverterTimestamp.allocationSize(value.`finished`) +
+                FfiConverterTimestamp.allocationSize(value.`started`) +
                 FfiConverterOptionalString.allocationSize(value.`result`)
         )
 
@@ -16023,8 +16191,8 @@ public object FfiConverterTypeSyncEvent : FfiConverterRustBuffer<SyncEvent> {
     ) {
         FfiConverterTypePublicKey.write(value.`peer`, buf)
         FfiConverterTypeOrigin.write(value.`origin`, buf)
-        FfiConverterTimestamp.write(value.`started`, buf)
         FfiConverterTimestamp.write(value.`finished`, buf)
+        FfiConverterTimestamp.write(value.`started`, buf)
         FfiConverterOptionalString.write(value.`result`, buf)
     }
 }
@@ -16325,12 +16493,11 @@ public object FfiConverterTypeBlobFormat : FfiConverterRustBuffer<BlobFormat> {
     }
 }
 
-sealed class CallbackException(
-    message: String,
-) : kotlin.Exception(message) {
-    class Exception(
-        message: String,
-    ) : CallbackException(message)
+sealed class CallbackException : kotlin.Exception() {
+    class Exception : CallbackException() {
+        override val message
+            get() = ""
+    }
 
     companion object ErrorHandler : UniffiRustCallStatusErrorHandler<CallbackException> {
         override fun lift(error_buf: RustBuffer.ByValue): CallbackException = FfiConverterTypeCallbackError.lift(error_buf)
@@ -16340,11 +16507,17 @@ sealed class CallbackException(
 public object FfiConverterTypeCallbackError : FfiConverterRustBuffer<CallbackException> {
     override fun read(buf: ByteBuffer): CallbackException =
         when (buf.getInt()) {
-            1 -> CallbackException.Exception(FfiConverterString.read(buf))
+            1 -> CallbackException.Exception()
             else -> throw RuntimeException("invalid error enum value, something is very wrong!!")
         }
 
-    override fun allocationSize(value: CallbackException): ULong = 4UL
+    override fun allocationSize(value: CallbackException): ULong =
+        when (value) {
+            is CallbackException.Exception -> (
+                // Add the size for the Int that specifies the variant plus the size needed for all fields
+                4UL
+            )
+        }
 
     override fun write(
         value: CallbackException,
@@ -16359,18 +16532,14 @@ public object FfiConverterTypeCallbackError : FfiConverterRustBuffer<CallbackExc
     }
 }
 
-/**
- * Kind of capability of the doc.
- */
-
 enum class CapabilityKind {
     /**
-     * A writable doc
+     * A writable replica.
      */
     WRITE,
 
     /**
-     * A readable doc
+     * A readable replica.
      */
     READ,
 
@@ -16504,7 +16673,7 @@ enum class DocExportProgressType {
     PROGRESS,
 
     /**
-     * We are finished writing item `id`.
+     * We finished exporting a blob with `id`
      */
     DONE,
 
@@ -16599,57 +16768,19 @@ public object FfiConverterTypeDocImportProgressType : FfiConverterRustBuffer<Doc
 }
 
 /**
- * The kinds of progress events that can occur in a `DownloadProgress`
+ * The different types of DownloadProgress events
  */
 
 enum class DownloadProgressType {
-    /**
-     * Initial state if subscribing to a running or queued transfer.
-     */
     INITIAL_STATE,
-
-    /**
-     * Data was found locally
-     */
     FOUND_LOCAL,
-
-    /**
-     * A new connection was established.
-     */
     CONNECTED,
-
-    /**
-     * An item was found with hash `hash`, from now on referred to via `id`
-     */
     FOUND,
-
-    /**
-     * An item was found with hash `hash`, from now on referred to via `id`
-     */
     FOUND_HASH_SEQ,
-
-    /**
-     * We got progress ingesting item `id`.
-     */
     PROGRESS,
-
-    /**
-     * We are done with `id`, and the hash is `hash`.
-     */
     DONE,
-
-    /**
-     * We are done with the whole operation.
-     */
     ALL_DONE,
-
-    /**
-     * We got an error and need to abort.
-     *
-     * This will be the last message in the stream.
-     */
     ABORT,
-
     ;
 
     companion object
@@ -16884,17 +17015,17 @@ public object FfiConverterTypeShareMode : FfiConverterRustBuffer<ShareMode> {
 }
 
 /**
- * Fields by which the query can be sorted
+ * d Fields by which the query can be sorted
  */
 
 enum class SortBy {
     /**
-     * Fields by which the query can be sorted
+     * Sort by key, then author.
      */
     KEY_AUTHOR,
 
     /**
-     * Fields by which the query can be sorted
+     * Sort by author, then key.
      */
     AUTHOR_KEY,
 
@@ -17676,7 +17807,7 @@ fun `keyToPath`(
 ): kotlin.String =
     FfiConverterString.lift(
         uniffiRustCallWithError(IrohException) { _status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_func_key_to_path(
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_func_key_to_path(
                 FfiConverterByteArray.lower(`key`),
                 FfiConverterOptionalString.lower(`prefix`),
                 FfiConverterOptionalString.lower(`root`),
@@ -17698,7 +17829,7 @@ fun `pathToKey`(
 ): kotlin.ByteArray =
     FfiConverterByteArray.lift(
         uniffiRustCallWithError(IrohException) { _status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_func_path_to_key(
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_func_path_to_key(
                 FfiConverterString.lower(`path`),
                 FfiConverterOptionalString.lower(`prefix`),
                 FfiConverterOptionalString.lower(`root`),
@@ -17712,7 +17843,7 @@ fun `pathToKey`(
  */
 fun `setLogLevel`(`level`: LogLevel) =
     uniffiRustCall { _status ->
-        UniffiLib.INSTANCE.uniffi_iroh_fn_func_set_log_level(
+        UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_func_set_log_level(
             FfiConverterTypeLogLevel.lower(`level`),
             _status,
         )
@@ -17724,7 +17855,7 @@ fun `setLogLevel`(`level`: LogLevel) =
 @Throws(IrohException::class)
 fun `startMetricsCollection`() =
     uniffiRustCallWithError(IrohException) { _status ->
-        UniffiLib.INSTANCE.uniffi_iroh_fn_func_start_metrics_collection(
+        UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_func_start_metrics_collection(
             _status,
         )
     }

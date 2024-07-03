@@ -1,5 +1,5 @@
 [package]
-name = "iroh"
+name = "iroh-ffi"
 version = "0.19.0"
 edition = "2021"
 publish = false
@@ -16,7 +16,7 @@ rust-version = "1.75"
 [profile.release]
 
 [lib]
-name = "iroh"
+name = "iroh_ffi"
 crate-type = ["staticlib", "cdylib"]
 
 [[bin]]

@@ -37,7 +37,7 @@ rm -f $INCLUDE_DIR/*
 mkdir -p $INCLUDE_DIR
 
 # UniFfi bindgen
-cargo run --bin uniffi-bindgen generate "src/$UDL_NAME.udl" --language swift --out-dir ./$INCLUDE_DIR
+cargo run --bin uniffi-bindgen generate --language swift --out-dir ./$INCLUDE_DIR --lib-file target/debug/libiroh.dylib
 
 # Make fat lib for sims
 lipo -create \
