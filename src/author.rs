@@ -15,14 +15,17 @@ impl std::fmt::Display for AuthorId {
     }
 }
 
+#[uniffi::export]
 impl AuthorId {
     /// Get an [`AuthorId`] from a String.
+    #[uniffi::constructor]
     pub fn from_string(str: String) -> Result<Self, IrohError> {
         let author = iroh::docs::AuthorId::from_str(&str)?;
         Ok(AuthorId(author))
     }
 
     /// Returns true when both AuthorId's have the same value
+    #[uniffi::method]
     pub fn equal(&self, other: &AuthorId) -> bool {
         *self == *other
     }
@@ -35,14 +38,17 @@ impl AuthorId {
 #[uniffi::export(Display)]
 pub struct Author(pub(crate) iroh::docs::Author);
 
+#[uniffi::export]
 impl Author {
     /// Get an [`Author`] from a String
+    #[uniffi::constructor]
     pub fn from_string(str: String) -> Result<Self, IrohError> {
         let author = iroh::docs::Author::from_str(&str)?;
         Ok(Author(author))
     }
 
     /// Get the [`AuthorId`] of this Author
+    #[uniffi::method]
     pub fn id(&self) -> Arc<AuthorId> {
         Arc::new(AuthorId(self.0.id()))
     }

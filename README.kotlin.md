@@ -7,6 +7,8 @@
 - [`kotlinc`](https://kotlinlang.org/docs/command-line.html)
 - [`ktlint`](https://github.com/pinterest/ktlint)
 - [`jna`](https://github.com/java-native-access/jna)
+- `kotlinx.coroutines`
+  - download from https://repo1.maven.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.6.4/kotlinx-coroutines-core-jvm-1.6.4.jar
 
 ### Android Development
 

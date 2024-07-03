@@ -239,6 +239,15 @@ impl IrohNode {
         Self::with_options(path, options).await
     }
 
+    /// Create a new iroh node. The `path` param should be a directory where we can store or load
+    /// iroh data from a previous session.
+    //
+    // This exists, as primary async constructors only work in Swift currently.
+    #[uniffi::constructor(async_runtime = "tokio")]
+    pub async fn create(path: String) -> Result<Self, IrohError> {
+        Self::new(path).await
+    }
+
     /// Create a new iroh node with options.
     #[uniffi::constructor(async_runtime = "tokio")]
     pub async fn with_options(path: String, options: NodeOptions) -> Result<Self, IrohError> {
@@ -327,8 +336,12 @@ impl IrohNode {
             tokio_rt,
         })
     }
+}
 
+#[uniffi::export]
+impl IrohNode {
     /// The string representation of the PublicKey of this node.
+    #[uniffi::method]
     pub fn node_id(&self) -> String {
         self.node.node_id().to_string()
     }

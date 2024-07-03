@@ -1619,6 +1619,8 @@ internal interface UniffiLib : Library {
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
+    fun uniffi_iroh_fn_constructor_irohnode_create(`path`: RustBuffer.ByValue): Long
+
     fun uniffi_iroh_fn_constructor_irohnode_new(`path`: RustBuffer.ByValue): Long
 
     fun uniffi_iroh_fn_constructor_irohnode_with_options(
@@ -1626,121 +1628,7 @@ internal interface UniffiLib : Library {
         `options`: RustBuffer.ByValue,
     ): Long
 
-    fun uniffi_iroh_fn_method_irohnode_blobs_add_bytes(
-        `ptr`: Pointer,
-        `bytes`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    fun uniffi_iroh_fn_method_irohnode_blobs_add_from_path(
-        `ptr`: Pointer,
-        `path`: RustBuffer.ByValue,
-        `inPlace`: Byte,
-        `tag`: Pointer,
-        `wrap`: Pointer,
-        `cb`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    fun uniffi_iroh_fn_method_irohnode_blobs_create_collection(
-        `ptr`: Pointer,
-        `collection`: Pointer,
-        `tag`: Pointer,
-        `tagsToDelete`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    fun uniffi_iroh_fn_method_irohnode_blobs_delete_blob(
-        `ptr`: Pointer,
-        `hash`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    fun uniffi_iroh_fn_method_irohnode_blobs_download(
-        `ptr`: Pointer,
-        `hash`: Pointer,
-        `req`: Pointer,
-        `cb`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    fun uniffi_iroh_fn_method_irohnode_blobs_export(
-        `ptr`: Pointer,
-        `hash`: Pointer,
-        `destination`: RustBuffer.ByValue,
-        `format`: RustBuffer.ByValue,
-        `mode`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    fun uniffi_iroh_fn_method_irohnode_blobs_get_collection(
-        `ptr`: Pointer,
-        `hash`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Pointer
-
-    fun uniffi_iroh_fn_method_irohnode_blobs_list(
-        `ptr`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    fun uniffi_iroh_fn_method_irohnode_blobs_list_collections(
-        `ptr`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    fun uniffi_iroh_fn_method_irohnode_blobs_list_incomplete(
-        `ptr`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    fun uniffi_iroh_fn_method_irohnode_blobs_read_at_to_bytes(
-        `ptr`: Pointer,
-        `hash`: Pointer,
-        `offset`: Long,
-        `len`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    fun uniffi_iroh_fn_method_irohnode_blobs_read_to_bytes(
-        `ptr`: Pointer,
-        `hash`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    fun uniffi_iroh_fn_method_irohnode_blobs_share(
-        `ptr`: Pointer,
-        `hash`: Pointer,
-        `blobFormat`: RustBuffer.ByValue,
-        `ticketOptions`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    fun uniffi_iroh_fn_method_irohnode_blobs_size(
-        `ptr`: Pointer,
-        `hash`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    fun uniffi_iroh_fn_method_irohnode_blobs_write_to_path(
-        `ptr`: Pointer,
-        `hash`: Pointer,
-        `path`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
     fun uniffi_iroh_fn_method_irohnode_node_id(
-        `ptr`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    fun uniffi_iroh_fn_method_irohnode_tags_delete(
-        `ptr`: Pointer,
-        `name`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    fun uniffi_iroh_fn_method_irohnode_tags_list(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
@@ -1765,6 +1653,88 @@ internal interface UniffiLib : Library {
     ): Long
 
     fun uniffi_iroh_fn_method_irohnode_author_list(`ptr`: Pointer): Long
+
+    fun uniffi_iroh_fn_method_irohnode_blobs_add_bytes(
+        `ptr`: Pointer,
+        `bytes`: RustBuffer.ByValue,
+    ): Long
+
+    fun uniffi_iroh_fn_method_irohnode_blobs_add_from_path(
+        `ptr`: Pointer,
+        `path`: RustBuffer.ByValue,
+        `inPlace`: Byte,
+        `tag`: Pointer,
+        `wrap`: Pointer,
+        `cb`: Pointer,
+    ): Long
+
+    fun uniffi_iroh_fn_method_irohnode_blobs_create_collection(
+        `ptr`: Pointer,
+        `collection`: Pointer,
+        `tag`: Pointer,
+        `tagsToDelete`: RustBuffer.ByValue,
+    ): Long
+
+    fun uniffi_iroh_fn_method_irohnode_blobs_delete_blob(
+        `ptr`: Pointer,
+        `hash`: Pointer,
+    ): Long
+
+    fun uniffi_iroh_fn_method_irohnode_blobs_download(
+        `ptr`: Pointer,
+        `hash`: Pointer,
+        `opts`: Pointer,
+        `cb`: Pointer,
+    ): Long
+
+    fun uniffi_iroh_fn_method_irohnode_blobs_export(
+        `ptr`: Pointer,
+        `hash`: Pointer,
+        `destination`: RustBuffer.ByValue,
+        `format`: RustBuffer.ByValue,
+        `mode`: RustBuffer.ByValue,
+    ): Long
+
+    fun uniffi_iroh_fn_method_irohnode_blobs_get_collection(
+        `ptr`: Pointer,
+        `hash`: Pointer,
+    ): Long
+
+    fun uniffi_iroh_fn_method_irohnode_blobs_list(`ptr`: Pointer): Long
+
+    fun uniffi_iroh_fn_method_irohnode_blobs_list_collections(`ptr`: Pointer): Long
+
+    fun uniffi_iroh_fn_method_irohnode_blobs_list_incomplete(`ptr`: Pointer): Long
+
+    fun uniffi_iroh_fn_method_irohnode_blobs_read_at_to_bytes(
+        `ptr`: Pointer,
+        `hash`: Pointer,
+        `offset`: Long,
+        `len`: RustBuffer.ByValue,
+    ): Long
+
+    fun uniffi_iroh_fn_method_irohnode_blobs_read_to_bytes(
+        `ptr`: Pointer,
+        `hash`: Pointer,
+    ): Long
+
+    fun uniffi_iroh_fn_method_irohnode_blobs_share(
+        `ptr`: Pointer,
+        `hash`: Pointer,
+        `blobFormat`: RustBuffer.ByValue,
+        `ticketOptions`: RustBuffer.ByValue,
+    ): Long
+
+    fun uniffi_iroh_fn_method_irohnode_blobs_size(
+        `ptr`: Pointer,
+        `hash`: Pointer,
+    ): Long
+
+    fun uniffi_iroh_fn_method_irohnode_blobs_write_to_path(
+        `ptr`: Pointer,
+        `hash`: Pointer,
+        `path`: RustBuffer.ByValue,
+    ): Long
 
     fun uniffi_iroh_fn_method_irohnode_connection_info(
         `ptr`: Pointer,
@@ -1801,6 +1771,13 @@ internal interface UniffiLib : Library {
     fun uniffi_iroh_fn_method_irohnode_stats(`ptr`: Pointer): Long
 
     fun uniffi_iroh_fn_method_irohnode_status(`ptr`: Pointer): Long
+
+    fun uniffi_iroh_fn_method_irohnode_tags_delete(
+        `ptr`: Pointer,
+        `name`: RustBuffer.ByValue,
+    ): Long
+
+    fun uniffi_iroh_fn_method_irohnode_tags_list(`ptr`: Pointer): Long
 
     fun uniffi_iroh_fn_clone_liveevent(
         `ptr`: Pointer,
@@ -2489,6 +2466,20 @@ internal interface UniffiLib : Library {
 
     fun uniffi_iroh_checksum_method_iroherror_message(): Short
 
+    fun uniffi_iroh_checksum_method_irohnode_node_id(): Short
+
+    fun uniffi_iroh_checksum_method_irohnode_author_create(): Short
+
+    fun uniffi_iroh_checksum_method_irohnode_author_default(): Short
+
+    fun uniffi_iroh_checksum_method_irohnode_author_delete(): Short
+
+    fun uniffi_iroh_checksum_method_irohnode_author_export(): Short
+
+    fun uniffi_iroh_checksum_method_irohnode_author_import(): Short
+
+    fun uniffi_iroh_checksum_method_irohnode_author_list(): Short
+
     fun uniffi_iroh_checksum_method_irohnode_blobs_add_bytes(): Short
 
     fun uniffi_iroh_checksum_method_irohnode_blobs_add_from_path(): Short
@@ -2519,24 +2510,6 @@ internal interface UniffiLib : Library {
 
     fun uniffi_iroh_checksum_method_irohnode_blobs_write_to_path(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_node_id(): Short
-
-    fun uniffi_iroh_checksum_method_irohnode_tags_delete(): Short
-
-    fun uniffi_iroh_checksum_method_irohnode_tags_list(): Short
-
-    fun uniffi_iroh_checksum_method_irohnode_author_create(): Short
-
-    fun uniffi_iroh_checksum_method_irohnode_author_default(): Short
-
-    fun uniffi_iroh_checksum_method_irohnode_author_delete(): Short
-
-    fun uniffi_iroh_checksum_method_irohnode_author_export(): Short
-
-    fun uniffi_iroh_checksum_method_irohnode_author_import(): Short
-
-    fun uniffi_iroh_checksum_method_irohnode_author_list(): Short
-
     fun uniffi_iroh_checksum_method_irohnode_connection_info(): Short
 
     fun uniffi_iroh_checksum_method_irohnode_connections(): Short
@@ -2556,6 +2529,10 @@ internal interface UniffiLib : Library {
     fun uniffi_iroh_checksum_method_irohnode_stats(): Short
 
     fun uniffi_iroh_checksum_method_irohnode_status(): Short
+
+    fun uniffi_iroh_checksum_method_irohnode_tags_delete(): Short
+
+    fun uniffi_iroh_checksum_method_irohnode_tags_list(): Short
 
     fun uniffi_iroh_checksum_method_liveevent_as_content_ready(): Short
 
@@ -2626,6 +2603,8 @@ internal interface UniffiLib : Library {
     fun uniffi_iroh_checksum_constructor_hash_from_string(): Short
 
     fun uniffi_iroh_checksum_constructor_hash_new(): Short
+
+    fun uniffi_iroh_checksum_constructor_irohnode_create(): Short
 
     fun uniffi_iroh_checksum_constructor_irohnode_new(): Short
 
@@ -2711,10 +2690,10 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_iroh_checksum_method_addprogress_type() != 38695.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_author_id() != 49771.toShort()) {
+    if (lib.uniffi_iroh_checksum_method_author_id() != 17949.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_authorid_equal() != 53671.toShort()) {
+    if (lib.uniffi_iroh_checksum_method_authorid_equal() != 29460.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_checksum_method_blobticket_as_download_options() != 57522.toShort()) {
@@ -2921,58 +2900,7 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_iroh_checksum_method_iroherror_message() != 42005.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_add_bytes() != 19868.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_add_from_path() != 57891.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_create_collection() != 14543.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_delete_blob() != 34789.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_download() != 765.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_export() != 64675.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_get_collection() != 55682.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_list() != 36698.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_list_collections() != 65104.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_list_incomplete() != 20923.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_read_at_to_bytes() != 53379.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_read_to_bytes() != 63774.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_share() != 8705.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_size() != 44328.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_write_to_path() != 9079.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
     if (lib.uniffi_iroh_checksum_method_irohnode_node_id() != 31962.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_checksum_method_irohnode_tags_delete() != 49837.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_checksum_method_irohnode_tags_list() != 47102.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_checksum_method_irohnode_author_create() != 58991.toShort()) {
@@ -2991,6 +2919,51 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_checksum_method_irohnode_author_list() != 14690.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_add_bytes() != 25287.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_add_from_path() != 5196.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_create_collection() != 29932.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_delete_blob() != 36095.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_download() != 6876.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_export() != 19311.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_get_collection() != 33956.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_list() != 40896.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_list_collections() != 53294.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_list_incomplete() != 1444.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_read_at_to_bytes() != 33959.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_read_to_bytes() != 15740.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_share() != 13012.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_size() != 588.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_blobs_write_to_path() != 32014.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_checksum_method_irohnode_connection_info() != 17326.toShort()) {
@@ -3021,6 +2994,12 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_checksum_method_irohnode_status() != 402.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_tags_delete() != 64578.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_tags_list() != 57793.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_checksum_method_liveevent_as_content_ready() != 15237.toShort()) {
@@ -3086,10 +3065,10 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_iroh_checksum_method_subscribecallback_event() != 53405.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_author_from_string() != 13625.toShort()) {
+    if (lib.uniffi_iroh_checksum_constructor_author_from_string() != 30389.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_constructor_authorid_from_string() != 9745.toShort()) {
+    if (lib.uniffi_iroh_checksum_constructor_authorid_from_string() != 38117.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_checksum_constructor_blobdownloadoptions_new() != 47667.toShort()) {
@@ -3126,6 +3105,9 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_checksum_constructor_hash_new() != 25525.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_constructor_irohnode_create() != 56881.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_checksum_constructor_irohnode_new() != 5720.toShort()) {
@@ -4693,7 +4675,7 @@ open class AuthorId :
 
     companion object {
         /**
-         * Get an [`AuthorId`] from a String
+         * Get an [`AuthorId`] from a String.
          */
         @Throws(IrohException::class)
         fun `fromString`(`str`: kotlin.String): AuthorId =
@@ -10370,153 +10352,9 @@ public object FfiConverterTypeIrohError : FfiConverter<IrohException, Pointer> {
  */
 public interface IrohNodeInterface {
     /**
-     * Write a blob by passing bytes.
-     */
-    fun `blobsAddBytes`(`bytes`: kotlin.ByteArray): BlobAddOutcome
-
-    /**
-     * Import a blob from a filesystem path.
-     *
-     * `path` should be an absolute path valid for the file system on which
-     * the node runs.
-     * If `in_place` is true, Iroh will assume that the data will not change and will share it in
-     * place without copying to the Iroh data directory.
-     */
-    fun `blobsAddFromPath`(
-        `path`: kotlin.String,
-        `inPlace`: kotlin.Boolean,
-        `tag`: SetTagOption,
-        `wrap`: WrapOption,
-        `cb`: AddCallback,
-    )
-
-    /**
-     * Create a collection from already existing blobs.
-     *
-     * To automatically clear the tags for the passed in blobs you can set
-     * `tags_to_delete` on those tags, and they will be deleted once the collection is created.
-     */
-    fun `blobsCreateCollection`(
-        `collection`: Collection,
-        `tag`: SetTagOption,
-        `tagsToDelete`: List<kotlin.String>,
-    ): HashAndTag
-
-    /**
-     * Delete a blob.
-     */
-    fun `blobsDeleteBlob`(`hash`: Hash)
-
-    /**
-     * Download a blob from another node and add it to the local database.
-     */
-    fun `blobsDownload`(
-        `hash`: Hash,
-        `req`: BlobDownloadOptions,
-        `cb`: DownloadCallback,
-    )
-
-    /**
-     * Download a blob from another node and add it to the local database.
-     */
-    fun `blobsExport`(
-        `hash`: Hash,
-        `destination`: kotlin.String,
-        `format`: BlobExportFormat,
-        `mode`: BlobExportMode,
-    )
-
-    /**
-     * Read the content of a collection
-     */
-    fun `blobsGetCollection`(`hash`: Hash): Collection
-
-    /**
-     * List all complete blobs.
-     *
-     * Note: this allocates for each `BlobInfo`, if you have many `BlobInfo`s this may be a prohibitively large list.
-     * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
-     */
-    fun `blobsList`(): List<Hash>
-
-    /**
-     * List all collections.
-     *
-     * Note: this allocates for each `CollectionInfo`, if you have many `CollectionInfo`s this may be a prohibitively large list.
-     * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
-     */
-    fun `blobsListCollections`(): List<CollectionInfo>
-
-    /**
-     * List all incomplete (partial) blobs.
-     *
-     * Note: this allocates for each `IncompleteBlobInfo`, if you have many `IncompleteBlobInfo`s this may be a prohibitively large list.
-     * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
-     */
-    fun `blobsListIncomplete`(): List<IncompleteBlobInfo>
-
-    /**
-     * Read all bytes of single blob at `offset` for length `len`.
-     *
-     * This allocates a buffer for the full length `len`. Use only if you know that the blob you're
-     * reading is small. If not sure, use [`Self::blobs_size`] and check the size with
-     * before calling [`Self::blobs_read_at_to_bytes`].
-     */
-    fun `blobsReadAtToBytes`(
-        `hash`: Hash,
-        `offset`: kotlin.ULong,
-        `len`: kotlin.ULong?,
-    ): kotlin.ByteArray
-
-    /**
-     * Read all bytes of single blob.
-     *
-     * This allocates a buffer for the full blob. Use only if you know that the blob you're
-     * reading is small. If not sure, use [`Self::blobs_size`] and check the size with
-     * before calling [`Self::blobs_read_to_bytes`].
-     */
-    fun `blobsReadToBytes`(`hash`: Hash): kotlin.ByteArray
-
-    /**
-     * Create a ticket for sharing a blob or collection from this node.
-     */
-    fun `blobsShare`(
-        `hash`: Hash,
-        `blobFormat`: BlobFormat,
-        `ticketOptions`: AddrInfoOptions,
-    ): kotlin.String
-
-    /**
-     * Get the size information on a single blob.
-     */
-    fun `blobsSize`(`hash`: Hash): kotlin.ULong
-
-    /**
-     * Export the blob contents to a file path
-     * The `path` field is expected to be the absolute path.
-     */
-    fun `blobsWriteToPath`(
-        `hash`: Hash,
-        `path`: kotlin.String,
-    )
-
-    /**
      * The string representation of the PublicKey of this node.
      */
     fun `nodeId`(): kotlin.String
-
-    /**
-     * Delete a tag.
-     */
-    fun `tagsDelete`(`name`: kotlin.ByteArray)
-
-    /**
-     * List all tags
-     *
-     * Note: this allocates for each `TagInfo`, if you have many `Tags`s this may be a prohibitively large list.
-     * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
-     */
-    fun `tagsList`(): List<TagInfo>
 
     /**
      * Create a new document author.
@@ -10563,6 +10401,147 @@ public interface IrohNodeInterface {
      * List all the AuthorIds that exist on this node.
      */
     suspend fun `authorList`(): List<AuthorId>
+
+    /**
+     * Write a blob by passing bytes.
+     */
+    suspend fun `blobsAddBytes`(`bytes`: kotlin.ByteArray): BlobAddOutcome
+
+    /**
+     * Import a blob from a filesystem path.
+     *
+     * `path` should be an absolute path valid for the file system on which
+     * the node runs.
+     * If `in_place` is true, Iroh will assume that the data will not change and will share it in
+     * place without copying to the Iroh data directory.
+     */
+    suspend fun `blobsAddFromPath`(
+        `path`: kotlin.String,
+        `inPlace`: kotlin.Boolean,
+        `tag`: SetTagOption,
+        `wrap`: WrapOption,
+        `cb`: AddCallback,
+    )
+
+    /**
+     * Create a collection from already existing blobs.
+     *
+     * To automatically clear the tags for the passed in blobs you can set
+     * `tags_to_delete` on those tags, and they will be deleted once the collection is created.
+     */
+    suspend fun `blobsCreateCollection`(
+        `collection`: Collection,
+        `tag`: SetTagOption,
+        `tagsToDelete`: List<kotlin.String>,
+    ): HashAndTag
+
+    /**
+     * Delete a blob.
+     */
+    suspend fun `blobsDeleteBlob`(`hash`: Hash)
+
+    /**
+     * Download a blob from another node and add it to the local database.
+     */
+    suspend fun `blobsDownload`(
+        `hash`: Hash,
+        `opts`: BlobDownloadOptions,
+        `cb`: DownloadCallback,
+    )
+
+    /**
+     * Export a blob from the internal blob store to a path on the node's filesystem.
+     *
+     * `destination` should be a writeable, absolute path on the local node's filesystem.
+     *
+     * If `format` is set to [`ExportFormat::Collection`], and the `hash` refers to a collection,
+     * all children of the collection will be exported. See [`ExportFormat`] for details.
+     *
+     * The `mode` argument defines if the blob should be copied to the target location or moved out of
+     * the internal store into the target location. See [`ExportMode`] for details.
+     */
+    suspend fun `blobsExport`(
+        `hash`: Hash,
+        `destination`: kotlin.String,
+        `format`: BlobExportFormat,
+        `mode`: BlobExportMode,
+    )
+
+    /**
+     * Read the content of a collection
+     */
+    suspend fun `blobsGetCollection`(`hash`: Hash): Collection
+
+    /**
+     * List all complete blobs.
+     *
+     * Note: this allocates for each `BlobListResponse`, if you have many `BlobListReponse`s this may be a prohibitively large list.
+     * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
+     */
+    suspend fun `blobsList`(): List<Hash>
+
+    /**
+     * List all collections.
+     *
+     * Note: this allocates for each `BlobListCollectionsResponse`, if you have many `BlobListCollectionsResponse`s this may be a prohibitively large list.
+     * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
+     */
+    suspend fun `blobsListCollections`(): List<CollectionInfo>
+
+    /**
+     * List all incomplete (partial) blobs.
+     *
+     * Note: this allocates for each `BlobListIncompleteResponse`, if you have many `BlobListIncompleteResponse`s this may be a prohibitively large list.
+     * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
+     */
+    suspend fun `blobsListIncomplete`(): List<IncompleteBlobInfo>
+
+    /**
+     * Read all bytes of single blob at `offset` for length `len`.
+     *
+     * This allocates a buffer for the full length `len`. Use only if you know that the blob you're
+     * reading is small. If not sure, use [`Self::blobs_size`] and check the size with
+     * before calling [`Self::blobs_read_at_to_bytes`].
+     */
+    suspend fun `blobsReadAtToBytes`(
+        `hash`: Hash,
+        `offset`: kotlin.ULong,
+        `len`: kotlin.ULong?,
+    ): kotlin.ByteArray
+
+    /**
+     * Read all bytes of single blob.
+     *
+     * This allocates a buffer for the full blob. Use only if you know that the blob you're
+     * reading is small. If not sure, use [`Self::blobs_size`] and check the size with
+     * before calling [`Self::blobs_read_to_bytes`].
+     */
+    suspend fun `blobsReadToBytes`(`hash`: Hash): kotlin.ByteArray
+
+    /**
+     * Create a ticket for sharing a blob from this node.
+     */
+    suspend fun `blobsShare`(
+        `hash`: Hash,
+        `blobFormat`: BlobFormat,
+        `ticketOptions`: AddrInfoOptions,
+    ): kotlin.String
+
+    /**
+     * Get the size information on a single blob.
+     *
+     * Method only exists in FFI
+     */
+    suspend fun `blobsSize`(`hash`: Hash): kotlin.ULong
+
+    /**
+     * Export the blob contents to a file path
+     * The `path` field is expected to be the absolute path.
+     */
+    suspend fun `blobsWriteToPath`(
+        `hash`: Hash,
+        `path`: kotlin.String,
+    )
 
     /**
      * Return connection information on the currently running node.
@@ -10622,6 +10601,19 @@ public interface IrohNodeInterface {
      * Get status information about a node
      */
     suspend fun `status`(): NodeStatus
+
+    /**
+     * Delete a tag
+     */
+    suspend fun `tagsDelete`(`name`: kotlin.ByteArray)
+
+    /**
+     * List all tags
+     *
+     * Note: this allocates for each `ListTagsResponse`, if you have many `Tags`s this may be a prohibitively large list.
+     * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
+     */
+    suspend fun `tagsList`(): List<TagInfo>
 
     companion object
 }
@@ -10715,346 +10707,6 @@ open class IrohNode :
         }
 
     /**
-     * Write a blob by passing bytes.
-     */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `blobsAddBytes`(`bytes`: kotlin.ByteArray): BlobAddOutcome =
-        FfiConverterTypeBlobAddOutcome.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_add_bytes(
-                        it,
-                        FfiConverterByteArray.lower(`bytes`),
-                        _status,
-                    )
-                }
-            },
-        )
-
-    /**
-     * Import a blob from a filesystem path.
-     *
-     * `path` should be an absolute path valid for the file system on which
-     * the node runs.
-     * If `in_place` is true, Iroh will assume that the data will not change and will share it in
-     * place without copying to the Iroh data directory.
-     */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `blobsAddFromPath`(
-        `path`: kotlin.String,
-        `inPlace`: kotlin.Boolean,
-        `tag`: SetTagOption,
-        `wrap`: WrapOption,
-        `cb`: AddCallback,
-    ) = callWithPointer {
-        uniffiRustCallWithError(IrohException) { _status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_add_from_path(
-                it,
-                FfiConverterString.lower(`path`),
-                FfiConverterBoolean.lower(`inPlace`),
-                FfiConverterTypeSetTagOption.lower(`tag`),
-                FfiConverterTypeWrapOption.lower(`wrap`),
-                FfiConverterTypeAddCallback.lower(`cb`),
-                _status,
-            )
-        }
-    }
-
-    /**
-     * Create a collection from already existing blobs.
-     *
-     * To automatically clear the tags for the passed in blobs you can set
-     * `tags_to_delete` on those tags, and they will be deleted once the collection is created.
-     */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `blobsCreateCollection`(
-        `collection`: Collection,
-        `tag`: SetTagOption,
-        `tagsToDelete`: List<kotlin.String>,
-    ): HashAndTag =
-        FfiConverterTypeHashAndTag.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_create_collection(
-                        it,
-                        FfiConverterTypeCollection.lower(`collection`),
-                        FfiConverterTypeSetTagOption.lower(`tag`),
-                        FfiConverterSequenceString.lower(`tagsToDelete`),
-                        _status,
-                    )
-                }
-            },
-        )
-
-    /**
-     * Delete a blob.
-     */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `blobsDeleteBlob`(`hash`: Hash) =
-        callWithPointer {
-            uniffiRustCallWithError(IrohException) { _status ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_delete_blob(
-                    it,
-                    FfiConverterTypeHash.lower(`hash`),
-                    _status,
-                )
-            }
-        }
-
-    /**
-     * Download a blob from another node and add it to the local database.
-     */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `blobsDownload`(
-        `hash`: Hash,
-        `req`: BlobDownloadOptions,
-        `cb`: DownloadCallback,
-    ) = callWithPointer {
-        uniffiRustCallWithError(IrohException) { _status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_download(
-                it,
-                FfiConverterTypeHash.lower(`hash`),
-                FfiConverterTypeBlobDownloadOptions.lower(`req`),
-                FfiConverterTypeDownloadCallback.lower(`cb`),
-                _status,
-            )
-        }
-    }
-
-    /**
-     * Download a blob from another node and add it to the local database.
-     */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `blobsExport`(
-        `hash`: Hash,
-        `destination`: kotlin.String,
-        `format`: BlobExportFormat,
-        `mode`: BlobExportMode,
-    ) = callWithPointer {
-        uniffiRustCallWithError(IrohException) { _status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_export(
-                it,
-                FfiConverterTypeHash.lower(`hash`),
-                FfiConverterString.lower(`destination`),
-                FfiConverterTypeBlobExportFormat.lower(`format`),
-                FfiConverterTypeBlobExportMode.lower(`mode`),
-                _status,
-            )
-        }
-    }
-
-    /**
-     * Read the content of a collection
-     */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `blobsGetCollection`(`hash`: Hash): Collection =
-        FfiConverterTypeCollection.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_get_collection(
-                        it,
-                        FfiConverterTypeHash.lower(`hash`),
-                        _status,
-                    )
-                }
-            },
-        )
-
-    /**
-     * List all complete blobs.
-     *
-     * Note: this allocates for each `BlobInfo`, if you have many `BlobInfo`s this may be a prohibitively large list.
-     * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
-     */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `blobsList`(): List<Hash> =
-        FfiConverterSequenceTypeHash.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_list(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
-
-    /**
-     * List all collections.
-     *
-     * Note: this allocates for each `CollectionInfo`, if you have many `CollectionInfo`s this may be a prohibitively large list.
-     * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
-     */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `blobsListCollections`(): List<CollectionInfo> =
-        FfiConverterSequenceTypeCollectionInfo.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_list_collections(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
-
-    /**
-     * List all incomplete (partial) blobs.
-     *
-     * Note: this allocates for each `IncompleteBlobInfo`, if you have many `IncompleteBlobInfo`s this may be a prohibitively large list.
-     * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
-     */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `blobsListIncomplete`(): List<IncompleteBlobInfo> =
-        FfiConverterSequenceTypeIncompleteBlobInfo.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_list_incomplete(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
-
-    /**
-     * Read all bytes of single blob at `offset` for length `len`.
-     *
-     * This allocates a buffer for the full length `len`. Use only if you know that the blob you're
-     * reading is small. If not sure, use [`Self::blobs_size`] and check the size with
-     * before calling [`Self::blobs_read_at_to_bytes`].
-     */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `blobsReadAtToBytes`(
-        `hash`: Hash,
-        `offset`: kotlin.ULong,
-        `len`: kotlin.ULong?,
-    ): kotlin.ByteArray =
-        FfiConverterByteArray.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_read_at_to_bytes(
-                        it,
-                        FfiConverterTypeHash.lower(`hash`),
-                        FfiConverterULong.lower(`offset`),
-                        FfiConverterOptionalULong.lower(`len`),
-                        _status,
-                    )
-                }
-            },
-        )
-
-    /**
-     * Read all bytes of single blob.
-     *
-     * This allocates a buffer for the full blob. Use only if you know that the blob you're
-     * reading is small. If not sure, use [`Self::blobs_size`] and check the size with
-     * before calling [`Self::blobs_read_to_bytes`].
-     */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `blobsReadToBytes`(`hash`: Hash): kotlin.ByteArray =
-        FfiConverterByteArray.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_read_to_bytes(
-                        it,
-                        FfiConverterTypeHash.lower(`hash`),
-                        _status,
-                    )
-                }
-            },
-        )
-
-    /**
-     * Create a ticket for sharing a blob or collection from this node.
-     */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `blobsShare`(
-        `hash`: Hash,
-        `blobFormat`: BlobFormat,
-        `ticketOptions`: AddrInfoOptions,
-    ): kotlin.String =
-        FfiConverterString.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_share(
-                        it,
-                        FfiConverterTypeHash.lower(`hash`),
-                        FfiConverterTypeBlobFormat.lower(`blobFormat`),
-                        FfiConverterTypeAddrInfoOptions.lower(`ticketOptions`),
-                        _status,
-                    )
-                }
-            },
-        )
-
-    /**
-     * Get the size information on a single blob.
-     */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `blobsSize`(`hash`: Hash): kotlin.ULong =
-        FfiConverterULong.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_size(
-                        it,
-                        FfiConverterTypeHash.lower(`hash`),
-                        _status,
-                    )
-                }
-            },
-        )
-
-    /**
-     * Export the blob contents to a file path
-     * The `path` field is expected to be the absolute path.
-     */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `blobsWriteToPath`(
-        `hash`: Hash,
-        `path`: kotlin.String,
-    ) = callWithPointer {
-        uniffiRustCallWithError(IrohException) { _status ->
-            UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_write_to_path(
-                it,
-                FfiConverterTypeHash.lower(`hash`),
-                FfiConverterString.lower(`path`),
-                _status,
-            )
-        }
-    }
-
-    /**
      * The string representation of the PublicKey of this node.
      */
     override fun `nodeId`(): kotlin.String =
@@ -11062,44 +10714,6 @@ open class IrohNode :
             callWithPointer {
                 uniffiRustCall { _status ->
                     UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_node_id(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
-
-    /**
-     * Delete a tag.
-     */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `tagsDelete`(`name`: kotlin.ByteArray) =
-        callWithPointer {
-            uniffiRustCallWithError(IrohException) { _status ->
-                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_tags_delete(
-                    it,
-                    FfiConverterByteArray.lower(`name`),
-                    _status,
-                )
-            }
-        }
-
-    /**
-     * List all tags
-     *
-     * Note: this allocates for each `TagInfo`, if you have many `Tags`s this may be a prohibitively large list.
-     * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
-     */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `tagsList`(): List<TagInfo> =
-        FfiConverterSequenceTypeTagInfo.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_tags_list(
                         it,
                         _status,
                     )
@@ -11251,6 +10865,411 @@ open class IrohNode :
             // Error FFI converter
             IrohException.ErrorHandler,
         )
+
+    /**
+     * Write a blob by passing bytes.
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `blobsAddBytes`(`bytes`: kotlin.ByteArray): BlobAddOutcome =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_add_bytes(
+                    thisPtr,
+                    FfiConverterByteArray.lower(`bytes`),
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            // lift function
+            { FfiConverterTypeBlobAddOutcome.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * Import a blob from a filesystem path.
+     *
+     * `path` should be an absolute path valid for the file system on which
+     * the node runs.
+     * If `in_place` is true, Iroh will assume that the data will not change and will share it in
+     * place without copying to the Iroh data directory.
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `blobsAddFromPath`(
+        `path`: kotlin.String,
+        `inPlace`: kotlin.Boolean,
+        `tag`: SetTagOption,
+        `wrap`: WrapOption,
+        `cb`: AddCallback,
+    ) = uniffiRustCallAsync(
+        callWithPointer { thisPtr ->
+            UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_add_from_path(
+                thisPtr,
+                FfiConverterString.lower(`path`),
+                FfiConverterBoolean.lower(`inPlace`),
+                FfiConverterTypeSetTagOption.lower(`tag`),
+                FfiConverterTypeWrapOption.lower(`wrap`),
+                FfiConverterTypeAddCallback.lower(`cb`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+
+    /**
+     * Create a collection from already existing blobs.
+     *
+     * To automatically clear the tags for the passed in blobs you can set
+     * `tags_to_delete` on those tags, and they will be deleted once the collection is created.
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `blobsCreateCollection`(
+        `collection`: Collection,
+        `tag`: SetTagOption,
+        `tagsToDelete`: List<kotlin.String>,
+    ): HashAndTag =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_create_collection(
+                    thisPtr,
+                    FfiConverterTypeCollection.lower(`collection`),
+                    FfiConverterTypeSetTagOption.lower(`tag`),
+                    FfiConverterSequenceString.lower(`tagsToDelete`),
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            // lift function
+            { FfiConverterTypeHashAndTag.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * Delete a blob.
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `blobsDeleteBlob`(`hash`: Hash) =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_delete_blob(
+                    thisPtr,
+                    FfiConverterTypeHash.lower(`hash`),
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+            // lift function
+            { Unit },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * Download a blob from another node and add it to the local database.
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `blobsDownload`(
+        `hash`: Hash,
+        `opts`: BlobDownloadOptions,
+        `cb`: DownloadCallback,
+    ) = uniffiRustCallAsync(
+        callWithPointer { thisPtr ->
+            UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_download(
+                thisPtr,
+                FfiConverterTypeHash.lower(`hash`),
+                FfiConverterTypeBlobDownloadOptions.lower(`opts`),
+                FfiConverterTypeDownloadCallback.lower(`cb`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+
+    /**
+     * Export a blob from the internal blob store to a path on the node's filesystem.
+     *
+     * `destination` should be a writeable, absolute path on the local node's filesystem.
+     *
+     * If `format` is set to [`ExportFormat::Collection`], and the `hash` refers to a collection,
+     * all children of the collection will be exported. See [`ExportFormat`] for details.
+     *
+     * The `mode` argument defines if the blob should be copied to the target location or moved out of
+     * the internal store into the target location. See [`ExportMode`] for details.
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `blobsExport`(
+        `hash`: Hash,
+        `destination`: kotlin.String,
+        `format`: BlobExportFormat,
+        `mode`: BlobExportMode,
+    ) = uniffiRustCallAsync(
+        callWithPointer { thisPtr ->
+            UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_export(
+                thisPtr,
+                FfiConverterTypeHash.lower(`hash`),
+                FfiConverterString.lower(`destination`),
+                FfiConverterTypeBlobExportFormat.lower(`format`),
+                FfiConverterTypeBlobExportMode.lower(`mode`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+
+    /**
+     * Read the content of a collection
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `blobsGetCollection`(`hash`: Hash): Collection =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_get_collection(
+                    thisPtr,
+                    FfiConverterTypeHash.lower(`hash`),
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_pointer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_pointer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_pointer(future) },
+            // lift function
+            { FfiConverterTypeCollection.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * List all complete blobs.
+     *
+     * Note: this allocates for each `BlobListResponse`, if you have many `BlobListReponse`s this may be a prohibitively large list.
+     * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `blobsList`(): List<Hash> =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_list(
+                    thisPtr,
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            // lift function
+            { FfiConverterSequenceTypeHash.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * List all collections.
+     *
+     * Note: this allocates for each `BlobListCollectionsResponse`, if you have many `BlobListCollectionsResponse`s this may be a prohibitively large list.
+     * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `blobsListCollections`(): List<CollectionInfo> =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_list_collections(
+                    thisPtr,
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            // lift function
+            { FfiConverterSequenceTypeCollectionInfo.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * List all incomplete (partial) blobs.
+     *
+     * Note: this allocates for each `BlobListIncompleteResponse`, if you have many `BlobListIncompleteResponse`s this may be a prohibitively large list.
+     * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `blobsListIncomplete`(): List<IncompleteBlobInfo> =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_list_incomplete(
+                    thisPtr,
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            // lift function
+            { FfiConverterSequenceTypeIncompleteBlobInfo.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * Read all bytes of single blob at `offset` for length `len`.
+     *
+     * This allocates a buffer for the full length `len`. Use only if you know that the blob you're
+     * reading is small. If not sure, use [`Self::blobs_size`] and check the size with
+     * before calling [`Self::blobs_read_at_to_bytes`].
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `blobsReadAtToBytes`(
+        `hash`: Hash,
+        `offset`: kotlin.ULong,
+        `len`: kotlin.ULong?,
+    ): kotlin.ByteArray =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_read_at_to_bytes(
+                    thisPtr,
+                    FfiConverterTypeHash.lower(`hash`),
+                    FfiConverterULong.lower(`offset`),
+                    FfiConverterOptionalULong.lower(`len`),
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            // lift function
+            { FfiConverterByteArray.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * Read all bytes of single blob.
+     *
+     * This allocates a buffer for the full blob. Use only if you know that the blob you're
+     * reading is small. If not sure, use [`Self::blobs_size`] and check the size with
+     * before calling [`Self::blobs_read_to_bytes`].
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `blobsReadToBytes`(`hash`: Hash): kotlin.ByteArray =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_read_to_bytes(
+                    thisPtr,
+                    FfiConverterTypeHash.lower(`hash`),
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            // lift function
+            { FfiConverterByteArray.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * Create a ticket for sharing a blob from this node.
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `blobsShare`(
+        `hash`: Hash,
+        `blobFormat`: BlobFormat,
+        `ticketOptions`: AddrInfoOptions,
+    ): kotlin.String =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_share(
+                    thisPtr,
+                    FfiConverterTypeHash.lower(`hash`),
+                    FfiConverterTypeBlobFormat.lower(`blobFormat`),
+                    FfiConverterTypeAddrInfoOptions.lower(`ticketOptions`),
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            // lift function
+            { FfiConverterString.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * Get the size information on a single blob.
+     *
+     * Method only exists in FFI
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `blobsSize`(`hash`: Hash): kotlin.ULong =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_size(
+                    thisPtr,
+                    FfiConverterTypeHash.lower(`hash`),
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_u64(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_u64(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_u64(future) },
+            // lift function
+            { FfiConverterULong.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * Export the blob contents to a file path
+     * The `path` field is expected to be the absolute path.
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `blobsWriteToPath`(
+        `hash`: Hash,
+        `path`: kotlin.String,
+    ) = uniffiRustCallAsync(
+        callWithPointer { thisPtr ->
+            UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_blobs_write_to_path(
+                thisPtr,
+                FfiConverterTypeHash.lower(`hash`),
+                FfiConverterString.lower(`path`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
 
     /**
      * Return connection information on the currently running node.
@@ -11477,7 +11496,71 @@ open class IrohNode :
             IrohException.ErrorHandler,
         )
 
+    /**
+     * Delete a tag
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `tagsDelete`(`name`: kotlin.ByteArray) =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_tags_delete(
+                    thisPtr,
+                    FfiConverterByteArray.lower(`name`),
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+            // lift function
+            { Unit },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * List all tags
+     *
+     * Note: this allocates for each `ListTagsResponse`, if you have many `Tags`s this may be a prohibitively large list.
+     * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `tagsList`(): List<TagInfo> =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_tags_list(
+                    thisPtr,
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            // lift function
+            { FfiConverterSequenceTypeTagInfo.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
     companion object {
+        /**
+         * Create a new iroh node. The `path` param should be a directory where we can store or load
+         * iroh data from a previous session.
+         */
+        @Throws(IrohException::class)
+        @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+        suspend fun `create`(`path`: kotlin.String): IrohNode =
+            uniffiRustCallAsync(
+                UniffiLib.INSTANCE.uniffi_iroh_fn_constructor_irohnode_create(FfiConverterString.lower(`path`)),
+                { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_pointer(future, callback, continuation) },
+                { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_pointer(future, continuation) },
+                { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_pointer(future) },
+                // lift function
+                { FfiConverterTypeIrohNode.lift(it) },
+                // Error FFI converter
+                IrohException.ErrorHandler,
+            )
+
         /**
          * Create a new iroh node with options.
          */

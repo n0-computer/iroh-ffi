@@ -1,6 +1,6 @@
 set -eu
 
-# $CLASSPATH must include `jna`
+# $CLASSPATH must include `jna` and `kotlinx-coroutines`
 
 LIB_EXTENSION=""
 LIB_NAME="libiroh"
@@ -28,10 +28,11 @@ cargo build --lib
 # UniFfi bindgen
 echo "generating binding"
 rm -rf ./kotlin/n0
-cargo run --bin uniffi-bindgen generate "src/iroh.udl" --language kotlin --out-dir ./kotlin --config uniffi.toml
+cargo run --bin uniffi-bindgen generate "src/iroh.udl" --language kotlin --out-dir ./kotlin --config uniffi.toml --lib-file  target/debug/$LIB_NAME.$LIB_EXTENSION
 
 # copy cdylib to outdir
-cp ./target/debug/$LIB_NAME.$LIB_EXTENSION ./kotlin/libuniffi_iroh.$LIB_EXTENSION
+cp ./target/debug/$LIB_NAME.$LIB_EXTENSION ./kotlin/
+
 
 # Build jar file
 echo "building jar"

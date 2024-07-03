@@ -1555,7 +1555,7 @@ mod tests {
             .set_bytes(&author, b"hello".to_vec(), b"world".to_vec())
             .unwrap();
         let hash = found_r.recv().unwrap().unwrap();
-        let val = node_1.blobs_read_to_bytes(hash.into()).unwrap();
+        let val = node_1.blobs_read_to_bytes(hash.into()).await.unwrap();
         assert_eq!(b"world".to_vec(), val);
     }
 

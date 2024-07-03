@@ -9,35 +9,34 @@ use futures::{StreamExt, TryStreamExt};
 use serde::{Deserialize, Serialize};
 
 use crate::ticket::AddrInfoOptions;
-use crate::{block_on, IrohError, NodeAddr};
 use crate::{node::IrohNode, CallbackError};
+use crate::{IrohError, NodeAddr};
 
+#[uniffi::export]
 impl IrohNode {
     /// List all complete blobs.
     ///
     /// Note: this allocates for each `BlobListResponse`, if you have many `BlobListReponse`s this may be a prohibitively large list.
     /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
-    pub fn blobs_list(&self) -> Result<Vec<Arc<Hash>>, IrohError> {
-        block_on(&self.rt(), async {
-            let response = self.sync_client.blobs().list().await?;
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn blobs_list(&self) -> Result<Vec<Arc<Hash>>, IrohError> {
+        let response = self.sync_client.blobs().list().await?;
 
-            let hashes: Vec<Arc<Hash>> = response
-                .map_ok(|i| Arc::new(Hash(i.hash)))
-                .try_collect()
-                .await?;
+        let hashes: Vec<Arc<Hash>> = response
+            .map_ok(|i| Arc::new(Hash(i.hash)))
+            .try_collect()
+            .await?;
 
-            Ok(hashes)
-        })
+        Ok(hashes)
     }
 
     /// Get the size information on a single blob.
     ///
     /// Method only exists in FFI
-    pub fn blobs_size(&self, hash: &Hash) -> Result<u64, IrohError> {
-        block_on(&self.rt(), async {
-            let r = self.sync_client.blobs().read(hash.0).await?;
-            Ok(r.size())
-        })
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn blobs_size(&self, hash: &Hash) -> Result<u64, IrohError> {
+        let r = self.sync_client.blobs().read(hash.0).await?;
+        Ok(r.size())
     }
 
     /// Read all bytes of single blob.
@@ -45,16 +44,15 @@ impl IrohNode {
     /// This allocates a buffer for the full blob. Use only if you know that the blob you're
     /// reading is small. If not sure, use [`Self::blobs_size`] and check the size with
     /// before calling [`Self::blobs_read_to_bytes`].
-    pub fn blobs_read_to_bytes(&self, hash: Arc<Hash>) -> Result<Vec<u8>, IrohError> {
-        block_on(&self.rt(), async {
-            let res = self
-                .sync_client
-                .blobs()
-                .read_to_bytes(hash.0)
-                .await
-                .map(|b| b.to_vec())?;
-            Ok(res)
-        })
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn blobs_read_to_bytes(&self, hash: Arc<Hash>) -> Result<Vec<u8>, IrohError> {
+        let res = self
+            .sync_client
+            .blobs()
+            .read_to_bytes(hash.0)
+            .await
+            .map(|b| b.to_vec())?;
+        Ok(res)
     }
 
     /// Read all bytes of single blob at `offset` for length `len`.
@@ -62,7 +60,8 @@ impl IrohNode {
     /// This allocates a buffer for the full length `len`. Use only if you know that the blob you're
     /// reading is small. If not sure, use [`Self::blobs_size`] and check the size with
     /// before calling [`Self::blobs_read_at_to_bytes`].
-    pub fn blobs_read_at_to_bytes(
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn blobs_read_at_to_bytes(
         &self,
         hash: Arc<Hash>,
         offset: u64,
@@ -72,15 +71,13 @@ impl IrohNode {
             None => None,
             Some(l) => Some(usize::try_from(l).map_err(anyhow::Error::from)?),
         };
-        block_on(&self.rt(), async {
-            let res = self
-                .sync_client
-                .blobs()
-                .read_at_to_bytes(hash.0, offset, len)
-                .await
-                .map(|b| b.to_vec())?;
-            Ok(res)
-        })
+        let res = self
+            .sync_client
+            .blobs()
+            .read_at_to_bytes(hash.0, offset, len)
+            .await
+            .map(|b| b.to_vec())?;
+        Ok(res)
     }
 
     /// Import a blob from a filesystem path.
@@ -89,7 +86,8 @@ impl IrohNode {
     /// the node runs.
     /// If `in_place` is true, Iroh will assume that the data will not change and will share it in
     /// place without copying to the Iroh data directory.
-    pub fn blobs_add_from_path(
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn blobs_add_from_path(
         &self,
         path: String,
         in_place: bool,
@@ -97,73 +95,72 @@ impl IrohNode {
         wrap: Arc<WrapOption>,
         cb: Arc<dyn AddCallback>,
     ) -> Result<(), IrohError> {
-        block_on(&self.rt(), async {
-            let mut stream = self
-                .sync_client
-                .blobs()
-                .add_from_path(
-                    path.into(),
-                    in_place,
-                    (*tag).clone().into(),
-                    (*wrap).clone().into(),
-                )
-                .await?;
-            while let Some(progress) = stream.next().await {
-                let progress = progress?;
-                cb.progress(Arc::new(progress.into()))?;
-            }
-            Ok(())
-        })
+        let mut stream = self
+            .sync_client
+            .blobs()
+            .add_from_path(
+                path.into(),
+                in_place,
+                (*tag).clone().into(),
+                (*wrap).clone().into(),
+            )
+            .await?;
+        while let Some(progress) = stream.next().await {
+            let progress = progress?;
+            cb.progress(Arc::new(progress.into()))?;
+        }
+        Ok(())
     }
 
     /// Export the blob contents to a file path
     /// The `path` field is expected to be the absolute path.
-    pub fn blobs_write_to_path(&self, hash: Arc<Hash>, path: String) -> Result<(), IrohError> {
-        block_on(&self.rt(), async {
-            let mut reader = self.sync_client.blobs().read(hash.0).await?;
-            let path: PathBuf = path.into();
-            if let Some(dir) = path.parent() {
-                tokio::fs::create_dir_all(dir)
-                    .await
-                    .map_err(anyhow::Error::from)?;
-            }
-            let mut file = tokio::fs::File::create(path)
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn blobs_write_to_path(
+        &self,
+        hash: Arc<Hash>,
+        path: String,
+    ) -> Result<(), IrohError> {
+        let mut reader = self.sync_client.blobs().read(hash.0).await?;
+        let path: PathBuf = path.into();
+        if let Some(dir) = path.parent() {
+            tokio::fs::create_dir_all(dir)
                 .await
                 .map_err(anyhow::Error::from)?;
-            tokio::io::copy(&mut reader, &mut file)
-                .await
-                .map_err(anyhow::Error::from)?;
-            Ok(())
-        })
+        }
+        let mut file = tokio::fs::File::create(path)
+            .await
+            .map_err(anyhow::Error::from)?;
+        tokio::io::copy(&mut reader, &mut file)
+            .await
+            .map_err(anyhow::Error::from)?;
+        Ok(())
     }
 
     /// Write a blob by passing bytes.
-    pub fn blobs_add_bytes(&self, bytes: Vec<u8>) -> Result<BlobAddOutcome, IrohError> {
-        block_on(&self.rt(), async {
-            let res = self.sync_client.blobs().add_bytes(bytes).await?;
-            Ok(res.into())
-        })
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn blobs_add_bytes(&self, bytes: Vec<u8>) -> Result<BlobAddOutcome, IrohError> {
+        let res = self.sync_client.blobs().add_bytes(bytes).await?;
+        Ok(res.into())
     }
 
     /// Download a blob from another node and add it to the local database.
-    pub fn blobs_download(
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn blobs_download(
         &self,
         hash: Arc<Hash>,
         opts: Arc<BlobDownloadOptions>,
         cb: Arc<dyn DownloadCallback>,
     ) -> Result<(), IrohError> {
-        block_on(&self.rt(), async {
-            let mut stream = self
-                .sync_client
-                .blobs()
-                .download_with_opts(hash.0, opts.0.clone())
-                .await?;
-            while let Some(progress) = stream.next().await {
-                let progress = progress?;
-                cb.progress(Arc::new(progress.into()))?;
-            }
-            Ok(())
-        })
+        let mut stream = self
+            .sync_client
+            .blobs()
+            .download_with_opts(hash.0, opts.0.clone())
+            .await?;
+        while let Some(progress) = stream.next().await {
+            let progress = progress?;
+            cb.progress(Arc::new(progress.into()))?;
+        }
+        Ok(())
     }
 
     /// Export a blob from the internal blob store to a path on the node's filesystem.
@@ -175,149 +172,145 @@ impl IrohNode {
     ///
     /// The `mode` argument defines if the blob should be copied to the target location or moved out of
     /// the internal store into the target location. See [`ExportMode`] for details.
-    pub fn blobs_export(
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn blobs_export(
         &self,
         hash: Arc<Hash>,
         destination: String,
         format: BlobExportFormat,
         mode: BlobExportMode,
     ) -> Result<(), IrohError> {
-        block_on(&self.rt(), async {
-            let destination: PathBuf = destination.into();
-            if let Some(dir) = destination.parent() {
-                tokio::fs::create_dir_all(dir)
-                    .await
-                    .map_err(anyhow::Error::from)?;
-            }
+        let destination: PathBuf = destination.into();
+        if let Some(dir) = destination.parent() {
+            tokio::fs::create_dir_all(dir)
+                .await
+                .map_err(anyhow::Error::from)?;
+        }
 
-            let stream = self
-                .sync_client
-                .blobs()
-                .export(hash.0, destination, format.into(), mode.into())
-                .await?;
+        let stream = self
+            .sync_client
+            .blobs()
+            .export(hash.0, destination, format.into(), mode.into())
+            .await?;
 
-            stream.finish().await?;
+        stream.finish().await?;
 
-            Ok(())
-        })
+        Ok(())
     }
 
     /// Create a ticket for sharing a blob from this node.
-    pub fn blobs_share(
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn blobs_share(
         &self,
         hash: Arc<Hash>,
         blob_format: BlobFormat,
         ticket_options: AddrInfoOptions,
     ) -> Result<String, IrohError> {
-        block_on(&self.rt(), async {
-            let ticket = self
-                .sync_client
-                .blobs()
-                .share(hash.0, blob_format.into(), ticket_options.into())
-                .await?;
-            Ok(ticket.to_string())
-        })
+        let ticket = self
+            .sync_client
+            .blobs()
+            .share(hash.0, blob_format.into(), ticket_options.into())
+            .await?;
+        Ok(ticket.to_string())
     }
 
     /// List all incomplete (partial) blobs.
     ///
     /// Note: this allocates for each `BlobListIncompleteResponse`, if you have many `BlobListIncompleteResponse`s this may be a prohibitively large list.
     /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
-    pub fn blobs_list_incomplete(&self) -> Result<Vec<IncompleteBlobInfo>, IrohError> {
-        block_on(&self.rt(), async {
-            let blobs = self
-                .sync_client
-                .blobs()
-                .list_incomplete()
-                .await?
-                .map_ok(|res| res.into())
-                .try_collect::<Vec<_>>()
-                .await?;
-            Ok(blobs)
-        })
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn blobs_list_incomplete(&self) -> Result<Vec<IncompleteBlobInfo>, IrohError> {
+        let blobs = self
+            .sync_client
+            .blobs()
+            .list_incomplete()
+            .await?
+            .map_ok(|res| res.into())
+            .try_collect::<Vec<_>>()
+            .await?;
+        Ok(blobs)
     }
 
     /// List all collections.
     ///
     /// Note: this allocates for each `BlobListCollectionsResponse`, if you have many `BlobListCollectionsResponse`s this may be a prohibitively large list.
     /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
-    pub fn blobs_list_collections(&self) -> Result<Vec<CollectionInfo>, IrohError> {
-        block_on(&self.rt(), async {
-            let blobs = self
-                .sync_client
-                .blobs()
-                .list_collections()?
-                .map_ok(|res| res.into())
-                .try_collect::<Vec<_>>()
-                .await?;
-            Ok(blobs)
-        })
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn blobs_list_collections(&self) -> Result<Vec<CollectionInfo>, IrohError> {
+        let blobs = self
+            .sync_client
+            .blobs()
+            .list_collections()?
+            .map_ok(|res| res.into())
+            .try_collect::<Vec<_>>()
+            .await?;
+        Ok(blobs)
     }
 
     /// Read the content of a collection
-    pub fn blobs_get_collection(&self, hash: Arc<Hash>) -> Result<Arc<Collection>, IrohError> {
-        block_on(&self.rt(), async {
-            let collection = self.sync_client.blobs().get_collection(hash.0).await?;
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn blobs_get_collection(
+        &self,
+        hash: Arc<Hash>,
+    ) -> Result<Arc<Collection>, IrohError> {
+        let collection = self.sync_client.blobs().get_collection(hash.0).await?;
 
-            Ok(Arc::new(collection.into()))
-        })
+        Ok(Arc::new(collection.into()))
     }
 
     /// Create a collection from already existing blobs.
     ///
     /// To automatically clear the tags for the passed in blobs you can set
     /// `tags_to_delete` on those tags, and they will be deleted once the collection is created.
-    pub fn blobs_create_collection(
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn blobs_create_collection(
         &self,
         collection: Arc<Collection>,
         tag: Arc<SetTagOption>,
         tags_to_delete: Vec<String>,
     ) -> Result<HashAndTag, IrohError> {
-        block_on(&self.rt(), async {
-            let collection = collection.0.read().unwrap().clone();
-            let (hash, tag) = self
-                .sync_client
-                .blobs()
-                .create_collection(
-                    collection,
-                    (*tag).clone().into(),
-                    tags_to_delete
-                        .into_iter()
-                        .map(iroh::blobs::Tag::from)
-                        .collect(),
-                )
-                .await?;
+        let collection = collection.0.read().unwrap().clone();
+        let (hash, tag) = self
+            .sync_client
+            .blobs()
+            .create_collection(
+                collection,
+                (*tag).clone().into(),
+                tags_to_delete
+                    .into_iter()
+                    .map(iroh::blobs::Tag::from)
+                    .collect(),
+            )
+            .await?;
 
-            Ok(HashAndTag {
-                hash: Arc::new(hash.into()),
-                tag: tag.0.to_vec(),
-            })
+        Ok(HashAndTag {
+            hash: Arc::new(hash.into()),
+            tag: tag.0.to_vec(),
         })
     }
 
     /// Delete a blob.
-    pub fn blobs_delete_blob(&self, hash: Arc<Hash>) -> Result<(), IrohError> {
-        block_on(&self.rt(), async {
-            let mut tags = self.sync_client.tags().list().await?;
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn blobs_delete_blob(&self, hash: Arc<Hash>) -> Result<(), IrohError> {
+        let mut tags = self.sync_client.tags().list().await?;
 
-            let mut name = None;
-            while let Some(tag) = tags.next().await {
-                let tag = tag?;
-                if tag.hash == hash.0 {
-                    name = Some(tag.name);
-                }
+        let mut name = None;
+        while let Some(tag) = tags.next().await {
+            let tag = tag?;
+            if tag.hash == hash.0 {
+                name = Some(tag.name);
             }
+        }
 
-            if let Some(name) = name {
-                self.sync_client.tags().delete(name).await?;
-                self.sync_client
-                    .blobs()
-                    .delete_blob((*hash).clone().0)
-                    .await?;
-            }
+        if let Some(name) = name {
+            self.sync_client.tags().delete(name).await?;
+            self.sync_client
+                .blobs()
+                .delete_blob((*hash).clone().0)
+                .await?;
+        }
 
-            Ok(())
-        })
+        Ok(())
     }
 }
 
@@ -1253,22 +1246,22 @@ mod tests {
         }
     }
 
-    fn blobs_add_get_bytes_size(node: &IrohNode, size: usize) -> Arc<Hash> {
+    async fn blobs_add_get_bytes_size(node: &IrohNode, size: usize) -> Arc<Hash> {
         // create bytes
         let mut bytes = vec![0; size];
         rand::thread_rng().fill_bytes(&mut bytes);
         // add blob
-        let add_outcome = node.blobs_add_bytes(bytes.to_vec()).unwrap();
+        let add_outcome = node.blobs_add_bytes(bytes.to_vec()).await.unwrap();
         // check outcome
         assert_eq!(add_outcome.format, BlobFormat::Raw);
         assert_eq!(add_outcome.size, size as u64);
         // check size
         let hash = add_outcome.hash;
-        let got_size = node.blobs_size(&hash).unwrap();
+        let got_size = node.blobs_size(&hash).await.unwrap();
         assert_eq!(got_size, size as u64);
         //
         // get blob
-        let got_bytes = node.blobs_read_to_bytes(hash.clone()).unwrap();
+        let got_bytes = node.blobs_read_to_bytes(hash.clone()).await.unwrap();
         assert_eq!(got_bytes.len(), size);
         assert_eq!(got_bytes, bytes);
         hash
@@ -1336,6 +1329,7 @@ mod tests {
             Arc::new(wrap),
             Arc::new(cb),
         )
+        .await
         .unwrap();
 
         let (hash, format) = {
@@ -1349,17 +1343,18 @@ mod tests {
         assert_eq!(BlobFormat::Raw, format);
 
         // check we get the expected size from the hash
-        let got_size = node.blobs_size(&hash).unwrap();
+        let got_size = node.blobs_size(&hash).await.unwrap();
         assert_eq!(blob_size as u64, got_size);
 
         // get bytes
-        let got_bytes = node.blobs_read_to_bytes(hash.clone()).unwrap();
+        let got_bytes = node.blobs_read_to_bytes(hash.clone()).await.unwrap();
         assert_eq!(blob_size, got_bytes.len());
         assert_eq!(bytes, got_bytes);
 
         // write to file
         let out_path = dir.path().join("out");
         node.blobs_write_to_path(hash, out_path.display().to_string())
+            .await
             .unwrap();
 
         // open file
@@ -1387,7 +1382,7 @@ mod tests {
             .unwrap();
 
         // ensure there are no blobs to start
-        let blobs = node.blobs_list().unwrap();
+        let blobs = node.blobs_list().await.unwrap();
         assert!(blobs.is_empty());
 
         struct Output {
@@ -1437,9 +1432,10 @@ mod tests {
             Arc::new(WrapOption::NoWrap),
             Arc::new(cb),
         )
+        .await
         .unwrap();
 
-        let collections = node.blobs_list_collections().unwrap();
+        let collections = node.blobs_list_collections().await.unwrap();
         assert!(collections.len() == 1);
         let (collection_hash, blob_hashes) = {
             let output = output.lock().unwrap();
@@ -1454,7 +1450,7 @@ mod tests {
             blob_hashes.len() as u64
         );
 
-        let blobs = node.blobs_list().unwrap();
+        let blobs = node.blobs_list().await.unwrap();
         hashes_exist(&blob_hashes, &blobs);
         println!("finished");
     }
@@ -1494,23 +1490,23 @@ mod tests {
         let mut hashes = vec![];
         let mut tags = vec![];
         for blob in blobs {
-            let output = node.blobs_add_bytes(blob).unwrap();
+            let output = node.blobs_add_bytes(blob).await.unwrap();
             hashes.push(output.hash);
             tags.push(output.tag);
         }
 
-        let got_hashes = node.blobs_list().unwrap();
+        let got_hashes = node.blobs_list().await.unwrap();
         assert_eq!(num_blobs, got_hashes.len());
         hashes_exist(&hashes, &got_hashes);
 
         let remove_hash = hashes.pop().unwrap();
         let remove_tag = tags.pop().unwrap();
         // delete the tag for the first blob
-        node.tags_delete(remove_tag).unwrap();
+        node.tags_delete(remove_tag).await.unwrap();
         // wait for GC to clear the blob. windows test runner is slow & needs like 500ms
         std::thread::sleep(Duration::from_millis(500));
 
-        let got_hashes = node.blobs_list().unwrap();
+        let got_hashes = node.blobs_list().await.unwrap();
         assert_eq!(num_blobs - 1, got_hashes.len());
         hashes_exist(&hashes, &got_hashes);
 

@@ -30,92 +30,7 @@ enum LogLevel {
 };
 
 /// An Iroh node. Allows you to sync, store, and transfer data.
-interface IrohNode {
-  /// The string representation of the PublicKey of this node.
-  string node_id();
-
-  /// List all complete blobs.
-  ///
-  /// Note: this allocates for each `BlobInfo`, if you have many `BlobInfo`s this may be a prohibitively large list.
-  /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
-  [Throws=IrohError]
-  sequence<Hash> blobs_list();
-  /// Get the size information on a single blob.
-  [Throws=IrohError]
-  u64 blobs_size([ByRef] Hash hash);
-  /// Create a ticket for sharing a blob or collection from this node.
-  [Throws=IrohError]
-  string blobs_share(Hash hash, BlobFormat blob_format, AddrInfoOptions ticket_options);
-  /// Read all bytes of single blob.
-  ///
-  /// This allocates a buffer for the full blob. Use only if you know that the blob you're
-  /// reading is small. If not sure, use [`Self::blobs_size`] and check the size with
-  /// before calling [`Self::blobs_read_to_bytes`].
-  [Throws=IrohError]
-  bytes blobs_read_to_bytes(Hash hash);
-  /// Read all bytes of single blob at `offset` for length `len`.
-  ///
-  /// This allocates a buffer for the full length `len`. Use only if you know that the blob you're
-  /// reading is small. If not sure, use [`Self::blobs_size`] and check the size with
-  /// before calling [`Self::blobs_read_at_to_bytes`].
-  [Throws=IrohError]
-  bytes blobs_read_at_to_bytes(Hash hash, u64 offset, u64? len);
-  /// Import a blob from a filesystem path.
-  ///
-  /// `path` should be an absolute path valid for the file system on which
-  /// the node runs.
-  /// If `in_place` is true, Iroh will assume that the data will not change and will share it in
-  /// place without copying to the Iroh data directory.
-  [Throws=IrohError]
-  void blobs_add_from_path(string path, boolean in_place, SetTagOption tag, WrapOption wrap, AddCallback cb);
-  /// Export the blob contents to a file path
-  /// The `path` field is expected to be the absolute path.
-  [Throws=IrohError]
-  void blobs_write_to_path(Hash hash, string path);
-  /// Write a blob by passing bytes.
-  [Throws=IrohError]
-  BlobAddOutcome blobs_add_bytes(bytes bytes);
-  /// Download a blob from another node and add it to the local database.
-  [Throws=IrohError]
-  void blobs_download(Hash hash, BlobDownloadOptions req, DownloadCallback cb);
-  /// Download a blob from another node and add it to the local database.
-  [Throws=IrohError]
-  void blobs_export(Hash hash, string destination, BlobExportFormat format, BlobExportMode mode);
-  /// List all incomplete (partial) blobs.
-  ///
-  /// Note: this allocates for each `IncompleteBlobInfo`, if you have many `IncompleteBlobInfo`s this may be a prohibitively large list.
-  /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
-  [Throws=IrohError]
-  sequence<IncompleteBlobInfo> blobs_list_incomplete();
-  /// List all collections.
-  ///
-  /// Note: this allocates for each `CollectionInfo`, if you have many `CollectionInfo`s this may be a prohibitively large list.
-  /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
-  [Throws=IrohError]
-  sequence<CollectionInfo> blobs_list_collections();
-  /// Read the content of a collection
-  [Throws=IrohError]
-  Collection blobs_get_collection(Hash hash);
-  /// Create a collection from already existing blobs.
-  ///
-  /// To automatically clear the tags for the passed in blobs you can set
-  /// `tags_to_delete` on those tags, and they will be deleted once the collection is created.
-  [Throws=IrohError]
-  HashAndTag blobs_create_collection(Collection collection, SetTagOption tag, sequence<string> tags_to_delete);
-  /// Delete a blob.
-  [Throws=IrohError]
-  void blobs_delete_blob(Hash hash);
-
-  /// List all tags
-  ///
-  /// Note: this allocates for each `TagInfo`, if you have many `Tags`s this may be a prohibitively large list.
-  /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
-  [Throws=IrohError]
-  sequence<TagInfo> tags_list();
-  /// Delete a tag.
-  [Throws=IrohError]
-  void tags_delete(bytes name);
-};
+interface IrohNode {};
 
 /// Options passed to [`IrohNode.new`]. Controls the behaviour of an iroh node.
 dictionary NodeOptions {
@@ -553,24 +468,12 @@ interface SubscribeCallback {
 };
 
 /// Identifier for an [`Author`]
-interface AuthorId {
-  /// Get an [`AuthorId`] from a String
-  [Name=from_string, Throws=IrohError]
-  constructor(string str);
-  /// Returns true when both AuthorId's have the same value
-  boolean equal([ByRef] AuthorId other);
-};
+interface AuthorId {};
 
 /// Author key to insert entries in a document
 ///
 /// Internally, an author is a `SigningKey` which is used to sign entries.
-interface Author {
-  /// Get an [`Author`] from a String
-  [Name=from_string, Throws=IrohError]
-  constructor(string str);
-  /// Get the [`AuthorId`] of this Author
-  AuthorId id();
-};
+interface Author {};
 
 /// A single entry in a [`Doc`]
 ///
