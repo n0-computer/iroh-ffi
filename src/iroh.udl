@@ -1,43 +1,4 @@
-namespace iroh {
-  /// Set the logging level.
-  void set_log_level(LogLevel level);
-  /// Initialize the global metrics collection.
-  [Throws=IrohError]
-  void start_metrics_collection();
-  /// Helper function that creates a document key from a canonicalized path, removing the `root` and adding the `prefix`, if they exist
-  ///
-  /// Appends the null byte to the end of the key.
-  [Throws=IrohError]
-  bytes path_to_key(string path, string? prefix, string? root);
-  /// Helper function that translates a key that was derived from the [`path_to_key`] function back
-  /// into a path.
-  ///
-  /// If `prefix` exists, it will be stripped before converting back to a path
-  /// If `root` exists, will add the root as a parent to the created path
-  /// Removes any null byte that has been appened to the key
-  [Throws=IrohError]
-  string key_to_path(bytes key, string? prefix, string? root);
-};
-
-/// The logging level. See the rust (log crate)[https://docs.rs/log] for more information.
-enum LogLevel {
-  "Trace",
-  "Debug",
-  "Info",
-  "Warn",
-  "Error",
-  "Off",
-};
-
-/// An Iroh node. Allows you to sync, store, and transfer data.
-interface IrohNode {};
-
-/// Options passed to [`IrohNode.new`]. Controls the behaviour of an iroh node.
-dictionary NodeOptions {
-  /// How frequently the blob store should clean up unreferenced blobs, in milliseconds.
-  /// Set to 0 to disable gc
-  u64? gc_interval_millis;
-};
+namespace iroh {};
 
 /// The Hash and associated tag of a newly created collection
 dictionary HashAndTag {
@@ -89,26 +50,6 @@ dictionary TagInfo {
   BlobFormat format;
   /// The hash of the associated blob
   Hash hash;
-};
-
-/// Information about a direct address.
-interface DirectAddrInfo {
-  /// Get the reported address
-  string addr();
-  /// Get the reported latency, if it exists
-  duration? latency();
-  /// Get the last control message received by this node
-  LatencyAndControlMsg? last_control();
-  /// Get how long ago the last payload message was received for this node
-  duration? last_payload();
-};
-
-/// The latency and type of the control message
-dictionary LatencyAndControlMsg {
-  /// The latency of the control message
-  duration latency;
-  /// The type of control message, represented as a string
-  string control_msg;
 };
 
 /// A representation of a mutable, synchronizable key-value store.
@@ -387,15 +328,6 @@ interface NodeAddr {
   boolean equal([ByRef] NodeAddr other);
 };
 
-interface NodeStatus {
-    /// The node id and socket addresses of this node.
-    NodeAddr node_addr();
-    /// The bound listening addresses of the node
-    sequence<string> listen_addrs();
-    /// The version of the node
-    string version();
-};
-
 /// The `progress` method will be called for each `SubscribeProgress` event that is
 /// emitted during a `node.doc_subscribe`. Use the `SubscribeProgress.type()`
 /// method to check the `LiveEvent`
@@ -446,14 +378,6 @@ dictionary OpenState {
   u64 subscribers;
   /// By how many handles the replica is currently held open
   u64 handles;
-};
-
-/// Stats counter
-dictionary CounterStats {
-  /// The counter value
-  u32 value;
-  /// The counter description
-  string description;
 };
 
 /// Events informing about actions of the live sync progress
@@ -574,56 +498,6 @@ dictionary QueryOptions {
   ///
   /// When the limit is 0, the limit does not exist.
   u64 limit;
-};
-
-/// Information about a connection
-dictionary ConnectionInfo {
-  /// The node identifier of the endpoint. Also a public key.
-  PublicKey node_id;
-  /// Relay url, if available.
-  string? relay_url;
-  /// List of addresses at which this node might be reachable, plus any latency information we
-  /// have about that address and the last time the address was used.
-  sequence<DirectAddrInfo> addrs;
-  /// The type of connection we have to the peer, either direct or over relay.
-  ConnectionType conn_type;
-  /// The latency of the `conn_type`.
-  duration? latency;
-  /// Duration since the last time this peer was used.
-  duration? last_used;
-};
-
-/// The type of the connection
-enum ConnType {
-  /// Indicates you have a UDP connection.
-  "Direct",
-  /// Indicates you have a relayed connection.
-  "Relay",
-  /// Indicates you have an unverified UDP connection, and a relay connection for backup.
-  "Mixed",
-  /// Indicates you have no proof of connection.
-  "None",
-};
-
-/// The type of connection we have to the node
-interface ConnectionType{
-  /// Whether connection is direct, relay, mixed, or none
-  ConnType type();
-  /// Return the socket address if this is a direct connection
-  string as_direct();
-  /// Return the relay url if this is a relay connection
-  string as_relay();
-  /// Return the socket address and relay url if this is a mixed connection
-  ConnectionTypeMixed as_mixed();
-};
-
-
-/// The socket address and url id of the mixed connection
-dictionary ConnectionTypeMixed {
-    /// Address of the node
-    string addr;
-    /// Url of the relay node to which the node is connected
-    string relay_url;
 };
 
 /// A public key

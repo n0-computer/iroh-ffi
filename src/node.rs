@@ -6,8 +6,7 @@ use iroh::node::{Builder, FsNode};
 use crate::{IrohError, NodeAddr, PublicKey};
 
 /// Stats counter
-/// Counter stats
-#[derive(Debug)]
+#[derive(Debug, uniffi::Record)]
 pub struct CounterStats {
     /// The counter value
     pub value: u32,
@@ -16,9 +15,10 @@ pub struct CounterStats {
 }
 
 /// Information about a direct address.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, uniffi::Object)]
 pub struct DirectAddrInfo(pub(crate) iroh::net::endpoint::DirectAddrInfo);
 
+#[uniffi::export]
 impl DirectAddrInfo {
     /// Get the reported address
     pub fn addr(&self) -> String {
@@ -47,6 +47,7 @@ impl DirectAddrInfo {
 }
 
 /// The latency and type of the control message
+#[derive(Debug, uniffi::Record)]
 pub struct LatencyAndControlMsg {
     /// The latency of the control message
     pub latency: Duration,
@@ -60,7 +61,7 @@ pub struct LatencyAndControlMsg {
 // pub use iroh::net::magicsock::ControlMsg;
 
 /// Information about a connection
-#[derive(Debug)]
+#[derive(Debug, uniffi::Record)]
 pub struct ConnectionInfo {
     /// The node identifier of the endpoint. Also a public key.
     pub node_id: Arc<PublicKey>,
@@ -95,7 +96,7 @@ impl From<iroh::net::endpoint::ConnectionInfo> for ConnectionInfo {
 }
 
 /// The type of the connection
-#[derive(Debug)]
+#[derive(Debug, uniffi::Enum)]
 pub enum ConnType {
     /// Indicates you have a UDP connection.
     Direct,
@@ -108,7 +109,7 @@ pub enum ConnType {
 }
 
 /// The type of connection we have to the node
-#[derive(Debug)]
+#[derive(Debug, uniffi::Object)]
 pub enum ConnectionType {
     /// Direct UDP connection
     Direct(String),
@@ -123,6 +124,7 @@ pub enum ConnectionType {
     None,
 }
 
+#[uniffi::export]
 impl ConnectionType {
     /// Whether connection is direct, relay, mixed, or none
     pub fn r#type(&self) -> ConnType {
@@ -163,6 +165,7 @@ impl ConnectionType {
 }
 
 /// The socket address and url of the mixed connection
+#[derive(Debug, uniffi::Record)]
 pub struct ConnectionTypeMixed {
     /// Address of the node
     pub addr: String,
@@ -187,6 +190,7 @@ impl From<iroh::net::endpoint::ConnectionType> for ConnectionType {
     }
 }
 /// Options passed to [`IrohNode.new`]. Controls the behaviour of an iroh node.
+#[derive(Debug, uniffi::Record)]
 pub struct NodeOptions {
     /// How frequently the blob store should clean up unreferenced blobs, in milliseconds.
     /// Set to 0 to disable gc
@@ -219,6 +223,7 @@ impl Default for NodeOptions {
 }
 
 /// An Iroh node. Allows you to sync, store, and transfer data.
+#[derive(uniffi::Object)]
 pub struct IrohNode {
     pub(crate) node: FsNode,
 }
@@ -254,7 +259,7 @@ impl IrohNode {
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn stats(&self) -> Result<HashMap<String, CounterStats>, IrohError> {
         let stats = self.node.stats().await?;
-        Ok(stats
+        let stats = stats
             .into_iter()
             .map(|(k, v)| {
                 (
@@ -265,7 +270,8 @@ impl IrohNode {
                     },
                 )
             })
-            .collect())
+            .collect();
+        Ok(stats)
     }
 
     /// Return `ConnectionInfo`s for each connection we have to another iroh node.
@@ -301,6 +307,11 @@ impl IrohNode {
         let res = self.node.status().await.map(|n| Arc::new(n.into()))?;
         Ok(res)
     }
+
+    /// The string representation of the PublicKey of this node.
+    pub fn node_id(&self) -> String {
+        self.node.node_id().to_string()
+    }
 }
 
 impl IrohNode {
@@ -315,17 +326,8 @@ impl IrohNode {
     }
 }
 
-#[uniffi::export]
-impl IrohNode {
-    /// The string representation of the PublicKey of this node.
-    #[uniffi::method]
-    pub fn node_id(&self) -> String {
-        self.node.node_id().to_string()
-    }
-}
-
 /// The response to a status request
-#[derive(Debug)]
+#[derive(Debug, uniffi::Object)]
 pub struct NodeStatus(iroh::client::NodeStatus);
 
 impl From<iroh::client::NodeStatus> for NodeStatus {
@@ -334,6 +336,7 @@ impl From<iroh::client::NodeStatus> for NodeStatus {
     }
 }
 
+#[uniffi::export]
 impl NodeStatus {
     /// The node id and socket addresses of this node.
     pub fn node_addr(&self) -> Arc<NodeAddr> {
