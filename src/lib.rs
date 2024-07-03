@@ -21,7 +21,7 @@ use iroh::metrics::try_init_metrics_collection;
 use tracing_subscriber::filter::LevelFilter;
 
 // This macro includes the scaffolding for the Iroh FFI bindings.
-uniffi::include_scaffolding!("iroh");
+uniffi::setup_scaffolding!();
 
 /// The logging level. See the rust (log crate)[https://docs.rs/log] for more information.
 #[derive(Debug, uniffi::Enum)]

@@ -8,8 +8,12 @@ use crate::error::IrohError;
 /// A token containing everything to get a file from the provider.
 ///
 /// It is a single item which can be easily serialized and deserialized.
+#[derive(Debug, uniffi::Object)]
 pub struct BlobTicket(iroh::base::ticket::BlobTicket);
+
+#[uniffi::export]
 impl BlobTicket {
+    #[uniffi::constructor]
     pub fn new(str: String) -> Result<Self, IrohError> {
         let ticket = iroh::base::ticket::BlobTicket::from_str(&str).map_err(anyhow::Error::from)?;
         Ok(BlobTicket(ticket))
@@ -50,6 +54,7 @@ impl BlobTicket {
 }
 
 /// Options when creating a ticket
+#[derive(Debug, uniffi::Enum)]
 pub enum AddrInfoOptions {
     /// Only the Node ID is added.
     ///

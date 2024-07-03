@@ -5,8 +5,7 @@ use futures::TryStreamExt;
 use crate::{IrohError, IrohNode};
 
 /// Identifier for an [`Author`]
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[uniffi::export(Display)]
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Object)]
 pub struct AuthorId(pub(crate) iroh::docs::AuthorId);
 
 impl std::fmt::Display for AuthorId {
@@ -34,8 +33,7 @@ impl AuthorId {
 /// Author key to insert entries in a document
 ///
 /// Internally, an author is a `SigningKey` which is used to sign entries.
-#[derive(Debug, Clone)]
-#[uniffi::export(Display)]
+#[derive(Debug, Clone, uniffi::Object)]
 pub struct Author(pub(crate) iroh::docs::Author);
 
 #[uniffi::export]

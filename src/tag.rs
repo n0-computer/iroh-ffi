@@ -5,6 +5,7 @@ use bytes::Bytes;
 use futures::TryStreamExt;
 
 /// A response to a list collections request
+#[derive(Debug, uniffi::Record)]
 pub struct TagInfo {
     /// The tag
     pub name: Vec<u8>,

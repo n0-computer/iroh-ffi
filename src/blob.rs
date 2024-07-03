@@ -312,7 +312,7 @@ impl IrohNode {
 }
 
 /// The Hash and associated tag of a newly created collection
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct HashAndTag {
     /// The hash of the collection
     pub hash: Arc<Hash>,
@@ -321,7 +321,7 @@ pub struct HashAndTag {
 }
 
 /// Outcome of a blob add operation.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct BlobAddOutcome {
     /// The hash of the blob
     pub hash: Arc<Hash>,
@@ -345,7 +345,7 @@ impl From<iroh::client::blobs::AddOutcome> for BlobAddOutcome {
 }
 
 /// An option for commands that allow setting a Tag
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Object)]
 pub enum SetTagOption {
     /// A tag will be automatically generated
     Auto,
@@ -353,13 +353,16 @@ pub enum SetTagOption {
     Named(Vec<u8>),
 }
 
+#[uniffi::export]
 impl SetTagOption {
     /// Indicate you want an automatically generated tag
+    #[uniffi::constructor]
     pub fn auto() -> Self {
         SetTagOption::Auto
     }
 
     /// Indicate you want a named tag
+    #[uniffi::constructor]
     pub fn named(tag: Vec<u8>) -> Self {
         SetTagOption::Named(tag)
     }
@@ -377,7 +380,7 @@ impl From<SetTagOption> for iroh::blobs::util::SetTagOption {
 }
 
 /// Whether to wrap the added data in a collection.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Object)]
 pub enum WrapOption {
     /// Do not wrap the file or directory.
     NoWrap,
@@ -388,13 +391,16 @@ pub enum WrapOption {
     },
 }
 
+#[uniffi::export]
 impl WrapOption {
     /// Indicate you do not wrap the file or directory.
+    #[uniffi::constructor]
     pub fn no_wrap() -> Self {
         WrapOption::NoWrap
     }
 
     /// Indicate you want to wrap the file or directory in a colletion, with an optional name
+    #[uniffi::constructor]
     pub fn wrap(name: Option<String>) -> Self {
         WrapOption::Wrap { name }
     }
@@ -410,8 +416,7 @@ impl From<WrapOption> for iroh::client::blobs::WrapOption {
 }
 
 /// Hash type used throughout Iroh. A blake3 hash.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[uniffi::export(Display)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Object)]
 pub struct Hash(pub(crate) iroh::blobs::Hash);
 
 impl From<iroh::blobs::Hash> for Hash {
@@ -420,8 +425,10 @@ impl From<iroh::blobs::Hash> for Hash {
     }
 }
 
+#[uniffi::export]
 impl Hash {
     /// Calculate the hash of the provide bytes.
+    #[uniffi::constructor]
     pub fn new(buf: Vec<u8>) -> Self {
         Hash(iroh::blobs::Hash::new(buf))
     }
@@ -432,6 +439,7 @@ impl Hash {
     }
 
     /// Create a `Hash` from its raw bytes representation.
+    #[uniffi::constructor]
     pub fn from_bytes(bytes: Vec<u8>) -> Result<Self, IrohError> {
         let bytes: [u8; 32] = bytes.try_into().map_err(|b: Vec<u8>| {
             anyhow::anyhow!("expected byte array of length 32, got {}", b.len())
@@ -440,6 +448,7 @@ impl Hash {
     }
 
     /// Make a Hash from hex string
+    #[uniffi::constructor]
     pub fn from_string(s: String) -> Result<Self, IrohError> {
         let key = iroh::blobs::Hash::from_str(&s).map_err(anyhow::Error::from)?;
         Ok(key.into())
@@ -471,12 +480,13 @@ impl From<Hash> for iroh::blobs::Hash {
 /// The `progress` method will be called for each `AddProgress` event that is
 /// emitted during a `node.blobs_add_from_path`. Use the `AddProgress.type()`
 /// method to check the `AddProgressType`
+#[uniffi::export(with_foreign)]
 pub trait AddCallback: Send + Sync + 'static {
     fn progress(&self, progress: Arc<AddProgress>) -> Result<(), CallbackError>;
 }
 
 /// The different types of AddProgress events
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone, uniffi::Enum)]
 pub enum AddProgressType {
     /// An item was found with name `name`, from now on referred to via `id`
     Found,
@@ -493,7 +503,7 @@ pub enum AddProgressType {
 }
 
 /// An AddProgress event indicating an item was found with name `name`, that can be referred to by `id`
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct AddProgressFound {
     /// A new unique id for this entry.
     pub id: u64,
@@ -504,7 +514,7 @@ pub struct AddProgressFound {
 }
 
 /// An AddProgress event indicating we got progress ingesting item `id`.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct AddProgressProgress {
     /// The unique id of the entry.
     pub id: u64,
@@ -513,7 +523,7 @@ pub struct AddProgressProgress {
 }
 
 /// An AddProgress event indicated we are done with `id` and now have a hash `hash`
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct AddProgressDone {
     /// The unique id of the entry.
     pub id: u64,
@@ -522,7 +532,7 @@ pub struct AddProgressDone {
 }
 
 /// An AddProgress event indicating we are done with the the whole operation
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct AddProgressAllDone {
     /// The hash of the created data.
     pub hash: Arc<Hash>,
@@ -533,13 +543,13 @@ pub struct AddProgressAllDone {
 }
 
 /// An AddProgress event indicating we got an error and need to abort
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct AddProgressAbort {
     pub error: String,
 }
 
 /// Progress updates for the add operation.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Object)]
 pub enum AddProgress {
     /// An item was found with name `name`, from now on referred to via `id`
     Found(AddProgressFound),
@@ -586,6 +596,7 @@ impl From<iroh::blobs::provider::AddProgress> for AddProgress {
     }
 }
 
+#[uniffi::export]
 impl AddProgress {
     /// Get the type of event
     pub fn r#type(&self) -> AddProgressType {
@@ -638,7 +649,7 @@ impl AddProgress {
 }
 
 /// A format identifier
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, uniffi::Enum)]
 pub enum BlobFormat {
     /// Raw blob
     Raw,
@@ -665,9 +676,13 @@ impl From<BlobFormat> for iroh::blobs::BlobFormat {
 }
 
 /// Options to download  data specified by the hash.
+#[derive(Debug, uniffi::Object)]
 pub struct BlobDownloadOptions(iroh::client::blobs::DownloadOptions);
+
+#[uniffi::export]
 impl BlobDownloadOptions {
     /// Create a BlobDownloadRequest
+    #[uniffi::constructor]
     pub fn new(
         format: BlobFormat,
         node: Arc<NodeAddr>,
@@ -689,6 +704,7 @@ impl From<iroh::client::blobs::DownloadOptions> for BlobDownloadOptions {
 }
 
 /// The expected format of a hash being exported.
+#[derive(Debug, uniffi::Enum)]
 pub enum BlobExportFormat {
     /// The hash refers to any blob and will be exported to a single file.
     Blob,
@@ -719,6 +735,7 @@ impl From<BlobExportFormat> for iroh::blobs::store::ExportFormat {
 /// does not make any sense. E.g. an in memory implementation will always have
 /// to copy the file into memory. Also, a disk based implementation might choose
 /// to copy small files even if the mode is `Reference`.
+#[derive(Debug, uniffi::Enum)]
 pub enum BlobExportMode {
     /// This mode will copy the file to the target directory.
     ///
@@ -748,12 +765,13 @@ impl From<BlobExportMode> for iroh::blobs::store::ExportMode {
 /// The `progress` method will be called for each `DownloadProgress` event that is emitted during
 /// a `node.blobs_download`. Use the `DownloadProgress.type()` method to check the
 /// `DownloadProgressType` of the event.
+#[uniffi::export(with_foreign)]
 pub trait DownloadCallback: Send + Sync + 'static {
     fn progress(&self, progress: Arc<DownloadProgress>) -> Result<(), CallbackError>;
 }
 
 /// The different types of DownloadProgress events
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Enum)]
 pub enum DownloadProgressType {
     InitialState,
     FoundLocal,
@@ -767,7 +785,7 @@ pub enum DownloadProgressType {
 }
 
 /// A DownloadProgress event indicating an item was found with hash `hash`, that can be referred to by `id`
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct DownloadProgressFound {
     /// A new unique id for this entry.
     pub id: u64,
@@ -780,7 +798,7 @@ pub struct DownloadProgressFound {
 }
 
 /// A DownloadProgress event indicating an entry was found locally
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct DownloadProgressFoundLocal {
     /// child offset
     pub child: u64,
@@ -793,7 +811,7 @@ pub struct DownloadProgressFoundLocal {
 }
 
 /// A DownloadProgress event indicating an item was found with hash `hash`, that can be referred to by `id`
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct DownloadProgressFoundHashSeq {
     /// Number of children in the collection, if known.
     pub children: u64,
@@ -802,7 +820,7 @@ pub struct DownloadProgressFoundHashSeq {
 }
 
 /// A DownloadProgress event indicating we got progress ingesting item `id`.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct DownloadProgressProgress {
     /// The unique id of the entry.
     pub id: u64,
@@ -811,14 +829,14 @@ pub struct DownloadProgressProgress {
 }
 
 /// A DownloadProgress event indicated we are done with `id`
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct DownloadProgressDone {
     /// The unique id of the entry.
     pub id: u64,
 }
 
 /// A DownloadProgress event indicating we are done with the whole operation
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct DownloadProgressAllDone {
     /// The number of bytes written
     pub bytes_written: u64,
@@ -829,12 +847,12 @@ pub struct DownloadProgressAllDone {
 }
 
 /// A DownloadProgress event indicating we got an error and need to abort
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct DownloadProgressAbort {
     pub error: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct DownloadProgressInitialState {
     // TODO(b5) - numerous fields missing
     // /// The root blob of this transfer (may be a hash seq),
@@ -850,7 +868,7 @@ pub struct DownloadProgressInitialState {
 }
 
 /// Progress updates for the get operation.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Object)]
 pub enum DownloadProgress {
     /// Initial state if subscribing to a running or queued transfer.
     InitialState(DownloadProgressInitialState),
@@ -934,6 +952,7 @@ impl From<iroh::blobs::get::db::DownloadProgress> for DownloadProgress {
     }
 }
 
+#[uniffi::export]
 impl DownloadProgress {
     /// Get the type of event
     /// note that there is no `as_connected` method, as the `Connected` event has no associated data
@@ -1009,9 +1028,10 @@ impl DownloadProgress {
 }
 
 /// A chunk range specification as a sequence of chunk offsets
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Object)]
 pub struct RangeSpec(pub(crate) iroh::blobs::protocol::RangeSpec);
 
+#[uniffi::export]
 impl RangeSpec {
     /// Checks if this [`RangeSpec`] does not select any chunks in the blob
     pub fn is_empty(&self) -> bool {
@@ -1031,7 +1051,7 @@ impl From<iroh::blobs::protocol::RangeSpec> for RangeSpec {
 }
 
 /// A response to a list blobs request
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, uniffi::Record)]
 pub struct BlobInfo {
     /// Location of the blob
     pub path: String,
@@ -1052,7 +1072,7 @@ impl From<iroh::client::blobs::BlobInfo> for BlobInfo {
 }
 
 /// A response to a list blobs request
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
 pub struct IncompleteBlobInfo {
     /// The size we got
     pub size: u64,
@@ -1073,7 +1093,7 @@ impl From<iroh::client::blobs::IncompleteBlobInfo> for IncompleteBlobInfo {
 }
 
 /// A response to a list collections request
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
 pub struct CollectionInfo {
     /// Tag of the collection
     pub tag: Vec<u8>,
@@ -1101,7 +1121,7 @@ impl From<iroh::client::blobs::CollectionInfo> for CollectionInfo {
 }
 
 /// A collection of blobs
-#[derive(Debug)]
+#[derive(Debug, uniffi::Object)]
 pub struct Collection(pub(crate) RwLock<iroh::blobs::format::collection::Collection>);
 
 impl From<iroh::blobs::format::collection::Collection> for Collection {
@@ -1117,9 +1137,11 @@ impl From<Collection> for iroh::blobs::format::collection::Collection {
     }
 }
 
+#[uniffi::export]
 impl Collection {
     /// Create a new empty collection
     #[allow(clippy::new_without_default)]
+    #[uniffi::constructor]
     pub fn new() -> Self {
         Collection(RwLock::new(
             iroh::blobs::format::collection::Collection::default(),
@@ -1180,7 +1202,7 @@ impl Collection {
 }
 
 /// `LinkAndName` includes a name and a hash for a blob in a collection
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, uniffi::Record)]
 pub struct LinkAndName {
     /// The name associated with this [`Hash`]
     pub name: String,

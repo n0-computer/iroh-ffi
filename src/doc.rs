@@ -9,7 +9,7 @@ use crate::{
     ticket::AddrInfoOptions, AuthorId, CallbackError, Hash, IrohError, IrohNode, PublicKey,
 };
 
-#[derive(Debug)]
+#[derive(Debug, uniffi::Enum)]
 pub enum CapabilityKind {
     /// A writable replica.
     Write = 1,
@@ -118,6 +118,7 @@ impl IrohNode {
 }
 
 /// The namespace id and CapabilityKind (read/write) of the doc
+#[derive(Debug, uniffi::Record)]
 pub struct NamespaceAndCapability {
     /// The namespace id of the doc
     pub namespace: String,
@@ -126,7 +127,7 @@ pub struct NamespaceAndCapability {
 }
 
 /// A representation of a mutable, synchronizable key-value store.
-#[derive(Clone)]
+#[derive(Clone, uniffi::Object)]
 pub struct Doc {
     pub(crate) inner: MemDoc,
 }
@@ -363,7 +364,7 @@ impl Doc {
 }
 
 /// Download policy to decide which content blobs shall be downloaded.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Object)]
 pub enum DownloadPolicy {
     /// Do not download any key unless it matches one of the filters.
     NothingExcept(Vec<Arc<FilterKind>>),
@@ -371,23 +372,29 @@ pub enum DownloadPolicy {
     EverythingExcept(Vec<Arc<FilterKind>>),
 }
 
+#[uniffi::export]
 impl DownloadPolicy {
     /// Download everything
+    #[uniffi::constructor]
     pub fn everything() -> Self {
         DownloadPolicy::EverythingExcept(Vec::default())
     }
 
     /// Download nothing
+    #[uniffi::constructor]
     pub fn nothing() -> Self {
         DownloadPolicy::NothingExcept(Vec::default())
     }
 
     /// Download nothing except keys that match the given filters
+
+    #[uniffi::constructor]
     pub fn nothing_except(filters: Vec<Arc<FilterKind>>) -> Self {
         DownloadPolicy::NothingExcept(filters)
     }
 
     /// Download everything except keys that match the given filters
+    #[uniffi::constructor]
     pub fn everything_except(filters: Vec<Arc<FilterKind>>) -> Self {
         DownloadPolicy::EverythingExcept(filters)
     }
@@ -428,9 +435,10 @@ impl From<DownloadPolicy> for iroh::docs::store::DownloadPolicy {
 }
 
 /// Filter strategy used in download policies.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Object)]
 pub struct FilterKind(pub(crate) iroh::docs::store::FilterKind);
 
+#[uniffi::export]
 impl FilterKind {
     /// Verifies whether this filter matches a given key
     pub fn matches(&self, key: Vec<u8>) -> bool {
@@ -438,11 +446,13 @@ impl FilterKind {
     }
 
     /// Returns a FilterKind that matches if the contained bytes are a prefix of the key.
+    #[uniffi::constructor]
     pub fn prefix(prefix: Vec<u8>) -> FilterKind {
         FilterKind(iroh::docs::store::FilterKind::Prefix(Bytes::from(prefix)))
     }
 
     /// Returns a FilterKind that matches if the contained bytes and the key are the same.
+    #[uniffi::constructor]
     pub fn exact(key: Vec<u8>) -> FilterKind {
         FilterKind(iroh::docs::store::FilterKind::Exact(Bytes::from(key)))
     }
@@ -455,7 +465,7 @@ impl From<iroh::docs::store::FilterKind> for FilterKind {
 }
 
 /// The state for an open replica.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, uniffi::Record)]
 pub struct OpenState {
     /// Whether to accept sync requests for this replica.
     pub sync: bool,
@@ -476,15 +486,17 @@ impl From<iroh::docs::actor::OpenState> for OpenState {
 }
 
 /// A peer and it's addressing information.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Object)]
 pub struct NodeAddr {
     node_id: Arc<PublicKey>,
     relay_url: Option<String>,
     addresses: Vec<String>,
 }
 
+#[uniffi::export]
 impl NodeAddr {
     /// Create a new [`NodeAddr`] with empty [`AddrInfo`].
+    #[uniffi::constructor]
     pub fn new(node_id: &PublicKey, derp_url: Option<String>, addresses: Vec<String>) -> Self {
         Self {
             node_id: Arc::new(node_id.clone()),
@@ -547,7 +559,7 @@ impl From<iroh::net::endpoint::NodeAddr> for NodeAddr {
 }
 
 /// Intended capability for document share tickets
-#[derive(Debug)]
+#[derive(Debug, uniffi::Enum)]
 pub enum ShareMode {
     /// Read-only access
     Read,
@@ -569,7 +581,7 @@ impl From<ShareMode> for iroh::client::docs::ShareMode {
 /// An entry is identified by a key, its [`AuthorId`], and the [`Doc`]'s
 /// namespace id. Its value is the 32-byte BLAKE3 [`hash`]
 /// of the entry's content data, the size of this content data, and a timestamp.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Object)]
 pub struct Entry(pub(crate) iroh::client::docs::Entry);
 
 impl From<iroh::client::docs::Entry> for Entry {
@@ -628,7 +640,7 @@ impl Entry {
 }
 
 ///d Fields by which the query can be sorted
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, uniffi::Enum)]
 pub enum SortBy {
     /// Sort by key, then author.
     KeyAuthor,
@@ -656,7 +668,7 @@ impl From<SortBy> for iroh::docs::store::SortBy {
 }
 
 /// Sort direction
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, uniffi::Enum)]
 pub enum SortDirection {
     /// Sort ascending
     #[default]
@@ -686,11 +698,11 @@ impl From<SortDirection> for iroh::docs::store::SortDirection {
 /// Build a Query to search for an entry or entries in a doc.
 ///
 /// Use this with `QueryOptions` to determine sorting, grouping, and pagination.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, uniffi::Object)]
 pub struct Query(pub(crate) iroh::docs::store::Query);
 
 /// Options for sorting and pagination for using [`Query`]s.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, uniffi::Record)]
 pub struct QueryOptions {
     /// Sort by author or key first.
     ///
@@ -708,6 +720,7 @@ pub struct QueryOptions {
     pub limit: u64,
 }
 
+#[uniffi::export]
 impl Query {
     /// Query all records.
     ///
@@ -716,6 +729,7 @@ impl Query {
     ///     direction: SortDirection::Asc
     ///     offset: None
     ///     limit: None
+    #[uniffi::constructor]
     pub fn all(opts: Option<QueryOptions>) -> Self {
         let mut builder = iroh::docs::store::Query::all();
 
@@ -738,6 +752,7 @@ impl Query {
     ///     direction: SortDirection::Asc
     ///     offset: None
     ///     limit: None
+    #[uniffi::constructor]
     pub fn single_latest_per_key(opts: Option<QueryOptions>) -> Self {
         let mut builder = iroh::docs::store::Query::single_latest_per_key();
 
@@ -755,6 +770,7 @@ impl Query {
 
     /// Query exactly the key, but only the latest entry for it, omitting older entries if the entry was written
     /// to by multiple authors.
+    #[uniffi::constructor]
     pub fn single_latest_per_key_exact(key: Vec<u8>) -> Self {
         let builder = iroh::docs::store::Query::single_latest_per_key()
             .key_exact(key)
@@ -769,6 +785,7 @@ impl Query {
     ///     direction: SortDirection::Asc
     ///     offset: None
     ///     limit: None
+    #[uniffi::constructor]
     pub fn single_latest_per_key_prefix(prefix: Vec<u8>, opts: Option<QueryOptions>) -> Self {
         let mut builder = iroh::docs::store::Query::single_latest_per_key().key_prefix(prefix);
 
@@ -790,6 +807,7 @@ impl Query {
     ///     direction: SortDirection::Asc
     ///     offset: None
     ///     limit: None
+    #[uniffi::constructor]
     pub fn author(author: &AuthorId, opts: Option<QueryOptions>) -> Self {
         let mut builder = iroh::docs::store::Query::author(author.0);
 
@@ -812,6 +830,7 @@ impl Query {
     ///     direction: SortDirection::Asc
     ///     offset: None
     ///     limit: None
+    #[uniffi::constructor]
     pub fn key_exact(key: Vec<u8>, opts: Option<QueryOptions>) -> Self {
         let mut builder = iroh::docs::store::Query::key_exact(key);
 
@@ -828,6 +847,7 @@ impl Query {
     }
 
     /// Create a Query for a single key and author.
+    #[uniffi::constructor]
     pub fn author_key_exact(author: &AuthorId, key: Vec<u8>) -> Self {
         let builder = iroh::docs::store::Query::author(author.0).key_exact(key);
         Query(builder.build())
@@ -840,6 +860,7 @@ impl Query {
     ///     direction: SortDirection::Asc
     ///     offset: None
     ///     limit: None
+    #[uniffi::constructor]
     pub fn key_prefix(prefix: Vec<u8>, opts: Option<QueryOptions>) -> Self {
         let mut builder = iroh::docs::store::Query::key_prefix(prefix);
 
@@ -861,6 +882,7 @@ impl Query {
     ///     direction: SortDirection::Asc
     ///     offset: None
     ///     limit: None
+    #[uniffi::constructor]
     pub fn author_key_prefix(
         author: &AuthorId,
         prefix: Vec<u8>,
@@ -894,12 +916,13 @@ impl Query {
 /// The `progress` method will be called for each `SubscribeProgress` event that is
 /// emitted during a `node.doc_subscribe`. Use the `SubscribeProgress.type()`
 /// method to check the `LiveEvent`
+#[uniffi::export(with_foreign)]
 pub trait SubscribeCallback: Send + Sync + 'static {
     fn event(&self, event: Arc<LiveEvent>) -> Result<(), CallbackError>;
 }
 
 /// Events informing about actions of the live sync progress
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, uniffi::Object)]
 #[allow(clippy::large_enum_variant)]
 pub enum LiveEvent {
     /// A local insertion.
@@ -940,6 +963,7 @@ pub enum LiveEvent {
 }
 
 /// The type of events that can be emitted during the live sync progress
+#[derive(Debug, uniffi::Enum)]
 pub enum LiveEventType {
     /// A local insertion.
     InsertLocal,
@@ -965,6 +989,7 @@ pub enum LiveEventType {
     PendingContentReady,
 }
 
+#[uniffi::export]
 impl LiveEvent {
     /// The type LiveEvent
     pub fn r#type(&self) -> LiveEventType {
@@ -1070,7 +1095,7 @@ impl From<iroh::client::docs::LiveEvent> for LiveEvent {
 }
 
 /// Outcome of a sync operation
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
 pub struct SyncEvent {
     /// Peer we synced with
     pub peer: Arc<PublicKey>,
@@ -1100,10 +1125,31 @@ impl From<iroh::client::docs::SyncEvent> for SyncEvent {
 }
 
 /// Why we started a sync request
-pub use iroh::client::docs::SyncReason;
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, Copy, uniffi::Enum)]
+pub enum SyncReason {
+    /// Direct join request via API
+    DirectJoin,
+    /// Peer showed up as new neighbor in the gossip swarm
+    NewNeighbor,
+    /// We synced after receiving a sync report that indicated news for us
+    SyncReport,
+    /// We received a sync report while a sync was running, so run again afterwars
+    Resync,
+}
+
+impl From<iroh::client::docs::SyncReason> for SyncReason {
+    fn from(value: iroh::client::docs::SyncReason) -> Self {
+        match value {
+            iroh::client::docs::SyncReason::DirectJoin => Self::DirectJoin,
+            iroh::client::docs::SyncReason::NewNeighbor => Self::NewNeighbor,
+            iroh::client::docs::SyncReason::SyncReport => Self::SyncReport,
+            iroh::client::docs::SyncReason::Resync => Self::Resync,
+        }
+    }
+}
 
 /// Why we performed a sync exchange
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Enum)]
 pub enum Origin {
     /// public, use a unit variant
     Connect { reason: SyncReason },
@@ -1114,14 +1160,16 @@ pub enum Origin {
 impl From<iroh::client::docs::Origin> for Origin {
     fn from(value: iroh::client::docs::Origin) -> Self {
         match value {
-            iroh::client::docs::Origin::Connect(reason) => Self::Connect { reason },
+            iroh::client::docs::Origin::Connect(reason) => Self::Connect {
+                reason: reason.into(),
+            },
             iroh::client::docs::Origin::Accept => Self::Accept,
         }
     }
 }
 
 /// Outcome of an InsertRemove event.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, uniffi::Record)]
 pub struct InsertRemoteEvent {
     /// The peer that sent us the entry.
     pub from: Arc<PublicKey>,
@@ -1132,7 +1180,7 @@ pub struct InsertRemoteEvent {
 }
 
 /// Whether the content status is available on a node.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Enum)]
 pub enum ContentStatus {
     /// The content is completely available.
     Complete,
@@ -1155,12 +1203,13 @@ impl From<iroh::docs::ContentStatus> for ContentStatus {
 /// The `progress` method will be called for each `DocImportProgress` event that is
 /// emitted during a `doc.import_file()` call. Use the `DocImportProgress.type()`
 /// method to check the `DocImportProgressType`
+#[uniffi::export(with_foreign)]
 pub trait DocImportFileCallback: Send + Sync + 'static {
     fn progress(&self, progress: Arc<DocImportProgress>) -> Result<(), CallbackError>;
 }
 
 /// The type of `DocImportProgress` event
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Enum)]
 pub enum DocImportProgressType {
     /// An item was found with name `name`, from now on referred to via `id`
     Found,
@@ -1177,7 +1226,7 @@ pub enum DocImportProgressType {
 }
 
 /// A DocImportProgress event indicating a file was found with name `name`, from now on referred to via `id`
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct DocImportProgressFound {
     /// A new unique id for this entry.
     pub id: u64,
@@ -1188,7 +1237,7 @@ pub struct DocImportProgressFound {
 }
 
 /// A DocImportProgress event indicating we've made progress ingesting item `id`.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct DocImportProgressProgress {
     /// The unique id of the entry.
     pub id: u64,
@@ -1197,7 +1246,7 @@ pub struct DocImportProgressProgress {
 }
 
 /// A DocImportProgress event indicating we are finished adding `id` to the data store and the hash is `hash`.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct DocImportProgressIngestDone {
     /// The unique id of the entry.
     pub id: u64,
@@ -1206,21 +1255,21 @@ pub struct DocImportProgressIngestDone {
 }
 
 /// A DocImportProgress event indicating we are done setting the entry to the doc
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct DocImportProgressAllDone {
     /// The key of the entry
     pub key: Vec<u8>,
 }
 
 /// A DocImportProgress event indicating we got an error and need to abort
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct DocImportProgressAbort {
     /// The error message
     pub error: String,
 }
 
 /// Progress updates for the doc import file operation.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Object)]
 pub enum DocImportProgress {
     /// An item was found with name `name`, from now on referred to via `id`
     Found(DocImportProgressFound),
@@ -1263,6 +1312,7 @@ impl From<iroh::client::docs::ImportProgress> for DocImportProgress {
     }
 }
 
+#[uniffi::export]
 impl DocImportProgress {
     /// Get the type of event
     pub fn r#type(&self) -> DocImportProgressType {
@@ -1319,12 +1369,13 @@ impl DocImportProgress {
 /// The `progress` method will be called for each `DocExportProgress` event that is
 /// emitted during a `doc.export_file()` call. Use the `DocExportProgress.type()`
 /// method to check the `DocExportProgressType`
+#[uniffi::export(with_foreign)]
 pub trait DocExportFileCallback: Send + Sync + 'static {
     fn progress(&self, progress: Arc<DocExportProgress>) -> Result<(), CallbackError>;
 }
 
 /// The type of `DocExportProgress` event
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Enum)]
 pub enum DocExportProgressType {
     /// An item was found with name `name`, from now on referred to via `id`
     Found,
@@ -1341,7 +1392,7 @@ pub enum DocExportProgressType {
 }
 
 /// A DocExportProgress event indicating a file was found with name `name`, from now on referred to via `id`
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct DocExportProgressFound {
     /// A new unique id for this entry.
     pub id: u64,
@@ -1354,7 +1405,7 @@ pub struct DocExportProgressFound {
 }
 
 /// A DocExportProgress event indicating we've made progress exporting item `id`.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct DocExportProgressProgress {
     /// The unique id of the entry.
     pub id: u64,
@@ -1363,21 +1414,21 @@ pub struct DocExportProgressProgress {
 }
 
 /// A DocExportProgress event indicating a single blob wit `id` is done
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct DocExportProgressDone {
     /// The unique id of the entry.
     pub id: u64,
 }
 
 /// A DocExportProgress event indicating we got an error and need to abort
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct DocExportProgressAbort {
     /// The error message
     pub error: String,
 }
 
 /// Progress updates for the doc import file operation.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Object)]
 pub enum DocExportProgress {
     /// An item was found with name `name`, from now on referred to via `id`
     Found(DocExportProgressFound),
@@ -1426,6 +1477,7 @@ impl From<iroh::blobs::export::ExportProgress> for DocExportProgress {
     }
 }
 
+#[uniffi::export]
 impl DocExportProgress {
     /// Get the type of event
     pub fn r#type(&self) -> DocExportProgressType {
