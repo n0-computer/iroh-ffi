@@ -1238,10 +1238,12 @@ mod tests {
         assert!(hash_0.equal(&hash));
     }
 
-    #[test]
-    fn test_blobs_add_get_bytes() {
+    #[tokio::test]
+    async fn test_blobs_add_get_bytes() {
         let dir = tempfile::tempdir().unwrap();
-        let node = IrohNode::new(dir.into_path().display().to_string()).unwrap();
+        let node = IrohNode::new(dir.into_path().display().to_string())
+            .await
+            .unwrap();
 
         let sizes = [1, 10, 100, 1000, 10000, 100000];
         let mut hashes = Vec::new();
@@ -1272,10 +1274,12 @@ mod tests {
         hash
     }
 
-    #[test]
-    fn test_blob_read_write_path() {
+    #[tokio::test]
+    async fn test_blob_read_write_path() {
         let iroh_dir = tempfile::tempdir().unwrap();
-        let node = IrohNode::new(iroh_dir.into_path().display().to_string()).unwrap();
+        let node = IrohNode::new(iroh_dir.into_path().display().to_string())
+            .await
+            .unwrap();
 
         // create bytes
         let blob_size = 100;
@@ -1364,8 +1368,8 @@ mod tests {
         assert_eq!(bytes, got_bytes);
     }
 
-    #[test]
-    fn test_blobs_list_collections() {
+    #[tokio::test]
+    async fn test_blobs_list_collections() {
         let dir = tempfile::tempdir().unwrap();
         let num_blobs = 3;
         let blob_size = 100;
@@ -1378,7 +1382,9 @@ mod tests {
         }
 
         let iroh_dir = tempfile::tempdir().unwrap();
-        let node = IrohNode::new(iroh_dir.into_path().display().to_string()).unwrap();
+        let node = IrohNode::new(iroh_dir.into_path().display().to_string())
+            .await
+            .unwrap();
 
         // ensure there are no blobs to start
         let blobs = node.blobs_list().unwrap();
@@ -1461,8 +1467,8 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_list_and_delete() {
+    #[tokio::test]
+    async fn test_list_and_delete() {
         setup_logging();
 
         let iroh_dir = tempfile::tempdir().unwrap();
@@ -1470,8 +1476,9 @@ mod tests {
         let opts = NodeOptions {
             gc_interval_millis: Some(100),
         };
-        let node =
-            IrohNode::with_options(iroh_dir.into_path().display().to_string(), opts).unwrap();
+        let node = IrohNode::with_options(iroh_dir.into_path().display().to_string(), opts)
+            .await
+            .unwrap();
 
         // create bytes
         let blob_size = 100;

@@ -130,22 +130,24 @@ impl IrohNode {
 }
 
 mod tests {
-    #[test]
-    fn test_author_api() {
+    #[tokio::test]
+    async fn test_author_api() {
         let dir = tempfile::tempdir().unwrap();
-        let node = crate::IrohNode::new(dir.into_path().display().to_string()).unwrap();
+        let node = crate::IrohNode::new(dir.into_path().display().to_string())
+            .await
+            .unwrap();
 
-        assert_eq!(node.author_list().unwrap().len(), 1);
-        let author_id = node.author_create().unwrap();
-        let authors = node.author_list().unwrap();
+        assert_eq!(node.author_list().await.unwrap().len(), 1);
+        let author_id = node.author_create().await.unwrap();
+        let authors = node.author_list().await.unwrap();
         assert_eq!(authors.len(), 2);
-        let author = node.author_export(author_id.clone()).unwrap();
+        let author = node.author_export(author_id.clone()).await.unwrap();
         assert!(author_id.equal(&author.id()));
-        node.author_delete(author_id).unwrap();
-        let authors = node.author_list().unwrap();
+        node.author_delete(author_id).await.unwrap();
+        let authors = node.author_list().await.unwrap();
         assert_eq!(authors.len(), 1);
-        node.author_import(author).unwrap();
-        let authors = node.author_list().unwrap();
+        node.author_import(author).await.unwrap();
+        let authors = node.author_list().await.unwrap();
         assert_eq!(authors.len(), 2);
     }
 }

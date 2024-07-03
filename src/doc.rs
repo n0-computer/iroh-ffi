@@ -1489,13 +1489,15 @@ mod tests {
     use rand::RngCore;
     use std::io::Write;
 
-    #[test]
-    fn test_doc_create() {
+    #[tokio::test]
+    async fn test_doc_create() {
         let path = tempfile::tempdir().unwrap();
-        let node = IrohNode::new(path.path().to_string_lossy().into_owned()).unwrap();
+        let node = IrohNode::new(path.path().to_string_lossy().into_owned())
+            .await
+            .unwrap();
         let node_id = node.node_id();
         println!("id: {}", node_id);
-        let doc = node.doc_create().unwrap();
+        let doc = node.doc_create().await.unwrap();
         let doc_id = doc.id();
         println!("doc_id: {}", doc_id);
 
@@ -1503,21 +1505,25 @@ mod tests {
             .share(crate::doc::ShareMode::Write, AddrInfoOptions::Id)
             .unwrap();
         println!("doc_ticket: {}", doc_ticket);
-        node.doc_join(doc_ticket).unwrap();
+        node.doc_join(doc_ticket).await.unwrap();
     }
 
-    #[test]
-    fn test_basic_sync() {
+    #[tokio::test]
+    async fn test_basic_sync() {
         // create node_0
         let iroh_dir_0 = tempfile::tempdir().unwrap();
-        let node_0 = IrohNode::new(iroh_dir_0.path().to_string_lossy().into_owned()).unwrap();
+        let node_0 = IrohNode::new(iroh_dir_0.path().to_string_lossy().into_owned())
+            .await
+            .unwrap();
 
         // create node_1
         let iroh_dir_1 = tempfile::tempdir().unwrap();
-        let node_1 = IrohNode::new(iroh_dir_1.path().to_string_lossy().into_owned()).unwrap();
+        let node_1 = IrohNode::new(iroh_dir_1.path().to_string_lossy().into_owned())
+            .await
+            .unwrap();
 
         // create doc on node_0
-        let doc_0 = node_0.doc_create().unwrap();
+        let doc_0 = node_0.doc_create().await.unwrap();
         let ticket = doc_0
             .share(ShareMode::Write, AddrInfoOptions::RelayAndAddresses)
             .unwrap();
@@ -1541,10 +1547,10 @@ mod tests {
         doc_0.subscribe(Arc::new(cb)).unwrap();
 
         // join the same doc from node_1
-        let doc_1 = node_1.doc_join(ticket).unwrap();
+        let doc_1 = node_1.doc_join(ticket).await.unwrap();
 
         // create author on node_1
-        let author = node_1.author_create().unwrap();
+        let author = node_1.author_create().await.unwrap();
         doc_1
             .set_bytes(&author, b"hello".to_vec(), b"world".to_vec())
             .unwrap();
@@ -1652,14 +1658,17 @@ mod tests {
         assert_eq!(0, key_prefix.offset());
         assert_eq!(Some(100), key_prefix.limit());
     }
-    #[test]
-    fn test_doc_entry_basics() {
+
+    #[tokio::test]
+    async fn test_doc_entry_basics() {
         let path = tempfile::tempdir().unwrap();
-        let node = crate::IrohNode::new(path.path().to_string_lossy().into_owned()).unwrap();
+        let node = crate::IrohNode::new(path.path().to_string_lossy().into_owned())
+            .await
+            .unwrap();
 
         // create doc  and author
-        let doc = node.doc_create().unwrap();
-        let author = node.author_create().unwrap();
+        let doc = node.doc_create().await.unwrap();
+        let author = node.author_create().await.unwrap();
 
         // add entry
         let val = b"hello world!".to_vec();
@@ -1676,8 +1685,9 @@ mod tests {
         assert_eq!(val, got_val);
         assert_eq!(val.len() as u64, entry.content_len());
     }
-    #[test]
-    fn test_doc_import_export() {
+
+    #[tokio::test]
+    async fn test_doc_import_export() {
         // create temp file
         let temp_dir = tempfile::tempdir().unwrap();
         let in_root = temp_dir.path().join("in");
@@ -1695,11 +1705,13 @@ mod tests {
 
         // spawn node
         let iroh_dir = tempfile::tempdir().unwrap();
-        let node = crate::IrohNode::new(iroh_dir.path().to_string_lossy().into_owned()).unwrap();
+        let node = crate::IrohNode::new(iroh_dir.path().to_string_lossy().into_owned())
+            .await
+            .unwrap();
 
         // create doc & author
-        let doc = node.doc_create().unwrap();
-        let author = node.author_create().unwrap();
+        let doc = node.doc_create().await.unwrap();
+        let author = node.author_create().await.unwrap();
 
         // import file
         let path_str = path.to_string_lossy().into_owned();
