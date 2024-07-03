@@ -1161,16 +1161,12 @@ internal interface UniffiLib : Library {
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_fn_method_doc_close_me(
-        `ptr`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
+    fun uniffi_iroh_fn_method_doc_close_me(`ptr`: Pointer): Long
 
     fun uniffi_iroh_fn_method_doc_del(
         `ptr`: Pointer,
         `authorId`: Pointer,
         `prefix`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
     fun uniffi_iroh_fn_method_doc_export_file(
@@ -1178,33 +1174,26 @@ internal interface UniffiLib : Library {
         `entry`: Pointer,
         `path`: RustBuffer.ByValue,
         `cb`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
+    ): Long
 
-    fun uniffi_iroh_fn_method_doc_get_download_policy(
-        `ptr`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Pointer
+    fun uniffi_iroh_fn_method_doc_get_download_policy(`ptr`: Pointer): Long
 
     fun uniffi_iroh_fn_method_doc_get_exact(
         `ptr`: Pointer,
         `author`: Pointer,
         `key`: RustBuffer.ByValue,
         `includeEmpty`: Byte,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
+    ): Long
 
     fun uniffi_iroh_fn_method_doc_get_many(
         `ptr`: Pointer,
         `query`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
+    ): Long
 
     fun uniffi_iroh_fn_method_doc_get_one(
         `ptr`: Pointer,
         `query`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
+    ): Long
 
     fun uniffi_iroh_fn_method_doc_id(
         `ptr`: Pointer,
@@ -1218,60 +1207,47 @@ internal interface UniffiLib : Library {
         `path`: RustBuffer.ByValue,
         `inPlace`: Byte,
         `cb`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
+    ): Long
 
-    fun uniffi_iroh_fn_method_doc_leave(
-        `ptr`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
+    fun uniffi_iroh_fn_method_doc_leave(`ptr`: Pointer): Long
 
     fun uniffi_iroh_fn_method_doc_set_bytes(
         `ptr`: Pointer,
-        `author`: Pointer,
+        `authorId`: Pointer,
         `key`: RustBuffer.ByValue,
         `value`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Pointer
+    ): Long
 
     fun uniffi_iroh_fn_method_doc_set_download_policy(
         `ptr`: Pointer,
         `policy`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
+    ): Long
 
     fun uniffi_iroh_fn_method_doc_set_hash(
         `ptr`: Pointer,
-        `author`: Pointer,
+        `authorId`: Pointer,
         `key`: RustBuffer.ByValue,
         `hash`: Pointer,
         `size`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
+    ): Long
 
     fun uniffi_iroh_fn_method_doc_share(
         `ptr`: Pointer,
         `mode`: RustBuffer.ByValue,
         `addrOptions`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
+    ): Long
 
     fun uniffi_iroh_fn_method_doc_start_sync(
         `ptr`: Pointer,
         `peers`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
+    ): Long
 
-    fun uniffi_iroh_fn_method_doc_status(
-        `ptr`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
+    fun uniffi_iroh_fn_method_doc_status(`ptr`: Pointer): Long
 
     fun uniffi_iroh_fn_method_doc_subscribe(
         `ptr`: Pointer,
         `cb`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
+    ): Long
 
     fun uniffi_iroh_fn_clone_docexportfilecallback(
         `ptr`: Pointer,
@@ -1489,8 +1465,7 @@ internal interface UniffiLib : Library {
     fun uniffi_iroh_fn_method_entry_content_bytes(
         `ptr`: Pointer,
         `doc`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
+    ): Long
 
     fun uniffi_iroh_fn_method_entry_content_hash(
         `ptr`: Pointer,
@@ -1628,11 +1603,6 @@ internal interface UniffiLib : Library {
         `options`: RustBuffer.ByValue,
     ): Long
 
-    fun uniffi_iroh_fn_method_irohnode_node_id(
-        `ptr`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
     fun uniffi_iroh_fn_method_irohnode_author_create(`ptr`: Pointer): Long
 
     fun uniffi_iroh_fn_method_irohnode_author_default(`ptr`: Pointer): Long
@@ -1767,6 +1737,11 @@ internal interface UniffiLib : Library {
         `ptr`: Pointer,
         `id`: RustBuffer.ByValue,
     ): Long
+
+    fun uniffi_iroh_fn_method_irohnode_node_id(
+        `ptr`: Pointer,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
 
     fun uniffi_iroh_fn_method_irohnode_stats(`ptr`: Pointer): Long
 
@@ -2466,8 +2441,6 @@ internal interface UniffiLib : Library {
 
     fun uniffi_iroh_checksum_method_iroherror_message(): Short
 
-    fun uniffi_iroh_checksum_method_irohnode_node_id(): Short
-
     fun uniffi_iroh_checksum_method_irohnode_author_create(): Short
 
     fun uniffi_iroh_checksum_method_irohnode_author_default(): Short
@@ -2525,6 +2498,8 @@ internal interface UniffiLib : Library {
     fun uniffi_iroh_checksum_method_irohnode_doc_list(): Short
 
     fun uniffi_iroh_checksum_method_irohnode_doc_open(): Short
+
+    fun uniffi_iroh_checksum_method_irohnode_node_id(): Short
 
     fun uniffi_iroh_checksum_method_irohnode_stats(): Short
 
@@ -2750,55 +2725,55 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_iroh_checksum_method_directaddrinfo_latency() != 9423.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_close_me() != 59191.toShort()) {
+    if (lib.uniffi_iroh_checksum_method_doc_close_me() != 54799.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_del() != 43294.toShort()) {
+    if (lib.uniffi_iroh_checksum_method_doc_del() != 49795.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_export_file() != 48659.toShort()) {
+    if (lib.uniffi_iroh_checksum_method_doc_export_file() != 22113.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_get_download_policy() != 12464.toShort()) {
+    if (lib.uniffi_iroh_checksum_method_doc_get_download_policy() != 45605.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_get_exact() != 20708.toShort()) {
+    if (lib.uniffi_iroh_checksum_method_doc_get_exact() != 38233.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_get_many() != 5459.toShort()) {
+    if (lib.uniffi_iroh_checksum_method_doc_get_many() != 49236.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_get_one() != 36881.toShort()) {
+    if (lib.uniffi_iroh_checksum_method_doc_get_one() != 31252.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_id() != 32607.toShort()) {
+    if (lib.uniffi_iroh_checksum_method_doc_id() != 12997.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_import_file() != 10090.toShort()) {
+    if (lib.uniffi_iroh_checksum_method_doc_import_file() != 50950.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_leave() != 46314.toShort()) {
+    if (lib.uniffi_iroh_checksum_method_doc_leave() != 59433.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_set_bytes() != 47919.toShort()) {
+    if (lib.uniffi_iroh_checksum_method_doc_set_bytes() != 42498.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_set_download_policy() != 29087.toShort()) {
+    if (lib.uniffi_iroh_checksum_method_doc_set_download_policy() != 8578.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_set_hash() != 3797.toShort()) {
+    if (lib.uniffi_iroh_checksum_method_doc_set_hash() != 56768.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_share() != 42549.toShort()) {
+    if (lib.uniffi_iroh_checksum_method_doc_share() != 40601.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_start_sync() != 55208.toShort()) {
+    if (lib.uniffi_iroh_checksum_method_doc_start_sync() != 48661.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_status() != 45958.toShort()) {
+    if (lib.uniffi_iroh_checksum_method_doc_status() != 50074.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_doc_subscribe() != 29020.toShort()) {
+    if (lib.uniffi_iroh_checksum_method_doc_subscribe() != 56381.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_checksum_method_docexportfilecallback_progress() != 40275.toShort()) {
@@ -2864,25 +2839,25 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_iroh_checksum_method_downloadprogress_type() != 61660.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_entry_author() != 26124.toShort()) {
+    if (lib.uniffi_iroh_checksum_method_entry_author() != 37327.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_entry_content_bytes() != 38764.toShort()) {
+    if (lib.uniffi_iroh_checksum_method_entry_content_bytes() != 61164.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_entry_content_hash() != 39306.toShort()) {
+    if (lib.uniffi_iroh_checksum_method_entry_content_hash() != 62733.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_entry_content_len() != 60107.toShort()) {
+    if (lib.uniffi_iroh_checksum_method_entry_content_len() != 47354.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_entry_key() != 19122.toShort()) {
+    if (lib.uniffi_iroh_checksum_method_entry_key() != 25617.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_entry_namespace() != 52248.toShort()) {
+    if (lib.uniffi_iroh_checksum_method_entry_namespace() != 9082.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_checksum_method_entry_timestamp() != 20078.toShort()) {
+    if (lib.uniffi_iroh_checksum_method_entry_timestamp() != 7806.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_checksum_method_filterkind_matches() != 35187.toShort()) {
@@ -2898,9 +2873,6 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_checksum_method_iroherror_message() != 42005.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_checksum_method_irohnode_node_id() != 31962.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_checksum_method_irohnode_author_create() != 58991.toShort()) {
@@ -2988,6 +2960,9 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_checksum_method_irohnode_doc_open() != 47990.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_checksum_method_irohnode_node_id() != 22360.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_checksum_method_irohnode_stats() != 45923.toShort()) {
@@ -6325,7 +6300,7 @@ public interface DocInterface {
     /**
      * Close the document.
      */
-    fun `closeMe`()
+    suspend fun `closeMe`()
 
     /**
      * Delete entries that match the given `author` and key `prefix`.
@@ -6335,7 +6310,7 @@ public interface DocInterface {
      *
      * Returns the number of entries deleted.
      */
-    fun `del`(
+    suspend fun `del`(
         `authorId`: AuthorId,
         `prefix`: kotlin.ByteArray,
     ): kotlin.ULong
@@ -6343,7 +6318,7 @@ public interface DocInterface {
     /**
      * Export an entry as a file to a given absolute path
      */
-    fun `exportFile`(
+    suspend fun `exportFile`(
         `entry`: Entry,
         `path`: kotlin.String,
         `cb`: DocExportFileCallback?,
@@ -6352,14 +6327,12 @@ public interface DocInterface {
     /**
      * Get the download policy for this document
      */
-    fun `getDownloadPolicy`(): DownloadPolicy
+    suspend fun `getDownloadPolicy`(): DownloadPolicy
 
     /**
      * Get an entry for a key and author.
-     *
-     * Optionally also get the entry if it is empty (i.e. a deletion marker)
      */
-    fun `getExact`(
+    suspend fun `getExact`(
         `author`: AuthorId,
         `key`: kotlin.ByteArray,
         `includeEmpty`: kotlin.Boolean,
@@ -6371,12 +6344,12 @@ public interface DocInterface {
      * Note: this allocates for each `Entry`, if you have many `Entry`s this may be a prohibitively large list.
      * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
      */
-    fun `getMany`(`query`: Query): List<Entry>
+    suspend fun `getMany`(`query`: Query): List<Entry>
 
     /**
      * Get the latest entry for a key and author.
      */
-    fun `getOne`(`query`: Query): Entry?
+    suspend fun `getOne`(`query`: Query): Entry?
 
     /**
      * Get the document id of this doc.
@@ -6386,7 +6359,7 @@ public interface DocInterface {
     /**
      * Add an entry from an absolute file path
      */
-    fun `importFile`(
+    suspend fun `importFile`(
         `author`: AuthorId,
         `key`: kotlin.ByteArray,
         `path`: kotlin.String,
@@ -6397,13 +6370,13 @@ public interface DocInterface {
     /**
      * Stop the live sync for this document.
      */
-    fun `leave`()
+    suspend fun `leave`()
 
     /**
      * Set the content of a key to a byte array.
      */
-    fun `setBytes`(
-        `author`: AuthorId,
+    suspend fun `setBytes`(
+        `authorId`: AuthorId,
         `key`: kotlin.ByteArray,
         `value`: kotlin.ByteArray,
     ): Hash
@@ -6411,13 +6384,13 @@ public interface DocInterface {
     /**
      * Set the download policy for this document
      */
-    fun `setDownloadPolicy`(`policy`: DownloadPolicy)
+    suspend fun `setDownloadPolicy`(`policy`: DownloadPolicy)
 
     /**
      * Set an entries on the doc via its key, hash, and size.
      */
-    fun `setHash`(
-        `author`: AuthorId,
+    suspend fun `setHash`(
+        `authorId`: AuthorId,
         `key`: kotlin.ByteArray,
         `hash`: Hash,
         `size`: kotlin.ULong,
@@ -6426,7 +6399,7 @@ public interface DocInterface {
     /**
      * Share this document with peers over a ticket.
      */
-    fun `share`(
+    suspend fun `share`(
         `mode`: ShareMode,
         `addrOptions`: AddrInfoOptions,
     ): kotlin.String
@@ -6434,17 +6407,17 @@ public interface DocInterface {
     /**
      * Start to sync this document with a list of peers.
      */
-    fun `startSync`(`peers`: List<NodeAddr>)
+    suspend fun `startSync`(`peers`: List<NodeAddr>)
 
     /**
      * Get status info for this document
      */
-    fun `status`(): OpenState
+    suspend fun `status`(): OpenState
 
     /**
      * Subscribe to events for this document.
      */
-    fun `subscribe`(`cb`: SubscribeCallback)
+    suspend fun `subscribe`(`cb`: SubscribeCallback)
 
     companion object
 }
@@ -6539,18 +6512,23 @@ open class Doc :
     /**
      * Close the document.
      */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `closeMe`() =
-        callWithPointer {
-            uniffiRustCallWithError(IrohException) { _status ->
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `closeMe`() =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
                 UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_close_me(
-                    it,
-                    _status,
+                    thisPtr,
                 )
-            }
-        }
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+            // lift function
+            { Unit },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
 
     /**
      * Delete entries that match the given `author` and key `prefix`.
@@ -6560,91 +6538,103 @@ open class Doc :
      *
      * Returns the number of entries deleted.
      */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `del`(
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `del`(
         `authorId`: AuthorId,
         `prefix`: kotlin.ByteArray,
     ): kotlin.ULong =
-        FfiConverterULong.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_del(
-                        it,
-                        FfiConverterTypeAuthorId.lower(`authorId`),
-                        FfiConverterByteArray.lower(`prefix`),
-                        _status,
-                    )
-                }
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_del(
+                    thisPtr,
+                    FfiConverterTypeAuthorId.lower(`authorId`),
+                    FfiConverterByteArray.lower(`prefix`),
+                )
             },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_u64(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_u64(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_u64(future) },
+            // lift function
+            { FfiConverterULong.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
         )
 
     /**
      * Export an entry as a file to a given absolute path
      */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `exportFile`(
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `exportFile`(
         `entry`: Entry,
         `path`: kotlin.String,
         `cb`: DocExportFileCallback?,
-    ) = callWithPointer {
-        uniffiRustCallWithError(IrohException) { _status ->
+    ) = uniffiRustCallAsync(
+        callWithPointer { thisPtr ->
             UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_export_file(
-                it,
+                thisPtr,
                 FfiConverterTypeEntry.lower(`entry`),
                 FfiConverterString.lower(`path`),
                 FfiConverterOptionalTypeDocExportFileCallback.lower(`cb`),
-                _status,
             )
-        }
-    }
+        },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
 
     /**
      * Get the download policy for this document
      */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `getDownloadPolicy`(): DownloadPolicy =
-        FfiConverterTypeDownloadPolicy.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_get_download_policy(
-                        it,
-                        _status,
-                    )
-                }
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `getDownloadPolicy`(): DownloadPolicy =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_get_download_policy(
+                    thisPtr,
+                )
             },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_pointer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_pointer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_pointer(future) },
+            // lift function
+            { FfiConverterTypeDownloadPolicy.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
         )
 
     /**
      * Get an entry for a key and author.
-     *
-     * Optionally also get the entry if it is empty (i.e. a deletion marker)
      */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `getExact`(
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `getExact`(
         `author`: AuthorId,
         `key`: kotlin.ByteArray,
         `includeEmpty`: kotlin.Boolean,
     ): Entry? =
-        FfiConverterOptionalTypeEntry.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_get_exact(
-                        it,
-                        FfiConverterTypeAuthorId.lower(`author`),
-                        FfiConverterByteArray.lower(`key`),
-                        FfiConverterBoolean.lower(`includeEmpty`),
-                        _status,
-                    )
-                }
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_get_exact(
+                    thisPtr,
+                    FfiConverterTypeAuthorId.lower(`author`),
+                    FfiConverterByteArray.lower(`key`),
+                    FfiConverterBoolean.lower(`includeEmpty`),
+                )
             },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            // lift function
+            { FfiConverterOptionalTypeEntry.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
         )
 
     /**
@@ -6653,39 +6643,45 @@ open class Doc :
      * Note: this allocates for each `Entry`, if you have many `Entry`s this may be a prohibitively large list.
      * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
      */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `getMany`(`query`: Query): List<Entry> =
-        FfiConverterSequenceTypeEntry.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_get_many(
-                        it,
-                        FfiConverterTypeQuery.lower(`query`),
-                        _status,
-                    )
-                }
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `getMany`(`query`: Query): List<Entry> =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_get_many(
+                    thisPtr,
+                    FfiConverterTypeQuery.lower(`query`),
+                )
             },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            // lift function
+            { FfiConverterSequenceTypeEntry.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
         )
 
     /**
      * Get the latest entry for a key and author.
      */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `getOne`(`query`: Query): Entry? =
-        FfiConverterOptionalTypeEntry.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_get_one(
-                        it,
-                        FfiConverterTypeQuery.lower(`query`),
-                        _status,
-                    )
-                }
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `getOne`(`query`: Query): Entry? =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_get_one(
+                    thisPtr,
+                    FfiConverterTypeQuery.lower(`query`),
+                )
             },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            // lift function
+            { FfiConverterOptionalTypeEntry.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
         )
 
     /**
@@ -6706,185 +6702,224 @@ open class Doc :
     /**
      * Add an entry from an absolute file path
      */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `importFile`(
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `importFile`(
         `author`: AuthorId,
         `key`: kotlin.ByteArray,
         `path`: kotlin.String,
         `inPlace`: kotlin.Boolean,
         `cb`: DocImportFileCallback?,
-    ) = callWithPointer {
-        uniffiRustCallWithError(IrohException) { _status ->
+    ) = uniffiRustCallAsync(
+        callWithPointer { thisPtr ->
             UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_import_file(
-                it,
+                thisPtr,
                 FfiConverterTypeAuthorId.lower(`author`),
                 FfiConverterByteArray.lower(`key`),
                 FfiConverterString.lower(`path`),
                 FfiConverterBoolean.lower(`inPlace`),
                 FfiConverterOptionalTypeDocImportFileCallback.lower(`cb`),
-                _status,
             )
-        }
-    }
+        },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
 
     /**
      * Stop the live sync for this document.
      */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `leave`() =
-        callWithPointer {
-            uniffiRustCallWithError(IrohException) { _status ->
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `leave`() =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
                 UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_leave(
-                    it,
-                    _status,
+                    thisPtr,
                 )
-            }
-        }
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+            // lift function
+            { Unit },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
 
     /**
      * Set the content of a key to a byte array.
      */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `setBytes`(
-        `author`: AuthorId,
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setBytes`(
+        `authorId`: AuthorId,
         `key`: kotlin.ByteArray,
         `value`: kotlin.ByteArray,
     ): Hash =
-        FfiConverterTypeHash.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_set_bytes(
-                        it,
-                        FfiConverterTypeAuthorId.lower(`author`),
-                        FfiConverterByteArray.lower(`key`),
-                        FfiConverterByteArray.lower(`value`),
-                        _status,
-                    )
-                }
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_set_bytes(
+                    thisPtr,
+                    FfiConverterTypeAuthorId.lower(`authorId`),
+                    FfiConverterByteArray.lower(`key`),
+                    FfiConverterByteArray.lower(`value`),
+                )
             },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_pointer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_pointer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_pointer(future) },
+            // lift function
+            { FfiConverterTypeHash.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
         )
 
     /**
      * Set the download policy for this document
      */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `setDownloadPolicy`(`policy`: DownloadPolicy) =
-        callWithPointer {
-            uniffiRustCallWithError(IrohException) { _status ->
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setDownloadPolicy`(`policy`: DownloadPolicy) =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
                 UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_set_download_policy(
-                    it,
+                    thisPtr,
                     FfiConverterTypeDownloadPolicy.lower(`policy`),
-                    _status,
                 )
-            }
-        }
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+            // lift function
+            { Unit },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
 
     /**
      * Set an entries on the doc via its key, hash, and size.
      */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `setHash`(
-        `author`: AuthorId,
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `setHash`(
+        `authorId`: AuthorId,
         `key`: kotlin.ByteArray,
         `hash`: Hash,
         `size`: kotlin.ULong,
-    ) = callWithPointer {
-        uniffiRustCallWithError(IrohException) { _status ->
+    ) = uniffiRustCallAsync(
+        callWithPointer { thisPtr ->
             UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_set_hash(
-                it,
-                FfiConverterTypeAuthorId.lower(`author`),
+                thisPtr,
+                FfiConverterTypeAuthorId.lower(`authorId`),
                 FfiConverterByteArray.lower(`key`),
                 FfiConverterTypeHash.lower(`hash`),
                 FfiConverterULong.lower(`size`),
-                _status,
             )
-        }
-    }
+        },
+        { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
 
     /**
      * Share this document with peers over a ticket.
      */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `share`(
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `share`(
         `mode`: ShareMode,
         `addrOptions`: AddrInfoOptions,
     ): kotlin.String =
-        FfiConverterString.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_share(
-                        it,
-                        FfiConverterTypeShareMode.lower(`mode`),
-                        FfiConverterTypeAddrInfoOptions.lower(`addrOptions`),
-                        _status,
-                    )
-                }
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_share(
+                    thisPtr,
+                    FfiConverterTypeShareMode.lower(`mode`),
+                    FfiConverterTypeAddrInfoOptions.lower(`addrOptions`),
+                )
             },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            // lift function
+            { FfiConverterString.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
         )
 
     /**
      * Start to sync this document with a list of peers.
      */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `startSync`(`peers`: List<NodeAddr>) =
-        callWithPointer {
-            uniffiRustCallWithError(IrohException) { _status ->
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `startSync`(`peers`: List<NodeAddr>) =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
                 UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_start_sync(
-                    it,
+                    thisPtr,
                     FfiConverterSequenceTypeNodeAddr.lower(`peers`),
-                    _status,
                 )
-            }
-        }
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+            // lift function
+            { Unit },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
 
     /**
      * Get status info for this document
      */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `status`(): OpenState =
-        FfiConverterTypeOpenState.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_status(
-                        it,
-                        _status,
-                    )
-                }
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `status`(): OpenState =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_status(
+                    thisPtr,
+                )
             },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            // lift function
+            { FfiConverterTypeOpenState.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
         )
 
     /**
      * Subscribe to events for this document.
      */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `subscribe`(`cb`: SubscribeCallback) =
-        callWithPointer {
-            uniffiRustCallWithError(IrohException) { _status ->
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `subscribe`(`cb`: SubscribeCallback) =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
                 UniffiLib.INSTANCE.uniffi_iroh_fn_method_doc_subscribe(
-                    it,
+                    thisPtr,
                     FfiConverterTypeSubscribeCallback.lower(`cb`),
-                    _status,
                 )
-            }
-        }
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_void(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_void(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_void(future) },
+            // lift function
+            { Unit },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
 
     companion object
 }
@@ -9154,7 +9189,7 @@ public interface EntryInterface {
      * reading is small. If not sure, use [`Self::content_len`] and check the size with
      * before calling [`Self::content_bytes`].
      */
-    fun `contentBytes`(`doc`: Doc): kotlin.ByteArray
+    suspend fun `contentBytes`(`doc`: Doc): kotlin.ByteArray
 
     /**
      * Get the content_hash of this entry.
@@ -9296,20 +9331,23 @@ open class Entry :
      * reading is small. If not sure, use [`Self::content_len`] and check the size with
      * before calling [`Self::content_bytes`].
      */
-    @Throws(
-        IrohException::class,
-        )
-    override fun `contentBytes`(`doc`: Doc): kotlin.ByteArray =
-        FfiConverterByteArray.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_entry_content_bytes(
-                        it,
-                        FfiConverterTypeDoc.lower(`doc`),
-                        _status,
-                    )
-                }
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `contentBytes`(`doc`: Doc): kotlin.ByteArray =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_fn_method_entry_content_bytes(
+                    thisPtr,
+                    FfiConverterTypeDoc.lower(`doc`),
+                )
             },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_poll_rust_buffer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_rust_future_free_rust_buffer(future) },
+            // lift function
+            { FfiConverterByteArray.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
         )
 
     /**
@@ -10352,11 +10390,6 @@ public object FfiConverterTypeIrohError : FfiConverter<IrohException, Pointer> {
  */
 public interface IrohNodeInterface {
     /**
-     * The string representation of the PublicKey of this node.
-     */
-    fun `nodeId`(): kotlin.String
-
-    /**
      * Create a new document author.
      *
      * You likely want to save the returned [`AuthorId`] somewhere so that you can use this author
@@ -10593,6 +10626,11 @@ public interface IrohNodeInterface {
     suspend fun `docOpen`(`id`: kotlin.String): Doc?
 
     /**
+     * The string representation of the PublicKey of this node.
+     */
+    fun `nodeId`(): kotlin.String
+
+    /**
      * Get statistics of the running node.
      */
     suspend fun `stats`(): Map<kotlin.String, CounterStats>
@@ -10705,21 +10743,6 @@ open class IrohNode :
         uniffiRustCall { status ->
             UniffiLib.INSTANCE.uniffi_iroh_fn_clone_irohnode(pointer!!, status)
         }
-
-    /**
-     * The string representation of the PublicKey of this node.
-     */
-    override fun `nodeId`(): kotlin.String =
-        FfiConverterString.lift(
-            callWithPointer {
-                uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_node_id(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
 
     /**
      * Create a new document author.
@@ -11452,6 +11475,21 @@ open class IrohNode :
             { FfiConverterOptionalTypeDoc.lift(it) },
             // Error FFI converter
             IrohException.ErrorHandler,
+        )
+
+    /**
+     * The string representation of the PublicKey of this node.
+     */
+    override fun `nodeId`(): kotlin.String =
+        FfiConverterString.lift(
+            callWithPointer {
+                uniffiRustCall { _status ->
+                    UniffiLib.INSTANCE.uniffi_iroh_fn_method_irohnode_node_id(
+                        it,
+                        _status,
+                    )
+                }
+            },
         )
 
     /**
