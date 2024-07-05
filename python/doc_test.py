@@ -4,7 +4,6 @@ import pytest
 import tempfile
 import os
 import random
-import asyncio
 
 def test_node_addr():
     #

@@ -1,13 +1,12 @@
 import iroh
 
 import argparse
+import asyncio
 import os
-import time
 
 IROH_DATA_DIR = "./iroh-data"
 
-if __name__ == "__main__":
-
+async def main():
     # parse arguments
     parser = argparse.ArgumentParser(description='Python Iroh Node Demo')
     parser.add_argument('--ticket', type=str, help='ticket to join a document')
@@ -26,18 +25,21 @@ if __name__ == "__main__":
             os.mkdir(IROH_DATA_DIR)
 
         # create iroh node
-        node = iroh.IrohNode(IROH_DATA_DIR)
-        print("Started Iroh node: {}".format(node.node_id()))
+        node = await iroh.IrohNode.create(IROH_DATA_DIR)
+        node_id = node.node_id()
+        print("Started Iroh node: {}".format(node_id))
 
-       # create doc
-        doc = node.doc_create();
-        print("Created doc: {}".format(doc.id()))
-        
-        doc = node.doc_create();
-        print("Created doc: {}".format(doc.id()))
-        
+        # create doc
+        doc = await node.doc_create()
+        doc_id = doc.id()
+        print("Created doc: {}".format(doc_id))
+
+        doc = await node.doc_create()
+        doc_id = doc.id()
+        print("Created doc: {}".format(doc_id))
+
         # list docs
-        docs = node.doc_list();
+        docs = await node.doc_list()
         print("List all {} docs:".format(len(docs)))
         for doc in docs:
             print("\t{}".format(doc))
@@ -49,20 +51,24 @@ if __name__ == "__main__":
         os.mkdir(IROH_DATA_DIR)
 
     # create iroh node
-    node = iroh.IrohNode(IROH_DATA_DIR)
-    print("Started Iroh node: {}".format(node.node_id()))
+    node = await iroh.IrohNode.create(IROH_DATA_DIR)
+    node_id = node.node_id()
+    print("Started Iroh node: {}".format(node_id))
 
     # join doc
-    doc = node.doc_join(args.ticket)
-    print("Joined doc: {}".format(doc.id()))
+    doc = await node.doc_join(args.ticket)
+    doc_id = doc.id()
+    print("Joined doc: {}".format(doc_id))
 
     # sync & print
     print("Waiting 5 seconds to let stuff sync...")
-    time.sleep(5)
-    keys = doc.keys()
+    await asyncio.sleep(5)
+    keys = await doc.keys()
     print("Data:")
     for key in keys:
-        content = doc.get_content_bytes(key)
+        content = await doc.get_content_bytes(key)
         print("{} : {} (hash: {})".format(key.key(), content.decode("utf8"), key.hash().to_string()))
-    
-    
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

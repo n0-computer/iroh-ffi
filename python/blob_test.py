@@ -33,18 +33,19 @@ def test_hash():
     assert hash_0.equal(hash)
 
 # test functionality between adding as bytes and reading to bytes
-def test_blob_add_get_bytes():
+@pytest.mark.asyncio
+async def test_blob_add_get_bytes():
     #
     # create node
     dir = tempfile.TemporaryDirectory()
-    node = IrohNode(dir.name)
+    node = await IrohNode.create(dir.name)
     #
     # create bytes
     blob_size = 100
     bytes = bytearray(map(random.getrandbits,(8,)*blob_size))
     #
     # add blob
-    add_outcome = node.blobs_add_bytes(bytes)
+    add_outcome = await node.blobs_add_bytes(bytes)
     #
     # check outcome info is as expected
     assert add_outcome.format == BlobFormat.RAW
@@ -52,19 +53,20 @@ def test_blob_add_get_bytes():
     #
     # check we get the expected size from the hash
     hash = add_outcome.hash
-    got_size = node.blobs_size(hash)
+    got_size = await node.blobs_size(hash)
     assert got_size == blob_size
     #
     # get bytes
-    got_bytes = node.blobs_read_to_bytes(hash)
+    got_bytes = await node.blobs_read_to_bytes(hash)
     assert len(got_bytes) == blob_size
     assert got_bytes == bytes
 
 # test functionality between reading bytes from a path and writing bytes to
 # a path
-def test_blob_read_write_path():
+@pytest.mark.asyncio
+async def test_blob_read_write_path():
     iroh_dir = tempfile.TemporaryDirectory()
-    node = IrohNode(iroh_dir.name)
+    node = await IrohNode.create(iroh_dir.name)
     #
     # create bytes
     blob_size = 100
@@ -98,25 +100,25 @@ def test_blob_read_write_path():
                 raise Exception(abort_event.error)
 
     cb = AddCallback()
-    node.blobs_add_from_path(path, False, tag, wrap, cb)
+    await node.blobs_add_from_path(path, False, tag, wrap, cb)
     #
     # check outcome info is as expected
     assert cb.format == BlobFormat.RAW
     assert cb.hash != None
     #
     # check we get the expected size from the hash
-    got_size = node.blobs_size(cb.hash)
+    got_size = await node.blobs_size(cb.hash)
     assert got_size == blob_size
     #
     # get bytes
-    got_bytes = node.blobs_read_to_bytes(cb.hash)
+    got_bytes = await node.blobs_read_to_bytes(cb.hash)
     print("read_to_bytes {}", got_bytes)
     assert len(got_bytes) == blob_size
     assert got_bytes == bytes
     #
     # write to file
     out_path = os.path.join(dir.name, "out")
-    node.blobs_write_to_path(cb.hash, out_path)
+    await node.blobs_write_to_path(cb.hash, out_path)
     # open file
     got_file = open(out_path, "rb")
     got_bytes = got_file.read()
@@ -125,7 +127,8 @@ def test_blob_read_write_path():
     assert len(got_bytes) == blob_size
     assert got_bytes == bytes
 
-def test_blob_collections():
+@pytest.mark.asyncio
+async def test_blob_collections():
     collection_dir = tempfile.TemporaryDirectory()
     num_files = 3
     blob_size = 100
@@ -139,10 +142,10 @@ def test_blob_collections():
 
     # make node
     iroh_dir = tempfile.TemporaryDirectory()
-    node = IrohNode(iroh_dir.name)
+    node = await IrohNode.create(iroh_dir.name)
 
     # ensure zero blobs
-    blobs = node.blobs_list()
+    blobs = await node.blobs_list()
     assert len(blobs) == 0
 
     # create callback to get blobs and collection hash
@@ -169,13 +172,13 @@ def test_blob_collections():
     tag = SetTagOption.auto()
     wrap = WrapOption.no_wrap()
     # add from path
-    node.blobs_add_from_path(collection_dir.name, False, tag, wrap, cb)
+    await node.blobs_add_from_path(collection_dir.name, False, tag, wrap, cb)
 
     assert cb.collection_hash != None
     assert cb.format == BlobFormat.HASH_SEQ
 
     # list collections
-    collections = node.blobs_list_collections()
+    collections = await node.blobs_list_collections()
     print("collection hash ", collections[0].hash)
     assert len(collections) == 1
     assert collections[0].hash.equal(cb.collection_hash)
@@ -187,9 +190,9 @@ def test_blob_collections():
     # list blobs
     collection_hashes = cb.blob_hashes
     collection_hashes.append(cb.collection_hash)
-    got_hashes = node.blobs_list()
+    got_hashes = await node.blobs_list()
     for hash in got_hashes:
-        blob = node.blobs_read_to_bytes(hash)
+        blob = await node.blobs_read_to_bytes(hash)
         print("hash ", hash, " has size ", len(blob))
 
     hashes_exist(collection_hashes, got_hashes)
@@ -197,10 +200,11 @@ def test_blob_collections():
     # in the list of hashes
     assert len(collection_hashes)+1 == len(got_hashes)
 
-def test_list_and_delete():
+@pytest.mark.asyncio
+async def test_list_and_delete():
     iroh_dir = tempfile.TemporaryDirectory()
     opts = NodeOptions(gc_interval_millis=100)
-    node = IrohNode.with_options(iroh_dir.name, opts)
+    node = await IrohNode.with_options(iroh_dir.name, opts)
     #
     # create bytes
     blob_size = 100
@@ -215,22 +219,22 @@ def test_list_and_delete():
     hashes = []
     tags = []
     for blob in blobs:
-        output = node.blobs_add_bytes(blob)
+        output = await node.blobs_add_bytes(blob)
         hashes.append(output.hash)
         tags.append(output.tag)
 
-    got_hashes = node.blobs_list()
+    got_hashes = await node.blobs_list()
     assert len(got_hashes) == num_blobs
     hashes_exist(hashes, got_hashes)
 
     remove_hash = hashes.pop(0)
     remove_tag = tags.pop(0)
     # delete the tag for the first blob
-    node.tags_delete(remove_tag)
+    await node.tags_delete(remove_tag)
     # wait for GC to clear the blob
     time.sleep(0.25)
 
-    got_hashes = node.blobs_list();
+    got_hashes = await node.blobs_list()
     assert len(got_hashes) == num_blobs - 1
     hashes_exist(hashes, got_hashes)
 
