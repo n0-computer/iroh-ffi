@@ -1941,6 +1941,7 @@ name = "iroh"
 version = "0.19.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "blake3",
  "bytes",
  "data-encoding",

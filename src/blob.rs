@@ -107,7 +107,7 @@ impl IrohNode {
             .await?;
         while let Some(progress) = stream.next().await {
             let progress = progress?;
-            cb.progress(Arc::new(progress.into()))?;
+            cb.progress(Arc::new(progress.into())).await?;
         }
         Ok(())
     }
@@ -158,7 +158,7 @@ impl IrohNode {
             .await?;
         while let Some(progress) = stream.next().await {
             let progress = progress?;
-            cb.progress(Arc::new(progress.into()))?;
+            cb.progress(Arc::new(progress.into())).await?;
         }
         Ok(())
     }
@@ -482,8 +482,9 @@ impl From<Hash> for iroh::blobs::Hash {
 /// emitted during a `node.blobs_add_from_path`. Use the `AddProgress.type()`
 /// method to check the `AddProgressType`
 #[uniffi::export(with_foreign)]
+#[async_trait::async_trait]
 pub trait AddCallback: Send + Sync + 'static {
-    fn progress(&self, progress: Arc<AddProgress>) -> Result<(), CallbackError>;
+    async fn progress(&self, progress: Arc<AddProgress>) -> Result<(), CallbackError>;
 }
 
 /// The different types of AddProgress events
@@ -767,8 +768,9 @@ impl From<BlobExportMode> for iroh::blobs::store::ExportMode {
 /// a `node.blobs_download`. Use the `DownloadProgress.type()` method to check the
 /// `DownloadProgressType` of the event.
 #[uniffi::export(with_foreign)]
+#[async_trait::async_trait]
 pub trait DownloadCallback: Send + Sync + 'static {
-    fn progress(&self, progress: Arc<DownloadProgress>) -> Result<(), CallbackError>;
+    async fn progress(&self, progress: Arc<DownloadProgress>) -> Result<(), CallbackError>;
 }
 
 /// The different types of DownloadProgress events
@@ -1321,8 +1323,9 @@ mod tests {
             output: Arc<Mutex<Output>>,
         }
 
+        #[async_trait::async_trait]
         impl AddCallback for Callback {
-            fn progress(&self, progress: Arc<AddProgress>) -> Result<(), CallbackError> {
+            async fn progress(&self, progress: Arc<AddProgress>) -> Result<(), CallbackError> {
                 match *progress {
                     AddProgress::AllDone(ref d) => {
                         let mut output = self.output.lock().unwrap();
@@ -1419,8 +1422,9 @@ mod tests {
             output: Arc<Mutex<Output>>,
         }
 
+        #[async_trait::async_trait]
         impl AddCallback for Callback {
-            fn progress(&self, progress: Arc<AddProgress>) -> Result<(), CallbackError> {
+            async fn progress(&self, progress: Arc<AddProgress>) -> Result<(), CallbackError> {
                 match *progress {
                     AddProgress::AllDone(ref d) => {
                         let mut output = self.output.lock().unwrap();

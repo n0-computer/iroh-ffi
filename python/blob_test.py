@@ -4,6 +4,8 @@ import tempfile
 import random
 import os
 import time
+import iroh
+import asyncio
 
 from iroh import Hash, IrohNode, SetTagOption, BlobFormat, WrapOption, AddProgressType, NodeOptions
 
@@ -35,6 +37,9 @@ def test_hash():
 # test functionality between adding as bytes and reading to bytes
 @pytest.mark.asyncio
 async def test_blob_add_get_bytes():
+    # setup event loop, to ensure async callbacks work
+    iroh.iroh_ffi.uniffi_set_event_loop(asyncio.get_running_loop())
+
     #
     # create node
     dir = tempfile.TemporaryDirectory()
@@ -65,6 +70,9 @@ async def test_blob_add_get_bytes():
 # a path
 @pytest.mark.asyncio
 async def test_blob_read_write_path():
+    # setup event loop, to ensure async callbacks work
+    iroh.iroh_ffi.uniffi_set_event_loop(asyncio.get_running_loop())
+
     iroh_dir = tempfile.TemporaryDirectory()
     node = await IrohNode.create(iroh_dir.name)
     #
@@ -87,7 +95,7 @@ async def test_blob_read_write_path():
         hash = None
         format = None
 
-        def progress(x, progress_event):
+        async def progress(x, progress_event):
             print(progress_event.type())
             if progress_event.type() == AddProgressType.ALL_DONE:
                 all_done_event = progress_event.as_all_done()
@@ -129,6 +137,9 @@ async def test_blob_read_write_path():
 
 @pytest.mark.asyncio
 async def test_blob_collections():
+    # setup event loop, to ensure async callbacks work
+    iroh.iroh_ffi.uniffi_set_event_loop(asyncio.get_running_loop())
+
     collection_dir = tempfile.TemporaryDirectory()
     num_files = 3
     blob_size = 100
@@ -154,7 +165,7 @@ async def test_blob_collections():
         format = None
         blob_hashes = []
 
-        def progress(self, progress_event):
+        async def progress(self, progress_event):
             print(progress_event.type())
             if progress_event.type() == AddProgressType.ALL_DONE:
                 all_done_event = progress_event.as_all_done()
@@ -202,6 +213,9 @@ async def test_blob_collections():
 
 @pytest.mark.asyncio
 async def test_list_and_delete():
+    # setup event loop, to ensure async callbacks work
+    iroh.iroh_ffi.uniffi_set_event_loop(asyncio.get_running_loop())
+
     iroh_dir = tempfile.TemporaryDirectory()
     opts = NodeOptions(gc_interval_millis=100)
     node = await IrohNode.with_options(iroh_dir.name, opts)

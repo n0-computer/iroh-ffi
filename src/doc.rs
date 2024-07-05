@@ -58,7 +58,7 @@ impl IrohNode {
             while let Some(event) = stream.next().await {
                 match event {
                     Ok(event) => {
-                        if let Err(err) = cb.event(Arc::new(event.into())) {
+                        if let Err(err) = cb.event(Arc::new(event.into())).await {
                             println!("cb error: {:?}", err);
                         }
                     }
@@ -189,7 +189,7 @@ impl Doc {
         while let Some(progress) = stream.next().await {
             let progress = progress?;
             if let Some(ref cb) = cb {
-                cb.progress(Arc::new(progress.into()))?;
+                cb.progress(Arc::new(progress.into())).await?;
             }
         }
         Ok(())
@@ -215,7 +215,7 @@ impl Doc {
         while let Some(progress) = stream.next().await {
             let progress = progress?;
             if let Some(ref cb) = cb {
-                cb.progress(Arc::new(progress.into()))?;
+                cb.progress(Arc::new(progress.into())).await?;
             }
         }
         Ok(())
@@ -321,7 +321,7 @@ impl Doc {
             while let Some(event) = sub.next().await {
                 match event {
                     Ok(event) => {
-                        if let Err(err) = cb.event(Arc::new(event.into())) {
+                        if let Err(err) = cb.event(Arc::new(event.into())).await {
                             println!("cb error: {:?}", err);
                         }
                     }
@@ -917,8 +917,9 @@ impl Query {
 /// emitted during a `node.doc_subscribe`. Use the `SubscribeProgress.type()`
 /// method to check the `LiveEvent`
 #[uniffi::export(with_foreign)]
+#[async_trait::async_trait]
 pub trait SubscribeCallback: Send + Sync + 'static {
-    fn event(&self, event: Arc<LiveEvent>) -> Result<(), CallbackError>;
+    async fn event(&self, event: Arc<LiveEvent>) -> Result<(), CallbackError>;
 }
 
 /// Events informing about actions of the live sync progress
@@ -1204,8 +1205,9 @@ impl From<iroh::docs::ContentStatus> for ContentStatus {
 /// emitted during a `doc.import_file()` call. Use the `DocImportProgress.type()`
 /// method to check the `DocImportProgressType`
 #[uniffi::export(with_foreign)]
+#[async_trait::async_trait]
 pub trait DocImportFileCallback: Send + Sync + 'static {
-    fn progress(&self, progress: Arc<DocImportProgress>) -> Result<(), CallbackError>;
+    async fn progress(&self, progress: Arc<DocImportProgress>) -> Result<(), CallbackError>;
 }
 
 /// The type of `DocImportProgress` event
@@ -1370,8 +1372,9 @@ impl DocImportProgress {
 /// emitted during a `doc.export_file()` call. Use the `DocExportProgress.type()`
 /// method to check the `DocExportProgressType`
 #[uniffi::export(with_foreign)]
+#[async_trait::async_trait]
 pub trait DocExportFileCallback: Send + Sync + 'static {
-    fn progress(&self, progress: Arc<DocExportProgress>) -> Result<(), CallbackError>;
+    async fn progress(&self, progress: Arc<DocExportProgress>) -> Result<(), CallbackError>;
 }
 
 /// The type of `DocExportProgress` event
@@ -1565,16 +1568,13 @@ mod tests {
         struct Callback {
             found_s: mpsc::Sender<Result<Hash, IrohError>>,
         }
+        #[async_trait::async_trait]
         impl SubscribeCallback for Callback {
-            fn event(&self, event: Arc<LiveEvent>) -> Result<(), CallbackError> {
+            async fn event(&self, event: Arc<LiveEvent>) -> Result<(), CallbackError> {
                 if let LiveEvent::ContentReady { ref hash } = *event {
                     let s = self.found_s.clone();
                     let hash = hash.clone();
-                    tokio::task::spawn(async move {
-                        if let Err(err) = s.send(Ok(hash)).await {
-                            eprintln!("failed to send: {err:?}");
-                        }
-                    });
+                    s.send(Ok(hash)).await.unwrap();
                 }
                 Ok(())
             }

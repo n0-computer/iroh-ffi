@@ -138,7 +138,7 @@ runBlocking {
         var hash: Hash? = null
         var format: BlobFormat? = null
 
-        override fun progress(progress: AddProgress) {
+        override suspend fun progress(progress: AddProgress) {
             println(progress.type())
             if (progress.type() == AddProgressType.ALL_DONE) {
                 val event = progress.asAllDone()!!
@@ -204,7 +204,7 @@ runBlocking {
         var format: BlobFormat? = null
         var blobHashes: MutableList<Hash> = arrayListOf()
 
-        override fun progress(progress: AddProgress) {
+        override suspend fun progress(progress: AddProgress) {
             println(progress.type())
             if (progress.type() == AddProgressType.ALL_DONE) {
                 val event = progress.asAllDone()!!

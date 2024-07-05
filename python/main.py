@@ -7,6 +7,9 @@ import os
 IROH_DATA_DIR = "./iroh-data"
 
 async def main():
+    # setup event loop, to ensure async callbacks work
+    iroh.iroh_ffi.uniffi_set_event_loop(asyncio.get_running_loop())
+
     # parse arguments
     parser = argparse.ArgumentParser(description='Python Iroh Node Demo')
     parser.add_argument('--ticket', type=str, help='ticket to join a document')

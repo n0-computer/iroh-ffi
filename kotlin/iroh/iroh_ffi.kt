@@ -24,6 +24,10 @@ import com.sun.jna.Pointer
 import com.sun.jna.Structure
 import com.sun.jna.ptr.*
 import kotlinx.coroutines.CancellableContinuation
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -736,8 +740,9 @@ internal interface UniffiCallbackInterfaceAddCallbackMethod0 : com.sun.jna.Callb
     fun callback(
         `uniffiHandle`: Long,
         `progress`: Pointer,
-        `uniffiOutReturn`: Pointer,
-        uniffiCallStatus: UniffiRustCallStatus,
+        `uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,
+        `uniffiCallbackData`: Long,
+        `uniffiOutReturn`: UniffiForeignFuture,
     )
 }
 
@@ -745,8 +750,9 @@ internal interface UniffiCallbackInterfaceDocExportFileCallbackMethod0 : com.sun
     fun callback(
         `uniffiHandle`: Long,
         `progress`: Pointer,
-        `uniffiOutReturn`: Pointer,
-        uniffiCallStatus: UniffiRustCallStatus,
+        `uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,
+        `uniffiCallbackData`: Long,
+        `uniffiOutReturn`: UniffiForeignFuture,
     )
 }
 
@@ -754,8 +760,9 @@ internal interface UniffiCallbackInterfaceDocImportFileCallbackMethod0 : com.sun
     fun callback(
         `uniffiHandle`: Long,
         `progress`: Pointer,
-        `uniffiOutReturn`: Pointer,
-        uniffiCallStatus: UniffiRustCallStatus,
+        `uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,
+        `uniffiCallbackData`: Long,
+        `uniffiOutReturn`: UniffiForeignFuture,
     )
 }
 
@@ -763,8 +770,9 @@ internal interface UniffiCallbackInterfaceDownloadCallbackMethod0 : com.sun.jna.
     fun callback(
         `uniffiHandle`: Long,
         `progress`: Pointer,
-        `uniffiOutReturn`: Pointer,
-        uniffiCallStatus: UniffiRustCallStatus,
+        `uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,
+        `uniffiCallbackData`: Long,
+        `uniffiOutReturn`: UniffiForeignFuture,
     )
 }
 
@@ -772,8 +780,9 @@ internal interface UniffiCallbackInterfaceSubscribeCallbackMethod0 : com.sun.jna
     fun callback(
         `uniffiHandle`: Long,
         `event`: Pointer,
-        `uniffiOutReturn`: Pointer,
-        uniffiCallStatus: UniffiRustCallStatus,
+        `uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,
+        `uniffiCallbackData`: Long,
+        `uniffiOutReturn`: UniffiForeignFuture,
     )
 }
 
@@ -901,8 +910,7 @@ internal interface UniffiLib : Library {
     fun uniffi_iroh_ffi_fn_method_addcallback_progress(
         `ptr`: Pointer,
         `progress`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
+    ): Long
 
     fun uniffi_iroh_ffi_fn_clone_addprogress(
         `ptr`: Pointer,
@@ -1269,8 +1277,7 @@ internal interface UniffiLib : Library {
     fun uniffi_iroh_ffi_fn_method_docexportfilecallback_progress(
         `ptr`: Pointer,
         `progress`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
+    ): Long
 
     fun uniffi_iroh_ffi_fn_clone_docexportprogress(
         `ptr`: Pointer,
@@ -1317,8 +1324,7 @@ internal interface UniffiLib : Library {
     fun uniffi_iroh_ffi_fn_method_docimportfilecallback_progress(
         `ptr`: Pointer,
         `progress`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
+    ): Long
 
     fun uniffi_iroh_ffi_fn_clone_docimportprogress(
         `ptr`: Pointer,
@@ -1375,8 +1381,7 @@ internal interface UniffiLib : Library {
     fun uniffi_iroh_ffi_fn_method_downloadcallback_progress(
         `ptr`: Pointer,
         `progress`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
+    ): Long
 
     fun uniffi_iroh_ffi_fn_clone_downloadpolicy(
         `ptr`: Pointer,
@@ -2027,8 +2032,7 @@ internal interface UniffiLib : Library {
     fun uniffi_iroh_ffi_fn_method_subscribecallback_event(
         `ptr`: Pointer,
         `event`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
+    ): Long
 
     fun uniffi_iroh_ffi_fn_clone_wrapoption(
         `ptr`: Pointer,
@@ -2651,7 +2655,7 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_func_start_metrics_collection() != 23413.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_addcallback_progress() != 49379.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_addcallback_progress() != 62116.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_addprogress_as_abort() != 44667.toShort()) {
@@ -2786,7 +2790,7 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_method_doc_subscribe() != 59807.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_docexportfilecallback_progress() != 38008.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_docexportfilecallback_progress() != 53186.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_docexportprogress_as_abort() != 34476.toShort()) {
@@ -2801,7 +2805,7 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_method_docexportprogress_type() != 11215.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_docimportfilecallback_progress() != 37343.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_docimportfilecallback_progress() != 55347.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_docimportprogress_as_abort() != 35952.toShort()) {
@@ -2822,7 +2826,7 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_method_docimportprogress_type() != 48401.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_downloadcallback_progress() != 15880.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_downloadcallback_progress() != 21881.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_downloadprogress_as_abort() != 6879.toShort()) {
@@ -3047,7 +3051,7 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_method_rangespec_is_empty() != 38175.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_subscribecallback_event() != 35027.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_subscribecallback_event() != 35520.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_constructor_author_from_string() != 63158.toShort()) {
@@ -3196,6 +3200,82 @@ internal suspend fun <T, F, E : kotlin.Exception> uniffiRustCallAsync(
         freeFunc(rustFuture)
     }
 }
+
+internal inline fun <T> uniffiTraitInterfaceCallAsync(
+    crossinline makeCall: suspend () -> T,
+    crossinline handleSuccess: (T) -> Unit,
+    crossinline handleError: (UniffiRustCallStatus.ByValue) -> Unit,
+): UniffiForeignFuture {
+    // Using `GlobalScope` is labeled as a "delicate API" and generally discouraged in Kotlin programs, since it breaks structured concurrency.
+    // However, our parent task is a Rust future, so we're going to need to break structure concurrency in any case.
+    //
+    // Uniffi does its best to support structured concurrency across the FFI.
+    // If the Rust future is dropped, `uniffiForeignFutureFreeImpl` is called, which will cancel the Kotlin coroutine if it's still running.
+    @OptIn(DelicateCoroutinesApi::class)
+    val job =
+        GlobalScope.launch {
+            try {
+                handleSuccess(makeCall())
+            } catch (e: Exception) {
+                handleError(
+                    UniffiRustCallStatus.create(
+                        UNIFFI_CALL_UNEXPECTED_ERROR,
+                        FfiConverterString.lower(e.toString()),
+                    ),
+                )
+            }
+        }
+    val handle = uniffiForeignFutureHandleMap.insert(job)
+    return UniffiForeignFuture(handle, uniffiForeignFutureFreeImpl)
+}
+
+internal inline fun <T, reified E : Throwable> uniffiTraitInterfaceCallAsyncWithError(
+    crossinline makeCall: suspend () -> T,
+    crossinline handleSuccess: (T) -> Unit,
+    crossinline handleError: (UniffiRustCallStatus.ByValue) -> Unit,
+    crossinline lowerError: (E) -> RustBuffer.ByValue,
+): UniffiForeignFuture {
+    // See uniffiTraitInterfaceCallAsync for details on `DelicateCoroutinesApi`
+    @OptIn(DelicateCoroutinesApi::class)
+    val job =
+        GlobalScope.launch {
+            try {
+                handleSuccess(makeCall())
+            } catch (e: Exception) {
+                if (e is E) {
+                    handleError(
+                        UniffiRustCallStatus.create(
+                            UNIFFI_CALL_ERROR,
+                            lowerError(e),
+                        ),
+                    )
+                } else {
+                    handleError(
+                        UniffiRustCallStatus.create(
+                            UNIFFI_CALL_UNEXPECTED_ERROR,
+                            FfiConverterString.lower(e.toString()),
+                        ),
+                    )
+                }
+            }
+        }
+    val handle = uniffiForeignFutureHandleMap.insert(job)
+    return UniffiForeignFuture(handle, uniffiForeignFutureFreeImpl)
+}
+
+internal val uniffiForeignFutureHandleMap = UniffiHandleMap<Job>()
+
+internal object uniffiForeignFutureFreeImpl : UniffiForeignFutureFree {
+    override fun callback(handle: Long) {
+        val job = uniffiForeignFutureHandleMap.remove(handle)
+        if (!job.isCompleted) {
+            job.cancel()
+        }
+    }
+}
+
+// For testing
+public fun uniffiForeignFutureHandleCount() = uniffiForeignFutureHandleMap.size
 
 // Public interface members begin here.
 
@@ -3619,7 +3699,7 @@ private class JavaLangRefCleanable(
  * method to check the `AddProgressType`
  */
 public interface AddCallback {
-    fun `progress`(`progress`: AddProgress)
+    suspend fun `progress`(`progress`: AddProgress)
 
     companion object
 }
@@ -3713,19 +3793,24 @@ open class AddCallbackImpl :
             UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_addcallback(pointer!!, status)
         }
 
-    @Throws(
-        CallbackException::class,
-        )
-    override fun `progress`(`progress`: AddProgress) =
-        callWithPointer {
-            uniffiRustCallWithError(CallbackException) { _status ->
+    @Throws(CallbackException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `progress`(`progress`: AddProgress) =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
                 UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_addcallback_progress(
-                    it,
+                    thisPtr,
                     FfiConverterTypeAddProgress.lower(`progress`),
-                    _status,
                 )
-            }
-        }
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_void(future) },
+            // lift function
+            { Unit },
+            // Error FFI converter
+            CallbackException.ErrorHandler,
+        )
 
     companion object
 }
@@ -3768,20 +3853,40 @@ internal object uniffiCallbackInterfaceAddCallback {
         override fun callback(
             `uniffiHandle`: Long,
             `progress`: Pointer,
-            `uniffiOutReturn`: Pointer,
-            uniffiCallStatus: UniffiRustCallStatus,
+            `uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,
+            `uniffiCallbackData`: Long,
+            `uniffiOutReturn`: UniffiForeignFuture,
         ) {
             val uniffiObj = FfiConverterTypeAddCallback.handleMap.get(uniffiHandle)
-            val makeCall = {  uniffiObj.`progress`(
-                FfiConverterTypeAddProgress.lift(`progress`),
-            )
+            val makeCall =
+                suspend {  uniffiObj.`progress`(
+                    FfiConverterTypeAddProgress.lift(`progress`),
+                )
+                }
+            val uniffiHandleSuccess = { _: Unit ->
+                val uniffiResult =
+                    UniffiForeignFutureStructVoid.UniffiByValue(
+                        UniffiRustCallStatus.ByValue(),
+                    )
+                uniffiResult.write()
+                uniffiFutureCallback.callback(uniffiCallbackData, uniffiResult)
             }
-            val writeReturn = { _: Unit -> Unit }
-            uniffiTraitInterfaceCallWithError(
-                uniffiCallStatus,
-                makeCall,
-                writeReturn,
-                { e: CallbackException -> FfiConverterTypeCallbackError.lower(e) },
+            val uniffiHandleError = { callStatus: UniffiRustCallStatus.ByValue ->
+                uniffiFutureCallback.callback(
+                    uniffiCallbackData,
+                    UniffiForeignFutureStructVoid.UniffiByValue(
+                        callStatus,
+                    ),
+                )
+            }
+
+            uniffiOutReturn.uniffiSetValue(
+                uniffiTraitInterfaceCallAsyncWithError(
+                    makeCall,
+                    uniffiHandleSuccess,
+                    uniffiHandleError,
+                    { e: CallbackException -> FfiConverterTypeCallbackError.lower(e) },
+                ),
             )
         }
     }
@@ -7110,7 +7215,7 @@ public object FfiConverterTypeDoc : FfiConverter<Doc, Pointer> {
  * method to check the `DocExportProgressType`
  */
 public interface DocExportFileCallback {
-    fun `progress`(`progress`: DocExportProgress)
+    suspend fun `progress`(`progress`: DocExportProgress)
 
     companion object
 }
@@ -7204,19 +7309,24 @@ open class DocExportFileCallbackImpl :
             UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_docexportfilecallback(pointer!!, status)
         }
 
-    @Throws(
-        CallbackException::class,
-        )
-    override fun `progress`(`progress`: DocExportProgress) =
-        callWithPointer {
-            uniffiRustCallWithError(CallbackException) { _status ->
+    @Throws(CallbackException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `progress`(`progress`: DocExportProgress) =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
                 UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_docexportfilecallback_progress(
-                    it,
+                    thisPtr,
                     FfiConverterTypeDocExportProgress.lower(`progress`),
-                    _status,
                 )
-            }
-        }
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_void(future) },
+            // lift function
+            { Unit },
+            // Error FFI converter
+            CallbackException.ErrorHandler,
+        )
 
     companion object
 }
@@ -7227,20 +7337,40 @@ internal object uniffiCallbackInterfaceDocExportFileCallback {
         override fun callback(
             `uniffiHandle`: Long,
             `progress`: Pointer,
-            `uniffiOutReturn`: Pointer,
-            uniffiCallStatus: UniffiRustCallStatus,
+            `uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,
+            `uniffiCallbackData`: Long,
+            `uniffiOutReturn`: UniffiForeignFuture,
         ) {
             val uniffiObj = FfiConverterTypeDocExportFileCallback.handleMap.get(uniffiHandle)
-            val makeCall = {  uniffiObj.`progress`(
-                FfiConverterTypeDocExportProgress.lift(`progress`),
-            )
+            val makeCall =
+                suspend {  uniffiObj.`progress`(
+                    FfiConverterTypeDocExportProgress.lift(`progress`),
+                )
+                }
+            val uniffiHandleSuccess = { _: Unit ->
+                val uniffiResult =
+                    UniffiForeignFutureStructVoid.UniffiByValue(
+                        UniffiRustCallStatus.ByValue(),
+                    )
+                uniffiResult.write()
+                uniffiFutureCallback.callback(uniffiCallbackData, uniffiResult)
             }
-            val writeReturn = { _: Unit -> Unit }
-            uniffiTraitInterfaceCallWithError(
-                uniffiCallStatus,
-                makeCall,
-                writeReturn,
-                { e: CallbackException -> FfiConverterTypeCallbackError.lower(e) },
+            val uniffiHandleError = { callStatus: UniffiRustCallStatus.ByValue ->
+                uniffiFutureCallback.callback(
+                    uniffiCallbackData,
+                    UniffiForeignFutureStructVoid.UniffiByValue(
+                        callStatus,
+                    ),
+                )
+            }
+
+            uniffiOutReturn.uniffiSetValue(
+                uniffiTraitInterfaceCallAsyncWithError(
+                    makeCall,
+                    uniffiHandleSuccess,
+                    uniffiHandleError,
+                    { e: CallbackException -> FfiConverterTypeCallbackError.lower(e) },
+                ),
             )
         }
     }
@@ -7689,7 +7819,7 @@ public object FfiConverterTypeDocExportProgress : FfiConverter<DocExportProgress
  * method to check the `DocImportProgressType`
  */
 public interface DocImportFileCallback {
-    fun `progress`(`progress`: DocImportProgress)
+    suspend fun `progress`(`progress`: DocImportProgress)
 
     companion object
 }
@@ -7783,19 +7913,24 @@ open class DocImportFileCallbackImpl :
             UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_docimportfilecallback(pointer!!, status)
         }
 
-    @Throws(
-        CallbackException::class,
-        )
-    override fun `progress`(`progress`: DocImportProgress) =
-        callWithPointer {
-            uniffiRustCallWithError(CallbackException) { _status ->
+    @Throws(CallbackException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `progress`(`progress`: DocImportProgress) =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
                 UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_docimportfilecallback_progress(
-                    it,
+                    thisPtr,
                     FfiConverterTypeDocImportProgress.lower(`progress`),
-                    _status,
                 )
-            }
-        }
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_void(future) },
+            // lift function
+            { Unit },
+            // Error FFI converter
+            CallbackException.ErrorHandler,
+        )
 
     companion object
 }
@@ -7806,20 +7941,40 @@ internal object uniffiCallbackInterfaceDocImportFileCallback {
         override fun callback(
             `uniffiHandle`: Long,
             `progress`: Pointer,
-            `uniffiOutReturn`: Pointer,
-            uniffiCallStatus: UniffiRustCallStatus,
+            `uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,
+            `uniffiCallbackData`: Long,
+            `uniffiOutReturn`: UniffiForeignFuture,
         ) {
             val uniffiObj = FfiConverterTypeDocImportFileCallback.handleMap.get(uniffiHandle)
-            val makeCall = {  uniffiObj.`progress`(
-                FfiConverterTypeDocImportProgress.lift(`progress`),
-            )
+            val makeCall =
+                suspend {  uniffiObj.`progress`(
+                    FfiConverterTypeDocImportProgress.lift(`progress`),
+                )
+                }
+            val uniffiHandleSuccess = { _: Unit ->
+                val uniffiResult =
+                    UniffiForeignFutureStructVoid.UniffiByValue(
+                        UniffiRustCallStatus.ByValue(),
+                    )
+                uniffiResult.write()
+                uniffiFutureCallback.callback(uniffiCallbackData, uniffiResult)
             }
-            val writeReturn = { _: Unit -> Unit }
-            uniffiTraitInterfaceCallWithError(
-                uniffiCallStatus,
-                makeCall,
-                writeReturn,
-                { e: CallbackException -> FfiConverterTypeCallbackError.lower(e) },
+            val uniffiHandleError = { callStatus: UniffiRustCallStatus.ByValue ->
+                uniffiFutureCallback.callback(
+                    uniffiCallbackData,
+                    UniffiForeignFutureStructVoid.UniffiByValue(
+                        callStatus,
+                    ),
+                )
+            }
+
+            uniffiOutReturn.uniffiSetValue(
+                uniffiTraitInterfaceCallAsyncWithError(
+                    makeCall,
+                    uniffiHandleSuccess,
+                    uniffiHandleError,
+                    { e: CallbackException -> FfiConverterTypeCallbackError.lower(e) },
+                ),
             )
         }
     }
@@ -8308,7 +8463,7 @@ public object FfiConverterTypeDocImportProgress : FfiConverter<DocImportProgress
  * `DownloadProgressType` of the event.
  */
 public interface DownloadCallback {
-    fun `progress`(`progress`: DownloadProgress)
+    suspend fun `progress`(`progress`: DownloadProgress)
 
     companion object
 }
@@ -8402,19 +8557,24 @@ open class DownloadCallbackImpl :
             UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_downloadcallback(pointer!!, status)
         }
 
-    @Throws(
-        CallbackException::class,
-        )
-    override fun `progress`(`progress`: DownloadProgress) =
-        callWithPointer {
-            uniffiRustCallWithError(CallbackException) { _status ->
+    @Throws(CallbackException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `progress`(`progress`: DownloadProgress) =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
                 UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_downloadcallback_progress(
-                    it,
+                    thisPtr,
                     FfiConverterTypeDownloadProgress.lower(`progress`),
-                    _status,
                 )
-            }
-        }
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_void(future) },
+            // lift function
+            { Unit },
+            // Error FFI converter
+            CallbackException.ErrorHandler,
+        )
 
     companion object
 }
@@ -8425,20 +8585,40 @@ internal object uniffiCallbackInterfaceDownloadCallback {
         override fun callback(
             `uniffiHandle`: Long,
             `progress`: Pointer,
-            `uniffiOutReturn`: Pointer,
-            uniffiCallStatus: UniffiRustCallStatus,
+            `uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,
+            `uniffiCallbackData`: Long,
+            `uniffiOutReturn`: UniffiForeignFuture,
         ) {
             val uniffiObj = FfiConverterTypeDownloadCallback.handleMap.get(uniffiHandle)
-            val makeCall = {  uniffiObj.`progress`(
-                FfiConverterTypeDownloadProgress.lift(`progress`),
-            )
+            val makeCall =
+                suspend {  uniffiObj.`progress`(
+                    FfiConverterTypeDownloadProgress.lift(`progress`),
+                )
+                }
+            val uniffiHandleSuccess = { _: Unit ->
+                val uniffiResult =
+                    UniffiForeignFutureStructVoid.UniffiByValue(
+                        UniffiRustCallStatus.ByValue(),
+                    )
+                uniffiResult.write()
+                uniffiFutureCallback.callback(uniffiCallbackData, uniffiResult)
             }
-            val writeReturn = { _: Unit -> Unit }
-            uniffiTraitInterfaceCallWithError(
-                uniffiCallStatus,
-                makeCall,
-                writeReturn,
-                { e: CallbackException -> FfiConverterTypeCallbackError.lower(e) },
+            val uniffiHandleError = { callStatus: UniffiRustCallStatus.ByValue ->
+                uniffiFutureCallback.callback(
+                    uniffiCallbackData,
+                    UniffiForeignFutureStructVoid.UniffiByValue(
+                        callStatus,
+                    ),
+                )
+            }
+
+            uniffiOutReturn.uniffiSetValue(
+                uniffiTraitInterfaceCallAsyncWithError(
+                    makeCall,
+                    uniffiHandleSuccess,
+                    uniffiHandleError,
+                    { e: CallbackException -> FfiConverterTypeCallbackError.lower(e) },
+                ),
             )
         }
     }
@@ -14116,7 +14296,7 @@ public object FfiConverterTypeSetTagOption : FfiConverter<SetTagOption, Pointer>
  * method to check the `LiveEvent`
  */
 public interface SubscribeCallback {
-    fun `event`(`event`: LiveEvent)
+    suspend fun `event`(`event`: LiveEvent)
 
     companion object
 }
@@ -14210,19 +14390,24 @@ open class SubscribeCallbackImpl :
             UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_subscribecallback(pointer!!, status)
         }
 
-    @Throws(
-        CallbackException::class,
-        )
-    override fun `event`(`event`: LiveEvent) =
-        callWithPointer {
-            uniffiRustCallWithError(CallbackException) { _status ->
+    @Throws(CallbackException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `event`(`event`: LiveEvent) =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
                 UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_subscribecallback_event(
-                    it,
+                    thisPtr,
                     FfiConverterTypeLiveEvent.lower(`event`),
-                    _status,
                 )
-            }
-        }
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_void(future) },
+            // lift function
+            { Unit },
+            // Error FFI converter
+            CallbackException.ErrorHandler,
+        )
 
     companion object
 }
@@ -14233,20 +14418,40 @@ internal object uniffiCallbackInterfaceSubscribeCallback {
         override fun callback(
             `uniffiHandle`: Long,
             `event`: Pointer,
-            `uniffiOutReturn`: Pointer,
-            uniffiCallStatus: UniffiRustCallStatus,
+            `uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,
+            `uniffiCallbackData`: Long,
+            `uniffiOutReturn`: UniffiForeignFuture,
         ) {
             val uniffiObj = FfiConverterTypeSubscribeCallback.handleMap.get(uniffiHandle)
-            val makeCall = {  uniffiObj.`event`(
-                FfiConverterTypeLiveEvent.lift(`event`),
-            )
+            val makeCall =
+                suspend {  uniffiObj.`event`(
+                    FfiConverterTypeLiveEvent.lift(`event`),
+                )
+                }
+            val uniffiHandleSuccess = { _: Unit ->
+                val uniffiResult =
+                    UniffiForeignFutureStructVoid.UniffiByValue(
+                        UniffiRustCallStatus.ByValue(),
+                    )
+                uniffiResult.write()
+                uniffiFutureCallback.callback(uniffiCallbackData, uniffiResult)
             }
-            val writeReturn = { _: Unit -> Unit }
-            uniffiTraitInterfaceCallWithError(
-                uniffiCallStatus,
-                makeCall,
-                writeReturn,
-                { e: CallbackException -> FfiConverterTypeCallbackError.lower(e) },
+            val uniffiHandleError = { callStatus: UniffiRustCallStatus.ByValue ->
+                uniffiFutureCallback.callback(
+                    uniffiCallbackData,
+                    UniffiForeignFutureStructVoid.UniffiByValue(
+                        callStatus,
+                    ),
+                )
+            }
+
+            uniffiOutReturn.uniffiSetValue(
+                uniffiTraitInterfaceCallAsyncWithError(
+                    makeCall,
+                    uniffiHandleSuccess,
+                    uniffiHandleError,
+                    { e: CallbackException -> FfiConverterTypeCallbackError.lower(e) },
+                ),
             )
         }
     }

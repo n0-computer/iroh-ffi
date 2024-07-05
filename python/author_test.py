@@ -2,9 +2,14 @@
 from iroh import IrohNode
 import pytest
 import tempfile
+import iroh
+import asyncio
 
 @pytest.mark.asyncio
 async def test_author_api():
+    # setup event loop, to ensure async callbacks work
+    iroh.iroh_ffi.uniffi_set_event_loop(asyncio.get_running_loop())
+
     #
     # create node
     dir = tempfile.TemporaryDirectory()

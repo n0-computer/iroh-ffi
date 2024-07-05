@@ -1,12 +1,16 @@
 # tests that correspond to the `src/doc.rs` rust api
 import tempfile
-import queue
 import pytest
+import asyncio
+import iroh
 
 from iroh import IrohNode, ShareMode, LiveEventType, AddrInfoOptions
 
 @pytest.mark.asyncio
 async def test_basic_sync():
+    # setup event loop, to ensure async callbacks work
+    iroh.iroh_ffi.uniffi_set_event_loop(asyncio.get_running_loop())
+
     # Create node_0
     iroh_dir_0 = tempfile.TemporaryDirectory()
     node_0 = await IrohNode.create(iroh_dir_0.name)
@@ -23,14 +27,14 @@ async def test_basic_sync():
         def __init__(self, found_s):
             self.found_s = found_s
 
-        def event(self, event):
+        async def event(self, event):
             print("", event.type())
             if (event.type() == LiveEventType.CONTENT_READY):
                 print("got event type content ready")
-                self.found_s.put(event.as_content_ready())
+                await self.found_s.put(event.as_content_ready())
 
     # Subscribe to sync events
-    found_s = queue.Queue()
+    found_s = asyncio.Queue(maxsize=1)
     cb = SubscribeCallback(found_s)
     await doc_0.subscribe(cb)
 
@@ -42,7 +46,8 @@ async def test_basic_sync():
     await doc_1.set_bytes(author, b"hello", b"world")
 
     # Wait for the content ready event
-    hash = found_s.get()
+    hash = await found_s.get()
+    found_s.task_done()
 
     # Get content from hash
     val = await node_1.blobs_read_to_bytes(hash)

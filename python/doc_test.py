@@ -4,6 +4,8 @@ import pytest
 import tempfile
 import os
 import random
+import asyncio
+import iroh
 
 def test_node_addr():
     #
@@ -89,6 +91,9 @@ def test_query():
 
 @pytest.mark.asyncio
 async def test_doc_entry_basics():
+    # setup event loop, to ensure async callbacks work
+    iroh.iroh_ffi.uniffi_set_event_loop(asyncio.get_running_loop())
+
     #
     # create node
     dir = tempfile.TemporaryDirectory()
@@ -113,6 +118,9 @@ async def test_doc_entry_basics():
 
 @pytest.mark.asyncio
 async def test_doc_import_export():
+    # setup event loop, to ensure async callbacks work
+    iroh.iroh_ffi.uniffi_set_event_loop(asyncio.get_running_loop())
+
     #
     # create file temp der
     dir = tempfile.TemporaryDirectory()
