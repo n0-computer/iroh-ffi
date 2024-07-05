@@ -547,7 +547,7 @@ private struct FfiConverterDuration: FfiConverterRustBuffer {
  * method to check the `AddProgressType`
  */
 public protocol AddCallback: AnyObject {
-    func progress(progress: AddProgress) throws
+    func progress(progress: AddProgress) async throws
 }
 
 /**
@@ -595,10 +595,21 @@ open class AddCallbackImpl:
         try! rustCall { uniffi_iroh_ffi_fn_free_addcallback(pointer, $0) }
     }
 
-    open func progress(progress: AddProgress) throws { try rustCallWithError(FfiConverterTypeCallbackError.lift) {
-        uniffi_iroh_ffi_fn_method_addcallback_progress(self.uniffiClonePointer(),
-                                                       FfiConverterTypeAddProgress.lower(progress), $0)
-    }
+    open func progress(progress: AddProgress) async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_addcallback_progress(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeAddProgress.lower(progress)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeCallbackError.lift
+            )
     }
 }
 
@@ -618,26 +629,43 @@ private enum UniffiCallbackInterfaceAddCallback {
         progress: { (
             uniffiHandle: UInt64,
             progress: UnsafeMutableRawPointer,
-            _: UnsafeMutableRawPointer,
-            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
+            uniffiFutureCallback: @escaping UniffiForeignFutureCompleteVoid,
+            uniffiCallbackData: UInt64,
+            uniffiOutReturn: UnsafeMutablePointer<UniffiForeignFuture>
         ) in
             let makeCall = {
-                () throws in
+                () async throws in
                 guard let uniffiObj = try? FfiConverterTypeAddCallback.handleMap.get(handle: uniffiHandle) else {
                     throw UniffiInternalError.unexpectedStaleHandle
                 }
-                return try uniffiObj.progress(
+                return try await uniffiObj.progress(
                     progress: FfiConverterTypeAddProgress.lift(progress)
                 )
             }
 
-            let writeReturn = { () }
-            uniffiTraitInterfaceCallWithError(
-                callStatus: uniffiCallStatus,
+            let uniffiHandleSuccess = { (_: ()) in
+                uniffiFutureCallback(
+                    uniffiCallbackData,
+                    UniffiForeignFutureStructVoid(
+                        callStatus: RustCallStatus()
+                    )
+                )
+            }
+            let uniffiHandleError = { statusCode, errorBuf in
+                uniffiFutureCallback(
+                    uniffiCallbackData,
+                    UniffiForeignFutureStructVoid(
+                        callStatus: RustCallStatus(code: statusCode, errorBuf: errorBuf)
+                    )
+                )
+            }
+            let uniffiForeignFuture = uniffiTraitInterfaceCallAsyncWithError(
                 makeCall: makeCall,
-                writeReturn: writeReturn,
+                handleSuccess: uniffiHandleSuccess,
+                handleError: uniffiHandleError,
                 lowerError: FfiConverterTypeCallbackError.lower
             )
+            uniffiOutReturn.pointee = uniffiForeignFuture
         },
         uniffiFree: { (uniffiHandle: UInt64) in
             let result = try? FfiConverterTypeAddCallback.handleMap.remove(handle: uniffiHandle)
@@ -2369,7 +2397,7 @@ public func FfiConverterTypeDoc_lower(_ value: Doc) -> UnsafeMutableRawPointer {
  * method to check the `DocExportProgressType`
  */
 public protocol DocExportFileCallback: AnyObject {
-    func progress(progress: DocExportProgress) throws
+    func progress(progress: DocExportProgress) async throws
 }
 
 /**
@@ -2417,10 +2445,21 @@ open class DocExportFileCallbackImpl:
         try! rustCall { uniffi_iroh_ffi_fn_free_docexportfilecallback(pointer, $0) }
     }
 
-    open func progress(progress: DocExportProgress) throws { try rustCallWithError(FfiConverterTypeCallbackError.lift) {
-        uniffi_iroh_ffi_fn_method_docexportfilecallback_progress(self.uniffiClonePointer(),
-                                                                 FfiConverterTypeDocExportProgress.lower(progress), $0)
-    }
+    open func progress(progress: DocExportProgress) async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_docexportfilecallback_progress(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeDocExportProgress.lower(progress)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeCallbackError.lift
+            )
     }
 }
 
@@ -2432,26 +2471,43 @@ private enum UniffiCallbackInterfaceDocExportFileCallback {
         progress: { (
             uniffiHandle: UInt64,
             progress: UnsafeMutableRawPointer,
-            _: UnsafeMutableRawPointer,
-            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
+            uniffiFutureCallback: @escaping UniffiForeignFutureCompleteVoid,
+            uniffiCallbackData: UInt64,
+            uniffiOutReturn: UnsafeMutablePointer<UniffiForeignFuture>
         ) in
             let makeCall = {
-                () throws in
+                () async throws in
                 guard let uniffiObj = try? FfiConverterTypeDocExportFileCallback.handleMap.get(handle: uniffiHandle) else {
                     throw UniffiInternalError.unexpectedStaleHandle
                 }
-                return try uniffiObj.progress(
+                return try await uniffiObj.progress(
                     progress: FfiConverterTypeDocExportProgress.lift(progress)
                 )
             }
 
-            let writeReturn = { () }
-            uniffiTraitInterfaceCallWithError(
-                callStatus: uniffiCallStatus,
+            let uniffiHandleSuccess = { (_: ()) in
+                uniffiFutureCallback(
+                    uniffiCallbackData,
+                    UniffiForeignFutureStructVoid(
+                        callStatus: RustCallStatus()
+                    )
+                )
+            }
+            let uniffiHandleError = { statusCode, errorBuf in
+                uniffiFutureCallback(
+                    uniffiCallbackData,
+                    UniffiForeignFutureStructVoid(
+                        callStatus: RustCallStatus(code: statusCode, errorBuf: errorBuf)
+                    )
+                )
+            }
+            let uniffiForeignFuture = uniffiTraitInterfaceCallAsyncWithError(
                 makeCall: makeCall,
-                writeReturn: writeReturn,
+                handleSuccess: uniffiHandleSuccess,
+                handleError: uniffiHandleError,
                 lowerError: FfiConverterTypeCallbackError.lower
             )
+            uniffiOutReturn.pointee = uniffiForeignFuture
         },
         uniffiFree: { (uniffiHandle: UInt64) in
             let result = try? FfiConverterTypeDocExportFileCallback.handleMap.remove(handle: uniffiHandle)
@@ -2658,7 +2714,7 @@ public func FfiConverterTypeDocExportProgress_lower(_ value: DocExportProgress) 
  * method to check the `DocImportProgressType`
  */
 public protocol DocImportFileCallback: AnyObject {
-    func progress(progress: DocImportProgress) throws
+    func progress(progress: DocImportProgress) async throws
 }
 
 /**
@@ -2706,10 +2762,21 @@ open class DocImportFileCallbackImpl:
         try! rustCall { uniffi_iroh_ffi_fn_free_docimportfilecallback(pointer, $0) }
     }
 
-    open func progress(progress: DocImportProgress) throws { try rustCallWithError(FfiConverterTypeCallbackError.lift) {
-        uniffi_iroh_ffi_fn_method_docimportfilecallback_progress(self.uniffiClonePointer(),
-                                                                 FfiConverterTypeDocImportProgress.lower(progress), $0)
-    }
+    open func progress(progress: DocImportProgress) async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_docimportfilecallback_progress(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeDocImportProgress.lower(progress)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeCallbackError.lift
+            )
     }
 }
 
@@ -2721,26 +2788,43 @@ private enum UniffiCallbackInterfaceDocImportFileCallback {
         progress: { (
             uniffiHandle: UInt64,
             progress: UnsafeMutableRawPointer,
-            _: UnsafeMutableRawPointer,
-            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
+            uniffiFutureCallback: @escaping UniffiForeignFutureCompleteVoid,
+            uniffiCallbackData: UInt64,
+            uniffiOutReturn: UnsafeMutablePointer<UniffiForeignFuture>
         ) in
             let makeCall = {
-                () throws in
+                () async throws in
                 guard let uniffiObj = try? FfiConverterTypeDocImportFileCallback.handleMap.get(handle: uniffiHandle) else {
                     throw UniffiInternalError.unexpectedStaleHandle
                 }
-                return try uniffiObj.progress(
+                return try await uniffiObj.progress(
                     progress: FfiConverterTypeDocImportProgress.lift(progress)
                 )
             }
 
-            let writeReturn = { () }
-            uniffiTraitInterfaceCallWithError(
-                callStatus: uniffiCallStatus,
+            let uniffiHandleSuccess = { (_: ()) in
+                uniffiFutureCallback(
+                    uniffiCallbackData,
+                    UniffiForeignFutureStructVoid(
+                        callStatus: RustCallStatus()
+                    )
+                )
+            }
+            let uniffiHandleError = { statusCode, errorBuf in
+                uniffiFutureCallback(
+                    uniffiCallbackData,
+                    UniffiForeignFutureStructVoid(
+                        callStatus: RustCallStatus(code: statusCode, errorBuf: errorBuf)
+                    )
+                )
+            }
+            let uniffiForeignFuture = uniffiTraitInterfaceCallAsyncWithError(
                 makeCall: makeCall,
-                writeReturn: writeReturn,
+                handleSuccess: uniffiHandleSuccess,
+                handleError: uniffiHandleError,
                 lowerError: FfiConverterTypeCallbackError.lower
             )
+            uniffiOutReturn.pointee = uniffiForeignFuture
         },
         uniffiFree: { (uniffiHandle: UInt64) in
             let result = try? FfiConverterTypeDocImportFileCallback.handleMap.remove(handle: uniffiHandle)
@@ -2975,7 +3059,7 @@ public func FfiConverterTypeDocImportProgress_lower(_ value: DocImportProgress) 
  * `DownloadProgressType` of the event.
  */
 public protocol DownloadCallback: AnyObject {
-    func progress(progress: DownloadProgress) throws
+    func progress(progress: DownloadProgress) async throws
 }
 
 /**
@@ -3023,10 +3107,21 @@ open class DownloadCallbackImpl:
         try! rustCall { uniffi_iroh_ffi_fn_free_downloadcallback(pointer, $0) }
     }
 
-    open func progress(progress: DownloadProgress) throws { try rustCallWithError(FfiConverterTypeCallbackError.lift) {
-        uniffi_iroh_ffi_fn_method_downloadcallback_progress(self.uniffiClonePointer(),
-                                                            FfiConverterTypeDownloadProgress.lower(progress), $0)
-    }
+    open func progress(progress: DownloadProgress) async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_downloadcallback_progress(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeDownloadProgress.lower(progress)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeCallbackError.lift
+            )
     }
 }
 
@@ -3038,26 +3133,43 @@ private enum UniffiCallbackInterfaceDownloadCallback {
         progress: { (
             uniffiHandle: UInt64,
             progress: UnsafeMutableRawPointer,
-            _: UnsafeMutableRawPointer,
-            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
+            uniffiFutureCallback: @escaping UniffiForeignFutureCompleteVoid,
+            uniffiCallbackData: UInt64,
+            uniffiOutReturn: UnsafeMutablePointer<UniffiForeignFuture>
         ) in
             let makeCall = {
-                () throws in
+                () async throws in
                 guard let uniffiObj = try? FfiConverterTypeDownloadCallback.handleMap.get(handle: uniffiHandle) else {
                     throw UniffiInternalError.unexpectedStaleHandle
                 }
-                return try uniffiObj.progress(
+                return try await uniffiObj.progress(
                     progress: FfiConverterTypeDownloadProgress.lift(progress)
                 )
             }
 
-            let writeReturn = { () }
-            uniffiTraitInterfaceCallWithError(
-                callStatus: uniffiCallStatus,
+            let uniffiHandleSuccess = { (_: ()) in
+                uniffiFutureCallback(
+                    uniffiCallbackData,
+                    UniffiForeignFutureStructVoid(
+                        callStatus: RustCallStatus()
+                    )
+                )
+            }
+            let uniffiHandleError = { statusCode, errorBuf in
+                uniffiFutureCallback(
+                    uniffiCallbackData,
+                    UniffiForeignFutureStructVoid(
+                        callStatus: RustCallStatus(code: statusCode, errorBuf: errorBuf)
+                    )
+                )
+            }
+            let uniffiForeignFuture = uniffiTraitInterfaceCallAsyncWithError(
                 makeCall: makeCall,
-                writeReturn: writeReturn,
+                handleSuccess: uniffiHandleSuccess,
+                handleError: uniffiHandleError,
                 lowerError: FfiConverterTypeCallbackError.lower
             )
+            uniffiOutReturn.pointee = uniffiForeignFuture
         },
         uniffiFree: { (uniffiHandle: UInt64) in
             let result = try? FfiConverterTypeDownloadCallback.handleMap.remove(handle: uniffiHandle)
@@ -6296,7 +6408,7 @@ public func FfiConverterTypeSetTagOption_lower(_ value: SetTagOption) -> UnsafeM
  * method to check the `LiveEvent`
  */
 public protocol SubscribeCallback: AnyObject {
-    func event(event: LiveEvent) throws
+    func event(event: LiveEvent) async throws
 }
 
 /**
@@ -6344,10 +6456,21 @@ open class SubscribeCallbackImpl:
         try! rustCall { uniffi_iroh_ffi_fn_free_subscribecallback(pointer, $0) }
     }
 
-    open func event(event: LiveEvent) throws { try rustCallWithError(FfiConverterTypeCallbackError.lift) {
-        uniffi_iroh_ffi_fn_method_subscribecallback_event(self.uniffiClonePointer(),
-                                                          FfiConverterTypeLiveEvent.lower(event), $0)
-    }
+    open func event(event: LiveEvent) async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_subscribecallback_event(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeLiveEvent.lower(event)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeCallbackError.lift
+            )
     }
 }
 
@@ -6359,26 +6482,43 @@ private enum UniffiCallbackInterfaceSubscribeCallback {
         event: { (
             uniffiHandle: UInt64,
             event: UnsafeMutableRawPointer,
-            _: UnsafeMutableRawPointer,
-            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
+            uniffiFutureCallback: @escaping UniffiForeignFutureCompleteVoid,
+            uniffiCallbackData: UInt64,
+            uniffiOutReturn: UnsafeMutablePointer<UniffiForeignFuture>
         ) in
             let makeCall = {
-                () throws in
+                () async throws in
                 guard let uniffiObj = try? FfiConverterTypeSubscribeCallback.handleMap.get(handle: uniffiHandle) else {
                     throw UniffiInternalError.unexpectedStaleHandle
                 }
-                return try uniffiObj.event(
+                return try await uniffiObj.event(
                     event: FfiConverterTypeLiveEvent.lift(event)
                 )
             }
 
-            let writeReturn = { () }
-            uniffiTraitInterfaceCallWithError(
-                callStatus: uniffiCallStatus,
+            let uniffiHandleSuccess = { (_: ()) in
+                uniffiFutureCallback(
+                    uniffiCallbackData,
+                    UniffiForeignFutureStructVoid(
+                        callStatus: RustCallStatus()
+                    )
+                )
+            }
+            let uniffiHandleError = { statusCode, errorBuf in
+                uniffiFutureCallback(
+                    uniffiCallbackData,
+                    UniffiForeignFutureStructVoid(
+                        callStatus: RustCallStatus(code: statusCode, errorBuf: errorBuf)
+                    )
+                )
+            }
+            let uniffiForeignFuture = uniffiTraitInterfaceCallAsyncWithError(
                 makeCall: makeCall,
-                writeReturn: writeReturn,
+                handleSuccess: uniffiHandleSuccess,
+                handleError: uniffiHandleError,
                 lowerError: FfiConverterTypeCallbackError.lower
             )
+            uniffiOutReturn.pointee = uniffiForeignFuture
         },
         uniffiFree: { (uniffiHandle: UInt64) in
             let result = try? FfiConverterTypeSubscribeCallback.handleMap.remove(handle: uniffiHandle)
@@ -10909,6 +11049,72 @@ private func uniffiFutureContinuationCallback(handle: UInt64, pollResult: Int8) 
     }
 }
 
+private func uniffiTraitInterfaceCallAsync<T>(
+    makeCall: @escaping () async throws -> T,
+    handleSuccess: @escaping (T) -> Void,
+    handleError: @escaping (Int8, RustBuffer) -> Void
+) -> UniffiForeignFuture {
+    let task = Task {
+        do {
+            try handleSuccess(await makeCall())
+        } catch {
+            handleError(CALL_UNEXPECTED_ERROR, FfiConverterString.lower(String(describing: error)))
+        }
+    }
+    let handle = UNIFFI_FOREIGN_FUTURE_HANDLE_MAP.insert(obj: task)
+    return UniffiForeignFuture(handle: handle, free: uniffiForeignFutureFree)
+}
+
+private func uniffiTraitInterfaceCallAsyncWithError<T, E>(
+    makeCall: @escaping () async throws -> T,
+    handleSuccess: @escaping (T) -> Void,
+    handleError: @escaping (Int8, RustBuffer) -> Void,
+    lowerError: @escaping (E) -> RustBuffer
+) -> UniffiForeignFuture {
+    let task = Task {
+        do {
+            try handleSuccess(await makeCall())
+        } catch let error as E {
+            handleError(CALL_ERROR, lowerError(error))
+        } catch {
+            handleError(CALL_UNEXPECTED_ERROR, FfiConverterString.lower(String(describing: error)))
+        }
+    }
+    let handle = UNIFFI_FOREIGN_FUTURE_HANDLE_MAP.insert(obj: task)
+    return UniffiForeignFuture(handle: handle, free: uniffiForeignFutureFree)
+}
+
+// Borrow the callback handle map implementation to store foreign future handles
+// TODO: consolidate the handle-map code (https://github.com/mozilla/uniffi-rs/pull/1823)
+private var UNIFFI_FOREIGN_FUTURE_HANDLE_MAP = UniffiHandleMap<UniffiForeignFutureTask>()
+
+// Protocol for tasks that handle foreign futures.
+//
+// Defining a protocol allows all tasks to be stored in the same handle map.  This can't be done
+// with the task object itself, since has generic parameters.
+protocol UniffiForeignFutureTask {
+    func cancel()
+}
+
+extension Task: UniffiForeignFutureTask {}
+
+private func uniffiForeignFutureFree(handle: UInt64) {
+    do {
+        let task = try UNIFFI_FOREIGN_FUTURE_HANDLE_MAP.remove(handle: handle)
+        // Set the cancellation flag on the task.  If it's still running, the code can check the
+        // cancellation flag or call `Task.checkCancellation()`.  If the task has completed, this is
+        // a no-op.
+        task.cancel()
+    } catch {
+        print("uniffiForeignFutureFree: handle missing from handlemap")
+    }
+}
+
+// For testing
+public func uniffiForeignFutureHandleCountIrohFfi() -> Int {
+    UNIFFI_FOREIGN_FUTURE_HANDLE_MAP.count
+}
+
 /**
  * Helper function that translates a key that was derived from the [`path_to_key`] function back
  * into a path.
@@ -10989,7 +11195,7 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_func_start_metrics_collection() != 23413 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_method_addcallback_progress() != 49379 {
+    if uniffi_iroh_ffi_checksum_method_addcallback_progress() != 62116 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_addprogress_as_abort() != 44667 {
@@ -11124,7 +11330,7 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_method_doc_subscribe() != 59807 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_method_docexportfilecallback_progress() != 38008 {
+    if uniffi_iroh_ffi_checksum_method_docexportfilecallback_progress() != 53186 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_docexportprogress_as_abort() != 34476 {
@@ -11139,7 +11345,7 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_method_docexportprogress_type() != 11215 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_method_docimportfilecallback_progress() != 37343 {
+    if uniffi_iroh_ffi_checksum_method_docimportfilecallback_progress() != 55347 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_docimportprogress_as_abort() != 35952 {
@@ -11160,7 +11366,7 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_method_docimportprogress_type() != 48401 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_method_downloadcallback_progress() != 15880 {
+    if uniffi_iroh_ffi_checksum_method_downloadcallback_progress() != 21881 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_downloadprogress_as_abort() != 6879 {
@@ -11385,7 +11591,7 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_method_rangespec_is_empty() != 38175 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_method_subscribecallback_event() != 35027 {
+    if uniffi_iroh_ffi_checksum_method_subscribecallback_event() != 35520 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_constructor_author_from_string() != 63158 {

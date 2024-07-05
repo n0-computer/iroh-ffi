@@ -253,36 +253,31 @@ typedef void (*UniffiForeignFutureCompleteVoid)(uint64_t, UniffiForeignFutureStr
 #endif
 #ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_ADD_CALLBACK_METHOD0
 #define UNIFFI_FFIDEF_CALLBACK_INTERFACE_ADD_CALLBACK_METHOD0
-typedef void (*UniffiCallbackInterfaceAddCallbackMethod0)(uint64_t, void*_Nonnull, void* _Nonnull, 
-        RustCallStatus *_Nonnull uniffiCallStatus
+typedef void (*UniffiCallbackInterfaceAddCallbackMethod0)(uint64_t, void*_Nonnull, UniffiForeignFutureCompleteVoid _Nonnull, uint64_t, UniffiForeignFuture* _Nonnull
     );
 
 #endif
 #ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_DOC_EXPORT_FILE_CALLBACK_METHOD0
 #define UNIFFI_FFIDEF_CALLBACK_INTERFACE_DOC_EXPORT_FILE_CALLBACK_METHOD0
-typedef void (*UniffiCallbackInterfaceDocExportFileCallbackMethod0)(uint64_t, void*_Nonnull, void* _Nonnull, 
-        RustCallStatus *_Nonnull uniffiCallStatus
+typedef void (*UniffiCallbackInterfaceDocExportFileCallbackMethod0)(uint64_t, void*_Nonnull, UniffiForeignFutureCompleteVoid _Nonnull, uint64_t, UniffiForeignFuture* _Nonnull
     );
 
 #endif
 #ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_DOC_IMPORT_FILE_CALLBACK_METHOD0
 #define UNIFFI_FFIDEF_CALLBACK_INTERFACE_DOC_IMPORT_FILE_CALLBACK_METHOD0
-typedef void (*UniffiCallbackInterfaceDocImportFileCallbackMethod0)(uint64_t, void*_Nonnull, void* _Nonnull, 
-        RustCallStatus *_Nonnull uniffiCallStatus
+typedef void (*UniffiCallbackInterfaceDocImportFileCallbackMethod0)(uint64_t, void*_Nonnull, UniffiForeignFutureCompleteVoid _Nonnull, uint64_t, UniffiForeignFuture* _Nonnull
     );
 
 #endif
 #ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_DOWNLOAD_CALLBACK_METHOD0
 #define UNIFFI_FFIDEF_CALLBACK_INTERFACE_DOWNLOAD_CALLBACK_METHOD0
-typedef void (*UniffiCallbackInterfaceDownloadCallbackMethod0)(uint64_t, void*_Nonnull, void* _Nonnull, 
-        RustCallStatus *_Nonnull uniffiCallStatus
+typedef void (*UniffiCallbackInterfaceDownloadCallbackMethod0)(uint64_t, void*_Nonnull, UniffiForeignFutureCompleteVoid _Nonnull, uint64_t, UniffiForeignFuture* _Nonnull
     );
 
 #endif
 #ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_SUBSCRIBE_CALLBACK_METHOD0
 #define UNIFFI_FFIDEF_CALLBACK_INTERFACE_SUBSCRIBE_CALLBACK_METHOD0
-typedef void (*UniffiCallbackInterfaceSubscribeCallbackMethod0)(uint64_t, void*_Nonnull, void* _Nonnull, 
-        RustCallStatus *_Nonnull uniffiCallStatus
+typedef void (*UniffiCallbackInterfaceSubscribeCallbackMethod0)(uint64_t, void*_Nonnull, UniffiForeignFutureCompleteVoid _Nonnull, uint64_t, UniffiForeignFuture* _Nonnull
     );
 
 #endif
@@ -343,7 +338,7 @@ void uniffi_iroh_ffi_fn_init_callback_vtable_addcallback(UniffiVTableCallbackInt
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ADDCALLBACK_PROGRESS
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ADDCALLBACK_PROGRESS
-void uniffi_iroh_ffi_fn_method_addcallback_progress(void*_Nonnull ptr, void*_Nonnull progress, RustCallStatus *_Nonnull out_status
+uint64_t uniffi_iroh_ffi_fn_method_addcallback_progress(void*_Nonnull ptr, void*_Nonnull progress
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_ADDPROGRESS
@@ -709,7 +704,7 @@ void uniffi_iroh_ffi_fn_init_callback_vtable_docexportfilecallback(UniffiVTableC
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOCEXPORTFILECALLBACK_PROGRESS
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOCEXPORTFILECALLBACK_PROGRESS
-void uniffi_iroh_ffi_fn_method_docexportfilecallback_progress(void*_Nonnull ptr, void*_Nonnull progress, RustCallStatus *_Nonnull out_status
+uint64_t uniffi_iroh_ffi_fn_method_docexportfilecallback_progress(void*_Nonnull ptr, void*_Nonnull progress
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_DOCEXPORTPROGRESS
@@ -759,7 +754,7 @@ void uniffi_iroh_ffi_fn_init_callback_vtable_docimportfilecallback(UniffiVTableC
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOCIMPORTFILECALLBACK_PROGRESS
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOCIMPORTFILECALLBACK_PROGRESS
-void uniffi_iroh_ffi_fn_method_docimportfilecallback_progress(void*_Nonnull ptr, void*_Nonnull progress, RustCallStatus *_Nonnull out_status
+uint64_t uniffi_iroh_ffi_fn_method_docimportfilecallback_progress(void*_Nonnull ptr, void*_Nonnull progress
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_DOCIMPORTPROGRESS
@@ -819,7 +814,7 @@ void uniffi_iroh_ffi_fn_init_callback_vtable_downloadcallback(UniffiVTableCallba
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOWNLOADCALLBACK_PROGRESS
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOWNLOADCALLBACK_PROGRESS
-void uniffi_iroh_ffi_fn_method_downloadcallback_progress(void*_Nonnull ptr, void*_Nonnull progress, RustCallStatus *_Nonnull out_status
+uint64_t uniffi_iroh_ffi_fn_method_downloadcallback_progress(void*_Nonnull ptr, void*_Nonnull progress
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_DOWNLOADPOLICY
@@ -1497,7 +1492,7 @@ void uniffi_iroh_ffi_fn_init_callback_vtable_subscribecallback(UniffiVTableCallb
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_SUBSCRIBECALLBACK_EVENT
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_SUBSCRIBECALLBACK_EVENT
-void uniffi_iroh_ffi_fn_method_subscribecallback_event(void*_Nonnull ptr, void*_Nonnull event, RustCallStatus *_Nonnull out_status
+uint64_t uniffi_iroh_ffi_fn_method_subscribecallback_event(void*_Nonnull ptr, void*_Nonnull event
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_WRAPOPTION
