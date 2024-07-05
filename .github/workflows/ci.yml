@@ -88,12 +88,12 @@ jobs:
       with:
           python-version: 3.11
     - name: Install Deps
-      run: pip install virtualenv maturin uniffi-bindgen pytest-asyncio
+      run: pip install virtualenv
     - name: Python tests
       run: |
         virtualenv venv && \
         source venv/bin/activate && \
-        pip install pytest
+        pip install pytest pytest-asyncio maturin uniffi-bindgen
         maturin develop && \
         python -m pytest
 
