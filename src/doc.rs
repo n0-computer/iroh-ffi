@@ -1571,6 +1571,7 @@ mod tests {
         #[async_trait::async_trait]
         impl SubscribeCallback for Callback {
             async fn event(&self, event: Arc<LiveEvent>) -> Result<(), CallbackError> {
+                println!("event {:?}", event);
                 if let LiveEvent::ContentReady { ref hash } = *event {
                     let s = self.found_s.clone();
                     let hash = hash.clone();
