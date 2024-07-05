@@ -1517,7 +1517,7 @@ mod tests {
     use super::*;
     use crate::PublicKey;
     use rand::RngCore;
-    use std::io::Write;
+    use tokio::{io::AsyncWriteExt, sync::mpsc};
 
     #[tokio::test]
     async fn test_doc_create() {
@@ -1561,16 +1561,20 @@ mod tests {
             .unwrap();
 
         // subscribe to sync events
-        let (found_s, found_r) = std::sync::mpsc::channel();
+        let (found_s, mut found_r) = mpsc::channel(8);
         struct Callback {
-            found_s: std::sync::mpsc::Sender<Result<Hash, IrohError>>,
+            found_s: mpsc::Sender<Result<Hash, IrohError>>,
         }
         impl SubscribeCallback for Callback {
             fn event(&self, event: Arc<LiveEvent>) -> Result<(), CallbackError> {
                 if let LiveEvent::ContentReady { ref hash } = *event {
-                    self.found_s
-                        .send(Ok(hash.clone()))
-                        .map_err(|e| anyhow::Error::from(e))?;
+                    let s = self.found_s.clone();
+                    let hash = hash.clone();
+                    tokio::task::spawn(async move {
+                        if let Err(err) = s.send(Ok(hash)).await {
+                            eprintln!("failed to send: {err:?}");
+                        }
+                    });
                 }
                 Ok(())
             }
@@ -1587,7 +1591,7 @@ mod tests {
             .set_bytes(&author, b"hello".to_vec(), b"world".to_vec())
             .await
             .unwrap();
-        let hash = found_r.recv().unwrap().unwrap();
+        let hash = found_r.recv().await.unwrap().unwrap();
         let val = node_1.blobs_read_to_bytes(hash.into()).await.unwrap();
         assert_eq!(b"world".to_vec(), val);
     }
@@ -1727,7 +1731,7 @@ mod tests {
         // create temp file
         let temp_dir = tempfile::tempdir().unwrap();
         let in_root = temp_dir.path().join("in");
-        std::fs::create_dir_all(in_root.clone()).unwrap();
+        tokio::fs::create_dir_all(in_root.clone()).await.unwrap();
 
         let out_root = temp_dir.path().join("out");
         let path = in_root.join("test");
@@ -1735,9 +1739,9 @@ mod tests {
         let size = 100;
         let mut buf = vec![0u8; size];
         rand::thread_rng().fill_bytes(&mut buf);
-        let mut file = std::fs::File::create(path.clone()).unwrap();
-        file.write_all(&buf.clone()).unwrap();
-        file.flush().unwrap();
+        let mut file = tokio::fs::File::create(path.clone()).await.unwrap();
+        file.write_all(&buf.clone()).await.unwrap();
+        file.flush().await.unwrap();
 
         // spawn node
         let iroh_dir = tempfile::tempdir().unwrap();
@@ -1768,7 +1772,7 @@ mod tests {
         let path = crate::key_to_path(key, None, Some(out_root_str)).unwrap();
         doc.export_file(entry, path.clone(), None).await.unwrap();
 
-        let got_bytes = std::fs::read(path).unwrap();
+        let got_bytes = tokio::fs::read(path).await.unwrap();
         assert_eq!(buf, got_bytes);
     }
 }
