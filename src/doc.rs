@@ -1525,9 +1525,14 @@ mod tests {
     #[tokio::test]
     async fn test_doc_create() {
         let path = tempfile::tempdir().unwrap();
-        let node = IrohNode::new(path.path().to_string_lossy().into_owned())
-            .await
-            .unwrap();
+        let node = IrohNode::new(
+            path.path()
+                .join("doc-create")
+                .to_string_lossy()
+                .into_owned(),
+        )
+        .await
+        .unwrap();
         let node_id = node.node_id();
         println!("id: {}", node_id);
         let doc = node.doc_create().await.unwrap();
@@ -1545,16 +1550,28 @@ mod tests {
     #[tokio::test]
     async fn test_basic_sync() {
         // create node_0
-        let iroh_dir_0 = tempfile::tempdir().unwrap();
-        let node_0 = IrohNode::new(iroh_dir_0.path().to_string_lossy().into_owned())
-            .await
-            .unwrap();
+        let iroh_dir = tempfile::tempdir().unwrap();
+
+        let node_0 = IrohNode::new(
+            iroh_dir
+                .path()
+                .join("basic-sync-0")
+                .to_string_lossy()
+                .into_owned(),
+        )
+        .await
+        .unwrap();
 
         // create node_1
-        let iroh_dir_1 = tempfile::tempdir().unwrap();
-        let node_1 = IrohNode::new(iroh_dir_1.path().to_string_lossy().into_owned())
-            .await
-            .unwrap();
+        let node_1 = IrohNode::new(
+            iroh_dir
+                .path()
+                .join("basic-sync-1")
+                .to_string_lossy()
+                .into_owned(),
+        )
+        .await
+        .unwrap();
 
         // create doc on node_0
         let doc_0 = node_0.doc_create().await.unwrap();
@@ -1700,9 +1717,14 @@ mod tests {
     #[tokio::test]
     async fn test_doc_entry_basics() {
         let path = tempfile::tempdir().unwrap();
-        let node = crate::IrohNode::new(path.path().to_string_lossy().into_owned())
-            .await
-            .unwrap();
+        let node = crate::IrohNode::new(
+            path.path()
+                .join("doc-entry-basics")
+                .to_string_lossy()
+                .into_owned(),
+        )
+        .await
+        .unwrap();
 
         // create doc  and author
         let doc = node.doc_create().await.unwrap();
@@ -1731,10 +1753,10 @@ mod tests {
     async fn test_doc_import_export() {
         // create temp file
         let temp_dir = tempfile::tempdir().unwrap();
-        let in_root = temp_dir.path().join("in");
+        let in_root = temp_dir.path().join("import-export-in");
         tokio::fs::create_dir_all(in_root.clone()).await.unwrap();
 
-        let out_root = temp_dir.path().join("out");
+        let out_root = temp_dir.path().join("import-export-out");
         let path = in_root.join("test");
 
         let size = 100;
@@ -1746,9 +1768,15 @@ mod tests {
 
         // spawn node
         let iroh_dir = tempfile::tempdir().unwrap();
-        let node = crate::IrohNode::new(iroh_dir.path().to_string_lossy().into_owned())
-            .await
-            .unwrap();
+        let node = crate::IrohNode::new(
+            iroh_dir
+                .path()
+                .join("import-export-node")
+                .to_string_lossy()
+                .into_owned(),
+        )
+        .await
+        .unwrap();
 
         // create doc & author
         let doc = node.doc_create().await.unwrap();
