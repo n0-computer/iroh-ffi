@@ -4404,7 +4404,7 @@ public protocol IrohNodeProtocol: AnyObject {
     /**
      * The string representation of the PublicKey of this node.
      */
-    func nodeId() -> String
+    func nodeId() async throws -> String
 
     /**
      * Get statistics of the running node.
@@ -4463,27 +4463,7 @@ open class IrohNode:
         return try! rustCall { uniffi_iroh_ffi_fn_clone_irohnode(self.pointer, $0) }
     }
 
-    /**
-     * Create a new iroh node. The `path` param should be a directory where we can store or load
-     * iroh data from a previous session.
-     */
-    public convenience init(path: String) async throws {
-        let pointer =
-            try await uniffiRustCallAsync(
-                rustFutureFunc: {
-                    uniffi_iroh_ffi_fn_constructor_irohnode_new(FfiConverterString.lower(path)
-                    )
-                },
-                pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
-                completeFunc: ffi_iroh_ffi_rust_future_complete_pointer,
-                freeFunc: ffi_iroh_ffi_rust_future_free_pointer,
-                liftFunc: FfiConverterTypeIrohNode.lift,
-                errorHandler: FfiConverterTypeIrohError__as_error.lift
-            )
-
-            .uniffiClonePointer()
-        self.init(unsafeFromRawPointer: pointer)
-    }
+    // No primary constructor declared for this class.
 
     deinit {
         guard let pointer = pointer else {
@@ -4494,14 +4474,54 @@ open class IrohNode:
     }
 
     /**
-     * Create a new iroh node. The `path` param should be a directory where we can store or load
-     * iroh data from a previous session.
+     * Create a new iroh node.
+     *
+     * All data will be only persistet in memory.
      */
-    public static func create(path: String) async throws -> IrohNode {
+    public static func memory() async throws -> IrohNode {
         return
             try await uniffiRustCallAsync(
                 rustFutureFunc: {
-                    uniffi_iroh_ffi_fn_constructor_irohnode_create(FfiConverterString.lower(path)
+                    uniffi_iroh_ffi_fn_constructor_irohnode_memory(
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_pointer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_pointer,
+                liftFunc: FfiConverterTypeIrohNode.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
+    }
+
+    /**
+     * Create a new in memory iroh node with options.
+     */
+    public static func memoryWithOptions(options: NodeOptions) async throws -> IrohNode {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_constructor_irohnode_memory_with_options(FfiConverterTypeNodeOptions.lower(options)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_pointer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_pointer,
+                liftFunc: FfiConverterTypeIrohNode.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
+    }
+
+    /**
+     * Create a new iroh node.
+     *
+     * The `path` param should be a directory where we can store or load
+     * iroh data from a previous session.
+     */
+    public static func persistent(path: String) async throws -> IrohNode {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_constructor_irohnode_persistent(FfiConverterString.lower(path)
                     )
                 },
                 pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
@@ -4515,11 +4535,11 @@ open class IrohNode:
     /**
      * Create a new iroh node with options.
      */
-    public static func withOptions(path: String, options: NodeOptions) async throws -> IrohNode {
+    public static func persistentWithOptions(path: String, options: NodeOptions) async throws -> IrohNode {
         return
             try await uniffiRustCallAsync(
                 rustFutureFunc: {
-                    uniffi_iroh_ffi_fn_constructor_irohnode_with_options(FfiConverterString.lower(path), FfiConverterTypeNodeOptions.lower(options))
+                    uniffi_iroh_ffi_fn_constructor_irohnode_persistent_with_options(FfiConverterString.lower(path), FfiConverterTypeNodeOptions.lower(options))
                 },
                 pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
                 completeFunc: ffi_iroh_ffi_rust_future_complete_pointer,
@@ -5161,10 +5181,20 @@ open class IrohNode:
     /**
      * The string representation of the PublicKey of this node.
      */
-    open func nodeId() -> String {
-        return try! FfiConverterString.lift(try! rustCall {
-            uniffi_iroh_ffi_fn_method_irohnode_node_id(self.uniffiClonePointer(), $0)
-        })
+    open func nodeId() async throws -> String {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_node_id(
+                        self.uniffiClonePointer()
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterString.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
@@ -11516,7 +11546,7 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_method_irohnode_doc_open() != 16291 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_method_irohnode_node_id() != 155 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_node_id() != 46920 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_irohnode_stats() != 11985 {
@@ -11636,13 +11666,16 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_constructor_hash_new() != 30613 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_constructor_irohnode_create() != 17798 {
+    if uniffi_iroh_ffi_checksum_constructor_irohnode_memory() != 52721 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_constructor_irohnode_new() != 19618 {
+    if uniffi_iroh_ffi_checksum_constructor_irohnode_memory_with_options() != 51113 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_constructor_irohnode_with_options() != 6808 {
+    if uniffi_iroh_ffi_checksum_constructor_irohnode_persistent() != 9772 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_constructor_irohnode_persistent_with_options() != 11511 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_constructor_nodeaddr_new() != 5759 {
