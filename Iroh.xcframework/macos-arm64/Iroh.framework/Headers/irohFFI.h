@@ -637,6 +637,11 @@ uint64_t uniffi_iroh_ffi_fn_method_doc_get_many(void*_Nonnull ptr, void*_Nonnull
 uint64_t uniffi_iroh_ffi_fn_method_doc_get_one(void*_Nonnull ptr, void*_Nonnull query
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOC_GET_SYNC_PEERS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOC_GET_SYNC_PEERS
+uint64_t uniffi_iroh_ffi_fn_method_doc_get_sync_peers(void*_Nonnull ptr
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOC_ID
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOC_ID
 RustBuffer uniffi_iroh_ffi_fn_method_doc_id(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -1065,6 +1070,11 @@ uint64_t uniffi_iroh_ffi_fn_constructor_irohnode_persistent(RustBuffer path
 uint64_t uniffi_iroh_ffi_fn_constructor_irohnode_persistent_with_options(RustBuffer path, RustBuffer options
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_ADD_NODE_ADDR
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_ADD_NODE_ADDR
+uint64_t uniffi_iroh_ffi_fn_method_irohnode_add_node_addr(void*_Nonnull ptr, void*_Nonnull addr
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_AUTHOR_CREATE
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_AUTHOR_CREATE
 uint64_t uniffi_iroh_ffi_fn_method_irohnode_author_create(void*_Nonnull ptr
@@ -1098,6 +1108,11 @@ uint64_t uniffi_iroh_ffi_fn_method_irohnode_author_list(void*_Nonnull ptr
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_ADD_BYTES
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_ADD_BYTES
 uint64_t uniffi_iroh_ffi_fn_method_irohnode_blobs_add_bytes(void*_Nonnull ptr, RustBuffer bytes
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_ADD_BYTES_NAMED
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_ADD_BYTES_NAMED
+uint64_t uniffi_iroh_ffi_fn_method_irohnode_blobs_add_bytes_named(void*_Nonnull ptr, RustBuffer bytes, RustBuffer name
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_ADD_FROM_PATH
@@ -1210,9 +1225,29 @@ uint64_t uniffi_iroh_ffi_fn_method_irohnode_doc_list(void*_Nonnull ptr
 uint64_t uniffi_iroh_ffi_fn_method_irohnode_doc_open(void*_Nonnull ptr, RustBuffer id
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_HOME_RELAY
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_HOME_RELAY
+uint64_t uniffi_iroh_ffi_fn_method_irohnode_home_relay(void*_Nonnull ptr
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_MY_RPC_ADDR
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_MY_RPC_ADDR
+RustBuffer uniffi_iroh_ffi_fn_method_irohnode_my_rpc_addr(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_NODE_ADDR
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_NODE_ADDR
+uint64_t uniffi_iroh_ffi_fn_method_irohnode_node_addr(void*_Nonnull ptr
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_NODE_ID
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_NODE_ID
 uint64_t uniffi_iroh_ffi_fn_method_irohnode_node_id(void*_Nonnull ptr
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_SHUTDOWN
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_SHUTDOWN
+uint64_t uniffi_iroh_ffi_fn_method_irohnode_shutdown(void*_Nonnull ptr, int8_t force
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_STATS
@@ -1328,6 +1363,11 @@ RustBuffer uniffi_iroh_ffi_fn_method_nodestatus_listen_addrs(void*_Nonnull ptr, 
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODESTATUS_NODE_ADDR
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODESTATUS_NODE_ADDR
 void*_Nonnull uniffi_iroh_ffi_fn_method_nodestatus_node_addr(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODESTATUS_RPC_ADDR
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODESTATUS_RPC_ADDR
+RustBuffer uniffi_iroh_ffi_fn_method_nodestatus_rpc_addr(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODESTATUS_VERSION
@@ -2057,6 +2097,12 @@ uint16_t uniffi_iroh_ffi_checksum_method_doc_get_one(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_DOC_GET_SYNC_PEERS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_DOC_GET_SYNC_PEERS
+uint16_t uniffi_iroh_ffi_checksum_method_doc_get_sync_peers(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_DOC_ID
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_DOC_ID
 uint16_t uniffi_iroh_ffi_checksum_method_doc_id(void
@@ -2315,6 +2361,12 @@ uint16_t uniffi_iroh_ffi_checksum_method_iroherror_message(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_ADD_NODE_ADDR
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_ADD_NODE_ADDR
+uint16_t uniffi_iroh_ffi_checksum_method_irohnode_add_node_addr(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_AUTHOR_CREATE
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_AUTHOR_CREATE
 uint16_t uniffi_iroh_ffi_checksum_method_irohnode_author_create(void
@@ -2354,6 +2406,12 @@ uint16_t uniffi_iroh_ffi_checksum_method_irohnode_author_list(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_ADD_BYTES
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_ADD_BYTES
 uint16_t uniffi_iroh_ffi_checksum_method_irohnode_blobs_add_bytes(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_ADD_BYTES_NAMED
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_ADD_BYTES_NAMED
+uint16_t uniffi_iroh_ffi_checksum_method_irohnode_blobs_add_bytes_named(void
     
 );
 #endif
@@ -2489,9 +2547,33 @@ uint16_t uniffi_iroh_ffi_checksum_method_irohnode_doc_open(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_HOME_RELAY
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_HOME_RELAY
+uint16_t uniffi_iroh_ffi_checksum_method_irohnode_home_relay(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_MY_RPC_ADDR
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_MY_RPC_ADDR
+uint16_t uniffi_iroh_ffi_checksum_method_irohnode_my_rpc_addr(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_NODE_ADDR
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_NODE_ADDR
+uint16_t uniffi_iroh_ffi_checksum_method_irohnode_node_addr(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_NODE_ID
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_NODE_ID
 uint16_t uniffi_iroh_ffi_checksum_method_irohnode_node_id(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_SHUTDOWN
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_SHUTDOWN
+uint16_t uniffi_iroh_ffi_checksum_method_irohnode_shutdown(void
     
 );
 #endif
@@ -2588,6 +2670,12 @@ uint16_t uniffi_iroh_ffi_checksum_method_nodestatus_listen_addrs(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODESTATUS_NODE_ADDR
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODESTATUS_NODE_ADDR
 uint16_t uniffi_iroh_ffi_checksum_method_nodestatus_node_addr(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODESTATUS_RPC_ADDR
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODESTATUS_RPC_ADDR
+uint16_t uniffi_iroh_ffi_checksum_method_nodestatus_rpc_addr(void
     
 );
 #endif

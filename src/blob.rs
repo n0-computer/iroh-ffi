@@ -143,6 +143,21 @@ impl IrohNode {
         Ok(res.into())
     }
 
+    /// Write a blob by passing bytes, setting an explicit tag name.
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn blobs_add_bytes_named(
+        &self,
+        bytes: Vec<u8>,
+        name: String,
+    ) -> Result<BlobAddOutcome, IrohError> {
+        let res = self
+            .node()
+            .blobs()
+            .add_bytes_named(bytes, iroh::blobs::Tag(name.into()))
+            .await?;
+        Ok(res.into())
+    }
+
     /// Download a blob from another node and add it to the local database.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn blobs_download(

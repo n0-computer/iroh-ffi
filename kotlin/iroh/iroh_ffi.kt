@@ -1208,6 +1208,8 @@ internal interface UniffiLib : Library {
         `query`: Pointer,
     ): Long
 
+    fun uniffi_iroh_ffi_fn_method_doc_get_sync_peers(`ptr`: Pointer): Long
+
     fun uniffi_iroh_ffi_fn_method_doc_id(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
@@ -1615,6 +1617,11 @@ internal interface UniffiLib : Library {
         `options`: RustBuffer.ByValue,
     ): Long
 
+    fun uniffi_iroh_ffi_fn_method_irohnode_add_node_addr(
+        `ptr`: Pointer,
+        `addr`: Pointer,
+    ): Long
+
     fun uniffi_iroh_ffi_fn_method_irohnode_author_create(`ptr`: Pointer): Long
 
     fun uniffi_iroh_ffi_fn_method_irohnode_author_default(`ptr`: Pointer): Long
@@ -1639,6 +1646,12 @@ internal interface UniffiLib : Library {
     fun uniffi_iroh_ffi_fn_method_irohnode_blobs_add_bytes(
         `ptr`: Pointer,
         `bytes`: RustBuffer.ByValue,
+    ): Long
+
+    fun uniffi_iroh_ffi_fn_method_irohnode_blobs_add_bytes_named(
+        `ptr`: Pointer,
+        `bytes`: RustBuffer.ByValue,
+        `name`: RustBuffer.ByValue,
     ): Long
 
     fun uniffi_iroh_ffi_fn_method_irohnode_blobs_add_from_path(
@@ -1750,7 +1763,21 @@ internal interface UniffiLib : Library {
         `id`: RustBuffer.ByValue,
     ): Long
 
+    fun uniffi_iroh_ffi_fn_method_irohnode_home_relay(`ptr`: Pointer): Long
+
+    fun uniffi_iroh_ffi_fn_method_irohnode_my_rpc_addr(
+        `ptr`: Pointer,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+
+    fun uniffi_iroh_ffi_fn_method_irohnode_node_addr(`ptr`: Pointer): Long
+
     fun uniffi_iroh_ffi_fn_method_irohnode_node_id(`ptr`: Pointer): Long
+
+    fun uniffi_iroh_ffi_fn_method_irohnode_shutdown(
+        `ptr`: Pointer,
+        `force`: Byte,
+    ): Long
 
     fun uniffi_iroh_ffi_fn_method_irohnode_stats(`ptr`: Pointer): Long
 
@@ -1860,6 +1887,11 @@ internal interface UniffiLib : Library {
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
+
+    fun uniffi_iroh_ffi_fn_method_nodestatus_rpc_addr(
+        `ptr`: Pointer,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
 
     fun uniffi_iroh_ffi_fn_method_nodestatus_version(
         `ptr`: Pointer,
@@ -2365,6 +2397,8 @@ internal interface UniffiLib : Library {
 
     fun uniffi_iroh_ffi_checksum_method_doc_get_one(): Short
 
+    fun uniffi_iroh_ffi_checksum_method_doc_get_sync_peers(): Short
+
     fun uniffi_iroh_ffi_checksum_method_doc_id(): Short
 
     fun uniffi_iroh_ffi_checksum_method_doc_import_file(): Short
@@ -2451,6 +2485,8 @@ internal interface UniffiLib : Library {
 
     fun uniffi_iroh_ffi_checksum_method_iroherror_message(): Short
 
+    fun uniffi_iroh_ffi_checksum_method_irohnode_add_node_addr(): Short
+
     fun uniffi_iroh_ffi_checksum_method_irohnode_author_create(): Short
 
     fun uniffi_iroh_ffi_checksum_method_irohnode_author_default(): Short
@@ -2464,6 +2500,8 @@ internal interface UniffiLib : Library {
     fun uniffi_iroh_ffi_checksum_method_irohnode_author_list(): Short
 
     fun uniffi_iroh_ffi_checksum_method_irohnode_blobs_add_bytes(): Short
+
+    fun uniffi_iroh_ffi_checksum_method_irohnode_blobs_add_bytes_named(): Short
 
     fun uniffi_iroh_ffi_checksum_method_irohnode_blobs_add_from_path(): Short
 
@@ -2509,7 +2547,15 @@ internal interface UniffiLib : Library {
 
     fun uniffi_iroh_ffi_checksum_method_irohnode_doc_open(): Short
 
+    fun uniffi_iroh_ffi_checksum_method_irohnode_home_relay(): Short
+
+    fun uniffi_iroh_ffi_checksum_method_irohnode_my_rpc_addr(): Short
+
+    fun uniffi_iroh_ffi_checksum_method_irohnode_node_addr(): Short
+
     fun uniffi_iroh_ffi_checksum_method_irohnode_node_id(): Short
+
+    fun uniffi_iroh_ffi_checksum_method_irohnode_shutdown(): Short
 
     fun uniffi_iroh_ffi_checksum_method_irohnode_stats(): Short
 
@@ -2542,6 +2588,8 @@ internal interface UniffiLib : Library {
     fun uniffi_iroh_ffi_checksum_method_nodestatus_listen_addrs(): Short
 
     fun uniffi_iroh_ffi_checksum_method_nodestatus_node_addr(): Short
+
+    fun uniffi_iroh_ffi_checksum_method_nodestatus_rpc_addr(): Short
 
     fun uniffi_iroh_ffi_checksum_method_nodestatus_version(): Short
 
@@ -2761,6 +2809,9 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_method_doc_get_one() != 18797.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_iroh_ffi_checksum_method_doc_get_sync_peers() != 59505.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_iroh_ffi_checksum_method_doc_id() != 53450.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -2890,6 +2941,9 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_method_iroherror_message() != 31085.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_add_node_addr() != 52679.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_iroh_ffi_checksum_method_irohnode_author_create() != 28895.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -2909,6 +2963,9 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_irohnode_blobs_add_bytes() != 17203.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_blobs_add_bytes_named() != 63529.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_irohnode_blobs_add_from_path() != 37809.toShort()) {
@@ -2977,7 +3034,19 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_method_irohnode_doc_open() != 16291.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_home_relay() != 3309.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_my_rpc_addr() != 33640.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_node_addr() != 20255.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_iroh_ffi_checksum_method_irohnode_node_id() != 46920.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_shutdown() != 624.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_irohnode_stats() != 11985.toShort()) {
@@ -3026,6 +3095,9 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_nodestatus_node_addr() != 12507.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_ffi_checksum_method_nodestatus_rpc_addr() != 20002.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_nodestatus_version() != 3183.toShort()) {
@@ -6491,6 +6563,11 @@ public interface DocInterface {
     suspend fun `getOne`(`query`: Query): Entry?
 
     /**
+     * Get sync peers for this document
+     */
+    suspend fun `getSyncPeers`(): List<kotlin.ByteArray>?
+
+    /**
      * Get the document id of this doc.
      */
     fun `id`(): kotlin.String
@@ -6837,6 +6914,33 @@ open class Doc :
             { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
             // lift function
             { FfiConverterOptionalTypeEntry.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * Get sync peers for this document
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `getSyncPeers`(): List<kotlin.ByteArray>? =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_doc_get_sync_peers(
+                    thisPtr,
+                )
+            },
+            {
+                    future,
+                    callback,
+                    continuation,
+                ->
+                UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
+            },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
+            // lift function
+            { FfiConverterOptionalSequenceByteArray.lift(it) },
             // Error FFI converter
             IrohException.ErrorHandler,
         )
@@ -10640,6 +10744,11 @@ public object FfiConverterTypeIrohError : FfiConverter<IrohException, Pointer> {
  */
 public interface IrohNodeInterface {
     /**
+     * Add a known node address to the node.
+     */
+    suspend fun `addNodeAddr`(`addr`: NodeAddr)
+
+    /**
      * Create a new document author.
      *
      * You likely want to save the returned [`AuthorId`] somewhere so that you can use this author
@@ -10689,6 +10798,14 @@ public interface IrohNodeInterface {
      * Write a blob by passing bytes.
      */
     suspend fun `blobsAddBytes`(`bytes`: kotlin.ByteArray): BlobAddOutcome
+
+    /**
+     * Write a blob by passing bytes, setting an explicit tag name.
+     */
+    suspend fun `blobsAddBytesNamed`(
+        `bytes`: kotlin.ByteArray,
+        `name`: kotlin.String,
+    ): BlobAddOutcome
 
     /**
      * Import a blob from a filesystem path.
@@ -10876,9 +10993,29 @@ public interface IrohNodeInterface {
     suspend fun `docOpen`(`id`: kotlin.String): Doc?
 
     /**
+     * Get the relay server we are connected to.
+     */
+    suspend fun `homeRelay`(): kotlin.String?
+
+    /**
+     * Returns `Some(addr)` if an RPC endpoint is running, `None` otherwise.
+     */
+    fun `myRpcAddr`(): kotlin.String?
+
+    /**
+     * Return the [`NodeAddr`] for this node.
+     */
+    suspend fun `nodeAddr`(): NodeAddr
+
+    /**
      * The string representation of the PublicKey of this node.
      */
     suspend fun `nodeId`(): kotlin.String
+
+    /**
+     * Shutdown this iroh node.
+     */
+    suspend fun `shutdown`(`force`: kotlin.Boolean)
 
     /**
      * Get statistics of the running node.
@@ -10992,6 +11129,28 @@ open class IrohNode :
         uniffiRustCall { status ->
             UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_irohnode(pointer!!, status)
         }
+
+    /**
+     * Add a known node address to the node.
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `addNodeAddr`(`addr`: NodeAddr) =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_add_node_addr(
+                    thisPtr,
+                    FfiConverterTypeNodeAddr.lower(`addr`),
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_void(future) },
+            // lift function
+            { Unit },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
 
     /**
      * Create a new document author.
@@ -11155,6 +11314,38 @@ open class IrohNode :
                 UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_blobs_add_bytes(
                     thisPtr,
                     FfiConverterByteArray.lower(`bytes`),
+                )
+            },
+            {
+                    future,
+                    callback,
+                    continuation,
+                ->
+                UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
+            },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
+            // lift function
+            { FfiConverterTypeBlobAddOutcome.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * Write a blob by passing bytes, setting an explicit tag name.
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `blobsAddBytesNamed`(
+        `bytes`: kotlin.ByteArray,
+        `name`: kotlin.String,
+    ): BlobAddOutcome =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_blobs_add_bytes_named(
+                    thisPtr,
+                    FfiConverterByteArray.lower(`bytes`),
+                    FfiConverterString.lower(`name`),
                 )
             },
             {
@@ -11805,6 +11996,69 @@ open class IrohNode :
         )
 
     /**
+     * Get the relay server we are connected to.
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `homeRelay`(): kotlin.String? =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_home_relay(
+                    thisPtr,
+                )
+            },
+            {
+                    future,
+                    callback,
+                    continuation,
+                ->
+                UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
+            },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
+            // lift function
+            { FfiConverterOptionalString.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * Returns `Some(addr)` if an RPC endpoint is running, `None` otherwise.
+     */
+    override fun `myRpcAddr`(): kotlin.String? =
+        FfiConverterOptionalString.lift(
+            callWithPointer {
+                uniffiRustCall { _status ->
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_my_rpc_addr(
+                        it,
+                        _status,
+                    )
+                }
+            },
+        )
+
+    /**
+     * Return the [`NodeAddr`] for this node.
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `nodeAddr`(): NodeAddr =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_node_addr(
+                    thisPtr,
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_pointer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_pointer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_pointer(future) },
+            // lift function
+            { FfiConverterTypeNodeAddr.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
      * The string representation of the PublicKey of this node.
      */
     @Throws(IrohException::class)
@@ -11827,6 +12081,28 @@ open class IrohNode :
             { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
             // lift function
             { FfiConverterString.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * Shutdown this iroh node.
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `shutdown`(`force`: kotlin.Boolean) =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_shutdown(
+                    thisPtr,
+                    FfiConverterBoolean.lower(`force`),
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_void(future) },
+            // lift function
+            { Unit },
             // Error FFI converter
             IrohException.ErrorHandler,
         )
@@ -12824,6 +13100,11 @@ public interface NodeStatusInterface {
     fun `nodeAddr`(): NodeAddr
 
     /**
+     * The address of the RPC of the node
+     */
+    fun `rpcAddr`(): kotlin.String?
+
+    /**
      * The version of the node
      */
     fun `version`(): kotlin.String
@@ -12941,6 +13222,21 @@ open class NodeStatus :
             callWithPointer {
                 uniffiRustCall { _status ->
                     UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_nodestatus_node_addr(
+                        it,
+                        _status,
+                    )
+                }
+            },
+        )
+
+    /**
+     * The address of the RPC of the node
+     */
+    override fun `rpcAddr`(): kotlin.String? =
+        FfiConverterOptionalString.lift(
+            callWithPointer {
+                uniffiRustCall { _status ->
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_nodestatus_rpc_addr(
                         it,
                         _status,
                     )
@@ -17768,6 +18064,35 @@ public object FfiConverterOptionalTypeQueryOptions : FfiConverterRustBuffer<Quer
     }
 }
 
+public object FfiConverterOptionalSequenceByteArray : FfiConverterRustBuffer<List<kotlin.ByteArray>?> {
+    override fun read(buf: ByteBuffer): List<kotlin.ByteArray>? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterSequenceByteArray.read(buf)
+    }
+
+    override fun allocationSize(value: List<kotlin.ByteArray>?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterSequenceByteArray.allocationSize(value)
+        }
+    }
+
+    override fun write(
+        value: List<kotlin.ByteArray>?,
+        buf: ByteBuffer,
+    ) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterSequenceByteArray.write(value, buf)
+        }
+    }
+}
+
 public object FfiConverterSequenceString : FfiConverterRustBuffer<List<kotlin.String>> {
     override fun read(buf: ByteBuffer): List<kotlin.String> {
         val len = buf.getInt()
@@ -17789,6 +18114,31 @@ public object FfiConverterSequenceString : FfiConverterRustBuffer<List<kotlin.St
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterString.write(it, buf)
+        }
+    }
+}
+
+public object FfiConverterSequenceByteArray : FfiConverterRustBuffer<List<kotlin.ByteArray>> {
+    override fun read(buf: ByteBuffer): List<kotlin.ByteArray> {
+        val len = buf.getInt()
+        return List<kotlin.ByteArray>(len) {
+            FfiConverterByteArray.read(buf)
+        }
+    }
+
+    override fun allocationSize(value: List<kotlin.ByteArray>): ULong {
+        val sizeForLength = 4UL
+        val sizeForItems = value.map { FfiConverterByteArray.allocationSize(it) }.sum()
+        return sizeForLength + sizeForItems
+    }
+
+    override fun write(
+        value: List<kotlin.ByteArray>,
+        buf: ByteBuffer,
+    ) {
+        buf.putInt(value.size)
+        value.iterator().forEach {
+            FfiConverterByteArray.write(it, buf)
         }
     }
 }

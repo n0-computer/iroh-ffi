@@ -1926,6 +1926,11 @@ public protocol DocProtocol: AnyObject {
     func getOne(query: Query) async throws -> Entry?
 
     /**
+     * Get sync peers for this document
+     */
+    func getSyncPeers() async throws -> [Data]?
+
+    /**
      * Get the document id of this doc.
      */
     func id() -> String
@@ -2161,6 +2166,25 @@ open class Doc:
                 completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
                 freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
                 liftFunc: FfiConverterOptionTypeEntry.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
+    }
+
+    /**
+     * Get sync peers for this document
+     */
+    open func getSyncPeers() async throws -> [Data]? {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_doc_get_sync_peers(
+                        self.uniffiClonePointer()
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterOptionSequenceData.lift,
                 errorHandler: FfiConverterTypeIrohError__as_error.lift
             )
     }
@@ -4199,6 +4223,11 @@ public func FfiConverterTypeIrohError_lower(_ value: IrohError) -> UnsafeMutable
  */
 public protocol IrohNodeProtocol: AnyObject {
     /**
+     * Add a known node address to the node.
+     */
+    func addNodeAddr(addr: NodeAddr) async throws
+
+    /**
      * Create a new document author.
      *
      * You likely want to save the returned [`AuthorId`] somewhere so that you can use this author
@@ -4248,6 +4277,11 @@ public protocol IrohNodeProtocol: AnyObject {
      * Write a blob by passing bytes.
      */
     func blobsAddBytes(bytes: Data) async throws -> BlobAddOutcome
+
+    /**
+     * Write a blob by passing bytes, setting an explicit tag name.
+     */
+    func blobsAddBytesNamed(bytes: Data, name: String) async throws -> BlobAddOutcome
 
     /**
      * Import a blob from a filesystem path.
@@ -4402,9 +4436,29 @@ public protocol IrohNodeProtocol: AnyObject {
     func docOpen(id: String) async throws -> Doc?
 
     /**
+     * Get the relay server we are connected to.
+     */
+    func homeRelay() async throws -> String?
+
+    /**
+     * Returns `Some(addr)` if an RPC endpoint is running, `None` otherwise.
+     */
+    func myRpcAddr() -> String?
+
+    /**
+     * Return the [`NodeAddr`] for this node.
+     */
+    func nodeAddr() async throws -> NodeAddr
+
+    /**
      * The string representation of the PublicKey of this node.
      */
     func nodeId() async throws -> String
+
+    /**
+     * Shutdown this iroh node.
+     */
+    func shutdown(force: Bool) async throws
 
     /**
      * Get statistics of the running node.
@@ -4545,6 +4599,26 @@ open class IrohNode:
                 completeFunc: ffi_iroh_ffi_rust_future_complete_pointer,
                 freeFunc: ffi_iroh_ffi_rust_future_free_pointer,
                 liftFunc: FfiConverterTypeIrohNode.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
+    }
+
+    /**
+     * Add a known node address to the node.
+     */
+    open func addNodeAddr(addr: NodeAddr) async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_add_node_addr(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeNodeAddr.lower(addr)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
                 errorHandler: FfiConverterTypeIrohError__as_error.lift
             )
     }
@@ -4692,6 +4766,26 @@ open class IrohNode:
                     uniffi_iroh_ffi_fn_method_irohnode_blobs_add_bytes(
                         self.uniffiClonePointer(),
                         FfiConverterData.lower(bytes)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterTypeBlobAddOutcome.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
+    }
+
+    /**
+     * Write a blob by passing bytes, setting an explicit tag name.
+     */
+    open func blobsAddBytesNamed(bytes: Data, name: String) async throws -> BlobAddOutcome {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_blobs_add_bytes_named(
+                        self.uniffiClonePointer(),
+                        FfiConverterData.lower(bytes), FfiConverterString.lower(name)
                     )
                 },
                 pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
@@ -5179,6 +5273,53 @@ open class IrohNode:
     }
 
     /**
+     * Get the relay server we are connected to.
+     */
+    open func homeRelay() async throws -> String? {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_home_relay(
+                        self.uniffiClonePointer()
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterOptionString.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
+    }
+
+    /**
+     * Returns `Some(addr)` if an RPC endpoint is running, `None` otherwise.
+     */
+    open func myRpcAddr() -> String? {
+        return try! FfiConverterOptionString.lift(try! rustCall {
+            uniffi_iroh_ffi_fn_method_irohnode_my_rpc_addr(self.uniffiClonePointer(), $0)
+        })
+    }
+
+    /**
+     * Return the [`NodeAddr`] for this node.
+     */
+    open func nodeAddr() async throws -> NodeAddr {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_node_addr(
+                        self.uniffiClonePointer()
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_pointer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_pointer,
+                liftFunc: FfiConverterTypeNodeAddr.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
+    }
+
+    /**
      * The string representation of the PublicKey of this node.
      */
     open func nodeId() async throws -> String {
@@ -5193,6 +5334,26 @@ open class IrohNode:
                 completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
                 freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
                 liftFunc: FfiConverterString.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
+    }
+
+    /**
+     * Shutdown this iroh node.
+     */
+    open func shutdown(force: Bool) async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_shutdown(
+                        self.uniffiClonePointer(),
+                        FfiConverterBool.lower(force)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
                 errorHandler: FfiConverterTypeIrohError__as_error.lift
             )
     }
@@ -5659,6 +5820,11 @@ public protocol NodeStatusProtocol: AnyObject {
     func nodeAddr() -> NodeAddr
 
     /**
+     * The address of the RPC of the node
+     */
+    func rpcAddr() -> String?
+
+    /**
      * The version of the node
      */
     func version() -> String
@@ -5722,6 +5888,15 @@ open class NodeStatus:
     open func nodeAddr() -> NodeAddr {
         return try! FfiConverterTypeNodeAddr.lift(try! rustCall {
             uniffi_iroh_ffi_fn_method_nodestatus_node_addr(self.uniffiClonePointer(), $0)
+        })
+    }
+
+    /**
+     * The address of the RPC of the node
+     */
+    open func rpcAddr() -> String? {
+        return try! FfiConverterOptionString.lift(try! rustCall {
+            uniffi_iroh_ffi_fn_method_nodestatus_rpc_addr(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -10723,6 +10898,27 @@ private struct FfiConverterOptionTypeQueryOptions: FfiConverterRustBuffer {
     }
 }
 
+private struct FfiConverterOptionSequenceData: FfiConverterRustBuffer {
+    typealias SwiftType = [Data]?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterSequenceData.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterSequenceData.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
 private struct FfiConverterSequenceString: FfiConverterRustBuffer {
     typealias SwiftType = [String]
 
@@ -10740,6 +10936,28 @@ private struct FfiConverterSequenceString: FfiConverterRustBuffer {
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
             try seq.append(FfiConverterString.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+private struct FfiConverterSequenceData: FfiConverterRustBuffer {
+    typealias SwiftType = [Data]
+
+    public static func write(_ value: [Data], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterData.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [Data] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [Data]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            try seq.append(FfiConverterData.read(from: &buf))
         }
         return seq
     }
@@ -11330,6 +11548,9 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_method_doc_get_one() != 18797 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_ffi_checksum_method_doc_get_sync_peers() != 59505 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_ffi_checksum_method_doc_id() != 53450 {
         return InitializationResult.apiChecksumMismatch
     }
@@ -11459,6 +11680,9 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_method_iroherror_message() != 31085 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_ffi_checksum_method_irohnode_add_node_addr() != 52679 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_ffi_checksum_method_irohnode_author_create() != 28895 {
         return InitializationResult.apiChecksumMismatch
     }
@@ -11478,6 +11702,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_irohnode_blobs_add_bytes() != 17203 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_method_irohnode_blobs_add_bytes_named() != 63529 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_irohnode_blobs_add_from_path() != 37809 {
@@ -11546,7 +11773,19 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_method_irohnode_doc_open() != 16291 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_ffi_checksum_method_irohnode_home_relay() != 3309 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_method_irohnode_my_rpc_addr() != 33640 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_method_irohnode_node_addr() != 20255 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_ffi_checksum_method_irohnode_node_id() != 46920 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_method_irohnode_shutdown() != 624 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_irohnode_stats() != 11985 {
@@ -11595,6 +11834,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_nodestatus_node_addr() != 12507 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_method_nodestatus_rpc_addr() != 20002 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_nodestatus_version() != 3183 {

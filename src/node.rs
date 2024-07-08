@@ -337,6 +337,39 @@ impl IrohNode {
         let id = self.node().node_id().await?;
         Ok(id.to_string())
     }
+
+    /// Return the [`NodeAddr`] for this node.
+    pub async fn node_addr(&self) -> Result<NodeAddr, IrohError> {
+        let addr = self.node().node_addr().await?;
+        Ok(addr.into())
+    }
+
+    /// Add a known node address to the node.
+    pub async fn add_node_addr(&self, addr: &NodeAddr) -> Result<(), IrohError> {
+        self.node().add_node_addr(addr.clone().try_into()?).await?;
+        Ok(())
+    }
+
+    /// Get the relay server we are connected to.
+    pub async fn home_relay(&self) -> Result<Option<String>, IrohError> {
+        let relay = self.node().home_relay().await?;
+        Ok(relay.map(|u| u.to_string()))
+    }
+
+    /// Shutdown this iroh node.
+    pub async fn shutdown(&self, force: bool) -> Result<(), IrohError> {
+        self.node().shutdown(force).await?;
+        Ok(())
+    }
+
+    /// Returns `Some(addr)` if an RPC endpoint is running, `None` otherwise.
+    pub fn my_rpc_addr(&self) -> Option<String> {
+        let addr = match self {
+            Self::Fs(n) => n.my_rpc_addr(),
+            Self::Memory(n) => n.my_rpc_addr(),
+        };
+        addr.map(|a| a.to_string())
+    }
 }
 
 /// The response to a status request
@@ -368,6 +401,11 @@ impl NodeStatus {
     /// The version of the node
     pub fn version(&self) -> String {
         self.0.version.clone()
+    }
+
+    /// The address of the RPC of the node
+    pub fn rpc_addr(&self) -> Option<String> {
+        self.0.rpc_addr.map(|a| a.to_string())
     }
 }
 
