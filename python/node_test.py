@@ -29,26 +29,35 @@ async def test_basic_sync():
 
         async def event(self, event):
             print("", event.type())
-            if (event.type() == LiveEventType.CONTENT_READY):
-                print("got event type content ready")
-                await self.found_s.put(event.as_content_ready())
+            await self.found_s.put(event)
 
     # Subscribe to sync events
-    found_s = asyncio.Queue(maxsize=1)
-    cb = SubscribeCallback(found_s)
-    await doc_0.subscribe(cb)
+    found_s_0 = asyncio.Queue(maxsize=1)
+    cb0 = SubscribeCallback(found_s_0)
+    await doc_0.subscribe(cb0)
 
     # Join the same doc from node_1
-    doc_1 = await node_1.doc_join(ticket)
+    found_s_1 = asyncio.Queue(maxsize=1)
+    cb1 = SubscribeCallback(found_s_1)
+    doc_1 = await node_1.doc_join_and_subscribe(ticket, cb1)
+
+    # wait for initial sync
+    while (True):
+        event = await found_s_1.get()
+        if (event.type() == LiveEventType.SYNC_FINISHED):
+            break
 
     # Create author on node_1
     author = await node_1.author_create()
     await doc_1.set_bytes(author, b"hello", b"world")
 
     # Wait for the content ready event
-    hash = await found_s.get()
-    found_s.task_done()
+    while (True):
+        event = await found_s_0.get()
+        if (event.type() == LiveEventType.CONTENT_READY):
+            hash = event.as_content_ready()
 
-    # Get content from hash
-    val = await node_1.blobs_read_to_bytes(hash)
-    assert b"world" == val
+            # Get content from hash
+            val = await node_1.blobs_read_to_bytes(hash)
+            assert b"world" == val
+            break
