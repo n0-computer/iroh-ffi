@@ -25,13 +25,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_iroh_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_iroh_ffi_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_iroh_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_iroh_ffi_rustbuffer_free(self, $0) }
     }
 }
 
@@ -547,7 +547,7 @@ private struct FfiConverterDuration: FfiConverterRustBuffer {
  * method to check the `AddProgressType`
  */
 public protocol AddCallback: AnyObject {
-    func progress(progress: AddProgress) throws
+    func progress(progress: AddProgress) async throws
 }
 
 /**
@@ -582,7 +582,7 @@ open class AddCallbackImpl:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_fn_clone_addcallback(self.pointer, $0) }
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_addcallback(self.pointer, $0) }
     }
 
     // No primary constructor declared for this class.
@@ -592,13 +592,24 @@ open class AddCallbackImpl:
             return
         }
 
-        try! rustCall { uniffi_iroh_fn_free_addcallback(pointer, $0) }
+        try! rustCall { uniffi_iroh_ffi_fn_free_addcallback(pointer, $0) }
     }
 
-    open func progress(progress: AddProgress) throws { try rustCallWithError(FfiConverterTypeCallbackError.lift) {
-        uniffi_iroh_fn_method_addcallback_progress(self.uniffiClonePointer(),
-                                                   FfiConverterTypeAddProgress.lower(progress), $0)
-    }
+    open func progress(progress: AddProgress) async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_addcallback_progress(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeAddProgress.lower(progress)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeCallbackError.lift
+            )
     }
 }
 
@@ -618,26 +629,43 @@ private enum UniffiCallbackInterfaceAddCallback {
         progress: { (
             uniffiHandle: UInt64,
             progress: UnsafeMutableRawPointer,
-            _: UnsafeMutableRawPointer,
-            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
+            uniffiFutureCallback: @escaping UniffiForeignFutureCompleteVoid,
+            uniffiCallbackData: UInt64,
+            uniffiOutReturn: UnsafeMutablePointer<UniffiForeignFuture>
         ) in
             let makeCall = {
-                () throws in
+                () async throws in
                 guard let uniffiObj = try? FfiConverterTypeAddCallback.handleMap.get(handle: uniffiHandle) else {
                     throw UniffiInternalError.unexpectedStaleHandle
                 }
-                return try uniffiObj.progress(
+                return try await uniffiObj.progress(
                     progress: FfiConverterTypeAddProgress.lift(progress)
                 )
             }
 
-            let writeReturn = { () }
-            uniffiTraitInterfaceCallWithError(
-                callStatus: uniffiCallStatus,
+            let uniffiHandleSuccess = { (_: ()) in
+                uniffiFutureCallback(
+                    uniffiCallbackData,
+                    UniffiForeignFutureStructVoid(
+                        callStatus: RustCallStatus()
+                    )
+                )
+            }
+            let uniffiHandleError = { statusCode, errorBuf in
+                uniffiFutureCallback(
+                    uniffiCallbackData,
+                    UniffiForeignFutureStructVoid(
+                        callStatus: RustCallStatus(code: statusCode, errorBuf: errorBuf)
+                    )
+                )
+            }
+            let uniffiForeignFuture = uniffiTraitInterfaceCallAsyncWithError(
                 makeCall: makeCall,
-                writeReturn: writeReturn,
+                handleSuccess: uniffiHandleSuccess,
+                handleError: uniffiHandleError,
                 lowerError: FfiConverterTypeCallbackError.lower
             )
+            uniffiOutReturn.pointee = uniffiForeignFuture
         },
         uniffiFree: { (uniffiHandle: UInt64) in
             let result = try? FfiConverterTypeAddCallback.handleMap.remove(handle: uniffiHandle)
@@ -649,7 +677,7 @@ private enum UniffiCallbackInterfaceAddCallback {
 }
 
 private func uniffiCallbackInitAddCallback() {
-    uniffi_iroh_fn_init_callback_vtable_addcallback(&UniffiCallbackInterfaceAddCallback.vtable)
+    uniffi_iroh_ffi_fn_init_callback_vtable_addcallback(&UniffiCallbackInterfaceAddCallback.vtable)
 }
 
 public struct FfiConverterTypeAddCallback: FfiConverter {
@@ -760,7 +788,7 @@ open class AddProgress:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_fn_clone_addprogress(self.pointer, $0) }
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_addprogress(self.pointer, $0) }
     }
 
     // No primary constructor declared for this class.
@@ -770,7 +798,7 @@ open class AddProgress:
             return
         }
 
-        try! rustCall { uniffi_iroh_fn_free_addprogress(pointer, $0) }
+        try! rustCall { uniffi_iroh_ffi_fn_free_addprogress(pointer, $0) }
     }
 
     /**
@@ -778,7 +806,7 @@ open class AddProgress:
      */
     open func asAbort() -> AddProgressAbort {
         return try! FfiConverterTypeAddProgressAbort.lift(try! rustCall {
-            uniffi_iroh_fn_method_addprogress_as_abort(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_addprogress_as_abort(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -787,7 +815,7 @@ open class AddProgress:
      */
     open func asAllDone() -> AddProgressAllDone {
         return try! FfiConverterTypeAddProgressAllDone.lift(try! rustCall {
-            uniffi_iroh_fn_method_addprogress_as_all_done(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_addprogress_as_all_done(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -796,7 +824,7 @@ open class AddProgress:
      */
     open func asDone() -> AddProgressDone {
         return try! FfiConverterTypeAddProgressDone.lift(try! rustCall {
-            uniffi_iroh_fn_method_addprogress_as_done(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_addprogress_as_done(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -805,7 +833,7 @@ open class AddProgress:
      */
     open func asFound() -> AddProgressFound {
         return try! FfiConverterTypeAddProgressFound.lift(try! rustCall {
-            uniffi_iroh_fn_method_addprogress_as_found(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_addprogress_as_found(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -814,7 +842,7 @@ open class AddProgress:
      */
     open func asProgress() -> AddProgressProgress {
         return try! FfiConverterTypeAddProgressProgress.lift(try! rustCall {
-            uniffi_iroh_fn_method_addprogress_as_progress(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_addprogress_as_progress(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -823,7 +851,7 @@ open class AddProgress:
      */
     open func type() -> AddProgressType {
         return try! FfiConverterTypeAddProgressType.lift(try! rustCall {
-            uniffi_iroh_fn_method_addprogress_type(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_addprogress_type(self.uniffiClonePointer(), $0)
         })
     }
 }
@@ -911,7 +939,7 @@ open class Author:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_fn_clone_author(self.pointer, $0) }
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_author(self.pointer, $0) }
     }
 
     // No primary constructor declared for this class.
@@ -921,7 +949,7 @@ open class Author:
             return
         }
 
-        try! rustCall { uniffi_iroh_fn_free_author(pointer, $0) }
+        try! rustCall { uniffi_iroh_ffi_fn_free_author(pointer, $0) }
     }
 
     /**
@@ -929,7 +957,7 @@ open class Author:
      */
     public static func fromString(str: String) throws -> Author {
         return try FfiConverterTypeAuthor.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_constructor_author_from_string(
+            uniffi_iroh_ffi_fn_constructor_author_from_string(
                 FfiConverterString.lower(str), $0
             )
         })
@@ -940,14 +968,14 @@ open class Author:
      */
     open func id() -> AuthorId {
         return try! FfiConverterTypeAuthorId.lift(try! rustCall {
-            uniffi_iroh_fn_method_author_id(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_author_id(self.uniffiClonePointer(), $0)
         })
     }
 
     open var description: String {
         return try! FfiConverterString.lift(
             try! rustCall {
-                uniffi_iroh_fn_method_author_uniffi_trait_display(self.uniffiClonePointer(), $0)
+                uniffi_iroh_ffi_fn_method_author_uniffi_trait_display(self.uniffiClonePointer(), $0)
             }
         )
     }
@@ -1032,7 +1060,7 @@ open class AuthorId:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_fn_clone_authorid(self.pointer, $0) }
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_authorid(self.pointer, $0) }
     }
 
     // No primary constructor declared for this class.
@@ -1042,15 +1070,15 @@ open class AuthorId:
             return
         }
 
-        try! rustCall { uniffi_iroh_fn_free_authorid(pointer, $0) }
+        try! rustCall { uniffi_iroh_ffi_fn_free_authorid(pointer, $0) }
     }
 
     /**
-     * Get an [`AuthorId`] from a String
+     * Get an [`AuthorId`] from a String.
      */
     public static func fromString(str: String) throws -> AuthorId {
         return try FfiConverterTypeAuthorId.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_constructor_authorid_from_string(
+            uniffi_iroh_ffi_fn_constructor_authorid_from_string(
                 FfiConverterString.lower(str), $0
             )
         })
@@ -1061,15 +1089,15 @@ open class AuthorId:
      */
     open func equal(other: AuthorId) -> Bool {
         return try! FfiConverterBool.lift(try! rustCall {
-            uniffi_iroh_fn_method_authorid_equal(self.uniffiClonePointer(),
-                                                 FfiConverterTypeAuthorId.lower(other), $0)
+            uniffi_iroh_ffi_fn_method_authorid_equal(self.uniffiClonePointer(),
+                                                     FfiConverterTypeAuthorId.lower(other), $0)
         })
     }
 
     open var description: String {
         return try! FfiConverterString.lift(
             try! rustCall {
-                uniffi_iroh_fn_method_authorid_uniffi_trait_display(self.uniffiClonePointer(), $0)
+                uniffi_iroh_ffi_fn_method_authorid_uniffi_trait_display(self.uniffiClonePointer(), $0)
             }
         )
     }
@@ -1114,12 +1142,12 @@ public func FfiConverterTypeAuthorId_lower(_ value: AuthorId) -> UnsafeMutableRa
 }
 
 /**
- * A request to the node to download and share the data specified by the hash.
+ * Options to download  data specified by the hash.
  */
 public protocol BlobDownloadOptionsProtocol: AnyObject {}
 
 /**
- * A request to the node to download and share the data specified by the hash.
+ * Options to download  data specified by the hash.
  */
 open class BlobDownloadOptions:
     BlobDownloadOptionsProtocol
@@ -1148,13 +1176,16 @@ open class BlobDownloadOptions:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_fn_clone_blobdownloadoptions(self.pointer, $0) }
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_blobdownloadoptions(self.pointer, $0) }
     }
 
+    /**
+     * Create a BlobDownloadRequest
+     */
     public convenience init(format: BlobFormat, node: NodeAddr, tag: SetTagOption) throws {
         let pointer =
             try rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-                uniffi_iroh_fn_constructor_blobdownloadoptions_new(
+                uniffi_iroh_ffi_fn_constructor_blobdownloadoptions_new(
                     FfiConverterTypeBlobFormat.lower(format),
                     FfiConverterTypeNodeAddr.lower(node),
                     FfiConverterTypeSetTagOption.lower(tag), $0
@@ -1168,7 +1199,7 @@ open class BlobDownloadOptions:
             return
         }
 
-        try! rustCall { uniffi_iroh_fn_free_blobdownloadoptions(pointer, $0) }
+        try! rustCall { uniffi_iroh_ffi_fn_free_blobdownloadoptions(pointer, $0) }
     }
 }
 
@@ -1217,24 +1248,29 @@ public func FfiConverterTypeBlobDownloadOptions_lower(_ value: BlobDownloadOptio
  */
 public protocol BlobTicketProtocol: AnyObject {
     /**
-     * Turn this ticket into parameters for blobs_download.
+     * Convert this ticket into input parameters for a call to blobs_download
      */
     func asDownloadOptions() -> BlobDownloadOptions
 
     /**
-     * The format of the blob.
+     * The [`BlobFormat`] for this ticket.
      */
     func format() -> BlobFormat
 
     /**
-     * The hash to retrieve.
+     * The hash of the item this ticket can retrieve.
      */
     func hash() -> Hash
 
     /**
-     * The provider to get a file from.
+     * The [`NodeAddr`] of the provider for this ticket.
      */
     func nodeAddr() -> NodeAddr
+
+    /**
+     * True if the ticket is for a collection and should retrieve all blobs in it.
+     */
+    func recursive() -> Bool
 }
 
 /**
@@ -1269,14 +1305,14 @@ open class BlobTicket:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_fn_clone_blobticket(self.pointer, $0) }
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_blobticket(self.pointer, $0) }
     }
 
-    public convenience init(ticket: String) throws {
+    public convenience init(str: String) throws {
         let pointer =
             try rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-                uniffi_iroh_fn_constructor_blobticket_new(
-                    FfiConverterString.lower(ticket), $0
+                uniffi_iroh_ffi_fn_constructor_blobticket_new(
+                    FfiConverterString.lower(str), $0
                 )
             }
         self.init(unsafeFromRawPointer: pointer)
@@ -1287,42 +1323,51 @@ open class BlobTicket:
             return
         }
 
-        try! rustCall { uniffi_iroh_fn_free_blobticket(pointer, $0) }
+        try! rustCall { uniffi_iroh_ffi_fn_free_blobticket(pointer, $0) }
     }
 
     /**
-     * Turn this ticket into parameters for blobs_download.
+     * Convert this ticket into input parameters for a call to blobs_download
      */
     open func asDownloadOptions() -> BlobDownloadOptions {
         return try! FfiConverterTypeBlobDownloadOptions.lift(try! rustCall {
-            uniffi_iroh_fn_method_blobticket_as_download_options(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_blobticket_as_download_options(self.uniffiClonePointer(), $0)
         })
     }
 
     /**
-     * The format of the blob.
+     * The [`BlobFormat`] for this ticket.
      */
     open func format() -> BlobFormat {
         return try! FfiConverterTypeBlobFormat.lift(try! rustCall {
-            uniffi_iroh_fn_method_blobticket_format(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_blobticket_format(self.uniffiClonePointer(), $0)
         })
     }
 
     /**
-     * The hash to retrieve.
+     * The hash of the item this ticket can retrieve.
      */
     open func hash() -> Hash {
         return try! FfiConverterTypeHash.lift(try! rustCall {
-            uniffi_iroh_fn_method_blobticket_hash(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_blobticket_hash(self.uniffiClonePointer(), $0)
         })
     }
 
     /**
-     * The provider to get a file from.
+     * The [`NodeAddr`] of the provider for this ticket.
      */
     open func nodeAddr() -> NodeAddr {
         return try! FfiConverterTypeNodeAddr.lift(try! rustCall {
-            uniffi_iroh_fn_method_blobticket_node_addr(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_blobticket_node_addr(self.uniffiClonePointer(), $0)
+        })
+    }
+
+    /**
+     * True if the ticket is for a collection and should retrieve all blobs in it.
+     */
+    open func recursive() -> Bool {
+        return try! FfiConverterBool.lift(try! rustCall {
+            uniffi_iroh_ffi_fn_method_blobticket_recursive(self.uniffiClonePointer(), $0)
         })
     }
 }
@@ -1367,12 +1412,10 @@ public func FfiConverterTypeBlobTicket_lower(_ value: BlobTicket) -> UnsafeMutab
 
 /**
  * A collection of blobs
- *
- * Note that the format is subject to change.
  */
 public protocol CollectionProtocol: AnyObject {
     /**
-     * Returns a [`Link`] (the name and the hash), for each blob in the collection.
+     * Get the blobs associated with this collection
      */
     func blobs() throws -> [LinkAndName]
 
@@ -1404,8 +1447,6 @@ public protocol CollectionProtocol: AnyObject {
 
 /**
  * A collection of blobs
- *
- * Note that the format is subject to change.
  */
 open class Collection:
     CollectionProtocol
@@ -1434,7 +1475,7 @@ open class Collection:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_fn_clone_collection(self.pointer, $0) }
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_collection(self.pointer, $0) }
     }
 
     /**
@@ -1443,7 +1484,7 @@ open class Collection:
     public convenience init() {
         let pointer =
             try! rustCall {
-                uniffi_iroh_fn_constructor_collection_new($0
+                uniffi_iroh_ffi_fn_constructor_collection_new($0
                 )
             }
         self.init(unsafeFromRawPointer: pointer)
@@ -1454,15 +1495,15 @@ open class Collection:
             return
         }
 
-        try! rustCall { uniffi_iroh_fn_free_collection(pointer, $0) }
+        try! rustCall { uniffi_iroh_ffi_fn_free_collection(pointer, $0) }
     }
 
     /**
-     * Returns a [`Link`] (the name and the hash), for each blob in the collection.
+     * Get the blobs associated with this collection
      */
     open func blobs() throws -> [LinkAndName] {
         return try FfiConverterSequenceTypeLinkAndName.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_collection_blobs(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_collection_blobs(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -1471,7 +1512,7 @@ open class Collection:
      */
     open func isEmpty() throws -> Bool {
         return try FfiConverterBool.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_collection_is_empty(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_collection_is_empty(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -1480,7 +1521,7 @@ open class Collection:
      */
     open func len() throws -> UInt64 {
         return try FfiConverterUInt64.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_collection_len(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_collection_len(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -1489,7 +1530,7 @@ open class Collection:
      */
     open func links() throws -> [Hash] {
         return try FfiConverterSequenceTypeHash.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_collection_links(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_collection_links(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -1498,7 +1539,7 @@ open class Collection:
      */
     open func names() throws -> [String] {
         return try FfiConverterSequenceString.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_collection_names(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_collection_names(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -1506,9 +1547,9 @@ open class Collection:
      * Add the given blob to the collection
      */
     open func push(name: String, hash: Hash) throws { try rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-        uniffi_iroh_fn_method_collection_push(self.uniffiClonePointer(),
-                                              FfiConverterString.lower(name),
-                                              FfiConverterTypeHash.lower(hash), $0)
+        uniffi_iroh_ffi_fn_method_collection_push(self.uniffiClonePointer(),
+                                                  FfiConverterString.lower(name),
+                                                  FfiConverterTypeHash.lower(hash), $0)
     }
     }
 }
@@ -1561,12 +1602,12 @@ public protocol ConnectionTypeProtocol: AnyObject {
     func asDirect() -> String
 
     /**
-     * Return the socket address and relay url if this is a mixed connection
+     * Return the socket address and DERP url if this is a mixed connection
      */
     func asMixed() -> ConnectionTypeMixed
 
     /**
-     * Return the relay url if this is a relay connection
+     * Return the derp url if this is a relay connection
      */
     func asRelay() -> String
 
@@ -1606,7 +1647,7 @@ open class ConnectionType:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_fn_clone_connectiontype(self.pointer, $0) }
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_connectiontype(self.pointer, $0) }
     }
 
     // No primary constructor declared for this class.
@@ -1616,7 +1657,7 @@ open class ConnectionType:
             return
         }
 
-        try! rustCall { uniffi_iroh_fn_free_connectiontype(pointer, $0) }
+        try! rustCall { uniffi_iroh_ffi_fn_free_connectiontype(pointer, $0) }
     }
 
     /**
@@ -1624,25 +1665,25 @@ open class ConnectionType:
      */
     open func asDirect() -> String {
         return try! FfiConverterString.lift(try! rustCall {
-            uniffi_iroh_fn_method_connectiontype_as_direct(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_connectiontype_as_direct(self.uniffiClonePointer(), $0)
         })
     }
 
     /**
-     * Return the socket address and relay url if this is a mixed connection
+     * Return the socket address and DERP url if this is a mixed connection
      */
     open func asMixed() -> ConnectionTypeMixed {
         return try! FfiConverterTypeConnectionTypeMixed.lift(try! rustCall {
-            uniffi_iroh_fn_method_connectiontype_as_mixed(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_connectiontype_as_mixed(self.uniffiClonePointer(), $0)
         })
     }
 
     /**
-     * Return the relay url if this is a relay connection
+     * Return the derp url if this is a relay connection
      */
     open func asRelay() -> String {
         return try! FfiConverterString.lift(try! rustCall {
-            uniffi_iroh_fn_method_connectiontype_as_relay(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_connectiontype_as_relay(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -1651,7 +1692,7 @@ open class ConnectionType:
      */
     open func type() -> ConnType {
         return try! FfiConverterTypeConnType.lift(try! rustCall {
-            uniffi_iroh_fn_method_connectiontype_type(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_connectiontype_type(self.uniffiClonePointer(), $0)
         })
     }
 }
@@ -1749,7 +1790,7 @@ open class DirectAddrInfo:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_fn_clone_directaddrinfo(self.pointer, $0) }
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_directaddrinfo(self.pointer, $0) }
     }
 
     // No primary constructor declared for this class.
@@ -1759,7 +1800,7 @@ open class DirectAddrInfo:
             return
         }
 
-        try! rustCall { uniffi_iroh_fn_free_directaddrinfo(pointer, $0) }
+        try! rustCall { uniffi_iroh_ffi_fn_free_directaddrinfo(pointer, $0) }
     }
 
     /**
@@ -1767,7 +1808,7 @@ open class DirectAddrInfo:
      */
     open func addr() -> String {
         return try! FfiConverterString.lift(try! rustCall {
-            uniffi_iroh_fn_method_directaddrinfo_addr(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_directaddrinfo_addr(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -1776,7 +1817,7 @@ open class DirectAddrInfo:
      */
     open func lastControl() -> LatencyAndControlMsg? {
         return try! FfiConverterOptionTypeLatencyAndControlMsg.lift(try! rustCall {
-            uniffi_iroh_fn_method_directaddrinfo_last_control(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_directaddrinfo_last_control(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -1785,7 +1826,7 @@ open class DirectAddrInfo:
      */
     open func lastPayload() -> TimeInterval? {
         return try! FfiConverterOptionDuration.lift(try! rustCall {
-            uniffi_iroh_fn_method_directaddrinfo_last_payload(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_directaddrinfo_last_payload(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -1794,7 +1835,7 @@ open class DirectAddrInfo:
      */
     open func latency() -> TimeInterval? {
         return try! FfiConverterOptionDuration.lift(try! rustCall {
-            uniffi_iroh_fn_method_directaddrinfo_latency(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_directaddrinfo_latency(self.uniffiClonePointer(), $0)
         })
     }
 }
@@ -1844,7 +1885,7 @@ public protocol DocProtocol: AnyObject {
     /**
      * Close the document.
      */
-    func closeMe() throws
+    func closeMe() async throws
 
     /**
      * Delete entries that match the given `author` and key `prefix`.
@@ -1854,24 +1895,22 @@ public protocol DocProtocol: AnyObject {
      *
      * Returns the number of entries deleted.
      */
-    func del(authorId: AuthorId, prefix: Data) throws -> UInt64
+    func del(authorId: AuthorId, prefix: Data) async throws -> UInt64
 
     /**
      * Export an entry as a file to a given absolute path
      */
-    func exportFile(entry: Entry, path: String, cb: DocExportFileCallback?) throws
+    func exportFile(entry: Entry, path: String, cb: DocExportFileCallback?) async throws
 
     /**
      * Get the download policy for this document
      */
-    func getDownloadPolicy() throws -> DownloadPolicy
+    func getDownloadPolicy() async throws -> DownloadPolicy
 
     /**
      * Get an entry for a key and author.
-     *
-     * Optionally also get the entry if it is empty (i.e. a deletion marker)
      */
-    func getExact(author: AuthorId, key: Data, includeEmpty: Bool) throws -> Entry?
+    func getExact(author: AuthorId, key: Data, includeEmpty: Bool) async throws -> Entry?
 
     /**
      * Get entries.
@@ -1879,12 +1918,12 @@ public protocol DocProtocol: AnyObject {
      * Note: this allocates for each `Entry`, if you have many `Entry`s this may be a prohibitively large list.
      * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
      */
-    func getMany(query: Query) throws -> [Entry]
+    func getMany(query: Query) async throws -> [Entry]
 
     /**
      * Get the latest entry for a key and author.
      */
-    func getOne(query: Query) throws -> Entry?
+    func getOne(query: Query) async throws -> Entry?
 
     /**
      * Get the document id of this doc.
@@ -1894,47 +1933,47 @@ public protocol DocProtocol: AnyObject {
     /**
      * Add an entry from an absolute file path
      */
-    func importFile(author: AuthorId, key: Data, path: String, inPlace: Bool, cb: DocImportFileCallback?) throws
+    func importFile(author: AuthorId, key: Data, path: String, inPlace: Bool, cb: DocImportFileCallback?) async throws
 
     /**
      * Stop the live sync for this document.
      */
-    func leave() throws
+    func leave() async throws
 
     /**
      * Set the content of a key to a byte array.
      */
-    func setBytes(author: AuthorId, key: Data, value: Data) throws -> Hash
+    func setBytes(authorId: AuthorId, key: Data, value: Data) async throws -> Hash
 
     /**
      * Set the download policy for this document
      */
-    func setDownloadPolicy(policy: DownloadPolicy) throws
+    func setDownloadPolicy(policy: DownloadPolicy) async throws
 
     /**
      * Set an entries on the doc via its key, hash, and size.
      */
-    func setHash(author: AuthorId, key: Data, hash: Hash, size: UInt64) throws
+    func setHash(authorId: AuthorId, key: Data, hash: Hash, size: UInt64) async throws
 
     /**
      * Share this document with peers over a ticket.
      */
-    func share(mode: ShareMode, addrOptions: AddrInfoOptions) throws -> String
+    func share(mode: ShareMode, addrOptions: AddrInfoOptions) async throws -> String
 
     /**
      * Start to sync this document with a list of peers.
      */
-    func startSync(peers: [NodeAddr]) throws
+    func startSync(peers: [NodeAddr]) async throws
 
     /**
      * Get status info for this document
      */
-    func status() throws -> OpenState
+    func status() async throws -> OpenState
 
     /**
      * Subscribe to events for this document.
      */
-    func subscribe(cb: SubscribeCallback) throws
+    func subscribe(cb: SubscribeCallback) async throws
 }
 
 /**
@@ -1967,7 +2006,7 @@ open class Doc:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_fn_clone_doc(self.pointer, $0) }
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_doc(self.pointer, $0) }
     }
 
     // No primary constructor declared for this class.
@@ -1977,15 +2016,26 @@ open class Doc:
             return
         }
 
-        try! rustCall { uniffi_iroh_fn_free_doc(pointer, $0) }
+        try! rustCall { uniffi_iroh_ffi_fn_free_doc(pointer, $0) }
     }
 
     /**
      * Close the document.
      */
-    open func closeMe() throws { try rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-        uniffi_iroh_fn_method_doc_close_me(self.uniffiClonePointer(), $0)
-    }
+    open func closeMe() async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_doc_close_me(
+                        self.uniffiClonePointer()
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
@@ -1996,46 +2046,80 @@ open class Doc:
      *
      * Returns the number of entries deleted.
      */
-    open func del(authorId: AuthorId, prefix: Data) throws -> UInt64 {
-        return try FfiConverterUInt64.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_doc_del(self.uniffiClonePointer(),
-                                          FfiConverterTypeAuthorId.lower(authorId),
-                                          FfiConverterData.lower(prefix), $0)
-        })
+    open func del(authorId: AuthorId, prefix: Data) async throws -> UInt64 {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_doc_del(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeAuthorId.lower(authorId), FfiConverterData.lower(prefix)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_u64,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_u64,
+                freeFunc: ffi_iroh_ffi_rust_future_free_u64,
+                liftFunc: FfiConverterUInt64.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * Export an entry as a file to a given absolute path
      */
-    open func exportFile(entry: Entry, path: String, cb: DocExportFileCallback?) throws { try rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-        uniffi_iroh_fn_method_doc_export_file(self.uniffiClonePointer(),
-                                              FfiConverterTypeEntry.lower(entry),
-                                              FfiConverterString.lower(path),
-                                              FfiConverterOptionTypeDocExportFileCallback.lower(cb), $0)
-    }
+    open func exportFile(entry: Entry, path: String, cb: DocExportFileCallback?) async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_doc_export_file(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeEntry.lower(entry), FfiConverterString.lower(path), FfiConverterOptionTypeDocExportFileCallback.lower(cb)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * Get the download policy for this document
      */
-    open func getDownloadPolicy() throws -> DownloadPolicy {
-        return try FfiConverterTypeDownloadPolicy.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_doc_get_download_policy(self.uniffiClonePointer(), $0)
-        })
+    open func getDownloadPolicy() async throws -> DownloadPolicy {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_doc_get_download_policy(
+                        self.uniffiClonePointer()
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_pointer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_pointer,
+                liftFunc: FfiConverterTypeDownloadPolicy.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * Get an entry for a key and author.
-     *
-     * Optionally also get the entry if it is empty (i.e. a deletion marker)
      */
-    open func getExact(author: AuthorId, key: Data, includeEmpty: Bool) throws -> Entry? {
-        return try FfiConverterOptionTypeEntry.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_doc_get_exact(self.uniffiClonePointer(),
-                                                FfiConverterTypeAuthorId.lower(author),
-                                                FfiConverterData.lower(key),
-                                                FfiConverterBool.lower(includeEmpty), $0)
-        })
+    open func getExact(author: AuthorId, key: Data, includeEmpty: Bool) async throws -> Entry? {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_doc_get_exact(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeAuthorId.lower(author), FfiConverterData.lower(key), FfiConverterBool.lower(includeEmpty)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterOptionTypeEntry.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
@@ -2044,21 +2128,41 @@ open class Doc:
      * Note: this allocates for each `Entry`, if you have many `Entry`s this may be a prohibitively large list.
      * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
      */
-    open func getMany(query: Query) throws -> [Entry] {
-        return try FfiConverterSequenceTypeEntry.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_doc_get_many(self.uniffiClonePointer(),
-                                               FfiConverterTypeQuery.lower(query), $0)
-        })
+    open func getMany(query: Query) async throws -> [Entry] {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_doc_get_many(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeQuery.lower(query)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterSequenceTypeEntry.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * Get the latest entry for a key and author.
      */
-    open func getOne(query: Query) throws -> Entry? {
-        return try FfiConverterOptionTypeEntry.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_doc_get_one(self.uniffiClonePointer(),
-                                              FfiConverterTypeQuery.lower(query), $0)
-        })
+    open func getOne(query: Query) async throws -> Entry? {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_doc_get_one(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeQuery.lower(query)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterOptionTypeEntry.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
@@ -2066,100 +2170,186 @@ open class Doc:
      */
     open func id() -> String {
         return try! FfiConverterString.lift(try! rustCall {
-            uniffi_iroh_fn_method_doc_id(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_doc_id(self.uniffiClonePointer(), $0)
         })
     }
 
     /**
      * Add an entry from an absolute file path
      */
-    open func importFile(author: AuthorId, key: Data, path: String, inPlace: Bool, cb: DocImportFileCallback?) throws { try rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-        uniffi_iroh_fn_method_doc_import_file(self.uniffiClonePointer(),
-                                              FfiConverterTypeAuthorId.lower(author),
-                                              FfiConverterData.lower(key),
-                                              FfiConverterString.lower(path),
-                                              FfiConverterBool.lower(inPlace),
-                                              FfiConverterOptionTypeDocImportFileCallback.lower(cb), $0)
-    }
+    open func importFile(author: AuthorId, key: Data, path: String, inPlace: Bool, cb: DocImportFileCallback?) async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_doc_import_file(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeAuthorId.lower(author), FfiConverterData.lower(key), FfiConverterString.lower(path), FfiConverterBool.lower(inPlace), FfiConverterOptionTypeDocImportFileCallback.lower(cb)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * Stop the live sync for this document.
      */
-    open func leave() throws { try rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-        uniffi_iroh_fn_method_doc_leave(self.uniffiClonePointer(), $0)
-    }
+    open func leave() async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_doc_leave(
+                        self.uniffiClonePointer()
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * Set the content of a key to a byte array.
      */
-    open func setBytes(author: AuthorId, key: Data, value: Data) throws -> Hash {
-        return try FfiConverterTypeHash.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_doc_set_bytes(self.uniffiClonePointer(),
-                                                FfiConverterTypeAuthorId.lower(author),
-                                                FfiConverterData.lower(key),
-                                                FfiConverterData.lower(value), $0)
-        })
+    open func setBytes(authorId: AuthorId, key: Data, value: Data) async throws -> Hash {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_doc_set_bytes(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeAuthorId.lower(authorId), FfiConverterData.lower(key), FfiConverterData.lower(value)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_pointer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_pointer,
+                liftFunc: FfiConverterTypeHash.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * Set the download policy for this document
      */
-    open func setDownloadPolicy(policy: DownloadPolicy) throws { try rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-        uniffi_iroh_fn_method_doc_set_download_policy(self.uniffiClonePointer(),
-                                                      FfiConverterTypeDownloadPolicy.lower(policy), $0)
-    }
+    open func setDownloadPolicy(policy: DownloadPolicy) async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_doc_set_download_policy(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeDownloadPolicy.lower(policy)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * Set an entries on the doc via its key, hash, and size.
      */
-    open func setHash(author: AuthorId, key: Data, hash: Hash, size: UInt64) throws { try rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-        uniffi_iroh_fn_method_doc_set_hash(self.uniffiClonePointer(),
-                                           FfiConverterTypeAuthorId.lower(author),
-                                           FfiConverterData.lower(key),
-                                           FfiConverterTypeHash.lower(hash),
-                                           FfiConverterUInt64.lower(size), $0)
-    }
+    open func setHash(authorId: AuthorId, key: Data, hash: Hash, size: UInt64) async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_doc_set_hash(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeAuthorId.lower(authorId), FfiConverterData.lower(key), FfiConverterTypeHash.lower(hash), FfiConverterUInt64.lower(size)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * Share this document with peers over a ticket.
      */
-    open func share(mode: ShareMode, addrOptions: AddrInfoOptions) throws -> String {
-        return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_doc_share(self.uniffiClonePointer(),
-                                            FfiConverterTypeShareMode.lower(mode),
-                                            FfiConverterTypeAddrInfoOptions.lower(addrOptions), $0)
-        })
+    open func share(mode: ShareMode, addrOptions: AddrInfoOptions) async throws -> String {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_doc_share(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeShareMode.lower(mode), FfiConverterTypeAddrInfoOptions.lower(addrOptions)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterString.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * Start to sync this document with a list of peers.
      */
-    open func startSync(peers: [NodeAddr]) throws { try rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-        uniffi_iroh_fn_method_doc_start_sync(self.uniffiClonePointer(),
-                                             FfiConverterSequenceTypeNodeAddr.lower(peers), $0)
-    }
+    open func startSync(peers: [NodeAddr]) async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_doc_start_sync(
+                        self.uniffiClonePointer(),
+                        FfiConverterSequenceTypeNodeAddr.lower(peers)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * Get status info for this document
      */
-    open func status() throws -> OpenState {
-        return try FfiConverterTypeOpenState.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_doc_status(self.uniffiClonePointer(), $0)
-        })
+    open func status() async throws -> OpenState {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_doc_status(
+                        self.uniffiClonePointer()
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterTypeOpenState.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * Subscribe to events for this document.
      */
-    open func subscribe(cb: SubscribeCallback) throws { try rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-        uniffi_iroh_fn_method_doc_subscribe(self.uniffiClonePointer(),
-                                            FfiConverterTypeSubscribeCallback.lower(cb), $0)
-    }
+    open func subscribe(cb: SubscribeCallback) async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_doc_subscribe(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeSubscribeCallback.lower(cb)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 }
 
@@ -2207,7 +2397,7 @@ public func FfiConverterTypeDoc_lower(_ value: Doc) -> UnsafeMutableRawPointer {
  * method to check the `DocExportProgressType`
  */
 public protocol DocExportFileCallback: AnyObject {
-    func progress(progress: DocExportProgress) throws
+    func progress(progress: DocExportProgress) async throws
 }
 
 /**
@@ -2242,7 +2432,7 @@ open class DocExportFileCallbackImpl:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_fn_clone_docexportfilecallback(self.pointer, $0) }
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_docexportfilecallback(self.pointer, $0) }
     }
 
     // No primary constructor declared for this class.
@@ -2252,13 +2442,24 @@ open class DocExportFileCallbackImpl:
             return
         }
 
-        try! rustCall { uniffi_iroh_fn_free_docexportfilecallback(pointer, $0) }
+        try! rustCall { uniffi_iroh_ffi_fn_free_docexportfilecallback(pointer, $0) }
     }
 
-    open func progress(progress: DocExportProgress) throws { try rustCallWithError(FfiConverterTypeCallbackError.lift) {
-        uniffi_iroh_fn_method_docexportfilecallback_progress(self.uniffiClonePointer(),
-                                                             FfiConverterTypeDocExportProgress.lower(progress), $0)
-    }
+    open func progress(progress: DocExportProgress) async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_docexportfilecallback_progress(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeDocExportProgress.lower(progress)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeCallbackError.lift
+            )
     }
 }
 
@@ -2270,26 +2471,43 @@ private enum UniffiCallbackInterfaceDocExportFileCallback {
         progress: { (
             uniffiHandle: UInt64,
             progress: UnsafeMutableRawPointer,
-            _: UnsafeMutableRawPointer,
-            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
+            uniffiFutureCallback: @escaping UniffiForeignFutureCompleteVoid,
+            uniffiCallbackData: UInt64,
+            uniffiOutReturn: UnsafeMutablePointer<UniffiForeignFuture>
         ) in
             let makeCall = {
-                () throws in
+                () async throws in
                 guard let uniffiObj = try? FfiConverterTypeDocExportFileCallback.handleMap.get(handle: uniffiHandle) else {
                     throw UniffiInternalError.unexpectedStaleHandle
                 }
-                return try uniffiObj.progress(
+                return try await uniffiObj.progress(
                     progress: FfiConverterTypeDocExportProgress.lift(progress)
                 )
             }
 
-            let writeReturn = { () }
-            uniffiTraitInterfaceCallWithError(
-                callStatus: uniffiCallStatus,
+            let uniffiHandleSuccess = { (_: ()) in
+                uniffiFutureCallback(
+                    uniffiCallbackData,
+                    UniffiForeignFutureStructVoid(
+                        callStatus: RustCallStatus()
+                    )
+                )
+            }
+            let uniffiHandleError = { statusCode, errorBuf in
+                uniffiFutureCallback(
+                    uniffiCallbackData,
+                    UniffiForeignFutureStructVoid(
+                        callStatus: RustCallStatus(code: statusCode, errorBuf: errorBuf)
+                    )
+                )
+            }
+            let uniffiForeignFuture = uniffiTraitInterfaceCallAsyncWithError(
                 makeCall: makeCall,
-                writeReturn: writeReturn,
+                handleSuccess: uniffiHandleSuccess,
+                handleError: uniffiHandleError,
                 lowerError: FfiConverterTypeCallbackError.lower
             )
+            uniffiOutReturn.pointee = uniffiForeignFuture
         },
         uniffiFree: { (uniffiHandle: UInt64) in
             let result = try? FfiConverterTypeDocExportFileCallback.handleMap.remove(handle: uniffiHandle)
@@ -2301,7 +2519,7 @@ private enum UniffiCallbackInterfaceDocExportFileCallback {
 }
 
 private func uniffiCallbackInitDocExportFileCallback() {
-    uniffi_iroh_fn_init_callback_vtable_docexportfilecallback(&UniffiCallbackInterfaceDocExportFileCallback.vtable)
+    uniffi_iroh_ffi_fn_init_callback_vtable_docexportfilecallback(&UniffiCallbackInterfaceDocExportFileCallback.vtable)
 }
 
 public struct FfiConverterTypeDocExportFileCallback: FfiConverter {
@@ -2402,7 +2620,7 @@ open class DocExportProgress:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_fn_clone_docexportprogress(self.pointer, $0) }
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_docexportprogress(self.pointer, $0) }
     }
 
     // No primary constructor declared for this class.
@@ -2412,7 +2630,7 @@ open class DocExportProgress:
             return
         }
 
-        try! rustCall { uniffi_iroh_fn_free_docexportprogress(pointer, $0) }
+        try! rustCall { uniffi_iroh_ffi_fn_free_docexportprogress(pointer, $0) }
     }
 
     /**
@@ -2420,7 +2638,7 @@ open class DocExportProgress:
      */
     open func asAbort() -> DocExportProgressAbort {
         return try! FfiConverterTypeDocExportProgressAbort.lift(try! rustCall {
-            uniffi_iroh_fn_method_docexportprogress_as_abort(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_docexportprogress_as_abort(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -2429,7 +2647,7 @@ open class DocExportProgress:
      */
     open func asFound() -> DocExportProgressFound {
         return try! FfiConverterTypeDocExportProgressFound.lift(try! rustCall {
-            uniffi_iroh_fn_method_docexportprogress_as_found(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_docexportprogress_as_found(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -2438,7 +2656,7 @@ open class DocExportProgress:
      */
     open func asProgress() -> DocExportProgressProgress {
         return try! FfiConverterTypeDocExportProgressProgress.lift(try! rustCall {
-            uniffi_iroh_fn_method_docexportprogress_as_progress(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_docexportprogress_as_progress(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -2447,7 +2665,7 @@ open class DocExportProgress:
      */
     open func type() -> DocExportProgressType {
         return try! FfiConverterTypeDocExportProgressType.lift(try! rustCall {
-            uniffi_iroh_fn_method_docexportprogress_type(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_docexportprogress_type(self.uniffiClonePointer(), $0)
         })
     }
 }
@@ -2496,7 +2714,7 @@ public func FfiConverterTypeDocExportProgress_lower(_ value: DocExportProgress) 
  * method to check the `DocImportProgressType`
  */
 public protocol DocImportFileCallback: AnyObject {
-    func progress(progress: DocImportProgress) throws
+    func progress(progress: DocImportProgress) async throws
 }
 
 /**
@@ -2531,7 +2749,7 @@ open class DocImportFileCallbackImpl:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_fn_clone_docimportfilecallback(self.pointer, $0) }
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_docimportfilecallback(self.pointer, $0) }
     }
 
     // No primary constructor declared for this class.
@@ -2541,13 +2759,24 @@ open class DocImportFileCallbackImpl:
             return
         }
 
-        try! rustCall { uniffi_iroh_fn_free_docimportfilecallback(pointer, $0) }
+        try! rustCall { uniffi_iroh_ffi_fn_free_docimportfilecallback(pointer, $0) }
     }
 
-    open func progress(progress: DocImportProgress) throws { try rustCallWithError(FfiConverterTypeCallbackError.lift) {
-        uniffi_iroh_fn_method_docimportfilecallback_progress(self.uniffiClonePointer(),
-                                                             FfiConverterTypeDocImportProgress.lower(progress), $0)
-    }
+    open func progress(progress: DocImportProgress) async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_docimportfilecallback_progress(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeDocImportProgress.lower(progress)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeCallbackError.lift
+            )
     }
 }
 
@@ -2559,26 +2788,43 @@ private enum UniffiCallbackInterfaceDocImportFileCallback {
         progress: { (
             uniffiHandle: UInt64,
             progress: UnsafeMutableRawPointer,
-            _: UnsafeMutableRawPointer,
-            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
+            uniffiFutureCallback: @escaping UniffiForeignFutureCompleteVoid,
+            uniffiCallbackData: UInt64,
+            uniffiOutReturn: UnsafeMutablePointer<UniffiForeignFuture>
         ) in
             let makeCall = {
-                () throws in
+                () async throws in
                 guard let uniffiObj = try? FfiConverterTypeDocImportFileCallback.handleMap.get(handle: uniffiHandle) else {
                     throw UniffiInternalError.unexpectedStaleHandle
                 }
-                return try uniffiObj.progress(
+                return try await uniffiObj.progress(
                     progress: FfiConverterTypeDocImportProgress.lift(progress)
                 )
             }
 
-            let writeReturn = { () }
-            uniffiTraitInterfaceCallWithError(
-                callStatus: uniffiCallStatus,
+            let uniffiHandleSuccess = { (_: ()) in
+                uniffiFutureCallback(
+                    uniffiCallbackData,
+                    UniffiForeignFutureStructVoid(
+                        callStatus: RustCallStatus()
+                    )
+                )
+            }
+            let uniffiHandleError = { statusCode, errorBuf in
+                uniffiFutureCallback(
+                    uniffiCallbackData,
+                    UniffiForeignFutureStructVoid(
+                        callStatus: RustCallStatus(code: statusCode, errorBuf: errorBuf)
+                    )
+                )
+            }
+            let uniffiForeignFuture = uniffiTraitInterfaceCallAsyncWithError(
                 makeCall: makeCall,
-                writeReturn: writeReturn,
+                handleSuccess: uniffiHandleSuccess,
+                handleError: uniffiHandleError,
                 lowerError: FfiConverterTypeCallbackError.lower
             )
+            uniffiOutReturn.pointee = uniffiForeignFuture
         },
         uniffiFree: { (uniffiHandle: UInt64) in
             let result = try? FfiConverterTypeDocImportFileCallback.handleMap.remove(handle: uniffiHandle)
@@ -2590,7 +2836,7 @@ private enum UniffiCallbackInterfaceDocImportFileCallback {
 }
 
 private func uniffiCallbackInitDocImportFileCallback() {
-    uniffi_iroh_fn_init_callback_vtable_docimportfilecallback(&UniffiCallbackInterfaceDocImportFileCallback.vtable)
+    uniffi_iroh_ffi_fn_init_callback_vtable_docimportfilecallback(&UniffiCallbackInterfaceDocImportFileCallback.vtable)
 }
 
 public struct FfiConverterTypeDocImportFileCallback: FfiConverter {
@@ -2701,7 +2947,7 @@ open class DocImportProgress:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_fn_clone_docimportprogress(self.pointer, $0) }
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_docimportprogress(self.pointer, $0) }
     }
 
     // No primary constructor declared for this class.
@@ -2711,7 +2957,7 @@ open class DocImportProgress:
             return
         }
 
-        try! rustCall { uniffi_iroh_fn_free_docimportprogress(pointer, $0) }
+        try! rustCall { uniffi_iroh_ffi_fn_free_docimportprogress(pointer, $0) }
     }
 
     /**
@@ -2719,7 +2965,7 @@ open class DocImportProgress:
      */
     open func asAbort() -> DocImportProgressAbort {
         return try! FfiConverterTypeDocImportProgressAbort.lift(try! rustCall {
-            uniffi_iroh_fn_method_docimportprogress_as_abort(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_docimportprogress_as_abort(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -2728,7 +2974,7 @@ open class DocImportProgress:
      */
     open func asAllDone() -> DocImportProgressAllDone {
         return try! FfiConverterTypeDocImportProgressAllDone.lift(try! rustCall {
-            uniffi_iroh_fn_method_docimportprogress_as_all_done(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_docimportprogress_as_all_done(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -2737,7 +2983,7 @@ open class DocImportProgress:
      */
     open func asFound() -> DocImportProgressFound {
         return try! FfiConverterTypeDocImportProgressFound.lift(try! rustCall {
-            uniffi_iroh_fn_method_docimportprogress_as_found(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_docimportprogress_as_found(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -2746,7 +2992,7 @@ open class DocImportProgress:
      */
     open func asIngestDone() -> DocImportProgressIngestDone {
         return try! FfiConverterTypeDocImportProgressIngestDone.lift(try! rustCall {
-            uniffi_iroh_fn_method_docimportprogress_as_ingest_done(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_docimportprogress_as_ingest_done(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -2755,7 +3001,7 @@ open class DocImportProgress:
      */
     open func asProgress() -> DocImportProgressProgress {
         return try! FfiConverterTypeDocImportProgressProgress.lift(try! rustCall {
-            uniffi_iroh_fn_method_docimportprogress_as_progress(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_docimportprogress_as_progress(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -2764,7 +3010,7 @@ open class DocImportProgress:
      */
     open func type() -> DocImportProgressType {
         return try! FfiConverterTypeDocImportProgressType.lift(try! rustCall {
-            uniffi_iroh_fn_method_docimportprogress_type(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_docimportprogress_type(self.uniffiClonePointer(), $0)
         })
     }
 }
@@ -2813,7 +3059,7 @@ public func FfiConverterTypeDocImportProgress_lower(_ value: DocImportProgress) 
  * `DownloadProgressType` of the event.
  */
 public protocol DownloadCallback: AnyObject {
-    func progress(progress: DownloadProgress) throws
+    func progress(progress: DownloadProgress) async throws
 }
 
 /**
@@ -2848,7 +3094,7 @@ open class DownloadCallbackImpl:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_fn_clone_downloadcallback(self.pointer, $0) }
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_downloadcallback(self.pointer, $0) }
     }
 
     // No primary constructor declared for this class.
@@ -2858,13 +3104,24 @@ open class DownloadCallbackImpl:
             return
         }
 
-        try! rustCall { uniffi_iroh_fn_free_downloadcallback(pointer, $0) }
+        try! rustCall { uniffi_iroh_ffi_fn_free_downloadcallback(pointer, $0) }
     }
 
-    open func progress(progress: DownloadProgress) throws { try rustCallWithError(FfiConverterTypeCallbackError.lift) {
-        uniffi_iroh_fn_method_downloadcallback_progress(self.uniffiClonePointer(),
-                                                        FfiConverterTypeDownloadProgress.lower(progress), $0)
-    }
+    open func progress(progress: DownloadProgress) async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_downloadcallback_progress(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeDownloadProgress.lower(progress)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeCallbackError.lift
+            )
     }
 }
 
@@ -2876,26 +3133,43 @@ private enum UniffiCallbackInterfaceDownloadCallback {
         progress: { (
             uniffiHandle: UInt64,
             progress: UnsafeMutableRawPointer,
-            _: UnsafeMutableRawPointer,
-            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
+            uniffiFutureCallback: @escaping UniffiForeignFutureCompleteVoid,
+            uniffiCallbackData: UInt64,
+            uniffiOutReturn: UnsafeMutablePointer<UniffiForeignFuture>
         ) in
             let makeCall = {
-                () throws in
+                () async throws in
                 guard let uniffiObj = try? FfiConverterTypeDownloadCallback.handleMap.get(handle: uniffiHandle) else {
                     throw UniffiInternalError.unexpectedStaleHandle
                 }
-                return try uniffiObj.progress(
+                return try await uniffiObj.progress(
                     progress: FfiConverterTypeDownloadProgress.lift(progress)
                 )
             }
 
-            let writeReturn = { () }
-            uniffiTraitInterfaceCallWithError(
-                callStatus: uniffiCallStatus,
+            let uniffiHandleSuccess = { (_: ()) in
+                uniffiFutureCallback(
+                    uniffiCallbackData,
+                    UniffiForeignFutureStructVoid(
+                        callStatus: RustCallStatus()
+                    )
+                )
+            }
+            let uniffiHandleError = { statusCode, errorBuf in
+                uniffiFutureCallback(
+                    uniffiCallbackData,
+                    UniffiForeignFutureStructVoid(
+                        callStatus: RustCallStatus(code: statusCode, errorBuf: errorBuf)
+                    )
+                )
+            }
+            let uniffiForeignFuture = uniffiTraitInterfaceCallAsyncWithError(
                 makeCall: makeCall,
-                writeReturn: writeReturn,
+                handleSuccess: uniffiHandleSuccess,
+                handleError: uniffiHandleError,
                 lowerError: FfiConverterTypeCallbackError.lower
             )
+            uniffiOutReturn.pointee = uniffiForeignFuture
         },
         uniffiFree: { (uniffiHandle: UInt64) in
             let result = try? FfiConverterTypeDownloadCallback.handleMap.remove(handle: uniffiHandle)
@@ -2907,7 +3181,7 @@ private enum UniffiCallbackInterfaceDownloadCallback {
 }
 
 private func uniffiCallbackInitDownloadCallback() {
-    uniffi_iroh_fn_init_callback_vtable_downloadcallback(&UniffiCallbackInterfaceDownloadCallback.vtable)
+    uniffi_iroh_ffi_fn_init_callback_vtable_downloadcallback(&UniffiCallbackInterfaceDownloadCallback.vtable)
 }
 
 public struct FfiConverterTypeDownloadCallback: FfiConverter {
@@ -2988,7 +3262,7 @@ open class DownloadPolicy:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_fn_clone_downloadpolicy(self.pointer, $0) }
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_downloadpolicy(self.pointer, $0) }
     }
 
     // No primary constructor declared for this class.
@@ -2998,7 +3272,7 @@ open class DownloadPolicy:
             return
         }
 
-        try! rustCall { uniffi_iroh_fn_free_downloadpolicy(pointer, $0) }
+        try! rustCall { uniffi_iroh_ffi_fn_free_downloadpolicy(pointer, $0) }
     }
 
     /**
@@ -3006,7 +3280,7 @@ open class DownloadPolicy:
      */
     public static func everything() -> DownloadPolicy {
         return try! FfiConverterTypeDownloadPolicy.lift(try! rustCall {
-            uniffi_iroh_fn_constructor_downloadpolicy_everything($0
+            uniffi_iroh_ffi_fn_constructor_downloadpolicy_everything($0
             )
         })
     }
@@ -3016,7 +3290,7 @@ open class DownloadPolicy:
      */
     public static func everythingExcept(filters: [FilterKind]) -> DownloadPolicy {
         return try! FfiConverterTypeDownloadPolicy.lift(try! rustCall {
-            uniffi_iroh_fn_constructor_downloadpolicy_everything_except(
+            uniffi_iroh_ffi_fn_constructor_downloadpolicy_everything_except(
                 FfiConverterSequenceTypeFilterKind.lower(filters), $0
             )
         })
@@ -3027,7 +3301,7 @@ open class DownloadPolicy:
      */
     public static func nothing() -> DownloadPolicy {
         return try! FfiConverterTypeDownloadPolicy.lift(try! rustCall {
-            uniffi_iroh_fn_constructor_downloadpolicy_nothing($0
+            uniffi_iroh_ffi_fn_constructor_downloadpolicy_nothing($0
             )
         })
     }
@@ -3037,7 +3311,7 @@ open class DownloadPolicy:
      */
     public static func nothingExcept(filters: [FilterKind]) -> DownloadPolicy {
         return try! FfiConverterTypeDownloadPolicy.lift(try! rustCall {
-            uniffi_iroh_fn_constructor_downloadpolicy_nothing_except(
+            uniffi_iroh_ffi_fn_constructor_downloadpolicy_nothing_except(
                 FfiConverterSequenceTypeFilterKind.lower(filters), $0
             )
         })
@@ -3087,7 +3361,7 @@ public func FfiConverterTypeDownloadPolicy_lower(_ value: DownloadPolicy) -> Uns
  */
 public protocol DownloadProgressProtocol: AnyObject {
     /**
-     * Return the `DownloadProgressAbort`
+     * Return the `DownloadProgressAbort` event
      */
     func asAbort() -> DownloadProgressAbort
 
@@ -3158,7 +3432,7 @@ open class DownloadProgress:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_fn_clone_downloadprogress(self.pointer, $0) }
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_downloadprogress(self.pointer, $0) }
     }
 
     // No primary constructor declared for this class.
@@ -3168,15 +3442,15 @@ open class DownloadProgress:
             return
         }
 
-        try! rustCall { uniffi_iroh_fn_free_downloadprogress(pointer, $0) }
+        try! rustCall { uniffi_iroh_ffi_fn_free_downloadprogress(pointer, $0) }
     }
 
     /**
-     * Return the `DownloadProgressAbort`
+     * Return the `DownloadProgressAbort` event
      */
     open func asAbort() -> DownloadProgressAbort {
         return try! FfiConverterTypeDownloadProgressAbort.lift(try! rustCall {
-            uniffi_iroh_fn_method_downloadprogress_as_abort(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_downloadprogress_as_abort(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -3185,7 +3459,7 @@ open class DownloadProgress:
      */
     open func asAllDone() -> DownloadProgressAllDone {
         return try! FfiConverterTypeDownloadProgressAllDone.lift(try! rustCall {
-            uniffi_iroh_fn_method_downloadprogress_as_all_done(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_downloadprogress_as_all_done(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -3194,7 +3468,7 @@ open class DownloadProgress:
      */
     open func asDone() -> DownloadProgressDone {
         return try! FfiConverterTypeDownloadProgressDone.lift(try! rustCall {
-            uniffi_iroh_fn_method_downloadprogress_as_done(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_downloadprogress_as_done(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -3203,7 +3477,7 @@ open class DownloadProgress:
      */
     open func asFound() -> DownloadProgressFound {
         return try! FfiConverterTypeDownloadProgressFound.lift(try! rustCall {
-            uniffi_iroh_fn_method_downloadprogress_as_found(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_downloadprogress_as_found(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -3212,7 +3486,7 @@ open class DownloadProgress:
      */
     open func asFoundHashSeq() -> DownloadProgressFoundHashSeq {
         return try! FfiConverterTypeDownloadProgressFoundHashSeq.lift(try! rustCall {
-            uniffi_iroh_fn_method_downloadprogress_as_found_hash_seq(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_downloadprogress_as_found_hash_seq(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -3221,7 +3495,7 @@ open class DownloadProgress:
      */
     open func asFoundLocal() -> DownloadProgressFoundLocal {
         return try! FfiConverterTypeDownloadProgressFoundLocal.lift(try! rustCall {
-            uniffi_iroh_fn_method_downloadprogress_as_found_local(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_downloadprogress_as_found_local(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -3230,7 +3504,7 @@ open class DownloadProgress:
      */
     open func asProgress() -> DownloadProgressProgress {
         return try! FfiConverterTypeDownloadProgressProgress.lift(try! rustCall {
-            uniffi_iroh_fn_method_downloadprogress_as_progress(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_downloadprogress_as_progress(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -3240,7 +3514,7 @@ open class DownloadProgress:
      */
     open func type() -> DownloadProgressType {
         return try! FfiConverterTypeDownloadProgressType.lift(try! rustCall {
-            uniffi_iroh_fn_method_downloadprogress_type(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_downloadprogress_type(self.uniffiClonePointer(), $0)
         })
     }
 }
@@ -3302,7 +3576,7 @@ public protocol EntryProtocol: AnyObject {
      * reading is small. If not sure, use [`Self::content_len`] and check the size with
      * before calling [`Self::content_bytes`].
      */
-    func contentBytes(doc: Doc) throws -> Data
+    func contentBytes(doc: Doc) async throws -> Data
 
     /**
      * Get the content_hash of this entry.
@@ -3364,7 +3638,7 @@ open class Entry:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_fn_clone_entry(self.pointer, $0) }
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_entry(self.pointer, $0) }
     }
 
     // No primary constructor declared for this class.
@@ -3374,7 +3648,7 @@ open class Entry:
             return
         }
 
-        try! rustCall { uniffi_iroh_fn_free_entry(pointer, $0) }
+        try! rustCall { uniffi_iroh_ffi_fn_free_entry(pointer, $0) }
     }
 
     /**
@@ -3382,7 +3656,7 @@ open class Entry:
      */
     open func author() -> AuthorId {
         return try! FfiConverterTypeAuthorId.lift(try! rustCall {
-            uniffi_iroh_fn_method_entry_author(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_entry_author(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -3392,11 +3666,21 @@ open class Entry:
      * reading is small. If not sure, use [`Self::content_len`] and check the size with
      * before calling [`Self::content_bytes`].
      */
-    open func contentBytes(doc: Doc) throws -> Data {
-        return try FfiConverterData.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_entry_content_bytes(self.uniffiClonePointer(),
-                                                      FfiConverterTypeDoc.lower(doc), $0)
-        })
+    open func contentBytes(doc: Doc) async throws -> Data {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_entry_content_bytes(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeDoc.lower(doc)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterData.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
@@ -3404,7 +3688,7 @@ open class Entry:
      */
     open func contentHash() -> Hash {
         return try! FfiConverterTypeHash.lift(try! rustCall {
-            uniffi_iroh_fn_method_entry_content_hash(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_entry_content_hash(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -3413,7 +3697,7 @@ open class Entry:
      */
     open func contentLen() -> UInt64 {
         return try! FfiConverterUInt64.lift(try! rustCall {
-            uniffi_iroh_fn_method_entry_content_len(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_entry_content_len(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -3422,7 +3706,7 @@ open class Entry:
      */
     open func key() -> Data {
         return try! FfiConverterData.lift(try! rustCall {
-            uniffi_iroh_fn_method_entry_key(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_entry_key(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -3431,7 +3715,7 @@ open class Entry:
      */
     open func namespace() -> String {
         return try! FfiConverterString.lift(try! rustCall {
-            uniffi_iroh_fn_method_entry_namespace(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_entry_namespace(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -3440,7 +3724,7 @@ open class Entry:
      */
     open func timestamp() -> UInt64 {
         return try! FfiConverterUInt64.lift(try! rustCall {
-            uniffi_iroh_fn_method_entry_timestamp(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_entry_timestamp(self.uniffiClonePointer(), $0)
         })
     }
 }
@@ -3523,7 +3807,7 @@ open class FilterKind:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_fn_clone_filterkind(self.pointer, $0) }
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_filterkind(self.pointer, $0) }
     }
 
     // No primary constructor declared for this class.
@@ -3533,7 +3817,7 @@ open class FilterKind:
             return
         }
 
-        try! rustCall { uniffi_iroh_fn_free_filterkind(pointer, $0) }
+        try! rustCall { uniffi_iroh_ffi_fn_free_filterkind(pointer, $0) }
     }
 
     /**
@@ -3541,7 +3825,7 @@ open class FilterKind:
      */
     public static func exact(key: Data) -> FilterKind {
         return try! FfiConverterTypeFilterKind.lift(try! rustCall {
-            uniffi_iroh_fn_constructor_filterkind_exact(
+            uniffi_iroh_ffi_fn_constructor_filterkind_exact(
                 FfiConverterData.lower(key), $0
             )
         })
@@ -3552,7 +3836,7 @@ open class FilterKind:
      */
     public static func prefix(prefix: Data) -> FilterKind {
         return try! FfiConverterTypeFilterKind.lift(try! rustCall {
-            uniffi_iroh_fn_constructor_filterkind_prefix(
+            uniffi_iroh_ffi_fn_constructor_filterkind_prefix(
                 FfiConverterData.lower(prefix), $0
             )
         })
@@ -3563,8 +3847,8 @@ open class FilterKind:
      */
     open func matches(key: Data) -> Bool {
         return try! FfiConverterBool.lift(try! rustCall {
-            uniffi_iroh_fn_method_filterkind_matches(self.uniffiClonePointer(),
-                                                     FfiConverterData.lower(key), $0)
+            uniffi_iroh_ffi_fn_method_filterkind_matches(self.uniffiClonePointer(),
+                                                         FfiConverterData.lower(key), $0)
         })
     }
 }
@@ -3658,7 +3942,7 @@ open class Hash:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_fn_clone_hash(self.pointer, $0) }
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_hash(self.pointer, $0) }
     }
 
     /**
@@ -3667,7 +3951,7 @@ open class Hash:
     public convenience init(buf: Data) {
         let pointer =
             try! rustCall {
-                uniffi_iroh_fn_constructor_hash_new(
+                uniffi_iroh_ffi_fn_constructor_hash_new(
                     FfiConverterData.lower(buf), $0
                 )
             }
@@ -3679,15 +3963,15 @@ open class Hash:
             return
         }
 
-        try! rustCall { uniffi_iroh_fn_free_hash(pointer, $0) }
+        try! rustCall { uniffi_iroh_ffi_fn_free_hash(pointer, $0) }
     }
 
     /**
-     * Create a Hash from its raw bytes representation.
+     * Create a `Hash` from its raw bytes representation.
      */
     public static func fromBytes(bytes: Data) throws -> Hash {
         return try FfiConverterTypeHash.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_constructor_hash_from_bytes(
+            uniffi_iroh_ffi_fn_constructor_hash_from_bytes(
                 FfiConverterData.lower(bytes), $0
             )
         })
@@ -3698,7 +3982,7 @@ open class Hash:
      */
     public static func fromString(s: String) throws -> Hash {
         return try FfiConverterTypeHash.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_constructor_hash_from_string(
+            uniffi_iroh_ffi_fn_constructor_hash_from_string(
                 FfiConverterString.lower(s), $0
             )
         })
@@ -3709,8 +3993,8 @@ open class Hash:
      */
     open func equal(other: Hash) -> Bool {
         return try! FfiConverterBool.lift(try! rustCall {
-            uniffi_iroh_fn_method_hash_equal(self.uniffiClonePointer(),
-                                             FfiConverterTypeHash.lower(other), $0)
+            uniffi_iroh_ffi_fn_method_hash_equal(self.uniffiClonePointer(),
+                                                 FfiConverterTypeHash.lower(other), $0)
         })
     }
 
@@ -3719,7 +4003,7 @@ open class Hash:
      */
     open func toBytes() -> Data {
         return try! FfiConverterData.lift(try! rustCall {
-            uniffi_iroh_fn_method_hash_to_bytes(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_hash_to_bytes(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -3728,14 +4012,14 @@ open class Hash:
      */
     open func toHex() -> String {
         return try! FfiConverterString.lift(try! rustCall {
-            uniffi_iroh_fn_method_hash_to_hex(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_hash_to_hex(self.uniffiClonePointer(), $0)
         })
     }
 
     open var description: String {
         return try! FfiConverterString.lift(
             try! rustCall {
-                uniffi_iroh_fn_method_hash_uniffi_trait_display(self.uniffiClonePointer(), $0)
+                uniffi_iroh_ffi_fn_method_hash_uniffi_trait_display(self.uniffiClonePointer(), $0)
             }
         )
     }
@@ -3780,14 +4064,14 @@ public func FfiConverterTypeHash_lower(_ value: Hash) -> UnsafeMutableRawPointer
 }
 
 /**
- * An iroh error.
+ * An Error.
  */
 public protocol IrohErrorProtocol: AnyObject {
     func message() -> String
 }
 
 /**
- * An iroh error.
+ * An Error.
  */
 open class IrohError:
     CustomDebugStringConvertible,
@@ -3819,7 +4103,7 @@ open class IrohError:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_fn_clone_iroherror(self.pointer, $0) }
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_iroherror(self.pointer, $0) }
     }
 
     // No primary constructor declared for this class.
@@ -3829,19 +4113,19 @@ open class IrohError:
             return
         }
 
-        try! rustCall { uniffi_iroh_fn_free_iroherror(pointer, $0) }
+        try! rustCall { uniffi_iroh_ffi_fn_free_iroherror(pointer, $0) }
     }
 
     open func message() -> String {
         return try! FfiConverterString.lift(try! rustCall {
-            uniffi_iroh_fn_method_iroherror_message(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_iroherror_message(self.uniffiClonePointer(), $0)
         })
     }
 
     open var debugDescription: String {
         return try! FfiConverterString.lift(
             try! rustCall {
-                uniffi_iroh_fn_method_iroherror_uniffi_trait_debug(self.uniffiClonePointer(), $0)
+                uniffi_iroh_ffi_fn_method_iroherror_uniffi_trait_debug(self.uniffiClonePointer(), $0)
             }
         )
     }
@@ -3922,7 +4206,7 @@ public protocol IrohNodeProtocol: AnyObject {
      *
      * If you need only a single author, use [`Self::default`].
      */
-    func authorCreate() throws -> AuthorId
+    func authorCreate() async throws -> AuthorId
 
     /**
      * Returns the default document author of this node.
@@ -3932,35 +4216,38 @@ public protocol IrohNodeProtocol: AnyObject {
      *
      * The default author can be set with [`Self::set_default`].
      */
-    func authorDefault() throws -> AuthorId
+    func authorDefault() async throws -> AuthorId
 
     /**
      * Deletes the given author by id.
      *
      * Warning: This permanently removes this author.
      */
-    func authorDelete(author: AuthorId) throws
+    func authorDelete(author: AuthorId) async throws
 
     /**
      * Export the given author.
      *
      * Warning: This contains sensitive data.
      */
-    func authorExport(author: AuthorId) throws -> Author
+    func authorExport(author: AuthorId) async throws -> Author
 
     /**
      * Import the given author.
      *
      * Warning: This contains sensitive data.
      */
-    func authorImport(author: Author) throws -> AuthorId
+    func authorImport(author: Author) async throws -> AuthorId
 
-    func authorList() throws -> [AuthorId]
+    /**
+     * List all the AuthorIds that exist on this node.
+     */
+    func authorList() async throws -> [AuthorId]
 
     /**
      * Write a blob by passing bytes.
      */
-    func blobsAddBytes(bytes: Data) throws -> BlobAddOutcome
+    func blobsAddBytes(bytes: Data) async throws -> BlobAddOutcome
 
     /**
      * Import a blob from a filesystem path.
@@ -3970,7 +4257,7 @@ public protocol IrohNodeProtocol: AnyObject {
      * If `in_place` is true, Iroh will assume that the data will not change and will share it in
      * place without copying to the Iroh data directory.
      */
-    func blobsAddFromPath(path: String, inPlace: Bool, tag: SetTagOption, wrap: WrapOption, cb: AddCallback) throws
+    func blobsAddFromPath(path: String, inPlace: Bool, tag: SetTagOption, wrap: WrapOption, cb: AddCallback) async throws
 
     /**
      * Create a collection from already existing blobs.
@@ -3978,51 +4265,59 @@ public protocol IrohNodeProtocol: AnyObject {
      * To automatically clear the tags for the passed in blobs you can set
      * `tags_to_delete` on those tags, and they will be deleted once the collection is created.
      */
-    func blobsCreateCollection(collection: Collection, tag: SetTagOption, tagsToDelete: [String]) throws -> HashAndTag
+    func blobsCreateCollection(collection: Collection, tag: SetTagOption, tagsToDelete: [String]) async throws -> HashAndTag
 
     /**
      * Delete a blob.
      */
-    func blobsDeleteBlob(hash: Hash) throws
+    func blobsDeleteBlob(hash: Hash) async throws
 
     /**
      * Download a blob from another node and add it to the local database.
      */
-    func blobsDownload(hash: Hash, req: BlobDownloadOptions, cb: DownloadCallback) throws
+    func blobsDownload(hash: Hash, opts: BlobDownloadOptions, cb: DownloadCallback) async throws
 
     /**
-     * Download a blob from another node and add it to the local database.
+     * Export a blob from the internal blob store to a path on the node's filesystem.
+     *
+     * `destination` should be a writeable, absolute path on the local node's filesystem.
+     *
+     * If `format` is set to [`ExportFormat::Collection`], and the `hash` refers to a collection,
+     * all children of the collection will be exported. See [`ExportFormat`] for details.
+     *
+     * The `mode` argument defines if the blob should be copied to the target location or moved out of
+     * the internal store into the target location. See [`ExportMode`] for details.
      */
-    func blobsExport(hash: Hash, destination: String, format: BlobExportFormat, mode: BlobExportMode) throws
+    func blobsExport(hash: Hash, destination: String, format: BlobExportFormat, mode: BlobExportMode) async throws
 
     /**
      * Read the content of a collection
      */
-    func blobsGetCollection(hash: Hash) throws -> Collection
+    func blobsGetCollection(hash: Hash) async throws -> Collection
 
     /**
      * List all complete blobs.
      *
-     * Note: this allocates for each `BlobInfo`, if you have many `BlobInfo`s this may be a prohibitively large list.
+     * Note: this allocates for each `BlobListResponse`, if you have many `BlobListReponse`s this may be a prohibitively large list.
      * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
      */
-    func blobsList() throws -> [Hash]
+    func blobsList() async throws -> [Hash]
 
     /**
      * List all collections.
      *
-     * Note: this allocates for each `CollectionInfo`, if you have many `CollectionInfo`s this may be a prohibitively large list.
+     * Note: this allocates for each `BlobListCollectionsResponse`, if you have many `BlobListCollectionsResponse`s this may be a prohibitively large list.
      * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
      */
-    func blobsListCollections() throws -> [CollectionInfo]
+    func blobsListCollections() async throws -> [CollectionInfo]
 
     /**
      * List all incomplete (partial) blobs.
      *
-     * Note: this allocates for each `IncompleteBlobInfo`, if you have many `IncompleteBlobInfo`s this may be a prohibitively large list.
+     * Note: this allocates for each `BlobListIncompleteResponse`, if you have many `BlobListIncompleteResponse`s this may be a prohibitively large list.
      * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
      */
-    func blobsListIncomplete() throws -> [IncompleteBlobInfo]
+    func blobsListIncomplete() async throws -> [IncompleteBlobInfo]
 
     /**
      * Read all bytes of single blob at `offset` for length `len`.
@@ -4031,7 +4326,7 @@ public protocol IrohNodeProtocol: AnyObject {
      * reading is small. If not sure, use [`Self::blobs_size`] and check the size with
      * before calling [`Self::blobs_read_at_to_bytes`].
      */
-    func blobsReadAtToBytes(hash: Hash, offset: UInt64, len: UInt64?) throws -> Data
+    func blobsReadAtToBytes(hash: Hash, offset: UInt64, len: UInt64?) async throws -> Data
 
     /**
      * Read all bytes of single blob.
@@ -4040,94 +4335,99 @@ public protocol IrohNodeProtocol: AnyObject {
      * reading is small. If not sure, use [`Self::blobs_size`] and check the size with
      * before calling [`Self::blobs_read_to_bytes`].
      */
-    func blobsReadToBytes(hash: Hash) throws -> Data
+    func blobsReadToBytes(hash: Hash) async throws -> Data
 
     /**
-     * Create a ticket for sharing a blob or collection from this node.
+     * Create a ticket for sharing a blob from this node.
      */
-    func blobsShare(hash: Hash, blobFormat: BlobFormat, ticketOptions: AddrInfoOptions) throws -> String
+    func blobsShare(hash: Hash, blobFormat: BlobFormat, ticketOptions: AddrInfoOptions) async throws -> String
 
     /**
      * Get the size information on a single blob.
+     *
+     * Method only exists in FFI
      */
-    func blobsSize(hash: Hash) throws -> UInt64
+    func blobsSize(hash: Hash) async throws -> UInt64
 
     /**
      * Export the blob contents to a file path
      * The `path` field is expected to be the absolute path.
      */
-    func blobsWriteToPath(hash: Hash, path: String) throws
+    func blobsWriteToPath(hash: Hash, path: String) async throws
 
-    func connectionInfo(nodeId: PublicKey) throws -> ConnectionInfo?
+    /**
+     * Return connection information on the currently running node.
+     */
+    func connectionInfo(nodeId: PublicKey) async throws -> ConnectionInfo?
 
     /**
      * Return `ConnectionInfo`s for each connection we have to another iroh node.
      */
-    func connections() throws -> [ConnectionInfo]
+    func connections() async throws -> [ConnectionInfo]
 
     /**
      * Create a new doc.
      */
-    func docCreate() throws -> Doc
+    func docCreate() async throws -> Doc
 
     /**
      * Delete a document from the local node.
      *
      * This is a destructive operation. Both the document secret key and all entries in the
-     * document will be permanently deleted from the node's storage. Content blobs will be
-     * deleted through garbage collection unless they are referenced from another document or tag.
+     * document will be permanently deleted from the node's storage. Content blobs will be deleted
+     * through garbage collection unless they are referenced from another document or tag.
      */
-    func docDrop(docId: String) throws
+    func docDrop(docId: String) async throws
 
     /**
      * Join and sync with an already existing document.
      */
-    func docJoin(ticket: String) throws -> Doc
+    func docJoin(ticket: String) async throws -> Doc
 
     /**
      * Join and sync with an already existing document and subscribe to events on that document.
      */
-    func docJoinAndSubscribe(ticket: String, cb: SubscribeCallback) throws -> Doc
+    func docJoinAndSubscribe(ticket: String, cb: SubscribeCallback) async throws -> Doc
 
     /**
      * List all the docs we have access to on this node.
      */
-    func docList() throws -> [NamespaceAndCapability]
+    func docList() async throws -> [NamespaceAndCapability]
 
     /**
      * Get a [`Doc`].
      *
      * Returns None if the document cannot be found.
      */
-    func docOpen(id: String) throws -> Doc?
+    func docOpen(id: String) async throws -> Doc?
 
     /**
      * The string representation of the PublicKey of this node.
      */
-    func nodeId() -> String
+    func nodeId() async throws -> String
 
     /**
      * Get statistics of the running node.
      */
-    func stats() throws -> [String: CounterStats]
+    func stats() async throws -> [String: CounterStats]
 
     /**
      * Get status information about a node
      */
-    func status() throws -> NodeStatus
+    func status() async throws -> NodeStatus
 
     /**
-     * Delete a tag.
+     * Delete a tag
      */
-    func tagsDelete(name: Data) throws
+    func tagsDelete(name: Data) async throws
 
     /**
      * List all tags
      *
-     * Note: this allocates for each `TagInfo`, if you have many `Tags`s this may be a prohibitively large list.
+     * Note: this allocates for each `ListTagsResponse`, if you have many `Tags`s this may be a prohibitively large list.
      * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
      */
-    func tagsList() throws -> [TagInfo]
+    func tagsList() async throws -> [TagInfo]
 }
 
 /**
@@ -4160,41 +4460,93 @@ open class IrohNode:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_fn_clone_irohnode(self.pointer, $0) }
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_irohnode(self.pointer, $0) }
     }
 
-    /**
-     * Create a new iroh node. The `path` param should be a directory where we can store or load
-     * iroh data from a previous session.
-     */
-    public convenience init(path: String) throws {
-        let pointer =
-            try rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-                uniffi_iroh_fn_constructor_irohnode_new(
-                    FfiConverterString.lower(path), $0
-                )
-            }
-        self.init(unsafeFromRawPointer: pointer)
-    }
+    // No primary constructor declared for this class.
 
     deinit {
         guard let pointer = pointer else {
             return
         }
 
-        try! rustCall { uniffi_iroh_fn_free_irohnode(pointer, $0) }
+        try! rustCall { uniffi_iroh_ffi_fn_free_irohnode(pointer, $0) }
+    }
+
+    /**
+     * Create a new iroh node.
+     *
+     * All data will be only persistet in memory.
+     */
+    public static func memory() async throws -> IrohNode {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_constructor_irohnode_memory(
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_pointer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_pointer,
+                liftFunc: FfiConverterTypeIrohNode.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
+    }
+
+    /**
+     * Create a new in memory iroh node with options.
+     */
+    public static func memoryWithOptions(options: NodeOptions) async throws -> IrohNode {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_constructor_irohnode_memory_with_options(FfiConverterTypeNodeOptions.lower(options)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_pointer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_pointer,
+                liftFunc: FfiConverterTypeIrohNode.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
+    }
+
+    /**
+     * Create a new iroh node.
+     *
+     * The `path` param should be a directory where we can store or load
+     * iroh data from a previous session.
+     */
+    public static func persistent(path: String) async throws -> IrohNode {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_constructor_irohnode_persistent(FfiConverterString.lower(path)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_pointer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_pointer,
+                liftFunc: FfiConverterTypeIrohNode.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * Create a new iroh node with options.
      */
-    public static func withOptions(path: String, opts: NodeOptions) throws -> IrohNode {
-        return try FfiConverterTypeIrohNode.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_constructor_irohnode_with_options(
-                FfiConverterString.lower(path),
-                FfiConverterTypeNodeOptions.lower(opts), $0
+    public static func persistentWithOptions(path: String, options: NodeOptions) async throws -> IrohNode {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_constructor_irohnode_persistent_with_options(FfiConverterString.lower(path), FfiConverterTypeNodeOptions.lower(options))
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_pointer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_pointer,
+                liftFunc: FfiConverterTypeIrohNode.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
             )
-        })
     }
 
     /**
@@ -4205,10 +4557,20 @@ open class IrohNode:
      *
      * If you need only a single author, use [`Self::default`].
      */
-    open func authorCreate() throws -> AuthorId {
-        return try FfiConverterTypeAuthorId.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_irohnode_author_create(self.uniffiClonePointer(), $0)
-        })
+    open func authorCreate() async throws -> AuthorId {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_author_create(
+                        self.uniffiClonePointer()
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_pointer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_pointer,
+                liftFunc: FfiConverterTypeAuthorId.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
@@ -4219,10 +4581,20 @@ open class IrohNode:
      *
      * The default author can be set with [`Self::set_default`].
      */
-    open func authorDefault() throws -> AuthorId {
-        return try FfiConverterTypeAuthorId.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_irohnode_author_default(self.uniffiClonePointer(), $0)
-        })
+    open func authorDefault() async throws -> AuthorId {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_author_default(
+                        self.uniffiClonePointer()
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_pointer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_pointer,
+                liftFunc: FfiConverterTypeAuthorId.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
@@ -4230,10 +4602,21 @@ open class IrohNode:
      *
      * Warning: This permanently removes this author.
      */
-    open func authorDelete(author: AuthorId) throws { try rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-        uniffi_iroh_fn_method_irohnode_author_delete(self.uniffiClonePointer(),
-                                                     FfiConverterTypeAuthorId.lower(author), $0)
-    }
+    open func authorDelete(author: AuthorId) async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_author_delete(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeAuthorId.lower(author)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
@@ -4241,11 +4624,21 @@ open class IrohNode:
      *
      * Warning: This contains sensitive data.
      */
-    open func authorExport(author: AuthorId) throws -> Author {
-        return try FfiConverterTypeAuthor.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_irohnode_author_export(self.uniffiClonePointer(),
-                                                         FfiConverterTypeAuthorId.lower(author), $0)
-        })
+    open func authorExport(author: AuthorId) async throws -> Author {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_author_export(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeAuthorId.lower(author)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_pointer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_pointer,
+                liftFunc: FfiConverterTypeAuthor.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
@@ -4253,27 +4646,60 @@ open class IrohNode:
      *
      * Warning: This contains sensitive data.
      */
-    open func authorImport(author: Author) throws -> AuthorId {
-        return try FfiConverterTypeAuthorId.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_irohnode_author_import(self.uniffiClonePointer(),
-                                                         FfiConverterTypeAuthor.lower(author), $0)
-        })
+    open func authorImport(author: Author) async throws -> AuthorId {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_author_import(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeAuthor.lower(author)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_pointer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_pointer,
+                liftFunc: FfiConverterTypeAuthorId.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
-    open func authorList() throws -> [AuthorId] {
-        return try FfiConverterSequenceTypeAuthorId.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_irohnode_author_list(self.uniffiClonePointer(), $0)
-        })
+    /**
+     * List all the AuthorIds that exist on this node.
+     */
+    open func authorList() async throws -> [AuthorId] {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_author_list(
+                        self.uniffiClonePointer()
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterSequenceTypeAuthorId.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * Write a blob by passing bytes.
      */
-    open func blobsAddBytes(bytes: Data) throws -> BlobAddOutcome {
-        return try FfiConverterTypeBlobAddOutcome.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_irohnode_blobs_add_bytes(self.uniffiClonePointer(),
-                                                           FfiConverterData.lower(bytes), $0)
-        })
+    open func blobsAddBytes(bytes: Data) async throws -> BlobAddOutcome {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_blobs_add_bytes(
+                        self.uniffiClonePointer(),
+                        FfiConverterData.lower(bytes)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterTypeBlobAddOutcome.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
@@ -4284,14 +4710,21 @@ open class IrohNode:
      * If `in_place` is true, Iroh will assume that the data will not change and will share it in
      * place without copying to the Iroh data directory.
      */
-    open func blobsAddFromPath(path: String, inPlace: Bool, tag: SetTagOption, wrap: WrapOption, cb: AddCallback) throws { try rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-        uniffi_iroh_fn_method_irohnode_blobs_add_from_path(self.uniffiClonePointer(),
-                                                           FfiConverterString.lower(path),
-                                                           FfiConverterBool.lower(inPlace),
-                                                           FfiConverterTypeSetTagOption.lower(tag),
-                                                           FfiConverterTypeWrapOption.lower(wrap),
-                                                           FfiConverterTypeAddCallback.lower(cb), $0)
-    }
+    open func blobsAddFromPath(path: String, inPlace: Bool, tag: SetTagOption, wrap: WrapOption, cb: AddCallback) async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_blobs_add_from_path(
+                        self.uniffiClonePointer(),
+                        FfiConverterString.lower(path), FfiConverterBool.lower(inPlace), FfiConverterTypeSetTagOption.lower(tag), FfiConverterTypeWrapOption.lower(wrap), FfiConverterTypeAddCallback.lower(cb)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
@@ -4300,91 +4733,175 @@ open class IrohNode:
      * To automatically clear the tags for the passed in blobs you can set
      * `tags_to_delete` on those tags, and they will be deleted once the collection is created.
      */
-    open func blobsCreateCollection(collection: Collection, tag: SetTagOption, tagsToDelete: [String]) throws -> HashAndTag {
-        return try FfiConverterTypeHashAndTag.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_irohnode_blobs_create_collection(self.uniffiClonePointer(),
-                                                                   FfiConverterTypeCollection.lower(collection),
-                                                                   FfiConverterTypeSetTagOption.lower(tag),
-                                                                   FfiConverterSequenceString.lower(tagsToDelete), $0)
-        })
+    open func blobsCreateCollection(collection: Collection, tag: SetTagOption, tagsToDelete: [String]) async throws -> HashAndTag {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_blobs_create_collection(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeCollection.lower(collection), FfiConverterTypeSetTagOption.lower(tag), FfiConverterSequenceString.lower(tagsToDelete)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterTypeHashAndTag.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * Delete a blob.
      */
-    open func blobsDeleteBlob(hash: Hash) throws { try rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-        uniffi_iroh_fn_method_irohnode_blobs_delete_blob(self.uniffiClonePointer(),
-                                                         FfiConverterTypeHash.lower(hash), $0)
-    }
+    open func blobsDeleteBlob(hash: Hash) async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_blobs_delete_blob(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeHash.lower(hash)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * Download a blob from another node and add it to the local database.
      */
-    open func blobsDownload(hash: Hash, req: BlobDownloadOptions, cb: DownloadCallback) throws { try rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-        uniffi_iroh_fn_method_irohnode_blobs_download(self.uniffiClonePointer(),
-                                                      FfiConverterTypeHash.lower(hash),
-                                                      FfiConverterTypeBlobDownloadOptions.lower(req),
-                                                      FfiConverterTypeDownloadCallback.lower(cb), $0)
-    }
+    open func blobsDownload(hash: Hash, opts: BlobDownloadOptions, cb: DownloadCallback) async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_blobs_download(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeHash.lower(hash), FfiConverterTypeBlobDownloadOptions.lower(opts), FfiConverterTypeDownloadCallback.lower(cb)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
-     * Download a blob from another node and add it to the local database.
+     * Export a blob from the internal blob store to a path on the node's filesystem.
+     *
+     * `destination` should be a writeable, absolute path on the local node's filesystem.
+     *
+     * If `format` is set to [`ExportFormat::Collection`], and the `hash` refers to a collection,
+     * all children of the collection will be exported. See [`ExportFormat`] for details.
+     *
+     * The `mode` argument defines if the blob should be copied to the target location or moved out of
+     * the internal store into the target location. See [`ExportMode`] for details.
      */
-    open func blobsExport(hash: Hash, destination: String, format: BlobExportFormat, mode: BlobExportMode) throws { try rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-        uniffi_iroh_fn_method_irohnode_blobs_export(self.uniffiClonePointer(),
-                                                    FfiConverterTypeHash.lower(hash),
-                                                    FfiConverterString.lower(destination),
-                                                    FfiConverterTypeBlobExportFormat.lower(format),
-                                                    FfiConverterTypeBlobExportMode.lower(mode), $0)
-    }
+    open func blobsExport(hash: Hash, destination: String, format: BlobExportFormat, mode: BlobExportMode) async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_blobs_export(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeHash.lower(hash), FfiConverterString.lower(destination), FfiConverterTypeBlobExportFormat.lower(format), FfiConverterTypeBlobExportMode.lower(mode)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * Read the content of a collection
      */
-    open func blobsGetCollection(hash: Hash) throws -> Collection {
-        return try FfiConverterTypeCollection.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_irohnode_blobs_get_collection(self.uniffiClonePointer(),
-                                                                FfiConverterTypeHash.lower(hash), $0)
-        })
+    open func blobsGetCollection(hash: Hash) async throws -> Collection {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_blobs_get_collection(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeHash.lower(hash)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_pointer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_pointer,
+                liftFunc: FfiConverterTypeCollection.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * List all complete blobs.
      *
-     * Note: this allocates for each `BlobInfo`, if you have many `BlobInfo`s this may be a prohibitively large list.
+     * Note: this allocates for each `BlobListResponse`, if you have many `BlobListReponse`s this may be a prohibitively large list.
      * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
      */
-    open func blobsList() throws -> [Hash] {
-        return try FfiConverterSequenceTypeHash.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_irohnode_blobs_list(self.uniffiClonePointer(), $0)
-        })
+    open func blobsList() async throws -> [Hash] {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_blobs_list(
+                        self.uniffiClonePointer()
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterSequenceTypeHash.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * List all collections.
      *
-     * Note: this allocates for each `CollectionInfo`, if you have many `CollectionInfo`s this may be a prohibitively large list.
+     * Note: this allocates for each `BlobListCollectionsResponse`, if you have many `BlobListCollectionsResponse`s this may be a prohibitively large list.
      * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
      */
-    open func blobsListCollections() throws -> [CollectionInfo] {
-        return try FfiConverterSequenceTypeCollectionInfo.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_irohnode_blobs_list_collections(self.uniffiClonePointer(), $0)
-        })
+    open func blobsListCollections() async throws -> [CollectionInfo] {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_blobs_list_collections(
+                        self.uniffiClonePointer()
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterSequenceTypeCollectionInfo.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * List all incomplete (partial) blobs.
      *
-     * Note: this allocates for each `IncompleteBlobInfo`, if you have many `IncompleteBlobInfo`s this may be a prohibitively large list.
+     * Note: this allocates for each `BlobListIncompleteResponse`, if you have many `BlobListIncompleteResponse`s this may be a prohibitively large list.
      * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
      */
-    open func blobsListIncomplete() throws -> [IncompleteBlobInfo] {
-        return try FfiConverterSequenceTypeIncompleteBlobInfo.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_irohnode_blobs_list_incomplete(self.uniffiClonePointer(), $0)
-        })
+    open func blobsListIncomplete() async throws -> [IncompleteBlobInfo] {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_blobs_list_incomplete(
+                        self.uniffiClonePointer()
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterSequenceTypeIncompleteBlobInfo.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
@@ -4394,13 +4911,21 @@ open class IrohNode:
      * reading is small. If not sure, use [`Self::blobs_size`] and check the size with
      * before calling [`Self::blobs_read_at_to_bytes`].
      */
-    open func blobsReadAtToBytes(hash: Hash, offset: UInt64, len: UInt64?) throws -> Data {
-        return try FfiConverterData.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_irohnode_blobs_read_at_to_bytes(self.uniffiClonePointer(),
-                                                                  FfiConverterTypeHash.lower(hash),
-                                                                  FfiConverterUInt64.lower(offset),
-                                                                  FfiConverterOptionUInt64.lower(len), $0)
-        })
+    open func blobsReadAtToBytes(hash: Hash, offset: UInt64, len: UInt64?) async throws -> Data {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_blobs_read_at_to_bytes(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeHash.lower(hash), FfiConverterUInt64.lower(offset), FfiConverterOptionUInt64.lower(len)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterData.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
@@ -4410,112 +4935,225 @@ open class IrohNode:
      * reading is small. If not sure, use [`Self::blobs_size`] and check the size with
      * before calling [`Self::blobs_read_to_bytes`].
      */
-    open func blobsReadToBytes(hash: Hash) throws -> Data {
-        return try FfiConverterData.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_irohnode_blobs_read_to_bytes(self.uniffiClonePointer(),
-                                                               FfiConverterTypeHash.lower(hash), $0)
-        })
+    open func blobsReadToBytes(hash: Hash) async throws -> Data {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_blobs_read_to_bytes(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeHash.lower(hash)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterData.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
-     * Create a ticket for sharing a blob or collection from this node.
+     * Create a ticket for sharing a blob from this node.
      */
-    open func blobsShare(hash: Hash, blobFormat: BlobFormat, ticketOptions: AddrInfoOptions) throws -> String {
-        return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_irohnode_blobs_share(self.uniffiClonePointer(),
-                                                       FfiConverterTypeHash.lower(hash),
-                                                       FfiConverterTypeBlobFormat.lower(blobFormat),
-                                                       FfiConverterTypeAddrInfoOptions.lower(ticketOptions), $0)
-        })
+    open func blobsShare(hash: Hash, blobFormat: BlobFormat, ticketOptions: AddrInfoOptions) async throws -> String {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_blobs_share(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeHash.lower(hash), FfiConverterTypeBlobFormat.lower(blobFormat), FfiConverterTypeAddrInfoOptions.lower(ticketOptions)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterString.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * Get the size information on a single blob.
+     *
+     * Method only exists in FFI
      */
-    open func blobsSize(hash: Hash) throws -> UInt64 {
-        return try FfiConverterUInt64.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_irohnode_blobs_size(self.uniffiClonePointer(),
-                                                      FfiConverterTypeHash.lower(hash), $0)
-        })
+    open func blobsSize(hash: Hash) async throws -> UInt64 {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_blobs_size(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeHash.lower(hash)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_u64,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_u64,
+                freeFunc: ffi_iroh_ffi_rust_future_free_u64,
+                liftFunc: FfiConverterUInt64.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * Export the blob contents to a file path
      * The `path` field is expected to be the absolute path.
      */
-    open func blobsWriteToPath(hash: Hash, path: String) throws { try rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-        uniffi_iroh_fn_method_irohnode_blobs_write_to_path(self.uniffiClonePointer(),
-                                                           FfiConverterTypeHash.lower(hash),
-                                                           FfiConverterString.lower(path), $0)
-    }
+    open func blobsWriteToPath(hash: Hash, path: String) async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_blobs_write_to_path(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeHash.lower(hash), FfiConverterString.lower(path)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
-    open func connectionInfo(nodeId: PublicKey) throws -> ConnectionInfo? {
-        return try FfiConverterOptionTypeConnectionInfo.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_irohnode_connection_info(self.uniffiClonePointer(),
-                                                           FfiConverterTypePublicKey.lower(nodeId), $0)
-        })
+    /**
+     * Return connection information on the currently running node.
+     */
+    open func connectionInfo(nodeId: PublicKey) async throws -> ConnectionInfo? {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_connection_info(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypePublicKey.lower(nodeId)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterOptionTypeConnectionInfo.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * Return `ConnectionInfo`s for each connection we have to another iroh node.
      */
-    open func connections() throws -> [ConnectionInfo] {
-        return try FfiConverterSequenceTypeConnectionInfo.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_irohnode_connections(self.uniffiClonePointer(), $0)
-        })
+    open func connections() async throws -> [ConnectionInfo] {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_connections(
+                        self.uniffiClonePointer()
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterSequenceTypeConnectionInfo.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * Create a new doc.
      */
-    open func docCreate() throws -> Doc {
-        return try FfiConverterTypeDoc.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_irohnode_doc_create(self.uniffiClonePointer(), $0)
-        })
+    open func docCreate() async throws -> Doc {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_doc_create(
+                        self.uniffiClonePointer()
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_pointer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_pointer,
+                liftFunc: FfiConverterTypeDoc.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * Delete a document from the local node.
      *
      * This is a destructive operation. Both the document secret key and all entries in the
-     * document will be permanently deleted from the node's storage. Content blobs will be
-     * deleted through garbage collection unless they are referenced from another document or tag.
+     * document will be permanently deleted from the node's storage. Content blobs will be deleted
+     * through garbage collection unless they are referenced from another document or tag.
      */
-    open func docDrop(docId: String) throws { try rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-        uniffi_iroh_fn_method_irohnode_doc_drop(self.uniffiClonePointer(),
-                                                FfiConverterString.lower(docId), $0)
-    }
+    open func docDrop(docId: String) async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_doc_drop(
+                        self.uniffiClonePointer(),
+                        FfiConverterString.lower(docId)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * Join and sync with an already existing document.
      */
-    open func docJoin(ticket: String) throws -> Doc {
-        return try FfiConverterTypeDoc.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_irohnode_doc_join(self.uniffiClonePointer(),
-                                                    FfiConverterString.lower(ticket), $0)
-        })
+    open func docJoin(ticket: String) async throws -> Doc {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_doc_join(
+                        self.uniffiClonePointer(),
+                        FfiConverterString.lower(ticket)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_pointer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_pointer,
+                liftFunc: FfiConverterTypeDoc.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * Join and sync with an already existing document and subscribe to events on that document.
      */
-    open func docJoinAndSubscribe(ticket: String, cb: SubscribeCallback) throws -> Doc {
-        return try FfiConverterTypeDoc.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_irohnode_doc_join_and_subscribe(self.uniffiClonePointer(),
-                                                                  FfiConverterString.lower(ticket),
-                                                                  FfiConverterTypeSubscribeCallback.lower(cb), $0)
-        })
+    open func docJoinAndSubscribe(ticket: String, cb: SubscribeCallback) async throws -> Doc {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_doc_join_and_subscribe(
+                        self.uniffiClonePointer(),
+                        FfiConverterString.lower(ticket), FfiConverterTypeSubscribeCallback.lower(cb)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_pointer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_pointer,
+                liftFunc: FfiConverterTypeDoc.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * List all the docs we have access to on this node.
      */
-    open func docList() throws -> [NamespaceAndCapability] {
-        return try FfiConverterSequenceTypeNamespaceAndCapability.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_irohnode_doc_list(self.uniffiClonePointer(), $0)
-        })
+    open func docList() async throws -> [NamespaceAndCapability] {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_doc_list(
+                        self.uniffiClonePointer()
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterSequenceTypeNamespaceAndCapability.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
@@ -4523,59 +5161,120 @@ open class IrohNode:
      *
      * Returns None if the document cannot be found.
      */
-    open func docOpen(id: String) throws -> Doc? {
-        return try FfiConverterOptionTypeDoc.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_irohnode_doc_open(self.uniffiClonePointer(),
-                                                    FfiConverterString.lower(id), $0)
-        })
+    open func docOpen(id: String) async throws -> Doc? {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_doc_open(
+                        self.uniffiClonePointer(),
+                        FfiConverterString.lower(id)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterOptionTypeDoc.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * The string representation of the PublicKey of this node.
      */
-    open func nodeId() -> String {
-        return try! FfiConverterString.lift(try! rustCall {
-            uniffi_iroh_fn_method_irohnode_node_id(self.uniffiClonePointer(), $0)
-        })
+    open func nodeId() async throws -> String {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_node_id(
+                        self.uniffiClonePointer()
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterString.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * Get statistics of the running node.
      */
-    open func stats() throws -> [String: CounterStats] {
-        return try FfiConverterDictionaryStringTypeCounterStats.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_irohnode_stats(self.uniffiClonePointer(), $0)
-        })
+    open func stats() async throws -> [String: CounterStats] {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_stats(
+                        self.uniffiClonePointer()
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterDictionaryStringTypeCounterStats.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * Get status information about a node
      */
-    open func status() throws -> NodeStatus {
-        return try FfiConverterTypeNodeStatus.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_irohnode_status(self.uniffiClonePointer(), $0)
-        })
+    open func status() async throws -> NodeStatus {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_status(
+                        self.uniffiClonePointer()
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_pointer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_pointer,
+                liftFunc: FfiConverterTypeNodeStatus.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
-     * Delete a tag.
+     * Delete a tag
      */
-    open func tagsDelete(name: Data) throws { try rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-        uniffi_iroh_fn_method_irohnode_tags_delete(self.uniffiClonePointer(),
-                                                   FfiConverterData.lower(name), $0)
-    }
+    open func tagsDelete(name: Data) async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_tags_delete(
+                        self.uniffiClonePointer(),
+                        FfiConverterData.lower(name)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 
     /**
      * List all tags
      *
-     * Note: this allocates for each `TagInfo`, if you have many `Tags`s this may be a prohibitively large list.
+     * Note: this allocates for each `ListTagsResponse`, if you have many `Tags`s this may be a prohibitively large list.
      * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
      */
-    open func tagsList() throws -> [TagInfo] {
-        return try FfiConverterSequenceTypeTagInfo.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_method_irohnode_tags_list(self.uniffiClonePointer(), $0)
-        })
+    open func tagsList() async throws -> [TagInfo] {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_irohnode_tags_list(
+                        self.uniffiClonePointer()
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterSequenceTypeTagInfo.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
     }
 }
 
@@ -4687,7 +5386,7 @@ open class LiveEvent:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_fn_clone_liveevent(self.pointer, $0) }
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_liveevent(self.pointer, $0) }
     }
 
     // No primary constructor declared for this class.
@@ -4697,7 +5396,7 @@ open class LiveEvent:
             return
         }
 
-        try! rustCall { uniffi_iroh_fn_free_liveevent(pointer, $0) }
+        try! rustCall { uniffi_iroh_ffi_fn_free_liveevent(pointer, $0) }
     }
 
     /**
@@ -4705,7 +5404,7 @@ open class LiveEvent:
      */
     open func asContentReady() -> Hash {
         return try! FfiConverterTypeHash.lift(try! rustCall {
-            uniffi_iroh_fn_method_liveevent_as_content_ready(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_liveevent_as_content_ready(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -4714,7 +5413,7 @@ open class LiveEvent:
      */
     open func asInsertLocal() -> Entry {
         return try! FfiConverterTypeEntry.lift(try! rustCall {
-            uniffi_iroh_fn_method_liveevent_as_insert_local(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_liveevent_as_insert_local(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -4723,7 +5422,7 @@ open class LiveEvent:
      */
     open func asInsertRemote() -> InsertRemoteEvent {
         return try! FfiConverterTypeInsertRemoteEvent.lift(try! rustCall {
-            uniffi_iroh_fn_method_liveevent_as_insert_remote(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_liveevent_as_insert_remote(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -4732,7 +5431,7 @@ open class LiveEvent:
      */
     open func asNeighborDown() -> PublicKey {
         return try! FfiConverterTypePublicKey.lift(try! rustCall {
-            uniffi_iroh_fn_method_liveevent_as_neighbor_down(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_liveevent_as_neighbor_down(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -4741,7 +5440,7 @@ open class LiveEvent:
      */
     open func asNeighborUp() -> PublicKey {
         return try! FfiConverterTypePublicKey.lift(try! rustCall {
-            uniffi_iroh_fn_method_liveevent_as_neighbor_up(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_liveevent_as_neighbor_up(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -4750,7 +5449,7 @@ open class LiveEvent:
      */
     open func asSyncFinished() -> SyncEvent {
         return try! FfiConverterTypeSyncEvent.lift(try! rustCall {
-            uniffi_iroh_fn_method_liveevent_as_sync_finished(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_liveevent_as_sync_finished(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -4759,7 +5458,7 @@ open class LiveEvent:
      */
     open func type() -> LiveEventType {
         return try! FfiConverterTypeLiveEventType.lift(try! rustCall {
-            uniffi_iroh_fn_method_liveevent_type(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_liveevent_type(self.uniffiClonePointer(), $0)
         })
     }
 }
@@ -4817,7 +5516,7 @@ public protocol NodeAddrProtocol: AnyObject {
     func equal(other: NodeAddr) -> Bool
 
     /**
-     * Get the relay url of this peer.
+     * Get the home relay URL for this peer
      */
     func relayUrl() -> String?
 }
@@ -4852,18 +5551,18 @@ open class NodeAddr:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_fn_clone_nodeaddr(self.pointer, $0) }
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_nodeaddr(self.pointer, $0) }
     }
 
     /**
      * Create a new [`NodeAddr`] with empty [`AddrInfo`].
      */
-    public convenience init(nodeId: PublicKey, relayUrl: String?, addresses: [String]) {
+    public convenience init(nodeId: PublicKey, derpUrl: String?, addresses: [String]) {
         let pointer =
             try! rustCall {
-                uniffi_iroh_fn_constructor_nodeaddr_new(
+                uniffi_iroh_ffi_fn_constructor_nodeaddr_new(
                     FfiConverterTypePublicKey.lower(nodeId),
-                    FfiConverterOptionString.lower(relayUrl),
+                    FfiConverterOptionString.lower(derpUrl),
                     FfiConverterSequenceString.lower(addresses), $0
                 )
             }
@@ -4875,7 +5574,7 @@ open class NodeAddr:
             return
         }
 
-        try! rustCall { uniffi_iroh_fn_free_nodeaddr(pointer, $0) }
+        try! rustCall { uniffi_iroh_ffi_fn_free_nodeaddr(pointer, $0) }
     }
 
     /**
@@ -4883,7 +5582,7 @@ open class NodeAddr:
      */
     open func directAddresses() -> [String] {
         return try! FfiConverterSequenceString.lift(try! rustCall {
-            uniffi_iroh_fn_method_nodeaddr_direct_addresses(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_nodeaddr_direct_addresses(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -4892,17 +5591,17 @@ open class NodeAddr:
      */
     open func equal(other: NodeAddr) -> Bool {
         return try! FfiConverterBool.lift(try! rustCall {
-            uniffi_iroh_fn_method_nodeaddr_equal(self.uniffiClonePointer(),
-                                                 FfiConverterTypeNodeAddr.lower(other), $0)
+            uniffi_iroh_ffi_fn_method_nodeaddr_equal(self.uniffiClonePointer(),
+                                                     FfiConverterTypeNodeAddr.lower(other), $0)
         })
     }
 
     /**
-     * Get the relay url of this peer.
+     * Get the home relay URL for this peer
      */
     open func relayUrl() -> String? {
         return try! FfiConverterOptionString.lift(try! rustCall {
-            uniffi_iroh_fn_method_nodeaddr_relay_url(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_nodeaddr_relay_url(self.uniffiClonePointer(), $0)
         })
     }
 }
@@ -4945,6 +5644,9 @@ public func FfiConverterTypeNodeAddr_lower(_ value: NodeAddr) -> UnsafeMutableRa
     return FfiConverterTypeNodeAddr.lower(value)
 }
 
+/**
+ * The response to a status request
+ */
 public protocol NodeStatusProtocol: AnyObject {
     /**
      * The bound listening addresses of the node
@@ -4962,6 +5664,9 @@ public protocol NodeStatusProtocol: AnyObject {
     func version() -> String
 }
 
+/**
+ * The response to a status request
+ */
 open class NodeStatus:
     NodeStatusProtocol
 {
@@ -4989,7 +5694,7 @@ open class NodeStatus:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_fn_clone_nodestatus(self.pointer, $0) }
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_nodestatus(self.pointer, $0) }
     }
 
     // No primary constructor declared for this class.
@@ -4999,7 +5704,7 @@ open class NodeStatus:
             return
         }
 
-        try! rustCall { uniffi_iroh_fn_free_nodestatus(pointer, $0) }
+        try! rustCall { uniffi_iroh_ffi_fn_free_nodestatus(pointer, $0) }
     }
 
     /**
@@ -5007,7 +5712,7 @@ open class NodeStatus:
      */
     open func listenAddrs() -> [String] {
         return try! FfiConverterSequenceString.lift(try! rustCall {
-            uniffi_iroh_fn_method_nodestatus_listen_addrs(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_nodestatus_listen_addrs(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -5016,7 +5721,7 @@ open class NodeStatus:
      */
     open func nodeAddr() -> NodeAddr {
         return try! FfiConverterTypeNodeAddr.lift(try! rustCall {
-            uniffi_iroh_fn_method_nodestatus_node_addr(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_nodestatus_node_addr(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -5025,7 +5730,7 @@ open class NodeStatus:
      */
     open func version() -> String {
         return try! FfiConverterString.lift(try! rustCall {
-            uniffi_iroh_fn_method_nodestatus_version(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_nodestatus_version(self.uniffiClonePointer(), $0)
         })
     }
 }
@@ -5069,27 +5774,34 @@ public func FfiConverterTypeNodeStatus_lower(_ value: NodeStatus) -> UnsafeMutab
 }
 
 /**
- * A public key
+ * A public key.
+ *
+ * The key itself is just a 32 byte array, but a key has associated crypto
+ * information that is cached for performance reasons.
  */
 public protocol PublicKeyProtocol: AnyObject {
     /**
-     * Returns true when both PublicKeys have the same value
+     * Returns true if the PublicKeys are equal
      */
     func equal(other: PublicKey) -> Bool
 
     /**
-     * The first 10 bytes of the PublicKey represented as a string
+     * Convert to a base32 string limited to the first 10 bytes for a friendly string
+     * representation of the key.
      */
     func fmtShort() -> String
 
     /**
-     * Represent a PublicKey as a byte slice
+     * Express the PublicKey as a byte array
      */
     func toBytes() -> Data
 }
 
 /**
- * A public key
+ * A public key.
+ *
+ * The key itself is just a 32 byte array, but a key has associated crypto
+ * information that is cached for performance reasons.
  */
 open class PublicKey:
     CustomStringConvertible,
@@ -5119,7 +5831,7 @@ open class PublicKey:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_fn_clone_publickey(self.pointer, $0) }
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_publickey(self.pointer, $0) }
     }
 
     // No primary constructor declared for this class.
@@ -5129,63 +5841,64 @@ open class PublicKey:
             return
         }
 
-        try! rustCall { uniffi_iroh_fn_free_publickey(pointer, $0) }
+        try! rustCall { uniffi_iroh_ffi_fn_free_publickey(pointer, $0) }
     }
 
     /**
-     * Get a PublicKey from a byte slice
+     * Make a PublicKey from byte array
      */
     public static func fromBytes(bytes: Data) throws -> PublicKey {
         return try FfiConverterTypePublicKey.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_constructor_publickey_from_bytes(
+            uniffi_iroh_ffi_fn_constructor_publickey_from_bytes(
                 FfiConverterData.lower(bytes), $0
             )
         })
     }
 
     /**
-     * Get a PublicKey from a string
+     * Make a PublicKey from base32 string
      */
     public static func fromString(s: String) throws -> PublicKey {
         return try FfiConverterTypePublicKey.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_fn_constructor_publickey_from_string(
+            uniffi_iroh_ffi_fn_constructor_publickey_from_string(
                 FfiConverterString.lower(s), $0
             )
         })
     }
 
     /**
-     * Returns true when both PublicKeys have the same value
+     * Returns true if the PublicKeys are equal
      */
     open func equal(other: PublicKey) -> Bool {
         return try! FfiConverterBool.lift(try! rustCall {
-            uniffi_iroh_fn_method_publickey_equal(self.uniffiClonePointer(),
-                                                  FfiConverterTypePublicKey.lower(other), $0)
+            uniffi_iroh_ffi_fn_method_publickey_equal(self.uniffiClonePointer(),
+                                                      FfiConverterTypePublicKey.lower(other), $0)
         })
     }
 
     /**
-     * The first 10 bytes of the PublicKey represented as a string
+     * Convert to a base32 string limited to the first 10 bytes for a friendly string
+     * representation of the key.
      */
     open func fmtShort() -> String {
         return try! FfiConverterString.lift(try! rustCall {
-            uniffi_iroh_fn_method_publickey_fmt_short(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_publickey_fmt_short(self.uniffiClonePointer(), $0)
         })
     }
 
     /**
-     * Represent a PublicKey as a byte slice
+     * Express the PublicKey as a byte array
      */
     open func toBytes() -> Data {
         return try! FfiConverterData.lift(try! rustCall {
-            uniffi_iroh_fn_method_publickey_to_bytes(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_publickey_to_bytes(self.uniffiClonePointer(), $0)
         })
     }
 
     open var description: String {
         return try! FfiConverterString.lift(
             try! rustCall {
-                uniffi_iroh_fn_method_publickey_uniffi_trait_display(self.uniffiClonePointer(), $0)
+                uniffi_iroh_ffi_fn_method_publickey_uniffi_trait_display(self.uniffiClonePointer(), $0)
             }
         )
     }
@@ -5278,7 +5991,7 @@ open class Query:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_fn_clone_query(self.pointer, $0) }
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_query(self.pointer, $0) }
     }
 
     // No primary constructor declared for this class.
@@ -5288,21 +6001,21 @@ open class Query:
             return
         }
 
-        try! rustCall { uniffi_iroh_fn_free_query(pointer, $0) }
+        try! rustCall { uniffi_iroh_ffi_fn_free_query(pointer, $0) }
     }
 
     /**
      * Query all records.
      *
      * If `opts` is `None`, the default values will be used:
-     *     sort_by: SortBy::AuthorKey
-     *     direction: SortDirection::Asc
-     *     offset: None
-     *     limit: None
+     * sort_by: SortBy::AuthorKey
+     * direction: SortDirection::Asc
+     * offset: None
+     * limit: None
      */
     public static func all(opts: QueryOptions?) -> Query {
         return try! FfiConverterTypeQuery.lift(try! rustCall {
-            uniffi_iroh_fn_constructor_query_all(
+            uniffi_iroh_ffi_fn_constructor_query_all(
                 FfiConverterOptionTypeQueryOptions.lower(opts), $0
             )
         })
@@ -5312,14 +6025,14 @@ open class Query:
      * Query all entries for by a single author.
      *
      * If `opts` is `None`, the default values will be used:
-     *     sort_by: SortBy::AuthorKey
-     *     direction: SortDirection::Asc
-     *     offset: None
-     *     limit: None
+     * sort_by: SortBy::AuthorKey
+     * direction: SortDirection::Asc
+     * offset: None
+     * limit: None
      */
     public static func author(author: AuthorId, opts: QueryOptions?) -> Query {
         return try! FfiConverterTypeQuery.lift(try! rustCall {
-            uniffi_iroh_fn_constructor_query_author(
+            uniffi_iroh_ffi_fn_constructor_query_author(
                 FfiConverterTypeAuthorId.lower(author),
                 FfiConverterOptionTypeQueryOptions.lower(opts), $0
             )
@@ -5331,7 +6044,7 @@ open class Query:
      */
     public static func authorKeyExact(author: AuthorId, key: Data) -> Query {
         return try! FfiConverterTypeQuery.lift(try! rustCall {
-            uniffi_iroh_fn_constructor_query_author_key_exact(
+            uniffi_iroh_ffi_fn_constructor_query_author_key_exact(
                 FfiConverterTypeAuthorId.lower(author),
                 FfiConverterData.lower(key), $0
             )
@@ -5342,13 +6055,13 @@ open class Query:
      * Create a query for all entries of a single author with a given key prefix.
      *
      * If `opts` is `None`, the default values will be used:
-     *     direction: SortDirection::Asc
-     *     offset: None
-     *     limit: None
+     * direction: SortDirection::Asc
+     * offset: None
+     * limit: None
      */
     public static func authorKeyPrefix(author: AuthorId, prefix: Data, opts: QueryOptions?) -> Query {
         return try! FfiConverterTypeQuery.lift(try! rustCall {
-            uniffi_iroh_fn_constructor_query_author_key_prefix(
+            uniffi_iroh_ffi_fn_constructor_query_author_key_prefix(
                 FfiConverterTypeAuthorId.lower(author),
                 FfiConverterData.lower(prefix),
                 FfiConverterOptionTypeQueryOptions.lower(opts), $0
@@ -5360,14 +6073,14 @@ open class Query:
      * Query all entries that have an exact key.
      *
      * If `opts` is `None`, the default values will be used:
-     *     sort_by: SortBy::AuthorKey
-     *     direction: SortDirection::Asc
-     *     offset: None
-     *     limit: None
+     * sort_by: SortBy::AuthorKey
+     * direction: SortDirection::Asc
+     * offset: None
+     * limit: None
      */
     public static func keyExact(key: Data, opts: QueryOptions?) -> Query {
         return try! FfiConverterTypeQuery.lift(try! rustCall {
-            uniffi_iroh_fn_constructor_query_key_exact(
+            uniffi_iroh_ffi_fn_constructor_query_key_exact(
                 FfiConverterData.lower(key),
                 FfiConverterOptionTypeQueryOptions.lower(opts), $0
             )
@@ -5378,14 +6091,14 @@ open class Query:
      * Create a query for all entries with a given key prefix.
      *
      * If `opts` is `None`, the default values will be used:
-     *     sort_by: SortBy::AuthorKey
-     *     direction: SortDirection::Asc
-     *     offset: None
-     *     limit: None
+     * sort_by: SortBy::AuthorKey
+     * direction: SortDirection::Asc
+     * offset: None
+     * limit: None
      */
     public static func keyPrefix(prefix: Data, opts: QueryOptions?) -> Query {
         return try! FfiConverterTypeQuery.lift(try! rustCall {
-            uniffi_iroh_fn_constructor_query_key_prefix(
+            uniffi_iroh_ffi_fn_constructor_query_key_prefix(
                 FfiConverterData.lower(prefix),
                 FfiConverterOptionTypeQueryOptions.lower(opts), $0
             )
@@ -5397,26 +6110,26 @@ open class Query:
      * to by multiple authors.
      *
      * If `opts` is `None`, the default values will be used:
-     *     direction: SortDirection::Asc
-     *     offset: None
-     *     limit: None
+     * direction: SortDirection::Asc
+     * offset: None
+     * limit: None
      */
     public static func singleLatestPerKey(opts: QueryOptions?) -> Query {
         return try! FfiConverterTypeQuery.lift(try! rustCall {
-            uniffi_iroh_fn_constructor_query_single_latest_per_key(
+            uniffi_iroh_ffi_fn_constructor_query_single_latest_per_key(
                 FfiConverterOptionTypeQueryOptions.lower(opts), $0
             )
         })
     }
 
     /**
-     * Query only the latest entry for this exact key, omitting older entries if the entry was written
+     * Query exactly the key, but only the latest entry for it, omitting older entries if the entry was written
      * to by multiple authors.
      */
-    public static func singleLatestPerKeyExact(exact: Data) -> Query {
+    public static func singleLatestPerKeyExact(key: Data) -> Query {
         return try! FfiConverterTypeQuery.lift(try! rustCall {
-            uniffi_iroh_fn_constructor_query_single_latest_per_key_exact(
-                FfiConverterData.lower(exact), $0
+            uniffi_iroh_ffi_fn_constructor_query_single_latest_per_key_exact(
+                FfiConverterData.lower(key), $0
             )
         })
     }
@@ -5426,13 +6139,13 @@ open class Query:
      * to by multiple authors.
      *
      * If `opts` is `None`, the default values will be used:
-     *     direction: SortDirection::Asc
-     *     offset: None
-     *     limit: None
+     * direction: SortDirection::Asc
+     * offset: None
+     * limit: None
      */
     public static func singleLatestPerKeyPrefix(prefix: Data, opts: QueryOptions?) -> Query {
         return try! FfiConverterTypeQuery.lift(try! rustCall {
-            uniffi_iroh_fn_constructor_query_single_latest_per_key_prefix(
+            uniffi_iroh_ffi_fn_constructor_query_single_latest_per_key_prefix(
                 FfiConverterData.lower(prefix),
                 FfiConverterOptionTypeQueryOptions.lower(opts), $0
             )
@@ -5444,7 +6157,7 @@ open class Query:
      */
     open func limit() -> UInt64? {
         return try! FfiConverterOptionUInt64.lift(try! rustCall {
-            uniffi_iroh_fn_method_query_limit(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_query_limit(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -5453,7 +6166,7 @@ open class Query:
      */
     open func offset() -> UInt64 {
         return try! FfiConverterUInt64.lift(try! rustCall {
-            uniffi_iroh_fn_method_query_offset(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_query_offset(self.uniffiClonePointer(), $0)
         })
     }
 }
@@ -5541,7 +6254,7 @@ open class RangeSpec:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_fn_clone_rangespec(self.pointer, $0) }
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_rangespec(self.pointer, $0) }
     }
 
     // No primary constructor declared for this class.
@@ -5551,7 +6264,7 @@ open class RangeSpec:
             return
         }
 
-        try! rustCall { uniffi_iroh_fn_free_rangespec(pointer, $0) }
+        try! rustCall { uniffi_iroh_ffi_fn_free_rangespec(pointer, $0) }
     }
 
     /**
@@ -5559,7 +6272,7 @@ open class RangeSpec:
      */
     open func isAll() -> Bool {
         return try! FfiConverterBool.lift(try! rustCall {
-            uniffi_iroh_fn_method_rangespec_is_all(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_rangespec_is_all(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -5568,7 +6281,7 @@ open class RangeSpec:
      */
     open func isEmpty() -> Bool {
         return try! FfiConverterBool.lift(try! rustCall {
-            uniffi_iroh_fn_method_rangespec_is_empty(self.uniffiClonePointer(), $0)
+            uniffi_iroh_ffi_fn_method_rangespec_is_empty(self.uniffiClonePointer(), $0)
         })
     }
 }
@@ -5612,12 +6325,12 @@ public func FfiConverterTypeRangeSpec_lower(_ value: RangeSpec) -> UnsafeMutable
 }
 
 /**
- * An option for commands that allow setting a tag
+ * An option for commands that allow setting a Tag
  */
 public protocol SetTagOptionProtocol: AnyObject {}
 
 /**
- * An option for commands that allow setting a tag
+ * An option for commands that allow setting a Tag
  */
 open class SetTagOption:
     SetTagOptionProtocol
@@ -5646,7 +6359,7 @@ open class SetTagOption:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_fn_clone_settagoption(self.pointer, $0) }
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_settagoption(self.pointer, $0) }
     }
 
     // No primary constructor declared for this class.
@@ -5656,7 +6369,7 @@ open class SetTagOption:
             return
         }
 
-        try! rustCall { uniffi_iroh_fn_free_settagoption(pointer, $0) }
+        try! rustCall { uniffi_iroh_ffi_fn_free_settagoption(pointer, $0) }
     }
 
     /**
@@ -5664,7 +6377,7 @@ open class SetTagOption:
      */
     public static func auto() -> SetTagOption {
         return try! FfiConverterTypeSetTagOption.lift(try! rustCall {
-            uniffi_iroh_fn_constructor_settagoption_auto($0
+            uniffi_iroh_ffi_fn_constructor_settagoption_auto($0
             )
         })
     }
@@ -5674,7 +6387,7 @@ open class SetTagOption:
      */
     public static func named(tag: Data) -> SetTagOption {
         return try! FfiConverterTypeSetTagOption.lift(try! rustCall {
-            uniffi_iroh_fn_constructor_settagoption_named(
+            uniffi_iroh_ffi_fn_constructor_settagoption_named(
                 FfiConverterData.lower(tag), $0
             )
         })
@@ -5725,7 +6438,7 @@ public func FfiConverterTypeSetTagOption_lower(_ value: SetTagOption) -> UnsafeM
  * method to check the `LiveEvent`
  */
 public protocol SubscribeCallback: AnyObject {
-    func event(event: LiveEvent) throws
+    func event(event: LiveEvent) async throws
 }
 
 /**
@@ -5760,7 +6473,7 @@ open class SubscribeCallbackImpl:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_fn_clone_subscribecallback(self.pointer, $0) }
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_subscribecallback(self.pointer, $0) }
     }
 
     // No primary constructor declared for this class.
@@ -5770,13 +6483,24 @@ open class SubscribeCallbackImpl:
             return
         }
 
-        try! rustCall { uniffi_iroh_fn_free_subscribecallback(pointer, $0) }
+        try! rustCall { uniffi_iroh_ffi_fn_free_subscribecallback(pointer, $0) }
     }
 
-    open func event(event: LiveEvent) throws { try rustCallWithError(FfiConverterTypeCallbackError.lift) {
-        uniffi_iroh_fn_method_subscribecallback_event(self.uniffiClonePointer(),
-                                                      FfiConverterTypeLiveEvent.lower(event), $0)
-    }
+    open func event(event: LiveEvent) async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_subscribecallback_event(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeLiveEvent.lower(event)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeCallbackError.lift
+            )
     }
 }
 
@@ -5788,26 +6512,43 @@ private enum UniffiCallbackInterfaceSubscribeCallback {
         event: { (
             uniffiHandle: UInt64,
             event: UnsafeMutableRawPointer,
-            _: UnsafeMutableRawPointer,
-            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
+            uniffiFutureCallback: @escaping UniffiForeignFutureCompleteVoid,
+            uniffiCallbackData: UInt64,
+            uniffiOutReturn: UnsafeMutablePointer<UniffiForeignFuture>
         ) in
             let makeCall = {
-                () throws in
+                () async throws in
                 guard let uniffiObj = try? FfiConverterTypeSubscribeCallback.handleMap.get(handle: uniffiHandle) else {
                     throw UniffiInternalError.unexpectedStaleHandle
                 }
-                return try uniffiObj.event(
+                return try await uniffiObj.event(
                     event: FfiConverterTypeLiveEvent.lift(event)
                 )
             }
 
-            let writeReturn = { () }
-            uniffiTraitInterfaceCallWithError(
-                callStatus: uniffiCallStatus,
+            let uniffiHandleSuccess = { (_: ()) in
+                uniffiFutureCallback(
+                    uniffiCallbackData,
+                    UniffiForeignFutureStructVoid(
+                        callStatus: RustCallStatus()
+                    )
+                )
+            }
+            let uniffiHandleError = { statusCode, errorBuf in
+                uniffiFutureCallback(
+                    uniffiCallbackData,
+                    UniffiForeignFutureStructVoid(
+                        callStatus: RustCallStatus(code: statusCode, errorBuf: errorBuf)
+                    )
+                )
+            }
+            let uniffiForeignFuture = uniffiTraitInterfaceCallAsyncWithError(
                 makeCall: makeCall,
-                writeReturn: writeReturn,
+                handleSuccess: uniffiHandleSuccess,
+                handleError: uniffiHandleError,
                 lowerError: FfiConverterTypeCallbackError.lower
             )
+            uniffiOutReturn.pointee = uniffiForeignFuture
         },
         uniffiFree: { (uniffiHandle: UInt64) in
             let result = try? FfiConverterTypeSubscribeCallback.handleMap.remove(handle: uniffiHandle)
@@ -5819,7 +6560,7 @@ private enum UniffiCallbackInterfaceSubscribeCallback {
 }
 
 private func uniffiCallbackInitSubscribeCallback() {
-    uniffi_iroh_fn_init_callback_vtable_subscribecallback(&UniffiCallbackInterfaceSubscribeCallback.vtable)
+    uniffi_iroh_ffi_fn_init_callback_vtable_subscribecallback(&UniffiCallbackInterfaceSubscribeCallback.vtable)
 }
 
 public struct FfiConverterTypeSubscribeCallback: FfiConverter {
@@ -5900,7 +6641,7 @@ open class WrapOption:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_fn_clone_wrapoption(self.pointer, $0) }
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_wrapoption(self.pointer, $0) }
     }
 
     // No primary constructor declared for this class.
@@ -5910,7 +6651,7 @@ open class WrapOption:
             return
         }
 
-        try! rustCall { uniffi_iroh_fn_free_wrapoption(pointer, $0) }
+        try! rustCall { uniffi_iroh_ffi_fn_free_wrapoption(pointer, $0) }
     }
 
     /**
@@ -5918,7 +6659,7 @@ open class WrapOption:
      */
     public static func noWrap() -> WrapOption {
         return try! FfiConverterTypeWrapOption.lift(try! rustCall {
-            uniffi_iroh_fn_constructor_wrapoption_no_wrap($0
+            uniffi_iroh_ffi_fn_constructor_wrapoption_no_wrap($0
             )
         })
     }
@@ -5928,7 +6669,7 @@ open class WrapOption:
      */
     public static func wrap(name: String?) -> WrapOption {
         return try! FfiConverterTypeWrapOption.lift(try! rustCall {
-            uniffi_iroh_fn_constructor_wrapoption_wrap(
+            uniffi_iroh_ffi_fn_constructor_wrapoption_wrap(
                 FfiConverterOptionString.lower(name), $0
             )
         })
@@ -5977,18 +6718,11 @@ public func FfiConverterTypeWrapOption_lower(_ value: WrapOption) -> UnsafeMutab
  * An AddProgress event indicating we got an error and need to abort
  */
 public struct AddProgressAbort {
-    /**
-     * The error message
-     */
     public var error: String
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(
-        /**
-         * The error message
-         */ error: String
-    ) {
+    public init(error: String) {
         self.error = error
     }
 }
@@ -6501,6 +7235,7 @@ public func FfiConverterTypeCollectionInfo_lower(_ value: CollectionInfo) -> Rus
 }
 
 /**
+ * The kinds of control messages that can be sent
  * Information about a connection
  */
 public struct ConnectionInfo {
@@ -6594,7 +7329,7 @@ public func FfiConverterTypeConnectionInfo_lower(_ value: ConnectionInfo) -> Rus
 }
 
 /**
- * The socket address and url id of the mixed connection
+ * The socket address and url of the mixed connection
  */
 public struct ConnectionTypeMixed {
     /**
@@ -6781,6 +7516,60 @@ public func FfiConverterTypeDocExportProgressAbort_lift(_ buf: RustBuffer) throw
 
 public func FfiConverterTypeDocExportProgressAbort_lower(_ value: DocExportProgressAbort) -> RustBuffer {
     return FfiConverterTypeDocExportProgressAbort.lower(value)
+}
+
+/**
+ * A DocExportProgress event indicating a single blob wit `id` is done
+ */
+public struct DocExportProgressDone {
+    /**
+     * The unique id of the entry.
+     */
+    public var id: UInt64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * The unique id of the entry.
+         */ id: UInt64
+    ) {
+        self.id = id
+    }
+}
+
+extension DocExportProgressDone: Equatable, Hashable {
+    public static func == (lhs: DocExportProgressDone, rhs: DocExportProgressDone) -> Bool {
+        if lhs.id != rhs.id {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+}
+
+public struct FfiConverterTypeDocExportProgressDone: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DocExportProgressDone {
+        return
+            try DocExportProgressDone(
+                id: FfiConverterUInt64.read(from: &buf)
+            )
+    }
+
+    public static func write(_ value: DocExportProgressDone, into buf: inout [UInt8]) {
+        FfiConverterUInt64.write(value.id, into: &buf)
+    }
+}
+
+public func FfiConverterTypeDocExportProgressDone_lift(_ buf: RustBuffer) throws -> DocExportProgressDone {
+    return try FfiConverterTypeDocExportProgressDone.lift(buf)
+}
+
+public func FfiConverterTypeDocExportProgressDone_lower(_ value: DocExportProgressDone) -> RustBuffer {
+    return FfiConverterTypeDocExportProgressDone.lower(value)
 }
 
 /**
@@ -7235,18 +8024,11 @@ public func FfiConverterTypeDocImportProgressProgress_lower(_ value: DocImportPr
  * A DownloadProgress event indicating we got an error and need to abort
  */
 public struct DownloadProgressAbort {
-    /**
-     * The error message
-     */
     public var error: String
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(
-        /**
-         * The error message
-         */ error: String
-    ) {
+    public init(error: String) {
         self.error = error
     }
 }
@@ -7614,6 +8396,57 @@ public func FfiConverterTypeDownloadProgressFoundLocal_lower(_ value: DownloadPr
     return FfiConverterTypeDownloadProgressFoundLocal.lower(value)
 }
 
+public struct DownloadProgressInitialState {
+    /**
+     * Whether we are connected to a node
+     */
+    public var connected: Bool
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * Whether we are connected to a node
+         */ connected: Bool
+    ) {
+        self.connected = connected
+    }
+}
+
+extension DownloadProgressInitialState: Equatable, Hashable {
+    public static func == (lhs: DownloadProgressInitialState, rhs: DownloadProgressInitialState) -> Bool {
+        if lhs.connected != rhs.connected {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(connected)
+    }
+}
+
+public struct FfiConverterTypeDownloadProgressInitialState: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DownloadProgressInitialState {
+        return
+            try DownloadProgressInitialState(
+                connected: FfiConverterBool.read(from: &buf)
+            )
+    }
+
+    public static func write(_ value: DownloadProgressInitialState, into buf: inout [UInt8]) {
+        FfiConverterBool.write(value.connected, into: &buf)
+    }
+}
+
+public func FfiConverterTypeDownloadProgressInitialState_lift(_ buf: RustBuffer) throws -> DownloadProgressInitialState {
+    return try FfiConverterTypeDownloadProgressInitialState.lift(buf)
+}
+
+public func FfiConverterTypeDownloadProgressInitialState_lower(_ value: DownloadProgressInitialState) -> RustBuffer {
+    return FfiConverterTypeDownloadProgressInitialState.lower(value)
+}
+
 /**
  * A DownloadProgress event indicating we got progress ingesting item `id`.
  */
@@ -7924,7 +8757,7 @@ public func FfiConverterTypeLatencyAndControlMsg_lower(_ value: LatencyAndContro
 }
 
 /**
- * A `Link` includes a name and a hash for a blob in a collection
+ * `LinkAndName` includes a name and a hash for a blob in a collection
  */
 public struct LinkAndName {
     /**
@@ -8303,11 +9136,11 @@ public struct SyncEvent {
     /**
      * Timestamp when the sync finished
      */
-    public var started: Date
+    public var finished: Date
     /**
      * Timestamp when the sync started
      */
-    public var finished: Date
+    public var started: Date
     /**
      * Result of the sync operation. `None` if successfull.
      */
@@ -8324,18 +9157,18 @@ public struct SyncEvent {
             */ origin: Origin,
         /**
             * Timestamp when the sync finished
-            */ started: Date,
+            */ finished: Date,
         /**
             * Timestamp when the sync started
-            */ finished: Date,
+            */ started: Date,
         /**
             * Result of the sync operation. `None` if successfull.
             */ result: String?
     ) {
         self.peer = peer
         self.origin = origin
-        self.started = started
         self.finished = finished
+        self.started = started
         self.result = result
     }
 }
@@ -8346,8 +9179,8 @@ public struct FfiConverterTypeSyncEvent: FfiConverterRustBuffer {
             try SyncEvent(
                 peer: FfiConverterTypePublicKey.read(from: &buf),
                 origin: FfiConverterTypeOrigin.read(from: &buf),
-                started: FfiConverterTimestamp.read(from: &buf),
                 finished: FfiConverterTimestamp.read(from: &buf),
+                started: FfiConverterTimestamp.read(from: &buf),
                 result: FfiConverterOptionString.read(from: &buf)
             )
     }
@@ -8355,8 +9188,8 @@ public struct FfiConverterTypeSyncEvent: FfiConverterRustBuffer {
     public static func write(_ value: SyncEvent, into buf: inout [UInt8]) {
         FfiConverterTypePublicKey.write(value.peer, into: &buf)
         FfiConverterTypeOrigin.write(value.origin, into: &buf)
-        FfiConverterTimestamp.write(value.started, into: &buf)
         FfiConverterTimestamp.write(value.finished, into: &buf)
+        FfiConverterTimestamp.write(value.started, into: &buf)
         FfiConverterOptionString.write(value.result, into: &buf)
     }
 }
@@ -8763,7 +9596,7 @@ public func FfiConverterTypeBlobFormat_lower(_ value: BlobFormat) -> RustBuffer 
 extension BlobFormat: Equatable, Hashable {}
 
 public enum CallbackError {
-    case Error(message: String)
+    case Error
 }
 
 public struct FfiConverterTypeCallbackError: FfiConverterRustBuffer {
@@ -8772,9 +9605,7 @@ public struct FfiConverterTypeCallbackError: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CallbackError {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return try .Error(
-                message: FfiConverterString.read(from: &buf)
-            )
+        case 1: return .Error
 
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -8782,7 +9613,7 @@ public struct FfiConverterTypeCallbackError: FfiConverterRustBuffer {
 
     public static func write(_ value: CallbackError, into buf: inout [UInt8]) {
         switch value {
-        case .Error(_ /* message is ignored*/ ):
+        case .Error:
             writeInt(&buf, Int32(1))
         }
     }
@@ -8798,17 +9629,14 @@ extension CallbackError: Foundation.LocalizedError {
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
-/**
- * Kind of capability of the doc.
- */
 
 public enum CapabilityKind {
     /**
-     * A writable doc
+     * A writable replica.
      */
     case write
     /**
-     * A readable doc
+     * A readable replica.
      */
     case read
 }
@@ -8995,7 +9823,7 @@ public enum DocExportProgressType {
      */
     case progress
     /**
-     * We are finished writing item `id`.
+     * We finished exporting a blob with `id`
      */
     case done
     /**
@@ -9144,47 +9972,18 @@ extension DocImportProgressType: Equatable, Hashable {}
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 /**
- * The kinds of progress events that can occur in a `DownloadProgress`
+ * The different types of DownloadProgress events
  */
 
 public enum DownloadProgressType {
-    /**
-     * Initial state if subscribing to a running or queued transfer.
-     */
     case initialState
-    /**
-     * Data was found locally
-     */
     case foundLocal
-    /**
-     * A new connection was established.
-     */
     case connected
-    /**
-     * An item was found with hash `hash`, from now on referred to via `id`
-     */
     case found
-    /**
-     * An item was found with hash `hash`, from now on referred to via `id`
-     */
     case foundHashSeq
-    /**
-     * We got progress ingesting item `id`.
-     */
     case progress
-    /**
-     * We are done with `id`, and the hash is `hash`.
-     */
     case done
-    /**
-     * We are done with the whole operation.
-     */
     case allDone
-    /**
-     * We got an error and need to abort.
-     *
-     * This will be the last message in the stream.
-     */
     case abort
 }
 
@@ -9543,16 +10342,16 @@ extension ShareMode: Equatable, Hashable {}
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 /**
- * Fields by which the query can be sorted
+ * d Fields by which the query can be sorted
  */
 
 public enum SortBy {
     /**
-     * Fields by which the query can be sorted
+     * Sort by key, then author.
      */
     case keyAuthor
     /**
-     * Fields by which the query can be sorted
+     * Sort by author, then key.
      */
     case authorKey
 }
@@ -10233,6 +11032,119 @@ private struct FfiConverterDictionaryStringTypeCounterStats: FfiConverterRustBuf
     }
 }
 
+private let UNIFFI_RUST_FUTURE_POLL_READY: Int8 = 0
+private let UNIFFI_RUST_FUTURE_POLL_MAYBE_READY: Int8 = 1
+
+private let uniffiContinuationHandleMap = UniffiHandleMap<UnsafeContinuation<Int8, Never>>()
+
+private func uniffiRustCallAsync<F, T>(
+    rustFutureFunc: () -> UInt64,
+    pollFunc: (UInt64, @escaping UniffiRustFutureContinuationCallback, UInt64) -> Void,
+    completeFunc: (UInt64, UnsafeMutablePointer<RustCallStatus>) -> F,
+    freeFunc: (UInt64) -> Void,
+    liftFunc: (F) throws -> T,
+    errorHandler: ((RustBuffer) throws -> Swift.Error)?
+) async throws -> T {
+    // Make sure to call uniffiEnsureInitialized() since future creation doesn't have a
+    // RustCallStatus param, so doesn't use makeRustCall()
+    uniffiEnsureInitialized()
+    let rustFuture = rustFutureFunc()
+    defer {
+        freeFunc(rustFuture)
+    }
+    var pollResult: Int8
+    repeat {
+        pollResult = await withUnsafeContinuation {
+            pollFunc(
+                rustFuture,
+                uniffiFutureContinuationCallback,
+                uniffiContinuationHandleMap.insert(obj: $0)
+            )
+        }
+    } while pollResult != UNIFFI_RUST_FUTURE_POLL_READY
+
+    return try liftFunc(makeRustCall(
+        { completeFunc(rustFuture, $0) },
+        errorHandler: errorHandler
+    ))
+}
+
+// Callback handlers for an async calls.  These are invoked by Rust when the future is ready.  They
+// lift the return value or error and resume the suspended function.
+private func uniffiFutureContinuationCallback(handle: UInt64, pollResult: Int8) {
+    if let continuation = try? uniffiContinuationHandleMap.remove(handle: handle) {
+        continuation.resume(returning: pollResult)
+    } else {
+        print("uniffiFutureContinuationCallback invalid handle")
+    }
+}
+
+private func uniffiTraitInterfaceCallAsync<T>(
+    makeCall: @escaping () async throws -> T,
+    handleSuccess: @escaping (T) -> Void,
+    handleError: @escaping (Int8, RustBuffer) -> Void
+) -> UniffiForeignFuture {
+    let task = Task {
+        do {
+            try handleSuccess(await makeCall())
+        } catch {
+            handleError(CALL_UNEXPECTED_ERROR, FfiConverterString.lower(String(describing: error)))
+        }
+    }
+    let handle = UNIFFI_FOREIGN_FUTURE_HANDLE_MAP.insert(obj: task)
+    return UniffiForeignFuture(handle: handle, free: uniffiForeignFutureFree)
+}
+
+private func uniffiTraitInterfaceCallAsyncWithError<T, E>(
+    makeCall: @escaping () async throws -> T,
+    handleSuccess: @escaping (T) -> Void,
+    handleError: @escaping (Int8, RustBuffer) -> Void,
+    lowerError: @escaping (E) -> RustBuffer
+) -> UniffiForeignFuture {
+    let task = Task {
+        do {
+            try handleSuccess(await makeCall())
+        } catch let error as E {
+            handleError(CALL_ERROR, lowerError(error))
+        } catch {
+            handleError(CALL_UNEXPECTED_ERROR, FfiConverterString.lower(String(describing: error)))
+        }
+    }
+    let handle = UNIFFI_FOREIGN_FUTURE_HANDLE_MAP.insert(obj: task)
+    return UniffiForeignFuture(handle: handle, free: uniffiForeignFutureFree)
+}
+
+// Borrow the callback handle map implementation to store foreign future handles
+// TODO: consolidate the handle-map code (https://github.com/mozilla/uniffi-rs/pull/1823)
+private var UNIFFI_FOREIGN_FUTURE_HANDLE_MAP = UniffiHandleMap<UniffiForeignFutureTask>()
+
+// Protocol for tasks that handle foreign futures.
+//
+// Defining a protocol allows all tasks to be stored in the same handle map.  This can't be done
+// with the task object itself, since has generic parameters.
+protocol UniffiForeignFutureTask {
+    func cancel()
+}
+
+extension Task: UniffiForeignFutureTask {}
+
+private func uniffiForeignFutureFree(handle: UInt64) {
+    do {
+        let task = try UNIFFI_FOREIGN_FUTURE_HANDLE_MAP.remove(handle: handle)
+        // Set the cancellation flag on the task.  If it's still running, the code can check the
+        // cancellation flag or call `Task.checkCancellation()`.  If the task has completed, this is
+        // a no-op.
+        task.cancel()
+    } catch {
+        print("uniffiForeignFutureFree: handle missing from handlemap")
+    }
+}
+
+// For testing
+public func uniffiForeignFutureHandleCountIrohFfi() -> Int {
+    UNIFFI_FOREIGN_FUTURE_HANDLE_MAP.count
+}
+
 /**
  * Helper function that translates a key that was derived from the [`path_to_key`] function back
  * into a path.
@@ -10243,7 +11155,7 @@ private struct FfiConverterDictionaryStringTypeCounterStats: FfiConverterRustBuf
  */
 public func keyToPath(key: Data, prefix: String?, root: String?) throws -> String {
     return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-        uniffi_iroh_fn_func_key_to_path(
+        uniffi_iroh_ffi_fn_func_key_to_path(
             FfiConverterData.lower(key),
             FfiConverterOptionString.lower(prefix),
             FfiConverterOptionString.lower(root), $0
@@ -10258,7 +11170,7 @@ public func keyToPath(key: Data, prefix: String?, root: String?) throws -> Strin
  */
 public func pathToKey(path: String, prefix: String?, root: String?) throws -> Data {
     return try FfiConverterData.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-        uniffi_iroh_fn_func_path_to_key(
+        uniffi_iroh_ffi_fn_func_path_to_key(
             FfiConverterString.lower(path),
             FfiConverterOptionString.lower(prefix),
             FfiConverterOptionString.lower(root), $0
@@ -10270,7 +11182,7 @@ public func pathToKey(path: String, prefix: String?, root: String?) throws -> Da
  * Set the logging level.
  */
 public func setLogLevel(level: LogLevel) { try! rustCall {
-    uniffi_iroh_fn_func_set_log_level(
+    uniffi_iroh_ffi_fn_func_set_log_level(
         FfiConverterTypeLogLevel.lower(level), $0
     )
 }
@@ -10280,7 +11192,7 @@ public func setLogLevel(level: LogLevel) { try! rustCall {
  * Initialize the global metrics collection.
  */
 public func startMetricsCollection() throws { try rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-    uniffi_iroh_fn_func_start_metrics_collection($0
+    uniffi_iroh_ffi_fn_func_start_metrics_collection($0
     )
 }
 }
@@ -10297,512 +11209,521 @@ private var initializationResult: InitializationResult = {
     // Get the bindings contract version from our ComponentInterface
     let bindings_contract_version = 26
     // Get the scaffolding contract version by calling the into the dylib
-    let scaffolding_contract_version = ffi_iroh_uniffi_contract_version()
+    let scaffolding_contract_version = ffi_iroh_ffi_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if uniffi_iroh_checksum_func_key_to_path() != 8362 {
+    if uniffi_iroh_ffi_checksum_func_key_to_path() != 28001 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_func_path_to_key() != 56143 {
+    if uniffi_iroh_ffi_checksum_func_path_to_key() != 4438 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_func_set_log_level() != 23842 {
+    if uniffi_iroh_ffi_checksum_func_set_log_level() != 52619 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_func_start_metrics_collection() != 52092 {
+    if uniffi_iroh_ffi_checksum_func_start_metrics_collection() != 23413 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_addcallback_progress() != 5192 {
+    if uniffi_iroh_ffi_checksum_method_addcallback_progress() != 62116 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_addprogress_as_abort() != 10096 {
+    if uniffi_iroh_ffi_checksum_method_addprogress_as_abort() != 44667 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_addprogress_as_all_done() != 25945 {
+    if uniffi_iroh_ffi_checksum_method_addprogress_as_all_done() != 62551 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_addprogress_as_done() != 63498 {
+    if uniffi_iroh_ffi_checksum_method_addprogress_as_done() != 58505 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_addprogress_as_found() != 8323 {
+    if uniffi_iroh_ffi_checksum_method_addprogress_as_found() != 8172 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_addprogress_as_progress() != 9008 {
+    if uniffi_iroh_ffi_checksum_method_addprogress_as_progress() != 36155 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_addprogress_type() != 38695 {
+    if uniffi_iroh_ffi_checksum_method_addprogress_type() != 46221 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_author_id() != 49771 {
+    if uniffi_iroh_ffi_checksum_method_author_id() != 39022 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_authorid_equal() != 53671 {
+    if uniffi_iroh_ffi_checksum_method_authorid_equal() != 56356 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_blobticket_as_download_options() != 57522 {
+    if uniffi_iroh_ffi_checksum_method_blobticket_as_download_options() != 18713 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_blobticket_format() != 20220 {
+    if uniffi_iroh_ffi_checksum_method_blobticket_format() != 35808 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_blobticket_hash() != 5648 {
+    if uniffi_iroh_ffi_checksum_method_blobticket_hash() != 54061 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_blobticket_node_addr() != 28080 {
+    if uniffi_iroh_ffi_checksum_method_blobticket_node_addr() != 30662 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_collection_blobs() != 43031 {
+    if uniffi_iroh_ffi_checksum_method_blobticket_recursive() != 53797 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_collection_is_empty() != 129 {
+    if uniffi_iroh_ffi_checksum_method_collection_blobs() != 52509 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_collection_len() != 6546 {
+    if uniffi_iroh_ffi_checksum_method_collection_is_empty() != 40621 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_collection_links() != 17782 {
+    if uniffi_iroh_ffi_checksum_method_collection_len() != 10206 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_collection_names() != 61681 {
+    if uniffi_iroh_ffi_checksum_method_collection_links() != 56034 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_collection_push() != 49442 {
+    if uniffi_iroh_ffi_checksum_method_collection_names() != 28871 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_connectiontype_as_direct() != 27175 {
+    if uniffi_iroh_ffi_checksum_method_collection_push() != 22031 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_connectiontype_as_mixed() != 7226 {
+    if uniffi_iroh_ffi_checksum_method_connectiontype_as_direct() != 47530 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_connectiontype_as_relay() != 40210 {
+    if uniffi_iroh_ffi_checksum_method_connectiontype_as_mixed() != 49068 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_connectiontype_type() != 27732 {
+    if uniffi_iroh_ffi_checksum_method_connectiontype_as_relay() != 6121 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_directaddrinfo_addr() != 41252 {
+    if uniffi_iroh_ffi_checksum_method_connectiontype_type() != 54998 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_directaddrinfo_last_control() != 9385 {
+    if uniffi_iroh_ffi_checksum_method_directaddrinfo_addr() != 20100 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_directaddrinfo_last_payload() != 50926 {
+    if uniffi_iroh_ffi_checksum_method_directaddrinfo_last_control() != 35048 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_directaddrinfo_latency() != 9423 {
+    if uniffi_iroh_ffi_checksum_method_directaddrinfo_last_payload() != 12406 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_close_me() != 59191 {
+    if uniffi_iroh_ffi_checksum_method_directaddrinfo_latency() != 7414 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_del() != 43294 {
+    if uniffi_iroh_ffi_checksum_method_doc_close_me() != 13449 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_export_file() != 48659 {
+    if uniffi_iroh_ffi_checksum_method_doc_del() != 7367 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_get_download_policy() != 12464 {
+    if uniffi_iroh_ffi_checksum_method_doc_export_file() != 16067 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_get_exact() != 20708 {
+    if uniffi_iroh_ffi_checksum_method_doc_get_download_policy() != 44884 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_get_many() != 5459 {
+    if uniffi_iroh_ffi_checksum_method_doc_get_exact() != 20423 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_get_one() != 36881 {
+    if uniffi_iroh_ffi_checksum_method_doc_get_many() != 53909 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_id() != 32607 {
+    if uniffi_iroh_ffi_checksum_method_doc_get_one() != 18797 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_import_file() != 10090 {
+    if uniffi_iroh_ffi_checksum_method_doc_id() != 53450 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_leave() != 46314 {
+    if uniffi_iroh_ffi_checksum_method_doc_import_file() != 52327 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_set_bytes() != 47919 {
+    if uniffi_iroh_ffi_checksum_method_doc_leave() != 40204 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_set_download_policy() != 29087 {
+    if uniffi_iroh_ffi_checksum_method_doc_set_bytes() != 32483 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_set_hash() != 3797 {
+    if uniffi_iroh_ffi_checksum_method_doc_set_download_policy() != 18200 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_share() != 42549 {
+    if uniffi_iroh_ffi_checksum_method_doc_set_hash() != 30875 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_start_sync() != 55208 {
+    if uniffi_iroh_ffi_checksum_method_doc_share() != 30398 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_status() != 45958 {
+    if uniffi_iroh_ffi_checksum_method_doc_start_sync() != 54450 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_doc_subscribe() != 29020 {
+    if uniffi_iroh_ffi_checksum_method_doc_status() != 30558 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_docexportfilecallback_progress() != 40275 {
+    if uniffi_iroh_ffi_checksum_method_doc_subscribe() != 59807 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_docexportprogress_as_abort() != 15488 {
+    if uniffi_iroh_ffi_checksum_method_docexportfilecallback_progress() != 53186 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_docexportprogress_as_found() != 32325 {
+    if uniffi_iroh_ffi_checksum_method_docexportprogress_as_abort() != 34476 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_docexportprogress_as_progress() != 41090 {
+    if uniffi_iroh_ffi_checksum_method_docexportprogress_as_found() != 23982 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_docexportprogress_type() != 29258 {
+    if uniffi_iroh_ffi_checksum_method_docexportprogress_as_progress() != 44802 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_docimportfilecallback_progress() != 2905 {
+    if uniffi_iroh_ffi_checksum_method_docexportprogress_type() != 11215 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_docimportprogress_as_abort() != 55128 {
+    if uniffi_iroh_ffi_checksum_method_docimportfilecallback_progress() != 55347 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_docimportprogress_as_all_done() != 49275 {
+    if uniffi_iroh_ffi_checksum_method_docimportprogress_as_abort() != 35952 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_docimportprogress_as_found() != 47675 {
+    if uniffi_iroh_ffi_checksum_method_docimportprogress_as_all_done() != 35787 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_docimportprogress_as_ingest_done() != 21810 {
+    if uniffi_iroh_ffi_checksum_method_docimportprogress_as_found() != 6030 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_docimportprogress_as_progress() != 30153 {
+    if uniffi_iroh_ffi_checksum_method_docimportprogress_as_ingest_done() != 36 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_docimportprogress_type() != 39562 {
+    if uniffi_iroh_ffi_checksum_method_docimportprogress_as_progress() != 19927 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_downloadcallback_progress() != 64420 {
+    if uniffi_iroh_ffi_checksum_method_docimportprogress_type() != 48401 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_downloadprogress_as_abort() != 63609 {
+    if uniffi_iroh_ffi_checksum_method_downloadcallback_progress() != 21881 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_downloadprogress_as_all_done() != 26844 {
+    if uniffi_iroh_ffi_checksum_method_downloadprogress_as_abort() != 6879 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_downloadprogress_as_done() != 57406 {
+    if uniffi_iroh_ffi_checksum_method_downloadprogress_as_all_done() != 4219 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_downloadprogress_as_found() != 46027 {
+    if uniffi_iroh_ffi_checksum_method_downloadprogress_as_done() != 21859 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_downloadprogress_as_found_hash_seq() != 120 {
+    if uniffi_iroh_ffi_checksum_method_downloadprogress_as_found() != 47836 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_downloadprogress_as_found_local() != 34679 {
+    if uniffi_iroh_ffi_checksum_method_downloadprogress_as_found_hash_seq() != 14451 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_downloadprogress_as_progress() != 28818 {
+    if uniffi_iroh_ffi_checksum_method_downloadprogress_as_found_local() != 47262 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_downloadprogress_type() != 61660 {
+    if uniffi_iroh_ffi_checksum_method_downloadprogress_as_progress() != 16155 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_entry_author() != 26124 {
+    if uniffi_iroh_ffi_checksum_method_downloadprogress_type() != 60534 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_entry_content_bytes() != 38764 {
+    if uniffi_iroh_ffi_checksum_method_entry_author() != 39787 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_entry_content_hash() != 39306 {
+    if uniffi_iroh_ffi_checksum_method_entry_content_bytes() != 18583 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_entry_content_len() != 60107 {
+    if uniffi_iroh_ffi_checksum_method_entry_content_hash() != 26949 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_entry_key() != 19122 {
+    if uniffi_iroh_ffi_checksum_method_entry_content_len() != 40073 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_entry_namespace() != 52248 {
+    if uniffi_iroh_ffi_checksum_method_entry_key() != 10200 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_entry_timestamp() != 20078 {
+    if uniffi_iroh_ffi_checksum_method_entry_namespace() != 25213 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_filterkind_matches() != 35187 {
+    if uniffi_iroh_ffi_checksum_method_entry_timestamp() != 38377 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_hash_equal() != 52326 {
+    if uniffi_iroh_ffi_checksum_method_filterkind_matches() != 24522 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_hash_to_bytes() != 29465 {
+    if uniffi_iroh_ffi_checksum_method_hash_equal() != 28210 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_hash_to_hex() != 27622 {
+    if uniffi_iroh_ffi_checksum_method_hash_to_bytes() != 26394 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_iroherror_message() != 42005 {
+    if uniffi_iroh_ffi_checksum_method_hash_to_hex() != 52108 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_author_create() != 33498 {
+    if uniffi_iroh_ffi_checksum_method_iroherror_message() != 31085 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_author_default() != 41725 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_author_create() != 28895 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_author_delete() != 31070 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_author_default() != 42499 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_author_export() != 61624 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_author_delete() != 4225 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_author_import() != 34851 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_author_export() != 37686 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_author_list() != 12810 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_author_import() != 5607 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_blobs_add_bytes() != 19868 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_author_list() != 62761 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_blobs_add_from_path() != 57891 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_blobs_add_bytes() != 17203 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_blobs_create_collection() != 14543 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_blobs_add_from_path() != 37809 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_blobs_delete_blob() != 34789 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_blobs_create_collection() != 52712 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_blobs_download() != 765 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_blobs_delete_blob() != 37832 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_blobs_export() != 64675 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_blobs_download() != 54471 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_blobs_get_collection() != 55682 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_blobs_export() != 19194 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_blobs_list() != 36698 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_blobs_get_collection() != 22036 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_blobs_list_collections() != 65104 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_blobs_list() != 31880 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_blobs_list_incomplete() != 20923 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_blobs_list_collections() != 189 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_blobs_read_at_to_bytes() != 53379 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_blobs_list_incomplete() != 31752 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_blobs_read_to_bytes() != 63774 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_blobs_read_at_to_bytes() != 11107 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_blobs_share() != 8705 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_blobs_read_to_bytes() != 15494 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_blobs_size() != 44328 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_blobs_share() != 38899 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_blobs_write_to_path() != 9079 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_blobs_size() != 39132 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_connection_info() != 3180 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_blobs_write_to_path() != 43769 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_connections() != 64940 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_connection_info() != 64141 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_doc_create() != 1646 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_connections() != 55452 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_doc_drop() != 4401 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_doc_create() != 25418 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_doc_join() != 7221 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_doc_drop() != 41240 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_doc_join_and_subscribe() != 37938 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_doc_join() != 61748 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_doc_list() != 48371 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_doc_join_and_subscribe() != 992 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_doc_open() != 50051 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_doc_list() != 63026 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_node_id() != 31962 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_doc_open() != 16291 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_stats() != 49644 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_node_id() != 46920 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_status() != 56342 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_stats() != 11985 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_tags_delete() != 49837 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_status() != 3356 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_irohnode_tags_list() != 47102 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_tags_delete() != 46770 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_liveevent_as_content_ready() != 15237 {
+    if uniffi_iroh_ffi_checksum_method_irohnode_tags_list() != 567 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_liveevent_as_insert_local() != 431 {
+    if uniffi_iroh_ffi_checksum_method_liveevent_as_content_ready() != 6578 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_liveevent_as_insert_remote() != 19916 {
+    if uniffi_iroh_ffi_checksum_method_liveevent_as_insert_local() != 27496 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_liveevent_as_neighbor_down() != 154 {
+    if uniffi_iroh_ffi_checksum_method_liveevent_as_insert_remote() != 38454 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_liveevent_as_neighbor_up() != 25727 {
+    if uniffi_iroh_ffi_checksum_method_liveevent_as_neighbor_down() != 27752 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_liveevent_as_sync_finished() != 62733 {
+    if uniffi_iroh_ffi_checksum_method_liveevent_as_neighbor_up() != 44203 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_liveevent_type() != 63032 {
+    if uniffi_iroh_ffi_checksum_method_liveevent_as_sync_finished() != 27893 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_nodeaddr_direct_addresses() != 13100 {
+    if uniffi_iroh_ffi_checksum_method_liveevent_type() != 30099 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_nodeaddr_equal() != 40672 {
+    if uniffi_iroh_ffi_checksum_method_nodeaddr_direct_addresses() != 23787 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_nodeaddr_relay_url() != 33747 {
+    if uniffi_iroh_ffi_checksum_method_nodeaddr_equal() != 19664 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_nodestatus_listen_addrs() != 52977 {
+    if uniffi_iroh_ffi_checksum_method_nodeaddr_relay_url() != 34772 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_nodestatus_node_addr() != 53928 {
+    if uniffi_iroh_ffi_checksum_method_nodestatus_listen_addrs() != 54436 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_nodestatus_version() != 46131 {
+    if uniffi_iroh_ffi_checksum_method_nodestatus_node_addr() != 12507 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_publickey_equal() != 13922 {
+    if uniffi_iroh_ffi_checksum_method_nodestatus_version() != 3183 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_publickey_fmt_short() != 33947 {
+    if uniffi_iroh_ffi_checksum_method_publickey_equal() != 8690 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_publickey_to_bytes() != 54334 {
+    if uniffi_iroh_ffi_checksum_method_publickey_fmt_short() != 31871 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_query_limit() != 13803 {
+    if uniffi_iroh_ffi_checksum_method_publickey_to_bytes() != 22449 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_query_offset() != 5309 {
+    if uniffi_iroh_ffi_checksum_method_query_limit() != 23235 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_rangespec_is_all() != 17079 {
+    if uniffi_iroh_ffi_checksum_method_query_offset() != 14460 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_rangespec_is_empty() != 55537 {
+    if uniffi_iroh_ffi_checksum_method_rangespec_is_all() != 51737 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_method_subscribecallback_event() != 53405 {
+    if uniffi_iroh_ffi_checksum_method_rangespec_is_empty() != 38175 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_author_from_string() != 13625 {
+    if uniffi_iroh_ffi_checksum_method_subscribecallback_event() != 35520 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_authorid_from_string() != 9745 {
+    if uniffi_iroh_ffi_checksum_constructor_author_from_string() != 63158 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_blobdownloadoptions_new() != 47667 {
+    if uniffi_iroh_ffi_checksum_constructor_authorid_from_string() != 47849 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_blobticket_new() != 36162 {
+    if uniffi_iroh_ffi_checksum_constructor_blobdownloadoptions_new() != 19425 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_collection_new() != 10699 {
+    if uniffi_iroh_ffi_checksum_constructor_blobticket_new() != 29763 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_downloadpolicy_everything() != 33704 {
+    if uniffi_iroh_ffi_checksum_constructor_collection_new() != 3798 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_downloadpolicy_everything_except() != 48193 {
+    if uniffi_iroh_ffi_checksum_constructor_downloadpolicy_everything() != 35143 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_downloadpolicy_nothing() != 44731 {
+    if uniffi_iroh_ffi_checksum_constructor_downloadpolicy_everything_except() != 21211 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_downloadpolicy_nothing_except() != 12480 {
+    if uniffi_iroh_ffi_checksum_constructor_downloadpolicy_nothing() != 16928 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_filterkind_exact() != 3557 {
+    if uniffi_iroh_ffi_checksum_constructor_downloadpolicy_nothing_except() != 12041 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_filterkind_prefix() != 58174 {
+    if uniffi_iroh_ffi_checksum_constructor_filterkind_exact() != 13432 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_hash_from_bytes() != 29694 {
+    if uniffi_iroh_ffi_checksum_constructor_filterkind_prefix() != 42338 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_hash_from_string() != 9376 {
+    if uniffi_iroh_ffi_checksum_constructor_hash_from_bytes() != 13104 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_hash_new() != 25525 {
+    if uniffi_iroh_ffi_checksum_constructor_hash_from_string() != 23453 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_irohnode_new() != 55095 {
+    if uniffi_iroh_ffi_checksum_constructor_hash_new() != 30613 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_irohnode_with_options() != 31863 {
+    if uniffi_iroh_ffi_checksum_constructor_irohnode_memory() != 52721 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_nodeaddr_new() != 31240 {
+    if uniffi_iroh_ffi_checksum_constructor_irohnode_memory_with_options() != 51113 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_publickey_from_bytes() != 13946 {
+    if uniffi_iroh_ffi_checksum_constructor_irohnode_persistent() != 9772 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_publickey_from_string() != 19439 {
+    if uniffi_iroh_ffi_checksum_constructor_irohnode_persistent_with_options() != 11511 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_query_all() != 14156 {
+    if uniffi_iroh_ffi_checksum_constructor_nodeaddr_new() != 5759 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_query_author() != 59964 {
+    if uniffi_iroh_ffi_checksum_constructor_publickey_from_bytes() != 64011 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_query_author_key_exact() != 59955 {
+    if uniffi_iroh_ffi_checksum_constructor_publickey_from_string() != 42207 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_query_author_key_prefix() != 43283 {
+    if uniffi_iroh_ffi_checksum_constructor_query_all() != 34328 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_query_key_exact() != 35442 {
+    if uniffi_iroh_ffi_checksum_constructor_query_author() != 17803 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_query_key_prefix() != 40767 {
+    if uniffi_iroh_ffi_checksum_constructor_query_author_key_exact() != 38571 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_query_single_latest_per_key() != 14952 {
+    if uniffi_iroh_ffi_checksum_constructor_query_author_key_prefix() != 48731 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_query_single_latest_per_key_exact() != 30329 {
+    if uniffi_iroh_ffi_checksum_constructor_query_key_exact() != 17481 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_query_single_latest_per_key_prefix() != 60943 {
+    if uniffi_iroh_ffi_checksum_constructor_query_key_prefix() != 35279 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_settagoption_auto() != 17797 {
+    if uniffi_iroh_ffi_checksum_constructor_query_single_latest_per_key() != 58221 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_settagoption_named() != 6167 {
+    if uniffi_iroh_ffi_checksum_constructor_query_single_latest_per_key_exact() != 6734 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_wrapoption_no_wrap() != 60071 {
+    if uniffi_iroh_ffi_checksum_constructor_query_single_latest_per_key_prefix() != 8914 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_checksum_constructor_wrapoption_wrap() != 15641 {
+    if uniffi_iroh_ffi_checksum_constructor_settagoption_auto() != 50496 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_constructor_settagoption_named() != 33009 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_constructor_wrapoption_no_wrap() != 59800 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_constructor_wrapoption_wrap() != 6667 {
         return InitializationResult.apiChecksumMismatch
     }
 

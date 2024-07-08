@@ -16,7 +16,7 @@ jobs:
   build_and_test_rust:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
-    name: Rust - Build and test 
+    name: Rust - Build and test
     strategy:
       fail-fast: false
       matrix:
@@ -78,7 +78,7 @@ jobs:
       run: cargo clippy --all-targets --bins --tests --benches
 
   build_and_test_python:
-    name: Python - Build and test 
+    name: Python - Build and test
     timeout-minutes: 30
     runs-on: [linux, x64]
     steps:
@@ -88,19 +88,19 @@ jobs:
       with:
           python-version: 3.11
     - name: Install Deps
-      run: pip install virtualenv maturin uniffi-bindgen
+      run: pip install virtualenv
     - name: Python tests
       run: |
         virtualenv venv && \
         source venv/bin/activate && \
-        pip install pytest 
+        pip install pytest pytest-asyncio maturin uniffi-bindgen
         maturin develop && \
         python -m pytest
 
   build_and_test_kotlin:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
-    name: Kotlin - Build and test 
+    name: Kotlin - Build and test
     strategy:
       fail-fast: false
       matrix:
@@ -137,7 +137,7 @@ jobs:
       with:
         distribution: 'temurin' # See 'Supported distributions' for available options
         java-version: '21'
-    
+
     - name: install kotlin
       uses: arqu/setup-kotlin@main
 
@@ -146,10 +146,12 @@ jobs:
 
     - name: fetch jna
       run: curl -L https://repo1.maven.org/maven2/net/java/dev/jna/jna/5.14.0/jna-5.14.0.jar -o jna.jar
+    - name: fetch kotlinx-coroutines
+      run: curl -L https://repo1.maven.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.6.4/kotlinx-coroutines-core-jvm-1.6.4.jar -o kotlinx-coroutines.jar
 
     - name: run kotlin tests
       env:
-        CLASSPATH: ./jna.jar
+        CLASSPATH: ./jna.jar:./kotlinx-coroutines.jar
         TEST_OS: ${{ matrix.os }}
       shell: bash
       run: ./test_kotlin.sh

@@ -8,7 +8,8 @@ use crate::IrohError;
 ///
 /// The key itself is just a 32 byte array, but a key has associated crypto
 /// information that is cached for performance reasons.
-#[derive(Debug, Clone, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, Serialize, Deserialize, uniffi::Object)]
+#[uniffi::export(Display)]
 pub struct PublicKey {
     pub(crate) key: [u8; 32],
 }
@@ -26,6 +27,7 @@ impl From<&PublicKey> for iroh::net::key::PublicKey {
     }
 }
 
+#[uniffi::export]
 impl PublicKey {
     /// Returns true if the PublicKeys are equal
     pub fn equal(&self, other: &PublicKey) -> bool {
@@ -38,12 +40,14 @@ impl PublicKey {
     }
 
     /// Make a PublicKey from base32 string
+    #[uniffi::constructor]
     pub fn from_string(s: String) -> Result<Self, IrohError> {
         let key = iroh::net::key::PublicKey::from_str(&s).map_err(anyhow::Error::from)?;
         Ok(key.into())
     }
 
     /// Make a PublicKey from byte array
+    #[uniffi::constructor]
     pub fn from_bytes(bytes: Vec<u8>) -> Result<Self, IrohError> {
         if bytes.len() != 32 {
             return Err(anyhow::anyhow!("the PublicKey must be 32 bytes in length").into());

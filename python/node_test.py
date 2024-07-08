@@ -1,50 +1,63 @@
 # tests that correspond to the `src/doc.rs` rust api
 import tempfile
-import queue
-import time
+import pytest
+import asyncio
+import iroh
 
 from iroh import IrohNode, ShareMode, LiveEventType, AddrInfoOptions
 
-def test_basic_sync():
+@pytest.mark.asyncio
+async def test_basic_sync():
+    # setup event loop, to ensure async callbacks work
+    iroh.iroh_ffi.uniffi_set_event_loop(asyncio.get_running_loop())
+
     # Create node_0
     iroh_dir_0 = tempfile.TemporaryDirectory()
-    node_0 = IrohNode(iroh_dir_0.name)
+    node_0 = await IrohNode.persistent(iroh_dir_0.name)
 
     # Create node_1
     iroh_dir_1 = tempfile.TemporaryDirectory()
-    node_1 = IrohNode(iroh_dir_1.name)
+    node_1 = await IrohNode.persistent(iroh_dir_1.name)
 
     # Create doc on node_0
-    doc_0 = node_0.doc_create()
-    ticket = doc_0.share(ShareMode.WRITE, AddrInfoOptions.RELAY_AND_ADDRESSES)
+    doc_0 = await node_0.doc_create()
+    ticket = await doc_0.share(ShareMode.WRITE, AddrInfoOptions.RELAY_AND_ADDRESSES)
 
     class SubscribeCallback:
         def __init__(self, found_s):
             self.found_s = found_s
 
-        def event(self, event):
+        async def event(self, event):
             print("", event.type())
-            if (event.type() == LiveEventType.CONTENT_READY):
-                print("got event type content ready")
-                self.found_s.put(event.as_content_ready())
+            await self.found_s.put(event)
 
     # Subscribe to sync events
-    found_s = queue.Queue()
-    cb = SubscribeCallback(found_s)
-    doc_0.subscribe(cb)
+    found_s_0 = asyncio.Queue(maxsize=1)
+    cb0 = SubscribeCallback(found_s_0)
+    await doc_0.subscribe(cb0)
 
     # Join the same doc from node_1
-    doc_1 = node_1.doc_join(ticket)
+    found_s_1 = asyncio.Queue(maxsize=1)
+    cb1 = SubscribeCallback(found_s_1)
+    doc_1 = await node_1.doc_join_and_subscribe(ticket, cb1)
+
+    # wait for initial sync
+    while (True):
+        event = await found_s_1.get()
+        if (event.type() == LiveEventType.SYNC_FINISHED):
+            break
 
     # Create author on node_1
-    author = node_1.author_create()
-    doc_1.set_bytes(author, b"hello", b"world")
+    author = await node_1.author_create()
+    await doc_1.set_bytes(author, b"hello", b"world")
 
     # Wait for the content ready event
-    hash = found_s.get()
-    
-    # Get content from hash
-    val = node_1.blobs_read_to_bytes(hash)
-    assert b"world" == val
+    while (True):
+        event = await found_s_0.get()
+        if (event.type() == LiveEventType.CONTENT_READY):
+            hash = event.as_content_ready()
 
-
+            # Get content from hash
+            val = await node_1.blobs_read_to_bytes(hash)
+            assert b"world" == val
+            break

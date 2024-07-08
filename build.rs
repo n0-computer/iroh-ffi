@@ -3,9 +3,6 @@ use std::{env, fs};
 
 fn main() {
     build_pc();
-
-    // Unifi
-    uniffi::generate_scaffolding("./src/iroh.udl").unwrap();
 }
 
 fn build_pc() {

@@ -8,6 +8,9 @@ FRAMEWORK_NAME="Iroh"
 SWIFT_INTERFACE="IrohLib"
 INCLUDE_DIR="include/apple"
 
+# Build default lib
+cargo build --lib
+
 # Compile the rust
 echo "Building aarch64-apple-ios"
 cargo build --release --target aarch64-apple-ios
@@ -37,7 +40,7 @@ rm -f $INCLUDE_DIR/*
 mkdir -p $INCLUDE_DIR
 
 # UniFfi bindgen
-cargo run --bin uniffi-bindgen generate "src/$UDL_NAME.udl" --language swift --out-dir ./$INCLUDE_DIR
+cargo run --bin uniffi-bindgen generate --language swift --out-dir ./$INCLUDE_DIR --library target/debug/libiroh_ffi.dylib --config uniffi.toml
 
 # Make fat lib for sims
 lipo -create \

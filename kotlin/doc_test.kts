@@ -1,8 +1,9 @@
 // tests that correspond to the `src/doc.rs` rust api
 import iroh.*
+import kotlinx.coroutines.runBlocking
 
 // Node addr
-fun testNodeAddr() {
+runBlocking {
     // create a node_id
     val keyStr = "ki6htfv2252cj2lhq3hxu4qfcfjtpjnukzonevigudzjpmmruxva"
     val nodeId = PublicKey.fromString(keyStr)
@@ -23,10 +24,9 @@ fun testNodeAddr() {
     gotAddrs.zip(expectAddrs) { got, ex -> assert(got == ex) }
     assert(relayUrl == nodeAddr.relayUrl())
 }
-testNodeAddr()
 
 // Author Id
-fun testAuthorId() {
+runBlocking {
     // create id from string
     val authorStr = "mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q"
     val author = AuthorId.fromString(authorStr)
@@ -41,10 +41,9 @@ fun testAuthorId() {
     assert(author.equal(author0))
     assert(author0.equal(author))
 }
-testAuthorId()
 
 // Query
-fun testQuery() {
+runBlocking {
     var opts = QueryOptions(SortBy.KEY_AUTHOR, SortDirection.ASC, 10u, 10u)
 
     // all
@@ -81,13 +80,12 @@ fun testQuery() {
     assert(0UL == keyPrefix.offset())
     assert(100UL == keyPrefix.limit())
 }
-testQuery()
 
 // Doc entry basics
-fun testDocEntry() {
+runBlocking {
     // create node
     val irohDir = kotlin.io.path.createTempDirectory("doc-test")
-    val node = IrohNode(irohDir.toString())
+    val node = IrohNode.persistent(irohDir.toString())
 
     // create doc and author
     val doc = node.docCreate()
@@ -106,4 +104,3 @@ fun testDocEntry() {
     val gotVal = entry.contentBytes(doc)
     assert(v contentEquals gotVal)
 }
-testDocEntry()

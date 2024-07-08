@@ -3,7 +3,7 @@
 
 > Foreign Function Interface (FFI) bindings for Iroh
 
-This repo defines Python & Swift bindings for [iroh](https://github.com/n0-computer/iroh), which is written in Rust.
+This repo defines Python, Swift and Kotlin bindings for [iroh](https://github.com/n0-computer/iroh), which is written in Rust.
 
 ### Published Packages:
 
@@ -62,9 +62,15 @@ docker run --rm -v $(pwd):/mnt -w /mnt quay.io/pypa/manylinux2014_x86_64 /mnt/bu
 - Make sure the `iroh` is installed `pip install iroh`
 - Run with `python3 main.py --help`
 
+### Running the tests
+- activate your virtual env
+- Install `pytest` with `pip`
+- Install `pytest-asyncio` with `pip`
+- Run `maturin develop` if you haven't yet
+- Run `python -m pytest`
 
-
-### Updating the bindings
+# Kotlin
+[Notes here](https://github.com/n0-computer/iroh-ffi/blob/main/README.kotlin.md)
 
 # Developers
 Check our our [DEVELOPERS.md](DEVELOPERS.md) for guides on how to translate from the iroh rust API to the iroh FFI API, as well as how to set up testing for golang and python.

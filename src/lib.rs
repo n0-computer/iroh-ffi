@@ -16,16 +16,15 @@ pub use self::node::*;
 pub use self::tag::*;
 pub use self::ticket::*;
 
-use futures::Future;
 use iroh::metrics::try_init_metrics_collection;
 
 use tracing_subscriber::filter::LevelFilter;
 
 // This macro includes the scaffolding for the Iroh FFI bindings.
-uniffi::include_scaffolding!("iroh");
+uniffi::setup_scaffolding!();
 
 /// The logging level. See the rust (log crate)[https://docs.rs/log] for more information.
-#[derive(Debug)]
+#[derive(Debug, uniffi::Enum)]
 pub enum LogLevel {
     Trace,
     Debug,
@@ -49,6 +48,7 @@ impl From<LogLevel> for LevelFilter {
 }
 
 /// Set the logging level.
+#[uniffi::export]
 pub fn set_log_level(level: LogLevel) {
     use tracing_subscriber::{fmt, prelude::*, reload};
     let filter: LevelFilter = level.into();
@@ -62,15 +62,9 @@ pub fn set_log_level(level: LogLevel) {
 }
 
 /// Initialize the global metrics collection.
+#[uniffi::export]
 pub fn start_metrics_collection() -> Result<(), IrohError> {
     try_init_metrics_collection().map_err(|e| anyhow::Error::from(e).into())
-}
-
-fn block_on<F: Future<Output = T>, T>(rt: &tokio::runtime::Handle, fut: F) -> T {
-    tokio::task::block_in_place(move || match tokio::runtime::Handle::try_current() {
-        Ok(handle) => handle.block_on(fut),
-        Err(_) => rt.block_on(fut),
-    })
 }
 
 /// Helper function that translates a key that was derived from the [`path_to_key`] function back
@@ -79,6 +73,7 @@ fn block_on<F: Future<Output = T>, T>(rt: &tokio::runtime::Handle, fut: F) -> T 
 /// If `prefix` exists, it will be stripped before converting back to a path
 /// If `root` exists, will add the root as a parent to the created path
 /// Removes any null byte that has been appened to the key
+#[uniffi::export]
 pub fn key_to_path(
     key: Vec<u8>,
     prefix: Option<String>,
@@ -94,6 +89,7 @@ pub fn key_to_path(
 /// Helper function that creates a document key from a canonicalized path, removing the `root` and adding the `prefix`, if they exist
 ///
 /// Appends the null byte to the end of the key.
+#[uniffi::export]
 pub fn path_to_key(
     path: String,
     prefix: Option<String>,

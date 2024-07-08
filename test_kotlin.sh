@@ -1,9 +1,9 @@
 set -eu
 
-# $CLASSPATH must include `jna`
+# $CLASSPATH must include `jna` and `kotlinx-coroutines`
 
 LIB_EXTENSION=""
-LIB_NAME="libiroh"
+LIB_NAME="libiroh_ffi"
 
 case "$TEST_OS" in
     "mac")
@@ -14,7 +14,7 @@ case "$TEST_OS" in
         ;;
     "windows")
         LIB_EXTENSION="lib"
-        LIB_NAME="iroh"
+        LIB_NAME="iroh_ffi"
         ;;
     *)
         echo "Unknown OS specified in TEST_OS"
@@ -27,11 +27,11 @@ cargo build --lib
 
 # UniFfi bindgen
 echo "generating binding"
-rm -rf ./kotlin/n0
-cargo run --bin uniffi-bindgen generate "src/iroh.udl" --language kotlin --out-dir ./kotlin --config uniffi.toml
+rm -rf ./kotlin/$LIB_NAME
+cargo run --bin uniffi-bindgen generate --language kotlin --out-dir ./kotlin --config uniffi.toml --library target/debug/$LIB_NAME.$LIB_EXTENSION
 
 # copy cdylib to outdir
-cp ./target/debug/$LIB_NAME.$LIB_EXTENSION ./kotlin/libuniffi_iroh.$LIB_EXTENSION
+cp ./target/debug/$LIB_NAME.$LIB_EXTENSION ./kotlin/
 
 # Build jar file
 echo "building jar"
@@ -40,4 +40,8 @@ kotlinc -Werror -d ./kotlin/iroh.jar ./kotlin/iroh/*.kt -classpath $CLASSPATH
 
 # Execute Tests
 echo "executing tests"
-kotlinc -Werror -J-ea -classpath $CLASSPATH:./kotlin/iroh.jar:./kotlin -script ./kotlin/*.kts
+
+for testName in author blob doc key node; do
+    echo "running ${testName}_test.kts ..."
+    kotlinc -Werror -J-ea -classpath $CLASSPATH:./kotlin/iroh.jar:./kotlin -script ./kotlin/${testName}_test.kts
+done

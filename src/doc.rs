@@ -6,11 +6,10 @@ use iroh::client::MemDoc;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    block_on, ticket::AddrInfoOptions, AuthorId, CallbackError, Hash, IrohError, IrohNode,
-    PublicKey,
+    ticket::AddrInfoOptions, AuthorId, CallbackError, Hash, IrohError, IrohNode, PublicKey,
 };
 
-#[derive(Debug)]
+#[derive(Debug, uniffi::Enum)]
 pub enum CapabilityKind {
     /// A writable replica.
     Write = 1,
@@ -27,47 +26,39 @@ impl From<iroh::docs::CapabilityKind> for CapabilityKind {
     }
 }
 
+#[uniffi::export]
 impl IrohNode {
     /// Create a new doc.
-    pub fn doc_create(&self) -> Result<Arc<Doc>, IrohError> {
-        block_on(&self.rt(), async {
-            let doc = self.sync_client.docs().create().await?;
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn doc_create(&self) -> Result<Arc<Doc>, IrohError> {
+        let doc = self.node().docs().create().await?;
 
-            Ok(Arc::new(Doc {
-                inner: doc,
-                rt: self.rt().clone(),
-            }))
-        })
+        Ok(Arc::new(Doc { inner: doc }))
     }
 
     /// Join and sync with an already existing document.
-    pub fn doc_join(&self, ticket: String) -> Result<Arc<Doc>, IrohError> {
-        block_on(&self.rt(), async {
-            let ticket = iroh::docs::DocTicket::from_str(&ticket).map_err(anyhow::Error::from)?;
-            let doc = self.sync_client.docs().import(ticket).await?;
-            Ok(Arc::new(Doc {
-                inner: doc,
-                rt: self.rt().clone(),
-            }))
-        })
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn doc_join(&self, ticket: String) -> Result<Arc<Doc>, IrohError> {
+        let ticket = iroh::docs::DocTicket::from_str(&ticket).map_err(anyhow::Error::from)?;
+        let doc = self.node().docs().import(ticket).await?;
+        Ok(Arc::new(Doc { inner: doc }))
     }
 
     /// Join and sync with an already existing document and subscribe to events on that document.
-    pub fn doc_join_and_subscribe(
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn doc_join_and_subscribe(
         &self,
         ticket: String,
         cb: Arc<dyn SubscribeCallback>,
     ) -> Result<Arc<Doc>, IrohError> {
-        let (doc, mut stream) = block_on(&self.rt(), async {
-            let ticket = iroh::docs::DocTicket::from_str(&ticket)?;
-            self.sync_client.docs().import_and_subscribe(ticket).await
-        })?;
+        let ticket = iroh::docs::DocTicket::from_str(&ticket).map_err(anyhow::Error::from)?;
+        let (doc, mut stream) = self.node().docs().import_and_subscribe(ticket).await?;
 
-        self.rt().spawn(async move {
+        tokio::spawn(async move {
             while let Some(event) = stream.next().await {
                 match event {
                     Ok(event) => {
-                        if let Err(err) = cb.event(Arc::new(event.into())) {
+                        if let Err(err) = cb.event(Arc::new(event.into())).await {
                             println!("cb error: {:?}", err);
                         }
                     }
@@ -78,46 +69,36 @@ impl IrohNode {
             }
         });
 
-        Ok(Arc::new(Doc {
-            inner: doc,
-            rt: self.rt().clone(),
-        }))
+        Ok(Arc::new(Doc { inner: doc }))
     }
 
     /// List all the docs we have access to on this node.
-    pub fn doc_list(&self) -> Result<Vec<NamespaceAndCapability>, IrohError> {
-        block_on(&self.rt(), async {
-            let docs = self
-                .sync_client
-                .docs()
-                .list()
-                .await?
-                .map_ok(|(namespace, capability)| NamespaceAndCapability {
-                    namespace: namespace.to_string(),
-                    capability: capability.into(),
-                })
-                .try_collect::<Vec<_>>()
-                .await?;
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn doc_list(&self) -> Result<Vec<NamespaceAndCapability>, IrohError> {
+        let docs = self
+            .node()
+            .docs()
+            .list()
+            .await?
+            .map_ok(|(namespace, capability)| NamespaceAndCapability {
+                namespace: namespace.to_string(),
+                capability: capability.into(),
+            })
+            .try_collect::<Vec<_>>()
+            .await?;
 
-            Ok(docs)
-        })
+        Ok(docs)
     }
 
     /// Get a [`Doc`].
     ///
     /// Returns None if the document cannot be found.
-    pub fn doc_open(&self, id: String) -> Result<Option<Arc<Doc>>, IrohError> {
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn doc_open(&self, id: String) -> Result<Option<Arc<Doc>>, IrohError> {
         let namespace_id = iroh::docs::NamespaceId::from_str(&id)?;
-        block_on(&self.rt(), async {
-            let doc = self.sync_client.docs().open(namespace_id).await?;
+        let doc = self.node().docs().open(namespace_id).await?;
 
-            Ok(doc.map(|d| {
-                Arc::new(Doc {
-                    inner: d,
-                    rt: self.rt().clone(),
-                })
-            }))
-        })
+        Ok(doc.map(|d| Arc::new(Doc { inner: d })))
     }
 
     /// Delete a document from the local node.
@@ -125,19 +106,19 @@ impl IrohNode {
     /// This is a destructive operation. Both the document secret key and all entries in the
     /// document will be permanently deleted from the node's storage. Content blobs will be deleted
     /// through garbage collection unless they are referenced from another document or tag.
-    pub fn doc_drop(&self, doc_id: String) -> Result<(), IrohError> {
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn doc_drop(&self, doc_id: String) -> Result<(), IrohError> {
         let doc_id = iroh::docs::NamespaceId::from_str(&doc_id)?;
-        block_on(&self.rt(), async {
-            self.sync_client
-                .docs()
-                .drop_doc(doc_id)
-                .await
-                .map_err(IrohError::from)
-        })
+        self.node()
+            .docs()
+            .drop_doc(doc_id)
+            .await
+            .map_err(IrohError::from)
     }
 }
 
 /// The namespace id and CapabilityKind (read/write) of the doc
+#[derive(Debug, uniffi::Record)]
 pub struct NamespaceAndCapability {
     /// The namespace id of the doc
     pub namespace: String,
@@ -146,54 +127,53 @@ pub struct NamespaceAndCapability {
 }
 
 /// A representation of a mutable, synchronizable key-value store.
-#[derive(Clone)]
+#[derive(Clone, uniffi::Object)]
 pub struct Doc {
     pub(crate) inner: MemDoc,
-    pub(crate) rt: tokio::runtime::Handle,
 }
 
+#[uniffi::export]
 impl Doc {
     /// Get the document id of this doc.
+    #[uniffi::method]
     pub fn id(&self) -> String {
         self.inner.id().to_string()
     }
 
     /// Close the document.
-    pub fn close_me(&self) -> Result<(), IrohError> {
-        block_on(&self.rt, async {
-            self.inner.close().await.map_err(IrohError::from)
-        })
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn close_me(&self) -> Result<(), IrohError> {
+        self.inner.close().await.map_err(IrohError::from)
     }
 
     /// Set the content of a key to a byte array.
-    pub fn set_bytes(
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn set_bytes(
         &self,
         author_id: &AuthorId,
         key: Vec<u8>,
         value: Vec<u8>,
     ) -> Result<Arc<Hash>, IrohError> {
-        block_on(&self.rt, async {
-            let hash = self.inner.set_bytes(author_id.0, key, value).await?;
-            Ok(Arc::new(Hash(hash)))
-        })
+        let hash = self.inner.set_bytes(author_id.0, key, value).await?;
+        Ok(Arc::new(Hash(hash)))
     }
 
     /// Set an entries on the doc via its key, hash, and size.
-    pub fn set_hash(
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn set_hash(
         &self,
         author_id: Arc<AuthorId>,
         key: Vec<u8>,
         hash: Arc<Hash>,
         size: u64,
     ) -> Result<(), IrohError> {
-        block_on(&self.rt, async {
-            self.inner.set_hash(author_id.0, key, hash.0, size).await?;
-            Ok(())
-        })
+        self.inner.set_hash(author_id.0, key, hash.0, size).await?;
+        Ok(())
     }
 
     /// Add an entry from an absolute file path
-    pub fn import_file(
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn import_file(
         &self,
         author: Arc<AuthorId>,
         key: Vec<u8>,
@@ -201,47 +181,44 @@ impl Doc {
         in_place: bool,
         cb: Option<Arc<dyn DocImportFileCallback>>,
     ) -> Result<(), IrohError> {
-        block_on(&self.rt, async {
-            let mut stream = self
-                .inner
-                .import_file(author.0, Bytes::from(key), PathBuf::from(path), in_place)
-                .await?;
+        let mut stream = self
+            .inner
+            .import_file(author.0, Bytes::from(key), PathBuf::from(path), in_place)
+            .await?;
 
-            while let Some(progress) = stream.next().await {
-                let progress = progress?;
-                if let Some(ref cb) = cb {
-                    cb.progress(Arc::new(progress.into()))?;
-                }
+        while let Some(progress) = stream.next().await {
+            let progress = progress?;
+            if let Some(ref cb) = cb {
+                cb.progress(Arc::new(progress.into())).await?;
             }
-            Ok(())
-        })
+        }
+        Ok(())
     }
 
     /// Export an entry as a file to a given absolute path
-    pub fn export_file(
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn export_file(
         &self,
         entry: Arc<Entry>,
         path: String,
         cb: Option<Arc<dyn DocExportFileCallback>>,
     ) -> Result<(), IrohError> {
-        block_on(&self.rt, async {
-            let mut stream = self
-                .inner
-                .export_file(
-                    entry.0.clone(),
-                    std::path::PathBuf::from(path),
-                    // TODO(b5) - plumb up the export mode, currently it's always copy
-                    iroh::blobs::store::ExportMode::Copy,
-                )
-                .await?;
-            while let Some(progress) = stream.next().await {
-                let progress = progress?;
-                if let Some(ref cb) = cb {
-                    cb.progress(Arc::new(progress.into()))?;
-                }
+        let mut stream = self
+            .inner
+            .export_file(
+                entry.0.clone(),
+                std::path::PathBuf::from(path),
+                // TODO(b5) - plumb up the export mode, currently it's always copy
+                iroh::blobs::store::ExportMode::Copy,
+            )
+            .await?;
+        while let Some(progress) = stream.next().await {
+            let progress = progress?;
+            if let Some(ref cb) = cb {
+                cb.progress(Arc::new(progress.into())).await?;
             }
-            Ok(())
-        })
+        }
+        Ok(())
     }
 
     /// Delete entries that match the given `author` and key `prefix`.
@@ -250,107 +227,101 @@ impl Doc {
     /// entries whose key starts with or is equal to the given `prefix`.
     ///
     /// Returns the number of entries deleted.
-    pub fn del(&self, author_id: Arc<AuthorId>, prefix: Vec<u8>) -> Result<u64, IrohError> {
-        block_on(&self.rt, async {
-            let num_del = self.inner.del(author_id.0, prefix).await?;
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn del(&self, author_id: Arc<AuthorId>, prefix: Vec<u8>) -> Result<u64, IrohError> {
+        let num_del = self.inner.del(author_id.0, prefix).await?;
 
-            u64::try_from(num_del).map_err(|e| anyhow::Error::from(e).into())
-        })
+        u64::try_from(num_del).map_err(|e| anyhow::Error::from(e).into())
     }
 
     /// Get an entry for a key and author.
-    pub fn get_exact(
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn get_exact(
         &self,
         author: Arc<AuthorId>,
         key: Vec<u8>,
         include_empty: bool,
     ) -> Result<Option<Arc<Entry>>, IrohError> {
-        block_on(&self.rt, async {
-            self.inner
-                .get_exact(author.0, key, include_empty)
-                .await
-                .map(|e| e.map(|e| Arc::new(e.into())))
-                .map_err(IrohError::from)
-        })
+        self.inner
+            .get_exact(author.0, key, include_empty)
+            .await
+            .map(|e| e.map(|e| Arc::new(e.into())))
+            .map_err(IrohError::from)
     }
 
     /// Get entries.
     ///
     /// Note: this allocates for each `Entry`, if you have many `Entry`s this may be a prohibitively large list.
     /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
-    pub fn get_many(&self, query: Arc<Query>) -> Result<Vec<Arc<Entry>>, IrohError> {
-        block_on(&self.rt, async {
-            let entries = self
-                .inner
-                .get_many(query.0.clone())
-                .await?
-                .map_ok(|e| Arc::new(Entry(e)))
-                .try_collect::<Vec<_>>()
-                .await?;
-            Ok(entries)
-        })
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn get_many(&self, query: Arc<Query>) -> Result<Vec<Arc<Entry>>, IrohError> {
+        let entries = self
+            .inner
+            .get_many(query.0.clone())
+            .await?
+            .map_ok(|e| Arc::new(Entry(e)))
+            .try_collect::<Vec<_>>()
+            .await?;
+        Ok(entries)
     }
 
     /// Get the latest entry for a key and author.
-    pub fn get_one(&self, query: Arc<Query>) -> Result<Option<Arc<Entry>>, IrohError> {
-        block_on(&self.rt, async {
-            let res = self
-                .inner
-                .get_one((*query).clone().0)
-                .await
-                .map(|e| e.map(|e| Arc::new(e.into())))?;
-            Ok(res)
-        })
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn get_one(&self, query: Arc<Query>) -> Result<Option<Arc<Entry>>, IrohError> {
+        let res = self
+            .inner
+            .get_one((*query).clone().0)
+            .await
+            .map(|e| e.map(|e| Arc::new(e.into())))?;
+        Ok(res)
     }
 
     /// Share this document with peers over a ticket.
-    pub fn share(
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn share(
         &self,
         mode: ShareMode,
         addr_options: AddrInfoOptions,
     ) -> Result<String, IrohError> {
-        block_on(&self.rt, async {
-            let res = self
-                .inner
-                .share(mode.into(), addr_options.into())
-                .await
-                .map(|ticket| ticket.to_string())?;
-            Ok(res)
-        })
+        let res = self
+            .inner
+            .share(mode.into(), addr_options.into())
+            .await
+            .map(|ticket| ticket.to_string())?;
+        Ok(res)
     }
 
     /// Start to sync this document with a list of peers.
-    pub fn start_sync(&self, peers: Vec<Arc<NodeAddr>>) -> Result<(), IrohError> {
-        block_on(&self.rt, async {
-            self.inner
-                .start_sync(
-                    peers
-                        .into_iter()
-                        .map(|p| (*p).clone().try_into())
-                        .collect::<Result<Vec<_>, IrohError>>()?,
-                )
-                .await?;
-            Ok(())
-        })
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn start_sync(&self, peers: Vec<Arc<NodeAddr>>) -> Result<(), IrohError> {
+        self.inner
+            .start_sync(
+                peers
+                    .into_iter()
+                    .map(|p| (*p).clone().try_into())
+                    .collect::<Result<Vec<_>, IrohError>>()?,
+            )
+            .await?;
+        Ok(())
     }
 
     /// Stop the live sync for this document.
-    pub fn leave(&self) -> Result<(), IrohError> {
-        block_on(&self.rt, async {
-            self.inner.leave().await?;
-            Ok(())
-        })
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn leave(&self) -> Result<(), IrohError> {
+        self.inner.leave().await?;
+        Ok(())
     }
 
     /// Subscribe to events for this document.
-    pub fn subscribe(&self, cb: Arc<dyn SubscribeCallback>) -> Result<(), IrohError> {
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn subscribe(&self, cb: Arc<dyn SubscribeCallback>) -> Result<(), IrohError> {
         let client = self.inner.clone();
-        self.rt.spawn(async move {
+        tokio::task::spawn(async move {
             let mut sub = client.subscribe().await.unwrap();
             while let Some(event) = sub.next().await {
                 match event {
                     Ok(event) => {
-                        if let Err(err) = cb.event(Arc::new(event.into())) {
+                        if let Err(err) = cb.event(Arc::new(event.into())).await {
                             println!("cb error: {:?}", err);
                         }
                     }
@@ -365,38 +336,35 @@ impl Doc {
     }
 
     /// Get status info for this document
-    pub fn status(&self) -> Result<OpenState, IrohError> {
-        block_on(&self.rt, async {
-            let res = self.inner.status().await.map(|o| o.into())?;
-            Ok(res)
-        })
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn status(&self) -> Result<OpenState, IrohError> {
+        let res = self.inner.status().await.map(|o| o.into())?;
+        Ok(res)
     }
 
     /// Set the download policy for this document
-    pub fn set_download_policy(&self, policy: Arc<DownloadPolicy>) -> Result<(), IrohError> {
-        block_on(&self.rt, async {
-            self.inner
-                .set_download_policy((*policy).clone().into())
-                .await?;
-            Ok(())
-        })
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn set_download_policy(&self, policy: Arc<DownloadPolicy>) -> Result<(), IrohError> {
+        self.inner
+            .set_download_policy((*policy).clone().into())
+            .await?;
+        Ok(())
     }
 
     /// Get the download policy for this document
-    pub fn get_download_policy(&self) -> Result<Arc<DownloadPolicy>, IrohError> {
-        block_on(&self.rt, async {
-            let res = self
-                .inner
-                .get_download_policy()
-                .await
-                .map(|policy| Arc::new(policy.into()))?;
-            Ok(res)
-        })
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn get_download_policy(&self) -> Result<Arc<DownloadPolicy>, IrohError> {
+        let res = self
+            .inner
+            .get_download_policy()
+            .await
+            .map(|policy| Arc::new(policy.into()))?;
+        Ok(res)
     }
 }
 
 /// Download policy to decide which content blobs shall be downloaded.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Object)]
 pub enum DownloadPolicy {
     /// Do not download any key unless it matches one of the filters.
     NothingExcept(Vec<Arc<FilterKind>>),
@@ -404,23 +372,29 @@ pub enum DownloadPolicy {
     EverythingExcept(Vec<Arc<FilterKind>>),
 }
 
+#[uniffi::export]
 impl DownloadPolicy {
     /// Download everything
+    #[uniffi::constructor]
     pub fn everything() -> Self {
         DownloadPolicy::EverythingExcept(Vec::default())
     }
 
     /// Download nothing
+    #[uniffi::constructor]
     pub fn nothing() -> Self {
         DownloadPolicy::NothingExcept(Vec::default())
     }
 
     /// Download nothing except keys that match the given filters
+
+    #[uniffi::constructor]
     pub fn nothing_except(filters: Vec<Arc<FilterKind>>) -> Self {
         DownloadPolicy::NothingExcept(filters)
     }
 
     /// Download everything except keys that match the given filters
+    #[uniffi::constructor]
     pub fn everything_except(filters: Vec<Arc<FilterKind>>) -> Self {
         DownloadPolicy::EverythingExcept(filters)
     }
@@ -461,9 +435,10 @@ impl From<DownloadPolicy> for iroh::docs::store::DownloadPolicy {
 }
 
 /// Filter strategy used in download policies.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Object)]
 pub struct FilterKind(pub(crate) iroh::docs::store::FilterKind);
 
+#[uniffi::export]
 impl FilterKind {
     /// Verifies whether this filter matches a given key
     pub fn matches(&self, key: Vec<u8>) -> bool {
@@ -471,11 +446,13 @@ impl FilterKind {
     }
 
     /// Returns a FilterKind that matches if the contained bytes are a prefix of the key.
+    #[uniffi::constructor]
     pub fn prefix(prefix: Vec<u8>) -> FilterKind {
         FilterKind(iroh::docs::store::FilterKind::Prefix(Bytes::from(prefix)))
     }
 
     /// Returns a FilterKind that matches if the contained bytes and the key are the same.
+    #[uniffi::constructor]
     pub fn exact(key: Vec<u8>) -> FilterKind {
         FilterKind(iroh::docs::store::FilterKind::Exact(Bytes::from(key)))
     }
@@ -488,7 +465,7 @@ impl From<iroh::docs::store::FilterKind> for FilterKind {
 }
 
 /// The state for an open replica.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, uniffi::Record)]
 pub struct OpenState {
     /// Whether to accept sync requests for this replica.
     pub sync: bool,
@@ -509,15 +486,17 @@ impl From<iroh::docs::actor::OpenState> for OpenState {
 }
 
 /// A peer and it's addressing information.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Object)]
 pub struct NodeAddr {
     node_id: Arc<PublicKey>,
     relay_url: Option<String>,
     addresses: Vec<String>,
 }
 
+#[uniffi::export]
 impl NodeAddr {
     /// Create a new [`NodeAddr`] with empty [`AddrInfo`].
+    #[uniffi::constructor]
     pub fn new(node_id: &PublicKey, derp_url: Option<String>, addresses: Vec<String>) -> Self {
         Self {
             node_id: Arc::new(node_id.clone()),
@@ -580,7 +559,7 @@ impl From<iroh::net::endpoint::NodeAddr> for NodeAddr {
 }
 
 /// Intended capability for document share tickets
-#[derive(Debug)]
+#[derive(Debug, uniffi::Enum)]
 pub enum ShareMode {
     /// Read-only access
     Read,
@@ -602,7 +581,7 @@ impl From<ShareMode> for iroh::client::docs::ShareMode {
 /// An entry is identified by a key, its [`AuthorId`], and the [`Doc`]'s
 /// namespace id. Its value is the 32-byte BLAKE3 [`hash`]
 /// of the entry's content data, the size of this content data, and a timestamp.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Object)]
 pub struct Entry(pub(crate) iroh::client::docs::Entry);
 
 impl From<iroh::client::docs::Entry> for Entry {
@@ -611,33 +590,40 @@ impl From<iroh::client::docs::Entry> for Entry {
     }
 }
 
+#[uniffi::export]
 impl Entry {
     /// Get the [`AuthorId`] of this entry.
+    #[uniffi::method]
     pub fn author(&self) -> Arc<AuthorId> {
         Arc::new(AuthorId(self.0.id().author()))
     }
 
     /// Get the content_hash of this entry.
+    #[uniffi::method]
     pub fn content_hash(&self) -> Arc<Hash> {
         Arc::new(Hash(self.0.content_hash()))
     }
 
     /// Get the content_length of this entry.
+    #[uniffi::method]
     pub fn content_len(&self) -> u64 {
         self.0.content_len()
     }
 
     /// Get the key of this entry.
+    #[uniffi::method]
     pub fn key(&self) -> Vec<u8> {
         self.0.id().key().to_vec()
     }
 
     /// Get the namespace id of this entry.
+    #[uniffi::method]
     pub fn namespace(&self) -> String {
         self.0.id().namespace().to_string()
     }
 
     /// Get the timestamp when this entry was written.
+    #[uniffi::method]
     pub fn timestamp(&self) -> u64 {
         self.0.timestamp()
     }
@@ -646,16 +632,15 @@ impl Entry {
     /// This allocates a buffer for the full entry. Use only if you know that the entry you're
     /// reading is small. If not sure, use [`Self::content_len`] and check the size with
     /// before calling [`Self::content_bytes`].
-    pub fn content_bytes(&self, doc: Arc<Doc>) -> Result<Vec<u8>, IrohError> {
-        block_on(&doc.rt, async {
-            let res = self.0.content_bytes(&doc.inner).await.map(|c| c.to_vec())?;
-            Ok(res)
-        })
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn content_bytes(&self, doc: Arc<Doc>) -> Result<Vec<u8>, IrohError> {
+        let res = self.0.content_bytes(&doc.inner).await.map(|c| c.to_vec())?;
+        Ok(res)
     }
 }
 
 ///d Fields by which the query can be sorted
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, uniffi::Enum)]
 pub enum SortBy {
     /// Sort by key, then author.
     KeyAuthor,
@@ -683,7 +668,7 @@ impl From<SortBy> for iroh::docs::store::SortBy {
 }
 
 /// Sort direction
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, uniffi::Enum)]
 pub enum SortDirection {
     /// Sort ascending
     #[default]
@@ -713,11 +698,11 @@ impl From<SortDirection> for iroh::docs::store::SortDirection {
 /// Build a Query to search for an entry or entries in a doc.
 ///
 /// Use this with `QueryOptions` to determine sorting, grouping, and pagination.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, uniffi::Object)]
 pub struct Query(pub(crate) iroh::docs::store::Query);
 
 /// Options for sorting and pagination for using [`Query`]s.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, uniffi::Record)]
 pub struct QueryOptions {
     /// Sort by author or key first.
     ///
@@ -735,6 +720,7 @@ pub struct QueryOptions {
     pub limit: u64,
 }
 
+#[uniffi::export]
 impl Query {
     /// Query all records.
     ///
@@ -743,6 +729,7 @@ impl Query {
     ///     direction: SortDirection::Asc
     ///     offset: None
     ///     limit: None
+    #[uniffi::constructor]
     pub fn all(opts: Option<QueryOptions>) -> Self {
         let mut builder = iroh::docs::store::Query::all();
 
@@ -765,6 +752,7 @@ impl Query {
     ///     direction: SortDirection::Asc
     ///     offset: None
     ///     limit: None
+    #[uniffi::constructor]
     pub fn single_latest_per_key(opts: Option<QueryOptions>) -> Self {
         let mut builder = iroh::docs::store::Query::single_latest_per_key();
 
@@ -782,6 +770,7 @@ impl Query {
 
     /// Query exactly the key, but only the latest entry for it, omitting older entries if the entry was written
     /// to by multiple authors.
+    #[uniffi::constructor]
     pub fn single_latest_per_key_exact(key: Vec<u8>) -> Self {
         let builder = iroh::docs::store::Query::single_latest_per_key()
             .key_exact(key)
@@ -796,6 +785,7 @@ impl Query {
     ///     direction: SortDirection::Asc
     ///     offset: None
     ///     limit: None
+    #[uniffi::constructor]
     pub fn single_latest_per_key_prefix(prefix: Vec<u8>, opts: Option<QueryOptions>) -> Self {
         let mut builder = iroh::docs::store::Query::single_latest_per_key().key_prefix(prefix);
 
@@ -817,6 +807,7 @@ impl Query {
     ///     direction: SortDirection::Asc
     ///     offset: None
     ///     limit: None
+    #[uniffi::constructor]
     pub fn author(author: &AuthorId, opts: Option<QueryOptions>) -> Self {
         let mut builder = iroh::docs::store::Query::author(author.0);
 
@@ -839,6 +830,7 @@ impl Query {
     ///     direction: SortDirection::Asc
     ///     offset: None
     ///     limit: None
+    #[uniffi::constructor]
     pub fn key_exact(key: Vec<u8>, opts: Option<QueryOptions>) -> Self {
         let mut builder = iroh::docs::store::Query::key_exact(key);
 
@@ -855,6 +847,7 @@ impl Query {
     }
 
     /// Create a Query for a single key and author.
+    #[uniffi::constructor]
     pub fn author_key_exact(author: &AuthorId, key: Vec<u8>) -> Self {
         let builder = iroh::docs::store::Query::author(author.0).key_exact(key);
         Query(builder.build())
@@ -867,6 +860,7 @@ impl Query {
     ///     direction: SortDirection::Asc
     ///     offset: None
     ///     limit: None
+    #[uniffi::constructor]
     pub fn key_prefix(prefix: Vec<u8>, opts: Option<QueryOptions>) -> Self {
         let mut builder = iroh::docs::store::Query::key_prefix(prefix);
 
@@ -888,6 +882,7 @@ impl Query {
     ///     direction: SortDirection::Asc
     ///     offset: None
     ///     limit: None
+    #[uniffi::constructor]
     pub fn author_key_prefix(
         author: &AuthorId,
         prefix: Vec<u8>,
@@ -921,12 +916,14 @@ impl Query {
 /// The `progress` method will be called for each `SubscribeProgress` event that is
 /// emitted during a `node.doc_subscribe`. Use the `SubscribeProgress.type()`
 /// method to check the `LiveEvent`
+#[uniffi::export(with_foreign)]
+#[async_trait::async_trait]
 pub trait SubscribeCallback: Send + Sync + 'static {
-    fn event(&self, event: Arc<LiveEvent>) -> Result<(), CallbackError>;
+    async fn event(&self, event: Arc<LiveEvent>) -> Result<(), CallbackError>;
 }
 
 /// Events informing about actions of the live sync progress
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, uniffi::Object)]
 #[allow(clippy::large_enum_variant)]
 pub enum LiveEvent {
     /// A local insertion.
@@ -967,6 +964,7 @@ pub enum LiveEvent {
 }
 
 /// The type of events that can be emitted during the live sync progress
+#[derive(Debug, uniffi::Enum)]
 pub enum LiveEventType {
     /// A local insertion.
     InsertLocal,
@@ -992,6 +990,7 @@ pub enum LiveEventType {
     PendingContentReady,
 }
 
+#[uniffi::export]
 impl LiveEvent {
     /// The type LiveEvent
     pub fn r#type(&self) -> LiveEventType {
@@ -1097,7 +1096,7 @@ impl From<iroh::client::docs::LiveEvent> for LiveEvent {
 }
 
 /// Outcome of a sync operation
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Record)]
 pub struct SyncEvent {
     /// Peer we synced with
     pub peer: Arc<PublicKey>,
@@ -1127,10 +1126,31 @@ impl From<iroh::client::docs::SyncEvent> for SyncEvent {
 }
 
 /// Why we started a sync request
-pub use iroh::client::docs::SyncReason;
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, Copy, uniffi::Enum)]
+pub enum SyncReason {
+    /// Direct join request via API
+    DirectJoin,
+    /// Peer showed up as new neighbor in the gossip swarm
+    NewNeighbor,
+    /// We synced after receiving a sync report that indicated news for us
+    SyncReport,
+    /// We received a sync report while a sync was running, so run again afterwars
+    Resync,
+}
+
+impl From<iroh::client::docs::SyncReason> for SyncReason {
+    fn from(value: iroh::client::docs::SyncReason) -> Self {
+        match value {
+            iroh::client::docs::SyncReason::DirectJoin => Self::DirectJoin,
+            iroh::client::docs::SyncReason::NewNeighbor => Self::NewNeighbor,
+            iroh::client::docs::SyncReason::SyncReport => Self::SyncReport,
+            iroh::client::docs::SyncReason::Resync => Self::Resync,
+        }
+    }
+}
 
 /// Why we performed a sync exchange
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Enum)]
 pub enum Origin {
     /// public, use a unit variant
     Connect { reason: SyncReason },
@@ -1141,14 +1161,16 @@ pub enum Origin {
 impl From<iroh::client::docs::Origin> for Origin {
     fn from(value: iroh::client::docs::Origin) -> Self {
         match value {
-            iroh::client::docs::Origin::Connect(reason) => Self::Connect { reason },
+            iroh::client::docs::Origin::Connect(reason) => Self::Connect {
+                reason: reason.into(),
+            },
             iroh::client::docs::Origin::Accept => Self::Accept,
         }
     }
 }
 
 /// Outcome of an InsertRemove event.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, uniffi::Record)]
 pub struct InsertRemoteEvent {
     /// The peer that sent us the entry.
     pub from: Arc<PublicKey>,
@@ -1159,7 +1181,7 @@ pub struct InsertRemoteEvent {
 }
 
 /// Whether the content status is available on a node.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, uniffi::Enum)]
 pub enum ContentStatus {
     /// The content is completely available.
     Complete,
@@ -1182,12 +1204,14 @@ impl From<iroh::docs::ContentStatus> for ContentStatus {
 /// The `progress` method will be called for each `DocImportProgress` event that is
 /// emitted during a `doc.import_file()` call. Use the `DocImportProgress.type()`
 /// method to check the `DocImportProgressType`
+#[uniffi::export(with_foreign)]
+#[async_trait::async_trait]
 pub trait DocImportFileCallback: Send + Sync + 'static {
-    fn progress(&self, progress: Arc<DocImportProgress>) -> Result<(), CallbackError>;
+    async fn progress(&self, progress: Arc<DocImportProgress>) -> Result<(), CallbackError>;
 }
 
 /// The type of `DocImportProgress` event
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Enum)]
 pub enum DocImportProgressType {
     /// An item was found with name `name`, from now on referred to via `id`
     Found,
@@ -1204,7 +1228,7 @@ pub enum DocImportProgressType {
 }
 
 /// A DocImportProgress event indicating a file was found with name `name`, from now on referred to via `id`
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct DocImportProgressFound {
     /// A new unique id for this entry.
     pub id: u64,
@@ -1215,7 +1239,7 @@ pub struct DocImportProgressFound {
 }
 
 /// A DocImportProgress event indicating we've made progress ingesting item `id`.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct DocImportProgressProgress {
     /// The unique id of the entry.
     pub id: u64,
@@ -1224,7 +1248,7 @@ pub struct DocImportProgressProgress {
 }
 
 /// A DocImportProgress event indicating we are finished adding `id` to the data store and the hash is `hash`.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct DocImportProgressIngestDone {
     /// The unique id of the entry.
     pub id: u64,
@@ -1233,21 +1257,21 @@ pub struct DocImportProgressIngestDone {
 }
 
 /// A DocImportProgress event indicating we are done setting the entry to the doc
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct DocImportProgressAllDone {
     /// The key of the entry
     pub key: Vec<u8>,
 }
 
 /// A DocImportProgress event indicating we got an error and need to abort
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct DocImportProgressAbort {
     /// The error message
     pub error: String,
 }
 
 /// Progress updates for the doc import file operation.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Object)]
 pub enum DocImportProgress {
     /// An item was found with name `name`, from now on referred to via `id`
     Found(DocImportProgressFound),
@@ -1290,6 +1314,7 @@ impl From<iroh::client::docs::ImportProgress> for DocImportProgress {
     }
 }
 
+#[uniffi::export]
 impl DocImportProgress {
     /// Get the type of event
     pub fn r#type(&self) -> DocImportProgressType {
@@ -1346,12 +1371,14 @@ impl DocImportProgress {
 /// The `progress` method will be called for each `DocExportProgress` event that is
 /// emitted during a `doc.export_file()` call. Use the `DocExportProgress.type()`
 /// method to check the `DocExportProgressType`
+#[uniffi::export(with_foreign)]
+#[async_trait::async_trait]
 pub trait DocExportFileCallback: Send + Sync + 'static {
-    fn progress(&self, progress: Arc<DocExportProgress>) -> Result<(), CallbackError>;
+    async fn progress(&self, progress: Arc<DocExportProgress>) -> Result<(), CallbackError>;
 }
 
 /// The type of `DocExportProgress` event
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Enum)]
 pub enum DocExportProgressType {
     /// An item was found with name `name`, from now on referred to via `id`
     Found,
@@ -1368,7 +1395,7 @@ pub enum DocExportProgressType {
 }
 
 /// A DocExportProgress event indicating a file was found with name `name`, from now on referred to via `id`
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct DocExportProgressFound {
     /// A new unique id for this entry.
     pub id: u64,
@@ -1381,7 +1408,7 @@ pub struct DocExportProgressFound {
 }
 
 /// A DocExportProgress event indicating we've made progress exporting item `id`.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct DocExportProgressProgress {
     /// The unique id of the entry.
     pub id: u64,
@@ -1390,21 +1417,21 @@ pub struct DocExportProgressProgress {
 }
 
 /// A DocExportProgress event indicating a single blob wit `id` is done
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct DocExportProgressDone {
     /// The unique id of the entry.
     pub id: u64,
 }
 
 /// A DocExportProgress event indicating we got an error and need to abort
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct DocExportProgressAbort {
     /// The error message
     pub error: String,
 }
 
 /// Progress updates for the doc import file operation.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Object)]
 pub enum DocExportProgress {
     /// An item was found with name `name`, from now on referred to via `id`
     Found(DocExportProgressFound),
@@ -1453,6 +1480,7 @@ impl From<iroh::blobs::export::ExportProgress> for DocExportProgress {
     }
 }
 
+#[uniffi::export]
 impl DocExportProgress {
     /// Get the type of event
     pub fn r#type(&self) -> DocExportProgressType {
@@ -1492,70 +1520,113 @@ mod tests {
     use super::*;
     use crate::PublicKey;
     use rand::RngCore;
-    use std::io::Write;
+    use tokio::{io::AsyncWriteExt, sync::mpsc};
 
-    #[test]
-    fn test_doc_create() {
+    #[tokio::test]
+    async fn test_doc_create() {
         let path = tempfile::tempdir().unwrap();
-        let node = IrohNode::new(path.path().to_string_lossy().into_owned()).unwrap();
-        let node_id = node.node_id();
+        let node = IrohNode::persistent(
+            path.path()
+                .join("doc-create")
+                .to_string_lossy()
+                .into_owned(),
+        )
+        .await
+        .unwrap();
+        let node_id = node.node_id().await.unwrap();
         println!("id: {}", node_id);
-        let doc = node.doc_create().unwrap();
+        let doc = node.doc_create().await.unwrap();
         let doc_id = doc.id();
         println!("doc_id: {}", doc_id);
 
         let doc_ticket = doc
             .share(crate::doc::ShareMode::Write, AddrInfoOptions::Id)
+            .await
             .unwrap();
         println!("doc_ticket: {}", doc_ticket);
-        node.doc_join(doc_ticket).unwrap();
+        node.doc_join(doc_ticket).await.unwrap();
     }
 
-    #[test]
-    fn test_basic_sync() {
+    #[tokio::test]
+    async fn test_basic_sync() {
         // create node_0
-        let iroh_dir_0 = tempfile::tempdir().unwrap();
-        let node_0 = IrohNode::new(iroh_dir_0.path().to_string_lossy().into_owned()).unwrap();
+        let iroh_dir = tempfile::tempdir().unwrap();
+
+        let node_0 = IrohNode::persistent(
+            iroh_dir
+                .path()
+                .join("basic-sync-0")
+                .to_string_lossy()
+                .into_owned(),
+        )
+        .await
+        .unwrap();
 
         // create node_1
-        let iroh_dir_1 = tempfile::tempdir().unwrap();
-        let node_1 = IrohNode::new(iroh_dir_1.path().to_string_lossy().into_owned()).unwrap();
+        let node_1 = IrohNode::persistent(
+            iroh_dir
+                .path()
+                .join("basic-sync-1")
+                .to_string_lossy()
+                .into_owned(),
+        )
+        .await
+        .unwrap();
 
         // create doc on node_0
-        let doc_0 = node_0.doc_create().unwrap();
+        let doc_0 = node_0.doc_create().await.unwrap();
         let ticket = doc_0
             .share(ShareMode::Write, AddrInfoOptions::RelayAndAddresses)
+            .await
             .unwrap();
 
         // subscribe to sync events
-        let (found_s, found_r) = std::sync::mpsc::channel();
+        let (found_s, mut found_r) = mpsc::channel(8);
         struct Callback {
-            found_s: std::sync::mpsc::Sender<Result<Hash, IrohError>>,
+            found_s: mpsc::Sender<Arc<LiveEvent>>,
         }
+        #[async_trait::async_trait]
         impl SubscribeCallback for Callback {
-            fn event(&self, event: Arc<LiveEvent>) -> Result<(), CallbackError> {
-                if let LiveEvent::ContentReady { ref hash } = *event {
-                    self.found_s
-                        .send(Ok(hash.clone()))
-                        .map_err(|e| anyhow::Error::from(e))?;
-                }
+            async fn event(&self, event: Arc<LiveEvent>) -> Result<(), CallbackError> {
+                println!("event {:?}", event);
+                self.found_s.send(event).await.unwrap();
                 Ok(())
             }
         }
-        let cb = Callback { found_s };
-        doc_0.subscribe(Arc::new(cb)).unwrap();
+        let cb_0 = Callback { found_s };
+        doc_0.subscribe(Arc::new(cb_0)).await.unwrap();
 
         // join the same doc from node_1
-        let doc_1 = node_1.doc_join(ticket).unwrap();
+        let (found_s_1, mut found_r_1) = mpsc::channel(8);
+        let cb_1 = Callback { found_s: found_s_1 };
+        let doc_1 = node_1
+            .doc_join_and_subscribe(ticket, Arc::new(cb_1))
+            .await
+            .unwrap();
+
+        // wait for initial sync to be one
+        while let Some(event) = found_r_1.recv().await {
+            if let LiveEvent::SyncFinished(_) = *event {
+                break;
+            }
+        }
 
         // create author on node_1
-        let author = node_1.author_create().unwrap();
+        let author = node_1.author_create().await.unwrap();
         doc_1
             .set_bytes(&author, b"hello".to_vec(), b"world".to_vec())
+            .await
             .unwrap();
-        let hash = found_r.recv().unwrap().unwrap();
-        let val = node_1.blobs_read_to_bytes(hash.into()).unwrap();
-        assert_eq!(b"world".to_vec(), val);
+        while let Some(event) = found_r.recv().await {
+            if let LiveEvent::ContentReady { ref hash } = *event {
+                let val = node_1
+                    .blobs_read_to_bytes(hash.clone().into())
+                    .await
+                    .unwrap();
+                assert_eq!(b"world".to_vec(), val);
+                break;
+            }
+        }
     }
 
     #[test]
@@ -1657,73 +1728,95 @@ mod tests {
         assert_eq!(0, key_prefix.offset());
         assert_eq!(Some(100), key_prefix.limit());
     }
-    #[test]
-    fn test_doc_entry_basics() {
+
+    #[tokio::test]
+    async fn test_doc_entry_basics() {
         let path = tempfile::tempdir().unwrap();
-        let node = crate::IrohNode::new(path.path().to_string_lossy().into_owned()).unwrap();
+        let node = crate::IrohNode::persistent(
+            path.path()
+                .join("doc-entry-basics")
+                .to_string_lossy()
+                .into_owned(),
+        )
+        .await
+        .unwrap();
 
         // create doc  and author
-        let doc = node.doc_create().unwrap();
-        let author = node.author_create().unwrap();
+        let doc = node.doc_create().await.unwrap();
+        let author = node.author_create().await.unwrap();
 
         // add entry
         let val = b"hello world!".to_vec();
         let key = b"foo".to_vec();
-        let hash = doc.set_bytes(&author, key.clone(), val.clone()).unwrap();
+        let hash = doc
+            .set_bytes(&author, key.clone(), val.clone())
+            .await
+            .unwrap();
 
         // get entry
         let query = Query::author_key_exact(&author, key.clone());
-        let entry = doc.get_one(query.into()).unwrap().unwrap();
+        let entry = doc.get_one(query.into()).await.unwrap().unwrap();
 
         assert!(hash.equal(&entry.content_hash()));
 
-        let got_val = entry.content_bytes(doc).unwrap();
+        let got_val = entry.content_bytes(doc).await.unwrap();
         assert_eq!(val, got_val);
         assert_eq!(val.len() as u64, entry.content_len());
     }
-    #[test]
-    fn test_doc_import_export() {
+
+    #[tokio::test]
+    async fn test_doc_import_export() {
         // create temp file
         let temp_dir = tempfile::tempdir().unwrap();
-        let in_root = temp_dir.path().join("in");
-        std::fs::create_dir_all(in_root.clone()).unwrap();
+        let in_root = temp_dir.path().join("import-export-in");
+        tokio::fs::create_dir_all(in_root.clone()).await.unwrap();
 
-        let out_root = temp_dir.path().join("out");
+        let out_root = temp_dir.path().join("import-export-out");
         let path = in_root.join("test");
 
         let size = 100;
         let mut buf = vec![0u8; size];
         rand::thread_rng().fill_bytes(&mut buf);
-        let mut file = std::fs::File::create(path.clone()).unwrap();
-        file.write_all(&buf.clone()).unwrap();
-        file.flush().unwrap();
+        let mut file = tokio::fs::File::create(path.clone()).await.unwrap();
+        file.write_all(&buf.clone()).await.unwrap();
+        file.flush().await.unwrap();
 
         // spawn node
         let iroh_dir = tempfile::tempdir().unwrap();
-        let node = crate::IrohNode::new(iroh_dir.path().to_string_lossy().into_owned()).unwrap();
+        let node = crate::IrohNode::persistent(
+            iroh_dir
+                .path()
+                .join("import-export-node")
+                .to_string_lossy()
+                .into_owned(),
+        )
+        .await
+        .unwrap();
 
         // create doc & author
-        let doc = node.doc_create().unwrap();
-        let author = node.author_create().unwrap();
+        let doc = node.doc_create().await.unwrap();
+        let author = node.author_create().await.unwrap();
 
         // import file
         let path_str = path.to_string_lossy().into_owned();
         let in_root_str = in_root.to_string_lossy().into_owned();
         let key = crate::path_to_key(path_str.clone(), None, Some(in_root_str)).unwrap();
         doc.import_file(author.clone(), key.clone(), path_str, true, None)
+            .await
             .unwrap();
 
         // export file
         let entry = doc
             .get_one(Query::author_key_exact(&author, key).into())
+            .await
             .unwrap()
             .unwrap();
         let key = entry.key().to_vec();
         let out_root_str = out_root.to_string_lossy().into_owned();
         let path = crate::key_to_path(key, None, Some(out_root_str)).unwrap();
-        doc.export_file(entry, path.clone(), None).unwrap();
+        doc.export_file(entry, path.clone(), None).await.unwrap();
 
-        let got_bytes = std::fs::read(path).unwrap();
+        let got_bytes = tokio::fs::read(path).await.unwrap();
         assert_eq!(buf, got_bytes);
     }
 }

@@ -1,6 +1,7 @@
 // tests that correspond to the `src/doc.rs` rust api
 
 import iroh.*
+import kotlinx.coroutines.runBlocking
 import kotlin.random.Random
 
 fun generateRandomByteArray(size: Int): ByteArray {
@@ -27,7 +28,7 @@ fun hashesExist(
 }
 
 // Hash
-fun testHash() {
+runBlocking {
     val hashStr = "2kbxxbofqx5rau77wzafrj4yntjb4gn4olfpwxmv26js6dvhgjhq"
     val hexStr = "d2837b85c585fb1053ffb64058a7986cd21e19bc72cafb5d95d7932f0ea7324f"
     val bytes =
@@ -86,13 +87,12 @@ fun testHash() {
     assert(hash.equal(hash0))
     assert(hash0.equal(hash))
 }
-testHash()
 
 // test functionality between adding as bytes and reading to bytes
-fun testAddBytes() {
+runBlocking {
     // create node
     val irohDir = kotlin.io.path.createTempDirectory("doc-test")
-    val node = IrohNode(irohDir.toString())
+    val node = IrohNode.persistent(irohDir.toString())
 
     // create bytes
     val blobSize = 100
@@ -115,12 +115,11 @@ fun testAddBytes() {
     assert(gotBytes.size == blobSize)
     assert(gotBytes contentEquals bytes)
 }
-testAddBytes()
 
 // test functionality between reading bytes from a path and writing bytes to a path
-fun testReadBytesPath() {
+runBlocking {
     val irohDir = kotlin.io.path.createTempDirectory("doc-test-read-bytes")
-    val node = IrohNode(irohDir.toString())
+    val node = IrohNode.persistent(irohDir.toString())
 
     // create bytes
     val blobSize = 100
@@ -139,7 +138,7 @@ fun testReadBytesPath() {
         var hash: Hash? = null
         var format: BlobFormat? = null
 
-        override fun progress(progress: AddProgress) {
+        override suspend fun progress(progress: AddProgress) {
             println(progress.type())
             if (progress.type() == AddProgressType.ALL_DONE) {
                 val event = progress.asAllDone()!!
@@ -179,10 +178,9 @@ fun testReadBytesPath() {
     assert(gotBytesFile.size == blobSize)
     assert(gotBytesFile contentEquals bytes)
 }
-testReadBytesPath()
 
 // Collections
-fun testCollections() {
+runBlocking {
     val collectionDir = kotlin.io.path.createTempDirectory("doc-test-collection-dir")
     val numFiles = 3
     val blobSize = 100
@@ -194,7 +192,7 @@ fun testCollections() {
     }
     // make node
     val irohDir = kotlin.io.path.createTempDirectory("doc-test-collection")
-    val node = IrohNode(irohDir.toString())
+    val node = IrohNode.persistent(irohDir.toString())
 
     // ensure zero blobs
     val blobs = node.blobsList()
@@ -206,7 +204,7 @@ fun testCollections() {
         var format: BlobFormat? = null
         var blobHashes: MutableList<Hash> = arrayListOf()
 
-        override fun progress(progress: AddProgress) {
+        override suspend fun progress(progress: AddProgress) {
             println(progress.type())
             if (progress.type() == AddProgressType.ALL_DONE) {
                 val event = progress.asAllDone()!!
@@ -253,13 +251,12 @@ fun testCollections() {
     // in the list of hashes
     assert(collectionHashes.size + 1 == gotHashes.size)
 }
-testCollections()
 
 // List and delete
-fun testListDelete() {
+runBlocking {
     val irohDir = kotlin.io.path.createTempDirectory("doc-test-list-del")
     val opts = NodeOptions(100UL)
-    val node = IrohNode.withOptions(irohDir.toString(), opts)
+    val node = IrohNode.persistentWithOptions(irohDir.toString(), opts)
 
     // create bytes
     val blobSize = 100
@@ -301,4 +298,3 @@ fun testListDelete() {
         }
     }
 }
-testListDelete()

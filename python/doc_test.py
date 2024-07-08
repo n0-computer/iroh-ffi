@@ -1,9 +1,11 @@
 # tests that correspond to the `src/doc.rs` rust api
-from iroh import IrohNode, PublicKey, NodeAddr, iroh, AuthorId, Query, SortBy, SortDirection, QueryOptions, path_to_key, key_to_path
+from iroh import IrohNode, PublicKey, NodeAddr, AuthorId, Query, SortBy, SortDirection, QueryOptions, path_to_key, key_to_path
 import pytest
 import tempfile
 import os
 import random
+import asyncio
+import iroh
 
 def test_node_addr():
     #
@@ -87,30 +89,38 @@ def test_query():
     assert 0 == key_prefix.offset()
     assert 100 == key_prefix.limit()
 
-def test_doc_entry_basics():
+@pytest.mark.asyncio
+async def test_doc_entry_basics():
+    # setup event loop, to ensure async callbacks work
+    iroh.iroh_ffi.uniffi_set_event_loop(asyncio.get_running_loop())
+
     #
     # create node
     dir = tempfile.TemporaryDirectory()
-    node = IrohNode(dir.name)
+    node = await IrohNode.persistent(dir.name)
     #
     # create doc and author
-    doc = node.doc_create()
-    author = node.author_create()
+    doc = await node.doc_create()
+    author = await node.author_create()
     #
     # create entry
     val = b'hello world!'
     key = b'foo'
-    hash = doc.set_bytes(author, key, val)
+    hash = await doc.set_bytes(author, key, val)
     #
     # get entry
     query = Query.author_key_exact(author, key)
-    entry = doc.get_one(query)
+    entry = await doc.get_one(query)
     assert hash.equal(entry.content_hash())
     assert len(val) == entry.content_len()
-    got_val = entry.content_bytes(doc)
+    got_val = await entry.content_bytes(doc)
     assert val == got_val
 
-def test_doc_import_export():
+@pytest.mark.asyncio
+async def test_doc_import_export():
+    # setup event loop, to ensure async callbacks work
+    iroh.iroh_ffi.uniffi_set_event_loop(asyncio.get_running_loop())
+
     #
     # create file temp der
     dir = tempfile.TemporaryDirectory()
@@ -129,23 +139,23 @@ def test_doc_import_export():
     #
     # create node
     iroh_dir = tempfile.TemporaryDirectory()
-    node = IrohNode(iroh_dir.name)
+    node = await IrohNode.persistent(iroh_dir.name)
     #
     # create doc and author
-    doc = node.doc_create()
-    author = node.author_create()
+    doc = await node.doc_create()
+    author = await node.author_create()
     #
     # import entry
     key = path_to_key(path, None, in_root)
-    doc.import_file(author, key, path, True, None)
+    await doc.import_file(author, key, path, True, None)
     #
     # get entry
     query = Query.author_key_exact(author, key)
-    entry = doc.get_one(query)
+    entry = await doc.get_one(query)
     #
     # export entry
     path = key_to_path(key, None, out_root)
-    doc.export_file(entry, path, None)
+    await doc.export_file(entry, path, None)
     #
     # read file
     file = open(path, "rb")

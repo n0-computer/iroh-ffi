@@ -1,3 +1,11 @@
 [bindings.kotlin]
 package_name = "iroh"
+cdylib_name = "iroh_ffi"
 # android = true
+
+[bindings.python]
+cdylib_name = "iroh_ffi"
+
+[bindings.swift]
+module_name = "iroh"
+cdylib_name = "iroh_ffi"

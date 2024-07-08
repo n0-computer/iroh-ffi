@@ -1,10 +1,12 @@
 /// An Error.
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, uniffi::Object)]
 #[error("{e:?}")]
+#[uniffi::export(Debug)]
 pub struct IrohError {
     e: anyhow::Error,
 }
 
+#[uniffi::export]
 impl IrohError {
     pub fn message(&self) -> String {
         self.to_string()
@@ -17,7 +19,7 @@ impl From<anyhow::Error> for IrohError {
     }
 }
 
-#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+#[derive(Debug, thiserror::Error, PartialEq, Eq, uniffi::Error)]
 pub enum CallbackError {
     #[error("Callback failed")]
     Error,
