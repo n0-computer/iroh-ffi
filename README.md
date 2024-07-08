@@ -62,7 +62,12 @@ docker run --rm -v $(pwd):/mnt -w /mnt quay.io/pypa/manylinux2014_x86_64 /mnt/bu
 - Make sure the `iroh` is installed `pip install iroh`
 - Run with `python3 main.py --help`
 
-
+### Running the tests
+- activate your virtual env
+- Install `pytest` with `pip`
+- Install `pytest-asyncio` with `pip`
+- Run `maturin develop` if you haven't yet
+- Run `python -m pytest`
 
 ### Updating the bindings
 
