@@ -60,4 +60,3 @@ uniffi = { version = "0.28.0", features = ["build"] }
 [patch.crates-io]
 # https://github.com/mullvad/system-configuration-rs/pull/42
 system-configuration = { git = "https://github.com/tmpfs/system-configuration-rs", branch = "ios-hack" }
-iroh = { git = "https://github.com/n0-computer/iroh", branch = "debug-docs-events" }

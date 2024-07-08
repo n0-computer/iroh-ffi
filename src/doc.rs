@@ -1518,7 +1518,7 @@ impl DocExportProgress {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::PublicKey;
+    use crate::{LogLevel, PublicKey};
     use rand::RngCore;
     use tokio::{io::AsyncWriteExt, sync::mpsc};
 
@@ -1549,6 +1549,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_basic_sync() {
+        crate::set_log_level(LogLevel::Debug);
+
         // create node_0
         let iroh_dir = tempfile::tempdir().unwrap();
 
@@ -1583,25 +1585,33 @@ mod tests {
         // subscribe to sync events
         let (found_s, mut found_r) = mpsc::channel(8);
         struct Callback {
-            found_s: mpsc::Sender<Result<Hash, IrohError>>,
+            found_s: mpsc::Sender<Arc<LiveEvent>>,
         }
         #[async_trait::async_trait]
         impl SubscribeCallback for Callback {
             async fn event(&self, event: Arc<LiveEvent>) -> Result<(), CallbackError> {
                 println!("event {:?}", event);
-                if let LiveEvent::ContentReady { ref hash } = *event {
-                    let s = self.found_s.clone();
-                    let hash = hash.clone();
-                    s.send(Ok(hash)).await.unwrap();
-                }
+                self.found_s.send(event).await.unwrap();
                 Ok(())
             }
         }
-        let cb = Callback { found_s };
-        doc_0.subscribe(Arc::new(cb)).await.unwrap();
+        let cb_0 = Callback { found_s };
+        doc_0.subscribe(Arc::new(cb_0)).await.unwrap();
 
         // join the same doc from node_1
-        let doc_1 = node_1.doc_join(ticket).await.unwrap();
+        let (found_s_1, mut found_r_1) = mpsc::channel(8);
+        let cb_1 = Callback { found_s: found_s_1 };
+        let doc_1 = node_1
+            .doc_join_and_subscribe(ticket, Arc::new(cb_1))
+            .await
+            .unwrap();
+
+        // wait for initial sync to be one
+        while let Some(event) = found_r_1.recv().await {
+            if let LiveEvent::SyncFinished(_) = *event {
+                break;
+            }
+        }
 
         // create author on node_1
         let author = node_1.author_create().await.unwrap();
@@ -1609,9 +1619,16 @@ mod tests {
             .set_bytes(&author, b"hello".to_vec(), b"world".to_vec())
             .await
             .unwrap();
-        let hash = found_r.recv().await.unwrap().unwrap();
-        let val = node_1.blobs_read_to_bytes(hash.into()).await.unwrap();
-        assert_eq!(b"world".to_vec(), val);
+        while let Some(event) = found_r.recv().await {
+            if let LiveEvent::ContentReady { ref hash } = *event {
+                let val = node_1
+                    .blobs_read_to_bytes(hash.clone().into())
+                    .await
+                    .unwrap();
+                assert_eq!(b"world".to_vec(), val);
+                break;
+            }
+        }
     }
 
     #[test]
