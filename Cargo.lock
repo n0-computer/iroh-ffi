@@ -3,6 +3,20 @@
 version = 3
 
 [[package]]
+name = "acto"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "31c372578ce4215ccf94ec3f3585fbb6a902e47d07b064ff8a55d850ffb5025e"
+dependencies = [
+ "parking_lot",
+ "pin-project-lite",
+ "rustc_version",
+ "smol_str",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "addr2line"
 version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1800,7 +1814,7 @@ dependencies = [
  "http 1.1.0",
  "hyper 1.4.0",
  "hyper-util",
- "rustls 0.23.10",
+ "rustls 0.23.11",
  "rustls-pki-types",
  "tokio",
  "tokio-rustls 0.26.0",
@@ -1948,7 +1962,7 @@ checksum = "8f518f335dce6725a761382244631d86cf0ccb2863413590b31338feb467f9c3"
 [[package]]
 name = "iroh"
 version = "0.19.0"
-source = "git+https://github.com/n0-computer/iroh?branch=main#9dddafcfcf81e29a09b3b6cceaae64696d59b997"
+source = "git+https://github.com/n0-computer/iroh?branch=main#af36c2fa3b74878a199a181e2cb480debc4c9883"
 dependencies = [
  "anyhow",
  "bao-tree",
@@ -1990,7 +2004,7 @@ dependencies = [
 [[package]]
 name = "iroh-base"
 version = "0.19.0"
-source = "git+https://github.com/n0-computer/iroh?branch=main#9dddafcfcf81e29a09b3b6cceaae64696d59b997"
+source = "git+https://github.com/n0-computer/iroh?branch=main#af36c2fa3b74878a199a181e2cb480debc4c9883"
 dependencies = [
  "aead",
  "anyhow",
@@ -2031,7 +2045,7 @@ dependencies = [
 [[package]]
 name = "iroh-blobs"
 version = "0.19.0"
-source = "git+https://github.com/n0-computer/iroh?branch=main#9dddafcfcf81e29a09b3b6cceaae64696d59b997"
+source = "git+https://github.com/n0-computer/iroh?branch=main#af36c2fa3b74878a199a181e2cb480debc4c9883"
 dependencies = [
  "anyhow",
  "bao-tree",
@@ -2070,7 +2084,7 @@ dependencies = [
 [[package]]
 name = "iroh-docs"
 version = "0.19.0"
-source = "git+https://github.com/n0-computer/iroh?branch=main#9dddafcfcf81e29a09b3b6cceaae64696d59b997"
+source = "git+https://github.com/n0-computer/iroh?branch=main#af36c2fa3b74878a199a181e2cb480debc4c9883"
 dependencies = [
  "anyhow",
  "bytes",
@@ -2138,7 +2152,7 @@ dependencies = [
 [[package]]
 name = "iroh-gossip"
 version = "0.19.0"
-source = "git+https://github.com/n0-computer/iroh?branch=main#9dddafcfcf81e29a09b3b6cceaae64696d59b997"
+source = "git+https://github.com/n0-computer/iroh?branch=main#af36c2fa3b74878a199a181e2cb480debc4c9883"
 dependencies = [
  "anyhow",
  "bytes",
@@ -2178,7 +2192,7 @@ dependencies = [
 [[package]]
 name = "iroh-metrics"
 version = "0.19.0"
-source = "git+https://github.com/n0-computer/iroh?branch=main#9dddafcfcf81e29a09b3b6cceaae64696d59b997"
+source = "git+https://github.com/n0-computer/iroh?branch=main#af36c2fa3b74878a199a181e2cb480debc4c9883"
 dependencies = [
  "anyhow",
  "erased_set",
@@ -2198,7 +2212,7 @@ dependencies = [
 [[package]]
 name = "iroh-net"
 version = "0.19.0"
-source = "git+https://github.com/n0-computer/iroh?branch=main#9dddafcfcf81e29a09b3b6cceaae64696d59b997"
+source = "git+https://github.com/n0-computer/iroh?branch=main#af36c2fa3b74878a199a181e2cb480debc4c9883"
 dependencies = [
  "aead",
  "anyhow",
@@ -2255,6 +2269,7 @@ dependencies = [
  "strum 0.26.3",
  "stun-rs",
  "surge-ping",
+ "swarm-discovery",
  "thiserror",
  "time",
  "tokio",
@@ -3318,7 +3333,7 @@ dependencies = [
  "quinn-proto",
  "quinn-udp",
  "rustc-hash",
- "rustls 0.23.10",
+ "rustls 0.23.11",
  "thiserror",
  "tokio",
  "tracing",
@@ -3334,7 +3349,7 @@ dependencies = [
  "rand",
  "ring",
  "rustc-hash",
- "rustls 0.23.10",
+ "rustls 0.23.11",
  "slab",
  "thiserror",
  "tinyvec",
@@ -3615,7 +3630,7 @@ dependencies = [
  "percent-encoding",
  "pin-project-lite",
  "quinn",
- "rustls 0.23.10",
+ "rustls 0.23.11",
  "rustls-pemfile 2.1.2",
  "rustls-pki-types",
  "serde",
@@ -3764,9 +3779,9 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.23.10"
+version = "0.23.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05cff451f60db80f490f3c182b77c35260baace73209e9cdbbe526bfe3a4d402"
+checksum = "4828ea528154ae444e5a642dbb7d5623354030dc9822b83fd9bb79683c7399d0"
 dependencies = [
  "log",
  "once_cell",
@@ -4134,6 +4149,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b7c388c1b5e93756d0c740965c41e8822f866621d41acbdf6336a6a168f8840c"
 
 [[package]]
+name = "smol_str"
+version = "0.1.24"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fad6c857cbab2627dcf01ec85a623ca4e7dcb5691cbaa3d7fb7653671f0d09c9"
+
+[[package]]
 name = "socket2"
 version = "0.5.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4340,6 +4361,21 @@ dependencies = [
  "rand",
  "socket2",
  "thiserror",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "swarm-discovery"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a0685d4eda80e2dfee7fc413ba861ef11411ca813d836a77ab8f0d3a00286488"
+dependencies = [
+ "acto",
+ "anyhow",
+ "hickory-proto",
+ "rand",
+ "socket2",
  "tokio",
  "tracing",
 ]
@@ -4601,7 +4637,7 @@ version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c7bc40d0e5a97695bb96e27995cd3a08538541b0a846f65bba7a359f36700d4"
 dependencies = [
- "rustls 0.23.10",
+ "rustls 0.23.11",
  "rustls-pki-types",
  "tokio",
 ]
@@ -5081,7 +5117,7 @@ dependencies = [
  "base64 0.22.1",
  "log",
  "once_cell",
- "rustls 0.23.10",
+ "rustls 0.23.11",
  "rustls-pki-types",
  "url",
  "webpki-roots 0.26.3",
