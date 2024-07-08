@@ -31,7 +31,7 @@ impl IrohNode {
     /// Create a new doc.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn doc_create(&self) -> Result<Arc<Doc>, IrohError> {
-        let doc = self.node.docs().create().await?;
+        let doc = self.node().docs().create().await?;
 
         Ok(Arc::new(Doc { inner: doc }))
     }
@@ -40,7 +40,7 @@ impl IrohNode {
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn doc_join(&self, ticket: String) -> Result<Arc<Doc>, IrohError> {
         let ticket = iroh::docs::DocTicket::from_str(&ticket).map_err(anyhow::Error::from)?;
-        let doc = self.node.docs().import(ticket).await?;
+        let doc = self.node().docs().import(ticket).await?;
         Ok(Arc::new(Doc { inner: doc }))
     }
 
@@ -52,7 +52,7 @@ impl IrohNode {
         cb: Arc<dyn SubscribeCallback>,
     ) -> Result<Arc<Doc>, IrohError> {
         let ticket = iroh::docs::DocTicket::from_str(&ticket).map_err(anyhow::Error::from)?;
-        let (doc, mut stream) = self.node.docs().import_and_subscribe(ticket).await?;
+        let (doc, mut stream) = self.node().docs().import_and_subscribe(ticket).await?;
 
         tokio::spawn(async move {
             while let Some(event) = stream.next().await {
@@ -76,7 +76,7 @@ impl IrohNode {
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn doc_list(&self) -> Result<Vec<NamespaceAndCapability>, IrohError> {
         let docs = self
-            .node
+            .node()
             .docs()
             .list()
             .await?
@@ -96,7 +96,7 @@ impl IrohNode {
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn doc_open(&self, id: String) -> Result<Option<Arc<Doc>>, IrohError> {
         let namespace_id = iroh::docs::NamespaceId::from_str(&id)?;
-        let doc = self.node.docs().open(namespace_id).await?;
+        let doc = self.node().docs().open(namespace_id).await?;
 
         Ok(doc.map(|d| Arc::new(Doc { inner: d })))
     }
@@ -109,7 +109,7 @@ impl IrohNode {
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn doc_drop(&self, doc_id: String) -> Result<(), IrohError> {
         let doc_id = iroh::docs::NamespaceId::from_str(&doc_id)?;
-        self.node
+        self.node()
             .docs()
             .drop_doc(doc_id)
             .await
@@ -1518,14 +1518,14 @@ impl DocExportProgress {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{LogLevel, PublicKey};
+    use crate::PublicKey;
     use rand::RngCore;
     use tokio::{io::AsyncWriteExt, sync::mpsc};
 
     #[tokio::test]
     async fn test_doc_create() {
         let path = tempfile::tempdir().unwrap();
-        let node = IrohNode::new(
+        let node = IrohNode::persistent(
             path.path()
                 .join("doc-create")
                 .to_string_lossy()
@@ -1533,7 +1533,7 @@ mod tests {
         )
         .await
         .unwrap();
-        let node_id = node.node_id();
+        let node_id = node.node_id().await.unwrap();
         println!("id: {}", node_id);
         let doc = node.doc_create().await.unwrap();
         let doc_id = doc.id();
@@ -1552,7 +1552,7 @@ mod tests {
         // create node_0
         let iroh_dir = tempfile::tempdir().unwrap();
 
-        let node_0 = IrohNode::new(
+        let node_0 = IrohNode::persistent(
             iroh_dir
                 .path()
                 .join("basic-sync-0")
@@ -1563,7 +1563,7 @@ mod tests {
         .unwrap();
 
         // create node_1
-        let node_1 = IrohNode::new(
+        let node_1 = IrohNode::persistent(
             iroh_dir
                 .path()
                 .join("basic-sync-1")
@@ -1732,7 +1732,7 @@ mod tests {
     #[tokio::test]
     async fn test_doc_entry_basics() {
         let path = tempfile::tempdir().unwrap();
-        let node = crate::IrohNode::new(
+        let node = crate::IrohNode::persistent(
             path.path()
                 .join("doc-entry-basics")
                 .to_string_lossy()
@@ -1783,7 +1783,7 @@ mod tests {
 
         // spawn node
         let iroh_dir = tempfile::tempdir().unwrap();
-        let node = crate::IrohNode::new(
+        let node = crate::IrohNode::persistent(
             iroh_dir
                 .path()
                 .join("import-export-node")

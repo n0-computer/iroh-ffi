@@ -1604,11 +1604,13 @@ internal interface UniffiLib : Library {
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_ffi_fn_constructor_irohnode_create(`path`: RustBuffer.ByValue): Long
+    fun uniffi_iroh_ffi_fn_constructor_irohnode_memory(): Long
 
-    fun uniffi_iroh_ffi_fn_constructor_irohnode_new(`path`: RustBuffer.ByValue): Long
+    fun uniffi_iroh_ffi_fn_constructor_irohnode_memory_with_options(`options`: RustBuffer.ByValue): Long
 
-    fun uniffi_iroh_ffi_fn_constructor_irohnode_with_options(
+    fun uniffi_iroh_ffi_fn_constructor_irohnode_persistent(`path`: RustBuffer.ByValue): Long
+
+    fun uniffi_iroh_ffi_fn_constructor_irohnode_persistent_with_options(
         `path`: RustBuffer.ByValue,
         `options`: RustBuffer.ByValue,
     ): Long
@@ -1748,10 +1750,7 @@ internal interface UniffiLib : Library {
         `id`: RustBuffer.ByValue,
     ): Long
 
-    fun uniffi_iroh_ffi_fn_method_irohnode_node_id(
-        `ptr`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
+    fun uniffi_iroh_ffi_fn_method_irohnode_node_id(`ptr`: Pointer): Long
 
     fun uniffi_iroh_ffi_fn_method_irohnode_stats(`ptr`: Pointer): Long
 
@@ -2590,11 +2589,13 @@ internal interface UniffiLib : Library {
 
     fun uniffi_iroh_ffi_checksum_constructor_hash_new(): Short
 
-    fun uniffi_iroh_ffi_checksum_constructor_irohnode_create(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_irohnode_memory(): Short
 
-    fun uniffi_iroh_ffi_checksum_constructor_irohnode_new(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_irohnode_memory_with_options(): Short
 
-    fun uniffi_iroh_ffi_checksum_constructor_irohnode_with_options(): Short
+    fun uniffi_iroh_ffi_checksum_constructor_irohnode_persistent(): Short
+
+    fun uniffi_iroh_ffi_checksum_constructor_irohnode_persistent_with_options(): Short
 
     fun uniffi_iroh_ffi_checksum_constructor_nodeaddr_new(): Short
 
@@ -2976,7 +2977,7 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_method_irohnode_doc_open() != 16291.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_node_id() != 155.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_node_id() != 46920.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_irohnode_stats() != 11985.toShort()) {
@@ -3096,13 +3097,16 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_constructor_hash_new() != 30613.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_constructor_irohnode_create() != 17798.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_irohnode_memory() != 52721.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_constructor_irohnode_new() != 19618.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_irohnode_memory_with_options() != 51113.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_constructor_irohnode_with_options() != 6808.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_irohnode_persistent() != 9772.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_ffi_checksum_constructor_irohnode_persistent_with_options() != 11511.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_constructor_nodeaddr_new() != 5759.toShort()) {
@@ -10874,7 +10878,7 @@ public interface IrohNodeInterface {
     /**
      * The string representation of the PublicKey of this node.
      */
-    fun `nodeId`(): kotlin.String
+    suspend fun `nodeId`(): kotlin.String
 
     /**
      * Get statistics of the running node.
@@ -10924,7 +10928,6 @@ open class IrohNode :
         this.pointer = null
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(pointer))
     }
-    // Note no constructor generated for this object as it is async.
 
     protected val pointer: Pointer?
     protected val cleanable: UniffiCleaner.Cleanable
@@ -11804,16 +11807,28 @@ open class IrohNode :
     /**
      * The string representation of the PublicKey of this node.
      */
-    override fun `nodeId`(): kotlin.String =
-        FfiConverterString.lift(
-            callWithPointer {
-                uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_node_id(
-                        it,
-                        _status,
-                    )
-                }
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `nodeId`(): kotlin.String =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_node_id(
+                    thisPtr,
+                )
             },
+            {
+                    future,
+                    callback,
+                    continuation,
+                ->
+                UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
+            },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
+            // lift function
+            { FfiConverterString.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
         )
 
     /**
@@ -11918,14 +11933,66 @@ open class IrohNode :
 
     companion object {
         /**
-         * Create a new iroh node. The `path` param should be a directory where we can store or load
+         * Create a new iroh node.
+         *
+         * All data will be only persistet in memory.
+         */
+        @Throws(IrohException::class)
+        @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+        suspend fun `memory`(): IrohNode =
+            uniffiRustCallAsync(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_irohnode_memory(),
+                {
+                        future,
+                        callback,
+                        continuation,
+                    ->
+                    UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_pointer(future, callback, continuation)
+                },
+                { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_pointer(future, continuation) },
+                { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_pointer(future) },
+                // lift function
+                { FfiConverterTypeIrohNode.lift(it) },
+                // Error FFI converter
+                IrohException.ErrorHandler,
+            )
+
+        /**
+         * Create a new in memory iroh node with options.
+         */
+        @Throws(IrohException::class)
+        @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+        suspend fun `memoryWithOptions`(`options`: NodeOptions): IrohNode =
+            uniffiRustCallAsync(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_irohnode_memory_with_options(
+                    FfiConverterTypeNodeOptions.lower(`options`),
+                ),
+                {
+                        future,
+                        callback,
+                        continuation,
+                    ->
+                    UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_pointer(future, callback, continuation)
+                },
+                { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_pointer(future, continuation) },
+                { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_pointer(future) },
+                // lift function
+                { FfiConverterTypeIrohNode.lift(it) },
+                // Error FFI converter
+                IrohException.ErrorHandler,
+            )
+
+        /**
+         * Create a new iroh node.
+         *
+         * The `path` param should be a directory where we can store or load
          * iroh data from a previous session.
          */
         @Throws(IrohException::class)
         @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-        suspend fun `create`(`path`: kotlin.String): IrohNode =
+        suspend fun `persistent`(`path`: kotlin.String): IrohNode =
             uniffiRustCallAsync(
-                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_irohnode_create(FfiConverterString.lower(`path`)),
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_irohnode_persistent(FfiConverterString.lower(`path`)),
                 {
                         future,
                         callback,
@@ -11946,12 +12013,12 @@ open class IrohNode :
          */
         @Throws(IrohException::class)
         @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-        suspend fun `withOptions`(
+        suspend fun `persistentWithOptions`(
             `path`: kotlin.String,
             `options`: NodeOptions,
         ): IrohNode =
             uniffiRustCallAsync(
-                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_irohnode_with_options(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_irohnode_persistent_with_options(
                     FfiConverterString.lower(`path`),
                     FfiConverterTypeNodeOptions.lower(`options`),
                 ),

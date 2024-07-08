@@ -2,9 +2,6 @@ import iroh
 
 import argparse
 import asyncio
-import os
-
-IROH_DATA_DIR = "./iroh-data"
 
 async def main():
     # setup event loop, to ensure async callbacks work
@@ -21,15 +18,9 @@ async def main():
         print("(To run the sync demo, please provide a ticket to join a document)")
         print()
 
-        print("creating data directory at ./iroh-data")
-
-        # create iroh data dir if it does not exists
-        if not os.path.exists(IROH_DATA_DIR):
-            os.mkdir(IROH_DATA_DIR)
-
         # create iroh node
-        node = await iroh.IrohNode.create(IROH_DATA_DIR)
-        node_id = node.node_id()
+        node = await iroh.IrohNode.memory()
+        node_id = await node.node_id()
         print("Started Iroh node: {}".format(node_id))
 
         # create doc
@@ -49,13 +40,9 @@ async def main():
 
         exit()
 
-    # create iroh data dir if it does not exists
-    if not os.path.exists(IROH_DATA_DIR):
-        os.mkdir(IROH_DATA_DIR)
-
     # create iroh node
-    node = await iroh.IrohNode.create(IROH_DATA_DIR)
-    node_id = node.node_id()
+    node = await iroh.IrohNode.memory()
+    node_id = await node.node_id()
     print("Started Iroh node: {}".format(node_id))
 
     # join doc

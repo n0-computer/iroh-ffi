@@ -12,8 +12,7 @@ async def test_author_api():
 
     #
     # create node
-    dir = tempfile.TemporaryDirectory()
-    node = await IrohNode.create(dir.name)
+    node = await IrohNode.memory()
     #
     # creating a node also creates an author
     assert len(await node.author_list()) == 1

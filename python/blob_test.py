@@ -43,7 +43,7 @@ async def test_blob_add_get_bytes():
     #
     # create node
     dir = tempfile.TemporaryDirectory()
-    node = await IrohNode.create(dir.name)
+    node = await IrohNode.persistent(dir.name)
     #
     # create bytes
     blob_size = 100
@@ -74,7 +74,7 @@ async def test_blob_read_write_path():
     iroh.iroh_ffi.uniffi_set_event_loop(asyncio.get_running_loop())
 
     iroh_dir = tempfile.TemporaryDirectory()
-    node = await IrohNode.create(iroh_dir.name)
+    node = await IrohNode.persistent(iroh_dir.name)
     #
     # create bytes
     blob_size = 100
@@ -153,7 +153,7 @@ async def test_blob_collections():
 
     # make node
     iroh_dir = tempfile.TemporaryDirectory()
-    node = await IrohNode.create(iroh_dir.name)
+    node = await IrohNode.persistent(iroh_dir.name)
 
     # ensure zero blobs
     blobs = await node.blobs_list()
@@ -218,7 +218,7 @@ async def test_list_and_delete():
 
     iroh_dir = tempfile.TemporaryDirectory()
     opts = NodeOptions(gc_interval_millis=100)
-    node = await IrohNode.with_options(iroh_dir.name, opts)
+    node = await IrohNode.persistent_with_options(iroh_dir.name, opts)
     #
     # create bytes
     blob_size = 100

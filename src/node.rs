@@ -1,7 +1,7 @@
 use std::{collections::HashMap, path::PathBuf, sync::Arc, time::Duration};
 
 use futures::stream::TryStreamExt;
-use iroh::node::{Builder, FsNode};
+use iroh::node::{FsNode, MemNode};
 
 use crate::{IrohError, NodeAddr, PublicKey};
 
@@ -197,23 +197,6 @@ pub struct NodeOptions {
     pub gc_interval_millis: Option<u64>,
 }
 
-impl From<NodeOptions> for iroh::node::Builder<iroh::blobs::store::mem::Store> {
-    fn from(value: NodeOptions) -> Self {
-        let mut b = Builder::default();
-
-        if let Some(millis) = value.gc_interval_millis {
-            b = match millis {
-                0 => b.gc_policy(iroh::node::GcPolicy::Disabled),
-                millis => b.gc_policy(iroh::node::GcPolicy::Interval(Duration::from_millis(
-                    millis,
-                ))),
-            };
-        }
-
-        b
-    }
-}
-
 impl Default for NodeOptions {
     fn default() -> Self {
         NodeOptions {
@@ -224,41 +207,82 @@ impl Default for NodeOptions {
 
 /// An Iroh node. Allows you to sync, store, and transfer data.
 #[derive(uniffi::Object)]
-pub struct IrohNode {
-    pub(crate) node: FsNode,
+pub enum IrohNode {
+    Fs(FsNode),
+    Memory(MemNode),
+}
+
+impl IrohNode {
+    pub(crate) fn node(&self) -> &iroh::client::Iroh {
+        match self {
+            Self::Fs(node) => node,
+            Self::Memory(node) => node,
+        }
+    }
 }
 
 #[uniffi::export]
 impl IrohNode {
-    /// Create a new iroh node. The `path` param should be a directory where we can store or load
+    /// Create a new iroh node.
+    ///
+    /// The `path` param should be a directory where we can store or load
     /// iroh data from a previous session.
     #[uniffi::constructor(async_runtime = "tokio")]
-    pub async fn new(path: String) -> Result<Self, IrohError> {
+    pub async fn persistent(path: String) -> Result<Self, IrohError> {
         let options = NodeOptions::default();
-        Self::with_options(path, options).await
+        Self::persistent_with_options(path, options).await
     }
 
-    /// Create a new iroh node. The `path` param should be a directory where we can store or load
-    /// iroh data from a previous session.
-    //
-    // This exists, as primary async constructors only work in Swift currently.
+    /// Create a new iroh node.
+    ///
+    /// All data will be only persistet in memory.
     #[uniffi::constructor(async_runtime = "tokio")]
-    pub async fn create(path: String) -> Result<Self, IrohError> {
-        Self::new(path).await
+    pub async fn memory() -> Result<Self, IrohError> {
+        let options = NodeOptions::default();
+        Self::memory_with_options(options).await
     }
 
     /// Create a new iroh node with options.
     #[uniffi::constructor(async_runtime = "tokio")]
-    pub async fn with_options(path: String, options: NodeOptions) -> Result<Self, IrohError> {
+    pub async fn persistent_with_options(
+        path: String,
+        options: NodeOptions,
+    ) -> Result<Self, IrohError> {
         let path = PathBuf::from(path);
-        let node = Self::new_inner(path, options).await?;
-        Ok(node)
+
+        let mut builder = iroh::node::Builder::default().persist(path).await?;
+        if let Some(millis) = options.gc_interval_millis {
+            let policy = match millis {
+                0 => iroh::node::GcPolicy::Disabled,
+                millis => iroh::node::GcPolicy::Interval(Duration::from_millis(millis)),
+            };
+            builder = builder.gc_policy(policy);
+        }
+        let node = builder.spawn().await?;
+
+        Ok(IrohNode::Fs(node))
+    }
+
+    /// Create a new in memory iroh node with options.
+    #[uniffi::constructor(async_runtime = "tokio")]
+    pub async fn memory_with_options(options: NodeOptions) -> Result<Self, IrohError> {
+        let mut builder = iroh::node::Builder::default();
+        if let Some(millis) = options.gc_interval_millis {
+            let policy = match millis {
+                0 => iroh::node::GcPolicy::Disabled,
+                millis => iroh::node::GcPolicy::Interval(Duration::from_millis(millis)),
+            };
+            builder = builder.gc_policy(policy);
+        }
+        let node = builder.spawn().await?;
+
+        Ok(IrohNode::Memory(node))
     }
 
     /// Get statistics of the running node.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn stats(&self) -> Result<HashMap<String, CounterStats>, IrohError> {
-        let stats = self.node.stats().await?;
+        let stats = self.node().stats().await?;
         let stats = stats
             .into_iter()
             .map(|(k, v)| {
@@ -278,7 +302,7 @@ impl IrohNode {
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn connections(&self) -> Result<Vec<ConnectionInfo>, IrohError> {
         let infos = self
-            .node
+            .node()
             .connections()
             .await?
             .map_ok(|info| info.into())
@@ -294,7 +318,7 @@ impl IrohNode {
         node_id: &PublicKey,
     ) -> Result<Option<ConnectionInfo>, IrohError> {
         let info = self
-            .node
+            .node()
             .connection_info(node_id.into())
             .await
             .map(|i| i.map(|i| i.into()))?;
@@ -304,25 +328,14 @@ impl IrohNode {
     /// Get status information about a node
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn status(&self) -> Result<Arc<NodeStatus>, IrohError> {
-        let res = self.node.status().await.map(|n| Arc::new(n.into()))?;
+        let res = self.node().status().await.map(|n| Arc::new(n.into()))?;
         Ok(res)
     }
 
     /// The string representation of the PublicKey of this node.
-    pub fn node_id(&self) -> String {
-        self.node.node_id().to_string()
-    }
-}
-
-impl IrohNode {
-    pub(crate) async fn new_inner(
-        path: PathBuf,
-        options: NodeOptions,
-    ) -> Result<Self, anyhow::Error> {
-        let builder: Builder<iroh::blobs::store::mem::Store> = options.into();
-        let node = builder.persist(path).await?.spawn().await?;
-
-        Ok(IrohNode { node })
+    pub async fn node_id(&self) -> Result<String, IrohError> {
+        let id = self.node().node_id().await?;
+        Ok(id.to_string())
     }
 }
 
@@ -355,5 +368,17 @@ impl NodeStatus {
     /// The version of the node
     pub fn version(&self) -> String {
         self.0.version.clone()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_memory() {
+        let node = IrohNode::memory().await.unwrap();
+        let id = node.node_id().await.unwrap();
+        println!("{id}");
     }
 }

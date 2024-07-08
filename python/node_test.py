@@ -13,11 +13,11 @@ async def test_basic_sync():
 
     # Create node_0
     iroh_dir_0 = tempfile.TemporaryDirectory()
-    node_0 = await IrohNode.create(iroh_dir_0.name)
+    node_0 = await IrohNode.persistent(iroh_dir_0.name)
 
     # Create node_1
     iroh_dir_1 = tempfile.TemporaryDirectory()
-    node_1 = await IrohNode.create(iroh_dir_1.name)
+    node_1 = await IrohNode.persistent(iroh_dir_1.name)
 
     # Create doc on node_0
     doc_0 = await node_0.doc_create()

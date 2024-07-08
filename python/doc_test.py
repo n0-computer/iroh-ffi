@@ -97,7 +97,7 @@ async def test_doc_entry_basics():
     #
     # create node
     dir = tempfile.TemporaryDirectory()
-    node = await IrohNode.create(dir.name)
+    node = await IrohNode.persistent(dir.name)
     #
     # create doc and author
     doc = await node.doc_create()
@@ -139,7 +139,7 @@ async def test_doc_import_export():
     #
     # create node
     iroh_dir = tempfile.TemporaryDirectory()
-    node = await IrohNode.create(iroh_dir.name)
+    node = await IrohNode.persistent(iroh_dir.name)
     #
     # create doc and author
     doc = await node.doc_create()

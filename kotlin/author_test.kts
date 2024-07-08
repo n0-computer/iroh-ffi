@@ -3,8 +3,7 @@ import iroh.*
 
 kotlinx.coroutines.runBlocking {
     // create node
-    val dir = kotlin.io.path.createTempDirectory("author-test")
-    val node = IrohNode.create(dir.toString())
+    val node = IrohNode.memory()
 
     // creating a node also creates an author
     assert(node.authorList().size == 1)

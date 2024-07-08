@@ -92,7 +92,7 @@ runBlocking {
 runBlocking {
     // create node
     val irohDir = kotlin.io.path.createTempDirectory("doc-test")
-    val node = IrohNode.create(irohDir.toString())
+    val node = IrohNode.persistent(irohDir.toString())
 
     // create bytes
     val blobSize = 100
@@ -119,7 +119,7 @@ runBlocking {
 // test functionality between reading bytes from a path and writing bytes to a path
 runBlocking {
     val irohDir = kotlin.io.path.createTempDirectory("doc-test-read-bytes")
-    val node = IrohNode.create(irohDir.toString())
+    val node = IrohNode.persistent(irohDir.toString())
 
     // create bytes
     val blobSize = 100
@@ -192,7 +192,7 @@ runBlocking {
     }
     // make node
     val irohDir = kotlin.io.path.createTempDirectory("doc-test-collection")
-    val node = IrohNode.create(irohDir.toString())
+    val node = IrohNode.persistent(irohDir.toString())
 
     // ensure zero blobs
     val blobs = node.blobsList()
@@ -256,7 +256,7 @@ runBlocking {
 runBlocking {
     val irohDir = kotlin.io.path.createTempDirectory("doc-test-list-del")
     val opts = NodeOptions(100UL)
-    val node = IrohNode.withOptions(irohDir.toString(), opts)
+    val node = IrohNode.persistentWithOptions(irohDir.toString(), opts)
 
     // create bytes
     val blobSize = 100

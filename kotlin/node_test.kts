@@ -25,12 +25,12 @@ runBlocking {
     // Create node_0
     val irohDir0 = kotlin.io.path.createTempDirectory("node-test-0")
     println(irohDir0.toString())
-    val node0 = IrohNode.create(irohDir0.toString())
+    val node0 = IrohNode.persistent(irohDir0.toString())
 
     // Create node_1
     val irohDir1 = kotlin.io.path.createTempDirectory("node-test-1")
     println(irohDir1.toString())
-    val node1 = IrohNode.create(irohDir1.toString())
+    val node1 = IrohNode.persistent(irohDir1.toString())
 
     // Create doc on node_0
     val doc0 = node0.docCreate()
