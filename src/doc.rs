@@ -1549,8 +1549,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_basic_sync() {
-        crate::set_log_level(LogLevel::Debug);
-
         // create node_0
         let iroh_dir = tempfile::tempdir().unwrap();
 
