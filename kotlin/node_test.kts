@@ -12,18 +12,16 @@ fun generateRandomByteArray(size: Int): ByteArray {
 }
 
 class Subscriber : SubscribeCallback {
-    val channel = Channel<Hash>(1)
+    val channel = Channel<LiveEvent>(8)
 
     override suspend fun `event`(`event`: LiveEvent) {
         println(event.type())
-        if (event.type() == LiveEventType.CONTENT_READY) {
-            println("got event type content ready")
-            this.channel.send(event.asContentReady())
-        }
+        this.channel.send(event)
     }
 }
 
 runBlocking {
+    setLogLevel(LogLevel.DEBUG)
     // Create node_0
     val irohDir0 = kotlin.io.path.createTempDirectory("node-test-0")
     println(irohDir0.toString())
@@ -38,12 +36,21 @@ runBlocking {
     val doc0 = node0.docCreate()
 
     // Subscribe to sync events
-    val cb = Subscriber()
-    doc0.subscribe(cb)
+    val cb0 = Subscriber()
+    doc0.subscribe(cb0)
 
     // Join the same doc from node_1
     val ticket = doc0.share(ShareMode.WRITE, AddrInfoOptions.RELAY_AND_ADDRESSES)
-    val doc1 = node1.docJoin(ticket)
+    val cb1 = Subscriber()
+    val doc1 = node1.docJoinAndSubscribe(ticket, cb1)
+
+    // wait for initial sync
+    while (true) {
+        val event = cb1.channel.receive()
+        if (event.type() == LiveEventType.SYNC_FINISHED) {
+            break
+        }
+    }
 
     // Create author on node_1
     val author = node1.authorCreate()
@@ -53,10 +60,17 @@ runBlocking {
     doc1.setBytes(author, "hello".toByteArray(Charsets.UTF_8), bytes)
 
     // Wait for the content ready event
-    val hash = cb.channel.receive()
-    println(hash)
+    while (true) {
+        val event = cb0.channel.receive()
+        if (event.type() == LiveEventType.CONTENT_READY) {
+            val hash = event.asContentReady()
+            println(hash)
 
-    // Get content from hash
-    val v = node1.blobsReadToBytes(hash)
-    assert(bytes contentEquals v)
+            // Get content from hash
+            val v = node1.blobsReadToBytes(hash)
+            assert(bytes contentEquals v)
+
+            break
+        }
+    }
 }
