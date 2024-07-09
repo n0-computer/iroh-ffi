@@ -14,6 +14,8 @@ class Callback: GossipMessageCallback {
 }
 
 runBlocking {
+    setLogLevel(LogLevel.DEBUG)
+
     val n0 = IrohNode.memory()
     val n1 = IrohNode.memory()
 
