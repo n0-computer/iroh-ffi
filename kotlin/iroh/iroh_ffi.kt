@@ -776,6 +776,16 @@ internal interface UniffiCallbackInterfaceDownloadCallbackMethod0 : com.sun.jna.
     )
 }
 
+internal interface UniffiCallbackInterfaceGossipMessageCallbackMethod0 : com.sun.jna.Callback {
+    fun callback(
+        `uniffiHandle`: Long,
+        `msg`: Pointer,
+        `uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,
+        `uniffiCallbackData`: Long,
+        `uniffiOutReturn`: UniffiForeignFuture,
+    )
+}
+
 internal interface UniffiCallbackInterfaceSubscribeCallbackMethod0 : com.sun.jna.Callback {
     fun callback(
         `uniffiHandle`: Long,
@@ -854,6 +864,23 @@ internal open class UniffiVTableCallbackInterfaceDownloadCallback(
     }
 }
 
+@Structure.FieldOrder("onMessage", "uniffiFree")
+internal open class UniffiVTableCallbackInterfaceGossipMessageCallback(
+    @JvmField internal var `onMessage`: UniffiCallbackInterfaceGossipMessageCallbackMethod0? = null,
+    @JvmField internal var `uniffiFree`: UniffiCallbackInterfaceFree? = null,
+) : Structure() {
+    class UniffiByValue(
+        `onMessage`: UniffiCallbackInterfaceGossipMessageCallbackMethod0? = null,
+        `uniffiFree`: UniffiCallbackInterfaceFree? = null,
+    ) : UniffiVTableCallbackInterfaceGossipMessageCallback(`onMessage`, `uniffiFree`),
+        Structure.ByValue
+
+    internal fun uniffiSetValue(other: UniffiVTableCallbackInterfaceGossipMessageCallback) {
+        `onMessage` = other.`onMessage`
+        `uniffiFree` = other.`uniffiFree`
+    }
+}
+
 @Structure.FieldOrder("event", "uniffiFree")
 internal open class UniffiVTableCallbackInterfaceSubscribeCallback(
     @JvmField internal var `event`: UniffiCallbackInterfaceSubscribeCallbackMethod0? = null,
@@ -885,6 +912,7 @@ internal interface UniffiLib : Library {
                     uniffiCallbackInterfaceDocExportFileCallback.register(lib)
                     uniffiCallbackInterfaceDocImportFileCallback.register(lib)
                     uniffiCallbackInterfaceDownloadCallback.register(lib)
+                    uniffiCallbackInterfaceGossipMessageCallback.register(lib)
                     uniffiCallbackInterfaceSubscribeCallback.register(lib)
                 }
         }
@@ -1530,6 +1558,23 @@ internal interface UniffiLib : Library {
         uniffi_out_err: UniffiRustCallStatus,
     ): Byte
 
+    fun uniffi_iroh_ffi_fn_clone_gossipmessagecallback(
+        `ptr`: Pointer,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): Pointer
+
+    fun uniffi_iroh_ffi_fn_free_gossipmessagecallback(
+        `ptr`: Pointer,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): Unit
+
+    fun uniffi_iroh_ffi_fn_init_callback_vtable_gossipmessagecallback(`vtable`: UniffiVTableCallbackInterfaceGossipMessageCallback): Unit
+
+    fun uniffi_iroh_ffi_fn_method_gossipmessagecallback_on_message(
+        `ptr`: Pointer,
+        `msg`: Pointer,
+    ): Long
+
     fun uniffi_iroh_ffi_fn_clone_hash(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
@@ -1763,6 +1808,13 @@ internal interface UniffiLib : Library {
         `id`: RustBuffer.ByValue,
     ): Long
 
+    fun uniffi_iroh_ffi_fn_method_irohnode_gossip_subscribe(
+        `ptr`: Pointer,
+        `topic`: RustBuffer.ByValue,
+        `bootstrap`: RustBuffer.ByValue,
+        `cb`: Pointer,
+    ): Long
+
     fun uniffi_iroh_ffi_fn_method_irohnode_home_relay(`ptr`: Pointer): Long
 
     fun uniffi_iroh_ffi_fn_method_irohnode_my_rpc_addr(
@@ -1831,6 +1883,41 @@ internal interface UniffiLib : Library {
     ): RustBuffer.ByValue
 
     fun uniffi_iroh_ffi_fn_method_liveevent_type(
+        `ptr`: Pointer,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+
+    fun uniffi_iroh_ffi_fn_clone_message(
+        `ptr`: Pointer,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): Pointer
+
+    fun uniffi_iroh_ffi_fn_free_message(
+        `ptr`: Pointer,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): Unit
+
+    fun uniffi_iroh_ffi_fn_method_message_as_error(
+        `ptr`: Pointer,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+
+    fun uniffi_iroh_ffi_fn_method_message_as_neighbor_down(
+        `ptr`: Pointer,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+
+    fun uniffi_iroh_ffi_fn_method_message_as_neighbor_up(
+        `ptr`: Pointer,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+
+    fun uniffi_iroh_ffi_fn_method_message_as_received(
+        `ptr`: Pointer,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+
+    fun uniffi_iroh_ffi_fn_method_message_type(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
@@ -2030,6 +2117,26 @@ internal interface UniffiLib : Library {
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Byte
+
+    fun uniffi_iroh_ffi_fn_clone_sender(
+        `ptr`: Pointer,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): Pointer
+
+    fun uniffi_iroh_ffi_fn_free_sender(
+        `ptr`: Pointer,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): Unit
+
+    fun uniffi_iroh_ffi_fn_method_sender_broadcast(
+        `ptr`: Pointer,
+        `msg`: RustBuffer.ByValue,
+    ): Long
+
+    fun uniffi_iroh_ffi_fn_method_sender_broadcast_neighbors(
+        `ptr`: Pointer,
+        `msg`: RustBuffer.ByValue,
+    ): Long
 
     fun uniffi_iroh_ffi_fn_clone_settagoption(
         `ptr`: Pointer,
@@ -2477,6 +2584,8 @@ internal interface UniffiLib : Library {
 
     fun uniffi_iroh_ffi_checksum_method_filterkind_matches(): Short
 
+    fun uniffi_iroh_ffi_checksum_method_gossipmessagecallback_on_message(): Short
+
     fun uniffi_iroh_ffi_checksum_method_hash_equal(): Short
 
     fun uniffi_iroh_ffi_checksum_method_hash_to_bytes(): Short
@@ -2547,6 +2656,8 @@ internal interface UniffiLib : Library {
 
     fun uniffi_iroh_ffi_checksum_method_irohnode_doc_open(): Short
 
+    fun uniffi_iroh_ffi_checksum_method_irohnode_gossip_subscribe(): Short
+
     fun uniffi_iroh_ffi_checksum_method_irohnode_home_relay(): Short
 
     fun uniffi_iroh_ffi_checksum_method_irohnode_my_rpc_addr(): Short
@@ -2579,6 +2690,16 @@ internal interface UniffiLib : Library {
 
     fun uniffi_iroh_ffi_checksum_method_liveevent_type(): Short
 
+    fun uniffi_iroh_ffi_checksum_method_message_as_error(): Short
+
+    fun uniffi_iroh_ffi_checksum_method_message_as_neighbor_down(): Short
+
+    fun uniffi_iroh_ffi_checksum_method_message_as_neighbor_up(): Short
+
+    fun uniffi_iroh_ffi_checksum_method_message_as_received(): Short
+
+    fun uniffi_iroh_ffi_checksum_method_message_type(): Short
+
     fun uniffi_iroh_ffi_checksum_method_nodeaddr_direct_addresses(): Short
 
     fun uniffi_iroh_ffi_checksum_method_nodeaddr_equal(): Short
@@ -2606,6 +2727,10 @@ internal interface UniffiLib : Library {
     fun uniffi_iroh_ffi_checksum_method_rangespec_is_all(): Short
 
     fun uniffi_iroh_ffi_checksum_method_rangespec_is_empty(): Short
+
+    fun uniffi_iroh_ffi_checksum_method_sender_broadcast(): Short
+
+    fun uniffi_iroh_ffi_checksum_method_sender_broadcast_neighbors(): Short
 
     fun uniffi_iroh_ffi_checksum_method_subscribecallback_event(): Short
 
@@ -2929,6 +3054,9 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_method_filterkind_matches() != 24522.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_iroh_ffi_checksum_method_gossipmessagecallback_on_message() != 49150.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_iroh_ffi_checksum_method_hash_equal() != 28210.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -3034,6 +3162,9 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_method_irohnode_doc_open() != 16291.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_iroh_ffi_checksum_method_irohnode_gossip_subscribe() != 10882.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_iroh_ffi_checksum_method_irohnode_home_relay() != 3309.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -3082,6 +3213,21 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_method_liveevent_type() != 30099.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_iroh_ffi_checksum_method_message_as_error() != 9059.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_ffi_checksum_method_message_as_neighbor_down() != 19092.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_ffi_checksum_method_message_as_neighbor_up() != 3541.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_ffi_checksum_method_message_as_received() != 6044.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_ffi_checksum_method_message_type() != 75.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_iroh_ffi_checksum_method_nodeaddr_direct_addresses() != 23787.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -3122,6 +3268,12 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_rangespec_is_empty() != 38175.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_ffi_checksum_method_sender_broadcast() != 42694.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_ffi_checksum_method_sender_broadcast_neighbors() != 14000.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_subscribecallback_event() != 35520.toShort()) {
@@ -10166,6 +10318,303 @@ public object FfiConverterTypeFilterKind : FfiConverter<FilterKind, Pointer> {
 // [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
 //
 
+public interface GossipMessageCallback {
+    suspend fun `onMessage`(`msg`: Message)
+
+    companion object
+}
+
+open class GossipMessageCallbackImpl :
+    Disposable,
+    AutoCloseable,
+    GossipMessageCallback {
+    constructor(pointer: Pointer) {
+        this.pointer = pointer
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(pointer))
+    }
+
+    /**
+     * This constructor can be used to instantiate a fake object. Only used for tests. Any
+     * attempt to actually use an object constructed this way will fail as there is no
+     * connected Rust object.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    constructor(noPointer: NoPointer) {
+        this.pointer = null
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(pointer))
+    }
+
+    protected val pointer: Pointer?
+    protected val cleanable: UniffiCleaner.Cleanable
+
+    private val wasDestroyed = AtomicBoolean(false)
+    private val callCounter = AtomicLong(1)
+
+    override fun destroy() {
+        // Only allow a single call to this method.
+        // TODO: maybe we should log a warning if called more than once?
+        if (this.wasDestroyed.compareAndSet(false, true)) {
+            // This decrement always matches the initial count of 1 given at creation time.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    @Synchronized
+    override fun close() {
+        this.destroy()
+    }
+
+    internal inline fun <R> callWithPointer(block: (ptr: Pointer) -> R): R {
+        // Check and increment the call counter, to keep the object alive.
+        // This needs a compare-and-set retry loop in case of concurrent updates.
+        do {
+            val c = this.callCounter.get()
+            if (c == 0L) {
+                throw IllegalStateException("${this.javaClass.simpleName} object has already been destroyed")
+            }
+            if (c == Long.MAX_VALUE) {
+                throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
+            }
+        } while (!this.callCounter.compareAndSet(c, c + 1L))
+        // Now we can safely do the method call without the pointer being freed concurrently.
+        try {
+            return block(this.uniffiClonePointer())
+        } finally {
+            // This decrement always matches the increment we performed above.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    // Use a static inner class instead of a closure so as not to accidentally
+    // capture `this` as part of the cleanable's action.
+    private class UniffiCleanAction(
+        private val pointer: Pointer?,
+    ) : Runnable {
+        override fun run() {
+            pointer?.let { ptr ->
+                uniffiRustCall { status ->
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_gossipmessagecallback(ptr, status)
+                }
+            }
+        }
+    }
+
+    fun uniffiClonePointer(): Pointer =
+        uniffiRustCall { status ->
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_gossipmessagecallback(pointer!!, status)
+        }
+
+    @Throws(CallbackException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `onMessage`(`msg`: Message) =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_gossipmessagecallback_on_message(
+                    thisPtr,
+                    FfiConverterTypeMessage.lower(`msg`),
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_void(future) },
+            // lift function
+            { Unit },
+            // Error FFI converter
+            CallbackException.ErrorHandler,
+        )
+
+    companion object
+}
+
+// Put the implementation in an object so we don't pollute the top-level namespace
+internal object uniffiCallbackInterfaceGossipMessageCallback {
+    internal object `onMessage` : UniffiCallbackInterfaceGossipMessageCallbackMethod0 {
+        override fun callback(
+            `uniffiHandle`: Long,
+            `msg`: Pointer,
+            `uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,
+            `uniffiCallbackData`: Long,
+            `uniffiOutReturn`: UniffiForeignFuture,
+        ) {
+            val uniffiObj = FfiConverterTypeGossipMessageCallback.handleMap.get(uniffiHandle)
+            val makeCall =
+                suspend {  uniffiObj.`onMessage`(
+                    FfiConverterTypeMessage.lift(`msg`),
+                )
+                }
+            val uniffiHandleSuccess = { _: Unit ->
+                val uniffiResult =
+                    UniffiForeignFutureStructVoid.UniffiByValue(
+                        UniffiRustCallStatus.ByValue(),
+                    )
+                uniffiResult.write()
+                uniffiFutureCallback.callback(uniffiCallbackData, uniffiResult)
+            }
+            val uniffiHandleError = { callStatus: UniffiRustCallStatus.ByValue ->
+                uniffiFutureCallback.callback(
+                    uniffiCallbackData,
+                    UniffiForeignFutureStructVoid.UniffiByValue(
+                        callStatus,
+                    ),
+                )
+            }
+
+            uniffiOutReturn.uniffiSetValue(
+                uniffiTraitInterfaceCallAsyncWithError(
+                    makeCall,
+                    uniffiHandleSuccess,
+                    uniffiHandleError,
+                    { e: CallbackException -> FfiConverterTypeCallbackError.lower(e) },
+                ),
+            )
+        }
+    }
+
+    internal object uniffiFree : UniffiCallbackInterfaceFree {
+        override fun callback(handle: Long) {
+            FfiConverterTypeGossipMessageCallback.handleMap.remove(handle)
+        }
+    }
+
+    internal var vtable =
+        UniffiVTableCallbackInterfaceGossipMessageCallback.UniffiByValue(
+            `onMessage`,
+            uniffiFree,
+        )
+
+    // Registers the foreign callback with the Rust side.
+    // This method is generated for each callback interface.
+    internal fun register(lib: UniffiLib) {
+        lib.uniffi_iroh_ffi_fn_init_callback_vtable_gossipmessagecallback(vtable)
+    }
+}
+
+public object FfiConverterTypeGossipMessageCallback : FfiConverter<GossipMessageCallback, Pointer> {
+    internal val handleMap = UniffiHandleMap<GossipMessageCallback>()
+
+    override fun lower(value: GossipMessageCallback): Pointer = Pointer(handleMap.insert(value))
+
+    override fun lift(value: Pointer): GossipMessageCallback = GossipMessageCallbackImpl(value)
+
+    override fun read(buf: ByteBuffer): GossipMessageCallback {
+        // The Rust code always writes pointers as 8 bytes, and will
+        // fail to compile if they don't fit.
+        return lift(Pointer(buf.getLong()))
+    }
+
+    override fun allocationSize(value: GossipMessageCallback) = 8UL
+
+    override fun write(
+        value: GossipMessageCallback,
+        buf: ByteBuffer,
+    ) {
+        // The Rust code always expects pointers written as 8 bytes,
+        // and will fail to compile if they don't fit.
+        buf.putLong(Pointer.nativeValue(lower(value)))
+    }
+}
+
+// This template implements a class for working with a Rust struct via a Pointer/Arc<T>
+// to the live Rust struct on the other side of the FFI.
+//
+// Each instance implements core operations for working with the Rust `Arc<T>` and the
+// Kotlin Pointer to work with the live Rust struct on the other side of the FFI.
+//
+// There's some subtlety here, because we have to be careful not to operate on a Rust
+// struct after it has been dropped, and because we must expose a public API for freeing
+// theq Kotlin wrapper object in lieu of reliable finalizers. The core requirements are:
+//
+//   * Each instance holds an opaque pointer to the underlying Rust struct.
+//     Method calls need to read this pointer from the object's state and pass it in to
+//     the Rust FFI.
+//
+//   * When an instance is no longer needed, its pointer should be passed to a
+//     special destructor function provided by the Rust FFI, which will drop the
+//     underlying Rust struct.
+//
+//   * Given an instance, calling code is expected to call the special
+//     `destroy` method in order to free it after use, either by calling it explicitly
+//     or by using a higher-level helper like the `use` method. Failing to do so risks
+//     leaking the underlying Rust struct.
+//
+//   * We can't assume that calling code will do the right thing, and must be prepared
+//     to handle Kotlin method calls executing concurrently with or even after a call to
+//     `destroy`, and to handle multiple (possibly concurrent!) calls to `destroy`.
+//
+//   * We must never allow Rust code to operate on the underlying Rust struct after
+//     the destructor has been called, and must never call the destructor more than once.
+//     Doing so may trigger memory unsafety.
+//
+//   * To mitigate many of the risks of leaking memory and use-after-free unsafety, a `Cleaner`
+//     is implemented to call the destructor when the Kotlin object becomes unreachable.
+//     This is done in a background thread. This is not a panacea, and client code should be aware that
+//      1. the thread may starve if some there are objects that have poorly performing
+//     `drop` methods or do significant work in their `drop` methods.
+//      2. the thread is shared across the whole library. This can be tuned by using `android_cleaner = true`,
+//         or `android = true` in the [`kotlin` section of the `uniffi.toml` file](https://mozilla.github.io/uniffi-rs/kotlin/configuration.html).
+//
+// If we try to implement this with mutual exclusion on access to the pointer, there is the
+// possibility of a race between a method call and a concurrent call to `destroy`:
+//
+//    * Thread A starts a method call, reads the value of the pointer, but is interrupted
+//      before it can pass the pointer over the FFI to Rust.
+//    * Thread B calls `destroy` and frees the underlying Rust struct.
+//    * Thread A resumes, passing the already-read pointer value to Rust and triggering
+//      a use-after-free.
+//
+// One possible solution would be to use a `ReadWriteLock`, with each method call taking
+// a read lock (and thus allowed to run concurrently) and the special `destroy` method
+// taking a write lock (and thus blocking on live method calls). However, we aim not to
+// generate methods with any hidden blocking semantics, and a `destroy` method that might
+// block if called incorrectly seems to meet that bar.
+//
+// So, we achieve our goals by giving each instance an associated `AtomicLong` counter to track
+// the number of in-flight method calls, and an `AtomicBoolean` flag to indicate whether `destroy`
+// has been called. These are updated according to the following rules:
+//
+//    * The initial value of the counter is 1, indicating a live object with no in-flight calls.
+//      The initial value for the flag is false.
+//
+//    * At the start of each method call, we atomically check the counter.
+//      If it is 0 then the underlying Rust struct has already been destroyed and the call is aborted.
+//      If it is nonzero them we atomically increment it by 1 and proceed with the method call.
+//
+//    * At the end of each method call, we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+//    * When `destroy` is called, we atomically flip the flag from false to true.
+//      If the flag was already true we silently fail.
+//      Otherwise we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+// Astute readers may observe that this all sounds very similar to the way that Rust's `Arc<T>` works,
+// and indeed it is, with the addition of a flag to guard against multiple calls to `destroy`.
+//
+// The overall effect is that the underlying Rust struct is destroyed only when `destroy` has been
+// called *and* all in-flight method calls have completed, avoiding violating any of the expectations
+// of the underlying Rust code.
+//
+// This makes a cleaner a better alternative to _not_ calling `destroy()` as
+// and when the object is finished with, but the abstraction is not perfect: if the Rust object's `drop`
+// method is slow, and/or there are many objects to cleanup, and it's on a low end Android device, then the cleaner
+// thread may be starved, and the app will leak memory.
+//
+// In this case, `destroy`ing manually may be a better solution.
+//
+// The cleaner can live side by side with the manual calling of `destroy`. In the order of responsiveness, uniffi objects
+// with Rust peers are reclaimed:
+//
+// 1. By calling the `destroy` method of the object, which calls `rustObject.free()`. If that doesn't happen:
+// 2. When the object becomes unreachable, AND the Cleaner thread gets to call `rustObject.free()`. If the thread is starved then:
+// 3. The memory is reclaimed when the process terminates.
+//
+// [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
+//
+
 /**
  * Hash type used throughout Iroh. A blake3 hash.
  */
@@ -10991,6 +11440,12 @@ public interface IrohNodeInterface {
      * Returns None if the document cannot be found.
      */
     suspend fun `docOpen`(`id`: kotlin.String): Doc?
+
+    suspend fun `gossipSubscribe`(
+        `topic`: kotlin.ByteArray,
+        `bootstrap`: List<kotlin.String>,
+        `cb`: GossipMessageCallback,
+    ): Sender
 
     /**
      * Get the relay server we are connected to.
@@ -11995,6 +12450,31 @@ open class IrohNode :
             IrohException.ErrorHandler,
         )
 
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `gossipSubscribe`(
+        `topic`: kotlin.ByteArray,
+        `bootstrap`: List<kotlin.String>,
+        `cb`: GossipMessageCallback,
+    ): Sender =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_irohnode_gossip_subscribe(
+                    thisPtr,
+                    FfiConverterByteArray.lower(`topic`),
+                    FfiConverterSequenceString.lower(`bootstrap`),
+                    FfiConverterTypeGossipMessageCallback.lower(`cb`),
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_pointer(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_pointer(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_pointer(future) },
+            // lift function
+            { FfiConverterTypeSender.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
     /**
      * Get the relay server we are connected to.
      */
@@ -12687,6 +13167,293 @@ public object FfiConverterTypeLiveEvent : FfiConverter<LiveEvent, Pointer> {
 
     override fun write(
         value: LiveEvent,
+        buf: ByteBuffer,
+    ) {
+        // The Rust code always expects pointers written as 8 bytes,
+        // and will fail to compile if they don't fit.
+        buf.putLong(Pointer.nativeValue(lower(value)))
+    }
+}
+
+// This template implements a class for working with a Rust struct via a Pointer/Arc<T>
+// to the live Rust struct on the other side of the FFI.
+//
+// Each instance implements core operations for working with the Rust `Arc<T>` and the
+// Kotlin Pointer to work with the live Rust struct on the other side of the FFI.
+//
+// There's some subtlety here, because we have to be careful not to operate on a Rust
+// struct after it has been dropped, and because we must expose a public API for freeing
+// theq Kotlin wrapper object in lieu of reliable finalizers. The core requirements are:
+//
+//   * Each instance holds an opaque pointer to the underlying Rust struct.
+//     Method calls need to read this pointer from the object's state and pass it in to
+//     the Rust FFI.
+//
+//   * When an instance is no longer needed, its pointer should be passed to a
+//     special destructor function provided by the Rust FFI, which will drop the
+//     underlying Rust struct.
+//
+//   * Given an instance, calling code is expected to call the special
+//     `destroy` method in order to free it after use, either by calling it explicitly
+//     or by using a higher-level helper like the `use` method. Failing to do so risks
+//     leaking the underlying Rust struct.
+//
+//   * We can't assume that calling code will do the right thing, and must be prepared
+//     to handle Kotlin method calls executing concurrently with or even after a call to
+//     `destroy`, and to handle multiple (possibly concurrent!) calls to `destroy`.
+//
+//   * We must never allow Rust code to operate on the underlying Rust struct after
+//     the destructor has been called, and must never call the destructor more than once.
+//     Doing so may trigger memory unsafety.
+//
+//   * To mitigate many of the risks of leaking memory and use-after-free unsafety, a `Cleaner`
+//     is implemented to call the destructor when the Kotlin object becomes unreachable.
+//     This is done in a background thread. This is not a panacea, and client code should be aware that
+//      1. the thread may starve if some there are objects that have poorly performing
+//     `drop` methods or do significant work in their `drop` methods.
+//      2. the thread is shared across the whole library. This can be tuned by using `android_cleaner = true`,
+//         or `android = true` in the [`kotlin` section of the `uniffi.toml` file](https://mozilla.github.io/uniffi-rs/kotlin/configuration.html).
+//
+// If we try to implement this with mutual exclusion on access to the pointer, there is the
+// possibility of a race between a method call and a concurrent call to `destroy`:
+//
+//    * Thread A starts a method call, reads the value of the pointer, but is interrupted
+//      before it can pass the pointer over the FFI to Rust.
+//    * Thread B calls `destroy` and frees the underlying Rust struct.
+//    * Thread A resumes, passing the already-read pointer value to Rust and triggering
+//      a use-after-free.
+//
+// One possible solution would be to use a `ReadWriteLock`, with each method call taking
+// a read lock (and thus allowed to run concurrently) and the special `destroy` method
+// taking a write lock (and thus blocking on live method calls). However, we aim not to
+// generate methods with any hidden blocking semantics, and a `destroy` method that might
+// block if called incorrectly seems to meet that bar.
+//
+// So, we achieve our goals by giving each instance an associated `AtomicLong` counter to track
+// the number of in-flight method calls, and an `AtomicBoolean` flag to indicate whether `destroy`
+// has been called. These are updated according to the following rules:
+//
+//    * The initial value of the counter is 1, indicating a live object with no in-flight calls.
+//      The initial value for the flag is false.
+//
+//    * At the start of each method call, we atomically check the counter.
+//      If it is 0 then the underlying Rust struct has already been destroyed and the call is aborted.
+//      If it is nonzero them we atomically increment it by 1 and proceed with the method call.
+//
+//    * At the end of each method call, we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+//    * When `destroy` is called, we atomically flip the flag from false to true.
+//      If the flag was already true we silently fail.
+//      Otherwise we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+// Astute readers may observe that this all sounds very similar to the way that Rust's `Arc<T>` works,
+// and indeed it is, with the addition of a flag to guard against multiple calls to `destroy`.
+//
+// The overall effect is that the underlying Rust struct is destroyed only when `destroy` has been
+// called *and* all in-flight method calls have completed, avoiding violating any of the expectations
+// of the underlying Rust code.
+//
+// This makes a cleaner a better alternative to _not_ calling `destroy()` as
+// and when the object is finished with, but the abstraction is not perfect: if the Rust object's `drop`
+// method is slow, and/or there are many objects to cleanup, and it's on a low end Android device, then the cleaner
+// thread may be starved, and the app will leak memory.
+//
+// In this case, `destroy`ing manually may be a better solution.
+//
+// The cleaner can live side by side with the manual calling of `destroy`. In the order of responsiveness, uniffi objects
+// with Rust peers are reclaimed:
+//
+// 1. By calling the `destroy` method of the object, which calls `rustObject.free()`. If that doesn't happen:
+// 2. When the object becomes unreachable, AND the Cleaner thread gets to call `rustObject.free()`. If the thread is starved then:
+// 3. The memory is reclaimed when the process terminates.
+//
+// [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
+//
+
+/**
+ * Gossip message
+ */
+public interface MessageInterface {
+    fun `asError`(): kotlin.String
+
+    fun `asNeighborDown`(): kotlin.String
+
+    fun `asNeighborUp`(): kotlin.String
+
+    fun `asReceived`(): MessageContent
+
+    fun `type`(): MessageType
+
+    companion object
+}
+
+/**
+ * Gossip message
+ */
+open class Message :
+    Disposable,
+    AutoCloseable,
+    MessageInterface {
+    constructor(pointer: Pointer) {
+        this.pointer = pointer
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(pointer))
+    }
+
+    /**
+     * This constructor can be used to instantiate a fake object. Only used for tests. Any
+     * attempt to actually use an object constructed this way will fail as there is no
+     * connected Rust object.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    constructor(noPointer: NoPointer) {
+        this.pointer = null
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(pointer))
+    }
+
+    protected val pointer: Pointer?
+    protected val cleanable: UniffiCleaner.Cleanable
+
+    private val wasDestroyed = AtomicBoolean(false)
+    private val callCounter = AtomicLong(1)
+
+    override fun destroy() {
+        // Only allow a single call to this method.
+        // TODO: maybe we should log a warning if called more than once?
+        if (this.wasDestroyed.compareAndSet(false, true)) {
+            // This decrement always matches the initial count of 1 given at creation time.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    @Synchronized
+    override fun close() {
+        this.destroy()
+    }
+
+    internal inline fun <R> callWithPointer(block: (ptr: Pointer) -> R): R {
+        // Check and increment the call counter, to keep the object alive.
+        // This needs a compare-and-set retry loop in case of concurrent updates.
+        do {
+            val c = this.callCounter.get()
+            if (c == 0L) {
+                throw IllegalStateException("${this.javaClass.simpleName} object has already been destroyed")
+            }
+            if (c == Long.MAX_VALUE) {
+                throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
+            }
+        } while (!this.callCounter.compareAndSet(c, c + 1L))
+        // Now we can safely do the method call without the pointer being freed concurrently.
+        try {
+            return block(this.uniffiClonePointer())
+        } finally {
+            // This decrement always matches the increment we performed above.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    // Use a static inner class instead of a closure so as not to accidentally
+    // capture `this` as part of the cleanable's action.
+    private class UniffiCleanAction(
+        private val pointer: Pointer?,
+    ) : Runnable {
+        override fun run() {
+            pointer?.let { ptr ->
+                uniffiRustCall { status ->
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_message(ptr, status)
+                }
+            }
+        }
+    }
+
+    fun uniffiClonePointer(): Pointer =
+        uniffiRustCall { status ->
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_message(pointer!!, status)
+        }
+
+    override fun `asError`(): kotlin.String =
+        FfiConverterString.lift(
+            callWithPointer {
+                uniffiRustCall { _status ->
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_message_as_error(
+                        it,
+                        _status,
+                    )
+                }
+            },
+        )
+
+    override fun `asNeighborDown`(): kotlin.String =
+        FfiConverterString.lift(
+            callWithPointer {
+                uniffiRustCall { _status ->
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_message_as_neighbor_down(
+                        it,
+                        _status,
+                    )
+                }
+            },
+        )
+
+    override fun `asNeighborUp`(): kotlin.String =
+        FfiConverterString.lift(
+            callWithPointer {
+                uniffiRustCall { _status ->
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_message_as_neighbor_up(
+                        it,
+                        _status,
+                    )
+                }
+            },
+        )
+
+    override fun `asReceived`(): MessageContent =
+        FfiConverterTypeMessageContent.lift(
+            callWithPointer {
+                uniffiRustCall { _status ->
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_message_as_received(
+                        it,
+                        _status,
+                    )
+                }
+            },
+        )
+
+    override fun `type`(): MessageType =
+        FfiConverterTypeMessageType.lift(
+            callWithPointer {
+                uniffiRustCall { _status ->
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_message_type(
+                        it,
+                        _status,
+                    )
+                }
+            },
+        )
+
+    companion object
+}
+
+public object FfiConverterTypeMessage : FfiConverter<Message, Pointer> {
+    override fun lower(value: Message): Pointer = value.uniffiClonePointer()
+
+    override fun lift(value: Pointer): Message = Message(value)
+
+    override fun read(buf: ByteBuffer): Message {
+        // The Rust code always writes pointers as 8 bytes, and will
+        // fail to compile if they don't fit.
+        return lift(Pointer(buf.getLong()))
+    }
+
+    override fun allocationSize(value: Message) = 8UL
+
+    override fun write(
+        value: Message,
         buf: ByteBuffer,
     ) {
         // The Rust code always expects pointers written as 8 bytes,
@@ -14306,6 +15073,277 @@ public object FfiConverterTypeRangeSpec : FfiConverter<RangeSpec, Pointer> {
 
     override fun write(
         value: RangeSpec,
+        buf: ByteBuffer,
+    ) {
+        // The Rust code always expects pointers written as 8 bytes,
+        // and will fail to compile if they don't fit.
+        buf.putLong(Pointer.nativeValue(lower(value)))
+    }
+}
+
+// This template implements a class for working with a Rust struct via a Pointer/Arc<T>
+// to the live Rust struct on the other side of the FFI.
+//
+// Each instance implements core operations for working with the Rust `Arc<T>` and the
+// Kotlin Pointer to work with the live Rust struct on the other side of the FFI.
+//
+// There's some subtlety here, because we have to be careful not to operate on a Rust
+// struct after it has been dropped, and because we must expose a public API for freeing
+// theq Kotlin wrapper object in lieu of reliable finalizers. The core requirements are:
+//
+//   * Each instance holds an opaque pointer to the underlying Rust struct.
+//     Method calls need to read this pointer from the object's state and pass it in to
+//     the Rust FFI.
+//
+//   * When an instance is no longer needed, its pointer should be passed to a
+//     special destructor function provided by the Rust FFI, which will drop the
+//     underlying Rust struct.
+//
+//   * Given an instance, calling code is expected to call the special
+//     `destroy` method in order to free it after use, either by calling it explicitly
+//     or by using a higher-level helper like the `use` method. Failing to do so risks
+//     leaking the underlying Rust struct.
+//
+//   * We can't assume that calling code will do the right thing, and must be prepared
+//     to handle Kotlin method calls executing concurrently with or even after a call to
+//     `destroy`, and to handle multiple (possibly concurrent!) calls to `destroy`.
+//
+//   * We must never allow Rust code to operate on the underlying Rust struct after
+//     the destructor has been called, and must never call the destructor more than once.
+//     Doing so may trigger memory unsafety.
+//
+//   * To mitigate many of the risks of leaking memory and use-after-free unsafety, a `Cleaner`
+//     is implemented to call the destructor when the Kotlin object becomes unreachable.
+//     This is done in a background thread. This is not a panacea, and client code should be aware that
+//      1. the thread may starve if some there are objects that have poorly performing
+//     `drop` methods or do significant work in their `drop` methods.
+//      2. the thread is shared across the whole library. This can be tuned by using `android_cleaner = true`,
+//         or `android = true` in the [`kotlin` section of the `uniffi.toml` file](https://mozilla.github.io/uniffi-rs/kotlin/configuration.html).
+//
+// If we try to implement this with mutual exclusion on access to the pointer, there is the
+// possibility of a race between a method call and a concurrent call to `destroy`:
+//
+//    * Thread A starts a method call, reads the value of the pointer, but is interrupted
+//      before it can pass the pointer over the FFI to Rust.
+//    * Thread B calls `destroy` and frees the underlying Rust struct.
+//    * Thread A resumes, passing the already-read pointer value to Rust and triggering
+//      a use-after-free.
+//
+// One possible solution would be to use a `ReadWriteLock`, with each method call taking
+// a read lock (and thus allowed to run concurrently) and the special `destroy` method
+// taking a write lock (and thus blocking on live method calls). However, we aim not to
+// generate methods with any hidden blocking semantics, and a `destroy` method that might
+// block if called incorrectly seems to meet that bar.
+//
+// So, we achieve our goals by giving each instance an associated `AtomicLong` counter to track
+// the number of in-flight method calls, and an `AtomicBoolean` flag to indicate whether `destroy`
+// has been called. These are updated according to the following rules:
+//
+//    * The initial value of the counter is 1, indicating a live object with no in-flight calls.
+//      The initial value for the flag is false.
+//
+//    * At the start of each method call, we atomically check the counter.
+//      If it is 0 then the underlying Rust struct has already been destroyed and the call is aborted.
+//      If it is nonzero them we atomically increment it by 1 and proceed with the method call.
+//
+//    * At the end of each method call, we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+//    * When `destroy` is called, we atomically flip the flag from false to true.
+//      If the flag was already true we silently fail.
+//      Otherwise we atomically decrement and check the counter.
+//      If it has reached zero then we destroy the underlying Rust struct.
+//
+// Astute readers may observe that this all sounds very similar to the way that Rust's `Arc<T>` works,
+// and indeed it is, with the addition of a flag to guard against multiple calls to `destroy`.
+//
+// The overall effect is that the underlying Rust struct is destroyed only when `destroy` has been
+// called *and* all in-flight method calls have completed, avoiding violating any of the expectations
+// of the underlying Rust code.
+//
+// This makes a cleaner a better alternative to _not_ calling `destroy()` as
+// and when the object is finished with, but the abstraction is not perfect: if the Rust object's `drop`
+// method is slow, and/or there are many objects to cleanup, and it's on a low end Android device, then the cleaner
+// thread may be starved, and the app will leak memory.
+//
+// In this case, `destroy`ing manually may be a better solution.
+//
+// The cleaner can live side by side with the manual calling of `destroy`. In the order of responsiveness, uniffi objects
+// with Rust peers are reclaimed:
+//
+// 1. By calling the `destroy` method of the object, which calls `rustObject.free()`. If that doesn't happen:
+// 2. When the object becomes unreachable, AND the Cleaner thread gets to call `rustObject.free()`. If the thread is starved then:
+// 3. The memory is reclaimed when the process terminates.
+//
+// [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
+//
+
+/**
+ * Gossip sender
+ */
+public interface SenderInterface {
+    /**
+     * Broadcast a message to all nodes in the swarm
+     */
+    suspend fun `broadcast`(`msg`: kotlin.ByteArray)
+
+    /**
+     * Broadcast a message to all direct neighbors.
+     */
+    suspend fun `broadcastNeighbors`(`msg`: kotlin.ByteArray)
+
+    companion object
+}
+
+/**
+ * Gossip sender
+ */
+open class Sender :
+    Disposable,
+    AutoCloseable,
+    SenderInterface {
+    constructor(pointer: Pointer) {
+        this.pointer = pointer
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(pointer))
+    }
+
+    /**
+     * This constructor can be used to instantiate a fake object. Only used for tests. Any
+     * attempt to actually use an object constructed this way will fail as there is no
+     * connected Rust object.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    constructor(noPointer: NoPointer) {
+        this.pointer = null
+        this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(pointer))
+    }
+
+    protected val pointer: Pointer?
+    protected val cleanable: UniffiCleaner.Cleanable
+
+    private val wasDestroyed = AtomicBoolean(false)
+    private val callCounter = AtomicLong(1)
+
+    override fun destroy() {
+        // Only allow a single call to this method.
+        // TODO: maybe we should log a warning if called more than once?
+        if (this.wasDestroyed.compareAndSet(false, true)) {
+            // This decrement always matches the initial count of 1 given at creation time.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    @Synchronized
+    override fun close() {
+        this.destroy()
+    }
+
+    internal inline fun <R> callWithPointer(block: (ptr: Pointer) -> R): R {
+        // Check and increment the call counter, to keep the object alive.
+        // This needs a compare-and-set retry loop in case of concurrent updates.
+        do {
+            val c = this.callCounter.get()
+            if (c == 0L) {
+                throw IllegalStateException("${this.javaClass.simpleName} object has already been destroyed")
+            }
+            if (c == Long.MAX_VALUE) {
+                throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
+            }
+        } while (!this.callCounter.compareAndSet(c, c + 1L))
+        // Now we can safely do the method call without the pointer being freed concurrently.
+        try {
+            return block(this.uniffiClonePointer())
+        } finally {
+            // This decrement always matches the increment we performed above.
+            if (this.callCounter.decrementAndGet() == 0L) {
+                cleanable.clean()
+            }
+        }
+    }
+
+    // Use a static inner class instead of a closure so as not to accidentally
+    // capture `this` as part of the cleanable's action.
+    private class UniffiCleanAction(
+        private val pointer: Pointer?,
+    ) : Runnable {
+        override fun run() {
+            pointer?.let { ptr ->
+                uniffiRustCall { status ->
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_free_sender(ptr, status)
+                }
+            }
+        }
+    }
+
+    fun uniffiClonePointer(): Pointer =
+        uniffiRustCall { status ->
+            UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_sender(pointer!!, status)
+        }
+
+    /**
+     * Broadcast a message to all nodes in the swarm
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `broadcast`(`msg`: kotlin.ByteArray) =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_sender_broadcast(
+                    thisPtr,
+                    FfiConverterByteArray.lower(`msg`),
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_void(future) },
+            // lift function
+            { Unit },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * Broadcast a message to all direct neighbors.
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `broadcastNeighbors`(`msg`: kotlin.ByteArray) =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_sender_broadcast_neighbors(
+                    thisPtr,
+                    FfiConverterByteArray.lower(`msg`),
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_void(future) },
+            // lift function
+            { Unit },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    companion object
+}
+
+public object FfiConverterTypeSender : FfiConverter<Sender, Pointer> {
+    override fun lower(value: Sender): Pointer = value.uniffiClonePointer()
+
+    override fun lift(value: Pointer): Sender = Sender(value)
+
+    override fun read(buf: ByteBuffer): Sender {
+        // The Rust code always writes pointers as 8 bytes, and will
+        // fail to compile if they don't fit.
+        return lift(Pointer(buf.getLong()))
+    }
+
+    override fun allocationSize(value: Sender) = 8UL
+
+    override fun write(
+        value: Sender,
         buf: ByteBuffer,
     ) {
         // The Rust code always expects pointers written as 8 bytes,
@@ -16589,6 +17627,44 @@ public object FfiConverterTypeLinkAndName : FfiConverterRustBuffer<LinkAndName> 
 }
 
 /**
+ * The actual content of a gossip message.
+ */
+data class MessageContent(
+    /**
+     * The content of the message
+     */
+    var `content`: kotlin.ByteArray,
+    /**
+     * The node that delivered the message. This is not the same as the original author.
+     */
+    var `deliveredFrom`: kotlin.String,
+) {
+    companion object
+}
+
+public object FfiConverterTypeMessageContent : FfiConverterRustBuffer<MessageContent> {
+    override fun read(buf: ByteBuffer): MessageContent =
+        MessageContent(
+            FfiConverterByteArray.read(buf),
+            FfiConverterString.read(buf),
+        )
+
+    override fun allocationSize(value: MessageContent) =
+        (
+            FfiConverterByteArray.allocationSize(value.`content`) +
+                FfiConverterString.allocationSize(value.`deliveredFrom`)
+        )
+
+    override fun write(
+        value: MessageContent,
+        buf: ByteBuffer,
+    ) {
+        FfiConverterByteArray.write(value.`content`, buf)
+        FfiConverterString.write(value.`deliveredFrom`, buf)
+    }
+}
+
+/**
  * The namespace id and CapabilityKind (read/write) of the doc
  */
 data class NamespaceAndCapability(
@@ -17539,6 +18615,35 @@ public object FfiConverterTypeLogLevel : FfiConverterRustBuffer<LogLevel> {
 
     override fun write(
         value: LogLevel,
+        buf: ByteBuffer,
+    ) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+enum class MessageType {
+    NEIGHBOR_UP,
+    NEIGHBOR_DOWN,
+    RECEIVED,
+    LAGGED,
+    ERROR,
+    ;
+
+    companion object
+}
+
+public object FfiConverterTypeMessageType : FfiConverterRustBuffer<MessageType> {
+    override fun read(buf: ByteBuffer) =
+        try {
+            MessageType.values()[buf.getInt() - 1]
+        } catch (e: IndexOutOfBoundsException) {
+            throw RuntimeException("invalid enum value, something is very wrong!!", e)
+        }
+
+    override fun allocationSize(value: MessageType) = 4UL
+
+    override fun write(
+        value: MessageType,
         buf: ByteBuffer,
     ) {
         buf.putInt(value.ordinal + 1)

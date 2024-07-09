@@ -135,7 +135,6 @@ impl IrohNode {
 
         tokio::task::spawn(async move {
             while let Some(event) = stream.next().await {
-                dbg!(&event);
                 let message = match event {
                     Ok(SubscribeResponse::Gossip(GossipEvent::NeighborUp(n))) => {
                         Message::NeighborUp(n.to_string())
