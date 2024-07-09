@@ -18,9 +18,15 @@ let package = Package(
             name: "IrohLib",
             dependencies: [
                 .byName(name: "Iroh")
+            ],
+            linkerSettings: [
+              .linkedFramework("SystemConfiguration")
             ]),
         .binaryTarget(
             name: "Iroh",
             path: "artifacts/Iroh.xcframework"),
+        .testTarget(
+          name: "IrohLibTests",
+          dependencies: ["IrohLib"]),
     ]
 )
