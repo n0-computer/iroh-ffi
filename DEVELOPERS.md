@@ -1,8 +1,11 @@
 # Developers
 
-- This uses https://mozilla.github.io/uniffi-rs/ for building the interface
+`iroh-ffi` uses [`uniffi-rs`](https://mozilla.github.io/uniffi-rs/) for building the different language bindings.
 
-## translating the iroh API into iroh ffi bindings
+## General
+
+### Translating the iroh API into iroh-ffi bindings
+
 Use these general guidelines when translating the rust API featured in the rust
 `iroh` library with the API we detail in this crate:
 - `PathBuf` -> `String`
@@ -15,27 +18,78 @@ Use these general guidelines when translating the rust API featured in the rust
 - Anything that can be represented as a string, should have a `to_string` and `from_string` method, eg `NamespaceId`, `DocTicket`
 - Enums that have enum variants which contain data should look at the `SocketAddr` or `LiveEvent` enums for the expected translation.
 
-## Testing
+### Testing
 
 Please include tests when you add new pieces of the API to the ffi bindings
 
+## Languages
+
+### Kotlin
+
+- See `README.kotlin.md` for setup
+- Run tests using `./test_kotlin.sh`
+
 ### Python
 
-#### Requirements
+#### Development setup
 
 - Install [`maturin`](https://www.maturin.rs/installation) for python development and packaging.
+- Create and activate a virtual environment
 - Install `uniffi-bindgen` with `pip`
-- `maturin develop` will build your package
-- maturin expects you to use `virtualenv` to manage your virtual environment
+- `maturin build` will build a wheel in `targets/wheels`
+- `maturin develop` will build the wheel and install into the current virtual env. It expects you to use `virtualenv` to manage your virtual environment.
 
-#### pytest
+See below for example commands that do all this.
 
-We use [`pytest`](https://docs.pytest.org/en/7.1.x/contents.html) to test the python api.
+#### Running the example
 
-Run the tests by using `python -m pytest` in order to correctly include all of the iroh bindings.
+This repo includes a very small, but working example for using the python API, at [`python/main.py`](python/main.py).
 
+To run it with the latest version of iroh published on pypi:
 
-#### Building wheels
+```sh
+# Install iroh with pip
+pip install iroh
+# Run the example
+python3 python/main.py --help
+```
+
+To run with a locally-built wheel:
+
+```sh
+# Create and activate a virtual env
+virtualenv .
+source ./bin/activate
+# Install dependencies
+pip install uniffi-bindgen
+# Build wheel
+maturin develop
+# Run the example
+python3 python/main.py --help
+
+```
+
+#### Testing
+
+We use [`pytest`](https://docs.pytest.org/en/7.1.x/contents.html) to test the python API.
+
+Execute the following commands to prepare and run all tests:
+```sh
+# Create and activate a virtual env
+virtualenv .
+source ./bin/activate
+# Install dependencies
+pip install uniffi-bindgen pytest pytest-asyncio
+# Build wheel
+maturin develop
+# Run tests
+python -m pytest
+```
+
+When developing the python API, create a test file for each rust module that you create, and test all pieces of the API in that module in the python test file. The file should be named `[MODULENAME]_test.py`.
+For example, the `iroh::net` ffi bindings crate should have a corresponding `net_test.py` file.
+
+#### Building portable wheels
 
 Invoking `maturin build` will build a wheel in `target/wheels`.  This
 will likely only work on your specific platform. To build a portable
@@ -58,11 +112,3 @@ Uniffi translates the rust to python in a systematic way. The biggest discrepanc
 - unit enums will have the same names:
     `SocketAddrType::V4` in rust will be `SocketAddrType.V4` in python
 - methods that return `Result` in rust will potentially throw exceptions on error in python
-
-#### test file
-Create a test file for each rust module that you create, and test all pieces of the API in that module in the python test file. The file should be named "[MODULENAME]\_test.py". For example, the `iroh::net` ffi bindings crate should have a corresponding "net\_test.py" file.
-
-### Kotlin
-
-- See `README.kotlin.md` for setup
-- Run tests using `./test_kotlin.sh`
