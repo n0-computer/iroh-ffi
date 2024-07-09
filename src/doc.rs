@@ -361,6 +361,14 @@ impl Doc {
             .map(|policy| Arc::new(policy.into()))?;
         Ok(res)
     }
+
+    /// Get sync peers for this document
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn get_sync_peers(&self) -> Result<Option<Vec<Vec<u8>>>, IrohError> {
+        let list = self.inner.get_sync_peers().await?;
+        let list = list.map(|l| l.into_iter().map(|p| p.to_vec()).collect());
+        Ok(list)
+    }
 }
 
 /// Download policy to decide which content blobs shall be downloaded.

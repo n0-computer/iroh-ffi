@@ -41,7 +41,7 @@ kotlinc -Werror -d ./kotlin/iroh.jar ./kotlin/iroh/*.kt -classpath $CLASSPATH
 # Execute Tests
 echo "executing tests"
 
-for testName in author blob doc key node; do
+for testName in author blob doc key node gossip; do
     echo "running ${testName}_test.kts ..."
     kotlinc -Werror -J-ea -classpath $CLASSPATH:./kotlin/iroh.jar:./kotlin -script ./kotlin/${testName}_test.kts
 done

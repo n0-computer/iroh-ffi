@@ -87,10 +87,7 @@ impl IrohNode {
             .await?;
         Ok(authors)
     }
-}
 
-#[uniffi::export]
-impl IrohNode {
     /// Create a new document author.
     ///
     /// You likely want to save the returned [`AuthorId`] somewhere so that you can use this author
