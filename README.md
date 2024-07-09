@@ -1,4 +1,3 @@
-
 # iroh-ffi
 
 > Foreign Function Interface (FFI) bindings for Iroh
@@ -29,53 +28,24 @@ Running `cargo build --release` will produce a dynamic library and a static libr
 
 For builds targeting older versions of MacOS, build with with:  `MACOSX_DEPLOYMENT_TARGET=10.7 && cargo build --target x86_64-apple-darwin --release`.
 
-## Swift
+## Language Specifics
 
-### Xcode and IOS
+### Swift
 
-- Run `make_swift.sh`.
-- Add `IrohLib` as a local package dependency under `Frameworks, Libraries, and Embedded Content` in the `General` settings of your project.
-- Run `Build`
-- Check that it is now listed under `Frameworks, Libraries, and Embedded Content`, if not click `+` again and add it from the list.
-- Add `SystemConfiguration` as a Framework.
-- Now you can just import the library in Swift with a standard import statement like `import IrohLib`.
+[Notes here](https://github.com/n0-computer/iroh-ffi/blob/main/README.python.md)
 
-## Python
+### Python
 
-- Install [`maturin`](https://www.maturin.rs/installation) for python development and packaging.
-- Install `uniffi-bindgen` with `pip`
-- `maturin develop` will build your package
-- maturin expects you to use `virtualenv` to manage your virtual environment
+[Notes here](https://github.com/n0-computer/iroh-ffi/blob/main/README.python.md)
 
-### Building wheels
+### Kotlin
 
-Invoking `maturin build` will build a wheel in `target/wheels`.  This
-will likely only work on your specific platform. To build a portable
-wheel for linux use:
-
-```
-docker run --rm -v $(pwd):/mnt -w /mnt quay.io/pypa/manylinux2014_x86_64 /mnt/build_wheel.sh
-```
-
-### Example
-
-- Make sure the `iroh` is installed `pip install iroh`
-- Run with `python3 main.py --help`
-
-### Running the tests
-- activate your virtual env
-- Install `pytest` with `pip`
-- Install `pytest-asyncio` with `pip`
-- Run `maturin develop` if you haven't yet
-- Run `python -m pytest`
-
-# Kotlin
 [Notes here](https://github.com/n0-computer/iroh-ffi/blob/main/README.kotlin.md)
 
-# Developers
+## Developers
 Check our our [DEVELOPERS.md](DEVELOPERS.md) for guides on how to translate from the iroh rust API to the iroh FFI API, as well as how to set up testing for golang and python.
 
-# License
+## License
 
 This project is licensed under either of
 

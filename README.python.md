@@ -14,6 +14,3 @@ We currently ship binary wheels on pypi for:
 - aarch64 manylinux2014
 - arm64 macosx
 - x86_64 macosx
-
-If you need another platform you will have to build from source using the repository at https://github.com/n0-computer/iroh-ffi/
-
