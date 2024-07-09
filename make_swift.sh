@@ -3,7 +3,7 @@ set -eu
 # TODO: convert to rust
 
 # Env
-UDL_NAME="iroh"
+UDL_NAME="iroh_ffi"
 FRAMEWORK_NAME="Iroh"
 SWIFT_INTERFACE="IrohLib"
 INCLUDE_DIR="include/apple"

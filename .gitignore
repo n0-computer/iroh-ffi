@@ -12,6 +12,7 @@ DerivedData/
 .swiftpm/config/registries.json
 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 /include
+.build
 
 /IrohLib.xcframework.zip
 
@@ -20,7 +21,7 @@ DerivedData/
 !/Iroh.xcframework/*/Iroh.framework/Info.plist
 !/Iroh.xcframework/*/Iroh.framework/Modules
 !/Iroh.xcframework/*/Iroh.framework/Headers
-!/Iroh.xcframework/*/Iroh.framework/Headers/irohFFI.h
+!/Iroh.xcframework/*/Iroh.framework/Headers/iroh_ffiFFI.h
 !/Iroh.xcframework/*/Iroh.framework/Headers/Export.h
 
 
