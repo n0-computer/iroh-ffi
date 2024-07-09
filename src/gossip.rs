@@ -238,21 +238,15 @@ mod tests {
         let n0_id = n0.node_id().await.unwrap();
         let n0_addr = n0.node_addr().await.unwrap();
         n1.add_node_addr(&n0_addr).await.unwrap();
-        let sink1 = n1
+        let _ = n1
             .gossip_subscribe(topic.clone(), vec![n0_id.to_string()], Arc::new(cb1))
             .await
             .unwrap();
-
-        // TODO: Remove, should pass without this.
-        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
         // Send message on n0
         println!("sending message");
         let msg_content = b"hello";
         sink0.broadcast(msg_content.to_vec()).await.unwrap();
-
-        // TODO: Remove, should pass without this.
-        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
         // Receive on n1
         let recv_fut = async {
@@ -276,6 +270,5 @@ mod tests {
         tokio::time::timeout(std::time::Duration::from_secs(10), recv_fut)
             .await
             .expect("timeout reached and no gossip message received");
-        drop(sink1);
     }
 }
