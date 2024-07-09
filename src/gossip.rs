@@ -243,26 +243,38 @@ mod tests {
             .await
             .unwrap();
 
-        tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+        // TODO: Remove, should pass without this.
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
         // Send message on n0
         println!("sending message");
         let msg_content = b"hello";
         sink0.broadcast(msg_content.to_vec()).await.unwrap();
 
-        tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+        // TODO: Remove, should pass without this.
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+
         // Receive on n1
-        while let Some(event) = receiver1.recv().await {
-            println!("{:?}", event);
-            if let Message::Received {
-                ref content,
-                ref delivered_from,
-            } = &*event
-            {
-                assert_eq!(content, msg_content);
-                assert_eq!(delivered_from, &n0_id.to_string());
-                break;
+        let recv_fut = async {
+            loop {
+                let Some(event) = receiver1.recv().await else {
+                    panic!("receiver stream closed before receiving gossip message");
+                };
+                println!("event: {:?}", event);
+                if let Message::Received {
+                    ref content,
+                    ref delivered_from,
+                } = &*event
+                {
+                    assert_eq!(content, msg_content);
+                    assert_eq!(delivered_from, &n0_id.to_string());
+
+                    break;
+                }
             }
-        }
+        };
+        tokio::time::timeout(std::time::Duration::from_secs(10), recv_fut)
+            .await
+            .expect("timeout reached and no gossip message received");
     }
 }
