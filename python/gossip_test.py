@@ -4,27 +4,31 @@ import pytest
 import asyncio
 import iroh
 
-from iroh import IrohNode, ShareMode, LiveEventType, MessageType
+from iroh import IrohNode, ShareMode, LiveEventType, MessageType, GossipMessageCallback, set_log_level, LogLevel
+
+class Callback(GossipMessageCallback):
+    def __init__(self, name):
+        print("init", name)
+        self.name = name
+        self.chan = asyncio.Queue()
+
+    async def on_message(self, msg):
+        print("onmessage")
+        print(self.name, msg.type())
+        await self.chan.put(msg)
 
 @pytest.mark.asyncio
 async def test_gossip_basic():
+    set_log_level(LogLevel.WARN)
+
     n0 = await IrohNode.memory()
     n1 = await IrohNode.memory()
-
-    class Callback:
-        def __init__(self, chan):
-            self.chan = chan
-
-        async def on_message(self, msg):
-            print("", msg.type())
-            await self.chan.put(msg)
 
     # Create a topic
     topic = bytearray([1] * 32)
 
     # Setup gossip on node 0
-    chan0 = asyncio.Queue(maxsize=8)
-    cb0 = Callback(chan0)
+    cb0 = Callback("n0")
     n1_id = await n1.node_id()
     n1_addr = await n1.node_addr()
     await n0.add_node_addr(n1_addr)
@@ -33,8 +37,7 @@ async def test_gossip_basic():
     sink0 = await n0.gossip_subscribe(topic, [n1_id], cb0)
 
     # Setup gossip on node 1
-    chan1 = asyncio.Queue(maxsize=8)
-    cb1 = Callback(chan1)
+    cb1 = Callback("n1")
     n0_id = await n0.node_id()
     n0_addr = await n0.node_addr()
     await n1.add_node_addr(n0_addr)
@@ -44,9 +47,9 @@ async def test_gossip_basic():
 
     # Wait for n1 to show up for n0
     while (True):
-        event = await chan0.get()
+        event = await cb0.chan.get()
         print("<<", event.type())
-        if (event.type() == MessageType.NeighborUp):
+        if (event.type() == MessageType.NEIGHBOR_UP):
             assert event.as_neighbor_up() == n1_id
             break
 
@@ -62,7 +65,7 @@ async def test_gossip_basic():
 
     # Wait for the message on node 1
     while (True):
-        event = await chan1.get()
+        event = await cb1.chan.get()
         if (event.type() == MessageType.RECEIVED):
             msg = event.as_received()
             assert msg.content == msg_content
