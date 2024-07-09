@@ -104,10 +104,6 @@ jobs:
     steps:
     - uses: actions/checkout@master
     - uses: dtolnay/rust-toolchain@stable
-    - name: Install Swift
-      run: |
-        brew install swift swift-format
-        swift --version
     - name: Swift tests
       run: |
         ./make_swift.sh
