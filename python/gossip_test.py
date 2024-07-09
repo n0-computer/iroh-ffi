@@ -4,7 +4,7 @@ import pytest
 import asyncio
 import iroh
 
-from iroh import IrohNode, ShareMode, LiveEventType, MessageType, GossipMessageCallback, set_log_level, LogLevel
+from iroh import IrohNode, ShareMode, LiveEventType, MessageType, GossipMessageCallback
 
 class Callback(GossipMessageCallback):
     def __init__(self, name):
@@ -13,7 +13,6 @@ class Callback(GossipMessageCallback):
         self.chan = asyncio.Queue()
 
     async def on_message(self, msg):
-        print("onmessage")
         print(self.name, msg.type())
         await self.chan.put(msg)
 
@@ -21,8 +20,6 @@ class Callback(GossipMessageCallback):
 async def test_gossip_basic():
     # setup event loop, to ensure async callbacks work
     iroh.iroh_ffi.uniffi_set_event_loop(asyncio.get_running_loop())
-
-    set_log_level(LogLevel.WARN)
 
     n0 = await IrohNode.memory()
     n1 = await IrohNode.memory()

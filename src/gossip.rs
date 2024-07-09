@@ -135,7 +135,7 @@ impl IrohNode {
 
         tokio::task::spawn(async move {
             while let Some(event) = stream.next().await {
-                let message = match dbg!(event) {
+                let message = match event {
                     Ok(SubscribeResponse::Gossip(GossipEvent::NeighborUp(n))) => {
                         Message::NeighborUp(n.to_string())
                     }
@@ -155,9 +155,7 @@ impl IrohNode {
                     Ok(SubscribeResponse::Lagged) => Message::Lagged,
                     Err(err) => Message::Error(err.to_string()),
                 };
-                dbg!(&message);
                 if let Err(err) = cb.on_message(Arc::new(message)).await {
-                    dbg!(&err);
                     warn!("cb error, gossip: {:?}", err);
                 }
             }
