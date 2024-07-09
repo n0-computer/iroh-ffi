@@ -97,6 +97,23 @@ jobs:
         maturin develop && \
         python -m pytest -vvv
 
+  build_and_test_swift:
+    name: Swift - Build and test
+    timeout-minutes: 30
+    runs-on: [macOS, ARM64]
+    steps:
+    - uses: actions/checkout@master
+    - uses: dtolnay/rust-toolchain@stable
+    - name: Install Swift
+      run: |
+        brew install swift swift-format
+        swift --version
+    - name: Swift tests
+      run: |
+        ./make_swift.sh
+        cd IrohLib
+        swift test
+
   build_and_test_kotlin:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30

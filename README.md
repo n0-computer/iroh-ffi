@@ -32,7 +32,7 @@ For builds targeting older versions of macOS, build with:  `MACOSX_DEPLOYMENT_TA
 
 ### Swift
 
-[Notes here](https://github.com/n0-computer/iroh-ffi/blob/main/README.python.md)
+[Notes here](https://github.com/n0-computer/iroh-ffi/blob/main/README.swift.md)
 
 ### Python
 
