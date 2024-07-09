@@ -238,7 +238,7 @@ mod tests {
         let n0_id = n0.node_id().await.unwrap();
         let n0_addr = n0.node_addr().await.unwrap();
         n1.add_node_addr(&n0_addr).await.unwrap();
-        let _ = n1
+        let sink1 = n1
             .gossip_subscribe(topic.clone(), vec![n0_id.to_string()], Arc::new(cb1))
             .await
             .unwrap();
@@ -276,5 +276,6 @@ mod tests {
         tokio::time::timeout(std::time::Duration::from_secs(10), recv_fut)
             .await
             .expect("timeout reached and no gossip message received");
+        drop(sink1);
     }
 }
