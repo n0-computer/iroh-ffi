@@ -104,6 +104,8 @@ jobs:
     steps:
     - uses: actions/checkout@master
     - uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios,aarch64-apple-darwin
     - name: Swift tests
       run: |
         ./make_swift.sh
