@@ -21,7 +21,7 @@ let package = Package(
             path: "IrohLib/Sources/IrohLib"),
         .binaryTarget(
             name: "Iroh",
-            url: "https://github.com/n0-computer/iroh-ffi/releases/download/0.17.0/IrohLib.xcframework.zip",
-            checksum: "2909fa5d0f2db938c946defb64d602120c76ee5e9c88940b191db4548f15b365")
+            url: "https://github.com/n0-computer/iroh-ffi/releases/download/v0.20.0/IrohLib.xcframework.zip",
+            checksum: "8123c2d43690c423e9bc8993c935b2fe009731f3b65b95754358570077037858")
     ]
 )
