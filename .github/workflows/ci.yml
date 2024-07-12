@@ -93,7 +93,7 @@ jobs:
       run: |
         virtualenv venv && \
         source venv/bin/activate && \
-        pip install setuptools pytest pytest-asyncio maturin uniffi-bindgen
+        pip install setuptools pytest pytest-asyncio "maturin[patchelf]" uniffi-bindgen
         maturin develop && \
         python -m pytest
 
