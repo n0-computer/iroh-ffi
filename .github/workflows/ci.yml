@@ -95,7 +95,7 @@ jobs:
         source venv/bin/activate && \
         pip install setuptools pytest pytest-asyncio "maturin[patchelf]" uniffi-bindgen
         maturin develop && \
-        python -m pytest
+        python -m pytest -vvv
 
   build_and_test_kotlin:
     runs-on: ${{ matrix.runner }}
