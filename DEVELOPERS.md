@@ -10,7 +10,7 @@ Use these general guidelines when translating the rust API featured in the rust
 - Any methods that stream files or have `Reader` inputs or outputs should instead expect to read from or write to a file. Also, see if it's logical for any structs or enums that have a method to return a `Reader` to instead have `size` method, so that the user can investigate the size of the data before attempting to save it or load it in memory.
 - Any methods that return a `Stream` of structs (such as a `list` method), should return a `Vec` instead. You should also add a comment that warns the user that this method will load all the entries into memory.
 - Any methods that return progress or events should instead take a call back. Check out the `Doc::subscribe` method and the `SubscribeCallback` trait for how this should be implemented
-- Most methods that return a `Result` should likely get their own unique `IrohError`s, follow the pattern layed out in `error.rs`.
+- Most methods that return a `Result` should likely get their own unique `IrohError`s, follow the pattern laid out in `error.rs`.
 - Except for unit enums, every struct and enum should be represented in the `udl` file as an interface. It should be expected that the foreign language use constructor methods in order to create structs, and use setters and getters to manipulate the struct, rather than having access to the internal fields themselves.
 - Anything that can be represented as a string, should have a `to_string` and `from_string` method, eg `NamespaceId`, `DocTicket`
 - Enums that have enum variants which contain data should look at the `SocketAddr` or `LiveEvent` enums for the expected translation.
@@ -47,7 +47,7 @@ docker run --rm -v $(pwd):/mnt -w /mnt quay.io/pypa/manylinux2014_x86_64 /mnt/bu
 
 #### Translations
 
-Uniffi translates the rust to python in a systematic way. The biggest discrepency between the rust and python syntax are around how new objects are constructed
+Uniffi translates the rust to python in a systematic way. The biggest discrepancy between the rust and python syntax are around how new objects are constructed
 
 - constructor methods w/ `new` name:
     `Ipv4Addr::new(127, 0, 0, 1)` in rust would be `Ipv4Addr(127, 0, 0, 1)` in python

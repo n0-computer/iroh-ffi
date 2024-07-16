@@ -1,6 +1,6 @@
 # Release Process
 
-Each release process is broken down per langauge target:
+Each release process is broken down per language target:
 
 ## Swift
 
@@ -72,7 +72,7 @@ To release iroh python:
 1) Download the artifacts from the [wheels ci workflow](https://github.com/n0-computer/iroh-ffi/actions/workflows/wheels.yml), picking the workflow that was run on the latest `main` branch
 2) Extract the artifacts
 3) Upload each to testpypi: `twine upload --repository testpypi iroh-$VERSION-*.whl`
-4) Dogfood by downloading the lastest iroh version from testpipy and using it. The simplest test may be to run the python code in the `iroh-ffi/python` directory.
+4) Dogfood by downloading the latest iroh version from testpipy and using it. The simplest test may be to run the python code in the `iroh-ffi/python` directory.
     - create & activate a new virtual env
     - install iroh from testpypi `pip install -i https://test.pypi.org/simple/ iroh`
     - run `python main.py`
