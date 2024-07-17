@@ -86,10 +86,13 @@ jobs:
     - uses: actions/setup-python@v5
       with:
           python-version: 3.12
-    - name: Install Deps
-      run: pip install setuptools pytest pytest-asyncio "maturin[patchelf]" uniffi-bindgen
+    - name: Install virtualenv
+      run: pip install virtualenv
     - name: Python tests
       run: |
+        virtualenv venv
+        source venv/bin/activate
+        pip install setuptools pytest pytest-asyncio "maturin[patchelf]" uniffi-bindgen
         maturin develop
         # Test python/gossip_test.py often times out so run all other pytests first
         pytest --ignore python/gossip_test.py
