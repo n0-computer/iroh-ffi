@@ -24,7 +24,7 @@ let package = Package(
             ]),
         .binaryTarget(
             name: "Iroh",
-            path: "artifacts/Iroh.xcframework"),
+            path: "./artifacts/Iroh.xcframework"),
         .testTarget(
           name: "IrohLibTests",
           dependencies: ["IrohLib"]),
