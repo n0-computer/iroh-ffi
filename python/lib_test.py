@@ -1,7 +1,5 @@
 # tests that correspond to the `src/lib.rs` rust api functions
 from iroh import path_to_key, key_to_path
-import pytest
-import tempfile
 
 def test_path_to_key_roundtrip():
     path = "/foo/bar"

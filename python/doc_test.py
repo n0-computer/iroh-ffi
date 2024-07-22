@@ -60,14 +60,14 @@ def test_query():
     opts.offset = 0
     single_latest_per_key = Query.single_latest_per_key(opts)
     assert 0 == single_latest_per_key.offset()
-    assert None == single_latest_per_key.limit()
+    assert single_latest_per_key.limit() is None
 
     # author
     opts.direction = SortDirection.ASC
     opts.offset = 100
     author = Query.author(AuthorId.from_string("mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q"), opts)
     assert 100 == author.offset()
-    assert None == author.limit()
+    assert author.limit() is None
 
     # key_exact
     opts.sort_by = SortBy.KEY_AUTHOR
@@ -85,7 +85,7 @@ def test_query():
     key_prefix = Query.key_prefix(
         b'prefix',
         opts
-    );
+    )
     assert 0 == key_prefix.offset()
     assert 100 == key_prefix.limit()
 

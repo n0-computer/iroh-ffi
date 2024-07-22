@@ -1,10 +1,9 @@
 # tests that correspond to the `src/gossp.rs` rust api
-import tempfile
 import pytest
 import asyncio
 import iroh
 
-from iroh import Iroh, ShareMode, LiveEventType, MessageType, GossipMessageCallback
+from iroh import Iroh, MessageType, GossipMessageCallback
 
 class Callback(GossipMessageCallback):
     def __init__(self, name):
@@ -43,7 +42,7 @@ async def test_gossip_basic():
     await n1.node().add_node_addr(n0_addr)
 
     print("subscribe n1")
-    sink1 = await n1.gossip().subscribe(topic, [n0_id], cb1)
+    await n1.gossip().subscribe(topic, [n0_id], cb1)
 
     # Wait for n1 to show up for n0
     while (True):

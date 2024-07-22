@@ -1,7 +1,6 @@
 # tests that correspond to the `src/author.rs` rust api
 from iroh import Iroh
 import pytest
-import tempfile
 import iroh
 import asyncio
 

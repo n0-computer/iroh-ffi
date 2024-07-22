@@ -112,7 +112,7 @@ async def test_blob_read_write_path():
     #
     # check outcome info is as expected
     assert cb.format == BlobFormat.RAW
-    assert cb.hash != None
+    assert cb.hash is not None
     #
     # check we get the expected size from the hash
     got_size = await node.blobs().size(cb.hash)
@@ -185,7 +185,7 @@ async def test_blob_collections():
     # add from path
     await node.blobs().add_from_path(collection_dir.name, False, tag, wrap, cb)
 
-    assert cb.collection_hash != None
+    assert cb.collection_hash is not None
     assert cb.format == BlobFormat.HASH_SEQ
 
     # list collections
@@ -223,7 +223,7 @@ async def test_list_and_delete():
     # create bytes
     blob_size = 100
     blobs = []
-    num_blobs = 3;
+    num_blobs = 3
 
     for x in range(num_blobs):
         print(x)

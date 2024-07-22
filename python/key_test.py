@@ -1,6 +1,5 @@
 # tests that correspond to the `src/key.rs` rust api
 from iroh import PublicKey
-import sys
 
 def test_public_key():
     key_str = "ki6htfv2252cj2lhq3hxu4qfcfjtpjnukzonevigudzjpmmruxva"
