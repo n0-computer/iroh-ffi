@@ -1,6 +1,6 @@
 # Iroh Python
 
-This is the [Iroh](https://github.com/n0-computer/iroh) python API!
+This is the [Iroh](https://github.com/n0-computer/iroh) Python API!
 
 The API was generated using [uniffi-rs](https://github.com/mozilla/uniffi-rs).
 
