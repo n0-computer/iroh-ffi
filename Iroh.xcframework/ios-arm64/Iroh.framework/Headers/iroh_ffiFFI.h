@@ -445,6 +445,51 @@ int8_t uniffi_iroh_ffi_fn_method_authorid_equal(void*_Nonnull ptr, void*_Nonnull
 RustBuffer uniffi_iroh_ffi_fn_method_authorid_uniffi_trait_display(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_AUTHORS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_AUTHORS
+void*_Nonnull uniffi_iroh_ffi_fn_clone_authors(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_AUTHORS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_AUTHORS
+void uniffi_iroh_ffi_fn_free_authors(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_AUTHORS_CREATE
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_AUTHORS_CREATE
+uint64_t uniffi_iroh_ffi_fn_method_authors_create(void*_Nonnull ptr
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_AUTHORS_DEFAULT
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_AUTHORS_DEFAULT
+uint64_t uniffi_iroh_ffi_fn_method_authors_default(void*_Nonnull ptr
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_AUTHORS_DELETE
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_AUTHORS_DELETE
+uint64_t uniffi_iroh_ffi_fn_method_authors_delete(void*_Nonnull ptr, void*_Nonnull author
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_AUTHORS_EXPORT
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_AUTHORS_EXPORT
+uint64_t uniffi_iroh_ffi_fn_method_authors_export(void*_Nonnull ptr, void*_Nonnull author
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_AUTHORS_IMPORT
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_AUTHORS_IMPORT
+uint64_t uniffi_iroh_ffi_fn_method_authors_import(void*_Nonnull ptr, void*_Nonnull author
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_AUTHORS_IMPORT_AUTHOR
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_AUTHORS_IMPORT_AUTHOR
+uint64_t uniffi_iroh_ffi_fn_method_authors_import_author(void*_Nonnull ptr, void*_Nonnull author
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_AUTHORS_LIST
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_AUTHORS_LIST
+uint64_t uniffi_iroh_ffi_fn_method_authors_list(void*_Nonnull ptr
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_BLOBDOWNLOADOPTIONS
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_BLOBDOWNLOADOPTIONS
 void*_Nonnull uniffi_iroh_ffi_fn_clone_blobdownloadoptions(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -498,6 +543,96 @@ void*_Nonnull uniffi_iroh_ffi_fn_method_blobticket_node_addr(void*_Nonnull ptr, 
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBTICKET_RECURSIVE
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBTICKET_RECURSIVE
 int8_t uniffi_iroh_ffi_fn_method_blobticket_recursive(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_BLOBS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_BLOBS
+void*_Nonnull uniffi_iroh_ffi_fn_clone_blobs(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_BLOBS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_BLOBS
+void uniffi_iroh_ffi_fn_free_blobs(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_ADD_BYTES
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_ADD_BYTES
+uint64_t uniffi_iroh_ffi_fn_method_blobs_add_bytes(void*_Nonnull ptr, RustBuffer bytes
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_ADD_BYTES_NAMED
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_ADD_BYTES_NAMED
+uint64_t uniffi_iroh_ffi_fn_method_blobs_add_bytes_named(void*_Nonnull ptr, RustBuffer bytes, RustBuffer name
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_ADD_FROM_PATH
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_ADD_FROM_PATH
+uint64_t uniffi_iroh_ffi_fn_method_blobs_add_from_path(void*_Nonnull ptr, RustBuffer path, int8_t in_place, void*_Nonnull tag, void*_Nonnull wrap, void*_Nonnull cb
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_CREATE_COLLECTION
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_CREATE_COLLECTION
+uint64_t uniffi_iroh_ffi_fn_method_blobs_create_collection(void*_Nonnull ptr, void*_Nonnull collection, void*_Nonnull tag, RustBuffer tags_to_delete
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_DELETE_BLOB
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_DELETE_BLOB
+uint64_t uniffi_iroh_ffi_fn_method_blobs_delete_blob(void*_Nonnull ptr, void*_Nonnull hash
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_DOWNLOAD
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_DOWNLOAD
+uint64_t uniffi_iroh_ffi_fn_method_blobs_download(void*_Nonnull ptr, void*_Nonnull hash, void*_Nonnull opts, void*_Nonnull cb
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_EXPORT
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_EXPORT
+uint64_t uniffi_iroh_ffi_fn_method_blobs_export(void*_Nonnull ptr, void*_Nonnull hash, RustBuffer destination, RustBuffer format, RustBuffer mode
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_GET_COLLECTION
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_GET_COLLECTION
+uint64_t uniffi_iroh_ffi_fn_method_blobs_get_collection(void*_Nonnull ptr, void*_Nonnull hash
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_LIST
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_LIST
+uint64_t uniffi_iroh_ffi_fn_method_blobs_list(void*_Nonnull ptr
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_LIST_COLLECTIONS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_LIST_COLLECTIONS
+uint64_t uniffi_iroh_ffi_fn_method_blobs_list_collections(void*_Nonnull ptr
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_LIST_INCOMPLETE
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_LIST_INCOMPLETE
+uint64_t uniffi_iroh_ffi_fn_method_blobs_list_incomplete(void*_Nonnull ptr
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_READ_AT_TO_BYTES
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_READ_AT_TO_BYTES
+uint64_t uniffi_iroh_ffi_fn_method_blobs_read_at_to_bytes(void*_Nonnull ptr, void*_Nonnull hash, uint64_t offset, RustBuffer len
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_READ_TO_BYTES
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_READ_TO_BYTES
+uint64_t uniffi_iroh_ffi_fn_method_blobs_read_to_bytes(void*_Nonnull ptr, void*_Nonnull hash
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_SHARE
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_SHARE
+uint64_t uniffi_iroh_ffi_fn_method_blobs_share(void*_Nonnull ptr, void*_Nonnull hash, RustBuffer blob_format, RustBuffer ticket_options
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_SIZE
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_SIZE
+uint64_t uniffi_iroh_ffi_fn_method_blobs_size(void*_Nonnull ptr, void*_Nonnull hash
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_WRITE_TO_PATH
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_WRITE_TO_PATH
+uint64_t uniffi_iroh_ffi_fn_method_blobs_write_to_path(void*_Nonnull ptr, void*_Nonnull hash, RustBuffer path
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_COLLECTION
@@ -621,9 +756,9 @@ void uniffi_iroh_ffi_fn_free_doc(void*_Nonnull ptr, RustCallStatus *_Nonnull out
 uint64_t uniffi_iroh_ffi_fn_method_doc_close_me(void*_Nonnull ptr
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOC_DEL
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOC_DEL
-uint64_t uniffi_iroh_ffi_fn_method_doc_del(void*_Nonnull ptr, void*_Nonnull author_id, RustBuffer prefix
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOC_DELETE_ENTRY
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOC_DELETE_ENTRY
+uint64_t uniffi_iroh_ffi_fn_method_doc_delete_entry(void*_Nonnull ptr, void*_Nonnull author_id, RustBuffer prefix
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOC_EXPORT_FILE
@@ -816,6 +951,46 @@ RustBuffer uniffi_iroh_ffi_fn_method_docimportprogress_as_progress(void*_Nonnull
 RustBuffer uniffi_iroh_ffi_fn_method_docimportprogress_type(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_DOCS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_DOCS
+void*_Nonnull uniffi_iroh_ffi_fn_clone_docs(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_DOCS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_DOCS
+void uniffi_iroh_ffi_fn_free_docs(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOCS_CREATE
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOCS_CREATE
+uint64_t uniffi_iroh_ffi_fn_method_docs_create(void*_Nonnull ptr
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOCS_DROP_DOC
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOCS_DROP_DOC
+uint64_t uniffi_iroh_ffi_fn_method_docs_drop_doc(void*_Nonnull ptr, RustBuffer doc_id
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOCS_JOIN
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOCS_JOIN
+uint64_t uniffi_iroh_ffi_fn_method_docs_join(void*_Nonnull ptr, RustBuffer ticket
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOCS_JOIN_AND_SUBSCRIBE
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOCS_JOIN_AND_SUBSCRIBE
+uint64_t uniffi_iroh_ffi_fn_method_docs_join_and_subscribe(void*_Nonnull ptr, RustBuffer ticket, void*_Nonnull cb
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOCS_LIST
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOCS_LIST
+uint64_t uniffi_iroh_ffi_fn_method_docs_list(void*_Nonnull ptr
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOCS_OPEN
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOCS_OPEN
+uint64_t uniffi_iroh_ffi_fn_method_docs_open(void*_Nonnull ptr, RustBuffer id
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_DOWNLOADCALLBACK
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_DOWNLOADCALLBACK
 void*_Nonnull uniffi_iroh_ffi_fn_clone_downloadcallback(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -988,6 +1163,21 @@ void*_Nonnull uniffi_iroh_ffi_fn_constructor_filterkind_prefix(RustBuffer prefix
 int8_t uniffi_iroh_ffi_fn_method_filterkind_matches(void*_Nonnull ptr, RustBuffer key, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_GOSSIP
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_GOSSIP
+void*_Nonnull uniffi_iroh_ffi_fn_clone_gossip(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_GOSSIP
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_GOSSIP
+void uniffi_iroh_ffi_fn_free_gossip(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_GOSSIP_SUBSCRIBE
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_GOSSIP_SUBSCRIBE
+uint64_t uniffi_iroh_ffi_fn_method_gossip_subscribe(void*_Nonnull ptr, RustBuffer topic, RustBuffer bootstrap, void*_Nonnull cb
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_GOSSIPMESSAGECALLBACK
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_GOSSIPMESSAGECALLBACK
 void*_Nonnull uniffi_iroh_ffi_fn_clone_gossipmessagecallback(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -1053,6 +1243,67 @@ RustBuffer uniffi_iroh_ffi_fn_method_hash_to_hex(void*_Nonnull ptr, RustCallStat
 RustBuffer uniffi_iroh_ffi_fn_method_hash_uniffi_trait_display(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_IROH
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_IROH
+void*_Nonnull uniffi_iroh_ffi_fn_clone_iroh(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_IROH
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_IROH
+void uniffi_iroh_ffi_fn_free_iroh(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_IROH_MEMORY
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_IROH_MEMORY
+uint64_t uniffi_iroh_ffi_fn_constructor_iroh_memory(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_IROH_MEMORY_WITH_OPTIONS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_IROH_MEMORY_WITH_OPTIONS
+uint64_t uniffi_iroh_ffi_fn_constructor_iroh_memory_with_options(RustBuffer options
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_IROH_PERSISTENT
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_IROH_PERSISTENT
+uint64_t uniffi_iroh_ffi_fn_constructor_iroh_persistent(RustBuffer path
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_IROH_PERSISTENT_WITH_OPTIONS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_IROH_PERSISTENT_WITH_OPTIONS
+uint64_t uniffi_iroh_ffi_fn_constructor_iroh_persistent_with_options(RustBuffer path, RustBuffer options
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROH_AUTHORS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROH_AUTHORS
+void*_Nonnull uniffi_iroh_ffi_fn_method_iroh_authors(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROH_BLOBS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROH_BLOBS
+void*_Nonnull uniffi_iroh_ffi_fn_method_iroh_blobs(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROH_DOCS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROH_DOCS
+void*_Nonnull uniffi_iroh_ffi_fn_method_iroh_docs(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROH_GOSSIP
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROH_GOSSIP
+void*_Nonnull uniffi_iroh_ffi_fn_method_iroh_gossip(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROH_NODE
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROH_NODE
+void*_Nonnull uniffi_iroh_ffi_fn_method_iroh_node(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROH_TAGS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROH_TAGS
+void*_Nonnull uniffi_iroh_ffi_fn_method_iroh_tags(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_IROHERROR
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_IROHERROR
 void*_Nonnull uniffi_iroh_ffi_fn_clone_iroherror(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -1071,242 +1322,6 @@ RustBuffer uniffi_iroh_ffi_fn_method_iroherror_message(void*_Nonnull ptr, RustCa
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHERROR_UNIFFI_TRAIT_DEBUG
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHERROR_UNIFFI_TRAIT_DEBUG
 RustBuffer uniffi_iroh_ffi_fn_method_iroherror_uniffi_trait_debug(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_IROHNODE
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_IROHNODE
-void*_Nonnull uniffi_iroh_ffi_fn_clone_irohnode(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_IROHNODE
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_IROHNODE
-void uniffi_iroh_ffi_fn_free_irohnode(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_IROHNODE_MEMORY
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_IROHNODE_MEMORY
-uint64_t uniffi_iroh_ffi_fn_constructor_irohnode_memory(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_IROHNODE_MEMORY_WITH_OPTIONS
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_IROHNODE_MEMORY_WITH_OPTIONS
-uint64_t uniffi_iroh_ffi_fn_constructor_irohnode_memory_with_options(RustBuffer options
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_IROHNODE_PERSISTENT
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_IROHNODE_PERSISTENT
-uint64_t uniffi_iroh_ffi_fn_constructor_irohnode_persistent(RustBuffer path
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_IROHNODE_PERSISTENT_WITH_OPTIONS
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_IROHNODE_PERSISTENT_WITH_OPTIONS
-uint64_t uniffi_iroh_ffi_fn_constructor_irohnode_persistent_with_options(RustBuffer path, RustBuffer options
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_ADD_NODE_ADDR
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_ADD_NODE_ADDR
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_add_node_addr(void*_Nonnull ptr, void*_Nonnull addr
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_AUTHOR_CREATE
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_AUTHOR_CREATE
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_author_create(void*_Nonnull ptr
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_AUTHOR_DEFAULT
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_AUTHOR_DEFAULT
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_author_default(void*_Nonnull ptr
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_AUTHOR_DELETE
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_AUTHOR_DELETE
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_author_delete(void*_Nonnull ptr, void*_Nonnull author
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_AUTHOR_EXPORT
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_AUTHOR_EXPORT
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_author_export(void*_Nonnull ptr, void*_Nonnull author
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_AUTHOR_IMPORT
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_AUTHOR_IMPORT
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_author_import(void*_Nonnull ptr, void*_Nonnull author
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_AUTHOR_LIST
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_AUTHOR_LIST
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_author_list(void*_Nonnull ptr
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_ADD_BYTES
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_ADD_BYTES
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_blobs_add_bytes(void*_Nonnull ptr, RustBuffer bytes
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_ADD_BYTES_NAMED
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_ADD_BYTES_NAMED
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_blobs_add_bytes_named(void*_Nonnull ptr, RustBuffer bytes, RustBuffer name
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_ADD_FROM_PATH
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_ADD_FROM_PATH
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_blobs_add_from_path(void*_Nonnull ptr, RustBuffer path, int8_t in_place, void*_Nonnull tag, void*_Nonnull wrap, void*_Nonnull cb
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_CREATE_COLLECTION
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_CREATE_COLLECTION
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_blobs_create_collection(void*_Nonnull ptr, void*_Nonnull collection, void*_Nonnull tag, RustBuffer tags_to_delete
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_DELETE_BLOB
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_DELETE_BLOB
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_blobs_delete_blob(void*_Nonnull ptr, void*_Nonnull hash
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_DOWNLOAD
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_DOWNLOAD
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_blobs_download(void*_Nonnull ptr, void*_Nonnull hash, void*_Nonnull opts, void*_Nonnull cb
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_EXPORT
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_EXPORT
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_blobs_export(void*_Nonnull ptr, void*_Nonnull hash, RustBuffer destination, RustBuffer format, RustBuffer mode
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_GET_COLLECTION
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_GET_COLLECTION
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_blobs_get_collection(void*_Nonnull ptr, void*_Nonnull hash
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_LIST
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_LIST
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_blobs_list(void*_Nonnull ptr
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_LIST_COLLECTIONS
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_LIST_COLLECTIONS
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_blobs_list_collections(void*_Nonnull ptr
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_LIST_INCOMPLETE
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_LIST_INCOMPLETE
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_blobs_list_incomplete(void*_Nonnull ptr
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_READ_AT_TO_BYTES
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_READ_AT_TO_BYTES
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_blobs_read_at_to_bytes(void*_Nonnull ptr, void*_Nonnull hash, uint64_t offset, RustBuffer len
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_READ_TO_BYTES
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_READ_TO_BYTES
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_blobs_read_to_bytes(void*_Nonnull ptr, void*_Nonnull hash
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_SHARE
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_SHARE
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_blobs_share(void*_Nonnull ptr, void*_Nonnull hash, RustBuffer blob_format, RustBuffer ticket_options
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_SIZE
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_SIZE
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_blobs_size(void*_Nonnull ptr, void*_Nonnull hash
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_WRITE_TO_PATH
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_BLOBS_WRITE_TO_PATH
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_blobs_write_to_path(void*_Nonnull ptr, void*_Nonnull hash, RustBuffer path
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_CONNECTION_INFO
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_CONNECTION_INFO
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_connection_info(void*_Nonnull ptr, void*_Nonnull node_id
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_CONNECTIONS
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_CONNECTIONS
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_connections(void*_Nonnull ptr
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_DOC_CREATE
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_DOC_CREATE
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_doc_create(void*_Nonnull ptr
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_DOC_DROP
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_DOC_DROP
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_doc_drop(void*_Nonnull ptr, RustBuffer doc_id
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_DOC_JOIN
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_DOC_JOIN
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_doc_join(void*_Nonnull ptr, RustBuffer ticket
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_DOC_JOIN_AND_SUBSCRIBE
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_DOC_JOIN_AND_SUBSCRIBE
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_doc_join_and_subscribe(void*_Nonnull ptr, RustBuffer ticket, void*_Nonnull cb
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_DOC_LIST
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_DOC_LIST
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_doc_list(void*_Nonnull ptr
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_DOC_OPEN
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_DOC_OPEN
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_doc_open(void*_Nonnull ptr, RustBuffer id
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_GOSSIP_SUBSCRIBE
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_GOSSIP_SUBSCRIBE
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_gossip_subscribe(void*_Nonnull ptr, RustBuffer topic, RustBuffer bootstrap, void*_Nonnull cb
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_HOME_RELAY
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_HOME_RELAY
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_home_relay(void*_Nonnull ptr
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_MY_RPC_ADDR
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_MY_RPC_ADDR
-RustBuffer uniffi_iroh_ffi_fn_method_irohnode_my_rpc_addr(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_NODE_ADDR
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_NODE_ADDR
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_node_addr(void*_Nonnull ptr
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_NODE_ID
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_NODE_ID
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_node_id(void*_Nonnull ptr
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_SHUTDOWN
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_SHUTDOWN
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_shutdown(void*_Nonnull ptr, int8_t force
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_STATS
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_STATS
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_stats(void*_Nonnull ptr
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_STATUS
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_STATUS
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_status(void*_Nonnull ptr
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_TAGS_DELETE
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_TAGS_DELETE
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_tags_delete(void*_Nonnull ptr, RustBuffer name
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_TAGS_LIST
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROHNODE_TAGS_LIST
-uint64_t uniffi_iroh_ffi_fn_method_irohnode_tags_list(void*_Nonnull ptr
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_LIVEEVENT
@@ -1387,6 +1402,66 @@ RustBuffer uniffi_iroh_ffi_fn_method_message_as_received(void*_Nonnull ptr, Rust
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_MESSAGE_TYPE
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_MESSAGE_TYPE
 RustBuffer uniffi_iroh_ffi_fn_method_message_type(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_NODE
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_NODE
+void*_Nonnull uniffi_iroh_ffi_fn_clone_node(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_NODE
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_NODE
+void uniffi_iroh_ffi_fn_free_node(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_ADD_NODE_ADDR
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_ADD_NODE_ADDR
+uint64_t uniffi_iroh_ffi_fn_method_node_add_node_addr(void*_Nonnull ptr, void*_Nonnull addr
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_CONNECTION_INFO
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_CONNECTION_INFO
+uint64_t uniffi_iroh_ffi_fn_method_node_connection_info(void*_Nonnull ptr, void*_Nonnull node_id
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_CONNECTIONS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_CONNECTIONS
+uint64_t uniffi_iroh_ffi_fn_method_node_connections(void*_Nonnull ptr
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_HOME_RELAY
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_HOME_RELAY
+uint64_t uniffi_iroh_ffi_fn_method_node_home_relay(void*_Nonnull ptr
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_MY_RPC_ADDR
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_MY_RPC_ADDR
+RustBuffer uniffi_iroh_ffi_fn_method_node_my_rpc_addr(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_NODE_ADDR
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_NODE_ADDR
+uint64_t uniffi_iroh_ffi_fn_method_node_node_addr(void*_Nonnull ptr
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_NODE_ID
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_NODE_ID
+uint64_t uniffi_iroh_ffi_fn_method_node_node_id(void*_Nonnull ptr
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_SHUTDOWN
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_SHUTDOWN
+uint64_t uniffi_iroh_ffi_fn_method_node_shutdown(void*_Nonnull ptr, int8_t force
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_STATS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_STATS
+uint64_t uniffi_iroh_ffi_fn_method_node_stats(void*_Nonnull ptr
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_STATUS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_STATUS
+uint64_t uniffi_iroh_ffi_fn_method_node_status(void*_Nonnull ptr
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_NODEADDR
@@ -1633,6 +1708,26 @@ void uniffi_iroh_ffi_fn_init_callback_vtable_subscribecallback(UniffiVTableCallb
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_SUBSCRIBECALLBACK_EVENT
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_SUBSCRIBECALLBACK_EVENT
 uint64_t uniffi_iroh_ffi_fn_method_subscribecallback_event(void*_Nonnull ptr, void*_Nonnull event
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_TAGS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_TAGS
+void*_Nonnull uniffi_iroh_ffi_fn_clone_tags(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_TAGS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_TAGS
+void uniffi_iroh_ffi_fn_free_tags(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_TAGS_DELETE
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_TAGS_DELETE
+uint64_t uniffi_iroh_ffi_fn_method_tags_delete(void*_Nonnull ptr, RustBuffer name
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_TAGS_LIST
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_TAGS_LIST
+uint64_t uniffi_iroh_ffi_fn_method_tags_list(void*_Nonnull ptr
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_WRAPOPTION
@@ -2035,6 +2130,48 @@ uint16_t uniffi_iroh_ffi_checksum_method_authorid_equal(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_AUTHORS_CREATE
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_AUTHORS_CREATE
+uint16_t uniffi_iroh_ffi_checksum_method_authors_create(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_AUTHORS_DEFAULT
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_AUTHORS_DEFAULT
+uint16_t uniffi_iroh_ffi_checksum_method_authors_default(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_AUTHORS_DELETE
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_AUTHORS_DELETE
+uint16_t uniffi_iroh_ffi_checksum_method_authors_delete(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_AUTHORS_EXPORT
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_AUTHORS_EXPORT
+uint16_t uniffi_iroh_ffi_checksum_method_authors_export(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_AUTHORS_IMPORT
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_AUTHORS_IMPORT
+uint16_t uniffi_iroh_ffi_checksum_method_authors_import(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_AUTHORS_IMPORT_AUTHOR
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_AUTHORS_IMPORT_AUTHOR
+uint16_t uniffi_iroh_ffi_checksum_method_authors_import_author(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_AUTHORS_LIST
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_AUTHORS_LIST
+uint16_t uniffi_iroh_ffi_checksum_method_authors_list(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBTICKET_AS_DOWNLOAD_OPTIONS
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBTICKET_AS_DOWNLOAD_OPTIONS
 uint16_t uniffi_iroh_ffi_checksum_method_blobticket_as_download_options(void
@@ -2062,6 +2199,102 @@ uint16_t uniffi_iroh_ffi_checksum_method_blobticket_node_addr(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBTICKET_RECURSIVE
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBTICKET_RECURSIVE
 uint16_t uniffi_iroh_ffi_checksum_method_blobticket_recursive(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_ADD_BYTES
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_ADD_BYTES
+uint16_t uniffi_iroh_ffi_checksum_method_blobs_add_bytes(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_ADD_BYTES_NAMED
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_ADD_BYTES_NAMED
+uint16_t uniffi_iroh_ffi_checksum_method_blobs_add_bytes_named(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_ADD_FROM_PATH
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_ADD_FROM_PATH
+uint16_t uniffi_iroh_ffi_checksum_method_blobs_add_from_path(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_CREATE_COLLECTION
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_CREATE_COLLECTION
+uint16_t uniffi_iroh_ffi_checksum_method_blobs_create_collection(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_DELETE_BLOB
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_DELETE_BLOB
+uint16_t uniffi_iroh_ffi_checksum_method_blobs_delete_blob(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_DOWNLOAD
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_DOWNLOAD
+uint16_t uniffi_iroh_ffi_checksum_method_blobs_download(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_EXPORT
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_EXPORT
+uint16_t uniffi_iroh_ffi_checksum_method_blobs_export(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_GET_COLLECTION
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_GET_COLLECTION
+uint16_t uniffi_iroh_ffi_checksum_method_blobs_get_collection(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_LIST
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_LIST
+uint16_t uniffi_iroh_ffi_checksum_method_blobs_list(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_LIST_COLLECTIONS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_LIST_COLLECTIONS
+uint16_t uniffi_iroh_ffi_checksum_method_blobs_list_collections(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_LIST_INCOMPLETE
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_LIST_INCOMPLETE
+uint16_t uniffi_iroh_ffi_checksum_method_blobs_list_incomplete(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_READ_AT_TO_BYTES
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_READ_AT_TO_BYTES
+uint16_t uniffi_iroh_ffi_checksum_method_blobs_read_at_to_bytes(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_READ_TO_BYTES
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_READ_TO_BYTES
+uint16_t uniffi_iroh_ffi_checksum_method_blobs_read_to_bytes(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_SHARE
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_SHARE
+uint16_t uniffi_iroh_ffi_checksum_method_blobs_share(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_SIZE
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_SIZE
+uint16_t uniffi_iroh_ffi_checksum_method_blobs_size(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_WRITE_TO_PATH
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_WRITE_TO_PATH
+uint16_t uniffi_iroh_ffi_checksum_method_blobs_write_to_path(void
     
 );
 #endif
@@ -2155,9 +2388,9 @@ uint16_t uniffi_iroh_ffi_checksum_method_doc_close_me(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_DOC_DEL
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_DOC_DEL
-uint16_t uniffi_iroh_ffi_checksum_method_doc_del(void
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_DOC_DELETE_ENTRY
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_DOC_DELETE_ENTRY
+uint16_t uniffi_iroh_ffi_checksum_method_doc_delete_entry(void
     
 );
 #endif
@@ -2329,6 +2562,42 @@ uint16_t uniffi_iroh_ffi_checksum_method_docimportprogress_type(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_DOCS_CREATE
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_DOCS_CREATE
+uint16_t uniffi_iroh_ffi_checksum_method_docs_create(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_DOCS_DROP_DOC
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_DOCS_DROP_DOC
+uint16_t uniffi_iroh_ffi_checksum_method_docs_drop_doc(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_DOCS_JOIN
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_DOCS_JOIN
+uint16_t uniffi_iroh_ffi_checksum_method_docs_join(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_DOCS_JOIN_AND_SUBSCRIBE
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_DOCS_JOIN_AND_SUBSCRIBE
+uint16_t uniffi_iroh_ffi_checksum_method_docs_join_and_subscribe(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_DOCS_LIST
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_DOCS_LIST
+uint16_t uniffi_iroh_ffi_checksum_method_docs_list(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_DOCS_OPEN
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_DOCS_OPEN
+uint16_t uniffi_iroh_ffi_checksum_method_docs_open(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_DOWNLOADCALLBACK_PROGRESS
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_DOWNLOADCALLBACK_PROGRESS
 uint16_t uniffi_iroh_ffi_checksum_method_downloadcallback_progress(void
@@ -2431,6 +2700,12 @@ uint16_t uniffi_iroh_ffi_checksum_method_filterkind_matches(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_GOSSIP_SUBSCRIBE
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_GOSSIP_SUBSCRIBE
+uint16_t uniffi_iroh_ffi_checksum_method_gossip_subscribe(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_GOSSIPMESSAGECALLBACK_ON_MESSAGE
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_GOSSIPMESSAGECALLBACK_ON_MESSAGE
 uint16_t uniffi_iroh_ffi_checksum_method_gossipmessagecallback_on_message(void
@@ -2455,255 +2730,45 @@ uint16_t uniffi_iroh_ffi_checksum_method_hash_to_hex(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROH_AUTHORS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROH_AUTHORS
+uint16_t uniffi_iroh_ffi_checksum_method_iroh_authors(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROH_BLOBS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROH_BLOBS
+uint16_t uniffi_iroh_ffi_checksum_method_iroh_blobs(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROH_DOCS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROH_DOCS
+uint16_t uniffi_iroh_ffi_checksum_method_iroh_docs(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROH_GOSSIP
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROH_GOSSIP
+uint16_t uniffi_iroh_ffi_checksum_method_iroh_gossip(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROH_NODE
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROH_NODE
+uint16_t uniffi_iroh_ffi_checksum_method_iroh_node(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROH_TAGS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROH_TAGS
+uint16_t uniffi_iroh_ffi_checksum_method_iroh_tags(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHERROR_MESSAGE
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHERROR_MESSAGE
 uint16_t uniffi_iroh_ffi_checksum_method_iroherror_message(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_ADD_NODE_ADDR
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_ADD_NODE_ADDR
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_add_node_addr(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_AUTHOR_CREATE
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_AUTHOR_CREATE
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_author_create(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_AUTHOR_DEFAULT
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_AUTHOR_DEFAULT
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_author_default(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_AUTHOR_DELETE
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_AUTHOR_DELETE
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_author_delete(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_AUTHOR_EXPORT
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_AUTHOR_EXPORT
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_author_export(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_AUTHOR_IMPORT
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_AUTHOR_IMPORT
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_author_import(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_AUTHOR_LIST
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_AUTHOR_LIST
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_author_list(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_ADD_BYTES
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_ADD_BYTES
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_blobs_add_bytes(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_ADD_BYTES_NAMED
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_ADD_BYTES_NAMED
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_blobs_add_bytes_named(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_ADD_FROM_PATH
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_ADD_FROM_PATH
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_blobs_add_from_path(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_CREATE_COLLECTION
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_CREATE_COLLECTION
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_blobs_create_collection(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_DELETE_BLOB
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_DELETE_BLOB
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_blobs_delete_blob(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_DOWNLOAD
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_DOWNLOAD
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_blobs_download(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_EXPORT
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_EXPORT
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_blobs_export(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_GET_COLLECTION
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_GET_COLLECTION
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_blobs_get_collection(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_LIST
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_LIST
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_blobs_list(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_LIST_COLLECTIONS
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_LIST_COLLECTIONS
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_blobs_list_collections(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_LIST_INCOMPLETE
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_LIST_INCOMPLETE
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_blobs_list_incomplete(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_READ_AT_TO_BYTES
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_READ_AT_TO_BYTES
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_blobs_read_at_to_bytes(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_READ_TO_BYTES
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_READ_TO_BYTES
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_blobs_read_to_bytes(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_SHARE
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_SHARE
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_blobs_share(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_SIZE
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_SIZE
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_blobs_size(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_WRITE_TO_PATH
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_BLOBS_WRITE_TO_PATH
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_blobs_write_to_path(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_CONNECTION_INFO
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_CONNECTION_INFO
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_connection_info(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_CONNECTIONS
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_CONNECTIONS
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_connections(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_DOC_CREATE
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_DOC_CREATE
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_doc_create(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_DOC_DROP
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_DOC_DROP
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_doc_drop(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_DOC_JOIN
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_DOC_JOIN
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_doc_join(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_DOC_JOIN_AND_SUBSCRIBE
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_DOC_JOIN_AND_SUBSCRIBE
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_doc_join_and_subscribe(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_DOC_LIST
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_DOC_LIST
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_doc_list(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_DOC_OPEN
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_DOC_OPEN
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_doc_open(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_GOSSIP_SUBSCRIBE
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_GOSSIP_SUBSCRIBE
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_gossip_subscribe(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_HOME_RELAY
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_HOME_RELAY
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_home_relay(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_MY_RPC_ADDR
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_MY_RPC_ADDR
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_my_rpc_addr(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_NODE_ADDR
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_NODE_ADDR
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_node_addr(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_NODE_ID
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_NODE_ID
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_node_id(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_SHUTDOWN
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_SHUTDOWN
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_shutdown(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_STATS
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_STATS
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_stats(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_STATUS
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_STATUS
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_status(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_TAGS_DELETE
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_TAGS_DELETE
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_tags_delete(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_TAGS_LIST
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROHNODE_TAGS_LIST
-uint16_t uniffi_iroh_ffi_checksum_method_irohnode_tags_list(void
     
 );
 #endif
@@ -2776,6 +2841,66 @@ uint16_t uniffi_iroh_ffi_checksum_method_message_as_received(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_MESSAGE_TYPE
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_MESSAGE_TYPE
 uint16_t uniffi_iroh_ffi_checksum_method_message_type(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_ADD_NODE_ADDR
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_ADD_NODE_ADDR
+uint16_t uniffi_iroh_ffi_checksum_method_node_add_node_addr(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_CONNECTION_INFO
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_CONNECTION_INFO
+uint16_t uniffi_iroh_ffi_checksum_method_node_connection_info(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_CONNECTIONS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_CONNECTIONS
+uint16_t uniffi_iroh_ffi_checksum_method_node_connections(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_HOME_RELAY
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_HOME_RELAY
+uint16_t uniffi_iroh_ffi_checksum_method_node_home_relay(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_MY_RPC_ADDR
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_MY_RPC_ADDR
+uint16_t uniffi_iroh_ffi_checksum_method_node_my_rpc_addr(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_NODE_ADDR
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_NODE_ADDR
+uint16_t uniffi_iroh_ffi_checksum_method_node_node_addr(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_NODE_ID
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_NODE_ID
+uint16_t uniffi_iroh_ffi_checksum_method_node_node_id(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_SHUTDOWN
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_SHUTDOWN
+uint16_t uniffi_iroh_ffi_checksum_method_node_shutdown(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_STATS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_STATS
+uint16_t uniffi_iroh_ffi_checksum_method_node_stats(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_STATUS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_STATUS
+uint16_t uniffi_iroh_ffi_checksum_method_node_status(void
     
 );
 #endif
@@ -2881,6 +3006,18 @@ uint16_t uniffi_iroh_ffi_checksum_method_subscribecallback_event(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_TAGS_DELETE
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_TAGS_DELETE
+uint16_t uniffi_iroh_ffi_checksum_method_tags_delete(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_TAGS_LIST
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_TAGS_LIST
+uint16_t uniffi_iroh_ffi_checksum_method_tags_list(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_AUTHOR_FROM_STRING
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_AUTHOR_FROM_STRING
 uint16_t uniffi_iroh_ffi_checksum_constructor_author_from_string(void
@@ -2965,27 +3102,27 @@ uint16_t uniffi_iroh_ffi_checksum_constructor_hash_new(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_IROHNODE_MEMORY
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_IROHNODE_MEMORY
-uint16_t uniffi_iroh_ffi_checksum_constructor_irohnode_memory(void
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_IROH_MEMORY
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_IROH_MEMORY
+uint16_t uniffi_iroh_ffi_checksum_constructor_iroh_memory(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_IROHNODE_MEMORY_WITH_OPTIONS
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_IROHNODE_MEMORY_WITH_OPTIONS
-uint16_t uniffi_iroh_ffi_checksum_constructor_irohnode_memory_with_options(void
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_IROH_MEMORY_WITH_OPTIONS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_IROH_MEMORY_WITH_OPTIONS
+uint16_t uniffi_iroh_ffi_checksum_constructor_iroh_memory_with_options(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_IROHNODE_PERSISTENT
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_IROHNODE_PERSISTENT
-uint16_t uniffi_iroh_ffi_checksum_constructor_irohnode_persistent(void
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_IROH_PERSISTENT
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_IROH_PERSISTENT
+uint16_t uniffi_iroh_ffi_checksum_constructor_iroh_persistent(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_IROHNODE_PERSISTENT_WITH_OPTIONS
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_IROHNODE_PERSISTENT_WITH_OPTIONS
-uint16_t uniffi_iroh_ffi_checksum_constructor_irohnode_persistent_with_options(void
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_IROH_PERSISTENT_WITH_OPTIONS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_IROH_PERSISTENT_WITH_OPTIONS
+uint16_t uniffi_iroh_ffi_checksum_constructor_iroh_persistent_with_options(void
     
 );
 #endif
