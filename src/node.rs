@@ -206,14 +206,14 @@ impl Default for NodeOptions {
 }
 
 /// An Iroh node. Allows you to sync, store, and transfer data.
-#[derive(uniffi::Object)]
-pub enum IrohNode {
+#[derive(uniffi::Object, Debug, Clone)]
+pub enum Iroh {
     Fs(FsNode),
     Memory(MemNode),
 }
 
-impl IrohNode {
-    pub(crate) fn node(&self) -> &iroh::client::Iroh {
+impl Iroh {
+    pub(crate) fn client(&self) -> &iroh::client::Iroh {
         match self {
             Self::Fs(node) => node,
             Self::Memory(node) => node,
@@ -222,7 +222,7 @@ impl IrohNode {
 }
 
 #[uniffi::export]
-impl IrohNode {
+impl Iroh {
     /// Create a new iroh node.
     ///
     /// The `path` param should be a directory where we can store or load
@@ -260,7 +260,7 @@ impl IrohNode {
         }
         let node = builder.spawn().await?;
 
-        Ok(IrohNode::Fs(node))
+        Ok(Iroh::Fs(node))
     }
 
     /// Create a new in memory iroh node with options.
@@ -276,9 +276,29 @@ impl IrohNode {
         }
         let node = builder.spawn().await?;
 
-        Ok(IrohNode::Memory(node))
+        Ok(Iroh::Memory(node))
     }
 
+    /// Access to node specific funtionaliy.
+    pub fn node(&self) -> Node {
+        Node { node: self.clone() }
+    }
+}
+
+/// Iroh node client.
+#[derive(uniffi::Object)]
+pub struct Node {
+    node: Iroh,
+}
+
+impl Node {
+    fn node(&self) -> &iroh::client::Iroh {
+        self.node.client()
+    }
+}
+
+#[uniffi::export]
+impl Node {
     /// Get statistics of the running node.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn stats(&self) -> Result<HashMap<String, CounterStats>, IrohError> {
@@ -364,9 +384,9 @@ impl IrohNode {
 
     /// Returns `Some(addr)` if an RPC endpoint is running, `None` otherwise.
     pub fn my_rpc_addr(&self) -> Option<String> {
-        let addr = match self {
-            Self::Fs(n) => n.my_rpc_addr(),
-            Self::Memory(n) => n.my_rpc_addr(),
+        let addr = match self.node {
+            Iroh::Fs(ref n) => n.my_rpc_addr(),
+            Iroh::Memory(ref n) => n.my_rpc_addr(),
         };
         addr.map(|a| a.to_string())
     }
@@ -415,8 +435,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_memory() {
-        let node = IrohNode::memory().await.unwrap();
-        let id = node.node_id().await.unwrap();
+        let node = Iroh::memory().await.unwrap();
+        let id = node.node().node_id().await.unwrap();
         println!("{id}");
     }
 }

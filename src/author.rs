@@ -2,7 +2,7 @@ use std::{str::FromStr, sync::Arc};
 
 use futures::TryStreamExt;
 
-use crate::{IrohError, IrohNode};
+use crate::{Iroh, IrohError};
 
 /// Identifier for an [`Author`]
 #[derive(Debug, Clone, PartialEq, Eq, uniffi::Object)]
@@ -60,8 +60,28 @@ impl std::fmt::Display for Author {
     }
 }
 
+/// Iroh authors client.
+#[derive(uniffi::Object)]
+pub struct Authors {
+    node: Iroh,
+}
+
 #[uniffi::export]
-impl IrohNode {
+impl Iroh {
+    /// Access to authors specific funtionaliy.
+    pub fn authors(&self) -> Authors {
+        Authors { node: self.clone() }
+    }
+}
+
+impl Authors {
+    fn client(&self) -> &iroh::client::Iroh {
+        self.node.client()
+    }
+}
+
+#[uniffi::export]
+impl Authors {
     /// Returns the default document author of this node.
     ///
     /// On persistent nodes, the author is created on first start and its public key is saved
@@ -69,16 +89,16 @@ impl IrohNode {
     ///
     /// The default author can be set with [`Self::set_default`].
     #[uniffi::method(async_runtime = "tokio")]
-    pub async fn author_default(&self) -> Result<Arc<AuthorId>, IrohError> {
-        let author = self.node().authors().default().await?;
+    pub async fn default(&self) -> Result<Arc<AuthorId>, IrohError> {
+        let author = self.client().authors().default().await?;
         Ok(Arc::new(AuthorId(author)))
     }
 
     /// List all the AuthorIds that exist on this node.
     #[uniffi::method(async_runtime = "tokio")]
-    pub async fn author_list(&self) -> Result<Vec<Arc<AuthorId>>, IrohError> {
+    pub async fn list(&self) -> Result<Vec<Arc<AuthorId>>, IrohError> {
         let authors = self
-            .node()
+            .client()
             .authors()
             .list()
             .await?
@@ -95,8 +115,8 @@ impl IrohNode {
     ///
     /// If you need only a single author, use [`Self::default`].
     #[uniffi::method(async_runtime = "tokio")]
-    pub async fn author_create(&self) -> Result<Arc<AuthorId>, IrohError> {
-        let author = self.node().authors().create().await?;
+    pub async fn create(&self) -> Result<Arc<AuthorId>, IrohError> {
+        let author = self.client().authors().create().await?;
 
         Ok(Arc::new(AuthorId(author)))
     }
@@ -105,8 +125,8 @@ impl IrohNode {
     ///
     /// Warning: This contains sensitive data.
     #[uniffi::method(async_runtime = "tokio")]
-    pub async fn author_export(&self, author: Arc<AuthorId>) -> Result<Arc<Author>, IrohError> {
-        let author = self.node().authors().export(author.0).await?;
+    pub async fn export(&self, author: Arc<AuthorId>) -> Result<Arc<Author>, IrohError> {
+        let author = self.client().authors().export(author.0).await?;
         match author {
             Some(author) => Ok(Arc::new(Author(author))),
             None => Err(anyhow::anyhow!("Author Not Found").into()),
@@ -117,17 +137,26 @@ impl IrohNode {
     ///
     /// Warning: This contains sensitive data.
     #[uniffi::method(async_runtime = "tokio")]
-    pub async fn author_import(&self, author: Arc<Author>) -> Result<Arc<AuthorId>, IrohError> {
-        self.node().authors().import(author.0.clone()).await?;
+    pub async fn import(&self, author: Arc<Author>) -> Result<Arc<AuthorId>, IrohError> {
+        self.client().authors().import(author.0.clone()).await?;
         Ok(Arc::new(AuthorId(author.0.id())))
+    }
+
+    /// Import the given author.
+    ///
+    /// Warning: This contains sensitive data.
+    /// `import` is reserved in python.
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn import_author(&self, author: Arc<Author>) -> Result<Arc<AuthorId>, IrohError> {
+        self.import(author).await
     }
 
     /// Deletes the given author by id.
     ///
     /// Warning: This permanently removes this author.
     #[uniffi::method(async_runtime = "tokio")]
-    pub async fn author_delete(&self, author: Arc<AuthorId>) -> Result<(), IrohError> {
-        self.node().authors().delete(author.0).await?;
+    pub async fn delete(&self, author: Arc<AuthorId>) -> Result<(), IrohError> {
+        self.client().authors().delete(author.0).await?;
         Ok(())
     }
 }
@@ -136,21 +165,21 @@ mod tests {
     #[tokio::test]
     async fn test_author_api() {
         let dir = tempfile::tempdir().unwrap();
-        let node = crate::IrohNode::persistent(dir.into_path().display().to_string())
+        let node = crate::Iroh::persistent(dir.into_path().display().to_string())
             .await
             .unwrap();
 
-        assert_eq!(node.author_list().await.unwrap().len(), 1);
-        let author_id = node.author_create().await.unwrap();
-        let authors = node.author_list().await.unwrap();
+        assert_eq!(node.authors().list().await.unwrap().len(), 1);
+        let author_id = node.authors().create().await.unwrap();
+        let authors = node.authors().list().await.unwrap();
         assert_eq!(authors.len(), 2);
-        let author = node.author_export(author_id.clone()).await.unwrap();
+        let author = node.authors().export(author_id.clone()).await.unwrap();
         assert!(author_id.equal(&author.id()));
-        node.author_delete(author_id).await.unwrap();
-        let authors = node.author_list().await.unwrap();
+        node.authors().delete(author_id).await.unwrap();
+        let authors = node.authors().list().await.unwrap();
         assert_eq!(authors.len(), 1);
-        node.author_import(author).await.unwrap();
-        let authors = node.author_list().await.unwrap();
+        node.authors().import(author).await.unwrap();
+        let authors = node.authors().list().await.unwrap();
         assert_eq!(authors.len(), 2);
     }
 }

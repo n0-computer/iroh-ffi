@@ -5,9 +5,7 @@ use futures::{StreamExt, TryStreamExt};
 use iroh::client::MemDoc;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    ticket::AddrInfoOptions, AuthorId, CallbackError, Hash, IrohError, IrohNode, PublicKey,
-};
+use crate::{ticket::AddrInfoOptions, AuthorId, CallbackError, Hash, Iroh, IrohError, PublicKey};
 
 #[derive(Debug, uniffi::Enum)]
 pub enum CapabilityKind {
@@ -26,33 +24,53 @@ impl From<iroh::docs::CapabilityKind> for CapabilityKind {
     }
 }
 
+/// Iroh docs client.
+#[derive(uniffi::Object)]
+pub struct Docs {
+    node: Iroh,
+}
+
 #[uniffi::export]
-impl IrohNode {
+impl Iroh {
+    /// Access to docs specific funtionaliy.
+    pub fn docs(&self) -> Docs {
+        Docs { node: self.clone() }
+    }
+}
+
+impl Docs {
+    fn client(&self) -> &iroh::client::Iroh {
+        self.node.client()
+    }
+}
+
+#[uniffi::export]
+impl Docs {
     /// Create a new doc.
     #[uniffi::method(async_runtime = "tokio")]
-    pub async fn doc_create(&self) -> Result<Arc<Doc>, IrohError> {
-        let doc = self.node().docs().create().await?;
+    pub async fn create(&self) -> Result<Arc<Doc>, IrohError> {
+        let doc = self.client().docs().create().await?;
 
         Ok(Arc::new(Doc { inner: doc }))
     }
 
     /// Join and sync with an already existing document.
     #[uniffi::method(async_runtime = "tokio")]
-    pub async fn doc_join(&self, ticket: String) -> Result<Arc<Doc>, IrohError> {
+    pub async fn join(&self, ticket: String) -> Result<Arc<Doc>, IrohError> {
         let ticket = iroh::docs::DocTicket::from_str(&ticket).map_err(anyhow::Error::from)?;
-        let doc = self.node().docs().import(ticket).await?;
+        let doc = self.client().docs().import(ticket).await?;
         Ok(Arc::new(Doc { inner: doc }))
     }
 
     /// Join and sync with an already existing document and subscribe to events on that document.
     #[uniffi::method(async_runtime = "tokio")]
-    pub async fn doc_join_and_subscribe(
+    pub async fn join_and_subscribe(
         &self,
         ticket: String,
         cb: Arc<dyn SubscribeCallback>,
     ) -> Result<Arc<Doc>, IrohError> {
         let ticket = iroh::docs::DocTicket::from_str(&ticket).map_err(anyhow::Error::from)?;
-        let (doc, mut stream) = self.node().docs().import_and_subscribe(ticket).await?;
+        let (doc, mut stream) = self.client().docs().import_and_subscribe(ticket).await?;
 
         tokio::spawn(async move {
             while let Some(event) = stream.next().await {
@@ -74,9 +92,9 @@ impl IrohNode {
 
     /// List all the docs we have access to on this node.
     #[uniffi::method(async_runtime = "tokio")]
-    pub async fn doc_list(&self) -> Result<Vec<NamespaceAndCapability>, IrohError> {
+    pub async fn list(&self) -> Result<Vec<NamespaceAndCapability>, IrohError> {
         let docs = self
-            .node()
+            .client()
             .docs()
             .list()
             .await?
@@ -94,9 +112,9 @@ impl IrohNode {
     ///
     /// Returns None if the document cannot be found.
     #[uniffi::method(async_runtime = "tokio")]
-    pub async fn doc_open(&self, id: String) -> Result<Option<Arc<Doc>>, IrohError> {
+    pub async fn open(&self, id: String) -> Result<Option<Arc<Doc>>, IrohError> {
         let namespace_id = iroh::docs::NamespaceId::from_str(&id)?;
-        let doc = self.node().docs().open(namespace_id).await?;
+        let doc = self.client().docs().open(namespace_id).await?;
 
         Ok(doc.map(|d| Arc::new(Doc { inner: d })))
     }
@@ -107,9 +125,9 @@ impl IrohNode {
     /// document will be permanently deleted from the node's storage. Content blobs will be deleted
     /// through garbage collection unless they are referenced from another document or tag.
     #[uniffi::method(async_runtime = "tokio")]
-    pub async fn doc_drop(&self, doc_id: String) -> Result<(), IrohError> {
+    pub async fn drop_doc(&self, doc_id: String) -> Result<(), IrohError> {
         let doc_id = iroh::docs::NamespaceId::from_str(&doc_id)?;
-        self.node()
+        self.client()
             .docs()
             .drop_doc(doc_id)
             .await
@@ -228,7 +246,11 @@ impl Doc {
     ///
     /// Returns the number of entries deleted.
     #[uniffi::method(async_runtime = "tokio")]
-    pub async fn del(&self, author_id: Arc<AuthorId>, prefix: Vec<u8>) -> Result<u64, IrohError> {
+    pub async fn delete_entry(
+        &self,
+        author_id: Arc<AuthorId>,
+        prefix: Vec<u8>,
+    ) -> Result<u64, IrohError> {
         let num_del = self.inner.del(author_id.0, prefix).await?;
 
         u64::try_from(num_del).map_err(|e| anyhow::Error::from(e).into())
@@ -1533,7 +1555,7 @@ mod tests {
     #[tokio::test]
     async fn test_doc_create() {
         let path = tempfile::tempdir().unwrap();
-        let node = IrohNode::persistent(
+        let node = Iroh::persistent(
             path.path()
                 .join("doc-create")
                 .to_string_lossy()
@@ -1541,9 +1563,9 @@ mod tests {
         )
         .await
         .unwrap();
-        let node_id = node.node_id().await.unwrap();
+        let node_id = node.node().node_id().await.unwrap();
         println!("id: {}", node_id);
-        let doc = node.doc_create().await.unwrap();
+        let doc = node.docs().create().await.unwrap();
         let doc_id = doc.id();
         println!("doc_id: {}", doc_id);
 
@@ -1552,7 +1574,7 @@ mod tests {
             .await
             .unwrap();
         println!("doc_ticket: {}", doc_ticket);
-        node.doc_join(doc_ticket).await.unwrap();
+        node.docs().join(doc_ticket).await.unwrap();
     }
 
     #[tokio::test]
@@ -1560,7 +1582,7 @@ mod tests {
         // create node_0
         let iroh_dir = tempfile::tempdir().unwrap();
 
-        let node_0 = IrohNode::persistent(
+        let node_0 = Iroh::persistent(
             iroh_dir
                 .path()
                 .join("basic-sync-0")
@@ -1571,7 +1593,7 @@ mod tests {
         .unwrap();
 
         // create node_1
-        let node_1 = IrohNode::persistent(
+        let node_1 = Iroh::persistent(
             iroh_dir
                 .path()
                 .join("basic-sync-1")
@@ -1582,7 +1604,7 @@ mod tests {
         .unwrap();
 
         // create doc on node_0
-        let doc_0 = node_0.doc_create().await.unwrap();
+        let doc_0 = node_0.docs().create().await.unwrap();
         let ticket = doc_0
             .share(ShareMode::Write, AddrInfoOptions::RelayAndAddresses)
             .await
@@ -1608,7 +1630,8 @@ mod tests {
         let (found_s_1, mut found_r_1) = mpsc::channel(8);
         let cb_1 = Callback { found_s: found_s_1 };
         let doc_1 = node_1
-            .doc_join_and_subscribe(ticket, Arc::new(cb_1))
+            .docs()
+            .join_and_subscribe(ticket, Arc::new(cb_1))
             .await
             .unwrap();
 
@@ -1620,7 +1643,7 @@ mod tests {
         }
 
         // create author on node_1
-        let author = node_1.author_create().await.unwrap();
+        let author = node_1.authors().create().await.unwrap();
         doc_1
             .set_bytes(&author, b"hello".to_vec(), b"world".to_vec())
             .await
@@ -1628,7 +1651,8 @@ mod tests {
         while let Some(event) = found_r.recv().await {
             if let LiveEvent::ContentReady { ref hash } = *event {
                 let val = node_1
-                    .blobs_read_to_bytes(hash.clone().into())
+                    .blobs()
+                    .read_to_bytes(hash.clone().into())
                     .await
                     .unwrap();
                 assert_eq!(b"world".to_vec(), val);
@@ -1740,7 +1764,7 @@ mod tests {
     #[tokio::test]
     async fn test_doc_entry_basics() {
         let path = tempfile::tempdir().unwrap();
-        let node = crate::IrohNode::persistent(
+        let node = crate::Iroh::persistent(
             path.path()
                 .join("doc-entry-basics")
                 .to_string_lossy()
@@ -1750,8 +1774,8 @@ mod tests {
         .unwrap();
 
         // create doc  and author
-        let doc = node.doc_create().await.unwrap();
-        let author = node.author_create().await.unwrap();
+        let doc = node.docs().create().await.unwrap();
+        let author = node.authors().create().await.unwrap();
 
         // add entry
         let val = b"hello world!".to_vec();
@@ -1791,7 +1815,7 @@ mod tests {
 
         // spawn node
         let iroh_dir = tempfile::tempdir().unwrap();
-        let node = crate::IrohNode::persistent(
+        let node = crate::Iroh::persistent(
             iroh_dir
                 .path()
                 .join("import-export-node")
@@ -1802,8 +1826,8 @@ mod tests {
         .unwrap();
 
         // create doc & author
-        let doc = node.doc_create().await.unwrap();
-        let author = node.author_create().await.unwrap();
+        let doc = node.docs().create().await.unwrap();
+        let author = node.authors().create().await.unwrap();
 
         // import file
         let path_str = path.to_string_lossy().into_owned();
