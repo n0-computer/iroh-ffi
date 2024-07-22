@@ -46,6 +46,13 @@ let package = Package(
 
 6. Commit the result & push
 
+### Cocoapods
+1. lint the `IrohLibFramework`: `pod spec lint IrohLibFramework.podspec`, make sure it passes
+2. `pod trunk push IrohlibFramework.podspec`
+3. `pod spec lint IrohFramework.podspec`, make sure it passes
+4. wait 6 minutes for cache to catch up & show new `IrohLibFramework.podspec` as available
+5. `pod trunk push IrohFramework.podspec --allow-warnings`
+
 ## Python
 
 The first time:

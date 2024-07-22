@@ -2748,7 +2748,7 @@ public protocol DocProtocol: AnyObject {
      *
      * Returns the number of entries deleted.
      */
-    func deleteEntry(authorId: AuthorId, prefix: Data) async throws -> UInt64
+    func delete(authorId: AuthorId, prefix: Data) async throws -> UInt64
 
     /**
      * Export an entry as a file to a given absolute path
@@ -2904,11 +2904,11 @@ open class Doc:
      *
      * Returns the number of entries deleted.
      */
-    open func deleteEntry(authorId: AuthorId, prefix: Data) async throws -> UInt64 {
+    open func delete(authorId: AuthorId, prefix: Data) async throws -> UInt64 {
         return
             try await uniffiRustCallAsync(
                 rustFutureFunc: {
-                    uniffi_iroh_ffi_fn_method_doc_delete_entry(
+                    uniffi_iroh_ffi_fn_method_doc_delete(
                         self.uniffiClonePointer(),
                         FfiConverterTypeAuthorId.lower(authorId), FfiConverterData.lower(prefix)
                     )
@@ -12812,7 +12812,7 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_method_doc_close_me() != 13449 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_method_doc_delete_entry() != 42178 {
+    if uniffi_iroh_ffi_checksum_method_doc_delete() != 54552 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_doc_export_file() != 16067 {
