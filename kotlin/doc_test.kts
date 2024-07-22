@@ -85,11 +85,11 @@ runBlocking {
 runBlocking {
     // create node
     val irohDir = kotlin.io.path.createTempDirectory("doc-test")
-    val node = IrohNode.persistent(irohDir.toString())
+    val node = Iroh.persistent(irohDir.toString())
 
     // create doc and author
-    val doc = node.docCreate()
-    val author = node.authorCreate()
+    val doc = node.docs().create()
+    val author = node.authors().create()
 
     // create entry
     val v = "hello world!".toByteArray()
