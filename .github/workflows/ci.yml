@@ -11,7 +11,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
-
 jobs:
   build_and_test_rust:
     runs-on: ${{ matrix.runner }}
@@ -87,15 +86,17 @@ jobs:
     - uses: actions/setup-python@v5
       with:
           python-version: 3.12
-    - name: Install Deps
+    - name: Install virtualenv
       run: pip install virtualenv
     - name: Python tests
       run: |
-        virtualenv venv && \
-        source venv/bin/activate && \
+        virtualenv venv
+        source venv/bin/activate
         pip install setuptools pytest pytest-asyncio "maturin[patchelf]" uniffi-bindgen
-        maturin develop && \
-        python -m pytest -vvv
+        maturin develop
+        # Test python/gossip_test.py often times out so run all other pytests first
+        pytest --ignore python/gossip_test.py
+        pytest -vvv python/gossip_test.py
 
   build_and_test_swift:
     name: Swift - Build and test
