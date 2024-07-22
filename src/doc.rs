@@ -245,7 +245,7 @@ impl Doc {
     ///
     /// Returns the number of entries deleted.
     #[uniffi::method(async_runtime = "tokio")]
-    pub async fn delete_entry(
+    pub async fn delete(
         &self,
         author_id: Arc<AuthorId>,
         prefix: Vec<u8>,
