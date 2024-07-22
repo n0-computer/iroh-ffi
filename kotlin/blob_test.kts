@@ -92,14 +92,14 @@ runBlocking {
 runBlocking {
     // create node
     val irohDir = kotlin.io.path.createTempDirectory("doc-test")
-    val node = IrohNode.persistent(irohDir.toString())
+    val node = Iroh.persistent(irohDir.toString())
 
     // create bytes
     val blobSize = 100
     val bytes = generateRandomByteArray(blobSize)
 
     // add blob
-    val addOutcome = node.blobsAddBytes(bytes)
+    val addOutcome = node.blobs().addBytes(bytes)
 
     // check outcome info is as expected
     assert(addOutcome.format == BlobFormat.RAW)
@@ -107,11 +107,11 @@ runBlocking {
 
     // check we get the expected size from the hash
     val hash = addOutcome.hash
-    val gotSize = node.blobsSize(hash)
+    val gotSize = node.blobs().size(hash)
     assert(gotSize == blobSize.toULong())
 
     // get bytes
-    val gotBytes = node.blobsReadToBytes(hash)
+    val gotBytes = node.blobs().readToBytes(hash)
     assert(gotBytes.size == blobSize)
     assert(gotBytes contentEquals bytes)
 }
@@ -119,7 +119,7 @@ runBlocking {
 // test functionality between reading bytes from a path and writing bytes to a path
 runBlocking {
     val irohDir = kotlin.io.path.createTempDirectory("doc-test-read-bytes")
-    val node = IrohNode.persistent(irohDir.toString())
+    val node = Iroh.persistent(irohDir.toString())
 
     // create bytes
     val blobSize = 100
@@ -154,24 +154,24 @@ runBlocking {
         }
     }
     val cb = Handler()
-    node.blobsAddFromPath(path, false, tag, wrap, cb)
+    node.blobs().addFromPath(path, false, tag, wrap, cb)
 
     // check outcome info is as expected
     assert(cb.format == BlobFormat.RAW)
     assert(cb.hash != null)
 
     // check we get the expected size from the hash
-    val gotSize = node.blobsSize(cb.hash!!)
+    val gotSize = node.blobs().size(cb.hash!!)
     assert(gotSize == blobSize.toULong())
 
     // get bytes
-    val gotBytes = node.blobsReadToBytes(cb.hash!!)
+    val gotBytes = node.blobs().readToBytes(cb.hash!!)
     assert(gotBytes.size == blobSize)
     assert(gotBytes contentEquals bytes)
 
     // write to file
     val outPath = dir.toString() + "out"
-    node.blobsWriteToPath(cb.hash!!, outPath)
+    node.blobs().writeToPath(cb.hash!!, outPath)
 
     // open file
     val gotBytesFile = java.io.File(outPath).readBytes()
@@ -192,10 +192,10 @@ runBlocking {
     }
     // make node
     val irohDir = kotlin.io.path.createTempDirectory("doc-test-collection")
-    val node = IrohNode.persistent(irohDir.toString())
+    val node = Iroh.persistent(irohDir.toString())
 
     // ensure zero blobs
-    val blobs = node.blobsList()
+    val blobs = node.blobs().list()
     assert(blobs.size == 0)
 
     // create callback to get blobs and collection hash
@@ -226,13 +226,13 @@ runBlocking {
     val tag = SetTagOption.auto()
     val wrap = WrapOption.noWrap()
     // add from path
-    node.blobsAddFromPath(collectionDir.toString(), false, tag, wrap, cb)
+    node.blobs().addFromPath(collectionDir.toString(), false, tag, wrap, cb)
 
     assert(cb.collectionHash != null)
     assert(cb.format == BlobFormat.HASH_SEQ)
 
     // list collections
-    val collections = node.blobsListCollections()
+    val collections = node.blobs().listCollections()
     println("collection hash " + collections[0].hash)
     assert(collections.size == 1)
     assert(collections[0].hash.equal(cb.collectionHash!!))
@@ -241,9 +241,9 @@ runBlocking {
     // list blobs
     val collectionHashes = cb.blobHashes!!
     collectionHashes.add(cb.collectionHash!!)
-    val gotHashes = node.blobsList()
+    val gotHashes = node.blobs().list()
     for (hash in gotHashes) {
-        val blob = node.blobsReadToBytes(hash)
+        val blob = node.blobs().readToBytes(hash)
         println("hash " + hash + " has size " + blob.size)
     }
     hashesExist(collectionHashes, gotHashes)
@@ -256,7 +256,7 @@ runBlocking {
 runBlocking {
     val irohDir = kotlin.io.path.createTempDirectory("doc-test-list-del")
     val opts = NodeOptions(100UL)
-    val node = IrohNode.persistentWithOptions(irohDir.toString(), opts)
+    val node = Iroh.persistentWithOptions(irohDir.toString(), opts)
 
     // create bytes
     val blobSize = 100
@@ -272,23 +272,23 @@ runBlocking {
     val hashes: MutableList<Hash> = arrayListOf()
     val tags: MutableList<ByteArray> = arrayListOf()
     for (blob in blobs) {
-        val output = node.blobsAddBytes(blob)
+        val output = node.blobs().addBytes(blob)
         hashes.add(output.hash)
         tags.add(output.tag)
     }
 
-    val gotHashes = node.blobsList()
+    val gotHashes = node.blobs().list()
     assert(gotHashes.size == numBlobs)
     hashesExist(hashes, gotHashes)
 
     val removeHash = hashes.removeAt(0)
     val removeTag = tags.removeAt(0)
     // delete the tag for the first blob
-    node.tagsDelete(removeTag)
+    node.tags().delete(removeTag)
     // wait for GC to clear the blob
     java.lang.Thread.sleep(250)
 
-    val clearedHashes = node.blobsList()
+    val clearedHashes = node.blobs().list()
     assert(clearedHashes.size == numBlobs - 1)
     hashesExist(hashes, clearedHashes)
 

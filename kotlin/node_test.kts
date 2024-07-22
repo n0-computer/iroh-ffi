@@ -25,15 +25,15 @@ runBlocking {
     // Create node_0
     val irohDir0 = kotlin.io.path.createTempDirectory("node-test-0")
     println(irohDir0.toString())
-    val node0 = IrohNode.persistent(irohDir0.toString())
+    val node0 = Iroh.persistent(irohDir0.toString())
 
     // Create node_1
     val irohDir1 = kotlin.io.path.createTempDirectory("node-test-1")
     println(irohDir1.toString())
-    val node1 = IrohNode.persistent(irohDir1.toString())
+    val node1 = Iroh.persistent(irohDir1.toString())
 
     // Create doc on node_0
-    val doc0 = node0.docCreate()
+    val doc0 = node0.docs().create()
 
     // Subscribe to sync events
     val cb0 = Subscriber()
@@ -42,7 +42,7 @@ runBlocking {
     // Join the same doc from node_1
     val ticket = doc0.share(ShareMode.WRITE, AddrInfoOptions.RELAY_AND_ADDRESSES)
     val cb1 = Subscriber()
-    val doc1 = node1.docJoinAndSubscribe(ticket, cb1)
+    val doc1 = node1.docs().joinAndSubscribe(ticket, cb1)
 
     // wait for initial sync
     while (true) {
@@ -53,7 +53,7 @@ runBlocking {
     }
 
     // Create author on node_1
-    val author = node1.authorCreate()
+    val author = node1.authors().create()
     val blobSize = 100
     val bytes = generateRandomByteArray(blobSize)
 
@@ -67,7 +67,7 @@ runBlocking {
             println(hash)
 
             // Get content from hash
-            val v = node1.blobsReadToBytes(hash)
+            val v = node1.blobs().readToBytes(hash)
             assert(bytes contentEquals v)
 
             break

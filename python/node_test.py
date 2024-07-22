@@ -4,7 +4,7 @@ import pytest
 import asyncio
 import iroh
 
-from iroh import IrohNode, ShareMode, LiveEventType, AddrInfoOptions
+from iroh import Iroh, ShareMode, LiveEventType, AddrInfoOptions
 
 @pytest.mark.asyncio
 async def test_basic_sync():
@@ -13,14 +13,14 @@ async def test_basic_sync():
 
     # Create node_0
     iroh_dir_0 = tempfile.TemporaryDirectory()
-    node_0 = await IrohNode.persistent(iroh_dir_0.name)
+    node_0 = await Iroh.persistent(iroh_dir_0.name)
 
     # Create node_1
     iroh_dir_1 = tempfile.TemporaryDirectory()
-    node_1 = await IrohNode.persistent(iroh_dir_1.name)
+    node_1 = await Iroh.persistent(iroh_dir_1.name)
 
     # Create doc on node_0
-    doc_0 = await node_0.doc_create()
+    doc_0 = await node_0.docs().create()
     ticket = await doc_0.share(ShareMode.WRITE, AddrInfoOptions.RELAY_AND_ADDRESSES)
 
     class SubscribeCallback:
@@ -39,7 +39,7 @@ async def test_basic_sync():
     # Join the same doc from node_1
     found_s_1 = asyncio.Queue(maxsize=1)
     cb1 = SubscribeCallback(found_s_1)
-    doc_1 = await node_1.doc_join_and_subscribe(ticket, cb1)
+    doc_1 = await node_1.docs().join_and_subscribe(ticket, cb1)
 
     # wait for initial sync
     while (True):
@@ -48,7 +48,7 @@ async def test_basic_sync():
             break
 
     # Create author on node_1
-    author = await node_1.author_create()
+    author = await node_1.authors().create()
     await doc_1.set_bytes(author, b"hello", b"world")
 
     # Wait for the content ready event
@@ -58,6 +58,6 @@ async def test_basic_sync():
             hash = event.as_content_ready()
 
             # Get content from hash
-            val = await node_1.blobs_read_to_bytes(hash)
+            val = await node_1.blobs().read_to_bytes(hash)
             assert b"world" == val
             break

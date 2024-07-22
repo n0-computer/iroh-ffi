@@ -8,7 +8,7 @@ use iroh::net::NodeId;
 use tokio::sync::Mutex;
 use tracing::warn;
 
-use crate::node::IrohNode;
+use crate::node::Iroh;
 use crate::{CallbackError, IrohError};
 
 /// Gossip message
@@ -107,10 +107,30 @@ pub trait GossipMessageCallback: Send + Sync + 'static {
     async fn on_message(&self, msg: Arc<Message>) -> Result<(), CallbackError>;
 }
 
+/// Iroh gossip client.
+#[derive(uniffi::Object)]
+pub struct Gossip {
+    node: Iroh,
+}
+
 #[uniffi::export]
-impl IrohNode {
+impl Iroh {
+    /// Access to gossip specific funtionaliy.
+    pub fn gossip(&self) -> Gossip {
+        Gossip { node: self.clone() }
+    }
+}
+
+impl Gossip {
+    fn client(&self) -> &iroh::client::Iroh {
+        self.node.client()
+    }
+}
+
+#[uniffi::export]
+impl Gossip {
     #[uniffi::method(async_runtime = "tokio")]
-    pub async fn gossip_subscribe(
+    pub async fn subscribe(
         &self,
         topic: Vec<u8>,
         bootstrap: Vec<String>,
@@ -128,7 +148,7 @@ impl IrohNode {
             .map_err(|e| anyhow::anyhow!("{e}"))?;
 
         let (sink, mut stream) = self
-            .node()
+            .client()
             .gossip()
             .subscribe(topic_bytes, bootstrap)
             .await?;
@@ -204,8 +224,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_gossip_basic() {
-        let n0 = IrohNode::memory().await.unwrap();
-        let n1 = IrohNode::memory().await.unwrap();
+        let n0 = Iroh::memory().await.unwrap();
+        let n1 = Iroh::memory().await.unwrap();
 
         struct Cb {
             channel: mpsc::Sender<Arc<Message>>,
@@ -223,22 +243,24 @@ mod tests {
 
         let (sender0, _receiver0) = mpsc::channel(8);
         let cb0 = Cb { channel: sender0 };
-        let n1_id = n1.node_id().await.unwrap();
-        let n1_addr = n1.node_addr().await.unwrap();
-        n0.add_node_addr(&n1_addr).await.unwrap();
+        let n1_id = n1.node().node_id().await.unwrap();
+        let n1_addr = n1.node().node_addr().await.unwrap();
+        n0.node().add_node_addr(&n1_addr).await.unwrap();
 
         let sink0 = n0
-            .gossip_subscribe(topic.clone(), vec![n1_id.to_string()], Arc::new(cb0))
+            .gossip()
+            .subscribe(topic.clone(), vec![n1_id.to_string()], Arc::new(cb0))
             .await
             .unwrap();
 
         let (sender1, mut receiver1) = mpsc::channel(8);
         let cb1 = Cb { channel: sender1 };
-        let n0_id = n0.node_id().await.unwrap();
-        let n0_addr = n0.node_addr().await.unwrap();
-        n1.add_node_addr(&n0_addr).await.unwrap();
+        let n0_id = n0.node().node_id().await.unwrap();
+        let n0_addr = n0.node().node_addr().await.unwrap();
+        n1.node().add_node_addr(&n0_addr).await.unwrap();
         let _ = n1
-            .gossip_subscribe(topic.clone(), vec![n0_id.to_string()], Arc::new(cb1))
+            .gossip()
+            .subscribe(topic.clone(), vec![n0_id.to_string()], Arc::new(cb1))
             .await
             .unwrap();
 

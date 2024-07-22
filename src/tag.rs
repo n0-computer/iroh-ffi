@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::{BlobFormat, Hash, IrohError, IrohNode};
+use crate::{BlobFormat, Hash, Iroh, IrohError};
 use bytes::Bytes;
 use futures::TryStreamExt;
 
@@ -25,16 +25,36 @@ impl From<iroh::client::tags::TagInfo> for TagInfo {
     }
 }
 
+/// Iroh tags client.
+#[derive(uniffi::Object)]
+pub struct Tags {
+    node: Iroh,
+}
+
 #[uniffi::export]
-impl IrohNode {
+impl Iroh {
+    /// Access to tags specific funtionaliy.
+    pub fn tags(&self) -> Tags {
+        Tags { node: self.clone() }
+    }
+}
+
+impl Tags {
+    fn client(&self) -> &iroh::client::Iroh {
+        self.node.client()
+    }
+}
+
+#[uniffi::export]
+impl Tags {
     /// List all tags
     ///
     /// Note: this allocates for each `ListTagsResponse`, if you have many `Tags`s this may be a prohibitively large list.
     /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
     #[uniffi::method(async_runtime = "tokio")]
-    pub async fn tags_list(&self) -> Result<Vec<TagInfo>, IrohError> {
+    pub async fn list(&self) -> Result<Vec<TagInfo>, IrohError> {
         let tags = self
-            .node()
+            .client()
             .tags()
             .list()
             .await?
@@ -46,9 +66,9 @@ impl IrohNode {
 
     /// Delete a tag
     #[uniffi::method(async_runtime = "tokio")]
-    pub async fn tags_delete(&self, name: Vec<u8>) -> Result<(), IrohError> {
+    pub async fn delete(&self, name: Vec<u8>) -> Result<(), IrohError> {
         let tag = iroh::blobs::Tag(Bytes::from(name));
-        self.node().tags().delete(tag).await?;
+        self.client().tags().delete(tag).await?;
         Ok(())
     }
 }

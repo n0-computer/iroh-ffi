@@ -16,29 +16,29 @@ class Callback: GossipMessageCallback {
 runBlocking {
     setLogLevel(LogLevel.DEBUG)
 
-    val n0 = IrohNode.memory()
-    val n1 = IrohNode.memory()
+    val n0 = Iroh.memory()
+    val n1 = Iroh.memory()
 
     // Create a topic
     val topic = ByteArray(32) { i -> 1 }
 
     // Setup gossip on node 0
     val cb0 = Callback()
-    val n1Id = n1.nodeId()
-    val n1Addr = n1.nodeAddr()
-    n0.addNodeAddr(n1Addr)
+    val n1Id = n1.node().nodeId()
+    val n1Addr = n1.node().nodeAddr()
+    n0.node().addNodeAddr(n1Addr)
 
     println("subscribe n0")
-    val sink0 = n0.gossipSubscribe(topic, listOf(n1Id), cb0)
+    val sink0 = n0.gossip().subscribe(topic, listOf(n1Id), cb0)
 
     // Setup gossip on node 1
     val cb1 = Callback()
-    val n0Id = n0.nodeId()
-    val n0Addr = n0.nodeAddr()
-    n1.addNodeAddr(n0Addr)
+    val n0Id = n0.node().nodeId()
+    val n0Addr = n0.node().nodeAddr()
+    n1.node().addNodeAddr(n0Addr)
 
     println("subscribe n1")
-    val sink1 = n1.gossipSubscribe(topic, listOf(n0Id), cb1)
+    val sink1 = n1.gossip().subscribe(topic, listOf(n0Id), cb1)
 
     // Wait for n1 to show up for n0
     while (true) {

@@ -19,21 +19,21 @@ async def main():
         print()
 
         # create iroh node
-        node = await iroh.IrohNode.memory()
-        node_id = await node.node_id()
+        node = await iroh.Iroh.memory()
+        node_id = await node.node().node_id()
         print("Started Iroh node: {}".format(node_id))
 
         # create doc
-        doc = await node.doc_create()
+        doc = await node.docs().create()
         doc_id = doc.id()
         print("Created doc: {}".format(doc_id))
 
-        doc = await node.doc_create()
+        doc = await node.docs().create()
         doc_id = doc.id()
         print("Created doc: {}".format(doc_id))
 
         # list docs
-        docs = await node.doc_list()
+        docs = await node.docs().list()
         print("List all {} docs:".format(len(docs)))
         for doc in docs:
             print("\t{}".format(doc))
@@ -41,8 +41,8 @@ async def main():
         exit()
 
     # create iroh node
-    node = await iroh.IrohNode.memory()
-    node_id = await node.node_id()
+    node = await iroh.Iroh.memory()
+    node_id = await node.node().node_id()
     print("Started Iroh node: {}".format(node_id))
 
     # join doc
