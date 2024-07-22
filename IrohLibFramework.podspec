@@ -1,6 +1,6 @@
 Pod::Spec.new do |spec|
   spec.name         = "IrohLibFramework"
-  spec.version      = "0.20.0"
+  spec.version      = "0.21.0"
   spec.summary      = "Complied rust cocoa framework for Iroh"
   spec.description  = <<-DESC
                    Complied rust cocoa framework for Iroh.

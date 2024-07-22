@@ -1525,7 +1525,7 @@ mod tests {
         let iroh_dir = tempfile::tempdir().unwrap();
         // we're going to use a very fast GC interval to get this test to delete stuff aggressively
         let opts = NodeOptions {
-            gc_interval_millis: Some(100),
+            gc_interval_millis: Some(50),
         };
         let node = Iroh::persistent_with_options(iroh_dir.into_path().display().to_string(), opts)
             .await
@@ -1559,7 +1559,7 @@ mod tests {
         // delete the tag for the first blob
         node.tags().delete(remove_tag).await.unwrap();
         // wait for GC to clear the blob. windows test runner is slow & needs like 500ms
-        std::thread::sleep(Duration::from_millis(500));
+        tokio::time::sleep(Duration::from_secs(1)).await;
 
         let got_hashes = node.blobs().list().await.unwrap();
         assert_eq!(num_blobs - 1, got_hashes.len());

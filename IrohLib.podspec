@@ -1,10 +1,10 @@
 Pod::Spec.new do |spec|
   spec.name         = "IrohLib"
-  spec.version      = "0.20.0"
+  spec.version      = "0.21.0"
   spec.summary      = "iroh is a toolkit for building distributed apps"
   spec.description  = <<-DESC
                       Build distributed apps that raise the status quo for your users.
-                      Open source and universally compatible, it's the quickest route from 
+                      Open source and universally compatible, it's the quickest route from
                       concept to connected devices.
                     DESC
   spec.homepage           = "https://iroh.computer"
