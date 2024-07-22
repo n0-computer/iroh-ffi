@@ -2,7 +2,6 @@ use std::{path::PathBuf, str::FromStr, sync::Arc, time::SystemTime};
 
 use bytes::Bytes;
 use futures::{StreamExt, TryStreamExt};
-use iroh::client::MemDoc;
 use serde::{Deserialize, Serialize};
 
 use crate::{ticket::AddrInfoOptions, AuthorId, CallbackError, Hash, Iroh, IrohError, PublicKey};
@@ -147,7 +146,7 @@ pub struct NamespaceAndCapability {
 /// A representation of a mutable, synchronizable key-value store.
 #[derive(Clone, uniffi::Object)]
 pub struct Doc {
-    pub(crate) inner: MemDoc,
+    pub(crate) inner: iroh::client::Doc,
 }
 
 #[uniffi::export]
@@ -246,7 +245,7 @@ impl Doc {
     ///
     /// Returns the number of entries deleted.
     #[uniffi::method(async_runtime = "tokio")]
-    pub async fn delete_entry(
+    pub async fn delete(
         &self,
         author_id: Arc<AuthorId>,
         prefix: Vec<u8>,

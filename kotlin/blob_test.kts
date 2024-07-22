@@ -286,7 +286,7 @@ runBlocking {
     // delete the tag for the first blob
     node.tags().delete(removeTag)
     // wait for GC to clear the blob
-    java.lang.Thread.sleep(250)
+    java.lang.Thread.sleep(500)
 
     val clearedHashes = node.blobs().list()
     assert(clearedHashes.size == numBlobs - 1)
