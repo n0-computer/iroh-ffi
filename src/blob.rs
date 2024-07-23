@@ -412,7 +412,7 @@ impl From<SetTagOption> for iroh::blobs::util::SetTagOption {
 pub enum WrapOption {
     /// Do not wrap the file or directory.
     NoWrap,
-    /// Wrap the file or directory in a colletion.
+    /// Wrap the file or directory in a collection.
     Wrap {
         /// Override the filename in the wrapping collection.
         name: Option<String>,
@@ -427,7 +427,7 @@ impl WrapOption {
         WrapOption::NoWrap
     }
 
-    /// Indicate you want to wrap the file or directory in a colletion, with an optional name
+    /// Indicate you want to wrap the file or directory in a collection, with an optional name
     #[uniffi::constructor]
     pub fn wrap(name: Option<String>) -> Self {
         WrapOption::Wrap { name }

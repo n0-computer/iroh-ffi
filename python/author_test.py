@@ -1,10 +1,12 @@
 # tests that correspond to the `src/author.rs` rust api
-from iroh import Iroh
-import pytest
-import iroh
 import asyncio
 
-@pytest.mark.asyncio
+import iroh
+import pytest
+from iroh import Iroh
+
+
+@pytest.mark.asyncio()
 async def test_author_api():
     # setup event loop, to ensure async callbacks work
     iroh.iroh_ffi.uniffi_set_event_loop(asyncio.get_running_loop())
