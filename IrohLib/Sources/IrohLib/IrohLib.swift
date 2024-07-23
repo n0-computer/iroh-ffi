@@ -7924,7 +7924,7 @@ open class WrapOption:
     }
 
     /**
-     * Indicate you want to wrap the file or directory in a colletion, with an optional name
+     * Indicate you want to wrap the file or directory in a collection, with an optional name
      */
     public static func wrap(name: String?) -> WrapOption {
         return try! FfiConverterTypeWrapOption.lift(try! rustCall {
@@ -8778,7 +8778,7 @@ public func FfiConverterTypeDocExportProgressAbort_lower(_ value: DocExportProgr
 }
 
 /**
- * A DocExportProgress event indicating a single blob wit `id` is done
+ * A DocExportProgress event indicating a single blob with `id` is done
  */
 public struct DocExportProgressDone {
     /**
@@ -10469,7 +10469,7 @@ public struct SyncEvent {
      */
     public var started: Date
     /**
-     * Result of the sync operation. `None` if successfull.
+     * Result of the sync operation. `None` if successful.
      */
     public var result: String?
 
@@ -10489,7 +10489,7 @@ public struct SyncEvent {
             * Timestamp when the sync started
             */ started: Date,
         /**
-            * Result of the sync operation. `None` if successfull.
+            * Result of the sync operation. `None` if successful.
             */ result: String?
     ) {
         self.peer = peer
@@ -12582,7 +12582,7 @@ public func uniffiForeignFutureHandleCountIrohFfi() -> Int {
  *
  * If `prefix` exists, it will be stripped before converting back to a path
  * If `root` exists, will add the root as a parent to the created path
- * Removes any null byte that has been appened to the key
+ * Removes any null byte that has been appended to the key
  */
 public func keyToPath(key: Data, prefix: String?, root: String?) throws -> String {
     return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {

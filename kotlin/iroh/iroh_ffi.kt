@@ -8,7 +8,7 @@ package iroh
 // Common helper code.
 //
 // Ideally this would live in a separate .kt file where it can be unittested etc
-// in isolation, and perhaps even published as a re-useable package.
+// in isolation, and perhaps even published as a reusable package.
 //
 // However, it's important that the details of how this helper code works (e.g. the
 // way that different builtin types are passed across the FFI) exactly match what's
@@ -3985,7 +3985,7 @@ public object FfiConverterDuration : FfiConverterRustBuffer<java.time.Duration> 
 //
 // The cleaner registers objects and returns cleanables, so now we are
 // defining a `UniffiCleaner` with a `UniffiClenaer.Cleanable` to abstract the
-// different implmentations available at compile time.
+// different implementations available at compile time.
 interface UniffiCleaner {
     interface Cleanable {
         fun clean()
@@ -17689,7 +17689,7 @@ open class WrapOption :
             )
 
         /**
-         * Indicate you want to wrap the file or directory in a colletion, with an optional name
+         * Indicate you want to wrap the file or directory in a collection, with an optional name
          */
         fun `wrap`(`name`: kotlin.String?): WrapOption =
             FfiConverterTypeWrapOption.lift(
@@ -18311,7 +18311,7 @@ public object FfiConverterTypeDocExportProgressAbort : FfiConverterRustBuffer<Do
 }
 
 /**
- * A DocExportProgress event indicating a single blob wit `id` is done
+ * A DocExportProgress event indicating a single blob with `id` is done
  */
 data class DocExportProgressDone(
     /**
@@ -19441,7 +19441,7 @@ data class SyncEvent(
      */
     var `started`: java.time.Instant,
     /**
-     * Result of the sync operation. `None` if successfull.
+     * Result of the sync operation. `None` if successful.
      */
     var `result`: kotlin.String?,
 ) : Disposable {
@@ -21175,7 +21175,7 @@ public object FfiConverterMapStringTypeCounterStats : FfiConverterRustBuffer<Map
  *
  * If `prefix` exists, it will be stripped before converting back to a path
  * If `root` exists, will add the root as a parent to the created path
- * Removes any null byte that has been appened to the key
+ * Removes any null byte that has been appended to the key
  */
 @Throws(IrohException::class)
 fun `keyToPath`(

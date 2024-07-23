@@ -1135,7 +1135,7 @@ pub struct SyncEvent {
     pub finished: SystemTime,
     /// Timestamp when the sync started
     pub started: SystemTime,
-    /// Result of the sync operation. `None` if successfull.
+    /// Result of the sync operation. `None` if successful.
     pub result: Option<String>,
 }
 
@@ -1445,7 +1445,7 @@ pub struct DocExportProgressProgress {
     pub offset: u64,
 }
 
-/// A DocExportProgress event indicating a single blob wit `id` is done
+/// A DocExportProgress event indicating a single blob with `id` is done
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct DocExportProgressDone {
     /// The unique id of the entry.

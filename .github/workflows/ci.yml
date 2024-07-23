@@ -98,6 +98,15 @@ jobs:
         pytest --ignore python/gossip_test.py
         pytest -vvv python/gossip_test.py
 
+  codespell_and_ruff:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - run: pip install --user codespell[toml] ruff
+    - run: codespell --ignore-words-list=crate,inout,optin
+    - run: ruff check --select=ALL --line-length=143 --output-format=github --target-version=py38
+                      --ignore=A001,ANN,D,EM101,ERA001,FBT003,INP001,PLR2004,PTH,S101,T201,TRY
+
   build_and_test_swift:
     name: Swift - Build and test
     timeout-minutes: 30

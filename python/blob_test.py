@@ -1,18 +1,26 @@
 # tests that correspond to the `src/doc.rs` rust api
-import pytest
-import tempfile
-import random
-import os
-import time
-import iroh
 import asyncio
+import os
+import random
+import tempfile
 
-from iroh import Hash, Iroh, SetTagOption, BlobFormat, WrapOption, AddProgressType, NodeOptions
+import iroh
+import pytest
+from iroh import (
+    AddProgressType,
+    BlobFormat,
+    Hash,
+    Iroh,
+    NodeOptions,
+    SetTagOption,
+    WrapOption,
+)
+
 
 def test_hash():
     hash_str = "2kbxxbofqx5rau77wzafrj4yntjb4gn4olfpwxmv26js6dvhgjhq"
     hex_str = "d2837b85c585fb1053ffb64058a7986cd21e19bc72cafb5d95d7932f0ea7324f"
-    bytes = b'\xd2\x83\x7b\x85\xc5\x85\xfb\x10\x53\xff\xb6\x40\x58\xa7\x98\x6c\xd2\x1e\x19\xbc\x72\xca\xfb\x5d\x95\xd7\x93\x2f\x0e\xa7\x32\x4f'
+    bytes = b"\xd2\x83\x7b\x85\xc5\x85\xfb\x10\x53\xff\xb6\x40\x58\xa7\x98\x6c\xd2\x1e\x19\xbc\x72\xca\xfb\x5d\x95\xd7\x93\x2f\x0e\xa7\x32\x4f"
     #
     # create hash from string
     hash = Hash.from_string(hash_str)
@@ -35,7 +43,7 @@ def test_hash():
     assert hash_0.equal(hash)
 
 # test functionality between adding as bytes and reading to bytes
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_blob_add_get_bytes():
     # setup event loop, to ensure async callbacks work
     iroh.iroh_ffi.uniffi_set_event_loop(asyncio.get_running_loop())
@@ -68,7 +76,7 @@ async def test_blob_add_get_bytes():
 
 # test functionality between reading bytes from a path and writing bytes to
 # a path
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_blob_read_write_path():
     # setup event loop, to ensure async callbacks work
     iroh.iroh_ffi.uniffi_set_event_loop(asyncio.get_running_loop())
@@ -83,9 +91,8 @@ async def test_blob_read_write_path():
     # write to file
     dir = tempfile.TemporaryDirectory()
     path = os.path.join(dir.name, "in")
-    file = open(path, "wb")
-    file.write(bytes)
-    file.close()
+    with open(path, "wb") as file:  # noqa: ASYNC230 blocking-open-call-in-async-function
+        file.write(bytes)
     #
     # add blob
     tag = SetTagOption.auto()
@@ -95,14 +102,14 @@ async def test_blob_read_write_path():
         hash = None
         format = None
 
-        async def progress(x, progress_event):
+        async def progress(self, progress_event):
             print(progress_event.type())
             if progress_event.type() == AddProgressType.ALL_DONE:
                 all_done_event = progress_event.as_all_done()
-                x.hash = all_done_event.hash
+                self.hash = all_done_event.hash
                 print(all_done_event.hash)
                 print(all_done_event.format)
-                x.format = all_done_event.format
+                self.format = all_done_event.format
             if progress_event.type() == AddProgressType.ABORT:
                 abort_event = progress_event.as_abort()
                 raise Exception(abort_event.error)
@@ -128,14 +135,13 @@ async def test_blob_read_write_path():
     out_path = os.path.join(dir.name, "out")
     await node.blobs().write_to_path(cb.hash, out_path)
     # open file
-    got_file = open(out_path, "rb")
-    got_bytes = got_file.read()
-    got_file.close()
+    with open(out_path, "rb") as got_file:  # noqa: ASYNC230 blocking-open-call-in-async-function
+        got_bytes = got_file.read()
     print("write_to_path {}", got_bytes)
     assert len(got_bytes) == blob_size
     assert got_bytes == bytes
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_blob_collections():
     # setup event loop, to ensure async callbacks work
     iroh.iroh_ffi.uniffi_set_event_loop(asyncio.get_running_loop())
@@ -146,9 +152,8 @@ async def test_blob_collections():
     for i in range(num_files):
         path = os.path.join(collection_dir.name, str(i))
         bytes = bytearray(map(random.getrandbits,(8,)*blob_size))
-        file = open(path, "wb")
-        file.write(bytes)
-        file.close()
+        with open(path, "wb") as file:  # noqa: ASYNC230 blocking-open-call-in-async-function
+            file.write(bytes)
     print(collection_dir.__sizeof__())
 
     # make node
@@ -163,7 +168,7 @@ async def test_blob_collections():
     class AddCallback:
         collection_hash = None
         format = None
-        blob_hashes = []
+        blob_hashes = []  # noqa: RUF012 mutable-class-default
 
         async def progress(self, progress_event):
             print(progress_event.type())
@@ -211,7 +216,7 @@ async def test_blob_collections():
     # in the list of hashes
     assert len(collection_hashes)+1 == len(got_hashes)
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_list_and_delete():
     # setup event loop, to ensure async callbacks work
     iroh.iroh_ffi.uniffi_set_event_loop(asyncio.get_running_loop())
@@ -246,7 +251,7 @@ async def test_list_and_delete():
     # delete the tag for the first blob
     await node.tags().delete(remove_tag)
     # wait for GC to clear the blob
-    time.sleep(0.5)
+    asyncio.sleep(0.5)
 
     got_hashes = await node.blobs().list()
     assert len(got_hashes) == num_blobs - 1

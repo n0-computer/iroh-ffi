@@ -1,9 +1,10 @@
 # tests that correspond to the `src/gossp.rs` rust api
-import pytest
 import asyncio
-import iroh
 
-from iroh import Iroh, MessageType, GossipMessageCallback
+import iroh
+import pytest
+from iroh import GossipMessageCallback, Iroh, MessageType
+
 
 class Callback(GossipMessageCallback):
     def __init__(self, name):
@@ -15,7 +16,7 @@ class Callback(GossipMessageCallback):
         print(self.name, msg.type())
         await self.chan.put(msg)
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_gossip_basic():
     # setup event loop, to ensure async callbacks work
     iroh.iroh_ffi.uniffi_set_event_loop(asyncio.get_running_loop())
@@ -55,7 +56,7 @@ async def test_gossip_basic():
 
     # Broadcact message from node 0
     print("broadcasting message")
-    msg_content = bytearray("hello".encode("utf-8"))
+    msg_content = bytearray(b"hello")
 
     await sink0.broadcast(msg_content)
 
