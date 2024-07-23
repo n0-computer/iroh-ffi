@@ -21,5 +21,8 @@ Pod::Spec.new do |spec|
   spec.swift_version      = '5.9'
   spec.framework          = "SystemConfiguration"
   spec.ios.deployment_target  = '15.0'
-  spec.dependency 'IrohLibFramework', "#{spec.version}"
+  # WARNINNG: we're publishing v0.21.0-1, not v0.21.0 because of an error in the binary artifact of the original release
+  # on the next release, rever to the template-driven URL:
+  # spec.dependency 'IrohLibFramework', "#{spec.version}"
+  spec.dependency 'IrohLibFramework', "0.21.0-1"
 end
