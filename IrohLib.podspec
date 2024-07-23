@@ -15,11 +15,14 @@ Pod::Spec.new do |spec|
                             }
   spec.author             = { "b5" => "sparkle_pony_2000@n0.computer" }
   spec.social_media_url   = "https://twitter.com/iroh_n0"
-  spec.source             = { :git => "https://github.com/n0-computer/iroh-ffi.git", :tag => "v#{spec.version}" }
+  spec.source             = { :git => "https://github.com/n0-computer/iroh-ffi.git", :tag => "#{spec.version}" }
   spec.static_framework   = true
   spec.source_files       = "IrohLib/Sources/IrohLib/*.swift"
   spec.swift_version      = '5.9'
   spec.framework          = "SystemConfiguration"
   spec.ios.deployment_target  = '15.0'
-  spec.dependency 'IrohLibFramework', "#{spec.version}"
+  # WARNINNG: we're publishing v0.21.0-1, not v0.21.0 because of an error in the binary artifact of the original release
+  # on the next release, rever to the template-driven URL:
+  # spec.dependency 'IrohLibFramework', "#{spec.version}"
+  spec.dependency 'IrohLibFramework', "0.21.0-1"
 end
