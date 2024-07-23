@@ -251,7 +251,7 @@ async def test_list_and_delete():
     # delete the tag for the first blob
     await node.tags().delete(remove_tag)
     # wait for GC to clear the blob
-    asyncio.sleep(0.5)
+    await asyncio.sleep(0.5)
 
     got_hashes = await node.blobs().list()
     assert len(got_hashes) == num_blobs - 1
