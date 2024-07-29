@@ -11,6 +11,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+env:
+  IROH_FORCE_STAGING_RELAYS: "1"
+
 jobs:
   build_and_test_rust:
     runs-on: ${{ matrix.runner }}
