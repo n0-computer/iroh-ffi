@@ -255,7 +255,7 @@ mod tests {
 
         let topic = [1u8; 32].to_vec();
 
-        let (sender0, _receiver0) = mpsc::channel(8);
+        let (sender0, mut receiver0) = mpsc::channel(8);
         let cb0 = Cb { channel: sender0 };
         let n1_id = n1.node().node_id().await.unwrap();
         let n1_addr = n1.node().node_addr().await.unwrap();
@@ -277,6 +277,15 @@ mod tests {
             .subscribe(topic.clone(), vec![n0_id.to_string()], Arc::new(cb1))
             .await
             .unwrap();
+
+        // Wait on n0 until we get a joined event.
+        let Some(event) = receiver0.recv().await else {
+            panic!("receiver stream closed before receiving joinmessage");
+        };
+        let Message::Joined(nodes) = &*event else {
+            panic!("expected join event");
+        };
+        assert_eq!(nodes, &[n1_id]);
 
         // Send message on n0
         println!("sending message");
