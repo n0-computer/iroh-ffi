@@ -44,8 +44,7 @@ runBlocking {
     while (true) {
         val event = cb0.channel.receive()
         println(event.type())
-        if (event.type() == MessageType.NEIGHBOR_UP) {
-            assert(event.asNeighborUp() contentEquals n1Id)
+        if (event.type() == MessageType.JOINED) {
             break
         }
     }

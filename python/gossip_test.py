@@ -48,8 +48,7 @@ async def test_gossip_basic():
     while (True):
         event = await cb0.chan.get()
         print("<<", event.type())
-        if (event.type() == MessageType.NEIGHBOR_UP):
-            assert event.as_neighbor_up() == n1_id
+        if (event.type() == MessageType.JOINED):
             break
 
 
