@@ -2748,7 +2748,7 @@ public protocol DocProtocol: AnyObject {
      *
      * Returns the number of entries deleted.
      */
-    func deleteEntry(authorId: AuthorId, prefix: Data) async throws -> UInt64
+    func delete(authorId: AuthorId, prefix: Data) async throws -> UInt64
 
     /**
      * Export an entry as a file to a given absolute path
@@ -2904,11 +2904,11 @@ open class Doc:
      *
      * Returns the number of entries deleted.
      */
-    open func deleteEntry(authorId: AuthorId, prefix: Data) async throws -> UInt64 {
+    open func delete(authorId: AuthorId, prefix: Data) async throws -> UInt64 {
         return
             try await uniffiRustCallAsync(
                 rustFutureFunc: {
-                    uniffi_iroh_ffi_fn_method_doc_delete_entry(
+                    uniffi_iroh_ffi_fn_method_doc_delete(
                         self.uniffiClonePointer(),
                         FfiConverterTypeAuthorId.lower(authorId), FfiConverterData.lower(prefix)
                     )
@@ -6026,6 +6026,8 @@ public func FfiConverterTypeLiveEvent_lower(_ value: LiveEvent) -> UnsafeMutable
 public protocol MessageProtocol: AnyObject {
     func asError() -> String
 
+    func asJoined() -> [String]
+
     func asNeighborDown() -> String
 
     func asNeighborUp() -> String
@@ -6081,6 +6083,12 @@ open class Message:
     open func asError() -> String {
         return try! FfiConverterString.lift(try! rustCall {
             uniffi_iroh_ffi_fn_method_message_as_error(self.uniffiClonePointer(), $0)
+        })
+    }
+
+    open func asJoined() -> [String] {
+        return try! FfiConverterSequenceString.lift(try! rustCall {
+            uniffi_iroh_ffi_fn_method_message_as_joined(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -11566,6 +11574,7 @@ public enum MessageType {
     case neighborUp
     case neighborDown
     case received
+    case joined
     case lagged
     case error
 }
@@ -11582,9 +11591,11 @@ public struct FfiConverterTypeMessageType: FfiConverterRustBuffer {
 
         case 3: return .received
 
-        case 4: return .lagged
+        case 4: return .joined
 
-        case 5: return .error
+        case 5: return .lagged
+
+        case 6: return .error
 
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -11601,11 +11612,14 @@ public struct FfiConverterTypeMessageType: FfiConverterRustBuffer {
         case .received:
             writeInt(&buf, Int32(3))
 
-        case .lagged:
+        case .joined:
             writeInt(&buf, Int32(4))
 
-        case .error:
+        case .lagged:
             writeInt(&buf, Int32(5))
+
+        case .error:
+            writeInt(&buf, Int32(6))
         }
     }
 }
@@ -12812,7 +12826,7 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_method_doc_close_me() != 13449 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_method_doc_delete_entry() != 42178 {
+    if uniffi_iroh_ffi_checksum_method_doc_delete() != 54552 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_doc_export_file() != 16067 {
@@ -13026,6 +13040,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_message_as_error() != 9059 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_method_message_as_joined() != 39463 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_message_as_neighbor_down() != 19092 {

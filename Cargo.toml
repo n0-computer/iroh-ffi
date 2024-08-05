@@ -1,10 +1,10 @@
 [package]
 name = "iroh-ffi"
-version = "0.21.0"
+version = "0.22.0"
 edition = "2021"
 publish = false
 readme = "README.md"
-description = "Bytes. Distributed. For all languages."
+description = "A toolkit for building distributed applications"
 license = "MIT OR Apache-2.0"
 authors = ["n0 team"]
 repository = "https://github.com/n0-computer/iroh-ffi"
@@ -57,7 +57,4 @@ tokio = { version = "1", features = ["full"] }
 uniffi = { version = "0.28.0", features = ["build"] }
 
 [patch.crates-io]
-# https://github.com/mullvad/system-configuration-rs/pull/42
-system-configuration = { git = "https://github.com/tmpfs/system-configuration-rs", branch = "ios-hack" }
-
-iroh = { git = "https://github.com/n0-computer/iroh", branch = "gossip-refactor"}
+iroh = { git = "https://github.com/n0-computer/iroh", branch = "main"}

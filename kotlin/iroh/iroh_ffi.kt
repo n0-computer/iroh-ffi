@@ -1338,7 +1338,7 @@ internal interface UniffiLib : Library {
 
     fun uniffi_iroh_ffi_fn_method_doc_close_me(`ptr`: Pointer): Long
 
-    fun uniffi_iroh_ffi_fn_method_doc_delete_entry(
+    fun uniffi_iroh_ffi_fn_method_doc_delete(
         `ptr`: Pointer,
         `authorId`: Pointer,
         `prefix`: RustBuffer.ByValue,
@@ -1934,6 +1934,11 @@ internal interface UniffiLib : Library {
     ): Unit
 
     fun uniffi_iroh_ffi_fn_method_message_as_error(
+        `ptr`: Pointer,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+
+    fun uniffi_iroh_ffi_fn_method_message_as_joined(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
@@ -2633,7 +2638,7 @@ internal interface UniffiLib : Library {
 
     fun uniffi_iroh_ffi_checksum_method_doc_close_me(): Short
 
-    fun uniffi_iroh_ffi_checksum_method_doc_delete_entry(): Short
+    fun uniffi_iroh_ffi_checksum_method_doc_delete(): Short
 
     fun uniffi_iroh_ffi_checksum_method_doc_export_file(): Short
 
@@ -2776,6 +2781,8 @@ internal interface UniffiLib : Library {
     fun uniffi_iroh_ffi_checksum_method_liveevent_type(): Short
 
     fun uniffi_iroh_ffi_checksum_method_message_as_error(): Short
+
+    fun uniffi_iroh_ffi_checksum_method_message_as_joined(): Short
 
     fun uniffi_iroh_ffi_checksum_method_message_as_neighbor_down(): Short
 
@@ -3094,7 +3101,7 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_method_doc_close_me() != 13449.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_doc_delete_entry() != 42178.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_doc_delete() != 54552.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_doc_export_file() != 16067.toShort()) {
@@ -3308,6 +3315,9 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_message_as_error() != 9059.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_ffi_checksum_method_message_as_joined() != 39463.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_message_as_neighbor_down() != 19092.toShort()) {
@@ -8101,7 +8111,7 @@ public interface DocInterface {
      *
      * Returns the number of entries deleted.
      */
-    suspend fun `deleteEntry`(
+    suspend fun `delete`(
         `authorId`: AuthorId,
         `prefix`: kotlin.ByteArray,
     ): kotlin.ULong
@@ -8336,13 +8346,13 @@ open class Doc :
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `deleteEntry`(
+    override suspend fun `delete`(
         `authorId`: AuthorId,
         `prefix`: kotlin.ByteArray,
     ): kotlin.ULong =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_doc_delete_entry(
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_doc_delete(
                     thisPtr,
                     FfiConverterTypeAuthorId.lower(`authorId`),
                     FfiConverterByteArray.lower(`prefix`),
@@ -14075,6 +14085,8 @@ public object FfiConverterTypeLiveEvent : FfiConverter<LiveEvent, Pointer> {
 public interface MessageInterface {
     fun `asError`(): kotlin.String
 
+    fun `asJoined`(): List<kotlin.String>
+
     fun `asNeighborDown`(): kotlin.String
 
     fun `asNeighborUp`(): kotlin.String
@@ -14178,6 +14190,18 @@ open class Message :
             callWithPointer {
                 uniffiRustCall { _status ->
                     UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_message_as_error(
+                        it,
+                        _status,
+                    )
+                }
+            },
+        )
+
+    override fun `asJoined`(): List<kotlin.String> =
+        FfiConverterSequenceString.lift(
+            callWithPointer {
+                uniffiRustCall { _status ->
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_message_as_joined(
                         it,
                         _status,
                     )
@@ -20208,6 +20232,7 @@ enum class MessageType {
     NEIGHBOR_UP,
     NEIGHBOR_DOWN,
     RECEIVED,
+    JOINED,
     LAGGED,
     ERROR,
     ;

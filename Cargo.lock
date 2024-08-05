@@ -1838,7 +1838,7 @@ checksum = "8f518f335dce6725a761382244631d86cf0ccb2863413590b31338feb467f9c3"
 [[package]]
 name = "iroh"
 version = "0.21.0"
-source = "git+https://github.com/n0-computer/iroh?branch=gossip-refactor#ddf974098af62383643a4b3d67119257d3c88722"
+source = "git+https://github.com/n0-computer/iroh?branch=main#bdc1c45b8251d23773ec6064416a3ea2f4264df9"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -1876,13 +1876,14 @@ dependencies = [
  "tokio-stream",
  "tokio-util",
  "tracing",
+ "url",
  "walkdir",
 ]
 
 [[package]]
 name = "iroh-base"
 version = "0.21.0"
-source = "git+https://github.com/n0-computer/iroh?branch=gossip-refactor#ddf974098af62383643a4b3d67119257d3c88722"
+source = "git+https://github.com/n0-computer/iroh?branch=main#bdc1c45b8251d23773ec6064416a3ea2f4264df9"
 dependencies = [
  "aead",
  "anyhow",
@@ -1923,7 +1924,7 @@ dependencies = [
 [[package]]
 name = "iroh-blobs"
 version = "0.21.0"
-source = "git+https://github.com/n0-computer/iroh?branch=gossip-refactor#ddf974098af62383643a4b3d67119257d3c88722"
+source = "git+https://github.com/n0-computer/iroh?branch=main#bdc1c45b8251d23773ec6064416a3ea2f4264df9"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -1964,7 +1965,7 @@ dependencies = [
 [[package]]
 name = "iroh-docs"
 version = "0.21.0"
-source = "git+https://github.com/n0-computer/iroh?branch=gossip-refactor#ddf974098af62383643a4b3d67119257d3c88722"
+source = "git+https://github.com/n0-computer/iroh?branch=main#bdc1c45b8251d23773ec6064416a3ea2f4264df9"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -2001,7 +2002,7 @@ dependencies = [
 
 [[package]]
 name = "iroh-ffi"
-version = "0.21.0"
+version = "0.22.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2031,7 +2032,7 @@ dependencies = [
 [[package]]
 name = "iroh-gossip"
 version = "0.21.0"
-source = "git+https://github.com/n0-computer/iroh?branch=gossip-refactor#ddf974098af62383643a4b3d67119257d3c88722"
+source = "git+https://github.com/n0-computer/iroh?branch=main#bdc1c45b8251d23773ec6064416a3ea2f4264df9"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -2071,7 +2072,7 @@ dependencies = [
 [[package]]
 name = "iroh-metrics"
 version = "0.21.0"
-source = "git+https://github.com/n0-computer/iroh?branch=gossip-refactor#ddf974098af62383643a4b3d67119257d3c88722"
+source = "git+https://github.com/n0-computer/iroh?branch=main#bdc1c45b8251d23773ec6064416a3ea2f4264df9"
 dependencies = [
  "anyhow",
  "erased_set",
@@ -2091,7 +2092,7 @@ dependencies = [
 [[package]]
 name = "iroh-net"
 version = "0.21.0"
-source = "git+https://github.com/n0-computer/iroh?branch=gossip-refactor#ddf974098af62383643a4b3d67119257d3c88722"
+source = "git+https://github.com/n0-computer/iroh?branch=main#bdc1c45b8251d23773ec6064416a3ea2f4264df9"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -5440,9 +5441,9 @@ dependencies = [
 
 [[package]]
 name = "xml-rs"
-version = "0.8.20"
+version = "0.8.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "791978798f0597cfc70478424c2b4fdc2b7a8024aaff78497ef00f24ef674193"
+checksum = "539a77ee7c0de333dcc6da69b177380a0b81e0dacfa4f7344c465a36871ee601"
 
 [[package]]
 name = "xmltree"
@@ -5494,8 +5495,3 @@ name = "zeroize"
 version = "1.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ced3678a2879b30306d323f4542626697a464a97c0a07c9aebf7ebca65cd4dde"
-
-[[patch.unused]]
-name = "system-configuration"
-version = "0.5.1"
-source = "git+https://github.com/tmpfs/system-configuration-rs?branch=ios-hack#572913bf0c74ed996b2beeac3d61ed681075cbd4"
