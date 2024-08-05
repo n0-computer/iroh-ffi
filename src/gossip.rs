@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use futures::{Sink, SinkExt, StreamExt};
 use iroh::client::gossip::{SubscribeResponse, SubscribeUpdate};
-use iroh::gossip::dispatcher::GossipEvent;
+use iroh::gossip::net::GossipEvent;
 use iroh::net::NodeId;
 use tokio::sync::Mutex;
 use tracing::warn;
@@ -25,6 +25,7 @@ pub enum Message {
         /// The node that delivered the message. This is not the same as the original author.
         delivered_from: String,
     },
+    Joined(Vec<String>),
     /// We missed some messages
     Lagged,
     /// There was a gossip error
@@ -36,6 +37,7 @@ pub enum MessageType {
     NeighborUp,
     NeighborDown,
     Received,
+    Joined,
     Lagged,
     Error,
 }
@@ -47,6 +49,7 @@ impl Message {
             Self::NeighborUp(_) => MessageType::NeighborUp,
             Self::NeighborDown(_) => MessageType::NeighborDown,
             Self::Received { .. } => MessageType::Received,
+            Self::Joined(_) => MessageType::Joined,
             Self::Lagged => MessageType::Lagged,
             Self::Error(_) => MessageType::Error,
         }
@@ -65,6 +68,14 @@ impl Message {
             s.clone()
         } else {
             panic!("not a NeighborDown message");
+        }
+    }
+
+    pub fn as_joined(&self) -> Vec<String> {
+        if let Self::Joined(nodes) = self {
+            nodes.clone()
+        } else {
+            panic!("not a Joined message");
         }
     }
 
@@ -163,7 +174,7 @@ impl Gossip {
                         Message::NeighborDown(n.to_string())
                     }
                     Ok(SubscribeResponse::Gossip(GossipEvent::Received(
-                        iroh::gossip::dispatcher::Message {
+                        iroh::gossip::net::Message {
                             content,
                             delivered_from,
                             ..
@@ -172,6 +183,9 @@ impl Gossip {
                         content: content.to_vec(),
                         delivered_from: delivered_from.to_string(),
                     },
+                    Ok(SubscribeResponse::Gossip(GossipEvent::Joined(nodes))) => {
+                        Message::Joined(nodes.into_iter().map(|n| n.to_string()).collect())
+                    }
                     Ok(SubscribeResponse::Lagged) => Message::Lagged,
                     Err(err) => Message::Error(err.to_string()),
                 };
