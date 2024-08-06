@@ -97,9 +97,7 @@ jobs:
         source venv/bin/activate
         pip install setuptools pytest pytest-asyncio "maturin[patchelf]" uniffi-bindgen
         maturin develop
-        # Test python/gossip_test.py often times out so run all other pytests first
-        pytest --ignore python/gossip_test.py
-        pytest -vvv python/gossip_test.py
+        pytest -v
 
   build_and_test_swift:
     name: Swift - Build and test

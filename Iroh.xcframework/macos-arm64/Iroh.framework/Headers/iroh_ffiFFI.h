@@ -756,9 +756,9 @@ void uniffi_iroh_ffi_fn_free_doc(void*_Nonnull ptr, RustCallStatus *_Nonnull out
 uint64_t uniffi_iroh_ffi_fn_method_doc_close_me(void*_Nonnull ptr
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOC_DELETE_ENTRY
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOC_DELETE_ENTRY
-uint64_t uniffi_iroh_ffi_fn_method_doc_delete_entry(void*_Nonnull ptr, void*_Nonnull author_id, RustBuffer prefix
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOC_DELETE
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOC_DELETE
+uint64_t uniffi_iroh_ffi_fn_method_doc_delete(void*_Nonnull ptr, void*_Nonnull author_id, RustBuffer prefix
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOC_EXPORT_FILE
@@ -1382,6 +1382,11 @@ void uniffi_iroh_ffi_fn_free_message(void*_Nonnull ptr, RustCallStatus *_Nonnull
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_MESSAGE_AS_ERROR
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_MESSAGE_AS_ERROR
 RustBuffer uniffi_iroh_ffi_fn_method_message_as_error(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_MESSAGE_AS_JOINED
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_MESSAGE_AS_JOINED
+RustBuffer uniffi_iroh_ffi_fn_method_message_as_joined(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_MESSAGE_AS_NEIGHBOR_DOWN
@@ -2388,9 +2393,9 @@ uint16_t uniffi_iroh_ffi_checksum_method_doc_close_me(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_DOC_DELETE_ENTRY
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_DOC_DELETE_ENTRY
-uint16_t uniffi_iroh_ffi_checksum_method_doc_delete_entry(void
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_DOC_DELETE
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_DOC_DELETE
+uint16_t uniffi_iroh_ffi_checksum_method_doc_delete(void
     
 );
 #endif
@@ -2817,6 +2822,12 @@ uint16_t uniffi_iroh_ffi_checksum_method_liveevent_type(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_MESSAGE_AS_ERROR
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_MESSAGE_AS_ERROR
 uint16_t uniffi_iroh_ffi_checksum_method_message_as_error(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_MESSAGE_AS_JOINED
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_MESSAGE_AS_JOINED
+uint16_t uniffi_iroh_ffi_checksum_method_message_as_joined(void
     
 );
 #endif
