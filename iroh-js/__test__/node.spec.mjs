@@ -16,9 +16,8 @@ test('create memory node, with options', async (t) => {
 })
 
 test('node status', async (t) => {
-  const node = await Iroh.memory()
-  const client = node.node()
-  const status = await client.status()
+  const iroh = await Iroh.memory()
+  const status = await iroh.node.status()
 
   t.is(status.version, '0.22.0')
 })

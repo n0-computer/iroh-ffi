@@ -90,7 +90,7 @@ impl Iroh {
     }
 
     /// Access to node specific funtionaliy.
-    #[napi]
+    #[napi(getter)]
     pub fn node(&self) -> Node {
         Node { node: self.clone() }
     }

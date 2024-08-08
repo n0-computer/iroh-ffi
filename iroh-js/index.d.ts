@@ -92,7 +92,6 @@ export interface NodeStatus {
   /** RPC address, if currently listening. */
   rpcAddr?: string
 }
-function sum(a: number, b: number): number
 /** The logging level. See the rust (log crate)[https://docs.rs/log] for more information. */
 Trace = 'Trace',
 Debug = 'Debug',
@@ -119,6 +118,65 @@ function keyToPath(key: Array<number>, prefix?: string | undefined | null, root?
  * Appends the null byte to the end of the key.
  */
 function pathToKey(path: string, prefix?: string | undefined | null, root?: string | undefined | null): Array<number>
+/** Identifier for an [`Author`] */
+export declare class AuthorId {
+  /** Get an [`AuthorId`] from a String. */
+  constructor(str: string)
+  /** Returns true when both AuthorId's have the same value */
+  equal(other: AuthorId): boolean
+  toString(): string
+}
+/**
+ * Author key to insert entries in a document
+ *
+ * Internally, an author is a `SigningKey` which is used to sign entries.
+ */
+export declare class Author {
+  /** Get the [`AuthorId`] of this Author */
+  id(): AuthorId
+  toString(): string
+}
+/** Iroh authors client. */
+export declare class Authors {
+  /**
+   * Returns the default document author of this node.
+   *
+   * On persistent nodes, the author is created on first start and its public key is saved
+   * in the data directory.
+   *
+   * The default author can be set with [`Self::set_default`].
+   */
+  default(): Promise<AuthorId>
+  /** List all the AuthorIds that exist on this node. */
+  list(): Promise<Array<AuthorId>>
+  /**
+   * Create a new document author.
+   *
+   * You likely want to save the returned [`AuthorId`] somewhere so that you can use this author
+   * again.
+   *
+   * If you need only a single author, use [`Self::default`].
+   */
+  create(): Promise<AuthorId>
+  /**
+   * Export the given author.
+   *
+   * Warning: This contains sensitive data.
+   */
+  export(author: AuthorId): Promise<Author>
+  /**
+   * Import the given author.
+   *
+   * Warning: This contains sensitive data.
+   */
+  import(author: Author): Promise<AuthorId>
+  /**
+   * Deletes the given author by id.
+   *
+   * Warning: This permanently removes this author.
+   */
+  delete(author: AuthorId): Promise<void>
+}
 /**
  * A public key.
  *
@@ -142,6 +200,8 @@ export declare class PublicKey {
 }
 /** An Iroh node. Allows you to sync, store, and transfer data. */
 export declare class Iroh {
+  /** Access to authors specific funtionaliy. */
+  get authors(): Authors
   /**
    * Create a new iroh node.
    *
@@ -156,7 +216,7 @@ export declare class Iroh {
    */
   static memory(opts?: NodeOptions | undefined | null): Promise<Iroh>
   /** Access to node specific funtionaliy. */
-  node(): Node
+  get node(): Node
 }
 /** Iroh node client. */
 export declare class Node {

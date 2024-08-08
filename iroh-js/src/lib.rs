@@ -3,18 +3,15 @@ use napi::bindgen_prelude::*;
 use napi_derive::napi;
 use tracing_subscriber::filter::LevelFilter;
 
+mod author;
 mod key;
 mod net;
 mod node;
 
+pub use author::*;
 pub use key::*;
 pub use net::*;
 pub use node::*;
-
-#[napi]
-pub fn sum(a: i32, b: i32) -> i32 {
-    a + b
-}
 
 /// The logging level. See the rust (log crate)[https://docs.rs/log] for more information.
 #[derive(Debug)]

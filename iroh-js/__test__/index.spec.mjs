@@ -1,10 +1,6 @@
 import test from 'ava'
 
-import { sum, setLogLevel, keyToPath, pathToKey } from '../index.js'
-
-test('sum from native', (t) => {
-  t.is(sum(1, 2), 3)
-})
+import { setLogLevel, keyToPath, pathToKey } from '../index.js'
 
 test('can set log level', (t) => {
   setLogLevel('Error')
