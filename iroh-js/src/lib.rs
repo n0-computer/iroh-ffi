@@ -5,6 +5,7 @@ use tracing_subscriber::filter::LevelFilter;
 
 mod author;
 mod blob;
+mod doc;
 mod key;
 mod net;
 mod node;
@@ -12,6 +13,7 @@ mod ticket;
 
 pub use author::*;
 pub use blob::*;
+pub use doc::*;
 pub use key::*;
 pub use net::*;
 pub use node::*;

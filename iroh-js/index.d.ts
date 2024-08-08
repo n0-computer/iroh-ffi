@@ -245,6 +245,295 @@ export interface CollectionInfo {
    */
   totalBlobsSize?: bigint
 }
+/** A writable replica. */
+Write = 'Write',
+/** A readable replica. */
+Read = 'Read'
+/** The namespace id and CapabilityKind (read/write) of the doc */
+export interface NamespaceAndCapability {
+  /** The namespace id of the doc */
+  namespace: string
+  /** The capability you have for the doc (read/write) */
+  capability: CapabilityKind
+}
+/** The state for an open replica. */
+export interface OpenState {
+  /** Whether to accept sync requests for this replica. */
+  sync: boolean
+  /** How many event subscriptions are open */
+  subscribers: bigint
+  /** By how many handles the replica is currently held open */
+  handles: bigint
+}
+/** Intended capability for document share tickets */
+/** Read-only access */
+Read = 'Read',
+/** Write access */
+Write = 'Write'
+/**
+ * A single entry in a [`Doc`]
+ *
+ * An entry is identified by a key, its [`AuthorId`], and the [`Doc`]'s
+ * namespace id. Its value is the 32-byte BLAKE3 [`hash`]
+ * of the entry's content data, the size of this content data, and a timestamp.
+ */
+export interface Entry {
+  /** The namespace this entry belongs to */
+  namespace: string
+  /** The author of the entry */
+  author: string
+  /** The key of the entry. */
+  key: Array<number>
+  /** Length of the data referenced by `hash`. */
+  len: bigint
+  /** Hash of the content data. */
+  hash: string
+  /** Record creation timestamp. Counted as micros since the Unix epoch. */
+  timestamp: bigint
+}
+/** Fields by which the query can be sorted */
+/** Sort by key, then author. */
+KeyAuthor = 'KeyAuthor',
+/** Sort by author, then key. */
+AuthorKey = 'AuthorKey'
+/** Sort direction */
+/** Sort ascending */
+Asc = 'Asc',
+/** Sort descending */
+Desc = 'Desc'
+/** Options for sorting and pagination for using [`Query`]s. */
+export interface QueryOptions {
+  /**
+   * Sort by author or key first.
+   *
+   * Default is [`SortBy::AuthorKey`], so sorting first by author and then by key.
+   */
+  sortBy: SortBy
+  /**
+   * Direction by which to sort the entries
+   *
+   * Default is [`SortDirection::Asc`]
+   */
+  direction: SortDirection
+  /** Offset */
+  offset: bigint
+  /**
+   * Limit to limit the pagination.
+   *
+   * When the limit is 0, the limit does not exist.
+   */
+  limit: bigint
+}
+/** Events informing about actions of the live sync progress */
+export interface LiveEvent {
+  /** A local insertion. */
+  insertLocal?: LiveEventInsertLocal
+  /** Received a remote insert. */
+  insertRemote?: LiveEventInsertRemote
+  /** The content of an entry was downloaded and is now available at the local node */
+  contentReady?: LiveEventContentReady
+  /** We have a new neighbor in the swarm. */
+  neighborUp?: LiveEventNeighborUp
+  /** We lost a neighbor in the swarm. */
+  neighborDown?: LiveEventNeighborDown
+  /** A set-reconciliation sync finished. */
+  syncFinished?: SyncEvent
+  /**
+   * All pending content is now ready.
+   *
+   * This event signals that all queued content downloads from the last sync run have either
+   * completed or failed.
+   *
+   * It will only be emitted after a [`Self::SyncFinished`] event, never before.
+   *
+   * Receiving this event does not guarantee that all content in the document is available. If
+   * blobs failed to download, this event will still be emitted after all operations completed.
+   */
+  pendingContentReady?: undefined
+}
+export interface LiveEventInsertLocal {
+  /** The inserted entry. */
+  entry: Entry
+}
+export interface LiveEventInsertRemote {
+  /** The peer that sent us the entry. */
+  from: string
+  /** The inserted entry. */
+  entry: Entry
+  /** If the content is available at the local node */
+  contentStatus: ContentStatus
+}
+export interface LiveEventContentReady {
+  /** The content hash of the newly available entry content */
+  hash: string
+}
+export interface LiveEventNeighborUp {
+  /** Public key of the neighbor */
+  neighbor: string
+}
+export interface LiveEventNeighborDown {
+  /** Public key of the neighbor */
+  neighbor: string
+}
+/** Outcome of a sync operation */
+export interface SyncEvent {
+  /** Peer we synced with */
+  peer: string
+  /** Origin of the sync exchange */
+  origin: Origin
+  /** Timestamp when the sync finished */
+  finished: Date
+  /** Timestamp when the sync started */
+  started: Date
+  /** Result of the sync operation. `None` if successfull. */
+  result?: string
+}
+/** Why we started a sync request */
+/** Direct join request via API */
+DirectJoin = 'DirectJoin',
+/** Peer showed up as new neighbor in the gossip swarm */
+NewNeighbor = 'NewNeighbor',
+/** We synced after receiving a sync report that indicated news for us */
+SyncReport = 'SyncReport',
+/** We received a sync report while a sync was running, so run again afterwars */
+Resync = 'Resync'
+/** Why we performed a sync exchange */
+/** Direct join request via API */
+ConnectDirectJoin = 'ConnectDirectJoin',
+/** Peer showed up as new neighbor in the gossip swarm */
+ConnectNewNeighbor = 'ConnectNewNeighbor',
+/** We synced after receiving a sync report that indicated news for us */
+ConnectSyncReport = 'ConnectSyncReport',
+/** We received a sync report while a sync was running, so run again afterwars */
+ConnectResync = 'ConnectResync',
+/** A peer connected to us and we accepted the exchange */
+Accept = 'Accept'
+/** Outcome of an InsertRemove event. */
+export interface InsertRemoteEvent {
+  /** The peer that sent us the entry. */
+  from: string
+  /** The inserted entry. */
+  entry: Entry
+  /** If the content is available at the local node */
+  contentStatus: ContentStatus
+}
+/** Whether the content status is available on a node. */
+/** The content is completely available. */
+Complete = 'Complete',
+/** The content is partially available. */
+Incomplete = 'Incomplete',
+/** The content is missing. */
+Missing = 'Missing'
+/** The type of `DocImportProgress` event */
+/** An item was found with name `name`, from now on referred to via `id` */
+Found = 'Found',
+/** We got progress ingesting item `id`. */
+Progress = 'Progress',
+/** We are done ingesting `id`, and the hash is `hash`. */
+IngestDone = 'IngestDone',
+/** We are done with the whole operation. */
+AllDone = 'AllDone',
+/**
+ * We got an error and need to abort.
+ *
+ * This will be the last message in the stream.
+ */
+Abort = 'Abort'
+/** A DocImportProgress event indicating a file was found with name `name`, from now on referred to via `id` */
+export interface DocImportProgressFound {
+  /** A new unique id for this entry. */
+  id: bigint
+  /** The name of the entry. */
+  name: string
+  /** The size of the entry in bytes. */
+  size: bigint
+}
+/** A DocImportProgress event indicating we've made progress ingesting item `id`. */
+export interface DocImportProgressProgress {
+  /** The unique id of the entry. */
+  id: bigint
+  /** The offset of the progress, in bytes. */
+  offset: bigint
+}
+/** A DocImportProgress event indicating we are finished adding `id` to the data store and the hash is `hash`. */
+export interface DocImportProgressIngestDone {
+  /** The unique id of the entry. */
+  id: bigint
+  /** The hash of the entry. */
+  hash: string
+}
+/** A DocImportProgress event indicating we are done setting the entry to the doc */
+export interface DocImportProgressAllDone {
+  /** The key of the entry */
+  key: Array<number>
+}
+/** A DocImportProgress event indicating we got an error and need to abort */
+export interface DocImportProgressAbort {
+  /** The error message */
+  error: string
+}
+/** Progress updates for the doc import file operation. */
+export interface DocImportProgress {
+  /** An item was found with name `name`, from now on referred to via `id` */
+  found?: DocImportProgressFound
+  /** We got progress ingesting item `id`. */
+  progress?: DocImportProgressProgress
+  /** We are done ingesting `id`, and the hash is `hash`. */
+  ingestDone?: DocImportProgressIngestDone
+  /** We are done with the whole operation. */
+  allDone?: DocImportProgressAllDone
+  /**
+   * We got an error and need to abort.
+   *
+   * This will be the last message in the stream.
+   */
+  abort?: DocImportProgressAbort
+}
+/** A DocExportProgress event indicating a file was found with name `name`, from now on referred to via `id` */
+export interface DocExportProgressFound {
+  /** A new unique id for this entry. */
+  id: bigint
+  /** The hash of the entry. */
+  hash: string
+  /** The size of the entry in bytes. */
+  size: bigint
+  /** The path where we are writing the entry */
+  outpath: string
+}
+/** A DocExportProgress event indicating we've made progress exporting item `id`. */
+export interface DocExportProgressProgress {
+  /** The unique id of the entry. */
+  id: bigint
+  /** The offset of the progress, in bytes. */
+  offset: bigint
+}
+/** A DocExportProgress event indicating a single blob wit `id` is done */
+export interface DocExportProgressDone {
+  /** The unique id of the entry. */
+  id: bigint
+}
+/** A DocExportProgress event indicating we got an error and need to abort */
+export interface DocExportProgressAbort {
+  /** The error message */
+  error: string
+}
+/** Progress updates for the doc import file operation. */
+export interface DocExportProgress {
+  /** An item was found with name `name`, from now on referred to via `id` */
+  found?: DocExportProgressFound
+  /** We got progress ingesting item `id`. */
+  progress?: DocExportProgressProgress
+  /** We finished exporting a blob */
+  done?: DocExportProgressDone
+  /** We are done with the whole operation. */
+  allDone?: undefined
+  /**
+   * We got an error and need to abort.
+   *
+   * This will be the last message in the stream.
+   */
+  abort?: DocExportProgressAbort
+}
 /** Stats counter */
 export interface CounterStats {
   /** The counter value */
@@ -563,6 +852,185 @@ export declare class RangeSpec {
 }
 /** A collection of blobs */
 export declare class Collection { }
+/** Iroh docs client. */
+export declare class Docs {
+  /** Create a new doc. */
+  create(): Promise<Doc>
+  /** Join and sync with an already existing document. */
+  join(ticket: string): Promise<Doc>
+  /** Join and sync with an already existing document and subscribe to events on that document. */
+  joinAndSubscribe(ticket: string, cb: (err: Error | null, arg: LiveEvent) => unknown): Promise<Doc>
+  /** List all the docs we have access to on this node. */
+  list(): Promise<Array<NamespaceAndCapability>>
+  /**
+   * Get a [`Doc`].
+   *
+   * Returns None if the document cannot be found.
+   */
+  open(id: string): Promise<Doc | null>
+  /**
+   * Delete a document from the local node.
+   *
+   * This is a destructive operation. Both the document secret key and all entries in the
+   * document will be permanently deleted from the node's storage. Content blobs will be deleted
+   * through garbage collection unless they are referenced from another document or tag.
+   */
+  dropDoc(docId: string): Promise<void>
+}
+/** A representation of a mutable, synchronizable key-value store. */
+export declare class Doc {
+  /** Get the document id of this doc. */
+  id(): string
+  /** Close the document. */
+  closeMe(): Promise<void>
+  /** Set the content of a key to a byte array. */
+  setBytes(authorId: AuthorId, key: Array<number>, value: Array<number>): Promise<Hash>
+  /** Set an entries on the doc via its key, hash, and size. */
+  setHash(authorId: AuthorId, key: Array<number>, hash: string, size: bigint): Promise<void>
+  /** Add an entry from an absolute file path */
+  importFile(author: AuthorId, key: Array<number>, path: string, inPlace: boolean, cb?: (err: Error | null, arg: DocImportProgress) => unknown | undefined | null): Promise<void>
+  /** Export an entry as a file to a given absolute path */
+  exportFile(entry: Entry, path: string, cb?: (err: Error | null, arg: DocExportProgress) => unknown | undefined | null): Promise<void>
+  /**
+   * Delete entries that match the given `author` and key `prefix`.
+   *
+   * This inserts an empty entry with the key set to `prefix`, effectively clearing all other
+   * entries whose key starts with or is equal to the given `prefix`.
+   *
+   * Returns the number of entries deleted.
+   */
+  delete(authorId: AuthorId, prefix: Array<number>): Promise<bigint>
+  /** Get an entry for a key and author. */
+  getExact(author: AuthorId, key: Array<number>, includeEmpty: boolean): Promise<Entry | null>
+  /**
+   * Get entries.
+   *
+   * Note: this allocates for each `Entry`, if you have many `Entry`s this may be a prohibitively large list.
+   * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
+   */
+  getMany(query: Query): Promise<Array<Entry>>
+  /** Get the latest entry for a key and author. */
+  getOne(query: Query): Promise<Entry | null>
+  /** Share this document with peers over a ticket. */
+  share(mode: ShareMode, addrOptions: AddrInfoOptions): Promise<string>
+  /** Start to sync this document with a list of peers. */
+  startSync(peers: Array<NodeAddr>): Promise<void>
+  /** Stop the live sync for this document. */
+  leave(): Promise<void>
+  /** Subscribe to events for this document. */
+  subscribe(cb: (err: Error | null, arg: LiveEvent) => unknown): Promise<void>
+  /** Get status info for this document */
+  status(): Promise<OpenState>
+  /** Set the download policy for this document */
+  setDownloadPolicy(policy: DownloadPolicy): Promise<void>
+  /** Get the download policy for this document */
+  getDownloadPolicy(): Promise<DownloadPolicy>
+  /** Get sync peers for this document */
+  getSyncPeers(): Promise<Array<Array<number>> | null>
+}
+/** Download policy to decide which content blobs shall be downloaded. */
+export declare class DownloadPolicy {
+  /** Download everything */
+  static everything(): DownloadPolicy
+  /** Download nothing */
+  static nothing(): DownloadPolicy
+  /** Download nothing except keys that match the given filters */
+  static nothingExcept(filters: Array<FilterKind>): DownloadPolicy
+  /** Download everything except keys that match the given filters */
+  static everythingExcept(filters: Array<FilterKind>): DownloadPolicy
+}
+/** Filter strategy used in download policies. */
+export declare class FilterKind {
+  /** Verifies whether this filter matches a given key */
+  matches(key: Array<number>): boolean
+  /** Returns a FilterKind that matches if the contained bytes are a prefix of the key. */
+  static prefix(prefix: Array<number>): FilterKind
+  /** Returns a FilterKind that matches if the contained bytes and the key are the same. */
+  static exact(key: Array<number>): FilterKind
+}
+/**
+ * Build a Query to search for an entry or entries in a doc.
+ *
+ * Use this with `QueryOptions` to determine sorting, grouping, and pagination.
+ */
+export declare class Query {
+  /**
+   * Query all records.
+   *
+   * If `opts` is `None`, the default values will be used:
+   *     sort_by: SortBy::AuthorKey
+   *     direction: SortDirection::Asc
+   *     offset: None
+   *     limit: None
+   */
+  static all(opts?: QueryOptions | undefined | null): Query
+  /**
+   * Query only the latest entry for each key, omitting older entries if the entry was written
+   * to by multiple authors.
+   *
+   * If `opts` is `None`, the default values will be used:
+   *     direction: SortDirection::Asc
+   *     offset: None
+   *     limit: None
+   */
+  static singleLatestPerKey(opts?: QueryOptions | undefined | null): Query
+  /**
+   * Query exactly the key, but only the latest entry for it, omitting older entries if the entry was written
+   * to by multiple authors.
+   */
+  static singleLatestPerKeyExact(key: Array<number>): Query
+  /**
+   * Query only the latest entry for each key, with this prefix, omitting older entries if the entry was written
+   * to by multiple authors.
+   *
+   * If `opts` is `None`, the default values will be used:
+   *     direction: SortDirection::Asc
+   *     offset: None
+   *     limit: None
+   */
+  static singleLatestPerKeyPrefix(prefix: Array<number>, opts?: QueryOptions | undefined | null): Query
+  /**
+   * Query all entries for by a single author.
+   *
+   * If `opts` is `None`, the default values will be used:
+   *     sort_by: SortBy::AuthorKey
+   *     direction: SortDirection::Asc
+   *     offset: None
+   *     limit: None
+   */
+  static author(author: AuthorId, opts?: QueryOptions | undefined | null): Query
+  /**
+   * Query all entries that have an exact key.
+   *
+   * If `opts` is `None`, the default values will be used:
+   *     sort_by: SortBy::AuthorKey
+   *     direction: SortDirection::Asc
+   *     offset: None
+   *     limit: None
+   */
+  static keyExact(key: Array<number>, opts?: QueryOptions | undefined | null): Query
+  /** Create a Query for a single key and author. */
+  static authorKeyExact(author: AuthorId, key: Array<number>): Query
+  /**
+   * Create a query for all entries with a given key prefix.
+   *
+   * If `opts` is `None`, the default values will be used:
+   *     sort_by: SortBy::AuthorKey
+   *     direction: SortDirection::Asc
+   *     offset: None
+   *     limit: None
+   */
+  static keyPrefix(prefix: Array<number>, opts?: QueryOptions | undefined | null): Query
+  /**
+   * Create a query for all entries of a single author with a given key prefix.
+   *
+   * If `opts` is `None`, the default values will be used:
+   *     direction: SortDirection::Asc
+   *     offset: None
+   *     limit: None
+   */
+  static authorKeyPrefix(author: AuthorId, prefix: Array<number>, opts?: QueryOptions | undefined | null): Query
+}
 /**
  * A public key.
  *
@@ -590,6 +1058,8 @@ export declare class Iroh {
   get authors(): Authors
   /** Access to blob specific funtionaliy. */
   get blobs(): Blobs
+  /** Access to docs specific funtionaliy. */
+  get docs(): Docs
   /**
    * Create a new iroh node.
    *

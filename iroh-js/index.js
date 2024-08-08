@@ -310,7 +310,7 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { AuthorId, Author, Authors, Blobs, SetTagOption, Hash, BlobFormat, BlobDownloadOptions, BlobExportFormat, BlobExportMode, RangeSpec, Collection, PublicKey, ConnType, Iroh, Node, BlobTicket, AddrInfoOptions, LogLevel, setLogLevel, startMetricsCollection, keyToPath, pathToKey } = nativeBinding
+const { AuthorId, Author, Authors, Blobs, SetTagOption, Hash, BlobFormat, BlobDownloadOptions, BlobExportFormat, BlobExportMode, RangeSpec, Collection, CapabilityKind, Docs, Doc, DownloadPolicy, FilterKind, ShareMode, SortBy, SortDirection, Query, SyncReason, Origin, ContentStatus, DocImportProgressType, PublicKey, ConnType, Iroh, Node, BlobTicket, AddrInfoOptions, LogLevel, setLogLevel, startMetricsCollection, keyToPath, pathToKey } = nativeBinding
 
 module.exports.AuthorId = AuthorId
 module.exports.Author = Author
@@ -324,6 +324,19 @@ module.exports.BlobExportFormat = BlobExportFormat
 module.exports.BlobExportMode = BlobExportMode
 module.exports.RangeSpec = RangeSpec
 module.exports.Collection = Collection
+module.exports.CapabilityKind = CapabilityKind
+module.exports.Docs = Docs
+module.exports.Doc = Doc
+module.exports.DownloadPolicy = DownloadPolicy
+module.exports.FilterKind = FilterKind
+module.exports.ShareMode = ShareMode
+module.exports.SortBy = SortBy
+module.exports.SortDirection = SortDirection
+module.exports.Query = Query
+module.exports.SyncReason = SyncReason
+module.exports.Origin = Origin
+module.exports.ContentStatus = ContentStatus
+module.exports.DocImportProgressType = DocImportProgressType
 module.exports.PublicKey = PublicKey
 module.exports.ConnType = ConnType
 module.exports.Iroh = Iroh
