@@ -2435,11 +2435,13 @@ version = "3.0.0-alpha.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "743b5a7769f54c95e20a26d9e66d1b43d5622b7dc8ec8f97b51ed8c58633841f"
 dependencies = [
+ "anyhow",
  "bitflags 2.6.0",
  "ctor",
  "napi-build",
  "napi-sys",
  "once_cell",
+ "tokio",
 ]
 
 [[package]]
@@ -2727,10 +2729,30 @@ dependencies = [
 name = "number0_iroh"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
+ "async-trait",
+ "blake3",
+ "bytes",
+ "data-encoding",
+ "flume",
+ "futures",
  "iroh",
+ "iroh-io",
+ "libc",
  "napi",
  "napi-build",
  "napi-derive",
+ "num_cpus",
+ "range-collections",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "tracing-subscriber",
+ "uniffi",
+ "url",
 ]
 
 [[package]]

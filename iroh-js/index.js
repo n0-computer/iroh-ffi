@@ -310,6 +310,11 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { sum } = nativeBinding
+const { sum, LogLevel, setLogLevel, startMetricsCollection, keyToPath, pathToKey } = nativeBinding
 
 module.exports.sum = sum
+module.exports.LogLevel = LogLevel
+module.exports.setLogLevel = setLogLevel
+module.exports.startMetricsCollection = startMetricsCollection
+module.exports.keyToPath = keyToPath
+module.exports.pathToKey = pathToKey
