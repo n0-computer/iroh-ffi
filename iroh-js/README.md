@@ -8,10 +8,10 @@
 
 ```sh
 # debug build
-> npm run build:debug
+> yarn build:debug
 
 # run tests
-> npm test
+> yarn test
 ```
 
 
