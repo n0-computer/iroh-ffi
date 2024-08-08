@@ -2437,6 +2437,7 @@ checksum = "743b5a7769f54c95e20a26d9e66d1b43d5622b7dc8ec8f97b51ed8c58633841f"
 dependencies = [
  "anyhow",
  "bitflags 2.6.0",
+ "chrono",
  "ctor",
  "napi-build",
  "napi-sys",
@@ -2733,6 +2734,7 @@ dependencies = [
  "async-trait",
  "blake3",
  "bytes",
+ "chrono",
  "data-encoding",
  "flume",
  "futures",

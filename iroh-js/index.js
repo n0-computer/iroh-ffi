@@ -310,8 +310,12 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { sum, LogLevel, setLogLevel, startMetricsCollection, keyToPath, pathToKey } = nativeBinding
+const { PublicKey, ConnType, Iroh, Node, sum, LogLevel, setLogLevel, startMetricsCollection, keyToPath, pathToKey } = nativeBinding
 
+module.exports.PublicKey = PublicKey
+module.exports.ConnType = ConnType
+module.exports.Iroh = Iroh
+module.exports.Node = Node
 module.exports.sum = sum
 module.exports.LogLevel = LogLevel
 module.exports.setLogLevel = setLogLevel

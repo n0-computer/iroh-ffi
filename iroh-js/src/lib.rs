@@ -3,6 +3,14 @@ use napi::bindgen_prelude::*;
 use napi_derive::napi;
 use tracing_subscriber::filter::LevelFilter;
 
+mod key;
+mod net;
+mod node;
+
+pub use key::*;
+pub use net::*;
+pub use node::*;
+
 #[napi]
 pub fn sum(a: i32, b: i32) -> i32 {
     a + b

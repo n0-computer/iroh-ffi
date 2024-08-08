@@ -7,7 +7,7 @@ version = "0.0.0"
 crate-type = ["cdylib"]
 
 [dependencies]
-napi = { version = "3.0.0-alpha.8", default-features = false, features = ["napi8", "error_anyhow", "async"] }
+napi = { version = "3.0.0-alpha.8", default-features = false, features = ["napi8", "error_anyhow", "async", "chrono_date"] }
 napi-derive = "3.0.0-alpha.7"
 anyhow = "1.0.69"
 async-trait = "0.1.80"
@@ -30,6 +30,7 @@ tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.17" }
 serde = { version = "1.0.196", features = ["derive"] }
 serde_json = "1.0.113"
+chrono = "0.4.38"
 
 
 [build-dependencies]
