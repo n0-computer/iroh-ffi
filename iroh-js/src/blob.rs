@@ -481,6 +481,7 @@ impl Hash {
     }
 
     /// Bytes of the hash.
+    #[napi]
     pub fn to_bytes(&self) -> Vec<u8> {
         let h: iroh::blobs::Hash = self.value.parse().unwrap();
         h.as_bytes().to_vec()
@@ -499,13 +500,14 @@ impl Hash {
     }
 
     /// Make a Hash from base32 or hex string
-    #[napi()]
+    #[napi(factory)]
     pub fn from_string(s: String) -> Result<Self> {
         let key = iroh::blobs::Hash::from_str(&s).map_err(anyhow::Error::from)?;
         Ok(key.into())
     }
 
     /// Convert the hash to a hex string.
+    #[napi]
     pub fn to_string(&self, target: Option<String>) -> String {
         match target {
             Some(target) => {

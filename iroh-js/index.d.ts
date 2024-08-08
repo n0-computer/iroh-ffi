@@ -127,6 +127,87 @@ Copy = 'Copy',
  * if the file is very small or if the store does not support referencing files.
  */
 TryReference = 'TryReference'
+/** A DownloadProgress event indicating an item was found with hash `hash`, that can be referred to by `id` */
+export interface DownloadProgressFound {
+  /** A new unique id for this entry. */
+  id: bigint
+  /** child offset */
+  child: bigint
+  /** The hash of the entry. */
+  hash: string
+  /** The size of the entry in bytes. */
+  size: bigint
+}
+/** A DownloadProgress event indicating an entry was found locally */
+export interface DownloadProgressFoundLocal {
+  /** child offset */
+  child: bigint
+  /** The hash of the entry. */
+  hash: string
+  /** The size of the entry in bytes. */
+  size: bigint
+}
+/** A DownloadProgress event indicating an item was found with hash `hash`, that can be referred to by `id` */
+export interface DownloadProgressFoundHashSeq {
+  /** Number of children in the collection, if known. */
+  children: bigint
+  /** The hash of the entry. */
+  hash: string
+}
+/** A DownloadProgress event indicating we got progress ingesting item `id`. */
+export interface DownloadProgressProgress {
+  /** The unique id of the entry. */
+  id: bigint
+  /** The offset of the progress, in bytes. */
+  offset: bigint
+}
+/** A DownloadProgress event indicated we are done with `id` */
+export interface DownloadProgressDone {
+  /** The unique id of the entry. */
+  id: bigint
+}
+/** A DownloadProgress event indicating we are done with the whole operation */
+export interface DownloadProgressAllDone {
+  /** The number of bytes written */
+  bytesWritten: bigint
+  /** The number of bytes read */
+  bytesRead: bigint
+  /** The time it took to transfer the data, in milliseconds. */
+  elapsed: bigint
+}
+/** A DownloadProgress event indicating we got an error and need to abort */
+export interface DownloadProgressAbort {
+  error: string
+}
+export interface DownloadProgressInitialState {
+  /** Whether we are connected to a node */
+  connected: boolean
+}
+/** Progress updates for the get operation. */
+export interface DownloadProgress {
+  /** Initial state if subscribing to a running or queued transfer. */
+  initialState?: DownloadProgressInitialState
+  /** A new connection was established. */
+  connected?: undefined
+  /** An item was found with hash `hash`, from now on referred to via `id` */
+  found?: DownloadProgressFound
+  /** Data was found locally */
+  foundLocal?: DownloadProgressFoundLocal
+  /** An item was found with hash `hash`, from now on referred to via `id` */
+  foundHashSeq?: DownloadProgressFoundHashSeq
+  /** We got progress ingesting item `id`. */
+  progress?: DownloadProgressProgress
+  /** We are done with `id`, and the hash is `hash`. */
+  done?: DownloadProgressDone
+  /** We are done with the whole operation. */
+  allDone?: DownloadProgressAllDone
+  /**
+   * We got an error and need to abort.
+   *
+   * This will be the last message in the stream.
+   */
+  abort?: DownloadProgressAbort
+}
 /** A response to a list blobs request */
 export interface BlobInfo {
   /** Location of the blob */
@@ -232,7 +313,7 @@ export interface NodeAddr {
   /** Get the home relay URL for this peer */
   relayUrl?: string
   /** Direct addresses of this peer. */
-  addresses: Array<string>
+  addresses?: Array<string>
 }
 /** Options passed to [`IrohNode.new`]. Controls the behaviour of an iroh node. */
 export interface NodeOptions {
@@ -400,6 +481,8 @@ export declare class Blobs {
   addBytes(bytes: Array<number>): Promise<BlobAddOutcome>
   /** Write a blob by passing bytes, setting an explicit tag name. */
   addBytesNamed(bytes: Array<number>, name: string): Promise<BlobAddOutcome>
+  /** Download a blob from another node and add it to the local database. */
+  download(hash: string, opts: BlobDownloadOptions, cb: (err: Error | null, arg: DownloadProgress) => unknown): Promise<void>
   /**
    * Export a blob from the internal blob store to a path on the node's filesystem.
    *
@@ -457,10 +540,14 @@ export declare class Hash {
   readonly value: string
   /** Calculate the hash of the provide bytes. */
   constructor(buf: Array<number>)
+  /** Bytes of the hash. */
+  toBytes(): Array<number>
   /** Create a `Hash` from its raw bytes representation. */
   static fromBytes(bytes: Array<number>): Hash
   /** Make a Hash from base32 or hex string */
-  static fromString(s: string): this
+  static fromString(s: string): Hash
+  /** Convert the hash to a hex string. */
+  toString(target?: string | undefined | null): string
 }
 /** Options to download  data specified by the hash. */
 export declare class BlobDownloadOptions {
@@ -548,13 +635,17 @@ export declare class Node {
  * It is a single item which can be easily serialized and deserialized.
  */
 export declare class BlobTicket {
-  constructor(str: string)
-  /** The hash of the item this ticket can retrieve. */
-  hash(): Hash
-  /** The [`NodeAddr`] of the provider for this ticket. */
-  nodeAddr(): NodeAddr
-  /** The [`BlobFormat`] for this ticket. */
-  format(): BlobFormat
+  /** The provider to get a file from. */
+  readonly nodeAddr: NodeAddr
+  /** The format of the blob. */
+  readonly format: BlobFormat
+  /** The hash to retrieve. */
+  readonly hash: string
+  constructor(nodeAddr: NodeAddr, hash: string, format: BlobFormat)
+  static fromString(str: string): BlobTicket
+  /** Checks if the two tickets are equal */
+  isEqual(other: BlobTicket): boolean
+  toString(): string
   /** True if the ticket is for a collection and should retrieve all blobs in it. */
   recursive(): boolean
   /** Convert this ticket into input parameters for a call to blobs_download */

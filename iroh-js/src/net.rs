@@ -146,18 +146,18 @@ pub struct NodeAddr {
     /// Get the home relay URL for this peer
     pub relay_url: Option<String>,
     /// Direct addresses of this peer.
-    pub addresses: Vec<String>,
+    pub addresses: Option<Vec<String>>,
 }
 
 impl TryFrom<NodeAddr> for iroh::net::endpoint::NodeAddr {
     type Error = anyhow::Error;
 
     fn try_from(value: NodeAddr) -> anyhow::Result<Self> {
-        let raw: &[u8] = value.node_id.as_ref();
-        let key: iroh::net::key::PublicKey = raw.try_into().map_err(anyhow::Error::from)?;
+        let key: iroh::net::key::PublicKey = value.node_id.parse().map_err(anyhow::Error::from)?;
         let mut node_addr = iroh::net::endpoint::NodeAddr::new(key);
         let addresses = value
             .addresses
+            .unwrap_or_default()
             .into_iter()
             .map(|addr| {
                 let addr: std::net::SocketAddr = addr.parse().map_err(anyhow::Error::from)?;
@@ -177,15 +177,21 @@ impl TryFrom<NodeAddr> for iroh::net::endpoint::NodeAddr {
 
 impl From<iroh::net::endpoint::NodeAddr> for NodeAddr {
     fn from(value: iroh::net::endpoint::NodeAddr) -> Self {
+        let addresses: Vec<_> = value
+            .info
+            .direct_addresses
+            .into_iter()
+            .map(|d| d.to_string())
+            .collect();
+        let addresses = if addresses.is_empty() {
+            None
+        } else {
+            Some(addresses)
+        };
         NodeAddr {
             node_id: value.node_id.to_string(),
             relay_url: value.info.relay_url.map(|url| url.to_string()),
-            addresses: value
-                .info
-                .direct_addresses
-                .into_iter()
-                .map(|d| d.to_string())
-                .collect(),
+            addresses,
         }
     }
 }
