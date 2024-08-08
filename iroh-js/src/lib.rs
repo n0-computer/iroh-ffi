@@ -4,14 +4,18 @@ use napi_derive::napi;
 use tracing_subscriber::filter::LevelFilter;
 
 mod author;
+mod blob;
 mod key;
 mod net;
 mod node;
+mod ticket;
 
 pub use author::*;
+pub use blob::*;
 pub use key::*;
 pub use net::*;
 pub use node::*;
+pub use ticket::*;
 
 /// The logging level. See the rust (log crate)[https://docs.rs/log] for more information.
 #[derive(Debug)]

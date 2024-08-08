@@ -2,13 +2,12 @@ use std::str::FromStr;
 
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
-use serde::{Deserialize, Serialize};
 
 /// A public key.
 ///
 /// The key itself is just a 32 byte array, but a key has associated crypto
 /// information that is cached for performance reasons.
-#[derive(Debug, Clone, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq)]
 #[napi]
 pub struct PublicKey {
     /// The actual key bytes. Always 32 bytes.
