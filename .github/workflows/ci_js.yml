@@ -1,4 +1,4 @@
-name: CI
+name: CI JS
 env:
   DEBUG: napi:*
   APP_NAME: iroh
