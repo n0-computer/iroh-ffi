@@ -1,7 +1,10 @@
 [package]
 edition = "2021"
 name = "number0_iroh"
-version = "0.0.0"
+version = "0.22.0"
+license = "MIT OR Apache-2.0"
+authors = ["n0 team"]
+repository = "https://github.com/n0-computer/iroh-ffi"
 
 [lib]
 crate-type = ["cdylib"]

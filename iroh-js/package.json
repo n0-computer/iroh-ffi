@@ -1,6 +1,6 @@
 {
   "name": "@number0/iroh",
-  "version": "0.0.0",
+  "version": "0.22.0",
   "main": "index.js",
   "types": "index.d.ts",
   "napi": {
@@ -21,7 +21,7 @@
       ]
     }
   },
-  "license": "MIT",
+  "license": "MIT OR Apache-2.0",
   "devDependencies": {
     "@napi-rs/cli": "^2.18.0",
     "ava": "^6.0.1"
