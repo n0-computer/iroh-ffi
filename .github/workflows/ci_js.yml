@@ -229,6 +229,10 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: yarn
           cache-dependency-path: './iroh-js/yarn.lock'
+      - name: Setup node x86_64
+        if: matrix.settings.target == 'x86_64-apple-darwin'
+        run: yarn config set supportedArchitectures.cpu "x86_64"
+        shell: bash
       - name: Install dependencies
         run: yarn install
       - name: Download artifacts
@@ -240,7 +244,7 @@ jobs:
         run: ls -R .
         shell: bash
       - name: Test bindings
-        run: yarn test --target ${{ matrix.settings.target }}
+        run: yarn test
   test-linux-x64-gnu-binding:
     name: Test bindings on Linux-x64-gnu - node@${{ matrix.node }}
     needs:
