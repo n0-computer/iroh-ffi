@@ -229,6 +229,7 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: yarn
           cache-dependency-path: './iroh-js/yarn.lock'
+          architecture: x64
       - name: Setup node x86_64
         if: matrix.settings.target == 'x86_64-apple-darwin'
         run: yarn config set supportedArchitectures.cpu "x86_64"
