@@ -9,7 +9,7 @@ test('can set log level', (t) => {
 })
 
 test('pathToKey basic', (t) => {
-  const path = `${sep}foo${sep}bar`
+  const path = `/foo${sep}bar`
   const key = Buffer.concat([
     Buffer.from('/foo/bar', 'utf8'),
     Buffer.from([0x00]),
@@ -23,7 +23,7 @@ test('pathToKey basic', (t) => {
 })
 
 test('pathToKey prefix', (t) => {
-  const path = `${sep}foo${sep}bar`
+  const path = `/foo${sep}bar`
   const prefix = 'prefix:'
   const key = Buffer.concat([
     Buffer.from('prefix:/foo/bar', 'utf8'),
