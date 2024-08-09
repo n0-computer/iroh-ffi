@@ -857,13 +857,15 @@ impl Query {
     }
 
     /// Get the limit for this query (max. number of entries to emit).
-    pub fn limit(&self) -> Option<u64> {
-        self.0.limit()
+    #[napi]
+    pub fn limit(&self) -> Option<BigInt> {
+        self.0.limit().map(Into::into)
     }
 
     /// Get the offset for this query (number of entries to skip at the beginning).
-    pub fn offset(&self) -> u64 {
-        self.0.offset()
+    #[napi]
+    pub fn offset(&self) -> BigInt {
+        self.0.offset().into()
     }
 }
 

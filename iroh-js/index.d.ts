@@ -1044,6 +1044,10 @@ export declare class Query {
    *     limit: None
    */
   static authorKeyPrefix(author: AuthorId, prefix: Array<number>, opts?: QueryOptions | undefined | null): Query
+  /** Get the limit for this query (max. number of entries to emit). */
+  limit(): bigint | null
+  /** Get the offset for this query (number of entries to skip at the beginning). */
+  offset(): bigint
 }
 /** Iroh gossip client. */
 export declare class Gossip {
