@@ -7,7 +7,14 @@ import { cwd } from 'process'
 test('add blob from path', async (t) => {
   const node = await Iroh.memory()
 
-  let { promise, resolve, reject } = Promise.withResolvers();
+
+  // Do not use Promise.withResovlers it is buggy
+  let resolve;
+  let reject;
+  const promise = new Promise((res, rej) => {
+    resolve = res
+    reject = rej;
+  });
 
   await node.blobs.addFromPath(
     cwd() + '/__test__/index.spec.mjs',
@@ -26,10 +33,8 @@ test('add blob from path', async (t) => {
     }
   )
 
-  return promise.then((allDone) => {
-    t.is(allDone.format, 'Raw')
-    t.truthy(allDone.tag)
-    t.truthy(allDone.hash)
-    t.pass()
-  })
+  const allDone = await promise
+  t.is(allDone.format, 'Raw')
+  t.truthy(allDone.tag)
+  t.truthy(allDone.hash)
 })
