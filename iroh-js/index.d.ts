@@ -1039,11 +1039,13 @@ export declare class Query {
  */
 export declare class PublicKey {
   /** Returns true if the PublicKeys are equal */
-  equal(other: PublicKey): boolean
+  isEqual(other: PublicKey): boolean
   /** Express the PublicKey as a byte array */
   toBytes(): Array<number>
   /** Make a PublicKey from base32 string */
-  constructor(s: string)
+  static fromString(s: string): PublicKey
+  /** Make a PublicKey from byte array */
+  static fromBytes(bytes: Array<number>): PublicKey
   /**
    * Convert to a base32 string limited to the first 10 bytes for a friendly string
    * representation of the key.

@@ -33,7 +33,7 @@ impl From<&PublicKey> for iroh::net::key::PublicKey {
 impl PublicKey {
     /// Returns true if the PublicKeys are equal
     #[napi]
-    pub fn equal(&self, other: &PublicKey) -> bool {
+    pub fn is_equal(&self, other: &PublicKey) -> bool {
         *self == *other
     }
 
@@ -44,14 +44,14 @@ impl PublicKey {
     }
 
     /// Make a PublicKey from base32 string
-    #[napi(constructor)]
+    #[napi(factory)]
     pub fn from_string(s: String) -> Result<Self> {
         let key = iroh::net::key::PublicKey::from_str(&s).map_err(anyhow::Error::from)?;
         Ok(key.into())
     }
 
     /// Make a PublicKey from byte array
-    #[uniffi::constructor]
+    #[napi(factory)]
     pub fn from_bytes(bytes: Vec<u8>) -> Result<Self> {
         if bytes.len() != 32 {
             return Err(anyhow::anyhow!("the PublicKey must be 32 bytes in length").into());
