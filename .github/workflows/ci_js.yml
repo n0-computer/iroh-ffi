@@ -86,6 +86,7 @@ jobs:
         with:
           node-version: 20
           cache: yarn
+          cache-dependency-path: './iroh-js/yarn.lock'
       - name: Install
         uses: dtolnay/rust-toolchain@stable
         if: ${{ !matrix.settings.docker }}
