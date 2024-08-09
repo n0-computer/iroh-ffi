@@ -1,0 +1,15 @@
+{
+  "name": "@number0/iroh-darwin-universal",
+  "version": "0.0.0",
+  "os": [
+    "darwin"
+  ],
+  "main": "iroh.darwin-universal.node",
+  "files": [
+    "iroh.darwin-universal.node"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">= 10"
+  }
+}
