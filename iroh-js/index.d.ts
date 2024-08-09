@@ -229,6 +229,13 @@ export interface CollectionInfo {
    */
   totalBlobsSize?: bigint
 }
+/** `LinkAndName` includes a name and a hash for a blob in a collection */
+export interface LinkAndName {
+  /** The name associated with this [`Hash`] */
+  name: string
+  /** The [`Hash`] of the blob */
+  link: string
+}
 /** A writable replica. */
 Write = 'Write',
 /** A readable replica. */
@@ -819,6 +826,8 @@ export declare class Hash {
   readonly value: string
   /** Calculate the hash of the provide bytes. */
   constructor(buf: Array<number>)
+  /** Checks if the other hash is equal to this instance. */
+  isEqual(other: Hash): boolean
   /** Bytes of the hash. */
   toBytes(): Array<number>
   /** Create a `Hash` from its raw bytes representation. */
@@ -841,7 +850,22 @@ export declare class RangeSpec {
   isAll(): boolean
 }
 /** A collection of blobs */
-export declare class Collection { }
+export declare class Collection {
+  /** Create a new empty collection */
+  constructor()
+  /** Add the given blob to the collection */
+  push(name: string, hash: string): void
+  /** Check if the collection is empty */
+  isEmpty(): boolean
+  /** Get the names of the blobs in this collection */
+  names(): Array<string>
+  /** Get the links to the blobs in this collection */
+  links(): Array<string>
+  /** Get the blobs associated with this collection */
+  blobs(): Array<LinkAndName>
+  /** Returns the number of blobs in this collection */
+  length(): bigint
+}
 /** Iroh docs client. */
 export declare class Docs {
   /** Create a new doc. */

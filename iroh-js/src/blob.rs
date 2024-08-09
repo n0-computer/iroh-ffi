@@ -480,6 +480,12 @@ impl Hash {
         }
     }
 
+    /// Checks if the other hash is equal to this instance.
+    #[napi]
+    pub fn is_equal(&self, other: &Hash) -> bool {
+        self.value == other.value
+    }
+
     /// Bytes of the hash.
     #[napi]
     pub fn to_bytes(&self) -> Vec<u8> {
@@ -1065,75 +1071,87 @@ impl From<Collection> for iroh::blobs::format::collection::Collection {
     }
 }
 
-// #[uniffi::export]
-// impl Collection {
-//     /// Create a new empty collection
-//     #[allow(clippy::new_without_default)]
-//     #[uniffi::constructor]
-//     pub fn new() -> Self {
-//         Collection(RwLock::new(
-//             iroh::blobs::format::collection::Collection::default(),
-//         ))
-//     }
+#[napi]
+impl Collection {
+    /// Create a new empty collection
+    #[allow(clippy::new_without_default)]
+    #[napi(constructor)]
+    pub fn new() -> Self {
+        Collection(RwLock::new(
+            iroh::blobs::format::collection::Collection::default(),
+        ))
+    }
 
-//     /// Add the given blob to the collection
-//     pub fn push(&self, name: String, hash: &Hash) -> Result<()> {
-//         self.0.write().unwrap().push(name, hash.0);
-//         Ok(())
-//     }
+    /// Add the given blob to the collection
+    #[napi]
+    pub fn push(&self, name: String, hash: String) -> Result<()> {
+        let hash = hash.parse().map_err(anyhow::Error::from)?;
+        self.0.write().unwrap().push(name, hash);
+        Ok(())
+    }
 
-//     /// Check if the collection is empty
-//     pub fn is_empty(&self) -> Result<bool> {
-//         Ok(self.0.read().unwrap().is_empty())
-//     }
+    /// Check if the collection is empty
+    #[napi]
+    pub fn is_empty(&self) -> bool {
+        self.0.read().unwrap().is_empty()
+    }
 
-//     /// Get the names of the blobs in this collection
-//     pub fn names(&self) -> Result<Vec<String>> {
-//         Ok(self
-//             .0
-//             .read()
-//             .unwrap()
-//             .iter()
-//             .map(|(name, _)| name.clone())
-//             .collect())
-//     }
+    /// Get the names of the blobs in this collection
+    #[napi]
+    pub fn names(&self) -> Vec<String> {
+        let res = self
+            .0
+            .read()
+            .unwrap()
+            .iter()
+            .map(|(name, _)| name.clone())
+            .collect();
+        res
+    }
 
-//     /// Get the links to the blobs in this collection
-//     pub fn links(&self) -> Result<Vec<Arc<Hash>>> {
-//         Ok(self
-//             .0
-//             .read()
-//             .unwrap()
-//             .iter()
-//             .map(|(_, hash)| Arc::new(Hash(*hash)))
-//             .collect())
-//     }
+    /// Get the links to the blobs in this collection
+    #[napi]
+    pub fn links(&self) -> Vec<String> {
+        let res = self
+            .0
+            .read()
+            .unwrap()
+            .iter()
+            .map(|(_, hash)| hash.to_string())
+            .collect();
+        res
+    }
 
-//     /// Get the blobs associated with this collection
-//     pub fn blobs(&self) -> Result<Vec<LinkAndName>> {
-//         Ok(self
-//             .0
-//             .read()
-//             .unwrap()
-//             .iter()
-//             .map(|(name, hash)| LinkAndName {
-//                 name: name.clone(),
-//                 link: Arc::new(Hash(*hash)),
-//             })
-//             .collect())
-//     }
+    /// Get the blobs associated with this collection
+    #[napi]
+    pub fn blobs(&self) -> Vec<LinkAndName> {
+        let res = self
+            .0
+            .read()
+            .unwrap()
+            .iter()
+            .map(|(name, hash)| LinkAndName {
+                name: name.clone(),
+                link: hash.to_string(),
+            })
+            .collect();
+        res
+    }
 
-//     /// Returns the number of blobs in this collection
-//     pub fn len(&self) -> Result<u64> {
-//         Ok(self.0.read().unwrap().len() as _)
-//     }
-// }
+    /// Returns the number of blobs in this collection
+    #[napi]
+    pub fn length(&self) -> BigInt {
+        let res = self.0.read().unwrap().len() as u64;
+        res.into()
+    }
+}
 
-// /// `LinkAndName` includes a name and a hash for a blob in a collection
-// #[derive(Clone, Debug, uniffi::Record)]
-// pub struct LinkAndName {
-//     /// The name associated with this [`Hash`]
-//     pub name: String,
-//     /// The [`Hash`] of the blob
-//     pub link: Arc<Hash>,
-// }
+/// `LinkAndName` includes a name and a hash for a blob in a collection
+#[derive(Clone, Debug)]
+#[napi(object)]
+pub struct LinkAndName {
+    /// The name associated with this [`Hash`]
+    pub name: String,
+    /// The [`Hash`] of the blob
+    pub link: String,
+}
