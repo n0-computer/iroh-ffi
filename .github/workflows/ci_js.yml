@@ -1,12 +1,19 @@
 name: CI JS
+
 env:
   DEBUG: napi:*
   APP_NAME: iroh
   MACOSX_DEPLOYMENT_TARGET: '10.13'
+
 permissions:
   contents: write
   id-token: write
-'on':
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+on:
   push:
     branches:
       - main
@@ -19,6 +26,7 @@ permissions:
       - .editorconfig
       - docs/**
   pull_request: null
+
 jobs:
   build:
     strategy:
@@ -31,26 +39,26 @@ jobs:
           - host: windows-latest
             build: yarn build
             target: x86_64-pc-windows-msvc
-          - host: windows-latest
-            build: |
-              yarn build --target i686-pc-windows-msvc
-              yarn test
-            target: i686-pc-windows-msvc
+          # - host: windows-latest
+          #   build: |
+          #     yarn build --target i686-pc-windows-msvc
+          #     yarn test
+          #   target: i686-pc-windows-msvc
           - host: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian
-            build: yarn build --target x86_64-unknown-linux-gnu
+            build: cd iroh-js && yarn build --target x86_64-unknown-linux-gnu
           - host: ubuntu-latest
             target: x86_64-unknown-linux-musl
             docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine
-            build: yarn build
+            build: cd iroh-js && yarn build
           - host: macos-latest
             target: aarch64-apple-darwin
             build: yarn build --target aarch64-apple-darwin
           - host: ubuntu-latest
             target: aarch64-unknown-linux-gnu
             docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian-aarch64
-            build: yarn build --target aarch64-unknown-linux-gnu
+            build: cd iroh-js && yarn build --target aarch64-unknown-linux-gnu
           - host: ubuntu-latest
             target: armv7-unknown-linux-gnueabihf
             setup: |
@@ -67,22 +75,27 @@ jobs:
             target: aarch64-unknown-linux-musl
             docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine
             build: |-
+              cd iroh-js &&
               set -e &&
               rustup target add aarch64-unknown-linux-musl &&
               yarn build --target aarch64-unknown-linux-musl
           - host: windows-latest
             target: aarch64-pc-windows-msvc
             build: yarn build --target aarch64-pc-windows-msvc
-    name: stable - ${{ matrix.settings.target }} - node@20
+    name: stable - ${{ matrix.settings.target }} - node@22
     runs-on: ${{ matrix.settings.host }}
+    defaults:
+      run:
+        working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
       - name: Setup node
         uses: actions/setup-node@v4
         if: ${{ !matrix.settings.docker }}
         with:
-          node-version: 20
+          node-version: 22
           cache: yarn
+          cache-dependency-path: './iroh-js/yarn.lock'
       - name: Install
         uses: dtolnay/rust-toolchain@stable
         if: ${{ !matrix.settings.docker }}
@@ -117,9 +130,10 @@ jobs:
         uses: actions/setup-node@v4
         if: matrix.settings.target == 'i686-pc-windows-msvc'
         with:
-          node-version: 20
+          node-version: 22
           cache: yarn
           architecture: x86
+          cache-dependency-path: './iroh-js/yarn.lock'
       - name: Build in docker
         uses: addnab/docker-run-action@v3
         if: ${{ matrix.settings.docker }}
@@ -135,55 +149,59 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: bindings-${{ matrix.settings.target }}
-          path: ${{ env.APP_NAME }}.*.node
+          path: iroh-js/${{ env.APP_NAME }}.*.node
           if-no-files-found: error
-  build-freebsd:
-    runs-on: macos-12
-    name: Build FreeBSD
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build
-        id: build
-        uses: cross-platform-actions/action@v0.22.0
-        env:
-          DEBUG: napi:*
-          RUSTUP_IO_THREADS: 1
-        with:
-          operating_system: freebsd
-          version: '13.2'
-          memory: 8G
-          cpu_count: 3
-          environment_variables: DEBUG RUSTUP_IO_THREADS
-          shell: bash
-          prepare: |
-            sudo pkg install -y -f curl node libnghttp2 npm
-            sudo npm install -g yarn --ignore-scripts
-            curl https://sh.rustup.rs -sSf --output rustup.sh
-            sh rustup.sh -y --profile minimal --default-toolchain stable
-            source "$HOME/.cargo/env"
-            echo "~~~~ rustc --version ~~~~"
-            rustc --version
-            echo "~~~~ node -v ~~~~"
-            node -v
-            echo "~~~~ yarn --version ~~~~"
-            yarn --version
-            pwd
-            ls -lah
-            whoami
-            env
-            freebsd-version
-            yarn install
-            yarn build
-            yarn test
-            rm -rf node_modules
-            rm -rf target
-            rm -rf .yarn/cache
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: bindings-freebsd
-          path: ${{ env.APP_NAME }}.*.node
-          if-no-files-found: error
+  # build-freebsd:
+  #   runs-on: macos-12
+  #   name: Build FreeBSD
+  #   defaults:
+  #     run:
+  #       working-directory: ./iroh-js
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Build
+  #       id: build
+  #       uses: cross-platform-actions/action@v0.22.0
+  #       env:
+  #         DEBUG: napi:*
+  #         RUSTUP_IO_THREADS: 1
+  #       with:
+  #         operating_system: freebsd
+  #         version: '13.2'
+  #         memory: 8G
+  #         cpu_count: 3
+  #         environment_variables: DEBUG RUSTUP_IO_THREADS
+  #         shell: bash
+  #         run: |
+  #           sudo pkg install -y -f curl node libnghttp2 npm
+  #           sudo npm install -g yarn --ignore-scripts
+  #           curl https://sh.rustup.rs -sSf --output rustup.sh
+  #           sh rustup.sh -y --profile minimal --default-toolchain stable
+  #           source "$HOME/.cargo/env"
+  #           echo "~~~~ rustc --version ~~~~"
+  #           rustc --version
+  #           echo "~~~~ node -v ~~~~"
+  #           node -v
+  #           echo "~~~~ yarn --version ~~~~"
+  #           yarn --version
+  #           pwd
+  #           ls -lah
+  #           whoami
+  #           env
+  #           freebsd-version
+  #           cd iroh-js
+  #           yarn install
+  #           yarn build
+  #           yarn test
+  #           rm -rf node_modules
+  #           rm -rf target
+  #           rm -rf .yarn/cache
+  #     - name: Upload artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: bindings-freebsd
+  #         path: iroh-js/${{ env.APP_NAME }}.*.node
+  #         if-no-files-found: error
   test-macOS-windows-binding:
     name: Test bindings on ${{ matrix.settings.target }} - node@${{ matrix.node }}
     needs:
@@ -197,9 +215,12 @@ jobs:
           - host: windows-latest
             target: x86_64-pc-windows-msvc
         node:
-          - '18'
+          - '22'
           - '20'
     runs-on: ${{ matrix.settings.host }}
+    defaults:
+      run:
+        working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
       - name: Setup node
@@ -207,13 +228,14 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           cache: yarn
+          cache-dependency-path: './iroh-js/yarn.lock'
       - name: Install dependencies
         run: yarn install
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           name: bindings-${{ matrix.settings.target }}
-          path: .
+          path: iroh-js/
       - name: List packages
         run: ls -R .
         shell: bash
@@ -227,9 +249,12 @@ jobs:
       fail-fast: false
       matrix:
         node:
-          - '18'
+          - '22'
           - '20'
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
       - name: Setup node
@@ -237,13 +262,14 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           cache: yarn
+          cache-dependency-path: './iroh-js/yarn.lock'
       - name: Install dependencies
         run: yarn install
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           name: bindings-x86_64-unknown-linux-gnu
-          path: .
+          path: iroh-js/
       - name: List packages
         run: ls -R .
         shell: bash
@@ -257,9 +283,12 @@ jobs:
       fail-fast: false
       matrix:
         node:
-          - '18'
+          - '22'
           - '20'
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
       - name: Setup node
@@ -267,6 +296,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           cache: yarn
+          cache-dependency-path: './iroh-js/yarn.lock'
       - name: Install dependencies
         run: |
           yarn config set supportedArchitectures.libc "musl"
@@ -275,7 +305,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: bindings-x86_64-unknown-linux-musl
-          path: .
+          path: iroh-js/
       - name: List packages
         run: ls -R .
         shell: bash
@@ -289,16 +319,19 @@ jobs:
       fail-fast: false
       matrix:
         node:
-          - '18'
+          - '22'
           - '20'
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           name: bindings-aarch64-unknown-linux-gnu
-          path: .
+          path: iroh-js/
       - name: List packages
         run: ls -R .
         shell: bash
@@ -316,7 +349,7 @@ jobs:
         uses: addnab/docker-run-action@v3
         with:
           image: node:${{ matrix.node }}-slim
-          options: '--platform linux/arm64 -v ${{ github.workspace }}:/build -w /build'
+          options: '--platform linux/arm64 -v ${{ github.workspace }}/iroh-js:/build -w /build'
           run: |
             set -e
             yarn test
@@ -326,13 +359,16 @@ jobs:
     needs:
       - build
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           name: bindings-aarch64-unknown-linux-musl
-          path: .
+          path: iroh-js/
       - name: List packages
         run: ls -R .
         shell: bash
@@ -350,7 +386,7 @@ jobs:
         uses: addnab/docker-run-action@v3
         with:
           image: node:lts-alpine
-          options: '--platform linux/arm64 -v ${{ github.workspace }}:/build -w /build'
+          options: '--platform linux/arm64 -v ${{ github.workspace }}/iroh-js:/build -w /build'
           run: |
             set -e
             yarn test
@@ -362,16 +398,19 @@ jobs:
       fail-fast: false
       matrix:
         node:
-          - '18'
+          - '22'
           - '20'
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           name: bindings-armv7-unknown-linux-gnueabihf
-          path: .
+          path: iroh-js/
       - name: List packages
         run: ls -R .
         shell: bash
@@ -388,87 +427,92 @@ jobs:
         uses: addnab/docker-run-action@v3
         with:
           image: node:${{ matrix.node }}-bullseye-slim
-          options: '--platform linux/arm/v7 -v ${{ github.workspace }}:/build -w /build'
+          options: '--platform linux/arm/v7 -v ${{ github.workspace }}/iroh-js:/build -w /build'
           run: |
             set -e
             yarn test
             ls -la
-  universal-macOS:
-    name: Build universal macOS binary
-    needs:
-      - build
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: yarn
-      - name: Install dependencies
-        run: yarn install
-      - name: Download macOS x64 artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: bindings-x86_64-apple-darwin
-          path: artifacts
-      - name: Download macOS arm64 artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: bindings-aarch64-apple-darwin
-          path: artifacts
-      - name: Combine binaries
-        run: yarn universal
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: bindings-universal-apple-darwin
-          path: ${{ env.APP_NAME }}.*.node
-          if-no-files-found: error
-  publish:
-    name: Publish
-    runs-on: ubuntu-latest
-    needs:
-      - build-freebsd
-      - test-macOS-windows-binding
-      - test-linux-x64-gnu-binding
-      - test-linux-x64-musl-binding
-      - test-linux-aarch64-gnu-binding
-      - test-linux-aarch64-musl-binding
-      - test-linux-arm-gnueabihf-binding
-      - universal-macOS
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: yarn
-      - name: Install dependencies
-        run: yarn install
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-      - name: Move artifacts
-        run: yarn artifacts
-      - name: List packages
-        run: ls -R ./npm
-        shell: bash
-      - name: Publish
-        run: |
-          npm config set provenance true
-          if git log -1 --pretty=%B | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+$";
-          then
-            echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
-            npm publish --access public
-          elif git log -1 --pretty=%B | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+";
-          then
-            echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
-            npm publish --tag next --access public
-          else
-            echo "Not a release, skipping publish"
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+  # universal-macOS:
+  #   name: Build universal macOS binary
+  #   needs:
+  #     - build
+  #   runs-on: macos-latest
+  #   defaults:
+  #     run:
+  #       working-directory: ./iroh-js
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Setup node
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 22
+  #         cache: yarn
+  #         cache-dependency-path: './iroh-js/yarn.lock'
+  #     - name: Install dependencies
+  #       run: yarn install
+  #     - name: Download macOS x64 artifact
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: bindings-x86_64-apple-darwin
+  #         path: iroh-js/artifacts/
+  #     - name: Download macOS arm64 artifact
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: bindings-aarch64-apple-darwin
+  #         path: iroh-js/artifacts/
+  #     - name: Combine binaries
+  #       run: yarn universal
+  #     - name: Upload artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: bindings-universal-apple-darwin
+  #         path: iroh-js/${{ env.APP_NAME }}.*.node
+  #         if-no-files-found: error
+  # publish:
+  #   name: Publish
+  #   runs-on: ubuntu-latest
+  #   needs:
+  #     - build-freebsd
+  #     - test-macOS-windows-binding
+  #     - test-linux-x64-gnu-binding
+  #     - test-linux-x64-musl-binding
+  #     - test-linux-aarch64-gnu-binding
+  #     - test-linux-aarch64-musl-binding
+  #     - test-linux-arm-gnueabihf-binding
+  #     - universal-macOS
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Setup node
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 22
+  #         cache: yarn
+  #         cache-dependency-path: './iroh-js/yarn.lock'
+  #     - name: Install dependencies
+  #       run: yarn install
+  #     - name: Download all artifacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         path: artifacts
+  #     - name: Move artifacts
+  #       run: yarn artifacts
+  #     - name: List packages
+  #       run: ls -R ./npm
+  #       shell: bash
+  #     - name: Publish
+  #       run: |
+  #         npm config set provenance true
+  #         if git log -1 --pretty=%B | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+$";
+  #         then
+  #           echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+  #           npm publish --access public
+  #         elif git log -1 --pretty=%B | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+";
+  #         then
+  #           echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+  #           npm publish --tag next --access public
+  #         else
+  #           echo "Not a release, skipping publish"
+  #         fi
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #         NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
