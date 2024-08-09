@@ -432,42 +432,42 @@ jobs:
             set -e
             yarn test
             ls -la
-  # universal-macOS:
-  #   name: Build universal macOS binary
-  #   needs:
-  #     - build
-  #   runs-on: macos-latest
-  #   defaults:
-  #     run:
-  #       working-directory: ./iroh-js
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - name: Setup node
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: 22
-  #         cache: yarn
-  #         cache-dependency-path: './iroh-js/yarn.lock'
-  #     - name: Install dependencies
-  #       run: yarn install
-  #     - name: Download macOS x64 artifact
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: bindings-x86_64-apple-darwin
-  #         path: iroh-js/artifacts/
-  #     - name: Download macOS arm64 artifact
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: bindings-aarch64-apple-darwin
-  #         path: iroh-js/artifacts/
-  #     - name: Combine binaries
-  #       run: yarn universal
-  #     - name: Upload artifact
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: bindings-universal-apple-darwin
-  #         path: iroh-js/${{ env.APP_NAME }}.*.node
-  #         if-no-files-found: error
+  universal-macOS:
+    name: Build universal macOS binary
+    needs:
+      - build
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: ./iroh-js
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+          cache-dependency-path: './iroh-js/yarn.lock'
+      - name: Install dependencies
+        run: yarn install
+      - name: Download macOS x64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: bindings-x86_64-apple-darwin
+          path: iroh-js/artifacts/
+      - name: Download macOS arm64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: bindings-aarch64-apple-darwin
+          path: iroh-js/artifacts/
+      - name: Combine binaries
+        run: yarn universal
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bindings-universal-apple-darwin
+          path: iroh-js/${{ env.APP_NAME }}.*.node
+          if-no-files-found: error
   # publish:
   #   name: Publish
   #   runs-on: ubuntu-latest
