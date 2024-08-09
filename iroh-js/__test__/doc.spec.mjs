@@ -1,7 +1,11 @@
 import test from 'ava'
 
-import { Iroh, PublicKey, verifyNodeAddr, Query, AuthorId } from '../index.js'
+import { Iroh, PublicKey, verifyNodeAddr, Query, AuthorId, pathToKey, keyToPath } from '../index.js'
 
+import { tmpdir } from 'node:os'
+import { randomBytes } from 'node:crypto'
+import { join } from 'node:path'
+import { mkdtemp, mkdir, writeFile, readFile } from 'node:fs/promises'
 
 test('create doc', async (t) => {
   const node = await Iroh.memory()
@@ -135,4 +139,39 @@ test('query', async (t) => {
   )
   t.is(query3.offset(), BigInt(0))
   t.is(query3.limit(), BigInt(100))
+})
+
+
+test('import export', async (t) => {
+  const dir = await mkdtemp(join(tmpdir(), 'iroh-docs-'));
+  const inRoot = join(dir, 'in')
+  const outRoot = join(dir, 'out')
+  await mkdir(inRoot)
+  await mkdir(outRoot)
+
+  const filePath = join(inRoot, 'test')
+  const size = 100
+  const bytes = randomBytes(size)
+  await writeFile(filePath, bytes)
+
+  const node = await Iroh.memory()
+  const author = await node.authors.default()
+  const doc = await node.docs.create()
+
+  // import entry
+  const key = pathToKey(filePath, null, inRoot)
+  await doc.importFile(author, key, filePath, true)
+
+  // get entry
+  const query = Query.authorKeyExact(author, key)
+  const entry = await doc.getOne(query)
+
+  // export entry
+  const exportPath = keyToPath(key, null, outRoot)
+  await doc.exportFile(entry, exportPath)
+
+  // read file
+  const content = await readFile(exportPath)
+
+  t.deepEqual(content, bytes)
 })
