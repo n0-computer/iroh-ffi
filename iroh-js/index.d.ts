@@ -638,6 +638,27 @@ RelayAndAddresses = 'RelayAndAddresses',
 Relay = 'Relay',
 /** Only include the direct addresses. */
 Addresses = 'Addresses'
+/** Gossip message */
+export interface Message {
+  /** We have a new, direct neighbor in the swarm membership layer for this topic */
+  neighborUp?: string
+  /** We dropped direct neighbor in the swarm membership layer for this topic */
+  neighborDown?: string
+  /** A gossip message was received for this topic */
+  received?: MessageContent
+  joined?: Array<string>
+  /** We missed some messages */
+  lagged: boolean
+  /** There was a gossip error */
+  error?: string
+}
+/** The actual content of a gossip message. */
+export interface MessageContent {
+  /** The content of the message */
+  content: Array<number>
+  /** The node that delivered the message. This is not the same as the original author. */
+  deliveredFrom: string
+}
 /** The logging level. See the rust (log crate)[https://docs.rs/log] for more information. */
 Trace = 'Trace',
 Debug = 'Debug',
@@ -1081,6 +1102,8 @@ export declare class Iroh {
   static memory(opts?: NodeOptions | undefined | null): Promise<Iroh>
   /** Access to node specific funtionaliy. */
   get node(): Node
+  /** Access to gossip specific funtionaliy. */
+  get gossip(): Gossip
 }
 /** Iroh node client. */
 export declare class Node {
@@ -1126,4 +1149,15 @@ export declare class BlobTicket {
   recursive(): boolean
   /** Convert this ticket into input parameters for a call to blobs_download */
   asDownloadOptions(): BlobDownloadOptions
+}
+/** Iroh gossip client. */
+export declare class Gossip {
+  subscribe(topic: Array<number>, bootstrap: Array<string>, cb: (err: Error | null, arg: Message) => unknown): Promise<Sender>
+}
+/** Gossip sender */
+export declare class Sender {
+  /** Broadcast a message to all nodes in the swarm */
+  broadcast(msg: Array<number>): Promise<void>
+  /** Broadcast a message to all direct neighbors. */
+  broadcastNeighbors(msg: Array<number>): Promise<void>
 }
