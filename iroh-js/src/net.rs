@@ -1,3 +1,4 @@
+use napi::bindgen_prelude::*;
 use napi_derive::napi;
 
 /// Stats counter
@@ -147,6 +148,13 @@ pub struct NodeAddr {
     pub relay_url: Option<String>,
     /// Direct addresses of this peer.
     pub addresses: Option<Vec<String>>,
+}
+
+/// Verify a `NodeAddr`.
+#[napi]
+pub fn verify_node_addr(addr: NodeAddr) -> Result<()> {
+    let _addr: iroh::net::endpoint::NodeAddr = addr.try_into()?;
+    Ok(())
 }
 
 impl TryFrom<NodeAddr> for iroh::net::endpoint::NodeAddr {

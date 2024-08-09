@@ -310,7 +310,7 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { AuthorId, Author, Authors, Blobs, SetTagOption, Hash, BlobFormat, BlobDownloadOptions, BlobExportFormat, BlobExportMode, RangeSpec, Collection, CapabilityKind, Docs, Doc, DownloadPolicy, FilterKind, ShareMode, SortBy, SortDirection, Query, SyncReason, Origin, ContentStatus, DocImportProgressType, PublicKey, ConnType, Iroh, Node, BlobTicket, AddrInfoOptions, LogLevel, setLogLevel, startMetricsCollection, keyToPath, pathToKey } = nativeBinding
+const { AuthorId, Author, Authors, Blobs, SetTagOption, Hash, BlobFormat, BlobDownloadOptions, BlobExportFormat, BlobExportMode, RangeSpec, Collection, CapabilityKind, Docs, Doc, DownloadPolicy, FilterKind, ShareMode, SortBy, SortDirection, Query, SyncReason, Origin, ContentStatus, DocImportProgressType, PublicKey, ConnType, verifyNodeAddr, Iroh, Node, BlobTicket, AddrInfoOptions, LogLevel, setLogLevel, startMetricsCollection, keyToPath, pathToKey } = nativeBinding
 
 module.exports.AuthorId = AuthorId
 module.exports.Author = Author
@@ -339,6 +339,7 @@ module.exports.ContentStatus = ContentStatus
 module.exports.DocImportProgressType = DocImportProgressType
 module.exports.PublicKey = PublicKey
 module.exports.ConnType = ConnType
+module.exports.verifyNodeAddr = verifyNodeAddr
 module.exports.Iroh = Iroh
 module.exports.Node = Node
 module.exports.BlobTicket = BlobTicket

@@ -12,7 +12,7 @@ pub struct AuthorId(pub(crate) iroh::docs::AuthorId);
 #[napi]
 impl AuthorId {
     /// Get an [`AuthorId`] from a String.
-    #[napi(constructor)]
+    #[napi(factory)]
     pub fn from_string(str: String) -> Result<Self> {
         let author: iroh::docs::AuthorId = str.parse()?;
         Ok(AuthorId(author))
@@ -20,7 +20,7 @@ impl AuthorId {
 
     /// Returns true when both AuthorId's have the same value
     #[napi]
-    pub fn equal(&self, other: &AuthorId) -> bool {
+    pub fn is_equal(&self, other: &AuthorId) -> bool {
         *self == *other
     }
 
@@ -40,7 +40,7 @@ pub struct Author(pub(crate) iroh::docs::Author);
 #[napi]
 impl Author {
     /// Get an [`Author`] from a String
-    #[uniffi::constructor]
+    #[napi(factory)]
     pub fn from_string(str: String) -> Result<Self> {
         let author: iroh::docs::Author = str.parse()?;
         Ok(Author(author))

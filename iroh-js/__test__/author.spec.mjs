@@ -1,6 +1,6 @@
 import test from 'ava'
 
-import { Iroh } from '../index.js'
+import { Iroh, AuthorId } from '../index.js'
 
 
 test('has a default author', async (t) => {
@@ -30,4 +30,13 @@ test('import export author', async (t) => {
   const authorImported = await node.authors.import(fullAuthor)
 
   t.is(author.toString(), authorImported.toString())
+})
+
+test('create author id', (t) => {
+  const authorStr = 'mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q'
+  const author = AuthorId.fromString(authorStr)
+  t.is(author.toString(), authorStr)
+
+  const author0 = AuthorId.fromString(authorStr)
+  t.truthy(author.isEqual(author0))
 })

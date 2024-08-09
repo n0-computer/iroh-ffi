@@ -904,7 +904,7 @@ pub struct LiveEvent {
     ///
     /// Receiving this event does not guarantee that all content in the document is available. If
     /// blobs failed to download, this event will still be emitted after all operations completed.
-    pub pending_content_ready: Option<()>,
+    pub pending_content_ready: bool,
 }
 
 #[derive(Debug)]
@@ -990,7 +990,7 @@ impl From<iroh::client::docs::LiveEvent> for LiveEvent {
                 ..Default::default()
             },
             iroh::client::docs::LiveEvent::PendingContentReady => LiveEvent {
-                pending_content_ready: Some(()),
+                pending_content_ready: true,
                 ..Default::default()
             },
         }
@@ -1291,7 +1291,7 @@ pub struct DocExportProgress {
     /// We finished exporting a blob
     pub done: Option<DocExportProgressDone>,
     /// We are done with the whole operation.
-    pub all_done: Option<()>,
+    pub all_done: bool,
     /// We got an error and need to abort.
     ///
     /// This will be the last message in the stream.
@@ -1329,7 +1329,7 @@ impl From<iroh::blobs::export::ExportProgress> for DocExportProgress {
                 ..Default::default()
             },
             iroh::blobs::export::ExportProgress::AllDone => DocExportProgress {
-                all_done: Some(()),
+                all_done: true,
                 ..Default::default()
             },
             iroh::blobs::export::ExportProgress::Abort(err) => DocExportProgress {

@@ -1,6 +1,6 @@
 import test from 'ava'
 
-import { Iroh } from '../index.js'
+import { Iroh, PublicKey, verifyNodeAddr } from '../index.js'
 
 
 test('create doc', async (t) => {
@@ -22,4 +22,78 @@ test('create doc', async (t) => {
   t.is(entry.author, author.toString())
   t.deepEqual(entry.key, key)
   t.is(entry.len, BigInt(key.length))
+})
+
+test('basic sync', async (t) => {
+  const node0 = await Iroh.memory()
+  const node1 = await Iroh.memory()
+
+  const doc0 = await node0.docs.create()
+  const ticket = await doc0.share('Write', 'RelayAndAddresses')
+
+  // Do not use Promise.withResovlers it is buggy
+  let resolve0;
+  let reject0;
+  const promise0 = new Promise((resolve, reject) => {
+    resolve0 = resolve;
+    reject0 = reject;
+  });
+  let resolve1;
+  let reject1;
+  const promise1 = new Promise((resolve, reject) => {
+    resolve1 = resolve;
+    reject1 = reject;
+  });
+
+  await doc0.subscribe(async (error, event) => {
+    if (error != null) {
+      return reject0(error)
+    }
+    // Wait until the sync is finished
+    if (event.contentReady != null) {
+      resolve0(event.contentReady.hash)
+    }
+  })
+
+  const doc1 = await node1.docs.joinAndSubscribe(ticket, async (error, event) => {
+    if (error != null) {
+      return reject1(error)
+    }
+    // Wait until the sync is finished
+    if (event.syncFinished != null) {
+      resolve1(event)
+    }
+  })
+
+  const e = await promise1
+
+  // create content on node1
+  const author = await node1.authors.default()
+  await doc1.setBytes(
+    author,
+    Array.from(Buffer.from('hello')),
+    Array.from(Buffer.from('world'))
+  )
+
+
+  const hash = await promise0
+  const val = await node1.blobs.readToBytes(hash)
+  t.is(Buffer.from(val).toString('utf8'), 'world')
+})
+
+
+test('node addr', (t) => {
+  const keyStr = 'ki6htfv2252cj2lhq3hxu4qfcfjtpjnukzonevigudzjpmmruxva'
+  const nodeId = PublicKey.fromString(keyStr)
+
+  const ipv4 = '127.0.0.1:3000'
+  const ipv6 = '::1:3000'
+  const addrs = [ipv4, ipv6]
+
+  const relayUrl = 'https://example.com'
+
+  const nodeAddr = { nodeId: nodeId.toString(), relayUrl, addrs }
+  verifyNodeAddr(nodeAddr)
+
+  t.pass()
 })

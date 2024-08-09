@@ -349,7 +349,7 @@ export interface LiveEvent {
    * Receiving this event does not guarantee that all content in the document is available. If
    * blobs failed to download, this event will still be emitted after all operations completed.
    */
-  pendingContentReady?: undefined
+  pendingContentReady: boolean
 }
 export interface LiveEventInsertLocal {
   /** The inserted entry. */
@@ -526,7 +526,7 @@ export interface DocExportProgress {
   /** We finished exporting a blob */
   done?: DocExportProgressDone
   /** We are done with the whole operation. */
-  allDone?: undefined
+  allDone: boolean
   /**
    * We got an error and need to abort.
    *
@@ -604,6 +604,8 @@ export interface NodeAddr {
   /** Direct addresses of this peer. */
   addresses?: Array<string>
 }
+/** Verify a `NodeAddr`. */
+function verifyNodeAddr(addr: NodeAddr): void
 /** Options passed to [`IrohNode.new`]. Controls the behaviour of an iroh node. */
 export interface NodeOptions {
   /**
@@ -665,9 +667,9 @@ function pathToKey(path: string, prefix?: string | undefined | null, root?: stri
 /** Identifier for an [`Author`] */
 export declare class AuthorId {
   /** Get an [`AuthorId`] from a String. */
-  constructor(str: string)
+  static fromString(str: string): AuthorId
   /** Returns true when both AuthorId's have the same value */
-  equal(other: AuthorId): boolean
+  isEqual(other: AuthorId): boolean
   toString(): string
 }
 /**
@@ -676,6 +678,8 @@ export declare class AuthorId {
  * Internally, an author is a `SigningKey` which is used to sign entries.
  */
 export declare class Author {
+  /** Get an [`Author`] from a String */
+  static fromString(str: string): Author
   /** Get the [`AuthorId`] of this Author */
   id(): AuthorId
   toString(): string
