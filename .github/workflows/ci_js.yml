@@ -349,7 +349,7 @@ jobs:
         uses: addnab/docker-run-action@v3
         with:
           image: node:${{ matrix.node }}-slim
-          options: '--platform linux/arm64 -v ${{ github.workspace }}:/build -w /build'
+          options: '--platform linux/arm64 -v ${{ github.workspace }}/iroh-js:/build -w /build'
           run: |
             set -e
             yarn test
@@ -386,7 +386,7 @@ jobs:
         uses: addnab/docker-run-action@v3
         with:
           image: node:lts-alpine
-          options: '--platform linux/arm64 -v ${{ github.workspace }}:/build -w /build'
+          options: '--platform linux/arm64 -v ${{ github.workspace }}/iroh-js:/build -w /build'
           run: |
             set -e
             yarn test
@@ -427,7 +427,7 @@ jobs:
         uses: addnab/docker-run-action@v3
         with:
           image: node:${{ matrix.node }}-bullseye-slim
-          options: '--platform linux/arm/v7 -v ${{ github.workspace }}:/build -w /build'
+          options: '--platform linux/arm/v7 -v ${{ github.workspace }}/iroh-js:/build -w /build'
           run: |
             set -e
             yarn test
@@ -454,7 +454,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: bindings-x86_64-apple-darwin
-          path: artifacts
+          path: iroh-js/artifacts/
       - name: Download macOS arm64 artifact
         uses: actions/download-artifact@v4
         with:
