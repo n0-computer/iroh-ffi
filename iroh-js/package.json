@@ -1,5 +1,8 @@
 {
   "name": "@number0/iroh",
+  "author": "number0",
+  "description": "A toolkit for building distributed applications",
+  "keywords": ["iroh", "distributed", "applications", "p2p", "peer-to-peer", "networking", "network", "protocol"],
   "version": "0.22.0",
   "main": "index.js",
   "types": "index.d.ts",
@@ -21,6 +24,10 @@
         "universal-apple-darwin"
       ]
     }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/n0-computer/iroh-ffi"
   },
   "license": "MIT OR Apache-2.0",
   "devDependencies": {
