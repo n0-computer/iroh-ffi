@@ -299,21 +299,21 @@ export interface QueryOptions {
    *
    * Default is [`SortBy::AuthorKey`], so sorting first by author and then by key.
    */
-  sortBy: SortBy
+  sortBy?: SortBy
   /**
    * Direction by which to sort the entries
    *
    * Default is [`SortDirection::Asc`]
    */
-  direction: SortDirection
+  direction?: SortDirection
   /** Offset */
-  offset: bigint
+  offset?: bigint
   /**
    * Limit to limit the pagination.
    *
    * When the limit is 0, the limit does not exist.
    */
-  limit: bigint
+  limit?: bigint
 }
 /** Events informing about actions of the live sync progress */
 export interface LiveEvent {

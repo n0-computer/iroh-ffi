@@ -1,6 +1,6 @@
 import test from 'ava'
 
-import { Iroh, PublicKey, verifyNodeAddr } from '../index.js'
+import { Iroh, PublicKey, verifyNodeAddr, Query, AuthorId } from '../index.js'
 
 
 test('create doc', async (t) => {
@@ -96,4 +96,43 @@ test('node addr', (t) => {
   verifyNodeAddr(nodeAddr)
 
   t.pass()
+})
+
+test('query', async (t) => {
+  const query1 = Query.singleLatestPerKey({
+    direction: 'Desc',
+  })
+
+  t.is(query1.offset(), BigInt(0))
+  t.is(query1.limit(), null)
+
+  const query2 = Query.author(
+    AuthorId.fromString('mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q'),
+    {
+      direction: 'Asc',
+      offset: BigInt(100),
+    }
+  )
+  t.is(query2.offset(), BigInt(100))
+  t.is(query2.limit(), null)
+
+  const query3 = Query.keyExact(
+    Array.from(Buffer.from('key')),
+    {
+      sortBy: 'KeyAuthor',
+      offset: BigInt(0),
+      limit: BigInt(100),
+    }
+  )
+  t.is(query3.offset(), BigInt(0))
+  t.is(query3.limit(), BigInt(100))
+
+  const query4 = Query.keyPrefix(
+    Array.from(Buffer.from('prefix')),
+    {
+      limit: BigInt(100)
+    }
+  )
+  t.is(query3.offset(), BigInt(0))
+  t.is(query3.limit(), BigInt(100))
 })

@@ -661,17 +661,33 @@ pub struct QueryOptions {
     /// Sort by author or key first.
     ///
     /// Default is [`SortBy::AuthorKey`], so sorting first by author and then by key.
-    pub sort_by: SortBy,
+    pub sort_by: Option<SortBy>,
     /// Direction by which to sort the entries
     ///
     /// Default is [`SortDirection::Asc`]
-    pub direction: SortDirection,
+    pub direction: Option<SortDirection>,
     /// Offset
-    pub offset: BigInt,
+    pub offset: Option<BigInt>,
     /// Limit to limit the pagination.
     ///
     /// When the limit is 0, the limit does not exist.
-    pub limit: BigInt,
+    pub limit: Option<BigInt>,
+}
+
+impl QueryOptions {
+    fn offset(&self) -> Option<u64> {
+        self.offset
+            .as_ref()
+            .map(|o| o.get_u64().1)
+            .and_then(|o| if o == 0 { None } else { Some(o) })
+    }
+
+    fn limit(&self) -> Option<u64> {
+        self.limit
+            .as_ref()
+            .map(|o| o.get_u64().1)
+            .and_then(|o| if o == 0 { None } else { Some(o) })
+    }
 }
 
 #[napi]
@@ -685,17 +701,8 @@ impl Query {
     ///     limit: None
     #[napi(factory)]
     pub fn all(opts: Option<QueryOptions>) -> Self {
-        let mut builder = iroh::docs::store::Query::all();
-
-        if let Some(opts) = opts {
-            if opts.offset.get_u64().1 != 0 {
-                builder = builder.offset(opts.offset.get_u64().1);
-            }
-            if opts.limit.get_u64().1 != 0 {
-                builder = builder.limit(opts.limit.get_u64().1);
-            }
-            builder = builder.sort_by(opts.sort_by.into(), opts.direction.into());
-        }
+        let builder = iroh::docs::store::Query::all();
+        let builder = apply_opts_with_sort(builder, opts.as_ref());
         Query(builder.build())
     }
 
@@ -708,17 +715,8 @@ impl Query {
     ///     limit: None
     #[napi(factory)]
     pub fn single_latest_per_key(opts: Option<QueryOptions>) -> Self {
-        let mut builder = iroh::docs::store::Query::single_latest_per_key();
-
-        if let Some(opts) = opts {
-            if opts.offset.get_u64().1 != 0 {
-                builder = builder.offset(opts.offset.get_u64().1);
-            }
-            if opts.limit.get_u64().1 != 0 {
-                builder = builder.limit(opts.limit.get_u64().1);
-            }
-            builder = builder.sort_direction(opts.direction.into());
-        }
+        let builder = iroh::docs::store::Query::single_latest_per_key();
+        let builder = apply_opts(builder, opts.as_ref());
         Query(builder.build())
     }
 
@@ -741,16 +739,8 @@ impl Query {
     ///     limit: None
     #[napi(factory)]
     pub fn single_latest_per_key_prefix(prefix: Vec<u8>, opts: Option<QueryOptions>) -> Self {
-        let mut builder = iroh::docs::store::Query::single_latest_per_key().key_prefix(prefix);
-
-        if let Some(opts) = opts {
-            if opts.offset.get_u64().1 != 0 {
-                builder = builder.offset(opts.offset.get_u64().1);
-            }
-            if opts.limit.get_u64().1 != 0 {
-                builder = builder.limit(opts.limit.get_u64().1);
-            }
-        }
+        let builder = iroh::docs::store::Query::single_latest_per_key().key_prefix(prefix);
+        let builder = apply_opts(builder, opts.as_ref());
         Query(builder.build())
     }
 
@@ -763,17 +753,8 @@ impl Query {
     ///     limit: None
     #[napi(factory)]
     pub fn author(author: &AuthorId, opts: Option<QueryOptions>) -> Self {
-        let mut builder = iroh::docs::store::Query::author(author.0);
-
-        if let Some(opts) = opts {
-            if opts.offset.get_u64().1 != 0 {
-                builder = builder.offset(opts.offset.get_u64().1);
-            }
-            if opts.limit.get_u64().1 != 0 {
-                builder = builder.limit(opts.limit.get_u64().1);
-            }
-            builder = builder.sort_by(opts.sort_by.into(), opts.direction.into());
-        }
+        let builder = iroh::docs::store::Query::author(author.0);
+        let builder = apply_opts_with_sort(builder, opts.as_ref());
         Query(builder.build())
     }
 
@@ -786,17 +767,8 @@ impl Query {
     ///     limit: None
     #[napi(factory)]
     pub fn key_exact(key: Vec<u8>, opts: Option<QueryOptions>) -> Self {
-        let mut builder = iroh::docs::store::Query::key_exact(key);
-
-        if let Some(opts) = opts {
-            if opts.offset.get_u64().1 != 0 {
-                builder = builder.offset(opts.offset.get_u64().1);
-            }
-            if opts.limit.get_u64().1 != 0 {
-                builder = builder.limit(opts.limit.get_u64().1);
-            }
-            builder = builder.sort_by(opts.sort_by.into(), opts.direction.into());
-        }
+        let builder = iroh::docs::store::Query::key_exact(key);
+        let builder = apply_opts_with_sort(builder, opts.as_ref());
         Query(builder.build())
     }
 
@@ -816,17 +788,8 @@ impl Query {
     ///     limit: None
     #[napi(factory)]
     pub fn key_prefix(prefix: Vec<u8>, opts: Option<QueryOptions>) -> Self {
-        let mut builder = iroh::docs::store::Query::key_prefix(prefix);
-
-        if let Some(opts) = opts {
-            if opts.offset.get_u64().1 != 0 {
-                builder = builder.offset(opts.offset.get_u64().1);
-            }
-            if opts.limit.get_u64().1 != 0 {
-                builder = builder.limit(opts.limit.get_u64().1);
-            }
-            builder = builder.sort_by(opts.sort_by.into(), opts.direction.into());
-        }
+        let builder = iroh::docs::store::Query::key_prefix(prefix);
+        let builder = apply_opts_with_sort(builder, opts.as_ref());
         Query(builder.build())
     }
 
@@ -842,17 +805,8 @@ impl Query {
         prefix: Vec<u8>,
         opts: Option<QueryOptions>,
     ) -> Self {
-        let mut builder = iroh::docs::store::Query::author(author.0).key_prefix(prefix);
-
-        if let Some(opts) = opts {
-            if opts.offset.get_u64().1 != 0 {
-                builder = builder.offset(opts.offset.get_u64().1);
-            }
-            if opts.limit.get_u64().1 != 0 {
-                builder = builder.limit(opts.limit.get_u64().1);
-            }
-            builder = builder.sort_by(opts.sort_by.into(), opts.direction.into());
-        }
+        let builder = iroh::docs::store::Query::author(author.0).key_prefix(prefix);
+        let builder = apply_opts_with_sort(builder, opts.as_ref());
         Query(builder.build())
     }
 
@@ -867,6 +821,35 @@ impl Query {
     pub fn offset(&self) -> BigInt {
         self.0.offset().into()
     }
+}
+
+fn apply_opts_with_sort(
+    mut builder: iroh::docs::store::QueryBuilder<iroh::docs::store::FlatQuery>,
+    opts: Option<&QueryOptions>,
+) -> iroh::docs::store::QueryBuilder<iroh::docs::store::FlatQuery> {
+    builder = apply_opts(builder, opts);
+    if let Some(opts) = opts {
+        if let Some(sort_by) = opts.sort_by {
+            let direction = opts.direction.unwrap_or_default();
+            builder = builder.sort_by(sort_by.into(), direction.into());
+        }
+    }
+    builder
+}
+
+fn apply_opts<K>(
+    mut builder: iroh::docs::store::QueryBuilder<K>,
+    opts: Option<&QueryOptions>,
+) -> iroh::docs::store::QueryBuilder<K> {
+    if let Some(opts) = opts {
+        if let Some(offset) = opts.offset() {
+            builder = builder.offset(offset);
+        }
+        if let Some(limit) = opts.limit() {
+            builder = builder.limit(limit);
+        }
+    }
+    builder
 }
 
 /// Events informing about actions of the live sync progress
