@@ -310,7 +310,7 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { AuthorId, Author, Authors, Blobs, SetTagOption, Hash, BlobFormat, BlobDownloadOptions, BlobExportFormat, BlobExportMode, RangeSpec, Collection, CapabilityKind, Docs, Doc, DownloadPolicy, FilterKind, ShareMode, SortBy, SortDirection, Query, SyncReason, Origin, ContentStatus, DocImportProgressType, PublicKey, ConnType, verifyNodeAddr, Iroh, Node, BlobTicket, AddrInfoOptions, Gossip, Sender, LogLevel, setLogLevel, startMetricsCollection, keyToPath, pathToKey } = nativeBinding
+const { AuthorId, Author, Authors, Blobs, SetTagOption, Hash, BlobFormat, BlobDownloadOptions, BlobExportFormat, BlobExportMode, RangeSpec, Collection, CapabilityKind, Docs, Doc, DownloadPolicy, FilterKind, ShareMode, SortBy, SortDirection, Query, SyncReason, Origin, ContentStatus, DocImportProgressType, Gossip, Sender, PublicKey, ConnType, verifyNodeAddr, Iroh, Node, BlobTicket, AddrInfoOptions, LogLevel, setLogLevel, startMetricsCollection, keyToPath, pathToKey } = nativeBinding
 
 module.exports.AuthorId = AuthorId
 module.exports.Author = Author
@@ -337,6 +337,8 @@ module.exports.SyncReason = SyncReason
 module.exports.Origin = Origin
 module.exports.ContentStatus = ContentStatus
 module.exports.DocImportProgressType = DocImportProgressType
+module.exports.Gossip = Gossip
+module.exports.Sender = Sender
 module.exports.PublicKey = PublicKey
 module.exports.ConnType = ConnType
 module.exports.verifyNodeAddr = verifyNodeAddr
@@ -344,8 +346,6 @@ module.exports.Iroh = Iroh
 module.exports.Node = Node
 module.exports.BlobTicket = BlobTicket
 module.exports.AddrInfoOptions = AddrInfoOptions
-module.exports.Gossip = Gossip
-module.exports.Sender = Sender
 module.exports.LogLevel = LogLevel
 module.exports.setLogLevel = setLogLevel
 module.exports.startMetricsCollection = startMetricsCollection

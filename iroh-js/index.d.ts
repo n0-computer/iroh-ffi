@@ -60,10 +60,6 @@ export interface AddProgressAllDone {
   /** The tag of the added data. */
   tag: Array<number>
 }
-/** An AddProgress event indicating we got an error and need to abort */
-export interface AddProgressAbort {
-  error: string
-}
 /** Progress updates for the add operation. */
 export interface AddProgress {
   /** An item was found with name `name`, from now on referred to via `id` */
@@ -74,12 +70,6 @@ export interface AddProgress {
   done?: AddProgressDone
   /** We are done with the whole operation. */
   allDone?: AddProgressAllDone
-  /**
-   * We got an error and need to abort.
-   *
-   * This will be the last message in the stream.
-   */
-  abort?: AddProgressAbort
 }
 /** A format identifier */
 /** Raw blob */
@@ -201,12 +191,6 @@ export interface DownloadProgress {
   done?: DownloadProgressDone
   /** We are done with the whole operation. */
   allDone?: DownloadProgressAllDone
-  /**
-   * We got an error and need to abort.
-   *
-   * This will be the last message in the stream.
-   */
-  abort?: DownloadProgressAbort
 }
 /** A response to a list blobs request */
 export interface BlobInfo {
@@ -467,11 +451,6 @@ export interface DocImportProgressAllDone {
   /** The key of the entry */
   key: Array<number>
 }
-/** A DocImportProgress event indicating we got an error and need to abort */
-export interface DocImportProgressAbort {
-  /** The error message */
-  error: string
-}
 /** Progress updates for the doc import file operation. */
 export interface DocImportProgress {
   /** An item was found with name `name`, from now on referred to via `id` */
@@ -482,12 +461,6 @@ export interface DocImportProgress {
   ingestDone?: DocImportProgressIngestDone
   /** We are done with the whole operation. */
   allDone?: DocImportProgressAllDone
-  /**
-   * We got an error and need to abort.
-   *
-   * This will be the last message in the stream.
-   */
-  abort?: DocImportProgressAbort
 }
 /** A DocExportProgress event indicating a file was found with name `name`, from now on referred to via `id` */
 export interface DocExportProgressFound {
@@ -527,12 +500,25 @@ export interface DocExportProgress {
   done?: DocExportProgressDone
   /** We are done with the whole operation. */
   allDone: boolean
-  /**
-   * We got an error and need to abort.
-   *
-   * This will be the last message in the stream.
-   */
-  abort?: DocExportProgressAbort
+}
+/** Gossip message */
+export interface Message {
+  /** We have a new, direct neighbor in the swarm membership layer for this topic */
+  neighborUp?: string
+  /** We dropped direct neighbor in the swarm membership layer for this topic */
+  neighborDown?: string
+  /** A gossip message was received for this topic */
+  received?: MessageContent
+  joined?: Array<string>
+  /** We missed some messages */
+  lagged: boolean
+}
+/** The actual content of a gossip message. */
+export interface MessageContent {
+  /** The content of the message */
+  content: Array<number>
+  /** The node that delivered the message. This is not the same as the original author. */
+  deliveredFrom: string
 }
 /** Stats counter */
 export interface CounterStats {
@@ -638,27 +624,6 @@ RelayAndAddresses = 'RelayAndAddresses',
 Relay = 'Relay',
 /** Only include the direct addresses. */
 Addresses = 'Addresses'
-/** Gossip message */
-export interface Message {
-  /** We have a new, direct neighbor in the swarm membership layer for this topic */
-  neighborUp?: string
-  /** We dropped direct neighbor in the swarm membership layer for this topic */
-  neighborDown?: string
-  /** A gossip message was received for this topic */
-  received?: MessageContent
-  joined?: Array<string>
-  /** We missed some messages */
-  lagged: boolean
-  /** There was a gossip error */
-  error?: string
-}
-/** The actual content of a gossip message. */
-export interface MessageContent {
-  /** The content of the message */
-  content: Array<number>
-  /** The node that delivered the message. This is not the same as the original author. */
-  deliveredFrom: string
-}
 /** The logging level. See the rust (log crate)[https://docs.rs/log] for more information. */
 Trace = 'Trace',
 Debug = 'Debug',
@@ -1056,6 +1021,17 @@ export declare class Query {
    */
   static authorKeyPrefix(author: AuthorId, prefix: Array<number>, opts?: QueryOptions | undefined | null): Query
 }
+/** Iroh gossip client. */
+export declare class Gossip {
+  subscribe(topic: Array<number>, bootstrap: Array<string>, cb: (err: Error | null, arg: Message) => unknown): Promise<Sender>
+}
+/** Gossip sender */
+export declare class Sender {
+  /** Broadcast a message to all nodes in the swarm */
+  broadcast(msg: Array<number>): Promise<void>
+  /** Broadcast a message to all direct neighbors. */
+  broadcastNeighbors(msg: Array<number>): Promise<void>
+}
 /**
  * A public key.
  *
@@ -1087,6 +1063,8 @@ export declare class Iroh {
   get blobs(): Blobs
   /** Access to docs specific funtionaliy. */
   get docs(): Docs
+  /** Access to gossip specific funtionaliy. */
+  get gossip(): Gossip
   /**
    * Create a new iroh node.
    *
@@ -1102,8 +1080,6 @@ export declare class Iroh {
   static memory(opts?: NodeOptions | undefined | null): Promise<Iroh>
   /** Access to node specific funtionaliy. */
   get node(): Node
-  /** Access to gossip specific funtionaliy. */
-  get gossip(): Gossip
 }
 /** Iroh node client. */
 export declare class Node {
@@ -1149,15 +1125,4 @@ export declare class BlobTicket {
   recursive(): boolean
   /** Convert this ticket into input parameters for a call to blobs_download */
   asDownloadOptions(): BlobDownloadOptions
-}
-/** Iroh gossip client. */
-export declare class Gossip {
-  subscribe(topic: Array<number>, bootstrap: Array<string>, cb: (err: Error | null, arg: Message) => unknown): Promise<Sender>
-}
-/** Gossip sender */
-export declare class Sender {
-  /** Broadcast a message to all nodes in the swarm */
-  broadcast(msg: Array<number>): Promise<void>
-  /** Broadcast a message to all direct neighbors. */
-  broadcastNeighbors(msg: Array<number>): Promise<void>
 }

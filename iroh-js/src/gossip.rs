@@ -25,8 +25,6 @@ pub struct Message {
     pub joined: Option<Vec<String>>,
     /// We missed some messages
     pub lagged: bool,
-    /// There was a gossip error
-    pub error: Option<String>,
 }
 
 /// The actual content of a gossip message.
@@ -39,38 +37,34 @@ pub struct MessageContent {
     pub delivered_from: String,
 }
 
-impl From<anyhow::Result<SubscribeResponse>> for Message {
-    fn from(event: anyhow::Result<SubscribeResponse>) -> Self {
+impl From<SubscribeResponse> for Message {
+    fn from(event: SubscribeResponse) -> Self {
         match event {
-            Ok(SubscribeResponse::Gossip(GossipEvent::NeighborUp(n))) => Message {
+            SubscribeResponse::Gossip(GossipEvent::NeighborUp(n)) => Message {
                 neighbor_up: Some(n.to_string()),
                 ..Default::default()
             },
-            Ok(SubscribeResponse::Gossip(GossipEvent::NeighborDown(n))) => Message {
+            SubscribeResponse::Gossip(GossipEvent::NeighborDown(n)) => Message {
                 neighbor_down: Some(n.to_string()),
                 ..Default::default()
             },
-            Ok(SubscribeResponse::Gossip(GossipEvent::Received(iroh::gossip::net::Message {
+            SubscribeResponse::Gossip(GossipEvent::Received(iroh::gossip::net::Message {
                 content,
                 delivered_from,
                 ..
-            }))) => Message {
+            })) => Message {
                 received: Some(MessageContent {
                     content: content.to_vec(),
                     delivered_from: delivered_from.to_string(),
                 }),
                 ..Default::default()
             },
-            Ok(SubscribeResponse::Gossip(GossipEvent::Joined(nodes))) => Message {
+            SubscribeResponse::Gossip(GossipEvent::Joined(nodes)) => Message {
                 joined: Some(nodes.into_iter().map(|n| n.to_string()).collect()),
                 ..Default::default()
             },
-            Ok(SubscribeResponse::Lagged) => Message {
+            SubscribeResponse::Lagged => Message {
                 lagged: true,
-                ..Default::default()
-            },
-            Err(err) => Message {
-                error: Some(err.to_string()),
                 ..Default::default()
             },
         }
@@ -125,8 +119,8 @@ impl Gossip {
 
         tokio::task::spawn(async move {
             while let Some(event) = stream.next().await {
-                let message: Message = event.into();
-                if let Err(err) = cb.call_async(Ok(message)).await {
+                let message: Result<Message> = event.map(Into::into).map_err(Into::into);
+                if let Err(err) = cb.call_async(message).await {
                     warn!("cb error, gossip: {:?}", err);
                 }
             }

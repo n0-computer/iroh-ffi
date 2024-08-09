@@ -5,6 +5,7 @@ use futures::{StreamExt, TryStreamExt};
 use napi::bindgen_prelude::*;
 use napi::threadsafe_function::{ThreadsafeFunction, UnknownReturnValue};
 use napi_derive::napi;
+use tracing::warn;
 
 use crate::{AddrInfoOptions, AuthorId, Hash, Iroh, NodeAddr};
 
@@ -77,15 +78,9 @@ impl Docs {
 
         tokio::spawn(async move {
             while let Some(event) = stream.next().await {
-                match event {
-                    Ok(event) => {
-                        if let Err(err) = cb.call_async(Ok(event.into())).await {
-                            println!("cb error: {:?}", err);
-                        }
-                    }
-                    Err(err) => {
-                        println!("rpc error: {:?}", err);
-                    }
+                let message: Result<LiveEvent> = event.map(Into::into).map_err(Into::into);
+                if let Err(err) = cb.call_async(message).await {
+                    warn!("cb error: {:?}", err);
                 }
             }
         });
@@ -214,11 +209,10 @@ impl Doc {
             .import_file(author.0, Bytes::from(key), PathBuf::from(path), in_place)
             .await?;
 
-        while let Some(progress) = stream.next().await {
-            let progress = progress?;
+        while let Some(event) = stream.next().await {
             if let Some(ref cb) = cb {
-                let progress: DocImportProgress = progress.into();
-                cb.call_async(Ok(progress)).await?;
+                let message = DocImportProgress::convert(event);
+                cb.call_async(message).await?;
             }
         }
         Ok(())
@@ -241,10 +235,10 @@ impl Doc {
                 iroh::blobs::store::ExportMode::Copy,
             )
             .await?;
-        while let Some(progress) = stream.next().await {
-            let progress = progress?;
+        while let Some(event) = stream.next().await {
             if let Some(ref cb) = cb {
-                cb.call_async(Ok(progress.into())).await?;
+                let message = DocExportProgress::convert(event);
+                cb.call_async(message).await?;
             }
         }
         Ok(())
@@ -346,15 +340,9 @@ impl Doc {
         tokio::task::spawn(async move {
             let mut sub = client.subscribe().await.unwrap();
             while let Some(event) = sub.next().await {
-                match event {
-                    Ok(event) => {
-                        if let Err(err) = cb.call_async(Ok(event.into())).await {
-                            println!("cb error: {:?}", err);
-                        }
-                    }
-                    Err(err) => {
-                        println!("rpc error: {:?}", err);
-                    }
+                let message: Result<LiveEvent> = event.map(Into::into).map_err(Into::into);
+                if let Err(err) = cb.call_async(message).await {
+                    warn!("cb error: {:?}", err);
                 }
             }
         });
@@ -1175,14 +1163,6 @@ pub struct DocImportProgressAllDone {
     pub key: Vec<u8>,
 }
 
-/// A DocImportProgress event indicating we got an error and need to abort
-#[derive(Debug, Clone)]
-#[napi(object)]
-pub struct DocImportProgressAbort {
-    /// The error message
-    pub error: String,
-}
-
 /// Progress updates for the doc import file operation.
 #[derive(Debug, Default)]
 #[napi(object)]
@@ -1195,47 +1175,47 @@ pub struct DocImportProgress {
     pub ingest_done: Option<DocImportProgressIngestDone>,
     /// We are done with the whole operation.
     pub all_done: Option<DocImportProgressAllDone>,
-    /// We got an error and need to abort.
-    ///
-    /// This will be the last message in the stream.
-    pub abort: Option<DocImportProgressAbort>,
 }
 
-impl From<iroh::client::docs::ImportProgress> for DocImportProgress {
-    fn from(value: iroh::client::docs::ImportProgress) -> Self {
+impl DocImportProgress {
+    fn convert(value: anyhow::Result<iroh::client::docs::ImportProgress>) -> Result<Self> {
         match value {
-            iroh::client::docs::ImportProgress::Found { id, name, size } => DocImportProgress {
-                found: Some(DocImportProgressFound {
-                    id: id.into(),
-                    name,
-                    size: size.into(),
-                }),
-                ..Default::default()
-            },
-            iroh::client::docs::ImportProgress::Progress { id, offset } => DocImportProgress {
-                progress: Some(DocImportProgressProgress {
-                    id: id.into(),
-                    offset: offset.into(),
-                }),
-                ..Default::default()
-            },
-            iroh::client::docs::ImportProgress::IngestDone { id, hash } => DocImportProgress {
-                ingest_done: Some(DocImportProgressIngestDone {
-                    id: id.into(),
-                    hash: hash.to_string(),
-                }),
-                ..Default::default()
-            },
-            iroh::client::docs::ImportProgress::AllDone { key } => DocImportProgress {
+            Ok(iroh::client::docs::ImportProgress::Found { id, name, size }) => {
+                Ok(DocImportProgress {
+                    found: Some(DocImportProgressFound {
+                        id: id.into(),
+                        name,
+                        size: size.into(),
+                    }),
+                    ..Default::default()
+                })
+            }
+            Ok(iroh::client::docs::ImportProgress::Progress { id, offset }) => {
+                Ok(DocImportProgress {
+                    progress: Some(DocImportProgressProgress {
+                        id: id.into(),
+                        offset: offset.into(),
+                    }),
+                    ..Default::default()
+                })
+            }
+            Ok(iroh::client::docs::ImportProgress::IngestDone { id, hash }) => {
+                Ok(DocImportProgress {
+                    ingest_done: Some(DocImportProgressIngestDone {
+                        id: id.into(),
+                        hash: hash.to_string(),
+                    }),
+                    ..Default::default()
+                })
+            }
+            Ok(iroh::client::docs::ImportProgress::AllDone { key }) => Ok(DocImportProgress {
                 all_done: Some(DocImportProgressAllDone { key: key.into() }),
                 ..Default::default()
-            },
-            iroh::client::docs::ImportProgress::Abort(err) => DocImportProgress {
-                abort: Some(DocImportProgressAbort {
-                    error: err.to_string(),
-                }),
-                ..Default::default()
-            },
+            }),
+            Ok(iroh::client::docs::ImportProgress::Abort(err)) => {
+                Err(anyhow::Error::from(err).into())
+            }
+            Err(err) => Err(err.into()),
         }
     }
 }
@@ -1292,52 +1272,49 @@ pub struct DocExportProgress {
     pub done: Option<DocExportProgressDone>,
     /// We are done with the whole operation.
     pub all_done: bool,
-    /// We got an error and need to abort.
-    ///
-    /// This will be the last message in the stream.
-    pub abort: Option<DocExportProgressAbort>,
 }
 
-impl From<iroh::blobs::export::ExportProgress> for DocExportProgress {
-    fn from(value: iroh::blobs::export::ExportProgress) -> Self {
+impl DocExportProgress {
+    fn convert(value: anyhow::Result<iroh::blobs::export::ExportProgress>) -> Result<Self> {
         match value {
-            iroh::blobs::export::ExportProgress::Found {
-                id,
-                hash,
-                size,
-                outpath,
-                // TODO (b5) - currently ignoring meta field. meta is probably the key of the entry that's being exported
-                ..
-            } => DocExportProgress {
-                found: Some(DocExportProgressFound {
-                    id: id.into(),
-                    hash: hash.to_string(),
-                    size: size.value().into(),
-                    outpath: outpath.to_string_lossy().to_string(),
+            Ok(value) => match value {
+                iroh::blobs::export::ExportProgress::Found {
+                    id,
+                    hash,
+                    size,
+                    outpath,
+                    ..
+                } => Ok(DocExportProgress {
+                    found: Some(DocExportProgressFound {
+                        id: id.into(),
+                        hash: hash.to_string(),
+                        size: size.value().into(),
+                        outpath: outpath.to_string_lossy().to_string(),
+                    }),
+                    ..Default::default()
                 }),
-                ..Default::default()
-            },
-            iroh::blobs::export::ExportProgress::Progress { id, offset } => DocExportProgress {
-                progress: Some(DocExportProgressProgress {
-                    id: id.into(),
-                    offset: offset.into(),
+                iroh::blobs::export::ExportProgress::Progress { id, offset } => {
+                    Ok(DocExportProgress {
+                        progress: Some(DocExportProgressProgress {
+                            id: id.into(),
+                            offset: offset.into(),
+                        }),
+                        ..Default::default()
+                    })
+                }
+                iroh::blobs::export::ExportProgress::Done { id } => Ok(DocExportProgress {
+                    done: Some(DocExportProgressDone { id: id.into() }),
+                    ..Default::default()
                 }),
-                ..Default::default()
-            },
-            iroh::blobs::export::ExportProgress::Done { id } => DocExportProgress {
-                done: Some(DocExportProgressDone { id: id.into() }),
-                ..Default::default()
-            },
-            iroh::blobs::export::ExportProgress::AllDone => DocExportProgress {
-                all_done: true,
-                ..Default::default()
-            },
-            iroh::blobs::export::ExportProgress::Abort(err) => DocExportProgress {
-                abort: Some(DocExportProgressAbort {
-                    error: err.to_string(),
+                iroh::blobs::export::ExportProgress::AllDone => Ok(DocExportProgress {
+                    all_done: true,
+                    ..Default::default()
                 }),
-                ..Default::default()
+                iroh::blobs::export::ExportProgress::Abort(err) => {
+                    Err(anyhow::Error::from(err).into())
+                }
             },
+            Err(err) => Err(err.into()),
         }
     }
 }

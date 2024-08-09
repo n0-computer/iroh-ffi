@@ -18,9 +18,6 @@ test('add blob from path', async (t) => {
       if (error != null) {
         return reject(error);
       }
-      if (progress.abort != null) {
-        return reject(progress.abort.error);
-      }
 
       // console.log('progress', progress)
       if (progress.allDone != null) {

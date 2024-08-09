@@ -122,8 +122,8 @@ impl Blobs {
             .add_from_path(path.into(), in_place, tag.into(), wrap.into())
             .await?;
         while let Some(progress) = stream.next().await {
-            let progress: AddProgress = progress?.into();
-            cb.call_async(Ok(progress)).await?;
+            let progress = AddProgress::convert(progress);
+            cb.call_async(progress).await?;
         }
         Ok(())
     }
@@ -184,8 +184,8 @@ impl Blobs {
             .download_with_opts(hash.parse().map_err(anyhow::Error::from)?, opts.0.clone())
             .await?;
         while let Some(progress) = stream.next().await {
-            let progress: DownloadProgress = progress?.into();
-            cb.call_async(Ok(progress)).await?;
+            let progress = DownloadProgress::convert(progress);
+            cb.call_async(progress).await?;
         }
         Ok(())
     }
@@ -582,13 +582,6 @@ pub struct AddProgressAllDone {
     pub tag: Vec<u8>,
 }
 
-/// An AddProgress event indicating we got an error and need to abort
-#[derive(Debug, Clone)]
-#[napi(object)]
-pub struct AddProgressAbort {
-    pub error: String,
-}
-
 /// Progress updates for the add operation.
 #[derive(Debug, Clone, Default)]
 #[napi(object)]
@@ -601,51 +594,49 @@ pub struct AddProgress {
     pub done: Option<AddProgressDone>,
     /// We are done with the whole operation.
     pub all_done: Option<AddProgressAllDone>,
-    /// We got an error and need to abort.
-    ///
-    /// This will be the last message in the stream.
-    pub abort: Option<AddProgressAbort>,
 }
 
-impl From<iroh::blobs::provider::AddProgress> for AddProgress {
-    fn from(value: iroh::blobs::provider::AddProgress) -> Self {
+impl AddProgress {
+    fn convert(value: anyhow::Result<iroh::blobs::provider::AddProgress>) -> Result<Self> {
         match value {
-            iroh::blobs::provider::AddProgress::Found { id, name, size } => AddProgress {
-                found: Some(AddProgressFound {
-                    id: id.into(),
-                    name,
-                    size: size.into(),
+            Ok(value) => match value {
+                iroh::blobs::provider::AddProgress::Found { id, name, size } => Ok(AddProgress {
+                    found: Some(AddProgressFound {
+                        id: id.into(),
+                        name,
+                        size: size.into(),
+                    }),
+                    ..Default::default()
                 }),
-                ..Default::default()
-            },
-            iroh::blobs::provider::AddProgress::Progress { id, offset } => AddProgress {
-                progress: Some(AddProgressProgress {
-                    id: id.into(),
-                    offset: offset.into(),
+                iroh::blobs::provider::AddProgress::Progress { id, offset } => Ok(AddProgress {
+                    progress: Some(AddProgressProgress {
+                        id: id.into(),
+                        offset: offset.into(),
+                    }),
+                    ..Default::default()
                 }),
-                ..Default::default()
-            },
-            iroh::blobs::provider::AddProgress::Done { id, hash } => AddProgress {
-                done: Some(AddProgressDone {
-                    id: id.into(),
-                    hash: hash.to_string(),
+                iroh::blobs::provider::AddProgress::Done { id, hash } => Ok(AddProgress {
+                    done: Some(AddProgressDone {
+                        id: id.into(),
+                        hash: hash.to_string(),
+                    }),
+                    ..Default::default()
                 }),
-                ..Default::default()
+                iroh::blobs::provider::AddProgress::AllDone { hash, format, tag } => {
+                    Ok(AddProgress {
+                        all_done: Some(AddProgressAllDone {
+                            hash: hash.to_string(),
+                            format: format.into(),
+                            tag: tag.0.to_vec(),
+                        }),
+                        ..Default::default()
+                    })
+                }
+                iroh::blobs::provider::AddProgress::Abort(err) => {
+                    Err(anyhow::Error::from(err).into())
+                }
             },
-            iroh::blobs::provider::AddProgress::AllDone { hash, format, tag } => AddProgress {
-                all_done: Some(AddProgressAllDone {
-                    hash: hash.to_string(),
-                    format: format.into(),
-                    tag: tag.0.to_vec(),
-                }),
-                ..Default::default()
-            },
-            iroh::blobs::provider::AddProgress::Abort(err) => AddProgress {
-                abort: Some(AddProgressAbort {
-                    error: err.to_string(),
-                }),
-                ..Default::default()
-            },
+            Err(err) => Err(err.into()),
         }
     }
 }
@@ -876,85 +867,83 @@ pub struct DownloadProgress {
     pub done: Option<DownloadProgressDone>,
     /// We are done with the whole operation.
     pub all_done: Option<DownloadProgressAllDone>,
-    /// We got an error and need to abort.
-    ///
-    /// This will be the last message in the stream.
-    pub abort: Option<DownloadProgressAbort>,
 }
 
-impl From<iroh::blobs::get::db::DownloadProgress> for DownloadProgress {
-    fn from(value: iroh::blobs::get::db::DownloadProgress) -> Self {
+impl DownloadProgress {
+    fn convert(value: anyhow::Result<iroh::blobs::get::db::DownloadProgress>) -> Result<Self> {
         match value {
-            iroh::blobs::get::db::DownloadProgress::InitialState(transfer_state) => {
-                DownloadProgress {
-                    initial_state: Some(DownloadProgressInitialState {
-                        connected: transfer_state.connected,
-                    }),
-                    ..Default::default()
+            Ok(value) => match value {
+                iroh::blobs::get::db::DownloadProgress::InitialState(transfer_state) => {
+                    Ok(DownloadProgress {
+                        initial_state: Some(DownloadProgressInitialState {
+                            connected: transfer_state.connected,
+                        }),
+                        ..Default::default()
+                    })
                 }
-            }
-            iroh::blobs::get::db::DownloadProgress::FoundLocal {
-                child, hash, size, ..
-            } => DownloadProgress {
-                found_local: Some(DownloadProgressFoundLocal {
-                    child: u64::from(child).into(),
-                    hash: hash.to_string(),
-                    size: size.value().into(),
-                }),
-                ..Default::default()
-            },
-            iroh::blobs::get::db::DownloadProgress::Connected => DownloadProgress {
-                connected: Some(()),
-                ..Default::default()
-            },
-            iroh::blobs::get::db::DownloadProgress::Found {
-                id,
-                hash,
-                child,
-                size,
-            } => DownloadProgress {
-                found: Some(DownloadProgressFound {
-                    id: id.into(),
-                    hash: hash.to_string(),
-                    child: u64::from(child).into(),
-                    size: size.into(),
-                }),
-                ..Default::default()
-            },
-            iroh::blobs::get::db::DownloadProgress::FoundHashSeq { hash, children } => {
-                DownloadProgress {
-                    found_hash_seq: Some(DownloadProgressFoundHashSeq {
+                iroh::blobs::get::db::DownloadProgress::FoundLocal {
+                    child, hash, size, ..
+                } => Ok(DownloadProgress {
+                    found_local: Some(DownloadProgressFoundLocal {
+                        child: u64::from(child).into(),
                         hash: hash.to_string(),
-                        children: children.into(),
+                        size: size.value().into(),
                     }),
                     ..Default::default()
+                }),
+                iroh::blobs::get::db::DownloadProgress::Connected => Ok(DownloadProgress {
+                    connected: Some(()),
+                    ..Default::default()
+                }),
+                iroh::blobs::get::db::DownloadProgress::Found {
+                    id,
+                    hash,
+                    child,
+                    size,
+                } => Ok(DownloadProgress {
+                    found: Some(DownloadProgressFound {
+                        id: id.into(),
+                        hash: hash.to_string(),
+                        child: u64::from(child).into(),
+                        size: size.into(),
+                    }),
+                    ..Default::default()
+                }),
+                iroh::blobs::get::db::DownloadProgress::FoundHashSeq { hash, children } => {
+                    Ok(DownloadProgress {
+                        found_hash_seq: Some(DownloadProgressFoundHashSeq {
+                            hash: hash.to_string(),
+                            children: children.into(),
+                        }),
+                        ..Default::default()
+                    })
                 }
-            }
-            iroh::blobs::get::db::DownloadProgress::Progress { id, offset } => DownloadProgress {
-                progress: Some(DownloadProgressProgress {
-                    id: id.into(),
-                    offset: offset.into(),
+                iroh::blobs::get::db::DownloadProgress::Progress { id, offset } => {
+                    Ok(DownloadProgress {
+                        progress: Some(DownloadProgressProgress {
+                            id: id.into(),
+                            offset: offset.into(),
+                        }),
+                        ..Default::default()
+                    })
+                }
+                iroh::blobs::get::db::DownloadProgress::Done { id } => Ok(DownloadProgress {
+                    done: Some(DownloadProgressDone { id: id.into() }),
+                    ..Default::default()
                 }),
-                ..Default::default()
-            },
-            iroh::blobs::get::db::DownloadProgress::Done { id } => DownloadProgress {
-                done: Some(DownloadProgressDone { id: id.into() }),
-                ..Default::default()
-            },
-            iroh::blobs::get::db::DownloadProgress::AllDone(stats) => DownloadProgress {
-                all_done: Some(DownloadProgressAllDone {
-                    bytes_written: stats.bytes_written.into(),
-                    bytes_read: stats.bytes_read.into(),
-                    elapsed: stats.elapsed.as_millis().into(),
+                iroh::blobs::get::db::DownloadProgress::AllDone(stats) => Ok(DownloadProgress {
+                    all_done: Some(DownloadProgressAllDone {
+                        bytes_written: stats.bytes_written.into(),
+                        bytes_read: stats.bytes_read.into(),
+                        elapsed: stats.elapsed.as_millis().into(),
+                    }),
+                    ..Default::default()
                 }),
-                ..Default::default()
+                iroh::blobs::get::db::DownloadProgress::Abort(err) => {
+                    Err(anyhow::Error::from(err).into())
+                }
             },
-            iroh::blobs::get::db::DownloadProgress::Abort(err) => DownloadProgress {
-                abort: Some(DownloadProgressAbort {
-                    error: err.to_string(),
-                }),
-                ..Default::default()
-            },
+            Err(err) => Err(err.into()),
         }
     }
 }

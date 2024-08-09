@@ -59,7 +59,6 @@ test('gossip basic', async (t) => {
 
   const msg = Array.from(Buffer.from('hello', 'utf8'))
   await sink0.broadcast(msg)
-  console.log('broadcast sent')
 
   // wait for node1 to receive the message
   const m = await promise1
