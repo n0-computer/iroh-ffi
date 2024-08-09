@@ -449,7 +449,7 @@ jobs:
           cache: yarn
           cache-dependency-path: './iroh-js/yarn.lock'
       - name: Install dependencies
-        run: cd iroh-js && yarn install
+        run: yarn install
       - name: Download macOS x64 artifact
         uses: actions/download-artifact@v4
         with:
