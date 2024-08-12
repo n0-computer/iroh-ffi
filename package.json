@@ -2,7 +2,16 @@
   "name": "@number0/iroh",
   "author": "number0",
   "description": "A toolkit for building distributed applications",
-  "keywords": ["iroh", "distributed", "applications", "p2p", "peer-to-peer", "networking", "network", "protocol"],
+  "keywords": [
+    "iroh",
+    "distributed",
+    "applications",
+    "p2p",
+    "peer-to-peer",
+    "networking",
+    "network",
+    "protocol"
+  ],
   "version": "0.22.1-test1",
   "main": "iroh-js/index.js",
   "types": "index.d.ts",
@@ -48,5 +57,8 @@
     "universal": "napi universal",
     "version": "napi version"
   },
-  "packageManager": "yarn@4.4.0"
+  "packageManager": "yarn@4.4.0",
+  "dependencies": {
+    "npm": "^10.8.2"
+  }
 }
