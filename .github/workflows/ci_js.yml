@@ -4,6 +4,7 @@ env:
   DEBUG: napi:*
   APP_NAME: iroh
   MACOSX_DEPLOYMENT_TARGET: '10.13'
+  YARN_ENABLE_IMMUTABLE_INSTALLS: false # THIS IS A HORRIBLE HACK, REMOVE BEFORE MERGE
 
 permissions:
   contents: write
