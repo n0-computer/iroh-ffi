@@ -89,6 +89,7 @@ jobs:
 #         working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
+      - run: corepack enable
       - name: Setup node
         uses: actions/setup-node@v4
         if: ${{ !matrix.settings.docker }}
@@ -223,6 +224,7 @@ jobs:
 #         working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
+      - run: corepack enable
       - name: Setup node
         uses: actions/setup-node@v4
         with:
@@ -262,6 +264,7 @@ jobs:
 #         working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
+      - run: corepack enable
       - name: Setup node
         uses: actions/setup-node@v4
         with:
@@ -296,6 +299,7 @@ jobs:
 #         working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
+      - run: corepack enable
       - name: Setup node
         uses: actions/setup-node@v4
         with:
@@ -447,6 +451,7 @@ jobs:
 #         working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
+      - run: corepack enable
       - name: Setup node
         uses: actions/setup-node@v4
         with:
@@ -489,6 +494,7 @@ jobs:
 #         working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
+      - run: corepack enable
       - name: Setup node
         uses: actions/setup-node@v4
         with:
