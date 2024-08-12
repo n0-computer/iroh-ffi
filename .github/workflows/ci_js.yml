@@ -84,9 +84,9 @@ jobs:
             build: yarn build --target aarch64-pc-windows-msvc
     name: stable - ${{ matrix.settings.target }} - node@22
     runs-on: ${{ matrix.settings.host }}
-    defaults:
-      run:
-        working-directory: ./iroh-js
+    # defaults:
+#       run:
+#         working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
       - name: Setup node
@@ -218,9 +218,9 @@ jobs:
           - '22'
           - '20'
     runs-on: ${{ matrix.settings.host }}
-    defaults:
-      run:
-        working-directory: ./iroh-js
+    # defaults:
+#       run:
+#         working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
       - name: Setup node
@@ -257,9 +257,9 @@ jobs:
           - '22'
           - '20'
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./iroh-js
+    # defaults:
+#       run:
+#         working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
       - name: Setup node
@@ -291,9 +291,9 @@ jobs:
           - '22'
           - '20'
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./iroh-js
+    # defaults:
+#       run:
+#         working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
       - name: Setup node
@@ -327,9 +327,9 @@ jobs:
           - '22'
           - '20'
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./iroh-js
+    # defaults:
+#       run:
+#         working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
       - name: Download artifacts
@@ -364,9 +364,9 @@ jobs:
     needs:
       - build
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./iroh-js
+    # defaults:
+#       run:
+#         working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
       - name: Download artifacts
@@ -406,9 +406,9 @@ jobs:
           - '22'
           - '20'
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./iroh-js
+    # defaults:
+#       run:
+#         working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
       - name: Download artifacts
@@ -442,9 +442,9 @@ jobs:
     needs:
       - build
     runs-on: macos-latest
-    defaults:
-      run:
-        working-directory: ./iroh-js
+    # defaults:
+#       run:
+#         working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
       - name: Setup node
@@ -484,9 +484,9 @@ jobs:
       - test-linux-aarch64-musl-binding
       - test-linux-arm-gnueabihf-binding
       - universal-macOS
-    defaults:
-      run:
-        working-directory: ./iroh-js
+    # defaults:
+#       run:
+#         working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
       - name: Setup node

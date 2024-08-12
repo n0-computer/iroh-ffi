@@ -4,7 +4,7 @@
   "description": "A toolkit for building distributed applications",
   "keywords": ["iroh", "distributed", "applications", "p2p", "peer-to-peer", "networking", "network", "protocol"],
   "version": "0.22.1-test1",
-  "main": "index.js",
+  "main": "iroh-js/index.js",
   "types": "index.d.ts",
   "napi": {
     "name": "iroh",
@@ -26,7 +26,7 @@
     }
   },
   "repository": {
-    "url": "https://github.com/n0-computer/iroh-ffi.git"
+    "url": "https://github.com/n0-computer/iroh-ffi"
   },
   "license": "MIT OR Apache-2.0",
   "devDependencies": {
@@ -43,7 +43,7 @@
     "artifacts": "napi artifacts",
     "build": "napi build --platform --release",
     "build:debug": "napi build --platform",
-    "prepublishOnly": "napi prepublish -t npm",
+    "prepublishOnly": "napi prepublish -t npm --skip-gh-release",
     "test": "ava",
     "universal": "napi universal",
     "version": "napi version"
