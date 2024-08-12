@@ -7,7 +7,7 @@ use napi::threadsafe_function::{ThreadsafeFunction, UnknownReturnValue};
 use napi_derive::napi;
 use tracing::warn;
 
-use crate::{AddrInfoOptions, AuthorId, Hash, Iroh, NodeAddr};
+use crate::{AddrInfoOptions, AuthorId, DocTicket, Hash, Iroh, NodeAddr};
 
 #[derive(Debug)]
 #[napi(string_enum)]
@@ -60,8 +60,8 @@ impl Docs {
 
     /// Join and sync with an already existing document.
     #[napi]
-    pub async fn join(&self, ticket: String) -> Result<Doc> {
-        let ticket = iroh::docs::DocTicket::from_str(&ticket).map_err(anyhow::Error::from)?;
+    pub async fn join(&self, ticket: &DocTicket) -> Result<Doc> {
+        let ticket = ticket.try_into()?;
         let doc = self.client().docs().import(ticket).await?;
         Ok(Doc { inner: doc })
     }
@@ -70,10 +70,10 @@ impl Docs {
     #[napi]
     pub async fn join_and_subscribe(
         &self,
-        ticket: String,
+        ticket: &DocTicket,
         cb: ThreadsafeFunction<LiveEvent, UnknownReturnValue>,
     ) -> Result<Doc> {
-        let ticket = iroh::docs::DocTicket::from_str(&ticket).map_err(anyhow::Error::from)?;
+        let ticket = ticket.try_into()?;
         let (doc, mut stream) = self.client().docs().import_and_subscribe(ticket).await?;
 
         tokio::spawn(async move {
@@ -302,12 +302,12 @@ impl Doc {
 
     /// Share this document with peers over a ticket.
     #[napi]
-    pub async fn share(&self, mode: ShareMode, addr_options: AddrInfoOptions) -> Result<String> {
+    pub async fn share(&self, mode: ShareMode, addr_options: AddrInfoOptions) -> Result<DocTicket> {
         let res = self
             .inner
             .share(mode.into(), addr_options.into())
             .await
-            .map(|ticket| ticket.to_string())?;
+            .map(|ticket| ticket.into())?;
         Ok(res)
     }
 

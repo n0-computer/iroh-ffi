@@ -5,6 +5,7 @@ use napi_derive::napi;
 
 use crate::{
     blob::{BlobDownloadOptions, BlobFormat},
+    doc::CapabilityKind,
     NodeAddr,
 };
 
@@ -123,5 +124,69 @@ impl From<AddrInfoOptions> for iroh::base::node_addr::AddrInfoOptions {
             AddrInfoOptions::Relay => iroh::base::node_addr::AddrInfoOptions::Relay,
             AddrInfoOptions::Addresses => iroh::base::node_addr::AddrInfoOptions::Addresses,
         }
+    }
+}
+
+/// Contains both a key (either secret or public) to a document, and a list of peers to join.
+#[derive(Clone, Debug)]
+#[napi]
+pub struct DocTicket {
+    /// The actual capability.
+    #[napi(readonly)]
+    pub capability: String,
+    /// The capabillity kind
+    #[napi(readonly)]
+    pub capability_kind: CapabilityKind,
+    /// A list of nodes to contact.
+    #[napi(readonly)]
+    pub nodes: Vec<NodeAddr>,
+}
+
+impl From<iroh::docs::DocTicket> for DocTicket {
+    fn from(value: iroh::docs::DocTicket) -> Self {
+        let (capability, kind) = match value.capability {
+            iroh::docs::Capability::Read(v) => (v.to_string(), CapabilityKind::Read),
+            iroh::docs::Capability::Write(v) => (v.to_string(), CapabilityKind::Write),
+        };
+        Self {
+            capability,
+            capability_kind: kind,
+            nodes: value.nodes.into_iter().map(Into::into).collect(),
+        }
+    }
+}
+
+impl TryFrom<&DocTicket> for iroh::docs::DocTicket {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &DocTicket) -> anyhow::Result<Self> {
+        let peers = value
+            .nodes
+            .iter()
+            .map(|v| v.clone().try_into())
+            .collect::<anyhow::Result<_>>()?;
+
+        let capability = match value.capability_kind {
+            CapabilityKind::Read => iroh::docs::Capability::Read(value.capability.parse()?),
+            CapabilityKind::Write => iroh::docs::Capability::Write(value.capability.parse()?),
+        };
+
+        let ticket = iroh::docs::DocTicket::new(capability, peers);
+        Ok(ticket)
+    }
+}
+
+#[napi]
+impl DocTicket {
+    #[napi(factory)]
+    pub fn from_string(str: String) -> Result<Self> {
+        let ticket = iroh::docs::DocTicket::from_str(&str).map_err(anyhow::Error::from)?;
+        Ok(ticket.into())
+    }
+
+    #[napi]
+    pub fn to_string(&self) -> Result<String> {
+        let ticket: iroh::docs::DocTicket = self.try_into()?;
+        Ok(ticket.to_string())
     }
 }

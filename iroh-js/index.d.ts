@@ -871,9 +871,9 @@ export declare class Docs {
   /** Create a new doc. */
   create(): Promise<Doc>
   /** Join and sync with an already existing document. */
-  join(ticket: string): Promise<Doc>
+  join(ticket: DocTicket): Promise<Doc>
   /** Join and sync with an already existing document and subscribe to events on that document. */
-  joinAndSubscribe(ticket: string, cb: (err: Error | null, arg: LiveEvent) => unknown): Promise<Doc>
+  joinAndSubscribe(ticket: DocTicket, cb: (err: Error | null, arg: LiveEvent) => unknown): Promise<Doc>
   /** List all the docs we have access to on this node. */
   list(): Promise<Array<NamespaceAndCapability>>
   /**
@@ -926,7 +926,7 @@ export declare class Doc {
   /** Get the latest entry for a key and author. */
   getOne(query: Query): Promise<Entry | null>
   /** Share this document with peers over a ticket. */
-  share(mode: ShareMode, addrOptions: AddrInfoOptions): Promise<string>
+  share(mode: ShareMode, addrOptions: AddrInfoOptions): Promise<DocTicket>
   /** Start to sync this document with a list of peers. */
   startSync(peers: Array<NodeAddr>): Promise<void>
   /** Stop the live sync for this document. */
@@ -1153,4 +1153,15 @@ export declare class BlobTicket {
   recursive(): boolean
   /** Convert this ticket into input parameters for a call to blobs_download */
   asDownloadOptions(): BlobDownloadOptions
+}
+/** Contains both a key (either secret or public) to a document, and a list of peers to join. */
+export declare class DocTicket {
+  /** The actual capability. */
+  readonly capability: string
+  /** The capabillity kind */
+  readonly capabilityKind: CapabilityKind
+  /** A list of nodes to contact. */
+  readonly nodes: Array<NodeAddr>
+  static fromString(str: string): DocTicket
+  toString(): string
 }

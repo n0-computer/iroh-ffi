@@ -310,7 +310,7 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { AuthorId, Author, Authors, Blobs, SetTagOption, Hash, BlobFormat, BlobDownloadOptions, BlobExportFormat, BlobExportMode, RangeSpec, Collection, CapabilityKind, Docs, Doc, DownloadPolicy, FilterKind, ShareMode, SortBy, SortDirection, Query, SyncReason, Origin, ContentStatus, DocImportProgressType, Gossip, Sender, PublicKey, ConnType, verifyNodeAddr, Iroh, Node, BlobTicket, AddrInfoOptions, LogLevel, setLogLevel, startMetricsCollection, keyToPath, pathToKey } = nativeBinding
+const { AuthorId, Author, Authors, Blobs, SetTagOption, Hash, BlobFormat, BlobDownloadOptions, BlobExportFormat, BlobExportMode, RangeSpec, Collection, CapabilityKind, Docs, Doc, DownloadPolicy, FilterKind, ShareMode, SortBy, SortDirection, Query, SyncReason, Origin, ContentStatus, DocImportProgressType, Gossip, Sender, PublicKey, ConnType, verifyNodeAddr, Iroh, Node, BlobTicket, AddrInfoOptions, DocTicket, LogLevel, setLogLevel, startMetricsCollection, keyToPath, pathToKey } = nativeBinding
 
 module.exports.AuthorId = AuthorId
 module.exports.Author = Author
@@ -346,6 +346,7 @@ module.exports.Iroh = Iroh
 module.exports.Node = Node
 module.exports.BlobTicket = BlobTicket
 module.exports.AddrInfoOptions = AddrInfoOptions
+module.exports.DocTicket = DocTicket
 module.exports.LogLevel = LogLevel
 module.exports.setLogLevel = setLogLevel
 module.exports.startMetricsCollection = startMetricsCollection
