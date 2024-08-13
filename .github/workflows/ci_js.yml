@@ -243,7 +243,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           cache: yarn
-          # cache-dependency-path: './iroh-js/yarn.lock'
+          cache-dependency-path: './yarn.lock'
           architecture: x64
       - name: Setup node x86_64
         if: matrix.settings.target == 'x86_64-apple-darwin'
@@ -255,7 +255,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: bindings-${{ matrix.settings.target }}
-          path: artifacts/
+          path: iroh-js/
       - name: List packages
         run: ls -R .
         shell: bash
