@@ -90,6 +90,7 @@ jobs:
               sudo apt-get install musl-tools -y
               yarn build --platform --target aarch64-unknown-linux-musl
             # runner: [self-hosted, linux, ARM64]
+            runner: ubuntu-latest
           - host: windows-latest
             target: aarch64-pc-windows-msvc
             build: yarn build --target aarch64-pc-windows-msvc
