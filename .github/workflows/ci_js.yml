@@ -109,6 +109,9 @@ jobs:
         if: ${{ matrix.settings.host == 'windows-latest' }}
         run: corepack enable
         shell: cmd
+      - name: cleanup node_modules
+        run: rm -rf node_modules && rm -rf iroh-js/node_modules
+        shell: bash
       - name: Setup node
         uses: actions/setup-node@v4
         if: ${{ !matrix.settings.docker }}
