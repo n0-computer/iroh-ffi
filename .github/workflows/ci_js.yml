@@ -5,6 +5,7 @@ env:
   APP_NAME: iroh
   MACOSX_DEPLOYMENT_TARGET: '10.13'
   YARN_ENABLE_IMMUTABLE_INSTALLS: false # THIS IS A HORRIBLE HACK, REMOVE BEFORE MERGE
+  SKIP_YARN_COREPACK_CHECK: true
 
 permissions:
   contents: write
@@ -101,7 +102,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: corepack enable
-        shell: bash
       - name: Setup node
         uses: actions/setup-node@v4
         if: ${{ !matrix.settings.docker }}
