@@ -112,7 +112,7 @@ jobs:
         uses: actions/setup-node@v4
         if: ${{ !matrix.settings.docker }}
         with:
-          node-version: 22
+          node-version: 20
           cache: yarn
           # cache-dependency-path: './iroh-js/yarn.lock'
       - name: Install
@@ -150,7 +150,7 @@ jobs:
         uses: actions/setup-node@v4
         if: matrix.settings.target == 'i686-pc-windows-msvc'
         with:
-          node-version: 22
+          node-version: 20
           cache: yarn
           architecture: x86
           # cache-dependency-path: './iroh-js/yarn.lock'
@@ -235,8 +235,8 @@ jobs:
           - host: windows-latest
             target: x86_64-pc-windows-msvc
         node:
-          - '22'
-          # - '20'
+          # - '22'
+          - '20'
     runs-on: ${{ matrix.settings.host }}
     # defaults:
 #       run:
@@ -476,7 +476,7 @@ jobs:
       - name: Setup node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
           cache: yarn
           # cache-dependency-path: './iroh-js/yarn.lock'
       - name: Install dependencies
@@ -519,7 +519,7 @@ jobs:
       - name: Setup node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
           cache: yarn
           # cache-dependency-path: './iroh-js/yarn.lock'
       - name: Install dependencies
