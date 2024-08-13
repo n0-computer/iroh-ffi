@@ -230,7 +230,7 @@ jobs:
             target: x86_64-pc-windows-msvc
         node:
           - '22'
-          - '20'
+          # - '20'
     runs-on: ${{ matrix.settings.host }}
     # defaults:
 #       run:
