@@ -255,12 +255,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: bindings-${{ matrix.settings.target }}
-          path: iroh-js/
+          path: artifacts/
       - name: List packages
         run: ls -R .
         shell: bash
       - name: Test bindings
-        run: cd iroh-js && yarn test
+        run: yarn test
   test-linux-x64-gnu-binding:
     name: Test bindings on Linux-x64-gnu - node@${{ matrix.node }}
     needs:
