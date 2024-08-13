@@ -260,7 +260,7 @@ jobs:
         run: ls -R .
         shell: bash
       - name: Test bindings
-        run: yarn test
+        run: cd iroh-js && yarn test
   test-linux-x64-gnu-binding:
     name: Test bindings on Linux-x64-gnu - node@${{ matrix.node }}
     needs:
