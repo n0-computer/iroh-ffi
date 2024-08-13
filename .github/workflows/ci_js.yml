@@ -85,11 +85,11 @@ jobs:
             runner: ubuntu-latest
           - host: ubuntu-latest
             target: aarch64-unknown-linux-musl
-            # docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine
+            docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-ubuntu
             build: |-
               sudo apt-get install musl-tools -y
               yarn build --platform --target aarch64-unknown-linux-musl
-            runner: [self-hosted, linux, ARM64]
+            # runner: [self-hosted, linux, ARM64]
           - host: windows-latest
             target: aarch64-pc-windows-msvc
             build: yarn build --target aarch64-pc-windows-msvc
