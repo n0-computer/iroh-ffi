@@ -57,7 +57,7 @@
     "universal": "napi universal",
     "version": "napi version"
   },
-  "packageManager": "yarn@4.4.0",
+  "packageManager": "yarn@1.22.22",
   "dependencies": {
     "npm": "^10.8.2"
   }
