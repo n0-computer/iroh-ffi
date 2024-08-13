@@ -291,7 +291,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           cache: yarn
-          # cache-dependency-path: './iroh-js/yarn.lock'
+          cache-dependency-path: './iroh-js/yarn.lock'
       - name: Install dependencies
         run: yarn install
       - name: Download artifacts
