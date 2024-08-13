@@ -1,0 +1,18 @@
+{
+  "name": "@number0/iroh-darwin-x64",
+  "version": "0.0.0",
+  "os": [
+    "darwin"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "main": "iroh.darwin-x64.node",
+  "files": [
+    "iroh.darwin-x64.node"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">= 10"
+  }
+}

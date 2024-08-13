@@ -268,7 +268,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: bindings-${{ matrix.settings.target }}
-          path: iroh-js/artifacts/
+          path: ./
       - name: List packages
         run: ls -R .
         shell: bash
