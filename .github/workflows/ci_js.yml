@@ -250,7 +250,9 @@ jobs:
         run: yarn config set supportedArchitectures.cpu "x86_64"
         shell: bash
       - name: Install dependencies
-        run: yarn install
+        run: |
+          yarn install
+          cp yarn.lock iroh-js/yarn.lock
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
