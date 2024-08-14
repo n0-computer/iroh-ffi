@@ -12,7 +12,7 @@
     "network",
     "protocol"
   ],
-  "version": "0.22.1-test1",
+  "version": "0.22.1-test2",
   "main": "index.js",
   "types": "index.d.ts",
   "napi": {
@@ -35,7 +35,8 @@
     }
   },
   "repository": {
-    "url": "https://github.com/n0-computer/iroh-ffi"
+    "type": "git",
+    "url": "https://github.com/n0-computer/iroh-ffi.git"
   },
   "license": "MIT OR Apache-2.0",
   "devDependencies": {
