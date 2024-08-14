@@ -468,8 +468,8 @@ jobs:
         with:
           name: bindings-aarch64-apple-darwin
           path: iroh-ffi/
-      - name: cwd
-        run: cwd
+      - name: pwd
+        run: pwd
         shell: bash
       - name: List packages
         run: ls -R ./
