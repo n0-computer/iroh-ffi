@@ -239,51 +239,32 @@ jobs:
           - host: windows-latest
             target: x86_64-pc-windows-msvc
         node:
-          # - '22'
+          - '22'
           - '20'
     runs-on: ${{ matrix.settings.host }}
-    # defaults:
-#       run:
-#         working-directory: ./iroh-js
+    defaults:
+      run:
+        working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
-      - run: corepack enable
       - name: Setup node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
           cache: yarn
-          # cache-dependency-path: './yarn.lock'
+          cache-dependency-path: './iroh-js/yarn.lock'
           architecture: x64
       - name: Setup node x86_64
         if: matrix.settings.target == 'x86_64-apple-darwin'
         run: yarn config set supportedArchitectures.cpu "x86_64"
         shell: bash
       - name: Install dependencies
-        run: |
-          rm -rf node_modules
-          yarn install
-          # cp yarn.lock iroh-js/yarn.lock
+        run: yarn install
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           name: bindings-${{ matrix.settings.target }}
-          path: ./iroh-js/
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: bindings-${{ matrix.settings.target }}
-          path: ./iroh-js/artifacts/
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: bindings-${{ matrix.settings.target }}
-          path: ./
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: bindings-${{ matrix.settings.target }}
-          path: ./artifacts/
+          path: iroh-js/
       - name: List packages
         run: ls -R .
         shell: bash
@@ -300,12 +281,11 @@ jobs:
           - '22'
           - '20'
     runs-on: ubuntu-latest
-    # defaults:
-#       run:
-#         working-directory: ./iroh-js
+    defaults:
+      run:
+        working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
-      - run: corepack enable
       - name: Setup node
         uses: actions/setup-node@v4
         with:
@@ -335,18 +315,17 @@ jobs:
           - '22'
           - '20'
     runs-on: ubuntu-latest
-    # defaults:
-#       run:
-#         working-directory: ./iroh-js
+    defaults:
+      run:
+        working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
-      - run: corepack enable
       - name: Setup node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
           cache: yarn
-          # cache-dependency-path: './iroh-js/yarn.lock'
+          cache-dependency-path: './iroh-js/yarn.lock'
       - name: Install dependencies
         run: |
           yarn config set supportedArchitectures.libc "musl"
@@ -372,9 +351,9 @@ jobs:
           - '22'
           - '20'
     runs-on: ubuntu-latest
-    # defaults:
-#       run:
-#         working-directory: ./iroh-js
+    defaults:
+      run:
+        working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
       - name: Download artifacts
@@ -399,7 +378,7 @@ jobs:
         uses: addnab/docker-run-action@v3
         with:
           image: node:${{ matrix.node }}-slim
-          options: '--platform linux/arm64 -v ${{ github.workspace }}:/build -w /build'
+          options: '--platform linux/arm64 -v ${{ github.workspace }}/iroh-js:/build -w /build'
           run: |
             set -e
             yarn test
@@ -409,9 +388,9 @@ jobs:
     needs:
       - build
     runs-on: ubuntu-latest
-    # defaults:
-#       run:
-#         working-directory: ./iroh-js
+    defaults:
+      run:
+        working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
       - name: Download artifacts
@@ -436,7 +415,7 @@ jobs:
         uses: addnab/docker-run-action@v3
         with:
           image: node:lts-alpine
-          options: '--platform linux/arm64 -v ${{ github.workspace }}:/build -w /build'
+          options: '--platform linux/arm64 -v ${{ github.workspace }}/iroh-js:/build -w /build'
           run: |
             set -e
             yarn test
@@ -451,9 +430,9 @@ jobs:
           - '22'
           - '20'
     runs-on: ubuntu-latest
-    # defaults:
-#       run:
-#         working-directory: ./iroh-js
+    defaults:
+      run:
+        working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
       - name: Download artifacts
@@ -477,7 +456,7 @@ jobs:
         uses: addnab/docker-run-action@v3
         with:
           image: node:${{ matrix.node }}-bullseye-slim
-          options: '--platform linux/arm/v7 -v ${{ github.workspace }}:/build -w /build'
+          options: '--platform linux/arm/v7 -v ${{ github.workspace }}/iroh-js:/build -w /build'
           run: |
             set -e
             yarn test
