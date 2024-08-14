@@ -478,7 +478,7 @@ jobs:
           if-no-files-found: error
   publish:
     name: Publish
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, X64]
     needs:
       - test-macOS-windows-binding
       - test-linux-x64-gnu-binding

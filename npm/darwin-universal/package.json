@@ -8,6 +8,9 @@
   "files": [
     "iroh.darwin-universal.node"
   ],
+  "repository": {
+    "url": "https://github.com/n0-computer/iroh-ffi"
+  },
   "license": "MIT",
   "engines": {
     "node": ">= 10"

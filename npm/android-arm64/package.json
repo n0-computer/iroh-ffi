@@ -11,6 +11,9 @@
   "files": [
     "iroh.android-arm64.node"
   ],
+  "repository": {
+    "url": "https://github.com/n0-computer/iroh-ffi"
+  },
   "license": "MIT",
   "engines": {
     "node": ">= 10"
