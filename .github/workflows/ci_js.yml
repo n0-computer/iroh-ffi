@@ -392,7 +392,7 @@ jobs:
       - name: Setup and run tests
         uses: addnab/docker-run-action@v3
         with:
-          image: node:lts-alpine
+          image: node:20-alpine
           options: '--platform linux/arm64 -v ${{ github.workspace }}/iroh-js:/build -w /build'
           run: |
             set -e
@@ -469,7 +469,7 @@ jobs:
           name: bindings-aarch64-apple-darwin
           path: artifacts/
       - name: Combine binaries
-        run: yarn universal
+        run: yarn napi universalize
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:

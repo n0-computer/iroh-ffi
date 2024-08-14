@@ -54,7 +54,6 @@
     "build:debug": "napi build",
     "prepublishOnly": "napi prepublish -t npm --skip-gh-release",
     "test": "ava",
-    "universal": "napi universal",
     "version": "napi version"
   },
   "packageManager": "yarn@1.22.22"
