@@ -462,12 +462,15 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: bindings-x86_64-apple-darwin
-          path: artifacts/
+          path: iroh-ffi/
       - name: Download macOS arm64 artifact
         uses: actions/download-artifact@v4
         with:
           name: bindings-aarch64-apple-darwin
-          path: artifacts/
+          path: iroh-ffi/
+      - name: cwd
+        run: cwd
+        shell: bash
       - name: List packages
         run: ls -R ./
         shell: bash
