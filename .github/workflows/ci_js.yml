@@ -478,7 +478,8 @@ jobs:
           if-no-files-found: error
   publish:
     name: Publish
-    runs-on: [self-hosted, linux, X64]
+    # runs-on: [self-hosted, linux, X64]
+    runs-on: ubuntu-latest
     needs:
       - test-macOS-windows-binding
       - test-linux-x64-gnu-binding
@@ -523,6 +524,7 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Publish TEST
+        continue-on-error: true
         run: |
           cp package.json ./npm/package.json
           echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
@@ -531,3 +533,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: publish logs
+        run: |
+          for log in /home/runner/.npm/_logs/*; do
+            echo "===== $log ====="
+            cat "$log"
+          done
