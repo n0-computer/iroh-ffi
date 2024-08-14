@@ -1,6 +1,6 @@
 import test from 'ava'
 
-import { Iroh, PublicKey, verifyNodeAddr, Query, AuthorId, pathToKey, keyToPath } from '../index.js'
+import { Iroh, PublicKey, verifyNodeAddr, Query, AuthorId, pathToKey, keyToPath, DocTicket } from '../index.js'
 
 import { tmpdir } from 'node:os'
 import { randomBytes } from 'node:crypto'
@@ -34,6 +34,8 @@ test('basic sync', async (t) => {
 
   const doc0 = await node0.docs.create()
   const ticket = await doc0.share('Write', 'RelayAndAddresses')
+  const ticketString = ticket.toString()
+  const ticketBack = DocTicket.fromString(ticketString)
 
   // Do not use Promise.withResovlers it is buggy
   let resolve0;
