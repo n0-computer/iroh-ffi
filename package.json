@@ -12,7 +12,7 @@
     "network",
     "protocol"
   ],
-  "version": "0.22.1-test3",
+  "version": "0.22.1-test4",
   "type": "commonjs",
   "main": "iroh-js/index.js",
   "types": "iroh-js/index.d.ts",
