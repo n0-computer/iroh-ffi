@@ -14,7 +14,7 @@
   ],
   "version": "0.22.1-test3",
   "main": "iroh-js/index.js",
-  "types": "index.d.ts",
+  "types": "iroh-js/index.d.ts",
   "napi": {
     "name": "iroh",
     "triples": {
@@ -28,7 +28,7 @@
         "x86_64-unknown-linux-musl",
         "x86_64-apple-darwin",
         "x86_64-unknown-freebsd",
-        "i686-pc-windows-msvc",
+        "x86_64-pc-windows-msvc",
         "armv7-linux-androideabi",
         "universal-apple-darwin"
       ]
@@ -58,8 +58,5 @@
     "universal": "napi universal",
     "version": "napi version"
   },
-  "packageManager": "yarn@1.22.22",
-  "dependencies": {
-    "npm": "^10.8.2"
-  }
+  "packageManager": "yarn@1.22.22"
 }
