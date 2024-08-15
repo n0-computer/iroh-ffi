@@ -415,7 +415,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: bindings-universal-apple-darwin
-          path: ${{ env.APP_NAME }}.*.node
+          path: ./iroh-js/${{ env.APP_NAME }}.*.node
           if-no-files-found: error
   publish:
     name: Publish
