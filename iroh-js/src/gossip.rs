@@ -5,7 +5,7 @@ use iroh::client::gossip::{SubscribeResponse, SubscribeUpdate};
 use iroh::gossip::net::GossipEvent;
 use iroh::net::NodeId;
 use napi::bindgen_prelude::*;
-use napi::threadsafe_function::{ThreadsafeFunction, UnknownReturnValue};
+use napi::threadsafe_function::ThreadsafeFunction;
 use napi_derive::napi;
 use tokio::sync::Mutex;
 use tracing::warn;
@@ -99,7 +99,7 @@ impl Gossip {
         &self,
         topic: Vec<u8>,
         bootstrap: Vec<String>,
-        cb: ThreadsafeFunction<Message, UnknownReturnValue>,
+        cb: ThreadsafeFunction<Message, ()>,
     ) -> Result<Sender> {
         if topic.len() != 32 {
             return Err(anyhow::anyhow!("topic must not be longer than 32 bytes").into());

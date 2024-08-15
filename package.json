@@ -17,7 +17,7 @@
   "main": "iroh-js/index.js",
   "types": "iroh-js/index.d.ts",
   "engines": {
-    "node": ">= 10.20.0 < 11 || >= 12.17.0 < 13 || >= 14.0.0"
+    "node": ">= 20.3.0"
   },
   "napi": {
     "binaryName": "iroh",

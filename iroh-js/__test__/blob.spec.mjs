@@ -21,9 +21,9 @@ test('add blob from path', async (t) => {
     true,
     SetTagOption.auto(),
     { wrap: false },
-    async (error, progress) => {
+    (error, progress) => {
       if (error != null) {
-        return reject(error);
+        return reject(error)
       }
 
       // console.log('progress', progress)

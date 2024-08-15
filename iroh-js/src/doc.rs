@@ -3,7 +3,7 @@ use std::{path::PathBuf, str::FromStr};
 use bytes::Bytes;
 use futures::{StreamExt, TryStreamExt};
 use napi::bindgen_prelude::*;
-use napi::threadsafe_function::{ThreadsafeFunction, UnknownReturnValue};
+use napi::threadsafe_function::ThreadsafeFunction;
 use napi_derive::napi;
 use tracing::warn;
 
@@ -71,7 +71,7 @@ impl Docs {
     pub async fn join_and_subscribe(
         &self,
         ticket: &DocTicket,
-        cb: ThreadsafeFunction<LiveEvent, UnknownReturnValue>,
+        cb: ThreadsafeFunction<LiveEvent, ()>,
     ) -> Result<Doc> {
         let ticket = ticket.try_into()?;
         let (doc, mut stream) = self.client().docs().import_and_subscribe(ticket).await?;
@@ -202,7 +202,7 @@ impl Doc {
         key: Vec<u8>,
         path: String,
         in_place: bool,
-        cb: Option<ThreadsafeFunction<DocImportProgress, UnknownReturnValue>>,
+        cb: Option<ThreadsafeFunction<DocImportProgress, ()>>,
     ) -> Result<()> {
         let mut stream = self
             .inner
@@ -224,7 +224,7 @@ impl Doc {
         &self,
         entry: Entry,
         path: String,
-        cb: Option<ThreadsafeFunction<DocExportProgress, UnknownReturnValue>>,
+        cb: Option<ThreadsafeFunction<DocExportProgress, ()>>,
     ) -> Result<()> {
         let mut stream = self
             .inner
@@ -332,10 +332,7 @@ impl Doc {
 
     /// Subscribe to events for this document.
     #[napi]
-    pub async fn subscribe(
-        &self,
-        cb: ThreadsafeFunction<LiveEvent, UnknownReturnValue>,
-    ) -> Result<()> {
+    pub async fn subscribe(&self, cb: ThreadsafeFunction<LiveEvent, ()>) -> Result<()> {
         let client = self.inner.clone();
         tokio::task::spawn(async move {
             let mut sub = client.subscribe().await.unwrap();

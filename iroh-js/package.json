@@ -45,12 +45,12 @@
     "timeout": "3m"
   },
   "engines": {
-    "node": ">= 10"
+    "node": ">= 20.3.0"
   },
   "scripts": {
     "artifacts": "napi artifacts",
     "build": "napi build --platform --release",
-    "build:debug": "napi build",
+    "build:debug": "napi build --platform",
     "prepublishOnly": "napi prepublish -t npm --skip-gh-release",
     "test": "ava",
     "universal": "napi universal",

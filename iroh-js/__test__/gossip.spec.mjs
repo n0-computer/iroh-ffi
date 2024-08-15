@@ -29,7 +29,7 @@ test('gossip basic', async (t) => {
     reject1 = reject;
   });
 
-  const sink0 = await n0.gossip.subscribe(topic, [n1Id], async (error, event) => {
+  const sink0 = await n0.gossip.subscribe(topic, [n1Id], (error, event) => {
     if (error != null) {
       return reject0(error)
     }
@@ -43,7 +43,7 @@ test('gossip basic', async (t) => {
   const n0Addr = await n0.node.nodeAddr()
   await n1.node.addNodeAddr(n0Addr)
 
-  const sink1 = await n1.gossip.subscribe(topic, [n0Id], async (error, event) => {
+  const sink1 = await n1.gossip.subscribe(topic, [n0Id], (error, event) => {
     if (error != null) {
       return reject1(error)
     }

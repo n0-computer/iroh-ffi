@@ -109,7 +109,7 @@ export declare class Blobs {
    * If `in_place` is true, Iroh will assume that the data will not change and will share it in
    * place without copying to the Iroh data directory.
    */
-  addFromPath(path: string, inPlace: boolean, tag: SetTagOption, wrap: WrapOption, cb: (err: Error | null, arg: AddProgress) => unknown): Promise<void>
+  addFromPath(path: string, inPlace: boolean, tag: SetTagOption, wrap: WrapOption, cb: (err: Error | null, arg: AddProgress) => void): Promise<void>
   /**
    * Export the blob contents to a file path
    * The `path` field is expected to be the absolute path.
@@ -120,7 +120,7 @@ export declare class Blobs {
   /** Write a blob by passing bytes, setting an explicit tag name. */
   addBytesNamed(bytes: Array<number>, name: string): Promise<BlobAddOutcome>
   /** Download a blob from another node and add it to the local database. */
-  download(hash: string, opts: BlobDownloadOptions, cb: (err: Error | null, arg: DownloadProgress) => unknown): Promise<void>
+  download(hash: string, opts: BlobDownloadOptions, cb: (err: Error | null, arg: DownloadProgress) => void): Promise<void>
   /**
    * Export a blob from the internal blob store to a path on the node's filesystem.
    *
@@ -214,9 +214,9 @@ export declare class Doc {
   /** Set an entries on the doc via its key, hash, and size. */
   setHash(authorId: AuthorId, key: Array<number>, hash: string, size: bigint): Promise<void>
   /** Add an entry from an absolute file path */
-  importFile(author: AuthorId, key: Array<number>, path: string, inPlace: boolean, cb?: (err: Error | null, arg: DocImportProgress) => unknown | undefined | null): Promise<void>
+  importFile(author: AuthorId, key: Array<number>, path: string, inPlace: boolean, cb?: (err: Error | null, arg: DocImportProgress) => void | undefined | null): Promise<void>
   /** Export an entry as a file to a given absolute path */
-  exportFile(entry: Entry, path: string, cb?: (err: Error | null, arg: DocExportProgress) => unknown | undefined | null): Promise<void>
+  exportFile(entry: Entry, path: string, cb?: (err: Error | null, arg: DocExportProgress) => void | undefined | null): Promise<void>
   /**
    * Delete entries that match the given `author` and key `prefix`.
    *
@@ -244,7 +244,7 @@ export declare class Doc {
   /** Stop the live sync for this document. */
   leave(): Promise<void>
   /** Subscribe to events for this document. */
-  subscribe(cb: (err: Error | null, arg: LiveEvent) => unknown): Promise<void>
+  subscribe(cb: (err: Error | null, arg: LiveEvent) => void): Promise<void>
   /** Get status info for this document */
   status(): Promise<OpenState>
   /** Set the download policy for this document */
@@ -262,7 +262,7 @@ export declare class Docs {
   /** Join and sync with an already existing document. */
   join(ticket: DocTicket): Promise<Doc>
   /** Join and sync with an already existing document and subscribe to events on that document. */
-  joinAndSubscribe(ticket: DocTicket, cb: (err: Error | null, arg: LiveEvent) => unknown): Promise<Doc>
+  joinAndSubscribe(ticket: DocTicket, cb: (err: Error | null, arg: LiveEvent) => void): Promise<Doc>
   /** List all the docs we have access to on this node. */
   list(): Promise<Array<NamespaceAndCapability>>
   /**
@@ -317,7 +317,7 @@ export declare class FilterKind {
 
 /** Iroh gossip client. */
 export declare class Gossip {
-  subscribe(topic: Array<number>, bootstrap: Array<string>, cb: (err: Error | null, arg: Message) => unknown): Promise<Sender>
+  subscribe(topic: Array<number>, bootstrap: Array<string>, cb: (err: Error | null, arg: Message) => void): Promise<Sender>
 }
 
 /** Hash type used throughout Iroh. A blake3 hash. */

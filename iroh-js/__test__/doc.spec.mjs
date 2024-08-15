@@ -51,7 +51,7 @@ test('basic sync', async (t) => {
     reject1 = reject;
   });
 
-  await doc0.subscribe(async (error, event) => {
+  await doc0.subscribe((error, event) => {
     if (error != null) {
       return reject0(error)
     }
@@ -61,7 +61,7 @@ test('basic sync', async (t) => {
     }
   })
 
-  const doc1 = await node1.docs.joinAndSubscribe(ticket, async (error, event) => {
+  const doc1 = await node1.docs.joinAndSubscribe(ticket, (error, event) => {
     if (error != null) {
       return reject1(error)
     }

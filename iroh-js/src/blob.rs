@@ -2,7 +2,7 @@ use std::{path::PathBuf, str::FromStr, sync::RwLock};
 
 use futures::{StreamExt, TryStreamExt};
 use napi::bindgen_prelude::*;
-use napi::threadsafe_function::{ThreadsafeFunction, UnknownReturnValue};
+use napi::threadsafe_function::ThreadsafeFunction;
 use napi_derive::napi;
 
 use crate::{node::Iroh, AddrInfoOptions, NodeAddr};
@@ -114,7 +114,7 @@ impl Blobs {
         in_place: bool,
         tag: &SetTagOption,
         wrap: WrapOption,
-        cb: ThreadsafeFunction<AddProgress, UnknownReturnValue>,
+        cb: ThreadsafeFunction<AddProgress, ()>,
     ) -> Result<()> {
         let mut stream = self
             .client()
@@ -176,7 +176,7 @@ impl Blobs {
         &self,
         hash: String,
         opts: &BlobDownloadOptions,
-        cb: ThreadsafeFunction<DownloadProgress, UnknownReturnValue>,
+        cb: ThreadsafeFunction<DownloadProgress, ()>,
     ) -> Result<()> {
         let mut stream = self
             .client()
@@ -185,7 +185,10 @@ impl Blobs {
             .await?;
         while let Some(progress) = stream.next().await {
             let progress = DownloadProgress::convert(progress);
-            cb.call_async(progress).await?;
+            // The callback failing is not fatal
+            if let Err(err) = cb.call_async(progress).await {
+                tracing::warn!("download callback failed: {:?}", err);
+            }
         }
         Ok(())
     }
