@@ -403,12 +403,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: bindings-x86_64-apple-darwin
-          path: ./
+          path: ./iroh-js/
       - name: Download macOS arm64 artifact
         uses: actions/download-artifact@v4
         with:
           name: bindings-aarch64-apple-darwin
-          path: ./
+          path: ./iroh-js/
       - name: Combine binaries
         run: yarn napi universalize
       - name: Upload artifact
@@ -443,7 +443,7 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          path: iroh-js/artifacts/
       - name: Move artifacts
         run: yarn artifacts
       - name: Publish
