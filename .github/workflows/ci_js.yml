@@ -396,6 +396,7 @@ jobs:
         with:
           node-version: 20
           cache: yarn
+          cache-dependency-path: './iroh-js/yarn.lock'
       - name: Install dependencies
         run: yarn install
       - name: Download macOS x64 artifact
