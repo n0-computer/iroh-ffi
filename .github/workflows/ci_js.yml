@@ -386,6 +386,9 @@ jobs:
     needs:
       - build
     runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
       - name: Setup node
@@ -416,6 +419,9 @@ jobs:
   publish:
     name: Publish
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./iroh-js
     needs:
       - test-macOS-windows-binding
       - test-linux-x64-gnu-binding
