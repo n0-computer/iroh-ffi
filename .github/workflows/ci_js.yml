@@ -5,7 +5,6 @@ env:
   APP_NAME: iroh
   MACOSX_DEPLOYMENT_TARGET: '10.13'
   YARN_ENABLE_IMMUTABLE_INSTALLS: false # THIS IS A HORRIBLE HACK, REMOVE BEFORE MERGE
-  # SKIP_YARN_COREPACK_CHECK: true
 
 permissions:
   contents: write
@@ -41,11 +40,6 @@ jobs:
           - host: windows-latest
             build: yarn build
             target: x86_64-pc-windows-msvc
-          # - host: windows-latest
-          #   build: |
-          #     yarn build --target i686-pc-windows-msvc
-          #     yarn test
-          #   target: i686-pc-windows-msvc
           - host: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian
@@ -153,57 +147,6 @@ jobs:
           name: bindings-${{ matrix.settings.target }}
           path: iroh-js/${{ env.APP_NAME }}.*.node
           if-no-files-found: error
-  # build-freebsd:
-  #   runs-on: macos-12
-  #   name: Build FreeBSD
-  #   defaults:
-  #     run:
-  #       working-directory: ./iroh-js
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - name: Build
-  #       id: build
-  #       uses: cross-platform-actions/action@v0.22.0
-  #       env:
-  #         DEBUG: napi:*
-  #         RUSTUP_IO_THREADS: 1
-  #       with:
-  #         operating_system: freebsd
-  #         version: '13.2'
-  #         memory: 8G
-  #         cpu_count: 3
-  #         environment_variables: DEBUG RUSTUP_IO_THREADS
-  #         shell: bash
-  #         run: |
-  #           sudo pkg install -y -f curl node libnghttp2 npm
-  #           sudo npm install -g yarn --ignore-scripts
-  #           curl https://sh.rustup.rs -sSf --output rustup.sh
-  #           sh rustup.sh -y --profile minimal --default-toolchain stable
-  #           source "$HOME/.cargo/env"
-  #           echo "~~~~ rustc --version ~~~~"
-  #           rustc --version
-  #           echo "~~~~ node -v ~~~~"
-  #           node -v
-  #           echo "~~~~ yarn --version ~~~~"
-  #           yarn --version
-  #           pwd
-  #           ls -lah
-  #           whoami
-  #           env
-  #           freebsd-version
-  #           cd iroh-js
-  #           yarn install
-  #           yarn build
-  #           yarn test
-  #           rm -rf node_modules
-  #           rm -rf target
-  #           rm -rf .yarn/cache
-  #     - name: Upload artifact
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: bindings-freebsd
-  #         path: iroh-js/${{ env.APP_NAME }}.*.node
-  #         if-no-files-found: error
   test-macOS-windows-binding:
     name: Test bindings on ${{ matrix.settings.target }} - node@${{ matrix.node }}
     needs:
@@ -444,9 +387,6 @@ jobs:
     needs:
       - build
     runs-on: macos-latest
-    # defaults:
-#       run:
-#         working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
       - run: corepack enable
@@ -478,7 +418,6 @@ jobs:
           if-no-files-found: error
   publish:
     name: Publish
-    # runs-on: [self-hosted, linux, X64]
     runs-on: ubuntu-latest
     needs:
       - test-macOS-windows-binding
@@ -488,18 +427,13 @@ jobs:
       - test-linux-aarch64-musl-binding
       - test-linux-arm-gnueabihf-binding
       - universal-macOS
-    # defaults:
-#       run:
-#         working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
-      # - run: corepack enable
       - name: Setup node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: yarn
-          # cache-dependency-path: './iroh-js/yarn.lock'
       - name: Install dependencies
         run: yarn install
       - name: Download all artifacts
@@ -523,19 +457,19 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - name: Publish TEST
-        continue-on-error: true
-        run: |
-          cp package.json ./npm/package.json
-          echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
-          npm publish --tag next --access public --provenance
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - name: publish logs
-        run: |
-          for log in /home/runner/.npm/_logs/*; do
-            echo "===== $log ====="
-            cat "$log"
-          done
+      # - name: Publish TEST
+      #   continue-on-error: true
+      #   run: |
+      #     cp package.json ./npm/package.json
+      #     echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+      #     npm publish --tag next --access public --provenance
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #     NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      #     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # - name: publish logs
+      #   run: |
+      #     for log in /home/runner/.npm/_logs/*; do
+      #       echo "===== $log ====="
+      #       cat "$log"
+      #     done
