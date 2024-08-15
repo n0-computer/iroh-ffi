@@ -233,7 +233,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@napi-rs/cli@npm:=3.0.0-alpha.62":
+"@napi-rs/cli@npm:^3.0.0-alpha.62":
   version: 3.0.0-alpha.62
   resolution: "@napi-rs/cli@npm:3.0.0-alpha.62"
   dependencies:
