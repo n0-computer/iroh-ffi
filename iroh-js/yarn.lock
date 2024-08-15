@@ -824,7 +824,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@number0/iroh@workspace:."
   dependencies:
-    "@napi-rs/cli": "npm:=3.0.0-alpha.62"
+    "@napi-rs/cli": "npm:^3.0.0-alpha.62"
     ava: "npm:^6.0.1"
   languageName: unknown
   linkType: soft
