@@ -64,7 +64,7 @@ jobs:
             target: armv7-unknown-linux-musleabihf
             setup: |
               sudo apt-get update
-              sudo apt-get -y install binutils-arm-linux-gnueabihf gcc-arm-linux-gnueabihf musl-tools
+              sudo apt-get -y install binutils-arm-linux-gnueabihf gcc-arm-linux-gnueabihf musl-tools musl-dev
             build: yarn build --target armv7-unknown-linux-musleabihf --use-napi-cross
           - host: ubuntu-latest
             target: aarch64-linux-android
