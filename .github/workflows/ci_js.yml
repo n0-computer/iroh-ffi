@@ -62,6 +62,9 @@ jobs:
             build: yarn build --target armv7-unknown-linux-gnueabihf --use-napi-cross
           - host: ubuntu-latest
             target: armv7-unknown-linux-musleabihf
+            setup: |
+              sudo apt-get update
+              sudo apt-get install musl-tools -y
             build: yarn build --target armv7-unknown-linux-musleabihf --use-napi-cross
           - host: ubuntu-latest
             target: aarch64-linux-android
