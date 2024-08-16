@@ -384,7 +384,7 @@ jobs:
             set -e
             yarn test
             ls -la
-  test-linux-arm--linux-musleabihf-binding:
+  test-linux-arm-linux-musleabihf-binding:
     name: Test bindings on armv7-unknown-linux-musleabihf - node@${{ matrix.node }}
     needs:
       - build
@@ -476,6 +476,7 @@ jobs:
       - test-linux-aarch64-gnu-binding
       - test-linux-aarch64-musl-binding
       - test-linux-arm-gnueabihf-binding
+      - test-linux-arm-linux-musleabihf-binding
       - universal-macOS
     steps:
       - uses: actions/checkout@v4
