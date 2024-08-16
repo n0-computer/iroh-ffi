@@ -411,6 +411,7 @@ jobs:
       - name: Install dependencies
         run: |
           yarn config set supportedArchitectures.cpu "arm"
+          yarn config set supportedArchitectures.libc "musl"
           yarn install
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
