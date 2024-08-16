@@ -61,6 +61,9 @@ jobs:
               sudo apt-get install gcc-arm-linux-gnueabihf -y
             build: yarn build --target armv7-unknown-linux-gnueabihf --use-napi-cross
           - host: ubuntu-latest
+            target: armv7-unknown-linux-musleabihf
+            build: yarn build --platform --target armv7-unknown-linux-musleabihf -x
+          - host: ubuntu-latest
             target: aarch64-linux-android
             build: yarn build --target aarch64-linux-android
           - host: ubuntu-latest
