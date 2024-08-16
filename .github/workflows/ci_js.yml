@@ -355,8 +355,7 @@ jobs:
         node:
           - '22'
           - '20'
-    # runs-on: ubuntu-latest
-    runs-on: [self-hosted, linux, ARM64]
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./iroh-js
@@ -398,7 +397,7 @@ jobs:
         node:
           - '22'
           - '20'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, ARM64]
     defaults:
       run:
         working-directory: ./iroh-js
@@ -421,7 +420,7 @@ jobs:
         uses: docker/setup-qemu-action@v3
         with:
           platforms: arm
-      - run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+      - run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes --platform linux/arm/v7
       - name: Setup and run tests
         uses: addnab/docker-run-action@v3
         with:
