@@ -4,8 +4,5 @@ rustflags = ["-C", "target-feature=-crt-static"]
 [target.x86_64-pc-windows-msvc]
 rustflags = ["-C", "target-feature=+crt-static"]
 [target.armv7-unknown-linux-musleabihf]
-linker = "arm-linux-gnueabihf-ld"
-rustflags = ["-C", "target-feature=+crt-static"]
-[target.arm-unknown-linux-musleabihf]
-linker = "arm-linux-gnueabihf-ld"
+linker = "arm-linux-gnueabihf-gcc"
 rustflags = ["-C", "target-feature=+crt-static"]
