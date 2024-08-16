@@ -355,7 +355,8 @@ jobs:
         node:
           - '22'
           - '20'
-    runs-on: ubuntu-latest
+    # runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, ARM64]
     defaults:
       run:
         working-directory: ./iroh-js
