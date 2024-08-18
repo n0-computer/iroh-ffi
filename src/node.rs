@@ -1,9 +1,9 @@
-use std::{collections::HashMap, path::PathBuf, sync::Arc, time::Duration};
+use std::{collections::HashMap, fmt::Debug, path::PathBuf, sync::Arc, time::Duration};
 
 use futures::stream::TryStreamExt;
 use iroh::node::{FsNode, MemNode};
 
-use crate::{IrohError, NodeAddr, PublicKey};
+use crate::{BlobProvideEventCallback, IrohError, NodeAddr, PublicKey};
 
 /// Stats counter
 #[derive(Debug, uniffi::Record)]
@@ -60,9 +60,9 @@ pub struct LatencyAndControlMsg {
 /// The kinds of control messages that can be sent
 // pub use iroh::net::magicsock::ControlMsg;
 
-/// Information about a connection
+/// Information about a remote node
 #[derive(Debug, uniffi::Record)]
-pub struct ConnectionInfo {
+pub struct RemoteInfo {
     /// The node identifier of the endpoint. Also a public key.
     pub node_id: Arc<PublicKey>,
     /// Relay url, if available.
@@ -78,9 +78,9 @@ pub struct ConnectionInfo {
     pub last_used: Option<Duration>,
 }
 
-impl From<iroh::net::endpoint::ConnectionInfo> for ConnectionInfo {
-    fn from(value: iroh::net::endpoint::ConnectionInfo) -> Self {
-        ConnectionInfo {
+impl From<iroh::net::endpoint::RemoteInfo> for RemoteInfo {
+    fn from(value: iroh::net::endpoint::RemoteInfo) -> Self {
+        RemoteInfo {
             node_id: Arc::new(value.node_id.into()),
             relay_url: value.relay_url.map(|info| info.relay_url.to_string()),
             addrs: value
@@ -190,18 +190,32 @@ impl From<iroh::net::endpoint::ConnectionType> for ConnectionType {
     }
 }
 /// Options passed to [`IrohNode.new`]. Controls the behaviour of an iroh node.
-#[derive(Debug, uniffi::Record)]
+#[derive(uniffi::Record)]
 pub struct NodeOptions {
     /// How frequently the blob store should clean up unreferenced blobs, in milliseconds.
     /// Set to 0 to disable gc
     pub gc_interval_millis: Option<u64>,
+    /// provide a callback to hook into events when the blobs component adds and provides blobs
+    pub blob_events: Option<Arc<dyn BlobProvideEventCallback>>,
 }
 
 impl Default for NodeOptions {
     fn default() -> Self {
         NodeOptions {
             gc_interval_millis: Some(0),
+            blob_events: None,
         }
+    }
+}
+
+impl Debug for NodeOptions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "NodeOptions(gc_interval_millis: {:?}, blob_events: {})",
+            self.gc_interval_millis,
+            self.blob_events.is_some()
+        )
     }
 }
 
@@ -257,6 +271,9 @@ impl Iroh {
                 millis => iroh::node::GcPolicy::Interval(Duration::from_millis(millis)),
             };
             builder = builder.gc_policy(policy);
+        }
+        if let Some(blob_events_cb) = options.blob_events {
+            builder = builder.blobs_events(BlobProvideEvents::new(blob_events_cb))
         }
         let node = builder.spawn().await?;
 
@@ -320,10 +337,10 @@ impl Node {
 
     /// Return `ConnectionInfo`s for each connection we have to another iroh node.
     #[uniffi::method(async_runtime = "tokio")]
-    pub async fn connections(&self) -> Result<Vec<ConnectionInfo>, IrohError> {
+    pub async fn connections(&self) -> Result<Vec<RemoteInfo>, IrohError> {
         let infos = self
             .node()
-            .connections()
+            .remote_infos_iter()
             .await?
             .map_ok(|info| info.into())
             .try_collect::<Vec<_>>()
@@ -336,10 +353,10 @@ impl Node {
     pub async fn connection_info(
         &self,
         node_id: &PublicKey,
-    ) -> Result<Option<ConnectionInfo>, IrohError> {
+    ) -> Result<Option<RemoteInfo>, IrohError> {
         let info = self
             .node()
-            .connection_info(node_id.into())
+            .remote_info(node_id.into())
             .await
             .map(|i| i.map(|i| i.into()))?;
         Ok(info)
@@ -426,6 +443,39 @@ impl NodeStatus {
     /// The address of the RPC of the node
     pub fn rpc_addr(&self) -> Option<String> {
         self.0.rpc_addr.map(|a| a.to_string())
+    }
+}
+
+#[derive(Clone)]
+struct BlobProvideEvents {
+    callback: Arc<dyn BlobProvideEventCallback>,
+}
+
+impl Debug for BlobProvideEvents {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "BlobProvideEvents()")
+    }
+}
+
+impl BlobProvideEvents {
+    fn new(callback: Arc<dyn BlobProvideEventCallback>) -> Self {
+        Self { callback }
+    }
+}
+
+impl iroh::blobs::provider::CustomEventSender for BlobProvideEvents {
+    fn send(&self, event: iroh::blobs::provider::Event) -> futures_lite::future::Boxed<()> {
+        let cb = self.callback.clone();
+        Box::pin(async move {
+            cb.event(Arc::new(event.into())).await.ok();
+        })
+    }
+
+    fn try_send(&self, event: iroh::blobs::provider::Event) {
+        let cb = self.callback.clone();
+        let _ = Box::pin(async move {
+            cb.event(Arc::new(event.into())).await.ok();
+        });
     }
 }
 
