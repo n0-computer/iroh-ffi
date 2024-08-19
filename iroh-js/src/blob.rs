@@ -678,10 +678,14 @@ pub struct BlobDownloadOptions(iroh::client::blobs::DownloadOptions);
 impl BlobDownloadOptions {
     /// Create a BlobDownloadRequest
     #[napi(constructor)]
-    pub fn new(format: BlobFormat, node: NodeAddr, tag: &SetTagOption) -> Result<Self> {
+    pub fn new(format: BlobFormat, nodes: Vec<NodeAddr>, tag: &SetTagOption) -> Result<Self> {
+        let nodes = nodes
+            .into_iter()
+            .map(|node| node.try_into())
+            .collect::<std::result::Result<_, _>>()?;
         Ok(BlobDownloadOptions(iroh::client::blobs::DownloadOptions {
             format: format.into(),
-            nodes: vec![node.try_into()?],
+            nodes,
             tag: tag.into(),
             mode: iroh::client::blobs::DownloadMode::Direct,
         }))

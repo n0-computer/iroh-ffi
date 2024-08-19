@@ -1054,12 +1054,15 @@ impl BlobDownloadOptions {
     #[uniffi::constructor]
     pub fn new(
         format: BlobFormat,
-        node: Arc<NodeAddr>,
+        nodes: Vec<Arc<NodeAddr>>,
         tag: Arc<SetTagOption>,
     ) -> Result<Self, IrohError> {
         Ok(BlobDownloadOptions(iroh::client::blobs::DownloadOptions {
             format: format.into(),
-            nodes: vec![(*node).clone().try_into()?],
+            nodes: nodes
+                .into_iter()
+                .map(|node| (*node).clone().try_into())
+                .collect::<Result<_, _>>()?,
             tag: (*tag).clone().into(),
             mode: iroh::client::blobs::DownloadMode::Direct,
         }))

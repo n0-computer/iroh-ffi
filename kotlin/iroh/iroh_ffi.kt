@@ -1107,7 +1107,7 @@ internal interface UniffiLib : Library {
 
     fun uniffi_iroh_ffi_fn_constructor_blobdownloadoptions_new(
         `format`: RustBuffer.ByValue,
-        `node`: Pointer,
+        `nodes`: RustBuffer.ByValue,
         `tag`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Pointer
@@ -3624,7 +3624,7 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_constructor_authorid_from_string() != 47849.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_constructor_blobdownloadoptions_new() != 19425.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_blobdownloadoptions_new() != 46030.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_constructor_blobticket_new() != 29763.toShort()) {
@@ -5950,12 +5950,12 @@ open class BlobDownloadOptions :
     /**
      * Create a BlobDownloadRequest
      */
-    constructor(`format`: BlobFormat, `node`: NodeAddr, `tag`: SetTagOption) :
+    constructor(`format`: BlobFormat, `nodes`: List<NodeAddr>, `tag`: SetTagOption) :
         this(
             uniffiRustCallWithError(IrohException) { _status ->
                 UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_blobdownloadoptions_new(
                     FfiConverterTypeBlobFormat.lower(`format`),
-                    FfiConverterTypeNodeAddr.lower(`node`),
+                    FfiConverterSequenceTypeNodeAddr.lower(`nodes`),
                     FfiConverterTypeSetTagOption.lower(`tag`),
                     _status,
                 )
@@ -20690,7 +20690,7 @@ data class NodeOptions(
      */
     var `gcIntervalMillis`: kotlin.ULong?,
     /**
-     * provide a callback to hook into events when the blobs component adds and provides blobs
+     * Provide a callback to hook into events when the blobs component adds and provides blobs.
      */
     var `blobEvents`: BlobProvideEventCallback?,
 ) : Disposable {

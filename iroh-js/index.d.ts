@@ -67,7 +67,7 @@ export declare class Authors {
 /** Options to download  data specified by the hash. */
 export declare class BlobDownloadOptions {
   /** Create a BlobDownloadRequest */
-  constructor(format: BlobFormat, node: NodeAddr, tag: SetTagOption)
+  constructor(format: BlobFormat, nodes: Array<NodeAddr>, tag: SetTagOption)
 }
 
 /** Iroh blobs client. */

@@ -152,7 +152,7 @@ test('provide events', async (t) => {
   t.truthy(res.hash)
   const node2Addr = await node2.net.nodeAddr()
 
-  const opts = new BlobDownloadOptions(res.format, node2Addr, SetTagOption.auto())
+  const opts = new BlobDownloadOptions(res.format, [node2Addr], SetTagOption.auto())
   await node1.blobs.download(res.hash, opts, (err, event) => {
     if (err != null) {
       return reject1(err)
