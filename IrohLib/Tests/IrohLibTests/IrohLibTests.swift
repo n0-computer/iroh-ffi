@@ -4,7 +4,7 @@ import XCTest
 final class IrohLibTests: XCTestCase {
     func testNodeId() async throws {
         let node = try await IrohLib.Iroh.memory()
-        let nodeId = try await node.node().nodeId()
+        let nodeId = try await node.net().nodeId()
         print(nodeId)
 
         XCTAssertEqual(true, true)
@@ -14,15 +14,14 @@ final class IrohLibTests: XCTestCase {
         let blobEvents = BlobEventHandler()
         let options = NodeOptions.init(gcIntervalMillis: 0, blobEvents: blobEvents)
         let a = try await Iroh.memoryWithOptions(options: options)
-        
+
         let blob = "oh hello".data(using: String.Encoding.utf8)!
         let result = try await a.blobs().addBytes(bytes: blob)
-        let ticketString: String = try await a.blobs().share(
+        let ticket = try await a.blobs().share(
                 hash: result.hash,
                 blobFormat: BlobFormat.raw,
                 ticketOptions: AddrInfoOptions.addresses
             )
-        let ticket = try BlobTicket.init(str: ticketString)
 
         let b = try await Iroh.memory()
         let progressManager = DownloadProgressManager()
@@ -47,7 +46,7 @@ actor BlobEventHandler: BlobProvideEventCallback {
 
 actor DownloadProgressManager: DownloadCallback {
     private(set) var completedFetches: UInt = 0
-  
+
     func progress(progress: DownloadProgress) throws {
         if progress.type() == .allDone {
             completedFetches += 1

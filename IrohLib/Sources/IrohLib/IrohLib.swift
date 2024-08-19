@@ -50,9 +50,11 @@ private extension ForeignBytes {
 
 private extension Data {
     init(rustBuffer: RustBuffer) {
-        // TODO: This copies the buffer. Can we read directly from a
-        // Rust buffer?
-        self.init(bytes: rustBuffer.data!, count: Int(rustBuffer.len))
+        self.init(
+            bytesNoCopy: rustBuffer.data!,
+            count: Int(rustBuffer.len),
+            deallocator: .none
+        )
     }
 }
 
@@ -1479,12 +1481,12 @@ open class BlobDownloadOptions:
     /**
      * Create a BlobDownloadRequest
      */
-    public convenience init(format: BlobFormat, node: NodeAddr, tag: SetTagOption) throws {
+    public convenience init(format: BlobFormat, nodes: [NodeAddr], tag: SetTagOption) throws {
         let pointer =
             try rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
                 uniffi_iroh_ffi_fn_constructor_blobdownloadoptions_new(
                     FfiConverterTypeBlobFormat.lower(format),
-                    FfiConverterTypeNodeAddr.lower(node),
+                    FfiConverterSequenceTypeNodeAddr.lower(nodes),
                     FfiConverterTypeSetTagOption.lower(tag), $0
                 )
             }
@@ -1963,6 +1965,7 @@ public protocol BlobTicketProtocol: AnyObject {
  * It is a single item which can be easily serialized and deserialized.
  */
 open class BlobTicket:
+    CustomStringConvertible,
     BlobTicketProtocol
 {
     fileprivate let pointer: UnsafeMutableRawPointer!
@@ -2053,6 +2056,14 @@ open class BlobTicket:
         return try! FfiConverterBool.lift(try! rustCall {
             uniffi_iroh_ffi_fn_method_blobticket_recursive(self.uniffiClonePointer(), $0)
         })
+    }
+
+    open var description: String {
+        return try! FfiConverterString.lift(
+            try! rustCall {
+                uniffi_iroh_ffi_fn_method_blobticket_uniffi_trait_display(self.uniffiClonePointer(), $0)
+            }
+        )
     }
 }
 
@@ -2199,7 +2210,7 @@ public protocol BlobsProtocol: AnyObject {
     /**
      * Create a ticket for sharing a blob from this node.
      */
-    func share(hash: Hash, blobFormat: BlobFormat, ticketOptions: AddrInfoOptions) async throws -> String
+    func share(hash: Hash, blobFormat: BlobFormat, ticketOptions: AddrInfoOptions) async throws -> BlobTicket
 
     /**
      * Get the size information on a single blob.
@@ -2551,7 +2562,7 @@ open class Blobs:
     /**
      * Create a ticket for sharing a blob from this node.
      */
-    open func share(hash: Hash, blobFormat: BlobFormat, ticketOptions: AddrInfoOptions) async throws -> String {
+    open func share(hash: Hash, blobFormat: BlobFormat, ticketOptions: AddrInfoOptions) async throws -> BlobTicket {
         return
             try await uniffiRustCallAsync(
                 rustFutureFunc: {
@@ -2560,10 +2571,10 @@ open class Blobs:
                         FfiConverterTypeHash.lower(hash), FfiConverterTypeBlobFormat.lower(blobFormat), FfiConverterTypeAddrInfoOptions.lower(ticketOptions)
                     )
                 },
-                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
-                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
-                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
-                liftFunc: FfiConverterString.lift,
+                pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_pointer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_pointer,
+                liftFunc: FfiConverterTypeBlobTicket.lift,
                 errorHandler: FfiConverterTypeIrohError__as_error.lift
             )
     }
@@ -3203,7 +3214,7 @@ public protocol DocProtocol: AnyObject {
     /**
      * Share this document with peers over a ticket.
      */
-    func share(mode: ShareMode, addrOptions: AddrInfoOptions) async throws -> String
+    func share(mode: ShareMode, addrOptions: AddrInfoOptions) async throws -> DocTicket
 
     /**
      * Start to sync this document with a list of peers.
@@ -3540,7 +3551,7 @@ open class Doc:
     /**
      * Share this document with peers over a ticket.
      */
-    open func share(mode: ShareMode, addrOptions: AddrInfoOptions) async throws -> String {
+    open func share(mode: ShareMode, addrOptions: AddrInfoOptions) async throws -> DocTicket {
         return
             try await uniffiRustCallAsync(
                 rustFutureFunc: {
@@ -3549,10 +3560,10 @@ open class Doc:
                         FfiConverterTypeShareMode.lower(mode), FfiConverterTypeAddrInfoOptions.lower(addrOptions)
                     )
                 },
-                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
-                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
-                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
-                liftFunc: FfiConverterString.lift,
+                pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_pointer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_pointer,
+                liftFunc: FfiConverterTypeDocTicket.lift,
                 errorHandler: FfiConverterTypeIrohError__as_error.lift
             )
     }
@@ -4318,6 +4329,110 @@ public func FfiConverterTypeDocImportProgress_lower(_ value: DocImportProgress) 
 }
 
 /**
+ * Contains both a key (either secret or public) to a document, and a list of peers to join.
+ */
+public protocol DocTicketProtocol: AnyObject {}
+
+/**
+ * Contains both a key (either secret or public) to a document, and a list of peers to join.
+ */
+open class DocTicket:
+    CustomStringConvertible,
+    DocTicketProtocol
+{
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    public required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    /// This constructor can be used to instantiate a fake object.
+    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    ///
+    /// - Warning:
+    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    public init(noPointer _: NoPointer) {
+        pointer = nil
+    }
+
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_docticket(self.pointer, $0) }
+    }
+
+    public convenience init(str: String) throws {
+        let pointer =
+            try rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
+                uniffi_iroh_ffi_fn_constructor_docticket_new(
+                    FfiConverterString.lower(str), $0
+                )
+            }
+        self.init(unsafeFromRawPointer: pointer)
+    }
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_iroh_ffi_fn_free_docticket(pointer, $0) }
+    }
+
+    open var description: String {
+        return try! FfiConverterString.lift(
+            try! rustCall {
+                uniffi_iroh_ffi_fn_method_docticket_uniffi_trait_display(self.uniffiClonePointer(), $0)
+            }
+        )
+    }
+}
+
+public struct FfiConverterTypeDocTicket: FfiConverter {
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = DocTicket
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> DocTicket {
+        return DocTicket(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: DocTicket) -> UnsafeMutableRawPointer {
+        return value.uniffiClonePointer()
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DocTicket {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: DocTicket, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+public func FfiConverterTypeDocTicket_lift(_ pointer: UnsafeMutableRawPointer) throws -> DocTicket {
+    return try FfiConverterTypeDocTicket.lift(pointer)
+}
+
+public func FfiConverterTypeDocTicket_lower(_ value: DocTicket) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeDocTicket.lower(value)
+}
+
+/**
  * Iroh docs client.
  */
 public protocol DocsProtocol: AnyObject {
@@ -4338,12 +4453,12 @@ public protocol DocsProtocol: AnyObject {
     /**
      * Join and sync with an already existing document.
      */
-    func join(ticket: String) async throws -> Doc
+    func join(ticket: DocTicket) async throws -> Doc
 
     /**
      * Join and sync with an already existing document and subscribe to events on that document.
      */
-    func joinAndSubscribe(ticket: String, cb: SubscribeCallback) async throws -> Doc
+    func joinAndSubscribe(ticket: DocTicket, cb: SubscribeCallback) async throws -> Doc
 
     /**
      * List all the docs we have access to on this node.
@@ -4447,13 +4562,13 @@ open class Docs:
     /**
      * Join and sync with an already existing document.
      */
-    open func join(ticket: String) async throws -> Doc {
+    open func join(ticket: DocTicket) async throws -> Doc {
         return
             try await uniffiRustCallAsync(
                 rustFutureFunc: {
                     uniffi_iroh_ffi_fn_method_docs_join(
                         self.uniffiClonePointer(),
-                        FfiConverterString.lower(ticket)
+                        FfiConverterTypeDocTicket.lower(ticket)
                     )
                 },
                 pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
@@ -4467,13 +4582,13 @@ open class Docs:
     /**
      * Join and sync with an already existing document and subscribe to events on that document.
      */
-    open func joinAndSubscribe(ticket: String, cb: SubscribeCallback) async throws -> Doc {
+    open func joinAndSubscribe(ticket: DocTicket, cb: SubscribeCallback) async throws -> Doc {
         return
             try await uniffiRustCallAsync(
                 rustFutureFunc: {
                     uniffi_iroh_ffi_fn_method_docs_join_and_subscribe(
                         self.uniffiClonePointer(),
-                        FfiConverterString.lower(ticket), FfiConverterTypeSubscribeCallback.lower(cb)
+                        FfiConverterTypeDocTicket.lower(ticket), FfiConverterTypeSubscribeCallback.lower(cb)
                     )
                 },
                 pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
@@ -5869,6 +5984,11 @@ public protocol IrohProtocol: AnyObject {
     func gossip() -> Gossip
 
     /**
+     * Access to blob specific funtionaliy.
+     */
+    func net() -> Net
+
+    /**
      * Access to node specific funtionaliy.
      */
     func node() -> Node
@@ -6031,6 +6151,15 @@ open class Iroh:
     open func gossip() -> Gossip {
         return try! FfiConverterTypeGossip.lift(try! rustCall {
             uniffi_iroh_ffi_fn_method_iroh_gossip(self.uniffiClonePointer(), $0)
+        })
+    }
+
+    /**
+     * Access to blob specific funtionaliy.
+     */
+    open func net() -> Net {
+        return try! FfiConverterTypeNet.lift(try! rustCall {
+            uniffi_iroh_ffi_fn_method_iroh_net(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -6543,33 +6672,18 @@ public func FfiConverterTypeMessage_lower(_ value: Message) -> UnsafeMutableRawP
 }
 
 /**
- * Iroh node client.
+ * Iroh net client.
  */
-public protocol NodeProtocol: AnyObject {
+public protocol NetProtocol: AnyObject {
     /**
      * Add a known node address to the node.
      */
     func addNodeAddr(addr: NodeAddr) async throws
 
     /**
-     * Return connection information on the currently running node.
-     */
-    func connectionInfo(nodeId: PublicKey) async throws -> RemoteInfo?
-
-    /**
-     * Return `ConnectionInfo`s for each connection we have to another iroh node.
-     */
-    func connections() async throws -> [RemoteInfo]
-
-    /**
      * Get the relay server we are connected to.
      */
     func homeRelay() async throws -> String?
-
-    /**
-     * Returns `Some(addr)` if an RPC endpoint is running, `None` otherwise.
-     */
-    func myRpcAddr() -> String?
 
     /**
      * Return the [`NodeAddr`] for this node.
@@ -6580,6 +6694,224 @@ public protocol NodeProtocol: AnyObject {
      * The string representation of the PublicKey of this node.
      */
     func nodeId() async throws -> String
+
+    /**
+     * Return connection information on the currently running node.
+     */
+    func remoteInfo(nodeId: PublicKey) async throws -> RemoteInfo?
+
+    /**
+     * Return `ConnectionInfo`s for each connection we have to another iroh node.
+     */
+    func remoteInfoList() async throws -> [RemoteInfo]
+}
+
+/**
+ * Iroh net client.
+ */
+open class Net:
+    NetProtocol
+{
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    public required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    /// This constructor can be used to instantiate a fake object.
+    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    ///
+    /// - Warning:
+    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    public init(noPointer _: NoPointer) {
+        pointer = nil
+    }
+
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_net(self.pointer, $0) }
+    }
+
+    // No primary constructor declared for this class.
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_iroh_ffi_fn_free_net(pointer, $0) }
+    }
+
+    /**
+     * Add a known node address to the node.
+     */
+    open func addNodeAddr(addr: NodeAddr) async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_net_add_node_addr(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeNodeAddr.lower(addr)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
+    }
+
+    /**
+     * Get the relay server we are connected to.
+     */
+    open func homeRelay() async throws -> String? {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_net_home_relay(
+                        self.uniffiClonePointer()
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterOptionString.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
+    }
+
+    /**
+     * Return the [`NodeAddr`] for this node.
+     */
+    open func nodeAddr() async throws -> NodeAddr {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_net_node_addr(
+                        self.uniffiClonePointer()
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_pointer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_pointer,
+                liftFunc: FfiConverterTypeNodeAddr.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
+    }
+
+    /**
+     * The string representation of the PublicKey of this node.
+     */
+    open func nodeId() async throws -> String {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_net_node_id(
+                        self.uniffiClonePointer()
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterString.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
+    }
+
+    /**
+     * Return connection information on the currently running node.
+     */
+    open func remoteInfo(nodeId: PublicKey) async throws -> RemoteInfo? {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_net_remote_info(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypePublicKey.lower(nodeId)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterOptionTypeRemoteInfo.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
+    }
+
+    /**
+     * Return `ConnectionInfo`s for each connection we have to another iroh node.
+     */
+    open func remoteInfoList() async throws -> [RemoteInfo] {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_net_remote_info_list(
+                        self.uniffiClonePointer()
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterSequenceTypeRemoteInfo.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
+    }
+}
+
+public struct FfiConverterTypeNet: FfiConverter {
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = Net
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> Net {
+        return Net(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: Net) -> UnsafeMutableRawPointer {
+        return value.uniffiClonePointer()
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Net {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: Net, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+public func FfiConverterTypeNet_lift(_ pointer: UnsafeMutableRawPointer) throws -> Net {
+    return try FfiConverterTypeNet.lift(pointer)
+}
+
+public func FfiConverterTypeNet_lower(_ value: Net) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeNet.lower(value)
+}
+
+/**
+ * Iroh node client.
+ */
+public protocol NodeProtocol: AnyObject {
+    /**
+     * Returns `Some(addr)` if an RPC endpoint is running, `None` otherwise.
+     */
+    func myRpcAddr() -> String?
 
     /**
      * Shutdown this iroh node.
@@ -6641,128 +6973,12 @@ open class Node:
     }
 
     /**
-     * Add a known node address to the node.
-     */
-    open func addNodeAddr(addr: NodeAddr) async throws {
-        return
-            try await uniffiRustCallAsync(
-                rustFutureFunc: {
-                    uniffi_iroh_ffi_fn_method_node_add_node_addr(
-                        self.uniffiClonePointer(),
-                        FfiConverterTypeNodeAddr.lower(addr)
-                    )
-                },
-                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
-                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
-                freeFunc: ffi_iroh_ffi_rust_future_free_void,
-                liftFunc: { $0 },
-                errorHandler: FfiConverterTypeIrohError__as_error.lift
-            )
-    }
-
-    /**
-     * Return connection information on the currently running node.
-     */
-    open func connectionInfo(nodeId: PublicKey) async throws -> RemoteInfo? {
-        return
-            try await uniffiRustCallAsync(
-                rustFutureFunc: {
-                    uniffi_iroh_ffi_fn_method_node_connection_info(
-                        self.uniffiClonePointer(),
-                        FfiConverterTypePublicKey.lower(nodeId)
-                    )
-                },
-                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
-                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
-                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
-                liftFunc: FfiConverterOptionTypeRemoteInfo.lift,
-                errorHandler: FfiConverterTypeIrohError__as_error.lift
-            )
-    }
-
-    /**
-     * Return `ConnectionInfo`s for each connection we have to another iroh node.
-     */
-    open func connections() async throws -> [RemoteInfo] {
-        return
-            try await uniffiRustCallAsync(
-                rustFutureFunc: {
-                    uniffi_iroh_ffi_fn_method_node_connections(
-                        self.uniffiClonePointer()
-                    )
-                },
-                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
-                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
-                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
-                liftFunc: FfiConverterSequenceTypeRemoteInfo.lift,
-                errorHandler: FfiConverterTypeIrohError__as_error.lift
-            )
-    }
-
-    /**
-     * Get the relay server we are connected to.
-     */
-    open func homeRelay() async throws -> String? {
-        return
-            try await uniffiRustCallAsync(
-                rustFutureFunc: {
-                    uniffi_iroh_ffi_fn_method_node_home_relay(
-                        self.uniffiClonePointer()
-                    )
-                },
-                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
-                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
-                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
-                liftFunc: FfiConverterOptionString.lift,
-                errorHandler: FfiConverterTypeIrohError__as_error.lift
-            )
-    }
-
-    /**
      * Returns `Some(addr)` if an RPC endpoint is running, `None` otherwise.
      */
     open func myRpcAddr() -> String? {
         return try! FfiConverterOptionString.lift(try! rustCall {
             uniffi_iroh_ffi_fn_method_node_my_rpc_addr(self.uniffiClonePointer(), $0)
         })
-    }
-
-    /**
-     * Return the [`NodeAddr`] for this node.
-     */
-    open func nodeAddr() async throws -> NodeAddr {
-        return
-            try await uniffiRustCallAsync(
-                rustFutureFunc: {
-                    uniffi_iroh_ffi_fn_method_node_node_addr(
-                        self.uniffiClonePointer()
-                    )
-                },
-                pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
-                completeFunc: ffi_iroh_ffi_rust_future_complete_pointer,
-                freeFunc: ffi_iroh_ffi_rust_future_free_pointer,
-                liftFunc: FfiConverterTypeNodeAddr.lift,
-                errorHandler: FfiConverterTypeIrohError__as_error.lift
-            )
-    }
-
-    /**
-     * The string representation of the PublicKey of this node.
-     */
-    open func nodeId() async throws -> String {
-        return
-            try await uniffiRustCallAsync(
-                rustFutureFunc: {
-                    uniffi_iroh_ffi_fn_method_node_node_id(
-                        self.uniffiClonePointer()
-                    )
-                },
-                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
-                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
-                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
-                liftFunc: FfiConverterString.lift,
-                errorHandler: FfiConverterTypeIrohError__as_error.lift
-            )
     }
 
     /**
@@ -10628,7 +10844,7 @@ public struct NodeOptions {
      */
     public var gcIntervalMillis: UInt64?
     /**
-     * provide a callback to hook into events when the blobs component adds and provides blobs
+     * Provide a callback to hook into events when the blobs component adds and provides blobs.
      */
     public var blobEvents: BlobProvideEventCallback?
 
@@ -10640,7 +10856,7 @@ public struct NodeOptions {
          * Set to 0 to disable gc
          */ gcIntervalMillis: UInt64?,
         /**
-            * provide a callback to hook into events when the blobs component adds and provides blobs
+            * Provide a callback to hook into events when the blobs component adds and provides blobs.
             */ blobEvents: BlobProvideEventCallback?
     ) {
         self.gcIntervalMillis = gcIntervalMillis
@@ -11109,6 +11325,10 @@ public struct TaggedBlobAdded {
      * The format of the added data
      */
     public var format: BlobFormat
+    /**
+     * The tag of the added data
+     */
+    public var tag: Data
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
@@ -11118,10 +11338,14 @@ public struct TaggedBlobAdded {
          */ hash: Hash,
         /**
             * The format of the added data
-            */ format: BlobFormat
+            */ format: BlobFormat,
+        /**
+            * The tag of the added data
+            */ tag: Data
     ) {
         self.hash = hash
         self.format = format
+        self.tag = tag
     }
 }
 
@@ -11130,13 +11354,15 @@ public struct FfiConverterTypeTaggedBlobAdded: FfiConverterRustBuffer {
         return
             try TaggedBlobAdded(
                 hash: FfiConverterTypeHash.read(from: &buf),
-                format: FfiConverterTypeBlobFormat.read(from: &buf)
+                format: FfiConverterTypeBlobFormat.read(from: &buf),
+                tag: FfiConverterData.read(from: &buf)
             )
     }
 
     public static func write(_ value: TaggedBlobAdded, into buf: inout [UInt8]) {
         FfiConverterTypeHash.write(value.hash, into: &buf)
         FfiConverterTypeBlobFormat.write(value.format, into: &buf)
+        FfiConverterData.write(value.tag, into: &buf)
     }
 }
 
@@ -11160,6 +11386,11 @@ public struct TransferAborted {
      * An identifier uniquely identifying this request.
      */
     public var requestId: UInt64
+    /**
+     * statistics about the transfer. This is None if the transfer
+     * was aborted before any data was sent.
+     */
+    public var stats: TransferStats?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
@@ -11169,10 +11400,15 @@ public struct TransferAborted {
          */ connectionId: UInt64,
         /**
             * An identifier uniquely identifying this request.
-            */ requestId: UInt64
+            */ requestId: UInt64,
+        /**
+            * statistics about the transfer. This is None if the transfer
+            * was aborted before any data was sent.
+            */ stats: TransferStats?
     ) {
         self.connectionId = connectionId
         self.requestId = requestId
+        self.stats = stats
     }
 }
 
@@ -11184,12 +11420,16 @@ extension TransferAborted: Equatable, Hashable {
         if lhs.requestId != rhs.requestId {
             return false
         }
+        if lhs.stats != rhs.stats {
+            return false
+        }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
         hasher.combine(connectionId)
         hasher.combine(requestId)
+        hasher.combine(stats)
     }
 }
 
@@ -11198,13 +11438,15 @@ public struct FfiConverterTypeTransferAborted: FfiConverterRustBuffer {
         return
             try TransferAborted(
                 connectionId: FfiConverterUInt64.read(from: &buf),
-                requestId: FfiConverterUInt64.read(from: &buf)
+                requestId: FfiConverterUInt64.read(from: &buf),
+                stats: FfiConverterOptionTypeTransferStats.read(from: &buf)
             )
     }
 
     public static func write(_ value: TransferAborted, into buf: inout [UInt8]) {
         FfiConverterUInt64.write(value.connectionId, into: &buf)
         FfiConverterUInt64.write(value.requestId, into: &buf)
+        FfiConverterOptionTypeTransferStats.write(value.stats, into: &buf)
     }
 }
 
@@ -11309,6 +11551,10 @@ public struct TransferCompleted {
      * An identifier uniquely identifying this transfer request.
      */
     public var requestId: UInt64
+    /**
+     * statistics about the transfer
+     */
+    public var stats: TransferStats
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
@@ -11318,10 +11564,14 @@ public struct TransferCompleted {
          */ connectionId: UInt64,
         /**
             * An identifier uniquely identifying this transfer request.
-            */ requestId: UInt64
+            */ requestId: UInt64,
+        /**
+            * statistics about the transfer
+            */ stats: TransferStats
     ) {
         self.connectionId = connectionId
         self.requestId = requestId
+        self.stats = stats
     }
 }
 
@@ -11333,12 +11583,16 @@ extension TransferCompleted: Equatable, Hashable {
         if lhs.requestId != rhs.requestId {
             return false
         }
+        if lhs.stats != rhs.stats {
+            return false
+        }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
         hasher.combine(connectionId)
         hasher.combine(requestId)
+        hasher.combine(stats)
     }
 }
 
@@ -11347,13 +11601,15 @@ public struct FfiConverterTypeTransferCompleted: FfiConverterRustBuffer {
         return
             try TransferCompleted(
                 connectionId: FfiConverterUInt64.read(from: &buf),
-                requestId: FfiConverterUInt64.read(from: &buf)
+                requestId: FfiConverterUInt64.read(from: &buf),
+                stats: FfiConverterTypeTransferStats.read(from: &buf)
             )
     }
 
     public static func write(_ value: TransferCompleted, into buf: inout [UInt8]) {
         FfiConverterUInt64.write(value.connectionId, into: &buf)
         FfiConverterUInt64.write(value.requestId, into: &buf)
+        FfiConverterTypeTransferStats.write(value.stats, into: &buf)
     }
 }
 
@@ -11519,6 +11775,60 @@ public func FfiConverterTypeTransferProgress_lift(_ buf: RustBuffer) throws -> T
 
 public func FfiConverterTypeTransferProgress_lower(_ value: TransferProgress) -> RustBuffer {
     return FfiConverterTypeTransferProgress.lower(value)
+}
+
+/**
+ * The stats for a transfer of a collection or blob.
+ */
+public struct TransferStats {
+    /**
+     * The total duration of the transfer in milliseconds
+     */
+    public var duration: UInt64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * The total duration of the transfer in milliseconds
+         */ duration: UInt64
+    ) {
+        self.duration = duration
+    }
+}
+
+extension TransferStats: Equatable, Hashable {
+    public static func == (lhs: TransferStats, rhs: TransferStats) -> Bool {
+        if lhs.duration != rhs.duration {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(duration)
+    }
+}
+
+public struct FfiConverterTypeTransferStats: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TransferStats {
+        return
+            try TransferStats(
+                duration: FfiConverterUInt64.read(from: &buf)
+            )
+    }
+
+    public static func write(_ value: TransferStats, into buf: inout [UInt8]) {
+        FfiConverterUInt64.write(value.duration, into: &buf)
+    }
+}
+
+public func FfiConverterTypeTransferStats_lift(_ buf: RustBuffer) throws -> TransferStats {
+    return try FfiConverterTypeTransferStats.lift(buf)
+}
+
+public func FfiConverterTypeTransferStats_lower(_ value: TransferStats) -> RustBuffer {
+    return FfiConverterTypeTransferStats.lower(value)
 }
 
 // Note that we don't yet support `indirect` for enums.
@@ -13177,6 +13487,27 @@ private struct FfiConverterOptionTypeRemoteInfo: FfiConverterRustBuffer {
     }
 }
 
+private struct FfiConverterOptionTypeTransferStats: FfiConverterRustBuffer {
+    typealias SwiftType = TransferStats?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeTransferStats.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeTransferStats.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
 private struct FfiConverterOptionSequenceData: FfiConverterRustBuffer {
     typealias SwiftType = [Data]?
 
@@ -13854,7 +14185,7 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_method_blobs_read_to_bytes() != 13624 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_method_blobs_share() != 55307 {
+    if uniffi_iroh_ffi_checksum_method_blobs_share() != 35831 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_blobs_size() != 20254 {
@@ -13947,7 +14278,7 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_method_doc_set_hash() != 30875 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_method_doc_share() != 30398 {
+    if uniffi_iroh_ffi_checksum_method_doc_share() != 59706 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_doc_start_sync() != 54450 {
@@ -14001,10 +14332,10 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_method_docs_drop_doc() != 5864 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_method_docs_join() != 29064 {
+    if uniffi_iroh_ffi_checksum_method_docs_join() != 38489 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_method_docs_join_and_subscribe() != 30619 {
+    if uniffi_iroh_ffi_checksum_method_docs_join_and_subscribe() != 41379 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_docs_list() != 23866 {
@@ -14091,6 +14422,9 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_method_iroh_gossip() != 58884 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_ffi_checksum_method_iroh_net() != 41953 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_ffi_checksum_method_iroh_node() != 12499 {
         return InitializationResult.apiChecksumMismatch
     }
@@ -14139,25 +14473,25 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_method_message_type() != 75 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_method_node_add_node_addr() != 48772 {
+    if uniffi_iroh_ffi_checksum_method_net_add_node_addr() != 17723 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_method_node_connection_info() != 49886 {
+    if uniffi_iroh_ffi_checksum_method_net_home_relay() != 3492 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_method_node_connections() != 56080 {
+    if uniffi_iroh_ffi_checksum_method_net_node_addr() != 60712 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_method_node_home_relay() != 39435 {
+    if uniffi_iroh_ffi_checksum_method_net_node_id() != 35201 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_method_net_remote_info() != 60537 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_method_net_remote_info_list() != 15919 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_node_my_rpc_addr() != 34751 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_ffi_checksum_method_node_node_addr() != 55077 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_ffi_checksum_method_node_node_id() != 50937 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_node_shutdown() != 21075 {
@@ -14232,13 +14566,16 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_constructor_authorid_from_string() != 47849 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_constructor_blobdownloadoptions_new() != 19425 {
+    if uniffi_iroh_ffi_checksum_constructor_blobdownloadoptions_new() != 46030 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_constructor_blobticket_new() != 29763 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_constructor_collection_new() != 3798 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_constructor_docticket_new() != 29537 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_constructor_downloadpolicy_everything() != 35143 {

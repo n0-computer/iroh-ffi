@@ -516,7 +516,7 @@ void uniffi_iroh_ffi_fn_free_blobdownloadoptions(void*_Nonnull ptr, RustCallStat
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_BLOBDOWNLOADOPTIONS_NEW
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_BLOBDOWNLOADOPTIONS_NEW
-void*_Nonnull uniffi_iroh_ffi_fn_constructor_blobdownloadoptions_new(RustBuffer format, void*_Nonnull node, void*_Nonnull tag, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_iroh_ffi_fn_constructor_blobdownloadoptions_new(RustBuffer format, RustBuffer nodes, void*_Nonnull tag, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_BLOBPROVIDEEVENT
@@ -1408,6 +1408,11 @@ void*_Nonnull uniffi_iroh_ffi_fn_method_iroh_docs(void*_Nonnull ptr, RustCallSta
 void*_Nonnull uniffi_iroh_ffi_fn_method_iroh_gossip(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROH_NET
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROH_NET
+void*_Nonnull uniffi_iroh_ffi_fn_method_iroh_net(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROH_NODE
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_IROH_NODE
 void*_Nonnull uniffi_iroh_ffi_fn_method_iroh_node(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -1523,6 +1528,46 @@ RustBuffer uniffi_iroh_ffi_fn_method_message_as_received(void*_Nonnull ptr, Rust
 RustBuffer uniffi_iroh_ffi_fn_method_message_type(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_NET
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_NET
+void*_Nonnull uniffi_iroh_ffi_fn_clone_net(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_NET
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_NET
+void uniffi_iroh_ffi_fn_free_net(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NET_ADD_NODE_ADDR
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NET_ADD_NODE_ADDR
+uint64_t uniffi_iroh_ffi_fn_method_net_add_node_addr(void*_Nonnull ptr, void*_Nonnull addr
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NET_HOME_RELAY
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NET_HOME_RELAY
+uint64_t uniffi_iroh_ffi_fn_method_net_home_relay(void*_Nonnull ptr
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NET_NODE_ADDR
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NET_NODE_ADDR
+uint64_t uniffi_iroh_ffi_fn_method_net_node_addr(void*_Nonnull ptr
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NET_NODE_ID
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NET_NODE_ID
+uint64_t uniffi_iroh_ffi_fn_method_net_node_id(void*_Nonnull ptr
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NET_REMOTE_INFO
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NET_REMOTE_INFO
+uint64_t uniffi_iroh_ffi_fn_method_net_remote_info(void*_Nonnull ptr, void*_Nonnull node_id
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NET_REMOTE_INFO_LIST
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NET_REMOTE_INFO_LIST
+uint64_t uniffi_iroh_ffi_fn_method_net_remote_info_list(void*_Nonnull ptr
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_NODE
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_NODE
 void*_Nonnull uniffi_iroh_ffi_fn_clone_node(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -1533,39 +1578,9 @@ void*_Nonnull uniffi_iroh_ffi_fn_clone_node(void*_Nonnull ptr, RustCallStatus *_
 void uniffi_iroh_ffi_fn_free_node(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_ADD_NODE_ADDR
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_ADD_NODE_ADDR
-uint64_t uniffi_iroh_ffi_fn_method_node_add_node_addr(void*_Nonnull ptr, void*_Nonnull addr
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_CONNECTION_INFO
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_CONNECTION_INFO
-uint64_t uniffi_iroh_ffi_fn_method_node_connection_info(void*_Nonnull ptr, void*_Nonnull node_id
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_CONNECTIONS
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_CONNECTIONS
-uint64_t uniffi_iroh_ffi_fn_method_node_connections(void*_Nonnull ptr
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_HOME_RELAY
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_HOME_RELAY
-uint64_t uniffi_iroh_ffi_fn_method_node_home_relay(void*_Nonnull ptr
-);
-#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_MY_RPC_ADDR
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_MY_RPC_ADDR
 RustBuffer uniffi_iroh_ffi_fn_method_node_my_rpc_addr(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_NODE_ADDR
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_NODE_ADDR
-uint64_t uniffi_iroh_ffi_fn_method_node_node_addr(void*_Nonnull ptr
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_NODE_ID
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_NODE_ID
-uint64_t uniffi_iroh_ffi_fn_method_node_node_id(void*_Nonnull ptr
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_SHUTDOWN
@@ -2933,6 +2948,12 @@ uint16_t uniffi_iroh_ffi_checksum_method_iroh_gossip(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROH_NET
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROH_NET
+uint16_t uniffi_iroh_ffi_checksum_method_iroh_net(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROH_NODE
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_IROH_NODE
 uint16_t uniffi_iroh_ffi_checksum_method_iroh_node(void
@@ -3029,45 +3050,45 @@ uint16_t uniffi_iroh_ffi_checksum_method_message_type(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_ADD_NODE_ADDR
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_ADD_NODE_ADDR
-uint16_t uniffi_iroh_ffi_checksum_method_node_add_node_addr(void
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NET_ADD_NODE_ADDR
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NET_ADD_NODE_ADDR
+uint16_t uniffi_iroh_ffi_checksum_method_net_add_node_addr(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_CONNECTION_INFO
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_CONNECTION_INFO
-uint16_t uniffi_iroh_ffi_checksum_method_node_connection_info(void
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NET_HOME_RELAY
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NET_HOME_RELAY
+uint16_t uniffi_iroh_ffi_checksum_method_net_home_relay(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_CONNECTIONS
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_CONNECTIONS
-uint16_t uniffi_iroh_ffi_checksum_method_node_connections(void
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NET_NODE_ADDR
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NET_NODE_ADDR
+uint16_t uniffi_iroh_ffi_checksum_method_net_node_addr(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_HOME_RELAY
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_HOME_RELAY
-uint16_t uniffi_iroh_ffi_checksum_method_node_home_relay(void
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NET_NODE_ID
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NET_NODE_ID
+uint16_t uniffi_iroh_ffi_checksum_method_net_node_id(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NET_REMOTE_INFO
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NET_REMOTE_INFO
+uint16_t uniffi_iroh_ffi_checksum_method_net_remote_info(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NET_REMOTE_INFO_LIST
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NET_REMOTE_INFO_LIST
+uint16_t uniffi_iroh_ffi_checksum_method_net_remote_info_list(void
     
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_MY_RPC_ADDR
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_MY_RPC_ADDR
 uint16_t uniffi_iroh_ffi_checksum_method_node_my_rpc_addr(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_NODE_ADDR
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_NODE_ADDR
-uint16_t uniffi_iroh_ffi_checksum_method_node_node_addr(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_NODE_ID
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_NODE_ID
-uint16_t uniffi_iroh_ffi_checksum_method_node_node_id(void
     
 );
 #endif
