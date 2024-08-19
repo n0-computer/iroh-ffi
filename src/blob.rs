@@ -523,7 +523,7 @@ impl From<Hash> for iroh::blobs::Hash {
 #[uniffi::export(with_foreign)]
 #[async_trait::async_trait]
 pub trait BlobProvideEventCallback: Send + Sync + 'static {
-    async fn event(&self, event: Arc<BlobProvideEvent>) -> Result<(), CallbackError>;
+    async fn blob_event(&self, event: Arc<BlobProvideEvent>) -> Result<(), CallbackError>;
 }
 
 /// The different types of BlobProvide events

@@ -291,6 +291,9 @@ impl Iroh {
             };
             builder = builder.gc_policy(policy);
         }
+        if let Some(blob_events_cb) = options.blob_events {
+            builder = builder.blobs_events(BlobProvideEvents::new(blob_events_cb))
+        }
         let node = builder.spawn().await?;
 
         Ok(Iroh::Memory(node))
@@ -466,15 +469,17 @@ impl BlobProvideEvents {
 impl iroh::blobs::provider::CustomEventSender for BlobProvideEvents {
     fn send(&self, event: iroh::blobs::provider::Event) -> futures_lite::future::Boxed<()> {
         let cb = self.callback.clone();
+        print!("calling blob event from send {:?}", &event);
         Box::pin(async move {
-            cb.event(Arc::new(event.into())).await.ok();
+            cb.blob_event(Arc::new(event.into())).await.ok();
         })
     }
 
     fn try_send(&self, event: iroh::blobs::provider::Event) {
         let cb = self.callback.clone();
+        print!("calling blob event from try_send {:?}", &event);
         let _ = Box::pin(async move {
-            cb.event(Arc::new(event.into())).await.ok();
+            cb.blob_event(Arc::new(event.into())).await.ok();
         });
     }
 }
