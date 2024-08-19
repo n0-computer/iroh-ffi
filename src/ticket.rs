@@ -1,6 +1,8 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
+use iroh::base::ticket::Ticket;
+
 use crate::blob::{BlobDownloadOptions, BlobFormat, Hash};
 use crate::doc::NodeAddr;
 use crate::error::IrohError;
@@ -9,7 +11,20 @@ use crate::error::IrohError;
 ///
 /// It is a single item which can be easily serialized and deserialized.
 #[derive(Debug, uniffi::Object)]
+#[uniffi::export(Display)]
 pub struct BlobTicket(iroh::base::ticket::BlobTicket);
+
+impl From<iroh::base::ticket::BlobTicket> for BlobTicket {
+    fn from(ticket: iroh::base::ticket::BlobTicket) -> Self {
+        BlobTicket(ticket)
+    }
+}
+
+impl std::fmt::Display for BlobTicket {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", Ticket::serialize(&self.0))
+    }
+}
 
 #[uniffi::export]
 impl BlobTicket {
@@ -17,6 +32,11 @@ impl BlobTicket {
     pub fn new(str: String) -> Result<Self, IrohError> {
         let ticket = iroh::base::ticket::BlobTicket::from_str(&str).map_err(anyhow::Error::from)?;
         Ok(BlobTicket(ticket))
+    }
+
+    /// Convert this ticket into a string.
+    pub fn serialize(&self) -> String {
+        self.0.to_string()
     }
 
     /// The hash of the item this ticket can retrieve.
