@@ -453,6 +453,8 @@ jobs:
           path: iroh-js/artifacts/
       - name: Move artifacts
         run: yarn artifacts
+      - name: Move README # Hack to get npm README to work
+        run: cp iroh-js/README.md ./README.md
       - name: Publish
         if: startsWith(github.event.ref, 'refs/tags/v')
         run: |
