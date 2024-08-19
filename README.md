@@ -6,13 +6,11 @@ This repo defines Python, Swift, Kotlin and Node.js bindings for [iroh](https://
 
 ### Published Packages:
 
-[Python: pypi](https://pypi.org/project/iroh/)
-[Swift: Cocoapods](https://cocoapods.org/pods/IrohLib)
-[Swift: SwifPM](https://swiftpackageindex.com/n0-computer/iroh-ffi)
-[Rust: Crates](https://crates.io/crates/iroh)
-
-Comming Soon
-`@number0/iroh`
+- [Python: pypi](https://pypi.org/project/iroh/)
+- [Swift: Cocoapods](https://cocoapods.org/pods/IrohLib)
+- [Swift: SwifPM](https://swiftpackageindex.com/n0-computer/iroh-ffi)
+- [Rust: Crates](https://crates.io/crates/iroh)
+- [JavaScript: `@number0/iroh`](https://www.npmjs.com/package/@number0/iroh)
 
 ## Repo Status: Tier 2
 

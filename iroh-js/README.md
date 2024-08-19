@@ -1,7 +1,12 @@
 # `@number0/iroh`
 
-> nodejs bindings for iroh
+> A toolkit for building distributed applications
 
+## Install
+
+```sh
+> npm i --save @number0/iroh
+```
 
 
 ## Development
