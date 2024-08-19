@@ -1,0 +1,25 @@
+{
+  "name": "@number0/iroh-linux-arm64-gnu",
+  "version": "0.0.0",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "main": "iroh.linux-arm64-gnu.node",
+  "files": [
+    "iroh.linux-arm64-gnu.node"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">= 10"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/n0-computer/iroh-ffi.git"
+  },
+  "libc": [
+    "glibc"
+  ]
+}

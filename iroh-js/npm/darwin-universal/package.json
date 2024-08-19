@@ -1,0 +1,19 @@
+{
+  "name": "@number0/iroh-darwin-universal",
+  "version": "0.0.0",
+  "os": [
+    "darwin"
+  ],
+  "main": "iroh.darwin-universal.node",
+  "files": [
+    "iroh.darwin-universal.node"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/n0-computer/iroh-ffi.git"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">= 10"
+  }
+}

@@ -2,14 +2,15 @@
 
 > Foreign Function Interface (FFI) bindings for Iroh
 
-This repo defines Python, Swift, and Kotlin bindings for [iroh](https://github.com/n0-computer/iroh), which is written in Rust.
+This repo defines Python, Swift, Kotlin and Node.js bindings for [iroh](https://github.com/n0-computer/iroh), which is written in Rust.
 
 ### Published Packages:
 
-[Python: pypi](https://pypi.org/project/iroh/)
-[Swift: Cocoapods](https://cocoapods.org/pods/IrohLib)
-[Swift: SwifPM](https://swiftpackageindex.com/n0-computer/iroh-ffi)
-[Rust: Crates](https://crates.io/crates/iroh)
+- [Python: pypi](https://pypi.org/project/iroh/)
+- [Swift: Cocoapods](https://cocoapods.org/pods/IrohLib)
+- [Swift: SwifPM](https://swiftpackageindex.com/n0-computer/iroh-ffi)
+- [Rust: Crates](https://crates.io/crates/iroh)
+- [JavaScript: `@number0/iroh`](https://www.npmjs.com/package/@number0/iroh)
 
 ## Repo Status: Tier 2
 
@@ -26,9 +27,10 @@ For builds targeting older versions of macOS, build with:  `MACOSX_DEPLOYMENT_TA
 
 ## Language-Specific READMEs
 
-* [**Swift readme**](https://github.com/n0-computer/iroh-ffi/blob/main/README.swift.md)
-* [**Python readme**](https://github.com/n0-computer/iroh-ffi/blob/main/README.python.md)
-* [**Kotlin readme**](https://github.com/n0-computer/iroh-ffi/blob/main/README.kotlin.md)
+* [**Swift readme**](README.swift.md)
+* [**Python readme**](README.python.md)
+* [**Kotlin readme**](README.kotlin.md)
+* [**Node.js readme**](iroh-js/README.md)
 
 ## Developers
 Check our [DEVELOPERS.md](DEVELOPERS.md) for guides on how to translate from the iroh rust API to the iroh FFI API, as well as how to set up testing for Golang and Python.

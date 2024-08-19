@@ -1,0 +1,22 @@
+{
+  "name": "@number0/iroh-android-arm64",
+  "version": "0.0.0",
+  "os": [
+    "android"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "main": "iroh.android-arm64.node",
+  "files": [
+    "iroh.android-arm64.node"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/n0-computer/iroh-ffi.git"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">= 10"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@number0/iroh-darwin-x64",
+  "version": "0.0.0",
+  "os": [
+    "darwin"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "main": "iroh.darwin-x64.node",
+  "files": [
+    "iroh.darwin-x64.node"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/n0-computer/iroh-ffi.git"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">= 10"
+  }
+}
