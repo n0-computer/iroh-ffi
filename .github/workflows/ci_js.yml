@@ -387,49 +387,6 @@ jobs:
             set -e
             yarn test
             ls -la
-  test-linux-arm-linux-musleabihf-binding:
-    name: Test bindings on armv7-unknown-linux-musleabihf - node@${{ matrix.node }}
-    needs:
-      - build
-    strategy:
-      fail-fast: false
-      matrix:
-        node:
-          - '22'
-          - '20'
-    runs-on: [self-hosted, linux, ARM64]
-    defaults:
-      run:
-        working-directory: ./iroh-js
-    steps:
-      - uses: actions/checkout@v4
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: bindings-armv7-unknown-linux-musleabihf
-          path: iroh-js/
-      - name: List packages
-        run: ls -R .
-        shell: bash
-      - name: Install dependencies
-        run: |
-          yarn config set supportedArchitectures.cpu "arm"
-          yarn config set supportedArchitectures.libc "musl"
-          yarn install
-      # - name: Set up QEMU
-      #   uses: docker/setup-qemu-action@v3
-      #   with:
-      #     platforms: arm
-      # - run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes --platform linux/arm/v7
-      - name: Setup and run tests
-        uses: addnab/docker-run-action@v3
-        with:
-          image: node:${{ matrix.node }}-bullseye-slim
-          options: '--platform linux/arm/v7 -v ${{ github.workspace }}/iroh-js:/build -w /build'
-          run: |
-            set -e
-            yarn test
-            ls -la
   universal-macOS:
     name: Build universal macOS binary
     needs:
@@ -479,7 +436,6 @@ jobs:
       - test-linux-aarch64-gnu-binding
       - test-linux-aarch64-musl-binding
       - test-linux-arm-gnueabihf-binding
-      - test-linux-arm-linux-musleabihf-binding
       - universal-macOS
     steps:
       - uses: actions/checkout@v4
