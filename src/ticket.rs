@@ -1,8 +1,6 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
-use iroh::base::ticket::Ticket;
-
 use crate::blob::{BlobDownloadOptions, BlobFormat, Hash};
 use crate::doc::NodeAddr;
 use crate::error::IrohError;
@@ -22,7 +20,7 @@ impl From<iroh::base::ticket::BlobTicket> for BlobTicket {
 
 impl std::fmt::Display for BlobTicket {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", Ticket::serialize(&self.0))
+        write!(f, "{}", self.0)
     }
 }
 
@@ -32,11 +30,6 @@ impl BlobTicket {
     pub fn new(str: String) -> Result<Self, IrohError> {
         let ticket = iroh::base::ticket::BlobTicket::from_str(&str).map_err(anyhow::Error::from)?;
         Ok(BlobTicket(ticket))
-    }
-
-    /// Convert this ticket into a string.
-    pub fn serialize(&self) -> String {
-        self.0.to_string()
     }
 
     /// The hash of the item this ticket can retrieve.
@@ -98,5 +91,37 @@ impl From<AddrInfoOptions> for iroh::base::node_addr::AddrInfoOptions {
             AddrInfoOptions::Relay => iroh::base::node_addr::AddrInfoOptions::Relay,
             AddrInfoOptions::Addresses => iroh::base::node_addr::AddrInfoOptions::Addresses,
         }
+    }
+}
+
+/// Contains both a key (either secret or public) to a document, and a list of peers to join.
+#[derive(Debug, Clone, uniffi::Object)]
+#[uniffi::export(Display)]
+pub struct DocTicket(iroh::docs::DocTicket);
+
+impl From<iroh::docs::DocTicket> for DocTicket {
+    fn from(value: iroh::docs::DocTicket) -> Self {
+        Self(value)
+    }
+}
+
+impl From<DocTicket> for iroh::docs::DocTicket {
+    fn from(value: DocTicket) -> Self {
+        value.0
+    }
+}
+
+#[uniffi::export]
+impl DocTicket {
+    #[uniffi::constructor]
+    pub fn new(str: String) -> Result<Self, IrohError> {
+        let ticket = iroh::docs::DocTicket::from_str(&str).map_err(anyhow::Error::from)?;
+        Ok(ticket.into())
+    }
+}
+
+impl std::fmt::Display for DocTicket {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
