@@ -63,4 +63,3 @@ uniffi = { version = "0.28.0", features = ["build"] }
 
 [profile.release]
 lto = true
-strip = "symbols"
