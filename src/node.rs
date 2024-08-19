@@ -343,7 +343,7 @@ impl Node {
     pub async fn connections(&self) -> Result<Vec<RemoteInfo>, IrohError> {
         let infos = self
             .node()
-            .remote_infos_iter()
+            .remote_info_iter()
             .await?
             .map_ok(|info| info.into())
             .try_collect::<Vec<_>>()

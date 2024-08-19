@@ -527,7 +527,7 @@ pub trait BlobProvideEventCallback: Send + Sync + 'static {
 }
 
 /// The different types of BlobProvide events
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone, uniffi::Enum)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone, uniffi::Enum)]
 pub enum BlobProvideEventType {
     /// A new collection or tagged blob has been added
     TaggedBlobAdded,
@@ -553,40 +553,40 @@ pub enum BlobProvideEventType {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct TaggedBlobAdded {
     /// The hash of the added data
-    hash: Arc<Hash>,
+    pub hash: Arc<Hash>,
     /// The format of the added data
-    format: BlobFormat,
-    // /// The tag of the added data
-    // tag: Tag,
+    pub format: BlobFormat,
+    /// The tag of the added data
+    pub tag: Vec<u8>,
 }
 
 /// A new client connected to the node.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct ClientConnected {
     /// An unique connection id.
-    connection_id: u64,
+    pub connection_id: u64,
 }
 
 /// A request was received from a client.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct GetRequestReceived {
     /// An unique connection id.
-    connection_id: u64,
+    pub connection_id: u64,
     /// An identifier uniquely identifying this transfer request.
-    request_id: u64,
+    pub request_id: u64,
     /// The hash for which the client wants to receive data.
-    hash: Arc<Hash>,
+    pub hash: Arc<Hash>,
 }
 
 /// A sequence of hashes has been found and is being transferred.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct TransferHashSeqStarted {
     /// An unique connection id.
-    connection_id: u64,
+    pub connection_id: u64,
     /// An identifier uniquely identifying this transfer request.
-    request_id: u64,
+    pub request_id: u64,
     /// The number of blobs in the sequence.
-    num_blobs: u64,
+    pub num_blobs: u64,
 }
 
 /// A chunk of a blob was transferred.
@@ -596,66 +596,78 @@ pub struct TransferHashSeqStarted {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct TransferProgress {
     /// An unique connection id.
-    connection_id: u64,
+    pub connection_id: u64,
     /// An identifier uniquely identifying this transfer request.
-    request_id: u64,
+    pub request_id: u64,
     /// The hash for which we are transferring data.
-    hash: Arc<Hash>,
+    pub hash: Arc<Hash>,
     /// Offset up to which we have transferred data.
-    end_offset: u64,
+    pub end_offset: u64,
 }
 
 /// A blob in a sequence was transferred.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
 pub struct TransferBlobCompleted {
     /// An unique connection id.
-    connection_id: u64,
+    pub connection_id: u64,
     /// An identifier uniquely identifying this transfer request.
-    request_id: u64,
+    pub request_id: u64,
     /// The hash of the blob
-    hash: Arc<Hash>,
+    pub hash: Arc<Hash>,
     /// The index of the blob in the sequence.
-    index: u64,
+    pub index: u64,
     /// The size of the blob transferred.
-    size: u64,
+    pub size: u64,
 }
 
 /// A request was completed and the data was sent to the client.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
 pub struct TransferCompleted {
     /// An unique connection id.
-    connection_id: u64,
+    pub connection_id: u64,
     /// An identifier uniquely identifying this transfer request.
-    request_id: u64,
-    // /// statistics about the transfer
-    // stats: Box<TransferStats>,
+    pub request_id: u64,
+    /// statistics about the transfer
+    pub stats: TransferStats,
 }
 
 /// A request was aborted because the client disconnected.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Record)]
+#[derive(Debug, Clone, PartialEq, uniffi::Record)]
 pub struct TransferAborted {
     /// The quic connection id.
-    connection_id: u64,
+    pub connection_id: u64,
     /// An identifier uniquely identifying this request.
-    request_id: u64,
-    // /// statistics about the transfer. This is None if the transfer
-    // /// was aborted before any data was sent.
-    // stats: Option<Box<TransferStats>>,
+    pub request_id: u64,
+    /// statistics about the transfer. This is None if the transfer
+    /// was aborted before any data was sent.
+    pub stats: Option<TransferStats>,
 }
 
-// /// The stats for a transfer of a collection or blob.
-// #[derive(Debug, Clone, Copy, Default)]
-// pub struct TransferStats {
-//     // /// Stats for sending to the client.
-//     // pub send: StreamWriterStats,
-//     // /// Stats for reading from disk.
-//     // pub read: SliceReaderStats,
-//     /// The total duration of the transfer.
-//     pub duration: Duration,
-// }
+/// The stats for a transfer of a collection or blob.
+#[derive(Debug, Clone, Copy, Default, PartialEq, uniffi::Record)]
+pub struct TransferStats {
+    // /// Stats for sending to the client.
+    // pub send: StreamWriterStats,
+    // /// Stats for reading from disk.
+    // pub read: SliceReaderStats,
+    /// The total duration of the transfer in milliseconds
+    pub duration: u64,
+}
+
+impl From<&iroh::blobs::provider::TransferStats> for TransferStats {
+    fn from(value: &iroh::blobs::provider::TransferStats) -> Self {
+        Self {
+            duration: value
+                .duration
+                .as_millis()
+                .try_into()
+                .expect("duration too large"),
+        }
+    }
+}
 
 /// Events emitted by the provider informing about the current status.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Object)]
+#[derive(Debug, Clone, PartialEq, uniffi::Object)]
 pub enum BlobProvideEvent {
     /// A new collection or tagged blob has been added
     TaggedBlobAdded(TaggedBlobAdded),
@@ -681,11 +693,11 @@ pub enum BlobProvideEvent {
 impl From<iroh::blobs::provider::Event> for BlobProvideEvent {
     fn from(value: iroh::blobs::provider::Event) -> Self {
         match value {
-            iroh::blobs::provider::Event::TaggedBlobAdded { hash, format, .. } => {
+            iroh::blobs::provider::Event::TaggedBlobAdded { hash, format, tag } => {
                 BlobProvideEvent::TaggedBlobAdded(TaggedBlobAdded {
                     hash: Arc::new(hash.into()),
                     format: format.into(),
-                    // tag,
+                    tag: tag.0.as_ref().to_vec(),
                 })
             }
             iroh::blobs::provider::Event::ClientConnected { connection_id } => {
@@ -736,20 +748,20 @@ impl From<iroh::blobs::provider::Event> for BlobProvideEvent {
             iroh::blobs::provider::Event::TransferCompleted {
                 connection_id,
                 request_id,
-                ..
+                stats,
             } => BlobProvideEvent::TransferCompleted(TransferCompleted {
                 connection_id,
                 request_id,
-                // stats,
+                stats: stats.as_ref().into(),
             }),
             iroh::blobs::provider::Event::TransferAborted {
                 connection_id,
                 request_id,
-                ..
+                stats,
             } => BlobProvideEvent::TransferAborted(TransferAborted {
                 connection_id,
                 request_id,
-                // stats,
+                stats: stats.map(|s| s.as_ref().into()),
             }),
         }
     }
