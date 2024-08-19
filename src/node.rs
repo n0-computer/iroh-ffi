@@ -1,6 +1,5 @@
 use std::{collections::HashMap, fmt::Debug, path::PathBuf, sync::Arc, time::Duration};
 
-use futures::stream::TryStreamExt;
 use iroh::node::{FsNode, MemNode};
 
 use crate::{BlobProvideEventCallback, IrohError, NodeAddr, PublicKey};
@@ -195,7 +194,7 @@ pub struct NodeOptions {
     /// How frequently the blob store should clean up unreferenced blobs, in milliseconds.
     /// Set to 0 to disable gc
     pub gc_interval_millis: Option<u64>,
-    /// provide a callback to hook into events when the blobs component adds and provides blobs
+    /// Provide a callback to hook into events when the blobs component adds and provides blobs.
     pub blob_events: Option<Arc<dyn BlobProvideEventCallback>>,
 }
 
@@ -338,62 +337,11 @@ impl Node {
         Ok(stats)
     }
 
-    /// Return `ConnectionInfo`s for each connection we have to another iroh node.
-    #[uniffi::method(async_runtime = "tokio")]
-    pub async fn connections(&self) -> Result<Vec<RemoteInfo>, IrohError> {
-        let infos = self
-            .node()
-            .remote_info_iter()
-            .await?
-            .map_ok(|info| info.into())
-            .try_collect::<Vec<_>>()
-            .await?;
-        Ok(infos)
-    }
-
-    /// Return connection information on the currently running node.
-    #[uniffi::method(async_runtime = "tokio")]
-    pub async fn connection_info(
-        &self,
-        node_id: &PublicKey,
-    ) -> Result<Option<RemoteInfo>, IrohError> {
-        let info = self
-            .node()
-            .remote_info(node_id.into())
-            .await
-            .map(|i| i.map(|i| i.into()))?;
-        Ok(info)
-    }
-
     /// Get status information about a node
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn status(&self) -> Result<Arc<NodeStatus>, IrohError> {
         let res = self.node().status().await.map(|n| Arc::new(n.into()))?;
         Ok(res)
-    }
-
-    /// The string representation of the PublicKey of this node.
-    pub async fn node_id(&self) -> Result<String, IrohError> {
-        let id = self.node().node_id().await?;
-        Ok(id.to_string())
-    }
-
-    /// Return the [`NodeAddr`] for this node.
-    pub async fn node_addr(&self) -> Result<NodeAddr, IrohError> {
-        let addr = self.node().node_addr().await?;
-        Ok(addr.into())
-    }
-
-    /// Add a known node address to the node.
-    pub async fn add_node_addr(&self, addr: &NodeAddr) -> Result<(), IrohError> {
-        self.node().add_node_addr(addr.clone().try_into()?).await?;
-        Ok(())
-    }
-
-    /// Get the relay server we are connected to.
-    pub async fn home_relay(&self) -> Result<Option<String>, IrohError> {
-        let relay = self.node().home_relay().await?;
-        Ok(relay.map(|u| u.to_string()))
     }
 
     /// Shutdown this iroh node.
@@ -469,7 +417,6 @@ impl BlobProvideEvents {
 impl iroh::blobs::provider::CustomEventSender for BlobProvideEvents {
     fn send(&self, event: iroh::blobs::provider::Event) -> futures_lite::future::Boxed<()> {
         let cb = self.callback.clone();
-        print!("calling blob event from send {:?}", &event);
         Box::pin(async move {
             cb.blob_event(Arc::new(event.into())).await.ok();
         })
@@ -477,8 +424,7 @@ impl iroh::blobs::provider::CustomEventSender for BlobProvideEvents {
 
     fn try_send(&self, event: iroh::blobs::provider::Event) {
         let cb = self.callback.clone();
-        print!("calling blob event from try_send {:?}", &event);
-        let _ = Box::pin(async move {
+        tokio::task::spawn(async move {
             cb.blob_event(Arc::new(event.into())).await.ok();
         });
     }
@@ -491,7 +437,7 @@ mod tests {
     #[tokio::test]
     async fn test_memory() {
         let node = Iroh::memory().await.unwrap();
-        let id = node.node().node_id().await.unwrap();
+        let id = node.net().node_id().await.unwrap();
         println!("{id}");
     }
 }

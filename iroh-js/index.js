@@ -376,6 +376,7 @@ module.exports.FilterKind = nativeBinding.FilterKind
 module.exports.Gossip = nativeBinding.Gossip
 module.exports.Hash = nativeBinding.Hash
 module.exports.Iroh = nativeBinding.Iroh
+module.exports.Net = nativeBinding.Net
 module.exports.Node = nativeBinding.Node
 module.exports.PublicKey = nativeBinding.PublicKey
 module.exports.Query = nativeBinding.Query

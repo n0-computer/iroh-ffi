@@ -1,5 +1,89 @@
+use futures::TryStreamExt;
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
+
+use crate::{Iroh, PublicKey};
+
+/// Iroh net client.
+#[napi]
+pub struct Net {
+    node: Iroh,
+}
+
+#[napi]
+impl Iroh {
+    /// Access to net specific funtionaliy.
+    #[napi(getter)]
+    pub fn net(&self) -> Net {
+        Net { node: self.clone() }
+    }
+}
+
+impl Net {
+    fn client(&self) -> &iroh::client::Iroh {
+        self.node.client()
+    }
+}
+
+#[napi]
+impl Net {
+    /// Return `RemoteInfo`s for nodes we know about.
+    #[napi]
+    pub async fn remote_info_list(&self) -> Result<Vec<RemoteInfo>> {
+        let infos = self
+            .client()
+            .net()
+            .remote_info_iter()
+            .await?
+            .map_ok(|info| info.into())
+            .try_collect::<Vec<_>>()
+            .await?;
+        Ok(infos)
+    }
+
+    /// Return information on the given remote node.
+    #[napi]
+    pub async fn remote_info(&self, node_id: &PublicKey) -> Result<Option<RemoteInfo>> {
+        let info = self
+            .client()
+            .net()
+            .remote_info(node_id.into())
+            .await
+            .map(|i| i.map(|i| i.into()))?;
+        Ok(info)
+    }
+
+    /// The string representation of the PublicKey of this node.
+    #[napi]
+    pub async fn node_id(&self) -> Result<String> {
+        let id = self.client().net().node_id().await?;
+        Ok(id.to_string())
+    }
+
+    /// Return the [`NodeAddr`] for this node.
+    #[napi]
+    pub async fn node_addr(&self) -> Result<NodeAddr> {
+        let addr = self.client().net().node_addr().await?;
+        Ok(addr.into())
+    }
+
+    /// Add a known node address to the node.
+    #[napi]
+    pub async fn add_node_addr(&self, addr: NodeAddr) -> Result<()> {
+        self.client()
+            .net()
+            .add_node_addr(addr.clone().try_into()?)
+            .await?;
+        Ok(())
+    }
+
+    /// Get the relay server we are connected to.
+    #[napi]
+    pub async fn home_relay(&self) -> Result<Option<String>> {
+        let relay = self.client().net().home_relay().await?;
+        Ok(relay.map(|u| u.to_string()))
+    }
+}
 
 /// Stats counter
 #[derive(Debug)]
@@ -61,7 +145,7 @@ pub struct LatencyAndControlMsg {
 /// Information about a connection
 #[derive(Debug)]
 #[napi(object)]
-pub struct ConnectionInfo {
+pub struct RemoteInfo {
     /// The node identifier of the endpoint. Also a public key.
     pub node_id: Vec<u8>,
     /// Relay url, if available.
@@ -77,9 +161,9 @@ pub struct ConnectionInfo {
     pub last_used: Option<u32>,
 }
 
-impl From<iroh::net::endpoint::RemoteInfo> for ConnectionInfo {
+impl From<iroh::net::endpoint::RemoteInfo> for RemoteInfo {
     fn from(value: iroh::net::endpoint::RemoteInfo) -> Self {
-        ConnectionInfo {
+        RemoteInfo {
             node_id: value.node_id.as_bytes().to_vec(),
             relay_url: value.relay_url.map(|info| info.relay_url.to_string()),
             addrs: value.addrs.into_iter().map(|a| a.into()).collect(),

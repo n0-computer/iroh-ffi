@@ -348,6 +348,8 @@ export declare class Iroh {
   get docs(): Docs
   /** Access to gossip specific funtionaliy. */
   get gossip(): Gossip
+  /** Access to net specific funtionaliy. */
+  get net(): Net
   /**
    * Create a new iroh node.
    *
@@ -365,16 +367,12 @@ export declare class Iroh {
   get node(): Node
 }
 
-/** Iroh node client. */
-export declare class Node {
-  /** Get statistics of the running node. */
-  stats(): Promise<Record<string, CounterStats>>
-  /** Return `ConnectionInfo`s for each connection we have to another iroh node. */
-  connections(): Promise<Array<ConnectionInfo>>
-  /** Return connection information on the currently running node. */
-  connectionInfo(nodeId: PublicKey): Promise<ConnectionInfo | null>
-  /** Get status information about a node */
-  status(): Promise<NodeStatus>
+/** Iroh net client. */
+export declare class Net {
+  /** Return `RemoteInfo`s for nodes we know about. */
+  remoteInfoList(): Promise<Array<RemoteInfo>>
+  /** Return information on the given remote node. */
+  remoteInfo(nodeId: PublicKey): Promise<RemoteInfo | null>
   /** The string representation of the PublicKey of this node. */
   nodeId(): Promise<string>
   /** Return the [`NodeAddr`] for this node. */
@@ -383,6 +381,14 @@ export declare class Node {
   addNodeAddr(addr: NodeAddr): Promise<void>
   /** Get the relay server we are connected to. */
   homeRelay(): Promise<string | null>
+}
+
+/** Iroh node client. */
+export declare class Node {
+  /** Get statistics of the running node. */
+  stats(): Promise<Record<string, CounterStats>>
+  /** Get status information about a node */
+  status(): Promise<NodeStatus>
   /** Shutdown this iroh node. */
   shutdown(force: boolean): Promise<void>
   /** Returns `Some(addr)` if an RPC endpoint is running, `None` otherwise. */
@@ -670,11 +676,42 @@ export interface BlobInfo {
   size: bigint
 }
 
+/** Events emitted by the provider informing about the current status. */
+export interface BlobProvideEvent {
+  /** A new collection or tagged blob has been added */
+  taggedBlobAdded?: TaggedBlobAdded
+  /** A new client connected to the node. */
+  clientConnected?: ClientConnected
+  /** A request was received from a client. */
+  getRequestReceived?: GetRequestReceived
+  /** A sequence of hashes has been found and is being transferred. */
+  transferHashSeqStarted?: TransferHashSeqStarted
+  /**
+   * A chunk of a blob was transferred.
+   *
+   * These events will be sent with try_send, so you can not assume that you
+   * will receive all of them.
+   */
+  transferProgress?: TransferProgress
+  /** A blob in a sequence was transferred. */
+  transferBlobCompleted?: TransferBlobCompleted
+  /** A request was completed and the data was sent to the client. */
+  transferCompleted?: TransferCompleted
+  /** A request was aborted because the client disconnected. */
+  transferAborted?: TransferAborted
+}
+
 export declare const enum CapabilityKind {
   /** A writable replica. */
   Write = 'Write',
   /** A readable replica. */
   Read = 'Read'
+}
+
+/** A new client connected to the node. */
+export interface ClientConnected {
+  /** An unique connection id. */
+  connectionId: bigint
 }
 
 /** A response to a list collections request */
@@ -695,25 +732,6 @@ export interface CollectionInfo {
    * This is an optional field, because the data is not always available.
    */
   totalBlobsSize?: bigint
-}
-
-/** Information about a connection */
-export interface ConnectionInfo {
-  /** The node identifier of the endpoint. Also a public key. */
-  nodeId: Array<number>
-  /** Relay url, if available. */
-  relayUrl?: string
-  /**
-   * List of addresses at which this node might be reachable, plus any latency information we
-   * have about that address and the last time the address was used.
-   */
-  addrs: Array<DirectAddrInfo>
-  /** The type of connection we have to the peer, either direct or over relay. */
-  connType: ConnectionType
-  /** The latency of the `conn_type`. In milliseconds. */
-  latency?: number
-  /** Duration since the last time this peer was used. In milliseconds. */
-  lastUsed?: number
 }
 
 /** The type of connection we have to the node */
@@ -981,6 +999,16 @@ export interface Entry {
   timestamp: bigint
 }
 
+/** A request was received from a client. */
+export interface GetRequestReceived {
+  /** An unique connection id. */
+  connectionId: bigint
+  /** An identifier uniquely identifying this transfer request. */
+  requestId: bigint
+  /** The hash for which the client wants to receive data. */
+  hash: string
+}
+
 /** The Hash and associated tag of a newly created collection */
 export interface HashAndTag {
   /** The hash of the collection */
@@ -1140,13 +1168,15 @@ export interface NodeAddr {
   addresses?: Array<string>
 }
 
-/** Options passed to [`IrohNode.new`]. Controls the behaviour of an iroh node. */
+/** Options passed to [`IrohNode.new`]. Controls the behaviour of an iroh node.# */
 export interface NodeOptions {
   /**
    * How frequently the blob store should clean up unreferenced blobs, in milliseconds.
    * Set to null to disable gc
    */
   gcIntervalMillis?: number
+  /** Provide a callback to hook into events when the blobs component adds and provides blobs. */
+  blobEvents?: (err: Error | null, arg: BlobProvideEvent) => void
 }
 
 /** The response to a status request */
@@ -1216,6 +1246,25 @@ export interface QueryOptions {
   limit?: bigint
 }
 
+/** Information about a connection */
+export interface RemoteInfo {
+  /** The node identifier of the endpoint. Also a public key. */
+  nodeId: Array<number>
+  /** Relay url, if available. */
+  relayUrl?: string
+  /**
+   * List of addresses at which this node might be reachable, plus any latency information we
+   * have about that address and the last time the address was used.
+   */
+  addrs: Array<DirectAddrInfo>
+  /** The type of connection we have to the peer, either direct or over relay. */
+  connType: ConnectionType
+  /** The latency of the `conn_type`. In milliseconds. */
+  latency?: number
+  /** Duration since the last time this peer was used. In milliseconds. */
+  lastUsed?: number
+}
+
 /** Set the logging level. */
 export declare function setLogLevel(level: LogLevel): void
 
@@ -1270,6 +1319,86 @@ export declare const enum SyncReason {
   SyncReport = 'SyncReport',
   /** We received a sync report while a sync was running, so run again afterwars */
   Resync = 'Resync'
+}
+
+/** An BlobProvide event indicating a new tagged blob or collection was added */
+export interface TaggedBlobAdded {
+  /** The hash of the added data */
+  hash: string
+  /** The format of the added data */
+  format: BlobFormat
+  /** The tag of the added data */
+  tag: Array<number>
+}
+
+/** A request was aborted because the client disconnected. */
+export interface TransferAborted {
+  /** The quic connection id. */
+  connectionId: bigint
+  /** An identifier uniquely identifying this request. */
+  requestId: bigint
+  /**
+   * statistics about the transfer. This is None if the transfer
+   * was aborted before any data was sent.
+   */
+  stats?: TransferStats
+}
+
+/** A blob in a sequence was transferred. */
+export interface TransferBlobCompleted {
+  /** An unique connection id. */
+  connectionId: bigint
+  /** An identifier uniquely identifying this transfer request. */
+  requestId: bigint
+  /** The hash of the blob */
+  hash: string
+  /** The index of the blob in the sequence. */
+  index: bigint
+  /** The size of the blob transferred. */
+  size: bigint
+}
+
+/** A request was completed and the data was sent to the client. */
+export interface TransferCompleted {
+  /** An unique connection id. */
+  connectionId: bigint
+  /** An identifier uniquely identifying this transfer request. */
+  requestId: bigint
+  /** statistics about the transfer */
+  stats: TransferStats
+}
+
+/** A sequence of hashes has been found and is being transferred. */
+export interface TransferHashSeqStarted {
+  /** An unique connection id. */
+  connectionId: bigint
+  /** An identifier uniquely identifying this transfer request. */
+  requestId: bigint
+  /** The number of blobs in the sequence. */
+  numBlobs: bigint
+}
+
+/**
+ * A chunk of a blob was transferred.
+ *
+ * These events will be sent with try_send, so you can not assume that you
+ * will receive all of them.
+ */
+export interface TransferProgress {
+  /** An unique connection id. */
+  connectionId: bigint
+  /** An identifier uniquely identifying this transfer request. */
+  requestId: bigint
+  /** The hash for which we are transferring data. */
+  hash: string
+  /** Offset up to which we have transferred data. */
+  endOffset: bigint
+}
+
+/** The stats for a transfer of a collection or blob. */
+export interface TransferStats {
+  /** The total duration of the transfer in milliseconds. */
+  duration: bigint
 }
 
 /** Verify a `NodeAddr`. */
