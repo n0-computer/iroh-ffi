@@ -77,8 +77,8 @@ pub struct ConnectionInfo {
     pub last_used: Option<u32>,
 }
 
-impl From<iroh::net::endpoint::ConnectionInfo> for ConnectionInfo {
-    fn from(value: iroh::net::endpoint::ConnectionInfo) -> Self {
+impl From<iroh::net::endpoint::RemoteInfo> for ConnectionInfo {
+    fn from(value: iroh::net::endpoint::RemoteInfo) -> Self {
         ConnectionInfo {
             node_id: value.node_id.as_bytes().to_vec(),
             relay_url: value.relay_url.map(|info| info.relay_url.to_string()),

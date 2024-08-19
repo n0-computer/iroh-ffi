@@ -134,7 +134,7 @@ impl Node {
     pub async fn connections(&self) -> Result<Vec<ConnectionInfo>> {
         let infos = self
             .node()
-            .connections()
+            .remote_info_iter()
             .await?
             .map_ok(|info| info.into())
             .try_collect::<Vec<_>>()
@@ -147,7 +147,7 @@ impl Node {
     pub async fn connection_info(&self, node_id: &PublicKey) -> Result<Option<ConnectionInfo>> {
         let info = self
             .node()
-            .connection_info(node_id.into())
+            .remote_info(node_id.into())
             .await
             .map(|i| i.map(|i| i.into()))?;
         Ok(info)
