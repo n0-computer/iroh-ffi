@@ -545,6 +545,11 @@ void*_Nonnull uniffi_iroh_ffi_fn_method_blobticket_node_addr(void*_Nonnull ptr, 
 int8_t uniffi_iroh_ffi_fn_method_blobticket_recursive(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBTICKET_UNIFFI_TRAIT_DISPLAY
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBTICKET_UNIFFI_TRAIT_DISPLAY
+RustBuffer uniffi_iroh_ffi_fn_method_blobticket_uniffi_trait_display(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_BLOBS
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_BLOBS
 void*_Nonnull uniffi_iroh_ffi_fn_clone_blobs(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -951,6 +956,26 @@ RustBuffer uniffi_iroh_ffi_fn_method_docimportprogress_as_progress(void*_Nonnull
 RustBuffer uniffi_iroh_ffi_fn_method_docimportprogress_type(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_DOCTICKET
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_DOCTICKET
+void*_Nonnull uniffi_iroh_ffi_fn_clone_docticket(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_DOCTICKET
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_DOCTICKET
+void uniffi_iroh_ffi_fn_free_docticket(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_DOCTICKET_NEW
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_DOCTICKET_NEW
+void*_Nonnull uniffi_iroh_ffi_fn_constructor_docticket_new(RustBuffer str, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOCTICKET_UNIFFI_TRAIT_DISPLAY
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOCTICKET_UNIFFI_TRAIT_DISPLAY
+RustBuffer uniffi_iroh_ffi_fn_method_docticket_uniffi_trait_display(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_DOCS
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_DOCS
 void*_Nonnull uniffi_iroh_ffi_fn_clone_docs(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -973,12 +998,12 @@ uint64_t uniffi_iroh_ffi_fn_method_docs_drop_doc(void*_Nonnull ptr, RustBuffer d
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOCS_JOIN
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOCS_JOIN
-uint64_t uniffi_iroh_ffi_fn_method_docs_join(void*_Nonnull ptr, RustBuffer ticket
+uint64_t uniffi_iroh_ffi_fn_method_docs_join(void*_Nonnull ptr, void*_Nonnull ticket
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOCS_JOIN_AND_SUBSCRIBE
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOCS_JOIN_AND_SUBSCRIBE
-uint64_t uniffi_iroh_ffi_fn_method_docs_join_and_subscribe(void*_Nonnull ptr, RustBuffer ticket, void*_Nonnull cb
+uint64_t uniffi_iroh_ffi_fn_method_docs_join_and_subscribe(void*_Nonnull ptr, void*_Nonnull ticket, void*_Nonnull cb
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_DOCS_LIST
@@ -3056,6 +3081,12 @@ uint16_t uniffi_iroh_ffi_checksum_constructor_blobticket_new(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_COLLECTION_NEW
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_COLLECTION_NEW
 uint16_t uniffi_iroh_ffi_checksum_constructor_collection_new(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_DOCTICKET_NEW
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_DOCTICKET_NEW
+uint16_t uniffi_iroh_ffi_checksum_constructor_docticket_new(void
     
 );
 #endif

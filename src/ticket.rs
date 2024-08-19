@@ -9,7 +9,20 @@ use crate::error::IrohError;
 ///
 /// It is a single item which can be easily serialized and deserialized.
 #[derive(Debug, uniffi::Object)]
+#[uniffi::export(Display)]
 pub struct BlobTicket(iroh::base::ticket::BlobTicket);
+
+impl From<iroh::base::ticket::BlobTicket> for BlobTicket {
+    fn from(ticket: iroh::base::ticket::BlobTicket) -> Self {
+        BlobTicket(ticket)
+    }
+}
+
+impl std::fmt::Display for BlobTicket {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 
 #[uniffi::export]
 impl BlobTicket {
@@ -78,5 +91,37 @@ impl From<AddrInfoOptions> for iroh::base::node_addr::AddrInfoOptions {
             AddrInfoOptions::Relay => iroh::base::node_addr::AddrInfoOptions::Relay,
             AddrInfoOptions::Addresses => iroh::base::node_addr::AddrInfoOptions::Addresses,
         }
+    }
+}
+
+/// Contains both a key (either secret or public) to a document, and a list of peers to join.
+#[derive(Debug, Clone, uniffi::Object)]
+#[uniffi::export(Display)]
+pub struct DocTicket(iroh::docs::DocTicket);
+
+impl From<iroh::docs::DocTicket> for DocTicket {
+    fn from(value: iroh::docs::DocTicket) -> Self {
+        Self(value)
+    }
+}
+
+impl From<DocTicket> for iroh::docs::DocTicket {
+    fn from(value: DocTicket) -> Self {
+        value.0
+    }
+}
+
+#[uniffi::export]
+impl DocTicket {
+    #[uniffi::constructor]
+    pub fn new(str: String) -> Result<Self, IrohError> {
+        let ticket = iroh::docs::DocTicket::from_str(&str).map_err(anyhow::Error::from)?;
+        Ok(ticket.into())
+    }
+}
+
+impl std::fmt::Display for DocTicket {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }

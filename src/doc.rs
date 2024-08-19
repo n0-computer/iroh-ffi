@@ -4,7 +4,9 @@ use bytes::Bytes;
 use futures::{StreamExt, TryStreamExt};
 use serde::{Deserialize, Serialize};
 
-use crate::{ticket::AddrInfoOptions, AuthorId, CallbackError, Hash, Iroh, IrohError, PublicKey};
+use crate::{
+    ticket::AddrInfoOptions, AuthorId, CallbackError, DocTicket, Hash, Iroh, IrohError, PublicKey,
+};
 
 #[derive(Debug, uniffi::Enum)]
 pub enum CapabilityKind {
@@ -55,9 +57,8 @@ impl Docs {
 
     /// Join and sync with an already existing document.
     #[uniffi::method(async_runtime = "tokio")]
-    pub async fn join(&self, ticket: String) -> Result<Arc<Doc>, IrohError> {
-        let ticket = iroh::docs::DocTicket::from_str(&ticket).map_err(anyhow::Error::from)?;
-        let doc = self.client().docs().import(ticket).await?;
+    pub async fn join(&self, ticket: &DocTicket) -> Result<Arc<Doc>, IrohError> {
+        let doc = self.client().docs().import(ticket.clone().into()).await?;
         Ok(Arc::new(Doc { inner: doc }))
     }
 
@@ -65,11 +66,14 @@ impl Docs {
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn join_and_subscribe(
         &self,
-        ticket: String,
+        ticket: &DocTicket,
         cb: Arc<dyn SubscribeCallback>,
     ) -> Result<Arc<Doc>, IrohError> {
-        let ticket = iroh::docs::DocTicket::from_str(&ticket).map_err(anyhow::Error::from)?;
-        let (doc, mut stream) = self.client().docs().import_and_subscribe(ticket).await?;
+        let (doc, mut stream) = self
+            .client()
+            .docs()
+            .import_and_subscribe(ticket.clone().into())
+            .await?;
 
         tokio::spawn(async move {
             while let Some(event) = stream.next().await {
@@ -303,12 +307,12 @@ impl Doc {
         &self,
         mode: ShareMode,
         addr_options: AddrInfoOptions,
-    ) -> Result<String, IrohError> {
+    ) -> Result<Arc<DocTicket>, IrohError> {
         let res = self
             .inner
             .share(mode.into(), addr_options.into())
             .await
-            .map(|ticket| ticket.to_string())?;
+            .map(|ticket| Arc::new(ticket.into()))?;
         Ok(res)
     }
 
@@ -1573,7 +1577,7 @@ mod tests {
             .await
             .unwrap();
         println!("doc_ticket: {}", doc_ticket);
-        node.docs().join(doc_ticket).await.unwrap();
+        node.docs().join(&doc_ticket).await.unwrap();
     }
 
     #[tokio::test]
@@ -1630,7 +1634,7 @@ mod tests {
         let cb_1 = Callback { found_s: found_s_1 };
         let doc_1 = node_1
             .docs()
-            .join_and_subscribe(ticket, Arc::new(cb_1))
+            .join_and_subscribe(&ticket, Arc::new(cb_1))
             .await
             .unwrap();
 

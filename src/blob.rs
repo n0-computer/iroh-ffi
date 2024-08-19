@@ -8,8 +8,8 @@ use std::{
 use futures::{StreamExt, TryStreamExt};
 use serde::{Deserialize, Serialize};
 
-use crate::ticket::AddrInfoOptions;
 use crate::{node::Iroh, CallbackError};
+use crate::{ticket::AddrInfoOptions, BlobTicket};
 use crate::{IrohError, NodeAddr};
 
 /// Iroh blobs client.
@@ -236,13 +236,13 @@ impl Blobs {
         hash: Arc<Hash>,
         blob_format: BlobFormat,
         ticket_options: AddrInfoOptions,
-    ) -> Result<String, IrohError> {
+    ) -> Result<Arc<BlobTicket>, IrohError> {
         let ticket = self
             .client()
             .blobs()
             .share(hash.0, blob_format.into(), ticket_options.into())
             .await?;
-        Ok(ticket.to_string())
+        Ok(Arc::new(ticket.into()))
     }
 
     /// List all incomplete (partial) blobs.

@@ -134,7 +134,7 @@ export declare class Blobs {
    */
   export(hash: string, destination: string, format: BlobExportFormat, mode: BlobExportMode): Promise<void>
   /** Create a ticket for sharing a blob from this node. */
-  share(hash: string, blobFormat: BlobFormat, ticketOptions: AddrInfoOptions): Promise<string>
+  share(hash: string, blobFormat: BlobFormat, ticketOptions: AddrInfoOptions): Promise<BlobTicket>
   /**
    * List all incomplete (partial) blobs.
    *

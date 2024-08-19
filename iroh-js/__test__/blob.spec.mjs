@@ -102,3 +102,18 @@ test('collections', async (t) => {
   t.is(collectionList[0].hash, res.hash)
   t.is(collectionList[0].totalBlobsCount, BigInt(numFiles + 1))
 })
+
+test('share', async (t) => {
+  const node = await Iroh.memory()
+
+  const res = await node.blobs.addBytes(Array.from(Buffer.from('hello')))
+  const ticket = await node.blobs.share(res.hash, res.format, 'RelayAndAddresses')
+
+  const nodeAddr = await node.node.nodeAddr()
+
+  console.log(res, ticket)
+
+  t.is(ticket.format, res.format)
+  t.is(ticket.hash, res.hash)
+  t.deepEqual(ticket.nodeAddr, nodeAddr)
+})

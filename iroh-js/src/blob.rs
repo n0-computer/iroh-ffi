@@ -5,7 +5,7 @@ use napi::bindgen_prelude::*;
 use napi::threadsafe_function::ThreadsafeFunction;
 use napi_derive::napi;
 
-use crate::{node::Iroh, AddrInfoOptions, NodeAddr};
+use crate::{node::Iroh, AddrInfoOptions, BlobTicket, NodeAddr};
 
 /// Iroh blobs client.
 #[napi]
@@ -240,7 +240,7 @@ impl Blobs {
         hash: String,
         blob_format: BlobFormat,
         ticket_options: AddrInfoOptions,
-    ) -> Result<String> {
+    ) -> Result<BlobTicket> {
         let ticket = self
             .client()
             .blobs()
@@ -250,7 +250,7 @@ impl Blobs {
                 ticket_options.into(),
             )
             .await?;
-        Ok(ticket.to_string())
+        Ok(ticket.into())
     }
 
     /// List all incomplete (partial) blobs.
