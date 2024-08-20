@@ -11,9 +11,9 @@ test('gossip basic', async (t) => {
   rawTopic.fill(0, 1, 32)
   const topic = Array.from(rawTopic)
 
-  const n1Id = await n1.node.nodeId()
-  const n1Addr = await n1.node.nodeAddr()
-  await n0.node.addNodeAddr(n1Addr)
+  const n1Id = await n1.net.nodeId()
+  const n1Addr = await n1.net.nodeAddr()
+  await n0.net.addNodeAddr(n1Addr)
 
   // Do not use Promise.withResovlers it is buggy
   let resolve0;
@@ -39,9 +39,9 @@ test('gossip basic', async (t) => {
     }
   })
 
-  const n0Id = await n0.node.nodeId()
-  const n0Addr = await n0.node.nodeAddr()
-  await n1.node.addNodeAddr(n0Addr)
+  const n0Id = await n0.net.nodeId()
+  const n0Addr = await n0.net.nodeAddr()
+  await n1.net.addNodeAddr(n0Addr)
 
   const sink1 = await n1.gossip.subscribe(topic, [n0Id], (error, event) => {
     if (error != null) {

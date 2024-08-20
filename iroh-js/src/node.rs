@@ -1,25 +1,29 @@
 use std::{collections::HashMap, path::PathBuf, time::Duration};
 
-use futures::stream::TryStreamExt;
 use iroh::node::{FsNode, MemNode};
-use napi::bindgen_prelude::*;
+use napi::{
+    bindgen_prelude::*,
+    threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode},
+};
 use napi_derive::napi;
 
-use crate::{ConnectionInfo, CounterStats, NodeAddr, PublicKey};
+use crate::{BlobProvideEvent, CounterStats, NodeAddr};
 
-/// Options passed to [`IrohNode.new`]. Controls the behaviour of an iroh node.
-#[derive(Debug)]
-#[napi(object)]
+/// Options passed to [`IrohNode.new`]. Controls the behaviour of an iroh node.#
+#[napi(object, object_to_js = false)]
 pub struct NodeOptions {
     /// How frequently the blob store should clean up unreferenced blobs, in milliseconds.
     /// Set to null to disable gc
     pub gc_interval_millis: Option<u32>,
+    /// Provide a callback to hook into events when the blobs component adds and provides blobs.
+    pub blob_events: Option<ThreadsafeFunction<BlobProvideEvent, ()>>,
 }
 
 impl Default for NodeOptions {
     fn default() -> Self {
         NodeOptions {
             gc_interval_millis: None,
+            blob_events: None,
         }
     }
 }
@@ -64,6 +68,10 @@ impl Iroh {
             };
             builder = builder.gc_policy(policy);
         }
+        if let Some(blob_events_cb) = options.blob_events {
+            builder = builder.blobs_events(BlobProvideEvents::new(blob_events_cb))
+        }
+
         let node = builder.spawn().await?;
 
         Ok(Iroh(InnerIroh::Fs(node)))
@@ -84,6 +92,11 @@ impl Iroh {
             };
             builder = builder.gc_policy(policy);
         }
+
+        if let Some(blob_events_cb) = options.blob_events {
+            builder = builder.blobs_events(BlobProvideEvents::new(blob_events_cb))
+        }
+
         let node = builder.spawn().await?;
 
         Ok(Iroh(InnerIroh::Memory(node)))
@@ -129,63 +142,11 @@ impl Node {
         Ok(stats)
     }
 
-    /// Return `ConnectionInfo`s for each connection we have to another iroh node.
-    #[napi]
-    pub async fn connections(&self) -> Result<Vec<ConnectionInfo>> {
-        let infos = self
-            .node()
-            .connections()
-            .await?
-            .map_ok(|info| info.into())
-            .try_collect::<Vec<_>>()
-            .await?;
-        Ok(infos)
-    }
-
-    /// Return connection information on the currently running node.
-    #[napi]
-    pub async fn connection_info(&self, node_id: &PublicKey) -> Result<Option<ConnectionInfo>> {
-        let info = self
-            .node()
-            .connection_info(node_id.into())
-            .await
-            .map(|i| i.map(|i| i.into()))?;
-        Ok(info)
-    }
-
     /// Get status information about a node
     #[napi]
     pub async fn status(&self) -> Result<NodeStatus> {
         let res = self.node().status().await.map(|n| n.into())?;
         Ok(res)
-    }
-
-    /// The string representation of the PublicKey of this node.
-    #[napi]
-    pub async fn node_id(&self) -> Result<String> {
-        let id = self.node().node_id().await?;
-        Ok(id.to_string())
-    }
-
-    /// Return the [`NodeAddr`] for this node.
-    #[napi]
-    pub async fn node_addr(&self) -> Result<NodeAddr> {
-        let addr = self.node().node_addr().await?;
-        Ok(addr.into())
-    }
-
-    /// Add a known node address to the node.
-    #[napi]
-    pub async fn add_node_addr(&self, addr: NodeAddr) -> Result<()> {
-        self.node().add_node_addr(addr.clone().try_into()?).await?;
-        Ok(())
-    }
-
-    /// Get the relay server we are connected to.
-    #[napi]
-    pub async fn home_relay(&self) -> Result<Option<String>> {
-        let relay = self.node().home_relay().await?;
-        Ok(relay.map(|u| u.to_string()))
     }
 
     /// Shutdown this iroh node.
@@ -228,5 +189,40 @@ impl From<iroh::client::NodeStatus> for NodeStatus {
             version: n.version,
             rpc_addr: n.rpc_addr.map(|a| a.to_string()),
         }
+    }
+}
+
+#[derive(Clone)]
+struct BlobProvideEvents {
+    callback: ThreadsafeFunction<BlobProvideEvent, ()>,
+}
+
+impl std::fmt::Debug for BlobProvideEvents {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "BlobProvideEvents()")
+    }
+}
+
+impl BlobProvideEvents {
+    fn new(callback: ThreadsafeFunction<BlobProvideEvent, ()>) -> Self {
+        Self { callback }
+    }
+}
+
+impl iroh::blobs::provider::CustomEventSender for BlobProvideEvents {
+    fn send(&self, event: iroh::blobs::provider::Event) -> futures::future::BoxFuture<'static, ()> {
+        let cb = self.callback.clone();
+        Box::pin(async move {
+            let msg = BlobProvideEvent::convert(event);
+            if let Err(err) = cb.call_async(msg).await {
+                eprintln!("failed call: {:?}", err);
+            }
+        })
+    }
+
+    fn try_send(&self, event: iroh::blobs::provider::Event) {
+        let cb = self.callback.clone();
+        let msg = BlobProvideEvent::convert(event);
+        cb.call(msg, ThreadsafeFunctionCallMode::NonBlocking);
     }
 }

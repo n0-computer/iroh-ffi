@@ -50,9 +50,11 @@ private extension ForeignBytes {
 
 private extension Data {
     init(rustBuffer: RustBuffer) {
-        // TODO: This copies the buffer. Can we read directly from a
-        // Rust buffer?
-        self.init(bytes: rustBuffer.data!, count: Int(rustBuffer.len))
+        self.init(
+            bytesNoCopy: rustBuffer.data!,
+            count: Int(rustBuffer.len),
+            deallocator: .none
+        )
     }
 }
 
@@ -1479,12 +1481,12 @@ open class BlobDownloadOptions:
     /**
      * Create a BlobDownloadRequest
      */
-    public convenience init(format: BlobFormat, node: NodeAddr, tag: SetTagOption) throws {
+    public convenience init(format: BlobFormat, nodes: [NodeAddr], tag: SetTagOption) throws {
         let pointer =
             try rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
                 uniffi_iroh_ffi_fn_constructor_blobdownloadoptions_new(
                     FfiConverterTypeBlobFormat.lower(format),
-                    FfiConverterTypeNodeAddr.lower(node),
+                    FfiConverterSequenceTypeNodeAddr.lower(nodes),
                     FfiConverterTypeSetTagOption.lower(tag), $0
                 )
             }
@@ -1536,6 +1538,393 @@ public func FfiConverterTypeBlobDownloadOptions_lift(_ pointer: UnsafeMutableRaw
 
 public func FfiConverterTypeBlobDownloadOptions_lower(_ value: BlobDownloadOptions) -> UnsafeMutableRawPointer {
     return FfiConverterTypeBlobDownloadOptions.lower(value)
+}
+
+/**
+ * Events emitted by the provider informing about the current status.
+ */
+public protocol BlobProvideEventProtocol: AnyObject {
+    /**
+     * Return the `ClientConnected` event
+     */
+    func asClientConnected() -> ClientConnected
+
+    /**
+     * Return the `GetRequestReceived` event
+     */
+    func asGetRequestReceived() -> GetRequestReceived
+
+    /**
+     * Return the `TaggedBlobAdded` event
+     */
+    func asTaggedBlobAdded() -> TaggedBlobAdded
+
+    /**
+     * Return the `TransferAborted` event
+     */
+    func asTransferAborted() -> TransferAborted
+
+    /**
+     * Return the `TransferBlobCompleted` event
+     */
+    func asTransferBlobCompleted() -> TransferBlobCompleted
+
+    /**
+     * Return the `TransferCompleted` event
+     */
+    func asTransferCompleted() -> TransferCompleted
+
+    /**
+     * Return the `TransferHashSeqStarted` event
+     */
+    func asTransferHashSeqStarted() -> TransferHashSeqStarted
+
+    /**
+     * Return the `TransferProgress` event
+     */
+    func asTransferProgress() -> TransferProgress
+
+    /**
+     * Get the type of event
+     */
+    func type() -> BlobProvideEventType
+}
+
+/**
+ * Events emitted by the provider informing about the current status.
+ */
+open class BlobProvideEvent:
+    BlobProvideEventProtocol
+{
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    public required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    /// This constructor can be used to instantiate a fake object.
+    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    ///
+    /// - Warning:
+    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    public init(noPointer _: NoPointer) {
+        pointer = nil
+    }
+
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_blobprovideevent(self.pointer, $0) }
+    }
+
+    // No primary constructor declared for this class.
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_iroh_ffi_fn_free_blobprovideevent(pointer, $0) }
+    }
+
+    /**
+     * Return the `ClientConnected` event
+     */
+    open func asClientConnected() -> ClientConnected {
+        return try! FfiConverterTypeClientConnected.lift(try! rustCall {
+            uniffi_iroh_ffi_fn_method_blobprovideevent_as_client_connected(self.uniffiClonePointer(), $0)
+        })
+    }
+
+    /**
+     * Return the `GetRequestReceived` event
+     */
+    open func asGetRequestReceived() -> GetRequestReceived {
+        return try! FfiConverterTypeGetRequestReceived.lift(try! rustCall {
+            uniffi_iroh_ffi_fn_method_blobprovideevent_as_get_request_received(self.uniffiClonePointer(), $0)
+        })
+    }
+
+    /**
+     * Return the `TaggedBlobAdded` event
+     */
+    open func asTaggedBlobAdded() -> TaggedBlobAdded {
+        return try! FfiConverterTypeTaggedBlobAdded.lift(try! rustCall {
+            uniffi_iroh_ffi_fn_method_blobprovideevent_as_tagged_blob_added(self.uniffiClonePointer(), $0)
+        })
+    }
+
+    /**
+     * Return the `TransferAborted` event
+     */
+    open func asTransferAborted() -> TransferAborted {
+        return try! FfiConverterTypeTransferAborted.lift(try! rustCall {
+            uniffi_iroh_ffi_fn_method_blobprovideevent_as_transfer_aborted(self.uniffiClonePointer(), $0)
+        })
+    }
+
+    /**
+     * Return the `TransferBlobCompleted` event
+     */
+    open func asTransferBlobCompleted() -> TransferBlobCompleted {
+        return try! FfiConverterTypeTransferBlobCompleted.lift(try! rustCall {
+            uniffi_iroh_ffi_fn_method_blobprovideevent_as_transfer_blob_completed(self.uniffiClonePointer(), $0)
+        })
+    }
+
+    /**
+     * Return the `TransferCompleted` event
+     */
+    open func asTransferCompleted() -> TransferCompleted {
+        return try! FfiConverterTypeTransferCompleted.lift(try! rustCall {
+            uniffi_iroh_ffi_fn_method_blobprovideevent_as_transfer_completed(self.uniffiClonePointer(), $0)
+        })
+    }
+
+    /**
+     * Return the `TransferHashSeqStarted` event
+     */
+    open func asTransferHashSeqStarted() -> TransferHashSeqStarted {
+        return try! FfiConverterTypeTransferHashSeqStarted.lift(try! rustCall {
+            uniffi_iroh_ffi_fn_method_blobprovideevent_as_transfer_hash_seq_started(self.uniffiClonePointer(), $0)
+        })
+    }
+
+    /**
+     * Return the `TransferProgress` event
+     */
+    open func asTransferProgress() -> TransferProgress {
+        return try! FfiConverterTypeTransferProgress.lift(try! rustCall {
+            uniffi_iroh_ffi_fn_method_blobprovideevent_as_transfer_progress(self.uniffiClonePointer(), $0)
+        })
+    }
+
+    /**
+     * Get the type of event
+     */
+    open func type() -> BlobProvideEventType {
+        return try! FfiConverterTypeBlobProvideEventType.lift(try! rustCall {
+            uniffi_iroh_ffi_fn_method_blobprovideevent_type(self.uniffiClonePointer(), $0)
+        })
+    }
+}
+
+public struct FfiConverterTypeBlobProvideEvent: FfiConverter {
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = BlobProvideEvent
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> BlobProvideEvent {
+        return BlobProvideEvent(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: BlobProvideEvent) -> UnsafeMutableRawPointer {
+        return value.uniffiClonePointer()
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BlobProvideEvent {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: BlobProvideEvent, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+public func FfiConverterTypeBlobProvideEvent_lift(_ pointer: UnsafeMutableRawPointer) throws -> BlobProvideEvent {
+    return try FfiConverterTypeBlobProvideEvent.lift(pointer)
+}
+
+public func FfiConverterTypeBlobProvideEvent_lower(_ value: BlobProvideEvent) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeBlobProvideEvent.lower(value)
+}
+
+/**
+ * The `progress` method will be called for each `BlobProvideEvent` event that is
+ * emitted from the iroh node while the callback is registered. Use the `BlobProvideEvent.type()`
+ * method to check the `BlobProvideEventType`
+ */
+public protocol BlobProvideEventCallback: AnyObject {
+    func blobEvent(event: BlobProvideEvent) async throws
+}
+
+/**
+ * The `progress` method will be called for each `BlobProvideEvent` event that is
+ * emitted from the iroh node while the callback is registered. Use the `BlobProvideEvent.type()`
+ * method to check the `BlobProvideEventType`
+ */
+open class BlobProvideEventCallbackImpl:
+    BlobProvideEventCallback
+{
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    public required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    /// This constructor can be used to instantiate a fake object.
+    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    ///
+    /// - Warning:
+    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    public init(noPointer _: NoPointer) {
+        pointer = nil
+    }
+
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_blobprovideeventcallback(self.pointer, $0) }
+    }
+
+    // No primary constructor declared for this class.
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_iroh_ffi_fn_free_blobprovideeventcallback(pointer, $0) }
+    }
+
+    open func blobEvent(event: BlobProvideEvent) async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_blobprovideeventcallback_blob_event(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeBlobProvideEvent.lower(event)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeCallbackError.lift
+            )
+    }
+}
+
+// Put the implementation in a struct so we don't pollute the top-level namespace
+private enum UniffiCallbackInterfaceBlobProvideEventCallback {
+    // Create the VTable using a series of closures.
+    // Swift automatically converts these into C callback functions.
+    static var vtable: UniffiVTableCallbackInterfaceBlobProvideEventCallback = .init(
+        blobEvent: { (
+            uniffiHandle: UInt64,
+            event: UnsafeMutableRawPointer,
+            uniffiFutureCallback: @escaping UniffiForeignFutureCompleteVoid,
+            uniffiCallbackData: UInt64,
+            uniffiOutReturn: UnsafeMutablePointer<UniffiForeignFuture>
+        ) in
+            let makeCall = {
+                () async throws in
+                guard let uniffiObj = try? FfiConverterTypeBlobProvideEventCallback.handleMap.get(handle: uniffiHandle) else {
+                    throw UniffiInternalError.unexpectedStaleHandle
+                }
+                return try await uniffiObj.blobEvent(
+                    event: FfiConverterTypeBlobProvideEvent.lift(event)
+                )
+            }
+
+            let uniffiHandleSuccess = { (_: ()) in
+                uniffiFutureCallback(
+                    uniffiCallbackData,
+                    UniffiForeignFutureStructVoid(
+                        callStatus: RustCallStatus()
+                    )
+                )
+            }
+            let uniffiHandleError = { statusCode, errorBuf in
+                uniffiFutureCallback(
+                    uniffiCallbackData,
+                    UniffiForeignFutureStructVoid(
+                        callStatus: RustCallStatus(code: statusCode, errorBuf: errorBuf)
+                    )
+                )
+            }
+            let uniffiForeignFuture = uniffiTraitInterfaceCallAsyncWithError(
+                makeCall: makeCall,
+                handleSuccess: uniffiHandleSuccess,
+                handleError: uniffiHandleError,
+                lowerError: FfiConverterTypeCallbackError.lower
+            )
+            uniffiOutReturn.pointee = uniffiForeignFuture
+        },
+        uniffiFree: { (uniffiHandle: UInt64) in
+            let result = try? FfiConverterTypeBlobProvideEventCallback.handleMap.remove(handle: uniffiHandle)
+            if result == nil {
+                print("Uniffi callback interface BlobProvideEventCallback: handle missing in uniffiFree")
+            }
+        }
+    )
+}
+
+private func uniffiCallbackInitBlobProvideEventCallback() {
+    uniffi_iroh_ffi_fn_init_callback_vtable_blobprovideeventcallback(&UniffiCallbackInterfaceBlobProvideEventCallback.vtable)
+}
+
+public struct FfiConverterTypeBlobProvideEventCallback: FfiConverter {
+    fileprivate static var handleMap = UniffiHandleMap<BlobProvideEventCallback>()
+
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = BlobProvideEventCallback
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> BlobProvideEventCallback {
+        return BlobProvideEventCallbackImpl(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: BlobProvideEventCallback) -> UnsafeMutableRawPointer {
+        guard let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: handleMap.insert(obj: value))) else {
+            fatalError("Cast to UnsafeMutableRawPointer failed")
+        }
+        return ptr
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BlobProvideEventCallback {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: BlobProvideEventCallback, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+public func FfiConverterTypeBlobProvideEventCallback_lift(_ pointer: UnsafeMutableRawPointer) throws -> BlobProvideEventCallback {
+    return try FfiConverterTypeBlobProvideEventCallback.lift(pointer)
+}
+
+public func FfiConverterTypeBlobProvideEventCallback_lower(_ value: BlobProvideEventCallback) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeBlobProvideEventCallback.lower(value)
 }
 
 /**
@@ -5595,6 +5984,11 @@ public protocol IrohProtocol: AnyObject {
     func gossip() -> Gossip
 
     /**
+     * Access to blob specific funtionaliy.
+     */
+    func net() -> Net
+
+    /**
      * Access to node specific funtionaliy.
      */
     func node() -> Node
@@ -5757,6 +6151,15 @@ open class Iroh:
     open func gossip() -> Gossip {
         return try! FfiConverterTypeGossip.lift(try! rustCall {
             uniffi_iroh_ffi_fn_method_iroh_gossip(self.uniffiClonePointer(), $0)
+        })
+    }
+
+    /**
+     * Access to blob specific funtionaliy.
+     */
+    open func net() -> Net {
+        return try! FfiConverterTypeNet.lift(try! rustCall {
+            uniffi_iroh_ffi_fn_method_iroh_net(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -6269,33 +6672,18 @@ public func FfiConverterTypeMessage_lower(_ value: Message) -> UnsafeMutableRawP
 }
 
 /**
- * Iroh node client.
+ * Iroh net client.
  */
-public protocol NodeProtocol: AnyObject {
+public protocol NetProtocol: AnyObject {
     /**
      * Add a known node address to the node.
      */
     func addNodeAddr(addr: NodeAddr) async throws
 
     /**
-     * Return connection information on the currently running node.
-     */
-    func connectionInfo(nodeId: PublicKey) async throws -> ConnectionInfo?
-
-    /**
-     * Return `ConnectionInfo`s for each connection we have to another iroh node.
-     */
-    func connections() async throws -> [ConnectionInfo]
-
-    /**
      * Get the relay server we are connected to.
      */
     func homeRelay() async throws -> String?
-
-    /**
-     * Returns `Some(addr)` if an RPC endpoint is running, `None` otherwise.
-     */
-    func myRpcAddr() -> String?
 
     /**
      * Return the [`NodeAddr`] for this node.
@@ -6306,6 +6694,224 @@ public protocol NodeProtocol: AnyObject {
      * The string representation of the PublicKey of this node.
      */
     func nodeId() async throws -> String
+
+    /**
+     * Return connection information on the currently running node.
+     */
+    func remoteInfo(nodeId: PublicKey) async throws -> RemoteInfo?
+
+    /**
+     * Return `ConnectionInfo`s for each connection we have to another iroh node.
+     */
+    func remoteInfoList() async throws -> [RemoteInfo]
+}
+
+/**
+ * Iroh net client.
+ */
+open class Net:
+    NetProtocol
+{
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    public required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    /// This constructor can be used to instantiate a fake object.
+    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    ///
+    /// - Warning:
+    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    public init(noPointer _: NoPointer) {
+        pointer = nil
+    }
+
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_net(self.pointer, $0) }
+    }
+
+    // No primary constructor declared for this class.
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_iroh_ffi_fn_free_net(pointer, $0) }
+    }
+
+    /**
+     * Add a known node address to the node.
+     */
+    open func addNodeAddr(addr: NodeAddr) async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_net_add_node_addr(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeNodeAddr.lower(addr)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
+    }
+
+    /**
+     * Get the relay server we are connected to.
+     */
+    open func homeRelay() async throws -> String? {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_net_home_relay(
+                        self.uniffiClonePointer()
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterOptionString.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
+    }
+
+    /**
+     * Return the [`NodeAddr`] for this node.
+     */
+    open func nodeAddr() async throws -> NodeAddr {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_net_node_addr(
+                        self.uniffiClonePointer()
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_pointer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_pointer,
+                liftFunc: FfiConverterTypeNodeAddr.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
+    }
+
+    /**
+     * The string representation of the PublicKey of this node.
+     */
+    open func nodeId() async throws -> String {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_net_node_id(
+                        self.uniffiClonePointer()
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterString.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
+    }
+
+    /**
+     * Return connection information on the currently running node.
+     */
+    open func remoteInfo(nodeId: PublicKey) async throws -> RemoteInfo? {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_net_remote_info(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypePublicKey.lower(nodeId)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterOptionTypeRemoteInfo.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
+    }
+
+    /**
+     * Return `ConnectionInfo`s for each connection we have to another iroh node.
+     */
+    open func remoteInfoList() async throws -> [RemoteInfo] {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_net_remote_info_list(
+                        self.uniffiClonePointer()
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
+                liftFunc: FfiConverterSequenceTypeRemoteInfo.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
+    }
+}
+
+public struct FfiConverterTypeNet: FfiConverter {
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = Net
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> Net {
+        return Net(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: Net) -> UnsafeMutableRawPointer {
+        return value.uniffiClonePointer()
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Net {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: Net, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+public func FfiConverterTypeNet_lift(_ pointer: UnsafeMutableRawPointer) throws -> Net {
+    return try FfiConverterTypeNet.lift(pointer)
+}
+
+public func FfiConverterTypeNet_lower(_ value: Net) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeNet.lower(value)
+}
+
+/**
+ * Iroh node client.
+ */
+public protocol NodeProtocol: AnyObject {
+    /**
+     * Returns `Some(addr)` if an RPC endpoint is running, `None` otherwise.
+     */
+    func myRpcAddr() -> String?
 
     /**
      * Shutdown this iroh node.
@@ -6367,128 +6973,12 @@ open class Node:
     }
 
     /**
-     * Add a known node address to the node.
-     */
-    open func addNodeAddr(addr: NodeAddr) async throws {
-        return
-            try await uniffiRustCallAsync(
-                rustFutureFunc: {
-                    uniffi_iroh_ffi_fn_method_node_add_node_addr(
-                        self.uniffiClonePointer(),
-                        FfiConverterTypeNodeAddr.lower(addr)
-                    )
-                },
-                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
-                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
-                freeFunc: ffi_iroh_ffi_rust_future_free_void,
-                liftFunc: { $0 },
-                errorHandler: FfiConverterTypeIrohError__as_error.lift
-            )
-    }
-
-    /**
-     * Return connection information on the currently running node.
-     */
-    open func connectionInfo(nodeId: PublicKey) async throws -> ConnectionInfo? {
-        return
-            try await uniffiRustCallAsync(
-                rustFutureFunc: {
-                    uniffi_iroh_ffi_fn_method_node_connection_info(
-                        self.uniffiClonePointer(),
-                        FfiConverterTypePublicKey.lower(nodeId)
-                    )
-                },
-                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
-                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
-                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
-                liftFunc: FfiConverterOptionTypeConnectionInfo.lift,
-                errorHandler: FfiConverterTypeIrohError__as_error.lift
-            )
-    }
-
-    /**
-     * Return `ConnectionInfo`s for each connection we have to another iroh node.
-     */
-    open func connections() async throws -> [ConnectionInfo] {
-        return
-            try await uniffiRustCallAsync(
-                rustFutureFunc: {
-                    uniffi_iroh_ffi_fn_method_node_connections(
-                        self.uniffiClonePointer()
-                    )
-                },
-                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
-                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
-                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
-                liftFunc: FfiConverterSequenceTypeConnectionInfo.lift,
-                errorHandler: FfiConverterTypeIrohError__as_error.lift
-            )
-    }
-
-    /**
-     * Get the relay server we are connected to.
-     */
-    open func homeRelay() async throws -> String? {
-        return
-            try await uniffiRustCallAsync(
-                rustFutureFunc: {
-                    uniffi_iroh_ffi_fn_method_node_home_relay(
-                        self.uniffiClonePointer()
-                    )
-                },
-                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
-                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
-                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
-                liftFunc: FfiConverterOptionString.lift,
-                errorHandler: FfiConverterTypeIrohError__as_error.lift
-            )
-    }
-
-    /**
      * Returns `Some(addr)` if an RPC endpoint is running, `None` otherwise.
      */
     open func myRpcAddr() -> String? {
         return try! FfiConverterOptionString.lift(try! rustCall {
             uniffi_iroh_ffi_fn_method_node_my_rpc_addr(self.uniffiClonePointer(), $0)
         })
-    }
-
-    /**
-     * Return the [`NodeAddr`] for this node.
-     */
-    open func nodeAddr() async throws -> NodeAddr {
-        return
-            try await uniffiRustCallAsync(
-                rustFutureFunc: {
-                    uniffi_iroh_ffi_fn_method_node_node_addr(
-                        self.uniffiClonePointer()
-                    )
-                },
-                pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
-                completeFunc: ffi_iroh_ffi_rust_future_complete_pointer,
-                freeFunc: ffi_iroh_ffi_rust_future_free_pointer,
-                liftFunc: FfiConverterTypeNodeAddr.lift,
-                errorHandler: FfiConverterTypeIrohError__as_error.lift
-            )
-    }
-
-    /**
-     * The string representation of the PublicKey of this node.
-     */
-    open func nodeId() async throws -> String {
-        return
-            try await uniffiRustCallAsync(
-                rustFutureFunc: {
-                    uniffi_iroh_ffi_fn_method_node_node_id(
-                        self.uniffiClonePointer()
-                    )
-                },
-                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
-                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
-                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
-                liftFunc: FfiConverterString.lift,
-                errorHandler: FfiConverterTypeIrohError__as_error.lift
-            )
     }
 
     /**
@@ -8536,6 +9026,60 @@ public func FfiConverterTypeBlobInfo_lower(_ value: BlobInfo) -> RustBuffer {
 }
 
 /**
+ * A new client connected to the node.
+ */
+public struct ClientConnected {
+    /**
+     * An unique connection id.
+     */
+    public var connectionId: UInt64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * An unique connection id.
+         */ connectionId: UInt64
+    ) {
+        self.connectionId = connectionId
+    }
+}
+
+extension ClientConnected: Equatable, Hashable {
+    public static func == (lhs: ClientConnected, rhs: ClientConnected) -> Bool {
+        if lhs.connectionId != rhs.connectionId {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(connectionId)
+    }
+}
+
+public struct FfiConverterTypeClientConnected: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ClientConnected {
+        return
+            try ClientConnected(
+                connectionId: FfiConverterUInt64.read(from: &buf)
+            )
+    }
+
+    public static func write(_ value: ClientConnected, into buf: inout [UInt8]) {
+        FfiConverterUInt64.write(value.connectionId, into: &buf)
+    }
+}
+
+public func FfiConverterTypeClientConnected_lift(_ buf: RustBuffer) throws -> ClientConnected {
+    return try FfiConverterTypeClientConnected.lift(buf)
+}
+
+public func FfiConverterTypeClientConnected_lower(_ value: ClientConnected) -> RustBuffer {
+    return FfiConverterTypeClientConnected.lower(value)
+}
+
+/**
  * A response to a list collections request
  */
 public struct CollectionInfo {
@@ -8612,100 +9156,6 @@ public func FfiConverterTypeCollectionInfo_lift(_ buf: RustBuffer) throws -> Col
 
 public func FfiConverterTypeCollectionInfo_lower(_ value: CollectionInfo) -> RustBuffer {
     return FfiConverterTypeCollectionInfo.lower(value)
-}
-
-/**
- * The kinds of control messages that can be sent
- * Information about a connection
- */
-public struct ConnectionInfo {
-    /**
-     * The node identifier of the endpoint. Also a public key.
-     */
-    public var nodeId: PublicKey
-    /**
-     * Relay url, if available.
-     */
-    public var relayUrl: String?
-    /**
-     * List of addresses at which this node might be reachable, plus any latency information we
-     * have about that address and the last time the address was used.
-     */
-    public var addrs: [DirectAddrInfo]
-    /**
-     * The type of connection we have to the peer, either direct or over relay.
-     */
-    public var connType: ConnectionType
-    /**
-     * The latency of the `conn_type`.
-     */
-    public var latency: TimeInterval?
-    /**
-     * Duration since the last time this peer was used.
-     */
-    public var lastUsed: TimeInterval?
-
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(
-        /**
-         * The node identifier of the endpoint. Also a public key.
-         */ nodeId: PublicKey,
-        /**
-            * Relay url, if available.
-            */ relayUrl: String?,
-        /**
-            * List of addresses at which this node might be reachable, plus any latency information we
-            * have about that address and the last time the address was used.
-            */ addrs: [DirectAddrInfo],
-        /**
-            * The type of connection we have to the peer, either direct or over relay.
-            */ connType: ConnectionType,
-        /**
-            * The latency of the `conn_type`.
-            */ latency: TimeInterval?,
-        /**
-            * Duration since the last time this peer was used.
-            */ lastUsed: TimeInterval?
-    ) {
-        self.nodeId = nodeId
-        self.relayUrl = relayUrl
-        self.addrs = addrs
-        self.connType = connType
-        self.latency = latency
-        self.lastUsed = lastUsed
-    }
-}
-
-public struct FfiConverterTypeConnectionInfo: FfiConverterRustBuffer {
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ConnectionInfo {
-        return
-            try ConnectionInfo(
-                nodeId: FfiConverterTypePublicKey.read(from: &buf),
-                relayUrl: FfiConverterOptionString.read(from: &buf),
-                addrs: FfiConverterSequenceTypeDirectAddrInfo.read(from: &buf),
-                connType: FfiConverterTypeConnectionType.read(from: &buf),
-                latency: FfiConverterOptionDuration.read(from: &buf),
-                lastUsed: FfiConverterOptionDuration.read(from: &buf)
-            )
-    }
-
-    public static func write(_ value: ConnectionInfo, into buf: inout [UInt8]) {
-        FfiConverterTypePublicKey.write(value.nodeId, into: &buf)
-        FfiConverterOptionString.write(value.relayUrl, into: &buf)
-        FfiConverterSequenceTypeDirectAddrInfo.write(value.addrs, into: &buf)
-        FfiConverterTypeConnectionType.write(value.connType, into: &buf)
-        FfiConverterOptionDuration.write(value.latency, into: &buf)
-        FfiConverterOptionDuration.write(value.lastUsed, into: &buf)
-    }
-}
-
-public func FfiConverterTypeConnectionInfo_lift(_ buf: RustBuffer) throws -> ConnectionInfo {
-    return try FfiConverterTypeConnectionInfo.lift(buf)
-}
-
-public func FfiConverterTypeConnectionInfo_lower(_ value: ConnectionInfo) -> RustBuffer {
-    return FfiConverterTypeConnectionInfo.lower(value)
 }
 
 /**
@@ -9896,6 +10346,67 @@ public func FfiConverterTypeDownloadProgressProgress_lower(_ value: DownloadProg
 }
 
 /**
+ * A request was received from a client.
+ */
+public struct GetRequestReceived {
+    /**
+     * An unique connection id.
+     */
+    public var connectionId: UInt64
+    /**
+     * An identifier uniquely identifying this transfer request.
+     */
+    public var requestId: UInt64
+    /**
+     * The hash for which the client wants to receive data.
+     */
+    public var hash: Hash
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * An unique connection id.
+         */ connectionId: UInt64,
+        /**
+            * An identifier uniquely identifying this transfer request.
+            */ requestId: UInt64,
+        /**
+            * The hash for which the client wants to receive data.
+            */ hash: Hash
+    ) {
+        self.connectionId = connectionId
+        self.requestId = requestId
+        self.hash = hash
+    }
+}
+
+public struct FfiConverterTypeGetRequestReceived: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> GetRequestReceived {
+        return
+            try GetRequestReceived(
+                connectionId: FfiConverterUInt64.read(from: &buf),
+                requestId: FfiConverterUInt64.read(from: &buf),
+                hash: FfiConverterTypeHash.read(from: &buf)
+            )
+    }
+
+    public static func write(_ value: GetRequestReceived, into buf: inout [UInt8]) {
+        FfiConverterUInt64.write(value.connectionId, into: &buf)
+        FfiConverterUInt64.write(value.requestId, into: &buf)
+        FfiConverterTypeHash.write(value.hash, into: &buf)
+    }
+}
+
+public func FfiConverterTypeGetRequestReceived_lift(_ buf: RustBuffer) throws -> GetRequestReceived {
+    return try FfiConverterTypeGetRequestReceived.lift(buf)
+}
+
+public func FfiConverterTypeGetRequestReceived_lower(_ value: GetRequestReceived) -> RustBuffer {
+    return FfiConverterTypeGetRequestReceived.lower(value)
+}
+
+/**
  * The Hash and associated tag of a newly created collection
  */
 public struct HashAndTag {
@@ -10332,6 +10843,10 @@ public struct NodeOptions {
      * Set to 0 to disable gc
      */
     public var gcIntervalMillis: UInt64?
+    /**
+     * Provide a callback to hook into events when the blobs component adds and provides blobs.
+     */
+    public var blobEvents: BlobProvideEventCallback?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
@@ -10339,22 +10854,13 @@ public struct NodeOptions {
         /**
          * How frequently the blob store should clean up unreferenced blobs, in milliseconds.
          * Set to 0 to disable gc
-         */ gcIntervalMillis: UInt64?
+         */ gcIntervalMillis: UInt64?,
+        /**
+            * Provide a callback to hook into events when the blobs component adds and provides blobs.
+            */ blobEvents: BlobProvideEventCallback?
     ) {
         self.gcIntervalMillis = gcIntervalMillis
-    }
-}
-
-extension NodeOptions: Equatable, Hashable {
-    public static func == (lhs: NodeOptions, rhs: NodeOptions) -> Bool {
-        if lhs.gcIntervalMillis != rhs.gcIntervalMillis {
-            return false
-        }
-        return true
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(gcIntervalMillis)
+        self.blobEvents = blobEvents
     }
 }
 
@@ -10362,12 +10868,14 @@ public struct FfiConverterTypeNodeOptions: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> NodeOptions {
         return
             try NodeOptions(
-                gcIntervalMillis: FfiConverterOptionUInt64.read(from: &buf)
+                gcIntervalMillis: FfiConverterOptionUInt64.read(from: &buf),
+                blobEvents: FfiConverterOptionTypeBlobProvideEventCallback.read(from: &buf)
             )
     }
 
     public static func write(_ value: NodeOptions, into buf: inout [UInt8]) {
         FfiConverterOptionUInt64.write(value.gcIntervalMillis, into: &buf)
+        FfiConverterOptionTypeBlobProvideEventCallback.write(value.blobEvents, into: &buf)
     }
 }
 
@@ -10570,6 +11078,100 @@ public func FfiConverterTypeQueryOptions_lower(_ value: QueryOptions) -> RustBuf
 }
 
 /**
+ * The kinds of control messages that can be sent
+ * Information about a remote node
+ */
+public struct RemoteInfo {
+    /**
+     * The node identifier of the endpoint. Also a public key.
+     */
+    public var nodeId: PublicKey
+    /**
+     * Relay url, if available.
+     */
+    public var relayUrl: String?
+    /**
+     * List of addresses at which this node might be reachable, plus any latency information we
+     * have about that address and the last time the address was used.
+     */
+    public var addrs: [DirectAddrInfo]
+    /**
+     * The type of connection we have to the peer, either direct or over relay.
+     */
+    public var connType: ConnectionType
+    /**
+     * The latency of the `conn_type`.
+     */
+    public var latency: TimeInterval?
+    /**
+     * Duration since the last time this peer was used.
+     */
+    public var lastUsed: TimeInterval?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * The node identifier of the endpoint. Also a public key.
+         */ nodeId: PublicKey,
+        /**
+            * Relay url, if available.
+            */ relayUrl: String?,
+        /**
+            * List of addresses at which this node might be reachable, plus any latency information we
+            * have about that address and the last time the address was used.
+            */ addrs: [DirectAddrInfo],
+        /**
+            * The type of connection we have to the peer, either direct or over relay.
+            */ connType: ConnectionType,
+        /**
+            * The latency of the `conn_type`.
+            */ latency: TimeInterval?,
+        /**
+            * Duration since the last time this peer was used.
+            */ lastUsed: TimeInterval?
+    ) {
+        self.nodeId = nodeId
+        self.relayUrl = relayUrl
+        self.addrs = addrs
+        self.connType = connType
+        self.latency = latency
+        self.lastUsed = lastUsed
+    }
+}
+
+public struct FfiConverterTypeRemoteInfo: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteInfo {
+        return
+            try RemoteInfo(
+                nodeId: FfiConverterTypePublicKey.read(from: &buf),
+                relayUrl: FfiConverterOptionString.read(from: &buf),
+                addrs: FfiConverterSequenceTypeDirectAddrInfo.read(from: &buf),
+                connType: FfiConverterTypeConnectionType.read(from: &buf),
+                latency: FfiConverterOptionDuration.read(from: &buf),
+                lastUsed: FfiConverterOptionDuration.read(from: &buf)
+            )
+    }
+
+    public static func write(_ value: RemoteInfo, into buf: inout [UInt8]) {
+        FfiConverterTypePublicKey.write(value.nodeId, into: &buf)
+        FfiConverterOptionString.write(value.relayUrl, into: &buf)
+        FfiConverterSequenceTypeDirectAddrInfo.write(value.addrs, into: &buf)
+        FfiConverterTypeConnectionType.write(value.connType, into: &buf)
+        FfiConverterOptionDuration.write(value.latency, into: &buf)
+        FfiConverterOptionDuration.write(value.lastUsed, into: &buf)
+    }
+}
+
+public func FfiConverterTypeRemoteInfo_lift(_ buf: RustBuffer) throws -> RemoteInfo {
+    return try FfiConverterTypeRemoteInfo.lift(buf)
+}
+
+public func FfiConverterTypeRemoteInfo_lower(_ value: RemoteInfo) -> RustBuffer {
+    return FfiConverterTypeRemoteInfo.lower(value)
+}
+
+/**
  * Outcome of a sync operation
  */
 public struct SyncEvent {
@@ -10709,6 +11311,524 @@ public func FfiConverterTypeTagInfo_lift(_ buf: RustBuffer) throws -> TagInfo {
 
 public func FfiConverterTypeTagInfo_lower(_ value: TagInfo) -> RustBuffer {
     return FfiConverterTypeTagInfo.lower(value)
+}
+
+/**
+ * An BlobProvide event indicating a new tagged blob or collection was added
+ */
+public struct TaggedBlobAdded {
+    /**
+     * The hash of the added data
+     */
+    public var hash: Hash
+    /**
+     * The format of the added data
+     */
+    public var format: BlobFormat
+    /**
+     * The tag of the added data
+     */
+    public var tag: Data
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * The hash of the added data
+         */ hash: Hash,
+        /**
+            * The format of the added data
+            */ format: BlobFormat,
+        /**
+            * The tag of the added data
+            */ tag: Data
+    ) {
+        self.hash = hash
+        self.format = format
+        self.tag = tag
+    }
+}
+
+public struct FfiConverterTypeTaggedBlobAdded: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TaggedBlobAdded {
+        return
+            try TaggedBlobAdded(
+                hash: FfiConverterTypeHash.read(from: &buf),
+                format: FfiConverterTypeBlobFormat.read(from: &buf),
+                tag: FfiConverterData.read(from: &buf)
+            )
+    }
+
+    public static func write(_ value: TaggedBlobAdded, into buf: inout [UInt8]) {
+        FfiConverterTypeHash.write(value.hash, into: &buf)
+        FfiConverterTypeBlobFormat.write(value.format, into: &buf)
+        FfiConverterData.write(value.tag, into: &buf)
+    }
+}
+
+public func FfiConverterTypeTaggedBlobAdded_lift(_ buf: RustBuffer) throws -> TaggedBlobAdded {
+    return try FfiConverterTypeTaggedBlobAdded.lift(buf)
+}
+
+public func FfiConverterTypeTaggedBlobAdded_lower(_ value: TaggedBlobAdded) -> RustBuffer {
+    return FfiConverterTypeTaggedBlobAdded.lower(value)
+}
+
+/**
+ * A request was aborted because the client disconnected.
+ */
+public struct TransferAborted {
+    /**
+     * The quic connection id.
+     */
+    public var connectionId: UInt64
+    /**
+     * An identifier uniquely identifying this request.
+     */
+    public var requestId: UInt64
+    /**
+     * statistics about the transfer. This is None if the transfer
+     * was aborted before any data was sent.
+     */
+    public var stats: TransferStats?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * The quic connection id.
+         */ connectionId: UInt64,
+        /**
+            * An identifier uniquely identifying this request.
+            */ requestId: UInt64,
+        /**
+            * statistics about the transfer. This is None if the transfer
+            * was aborted before any data was sent.
+            */ stats: TransferStats?
+    ) {
+        self.connectionId = connectionId
+        self.requestId = requestId
+        self.stats = stats
+    }
+}
+
+extension TransferAborted: Equatable, Hashable {
+    public static func == (lhs: TransferAborted, rhs: TransferAborted) -> Bool {
+        if lhs.connectionId != rhs.connectionId {
+            return false
+        }
+        if lhs.requestId != rhs.requestId {
+            return false
+        }
+        if lhs.stats != rhs.stats {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(connectionId)
+        hasher.combine(requestId)
+        hasher.combine(stats)
+    }
+}
+
+public struct FfiConverterTypeTransferAborted: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TransferAborted {
+        return
+            try TransferAborted(
+                connectionId: FfiConverterUInt64.read(from: &buf),
+                requestId: FfiConverterUInt64.read(from: &buf),
+                stats: FfiConverterOptionTypeTransferStats.read(from: &buf)
+            )
+    }
+
+    public static func write(_ value: TransferAborted, into buf: inout [UInt8]) {
+        FfiConverterUInt64.write(value.connectionId, into: &buf)
+        FfiConverterUInt64.write(value.requestId, into: &buf)
+        FfiConverterOptionTypeTransferStats.write(value.stats, into: &buf)
+    }
+}
+
+public func FfiConverterTypeTransferAborted_lift(_ buf: RustBuffer) throws -> TransferAborted {
+    return try FfiConverterTypeTransferAborted.lift(buf)
+}
+
+public func FfiConverterTypeTransferAborted_lower(_ value: TransferAborted) -> RustBuffer {
+    return FfiConverterTypeTransferAborted.lower(value)
+}
+
+/**
+ * A blob in a sequence was transferred.
+ */
+public struct TransferBlobCompleted {
+    /**
+     * An unique connection id.
+     */
+    public var connectionId: UInt64
+    /**
+     * An identifier uniquely identifying this transfer request.
+     */
+    public var requestId: UInt64
+    /**
+     * The hash of the blob
+     */
+    public var hash: Hash
+    /**
+     * The index of the blob in the sequence.
+     */
+    public var index: UInt64
+    /**
+     * The size of the blob transferred.
+     */
+    public var size: UInt64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * An unique connection id.
+         */ connectionId: UInt64,
+        /**
+            * An identifier uniquely identifying this transfer request.
+            */ requestId: UInt64,
+        /**
+            * The hash of the blob
+            */ hash: Hash,
+        /**
+            * The index of the blob in the sequence.
+            */ index: UInt64,
+        /**
+            * The size of the blob transferred.
+            */ size: UInt64
+    ) {
+        self.connectionId = connectionId
+        self.requestId = requestId
+        self.hash = hash
+        self.index = index
+        self.size = size
+    }
+}
+
+public struct FfiConverterTypeTransferBlobCompleted: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TransferBlobCompleted {
+        return
+            try TransferBlobCompleted(
+                connectionId: FfiConverterUInt64.read(from: &buf),
+                requestId: FfiConverterUInt64.read(from: &buf),
+                hash: FfiConverterTypeHash.read(from: &buf),
+                index: FfiConverterUInt64.read(from: &buf),
+                size: FfiConverterUInt64.read(from: &buf)
+            )
+    }
+
+    public static func write(_ value: TransferBlobCompleted, into buf: inout [UInt8]) {
+        FfiConverterUInt64.write(value.connectionId, into: &buf)
+        FfiConverterUInt64.write(value.requestId, into: &buf)
+        FfiConverterTypeHash.write(value.hash, into: &buf)
+        FfiConverterUInt64.write(value.index, into: &buf)
+        FfiConverterUInt64.write(value.size, into: &buf)
+    }
+}
+
+public func FfiConverterTypeTransferBlobCompleted_lift(_ buf: RustBuffer) throws -> TransferBlobCompleted {
+    return try FfiConverterTypeTransferBlobCompleted.lift(buf)
+}
+
+public func FfiConverterTypeTransferBlobCompleted_lower(_ value: TransferBlobCompleted) -> RustBuffer {
+    return FfiConverterTypeTransferBlobCompleted.lower(value)
+}
+
+/**
+ * A request was completed and the data was sent to the client.
+ */
+public struct TransferCompleted {
+    /**
+     * An unique connection id.
+     */
+    public var connectionId: UInt64
+    /**
+     * An identifier uniquely identifying this transfer request.
+     */
+    public var requestId: UInt64
+    /**
+     * statistics about the transfer
+     */
+    public var stats: TransferStats
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * An unique connection id.
+         */ connectionId: UInt64,
+        /**
+            * An identifier uniquely identifying this transfer request.
+            */ requestId: UInt64,
+        /**
+            * statistics about the transfer
+            */ stats: TransferStats
+    ) {
+        self.connectionId = connectionId
+        self.requestId = requestId
+        self.stats = stats
+    }
+}
+
+extension TransferCompleted: Equatable, Hashable {
+    public static func == (lhs: TransferCompleted, rhs: TransferCompleted) -> Bool {
+        if lhs.connectionId != rhs.connectionId {
+            return false
+        }
+        if lhs.requestId != rhs.requestId {
+            return false
+        }
+        if lhs.stats != rhs.stats {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(connectionId)
+        hasher.combine(requestId)
+        hasher.combine(stats)
+    }
+}
+
+public struct FfiConverterTypeTransferCompleted: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TransferCompleted {
+        return
+            try TransferCompleted(
+                connectionId: FfiConverterUInt64.read(from: &buf),
+                requestId: FfiConverterUInt64.read(from: &buf),
+                stats: FfiConverterTypeTransferStats.read(from: &buf)
+            )
+    }
+
+    public static func write(_ value: TransferCompleted, into buf: inout [UInt8]) {
+        FfiConverterUInt64.write(value.connectionId, into: &buf)
+        FfiConverterUInt64.write(value.requestId, into: &buf)
+        FfiConverterTypeTransferStats.write(value.stats, into: &buf)
+    }
+}
+
+public func FfiConverterTypeTransferCompleted_lift(_ buf: RustBuffer) throws -> TransferCompleted {
+    return try FfiConverterTypeTransferCompleted.lift(buf)
+}
+
+public func FfiConverterTypeTransferCompleted_lower(_ value: TransferCompleted) -> RustBuffer {
+    return FfiConverterTypeTransferCompleted.lower(value)
+}
+
+/**
+ * A sequence of hashes has been found and is being transferred.
+ */
+public struct TransferHashSeqStarted {
+    /**
+     * An unique connection id.
+     */
+    public var connectionId: UInt64
+    /**
+     * An identifier uniquely identifying this transfer request.
+     */
+    public var requestId: UInt64
+    /**
+     * The number of blobs in the sequence.
+     */
+    public var numBlobs: UInt64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * An unique connection id.
+         */ connectionId: UInt64,
+        /**
+            * An identifier uniquely identifying this transfer request.
+            */ requestId: UInt64,
+        /**
+            * The number of blobs in the sequence.
+            */ numBlobs: UInt64
+    ) {
+        self.connectionId = connectionId
+        self.requestId = requestId
+        self.numBlobs = numBlobs
+    }
+}
+
+extension TransferHashSeqStarted: Equatable, Hashable {
+    public static func == (lhs: TransferHashSeqStarted, rhs: TransferHashSeqStarted) -> Bool {
+        if lhs.connectionId != rhs.connectionId {
+            return false
+        }
+        if lhs.requestId != rhs.requestId {
+            return false
+        }
+        if lhs.numBlobs != rhs.numBlobs {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(connectionId)
+        hasher.combine(requestId)
+        hasher.combine(numBlobs)
+    }
+}
+
+public struct FfiConverterTypeTransferHashSeqStarted: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TransferHashSeqStarted {
+        return
+            try TransferHashSeqStarted(
+                connectionId: FfiConverterUInt64.read(from: &buf),
+                requestId: FfiConverterUInt64.read(from: &buf),
+                numBlobs: FfiConverterUInt64.read(from: &buf)
+            )
+    }
+
+    public static func write(_ value: TransferHashSeqStarted, into buf: inout [UInt8]) {
+        FfiConverterUInt64.write(value.connectionId, into: &buf)
+        FfiConverterUInt64.write(value.requestId, into: &buf)
+        FfiConverterUInt64.write(value.numBlobs, into: &buf)
+    }
+}
+
+public func FfiConverterTypeTransferHashSeqStarted_lift(_ buf: RustBuffer) throws -> TransferHashSeqStarted {
+    return try FfiConverterTypeTransferHashSeqStarted.lift(buf)
+}
+
+public func FfiConverterTypeTransferHashSeqStarted_lower(_ value: TransferHashSeqStarted) -> RustBuffer {
+    return FfiConverterTypeTransferHashSeqStarted.lower(value)
+}
+
+/**
+ * A chunk of a blob was transferred.
+ *
+ * These events will be sent with try_send, so you can not assume that you
+ * will receive all of them.
+ */
+public struct TransferProgress {
+    /**
+     * An unique connection id.
+     */
+    public var connectionId: UInt64
+    /**
+     * An identifier uniquely identifying this transfer request.
+     */
+    public var requestId: UInt64
+    /**
+     * The hash for which we are transferring data.
+     */
+    public var hash: Hash
+    /**
+     * Offset up to which we have transferred data.
+     */
+    public var endOffset: UInt64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * An unique connection id.
+         */ connectionId: UInt64,
+        /**
+            * An identifier uniquely identifying this transfer request.
+            */ requestId: UInt64,
+        /**
+            * The hash for which we are transferring data.
+            */ hash: Hash,
+        /**
+            * Offset up to which we have transferred data.
+            */ endOffset: UInt64
+    ) {
+        self.connectionId = connectionId
+        self.requestId = requestId
+        self.hash = hash
+        self.endOffset = endOffset
+    }
+}
+
+public struct FfiConverterTypeTransferProgress: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TransferProgress {
+        return
+            try TransferProgress(
+                connectionId: FfiConverterUInt64.read(from: &buf),
+                requestId: FfiConverterUInt64.read(from: &buf),
+                hash: FfiConverterTypeHash.read(from: &buf),
+                endOffset: FfiConverterUInt64.read(from: &buf)
+            )
+    }
+
+    public static func write(_ value: TransferProgress, into buf: inout [UInt8]) {
+        FfiConverterUInt64.write(value.connectionId, into: &buf)
+        FfiConverterUInt64.write(value.requestId, into: &buf)
+        FfiConverterTypeHash.write(value.hash, into: &buf)
+        FfiConverterUInt64.write(value.endOffset, into: &buf)
+    }
+}
+
+public func FfiConverterTypeTransferProgress_lift(_ buf: RustBuffer) throws -> TransferProgress {
+    return try FfiConverterTypeTransferProgress.lift(buf)
+}
+
+public func FfiConverterTypeTransferProgress_lower(_ value: TransferProgress) -> RustBuffer {
+    return FfiConverterTypeTransferProgress.lower(value)
+}
+
+/**
+ * The stats for a transfer of a collection or blob.
+ */
+public struct TransferStats {
+    /**
+     * The total duration of the transfer in milliseconds
+     */
+    public var duration: UInt64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * The total duration of the transfer in milliseconds
+         */ duration: UInt64
+    ) {
+        self.duration = duration
+    }
+}
+
+extension TransferStats: Equatable, Hashable {
+    public static func == (lhs: TransferStats, rhs: TransferStats) -> Bool {
+        if lhs.duration != rhs.duration {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(duration)
+    }
+}
+
+public struct FfiConverterTypeTransferStats: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TransferStats {
+        return
+            try TransferStats(
+                duration: FfiConverterUInt64.read(from: &buf)
+            )
+    }
+
+    public static func write(_ value: TransferStats, into buf: inout [UInt8]) {
+        FfiConverterUInt64.write(value.duration, into: &buf)
+    }
+}
+
+public func FfiConverterTypeTransferStats_lift(_ buf: RustBuffer) throws -> TransferStats {
+    return try FfiConverterTypeTransferStats.lift(buf)
+}
+
+public func FfiConverterTypeTransferStats_lower(_ value: TransferStats) -> RustBuffer {
+    return FfiConverterTypeTransferStats.lower(value)
 }
 
 // Note that we don't yet support `indirect` for enums.
@@ -11042,6 +12162,114 @@ public func FfiConverterTypeBlobFormat_lower(_ value: BlobFormat) -> RustBuffer 
 }
 
 extension BlobFormat: Equatable, Hashable {}
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+/**
+ * The different types of BlobProvide events
+ */
+
+public enum BlobProvideEventType {
+    /**
+     * A new collection or tagged blob has been added
+     */
+    case taggedBlobAdded
+    /**
+     * A new client connected to the node.
+     */
+    case clientConnected
+    /**
+     * A request was received from a client.
+     */
+    case getRequestReceived
+    /**
+     * A sequence of hashes has been found and is being transferred.
+     */
+    case transferHashSeqStarted
+    /**
+     * A chunk of a blob was transferred.
+     *
+     * it is not safe to assume all progress events will be sent
+     */
+    case transferProgress
+    /**
+     * A blob in a sequence was transferred.
+     */
+    case transferBlobCompleted
+    /**
+     * A request was completed and the data was sent to the client.
+     */
+    case transferCompleted
+    /**
+     * A request was aborted because the client disconnected.
+     */
+    case transferAborted
+}
+
+public struct FfiConverterTypeBlobProvideEventType: FfiConverterRustBuffer {
+    typealias SwiftType = BlobProvideEventType
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BlobProvideEventType {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        case 1: return .taggedBlobAdded
+
+        case 2: return .clientConnected
+
+        case 3: return .getRequestReceived
+
+        case 4: return .transferHashSeqStarted
+
+        case 5: return .transferProgress
+
+        case 6: return .transferBlobCompleted
+
+        case 7: return .transferCompleted
+
+        case 8: return .transferAborted
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: BlobProvideEventType, into buf: inout [UInt8]) {
+        switch value {
+        case .taggedBlobAdded:
+            writeInt(&buf, Int32(1))
+
+        case .clientConnected:
+            writeInt(&buf, Int32(2))
+
+        case .getRequestReceived:
+            writeInt(&buf, Int32(3))
+
+        case .transferHashSeqStarted:
+            writeInt(&buf, Int32(4))
+
+        case .transferProgress:
+            writeInt(&buf, Int32(5))
+
+        case .transferBlobCompleted:
+            writeInt(&buf, Int32(6))
+
+        case .transferCompleted:
+            writeInt(&buf, Int32(7))
+
+        case .transferAborted:
+            writeInt(&buf, Int32(8))
+        }
+    }
+}
+
+public func FfiConverterTypeBlobProvideEventType_lift(_ buf: RustBuffer) throws -> BlobProvideEventType {
+    return try FfiConverterTypeBlobProvideEventType.lift(buf)
+}
+
+public func FfiConverterTypeBlobProvideEventType_lower(_ value: BlobProvideEventType) -> RustBuffer {
+    return FfiConverterTypeBlobProvideEventType.lower(value)
+}
+
+extension BlobProvideEventType: Equatable, Hashable {}
 
 public enum CallbackError {
     case Error
@@ -12091,6 +13319,27 @@ private struct FfiConverterOptionDuration: FfiConverterRustBuffer {
     }
 }
 
+private struct FfiConverterOptionTypeBlobProvideEventCallback: FfiConverterRustBuffer {
+    typealias SwiftType = BlobProvideEventCallback?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeBlobProvideEventCallback.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeBlobProvideEventCallback.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
 private struct FfiConverterOptionTypeDoc: FfiConverterRustBuffer {
     typealias SwiftType = Doc?
 
@@ -12175,27 +13424,6 @@ private struct FfiConverterOptionTypeEntry: FfiConverterRustBuffer {
     }
 }
 
-private struct FfiConverterOptionTypeConnectionInfo: FfiConverterRustBuffer {
-    typealias SwiftType = ConnectionInfo?
-
-    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
-        guard let value = value else {
-            writeInt(&buf, Int8(0))
-            return
-        }
-        writeInt(&buf, Int8(1))
-        FfiConverterTypeConnectionInfo.write(value, into: &buf)
-    }
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
-        switch try readInt(&buf) as Int8 {
-        case 0: return nil
-        case 1: return try FfiConverterTypeConnectionInfo.read(from: &buf)
-        default: throw UniffiInternalError.unexpectedOptionalTag
-        }
-    }
-}
-
 private struct FfiConverterOptionTypeLatencyAndControlMsg: FfiConverterRustBuffer {
     typealias SwiftType = LatencyAndControlMsg?
 
@@ -12233,6 +13461,48 @@ private struct FfiConverterOptionTypeQueryOptions: FfiConverterRustBuffer {
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterTypeQueryOptions.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+private struct FfiConverterOptionTypeRemoteInfo: FfiConverterRustBuffer {
+    typealias SwiftType = RemoteInfo?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeRemoteInfo.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeRemoteInfo.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+private struct FfiConverterOptionTypeTransferStats: FfiConverterRustBuffer {
+    typealias SwiftType = TransferStats?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeTransferStats.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeTransferStats.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
@@ -12457,28 +13727,6 @@ private struct FfiConverterSequenceTypeCollectionInfo: FfiConverterRustBuffer {
     }
 }
 
-private struct FfiConverterSequenceTypeConnectionInfo: FfiConverterRustBuffer {
-    typealias SwiftType = [ConnectionInfo]
-
-    public static func write(_ value: [ConnectionInfo], into buf: inout [UInt8]) {
-        let len = Int32(value.count)
-        writeInt(&buf, len)
-        for item in value {
-            FfiConverterTypeConnectionInfo.write(item, into: &buf)
-        }
-    }
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [ConnectionInfo] {
-        let len: Int32 = try readInt(&buf)
-        var seq = [ConnectionInfo]()
-        seq.reserveCapacity(Int(len))
-        for _ in 0 ..< len {
-            try seq.append(FfiConverterTypeConnectionInfo.read(from: &buf))
-        }
-        return seq
-    }
-}
-
 private struct FfiConverterSequenceTypeIncompleteBlobInfo: FfiConverterRustBuffer {
     typealias SwiftType = [IncompleteBlobInfo]
 
@@ -12540,6 +13788,28 @@ private struct FfiConverterSequenceTypeNamespaceAndCapability: FfiConverterRustB
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
             try seq.append(FfiConverterTypeNamespaceAndCapability.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+private struct FfiConverterSequenceTypeRemoteInfo: FfiConverterRustBuffer {
+    typealias SwiftType = [RemoteInfo]
+
+    public static func write(_ value: [RemoteInfo], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeRemoteInfo.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [RemoteInfo] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [RemoteInfo]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            try seq.append(FfiConverterTypeRemoteInfo.read(from: &buf))
         }
         return seq
     }
@@ -12829,6 +14099,36 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_authors_list() != 33930 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_method_blobprovideevent_as_client_connected() != 48446 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_method_blobprovideevent_as_get_request_received() != 8740 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_method_blobprovideevent_as_tagged_blob_added() != 59887 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_method_blobprovideevent_as_transfer_aborted() != 41238 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_method_blobprovideevent_as_transfer_blob_completed() != 20663 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_method_blobprovideevent_as_transfer_completed() != 47368 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_method_blobprovideevent_as_transfer_hash_seq_started() != 27778 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_method_blobprovideevent_as_transfer_progress() != 40626 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_method_blobprovideevent_type() != 51159 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_method_blobprovideeventcallback_blob_event() != 43399 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_blobticket_as_download_options() != 18713 {
@@ -13122,6 +14422,9 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_method_iroh_gossip() != 58884 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_ffi_checksum_method_iroh_net() != 41953 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_ffi_checksum_method_iroh_node() != 12499 {
         return InitializationResult.apiChecksumMismatch
     }
@@ -13170,25 +14473,25 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_method_message_type() != 75 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_method_node_add_node_addr() != 48772 {
+    if uniffi_iroh_ffi_checksum_method_net_add_node_addr() != 17723 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_method_node_connection_info() != 19420 {
+    if uniffi_iroh_ffi_checksum_method_net_home_relay() != 3492 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_method_node_connections() != 60971 {
+    if uniffi_iroh_ffi_checksum_method_net_node_addr() != 60712 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_method_node_home_relay() != 39435 {
+    if uniffi_iroh_ffi_checksum_method_net_node_id() != 35201 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_method_net_remote_info() != 60537 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_method_net_remote_info_list() != 15919 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_node_my_rpc_addr() != 34751 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_ffi_checksum_method_node_node_addr() != 55077 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_ffi_checksum_method_node_node_id() != 50937 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_node_shutdown() != 21075 {
@@ -13263,7 +14566,7 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_constructor_authorid_from_string() != 47849 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_constructor_blobdownloadoptions_new() != 19425 {
+    if uniffi_iroh_ffi_checksum_constructor_blobdownloadoptions_new() != 46030 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_constructor_blobticket_new() != 29763 {
@@ -13364,6 +14667,7 @@ private var initializationResult: InitializationResult = {
     }
 
     uniffiCallbackInitAddCallback()
+    uniffiCallbackInitBlobProvideEventCallback()
     uniffiCallbackInitDocExportFileCallback()
     uniffiCallbackInitDocImportFileCallback()
     uniffiCallbackInitDownloadCallback()

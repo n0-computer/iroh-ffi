@@ -538,15 +538,6 @@ impl From<&Hash> for iroh::blobs::Hash {
     }
 }
 
-// /// The `progress` method will be called for each `AddProgress` event that is
-// /// emitted during a `node.blobs_add_from_path`. Use the `AddProgress.type()`
-// /// method to check the `AddProgressType`
-// #[uniffi::export(with_foreign)]
-// #[async_trait::async_trait]
-// pub trait AddCallback: Send + Sync + 'static {
-//     async fn progress(&self, progress: Arc<AddProgress>) -> Result<(), CallbackError>;
-// }
-
 /// An AddProgress event indicating an item was found with name `name`, that can be referred to by `id`
 #[derive(Debug, Clone)]
 #[napi(object)]
@@ -687,10 +678,14 @@ pub struct BlobDownloadOptions(iroh::client::blobs::DownloadOptions);
 impl BlobDownloadOptions {
     /// Create a BlobDownloadRequest
     #[napi(constructor)]
-    pub fn new(format: BlobFormat, node: NodeAddr, tag: &SetTagOption) -> Result<Self> {
+    pub fn new(format: BlobFormat, nodes: Vec<NodeAddr>, tag: &SetTagOption) -> Result<Self> {
+        let nodes = nodes
+            .into_iter()
+            .map(|node| node.try_into())
+            .collect::<std::result::Result<_, _>>()?;
         Ok(BlobDownloadOptions(iroh::client::blobs::DownloadOptions {
             format: format.into(),
-            nodes: vec![node.try_into()?],
+            nodes,
             tag: tag.into(),
             mode: iroh::client::blobs::DownloadMode::Direct,
         }))
@@ -1157,4 +1152,250 @@ pub struct LinkAndName {
     pub name: String,
     /// The [`Hash`] of the blob
     pub link: String,
+}
+
+/// Events emitted by the provider informing about the current status.
+#[derive(Clone, Debug, Default)]
+#[napi(object)]
+pub struct BlobProvideEvent {
+    /// A new collection or tagged blob has been added
+    pub tagged_blob_added: Option<TaggedBlobAdded>,
+    /// A new client connected to the node.
+    pub client_connected: Option<ClientConnected>,
+    /// A request was received from a client.
+    pub get_request_received: Option<GetRequestReceived>,
+    /// A sequence of hashes has been found and is being transferred.
+    pub transfer_hash_seq_started: Option<TransferHashSeqStarted>,
+    /// A chunk of a blob was transferred.
+    ///
+    /// These events will be sent with try_send, so you can not assume that you
+    /// will receive all of them.
+    pub transfer_progress: Option<TransferProgress>,
+    /// A blob in a sequence was transferred.
+    pub transfer_blob_completed: Option<TransferBlobCompleted>,
+    /// A request was completed and the data was sent to the client.
+    pub transfer_completed: Option<TransferCompleted>,
+    /// A request was aborted because the client disconnected.
+    pub transfer_aborted: Option<TransferAborted>,
+}
+
+/// An BlobProvide event indicating a new tagged blob or collection was added
+#[derive(Debug, Clone)]
+#[napi(object)]
+pub struct TaggedBlobAdded {
+    /// The hash of the added data
+    pub hash: String,
+    /// The format of the added data
+    pub format: BlobFormat,
+    /// The tag of the added data
+    pub tag: Vec<u8>,
+}
+
+/// A new client connected to the node.
+#[derive(Debug, Clone)]
+#[napi(object)]
+pub struct ClientConnected {
+    /// An unique connection id.
+    pub connection_id: BigInt,
+}
+
+/// A request was received from a client.
+#[derive(Debug, Clone)]
+#[napi(object)]
+pub struct GetRequestReceived {
+    /// An unique connection id.
+    pub connection_id: BigInt,
+    /// An identifier uniquely identifying this transfer request.
+    pub request_id: BigInt,
+    /// The hash for which the client wants to receive data.
+    pub hash: String,
+}
+
+/// A sequence of hashes has been found and is being transferred.
+#[derive(Debug, Clone)]
+#[napi(object)]
+pub struct TransferHashSeqStarted {
+    /// An unique connection id.
+    pub connection_id: BigInt,
+    /// An identifier uniquely identifying this transfer request.
+    pub request_id: BigInt,
+    /// The number of blobs in the sequence.
+    pub num_blobs: BigInt,
+}
+
+/// A chunk of a blob was transferred.
+///
+/// These events will be sent with try_send, so you can not assume that you
+/// will receive all of them.
+#[derive(Debug, Clone)]
+#[napi(object)]
+pub struct TransferProgress {
+    /// An unique connection id.
+    pub connection_id: BigInt,
+    /// An identifier uniquely identifying this transfer request.
+    pub request_id: BigInt,
+    /// The hash for which we are transferring data.
+    pub hash: String,
+    /// Offset up to which we have transferred data.
+    pub end_offset: BigInt,
+}
+
+/// A blob in a sequence was transferred.
+#[derive(Debug, Clone)]
+#[napi(object)]
+pub struct TransferBlobCompleted {
+    /// An unique connection id.
+    pub connection_id: BigInt,
+    /// An identifier uniquely identifying this transfer request.
+    pub request_id: BigInt,
+    /// The hash of the blob
+    pub hash: String,
+    /// The index of the blob in the sequence.
+    pub index: BigInt,
+    /// The size of the blob transferred.
+    pub size: BigInt,
+}
+
+/// A request was completed and the data was sent to the client.
+#[derive(Debug, Clone)]
+#[napi(object)]
+pub struct TransferCompleted {
+    /// An unique connection id.
+    pub connection_id: BigInt,
+    /// An identifier uniquely identifying this transfer request.
+    pub request_id: BigInt,
+    /// statistics about the transfer
+    pub stats: TransferStats,
+}
+
+/// A request was aborted because the client disconnected.
+#[derive(Debug, Clone)]
+#[napi(object)]
+pub struct TransferAborted {
+    /// The quic connection id.
+    pub connection_id: BigInt,
+    /// An identifier uniquely identifying this request.
+    pub request_id: BigInt,
+    /// statistics about the transfer. This is None if the transfer
+    /// was aborted before any data was sent.
+    pub stats: Option<TransferStats>,
+}
+
+/// The stats for a transfer of a collection or blob.
+#[derive(Debug, Clone)]
+#[napi(object)]
+pub struct TransferStats {
+    /// The total duration of the transfer in milliseconds.
+    pub duration: BigInt,
+}
+
+impl BlobProvideEvent {
+    pub(crate) fn convert(value: iroh::blobs::provider::Event) -> Result<Self> {
+        match value {
+            iroh::blobs::provider::Event::TaggedBlobAdded { hash, format, tag } => {
+                Ok(BlobProvideEvent {
+                    tagged_blob_added: Some(TaggedBlobAdded {
+                        hash: hash.to_string(),
+                        format: format.into(),
+                        tag: tag.0.as_ref().to_vec(),
+                    }),
+                    ..Default::default()
+                })
+            }
+            iroh::blobs::provider::Event::ClientConnected { connection_id } => {
+                Ok(BlobProvideEvent {
+                    client_connected: Some(ClientConnected {
+                        connection_id: connection_id.into(),
+                    }),
+                    ..Default::default()
+                })
+            }
+            iroh::blobs::provider::Event::GetRequestReceived {
+                connection_id,
+                request_id,
+                hash,
+            } => Ok(BlobProvideEvent {
+                get_request_received: Some(GetRequestReceived {
+                    connection_id: connection_id.into(),
+                    request_id: request_id.into(),
+                    hash: hash.to_string(),
+                }),
+                ..Default::default()
+            }),
+            iroh::blobs::provider::Event::TransferHashSeqStarted {
+                connection_id,
+                request_id,
+                num_blobs,
+            } => Ok(BlobProvideEvent {
+                transfer_hash_seq_started: Some(TransferHashSeqStarted {
+                    connection_id: connection_id.into(),
+                    request_id: request_id.into(),
+                    num_blobs: num_blobs.into(),
+                }),
+                ..Default::default()
+            }),
+            iroh::blobs::provider::Event::TransferProgress {
+                connection_id,
+                request_id,
+                hash,
+                end_offset,
+            } => Ok(BlobProvideEvent {
+                transfer_progress: Some(TransferProgress {
+                    connection_id: connection_id.into(),
+                    request_id: request_id.into(),
+                    hash: hash.to_string(),
+                    end_offset: end_offset.into(),
+                }),
+                ..Default::default()
+            }),
+            iroh::blobs::provider::Event::TransferBlobCompleted {
+                connection_id,
+                request_id,
+                hash,
+                index,
+                size,
+            } => Ok(BlobProvideEvent {
+                transfer_blob_completed: Some(TransferBlobCompleted {
+                    connection_id: connection_id.into(),
+                    request_id: request_id.into(),
+                    hash: hash.to_string(),
+                    index: index.into(),
+                    size: size.into(),
+                }),
+                ..Default::default()
+            }),
+            iroh::blobs::provider::Event::TransferCompleted {
+                connection_id,
+                request_id,
+                stats,
+            } => Ok(BlobProvideEvent {
+                transfer_completed: Some(TransferCompleted {
+                    connection_id: connection_id.into(),
+                    request_id: request_id.into(),
+                    stats: stats.as_ref().into(),
+                }),
+                ..Default::default()
+            }),
+            iroh::blobs::provider::Event::TransferAborted {
+                connection_id,
+                request_id,
+                stats,
+            } => Ok(BlobProvideEvent {
+                transfer_aborted: Some(TransferAborted {
+                    connection_id: connection_id.into(),
+                    request_id: request_id.into(),
+                    stats: stats.map(|s| s.as_ref().into()),
+                }),
+                ..Default::default()
+            }),
+        }
+    }
+}
+
+impl From<&iroh::blobs::provider::TransferStats> for TransferStats {
+    fn from(value: &iroh::blobs::provider::TransferStats) -> Self {
+        Self {
+            duration: value.duration.as_millis().into(),
+        }
+    }
 }

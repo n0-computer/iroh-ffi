@@ -1,4 +1,4 @@
-// tests that correspond to the `src/gossp.rs` rust api
+// tests that correspond to the `src/gossip.rs` rust api
 
 import iroh.*
 import kotlinx.coroutines.channels.*
@@ -24,18 +24,18 @@ runBlocking {
 
     // Setup gossip on node 0
     val cb0 = Callback()
-    val n1Id = n1.node().nodeId()
-    val n1Addr = n1.node().nodeAddr()
-    n0.node().addNodeAddr(n1Addr)
+    val n1Id = n1.net().nodeId()
+    val n1Addr = n1.net().nodeAddr()
+    n0.net().addNodeAddr(n1Addr)
 
     println("subscribe n0")
     val sink0 = n0.gossip().subscribe(topic, listOf(n1Id), cb0)
 
     // Setup gossip on node 1
     val cb1 = Callback()
-    val n0Id = n0.node().nodeId()
-    val n0Addr = n0.node().nodeAddr()
-    n1.node().addNodeAddr(n0Addr)
+    val n0Id = n0.net().nodeId()
+    val n0Addr = n0.net().nodeAddr()
+    n1.net().addNodeAddr(n0Addr)
 
     println("subscribe n1")
     val sink1 = n1.gossip().subscribe(topic, listOf(n0Id), cb1)

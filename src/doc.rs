@@ -1566,7 +1566,7 @@ mod tests {
         )
         .await
         .unwrap();
-        let node_id = node.node().node_id().await.unwrap();
+        let node_id = node.net().node_id().await.unwrap();
         println!("id: {}", node_id);
         let doc = node.docs().create().await.unwrap();
         let doc_id = doc.id();

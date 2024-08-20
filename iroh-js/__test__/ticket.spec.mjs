@@ -5,7 +5,7 @@ import { Iroh, Hash, BlobTicket } from '../index.js'
 
 test('ticket creation and encoding', async (t) => {
   const node = await Iroh.memory()
-  const nodeId = await node.node.nodeId()
+  const nodeId = await node.net.nodeId()
 
   const hash1 = new Hash(Array.from(new Uint8Array([1, 2, 3])))
   const hash2 = new Hash(Array.from(new Uint8Array([1, 2, 3, 4])))

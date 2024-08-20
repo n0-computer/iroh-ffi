@@ -255,7 +255,7 @@ runBlocking {
 // List and delete
 runBlocking {
     val irohDir = kotlin.io.path.createTempDirectory("doc-test-list-del")
-    val opts = NodeOptions(100UL)
+    val opts = NodeOptions(100UL, null)
     val node = Iroh.persistentWithOptions(irohDir.toString(), opts)
 
     // create bytes

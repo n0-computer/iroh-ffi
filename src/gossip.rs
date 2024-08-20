@@ -257,9 +257,9 @@ mod tests {
 
         let (sender0, mut receiver0) = mpsc::channel(8);
         let cb0 = Cb { channel: sender0 };
-        let n1_id = n1.node().node_id().await.unwrap();
-        let n1_addr = n1.node().node_addr().await.unwrap();
-        n0.node().add_node_addr(&n1_addr).await.unwrap();
+        let n1_id = n1.net().node_id().await.unwrap();
+        let n1_addr = n1.net().node_addr().await.unwrap();
+        n0.net().add_node_addr(&n1_addr).await.unwrap();
 
         let sink0 = n0
             .gossip()
@@ -269,9 +269,9 @@ mod tests {
 
         let (sender1, mut receiver1) = mpsc::channel(8);
         let cb1 = Cb { channel: sender1 };
-        let n0_id = n0.node().node_id().await.unwrap();
-        let n0_addr = n0.node().node_addr().await.unwrap();
-        n1.node().add_node_addr(&n0_addr).await.unwrap();
+        let n0_id = n0.net().node_id().await.unwrap();
+        let n0_addr = n0.net().node_addr().await.unwrap();
+        n1.net().add_node_addr(&n0_addr).await.unwrap();
         let _ = n1
             .gossip()
             .subscribe(topic.clone(), vec![n0_id.to_string()], Arc::new(cb1))

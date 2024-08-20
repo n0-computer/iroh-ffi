@@ -1,6 +1,6 @@
 import test from 'ava'
 
-import { Iroh, SetTagOption, Hash, Collection } from '../index.js'
+import { Iroh, SetTagOption, Hash, Collection, BlobDownloadOptions } from '../index.js'
 import { cwd } from 'process'
 import { randomBytes } from 'crypto'
 
@@ -109,11 +109,62 @@ test('share', async (t) => {
   const res = await node.blobs.addBytes(Array.from(Buffer.from('hello')))
   const ticket = await node.blobs.share(res.hash, res.format, 'RelayAndAddresses')
 
-  const nodeAddr = await node.node.nodeAddr()
-
-  console.log(res, ticket)
+  const nodeAddr = await node.net.nodeAddr()
 
   t.is(ticket.format, res.format)
   t.is(ticket.hash, res.hash)
   t.deepEqual(ticket.nodeAddr, nodeAddr)
+})
+
+test('provide events', async (t) => {
+  const node1 = await Iroh.memory()
+
+  // Do not use Promise.withResovlers it is buggy
+  let resolve0
+  let reject0
+  const promise0 = new Promise((res, rej) => {
+    resolve0 = res
+    reject0 = rej
+  })
+
+  let resolve1
+  let reject1
+  const promise1 = new Promise((res, rej) => {
+    resolve1 = res
+    reject1 = rej
+  })
+
+  let events = []
+  const node2 = await Iroh.memory({ blobEvents: (err, event) => {
+    if (err != null) {
+      return reject0(err)
+    }
+
+    events.push(event)
+
+    if (event.transferCompleted != null) {
+      return resolve0()
+    }
+  }})
+
+  const res = await node2.blobs.addBytes(Array.from(Buffer.from('hello')))
+
+  t.truthy(res.hash)
+  const node2Addr = await node2.net.nodeAddr()
+
+  const opts = new BlobDownloadOptions(res.format, [node2Addr], SetTagOption.auto())
+  await node1.blobs.download(res.hash, opts, (err, event) => {
+    if (err != null) {
+      return reject1(err)
+    }
+
+    if (event.allDone != null) {
+      return resolve1(event)
+    }
+  })
+
+  await promise0
+  await promise1
+
+  t.is(events.length, 4)
 })

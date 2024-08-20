@@ -28,18 +28,18 @@ async def test_gossip_basic():
 
     # Setup gossip on node 0
     cb0 = Callback("n0")
-    n1_id = await n1.node().node_id()
-    n1_addr = await n1.node().node_addr()
-    await n0.node().add_node_addr(n1_addr)
+    n1_id = await n1.net().node_id()
+    n1_addr = await n1.net().node_addr()
+    await n0.net().add_node_addr(n1_addr)
 
     print("subscribe n0")
     sink0 = await n0.gossip().subscribe(topic, [n1_id], cb0)
 
     # Setup gossip on node 1
     cb1 = Callback("n1")
-    n0_id = await n0.node().node_id()
-    n0_addr = await n0.node().node_addr()
-    await n1.node().add_node_addr(n0_addr)
+    n0_id = await n0.net().node_id()
+    n0_addr = await n0.net().node_addr()
+    await n1.net().add_node_addr(n0_addr)
 
     print("subscribe n1")
     await n1.gossip().subscribe(topic, [n0_id], cb1)
