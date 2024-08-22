@@ -217,7 +217,6 @@ jobs:
       shell: bash
       env:
         ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
-        CLASSPATH: ./jna.jar:./kotlinx-coroutines.jar
       run: |
         cargo install --version 3.5.4 cargo-ndk
         cargo build --lib
@@ -229,4 +228,5 @@ jobs:
         -t x86_64 \
         build --release
         cargo run --bin uniffi-bindgen generate --language kotlin --library ./target/debug/libiroh_ffi.so --out-dir ./kotlin --config uniffi.toml
-        kotlinc -Werror -d ./kotlin/iroh.jar ./kotlin/iroh/*.kt
+        cp ./target/debug/libiroh_ffi.so ./kotlin
+        kotlinc -Werror -d ./kotlin/iroh.jar ./kotlin/iroh/*.kt -classpath ./jna.jar:./kotlinx-coroutines.jar
