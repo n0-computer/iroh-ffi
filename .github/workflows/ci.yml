@@ -173,3 +173,45 @@ jobs:
         TEST_OS: ${{ matrix.os }}
       shell: bash
       run: ./test_kotlin.sh
+
+
+
+
+
+  build-and-publish-kotlin-test:
+    name: Build & publish kotlin libraries
+    timeout-minutes: 30
+    runs-on: [self-hosted, linux, X64]
+    steps:
+    - uses: actions/checkout@master
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+    - name: Setup Android NDK
+      uses: arqu/setup-ndk@main
+      id: setup-ndk
+      with:
+        ndk-version: r23
+        add-to-path: true
+    - name: Build kotlin
+      env:
+        ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+      run: |
+        cargo install --version 3.5.4 cargo-ndk
+        cargo build --lib
+        cargo ndk -o ./kotlin \
+        --manifest-path ./Cargo.toml \
+        -t armeabi-v7a \
+        -t arm64-v8a \
+        -t x86 \
+        -t x86_64 \
+        build --release
+        cargo run --bin uniffi-bindgen generate --language kotlin --library ./target/debug/libiroh_ffi.so --out-dir ./kotlin --config uniffi.toml
+        kotlinc -Werror -d ./kotlin/iroh.jar ./kotlin/iroh/*.kt
