@@ -52,8 +52,9 @@ jobs:
       with:
         tag_name: ${{ env.RELEASE_VERSION }}
         release_name: ${{ env.RELEASE_VERSION }}
-  build-release:
-    name: build-release
+
+  build-and-publish-libs:
+    name: Build & publish release libraries
     needs: create-release
     runs-on: ${{ matrix.runner }}
     strategy:
@@ -100,12 +101,12 @@ jobs:
         staging="${{ env.PACKAGE_NAME }}-${{ matrix.target }}"
         mkdir -p "$staging"
         if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          cp "target/release/iroh.lib" "$staging/"
+          cp "target/release/iroh_ffi.lib" "$staging/iroh.lib"
           cd "$staging"
           7z a "../$staging.zip" .
           echo "ASSET=$staging.zip" >> $GITHUB_ENV
         else
-          cp "target/release/${{ env.LIB_NAME }}.a" "$staging/"
+          cp "target/release/${{ env.LIB_NAME }}.a" "$staging/${{ env.PACKAGE_NAME }}.a"
           tar czf "$staging.tar.gz" -C "$staging" .
           echo "ASSET=$staging.tar.gz" >> $GITHUB_ENV
         fi
@@ -118,3 +119,91 @@ jobs:
         asset_path: ${{ env.ASSET }}
         asset_name: ${{ env.ASSET }}
         asset_content_type: application/octet-stream
+
+  build-and-publish-swift:
+    name: Build & publish swift libraries
+    timeout-minutes: 30
+    runs-on: [macOS, ARM64]
+    needs: create-release
+    steps:
+    - uses: actions/checkout@master
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios,aarch64-apple-darwin
+    - name: Make swift
+      run: |
+        ./make_swift.sh
+        zip -r IrohLib.xcframework.zip Iroh.xcframework/*
+    - name: Upload release archive
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: IrohLib.xcframework.zip 
+        asset_name: IrohLib.xcframework.zip 
+        asset_content_type: application/octet-stream
+
+  build-and-publish-kotlin:
+    name: Build & publish kotlin libraries
+    timeout-minutes: 30
+    runs-on: [self-hosted, linux, X64]
+    needs: create-release
+    steps:
+    - uses: actions/checkout@master
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+    - name: setup java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin' # See 'Supported distributions' for available options
+        java-version: '21'
+
+    - name: install kotlin
+      uses: arqu/setup-kotlin@main
+
+    - name: install ktlint
+      uses: arqu/action-ktlint-setup@main
+
+    - name: fetch jna
+      run: curl -L https://repo1.maven.org/maven2/net/java/dev/jna/jna/5.14.0/jna-5.14.0.jar -o jna.jar
+    - name: fetch kotlinx-coroutines
+      run: curl -L https://repo1.maven.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.6.4/kotlinx-coroutines-core-jvm-1.6.4.jar -o kotlinx-coroutines.jar
+
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+    - name: Setup Android NDK
+      uses: arqu/setup-ndk@main
+      id: setup-ndk
+      with:
+        ndk-version: r23
+        add-to-path: true
+
+    - name: Build kotlin
+      shell: bash
+      env:
+        ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+      run: |
+        cargo install --version 3.5.4 cargo-ndk
+        cargo build --lib
+        cargo ndk -o ./kotlin \
+        --manifest-path ./Cargo.toml \
+        -t armeabi-v7a \
+        -t arm64-v8a \
+        -t x86 \
+        -t x86_64 \
+        build --release
+        cargo run --bin uniffi-bindgen generate --language kotlin --library ./target/debug/libiroh_ffi.so --out-dir ./kotlin --config uniffi.toml
+        cp ./target/debug/libiroh_ffi.so ./kotlin
+        kotlinc -Werror -d ./kotlin/iroh.jar ./kotlin/iroh/*.kt -classpath ./jna.jar:./kotlinx-coroutines.jar
+    - name: Upload release archive
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ./kotlin/iroh.jar
+        asset_name: iroh.jar
+        asset_content_type: application/octet-stream
+      
