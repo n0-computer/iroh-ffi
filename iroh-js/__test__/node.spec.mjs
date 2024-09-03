@@ -19,5 +19,5 @@ test('node status', async (t) => {
   const iroh = await Iroh.memory()
   const status = await iroh.node.status()
 
-  t.is(status.version, '0.23.0')
+  t.is(status.version, '0.24.0')
 })
