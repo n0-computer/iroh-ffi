@@ -2097,6 +2097,7 @@ dependencies = [
  "blake3",
  "bytes",
  "data-encoding",
+ "derive_more",
  "flume",
  "futures",
  "futures-lite 2.3.0",

@@ -189,12 +189,13 @@ impl From<iroh::net::endpoint::ConnectionType> for ConnectionType {
     }
 }
 /// Options passed to [`IrohNode.new`]. Controls the behaviour of an iroh node.
-#[derive(uniffi::Record)]
+#[derive(derive_more::Debug, uniffi::Record)]
 pub struct NodeOptions {
     /// How frequently the blob store should clean up unreferenced blobs, in milliseconds.
     /// Set to 0 to disable gc
     pub gc_interval_millis: Option<u64>,
     /// Provide a callback to hook into events when the blobs component adds and provides blobs.
+    #[debug("BlobProvideEventCallback")]
     pub blob_events: Option<Arc<dyn BlobProvideEventCallback>>,
     /// Should docs be enabled? Defaults to `true`.
     pub enable_docs: bool,
@@ -222,17 +223,6 @@ impl Default for NodeOptions {
             node_discovery: NodeDiscoveryConfig::Default,
             secret_key: None,
         }
-    }
-}
-
-impl Debug for NodeOptions {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "NodeOptions(gc_interval_millis: {:?}, blob_events: {})",
-            self.gc_interval_millis,
-            self.blob_events.is_some()
-        )
     }
 }
 
