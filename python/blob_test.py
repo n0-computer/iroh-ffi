@@ -217,7 +217,7 @@ async def test_list_and_delete():
     iroh.iroh_ffi.uniffi_set_event_loop(asyncio.get_running_loop())
 
     iroh_dir = tempfile.TemporaryDirectory()
-    opts = NodeOptions(gc_interval_millis=100, blob_events=None)
+    opts = NodeOptions(gc_interval_millis=100)
     node = await Iroh.persistent_with_options(iroh_dir.name, opts)
     #
     # create bytes
@@ -227,7 +227,7 @@ async def test_list_and_delete():
 
     for x in range(num_blobs):
         print(x)
-        bytes = bytearray(map(random.getrandbits,(8,)*blob_size))
+        bytes = bytearray(map(random.getrandbits, (8,)*blob_size))
         blobs.append(bytes)
 
     hashes = []

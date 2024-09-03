@@ -193,21 +193,29 @@ impl From<iroh::net::endpoint::ConnectionType> for ConnectionType {
 pub struct NodeOptions {
     /// How frequently the blob store should clean up unreferenced blobs, in milliseconds.
     /// Set to 0 to disable gc
+    #[uniffi(default = None)]
     pub gc_interval_millis: Option<u64>,
     /// Provide a callback to hook into events when the blobs component adds and provides blobs.
     #[debug("BlobProvideEventCallback")]
+    #[uniffi(default = None)]
     pub blob_events: Option<Arc<dyn BlobProvideEventCallback>>,
     /// Should docs be enabled? Defaults to `true`.
+    #[uniffi(default = true)]
     pub enable_docs: bool,
     /// Overwrites the default bind port if set.
+    #[uniffi(default = None)]
     pub port: Option<u16>,
-    /// Enable RPC. Defaults to `true`.
+    /// Enable RPC. Defaults to `false`.
+    #[uniffi(default = false)]
     pub enable_rpc: bool,
     /// Overwrite the default RPC address.
+    #[uniffi(default = None)]
     pub rpc_addr: Option<String>,
-    /// Configure the node discovery.
-    pub node_discovery: NodeDiscoveryConfig,
+    /// Configure the node discovery. Defaults to the default set of config
+    #[uniffi(default = None)]
+    pub node_discovery: Option<NodeDiscoveryConfig>,
     /// Provide a specific secret key, identifying this node. Must be 32 bytes long.
+    #[uniffi(default = None)]
     pub secret_key: Option<Vec<u8>>,
 }
 
@@ -217,10 +225,10 @@ impl Default for NodeOptions {
             gc_interval_millis: Some(0),
             blob_events: None,
             enable_docs: true,
-            enable_rpc: true,
+            enable_rpc: false,
             rpc_addr: None,
             port: None,
-            node_discovery: NodeDiscoveryConfig::Default,
+            node_discovery: None,
             secret_key: None,
         }
     }
@@ -353,8 +361,10 @@ async fn apply_options<S: iroh::blobs::store::Store>(
         builder = builder.enable_rpc_with_addr(addr.parse()?).await?;
     }
     builder = match options.node_discovery {
-        NodeDiscoveryConfig::None => builder.node_discovery(iroh::node::DiscoveryConfig::None),
-        NodeDiscoveryConfig::Default => {
+        Some(NodeDiscoveryConfig::None) => {
+            builder.node_discovery(iroh::node::DiscoveryConfig::None)
+        }
+        Some(NodeDiscoveryConfig::Default) | None => {
             builder.node_discovery(iroh::node::DiscoveryConfig::Default)
         }
     };

@@ -393,6 +393,7 @@ module.exports.ContentStatus = nativeBinding.ContentStatus
 module.exports.DocImportProgressType = nativeBinding.DocImportProgressType
 module.exports.keyToPath = nativeBinding.keyToPath
 module.exports.LogLevel = nativeBinding.LogLevel
+module.exports.NodeDiscoveryConfig = nativeBinding.NodeDiscoveryConfig
 module.exports.Origin = nativeBinding.Origin
 module.exports.pathToKey = nativeBinding.pathToKey
 module.exports.setLogLevel = nativeBinding.setLogLevel

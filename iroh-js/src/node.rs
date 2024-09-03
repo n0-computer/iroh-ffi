@@ -18,15 +18,15 @@ pub struct NodeOptions {
     /// Provide a callback to hook into events when the blobs component adds and provides blobs.
     pub blob_events: Option<ThreadsafeFunction<BlobProvideEvent, ()>>,
     /// Should docs be enabled? Defaults to `true`.
-    pub enable_docs: bool,
+    pub enable_docs: Option<bool>,
     /// Overwrites the default bind port if set.
     pub port: Option<u16>,
-    /// Enable RPC. Defaults to `true`.
-    pub enable_rpc: bool,
+    /// Enable RPC. Defaults to `false`.
+    pub enable_rpc: Option<bool>,
     /// Overwrite the default RPC address.
     pub rpc_addr: Option<String>,
     /// Configure the node discovery.
-    pub node_discovery: NodeDiscoveryConfig,
+    pub node_discovery: Option<NodeDiscoveryConfig>,
     /// Provide a specific secret key, identifying this node. Must be 32 bytes long.
     pub secret_key: Option<Vec<u8>>,
 }
@@ -36,11 +36,11 @@ impl Default for NodeOptions {
         NodeOptions {
             gc_interval_millis: None,
             blob_events: None,
-            enable_docs: true,
-            enable_rpc: true,
+            enable_docs: None,
+            enable_rpc: None,
             rpc_addr: None,
             port: None,
-            node_discovery: NodeDiscoveryConfig::Default,
+            node_discovery: None,
             secret_key: None,
         }
     }
@@ -151,7 +151,7 @@ async fn apply_options<S: iroh::blobs::store::Store>(
         builder = builder.blobs_events(BlobProvideEvents::new(blob_events_cb))
     }
 
-    if !options.enable_docs {
+    if !options.enable_docs.unwrap_or(true) {
         builder = builder.disable_docs();
     }
 
@@ -159,7 +159,7 @@ async fn apply_options<S: iroh::blobs::store::Store>(
         builder = builder.bind_port(port);
     }
 
-    if options.enable_rpc {
+    if options.enable_rpc.unwrap_or(false) {
         builder = builder.enable_rpc().await?;
     }
 
@@ -169,8 +169,10 @@ async fn apply_options<S: iroh::blobs::store::Store>(
             .await?;
     }
     builder = match options.node_discovery {
-        NodeDiscoveryConfig::None => builder.node_discovery(iroh::node::DiscoveryConfig::None),
-        NodeDiscoveryConfig::Default => {
+        Some(NodeDiscoveryConfig::None) => {
+            builder.node_discovery(iroh::node::DiscoveryConfig::None)
+        }
+        Some(NodeDiscoveryConfig::Default) | None => {
             builder.node_discovery(iroh::node::DiscoveryConfig::Default)
         }
     };

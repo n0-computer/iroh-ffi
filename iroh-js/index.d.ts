@@ -1168,6 +1168,34 @@ export interface NodeAddr {
   addresses?: Array<string>
 }
 
+export declare const enum NodeDiscoveryConfig {
+  /** Use no node discovery mechanism. */
+  None = 'None',
+  /**
+   * Use the default discovery mechanism.
+   *
+   * This uses two discovery services concurrently:
+   *
+   * - It publishes to a pkarr service operated by [number 0] which makes the information
+   *   available via DNS in the `iroh.link` domain.
+   *
+   * - It uses an mDNS-like system to announce itself on the local network.
+   *
+   * # Usage during tests
+   *
+   * Note that the default changes when compiling with `cfg(test)` or the `test-utils`
+   * cargo feature from [iroh-net] is enabled.  In this case only the Pkarr/DNS service
+   * is used, but on the `iroh.test` domain.  This domain is not integrated with the
+   * global DNS network and thus node discovery is effectively disabled.  To use node
+   * discovery in a test use the [`iroh_net::test_utils::DnsPkarrServer`] in the test and
+   * configure it here as a custom discovery mechanism ([`DiscoveryConfig::Custom`]).
+   *
+   * [number 0]: https://n0.computer
+   * [iroh-net]: crate::net
+   */
+  Default = 'Default'
+}
+
 /** Options passed to [`IrohNode.new`]. Controls the behaviour of an iroh node.# */
 export interface NodeOptions {
   /**
@@ -1177,6 +1205,18 @@ export interface NodeOptions {
   gcIntervalMillis?: number
   /** Provide a callback to hook into events when the blobs component adds and provides blobs. */
   blobEvents?: (err: Error | null, arg: BlobProvideEvent) => void
+  /** Should docs be enabled? Defaults to `true`. */
+  enableDocs?: boolean
+  /** Overwrites the default bind port if set. */
+  port?: number
+  /** Enable RPC. Defaults to `false`. */
+  enableRpc?: boolean
+  /** Overwrite the default RPC address. */
+  rpcAddr?: string
+  /** Configure the node discovery. */
+  nodeDiscovery?: NodeDiscoveryConfig
+  /** Provide a specific secret key, identifying this node. Must be 32 bytes long. */
+  secretKey?: Array<number>
 }
 
 /** The response to a status request */
