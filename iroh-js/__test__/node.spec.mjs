@@ -21,3 +21,16 @@ test('node status', async (t) => {
 
   t.is(status.version, '0.24.0')
 })
+
+test('rpc client memory node', async (t) => {
+  const node = await Iroh.memory({
+    enableRpc: true
+  })
+
+  const nodeId = await node.net.nodeId()
+
+  const client = await Iroh.client()
+  const clientId = await client.net.nodeId()
+
+  t.is(nodeId, clientId)
+})

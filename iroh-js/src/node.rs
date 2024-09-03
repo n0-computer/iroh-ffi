@@ -1,6 +1,6 @@
 use std::{collections::HashMap, path::PathBuf, time::Duration};
 
-use iroh::node::{FsNode, MemNode};
+use iroh::node::{FsNode, MemNode, DEFAULT_RPC_ADDR};
 use napi::{
     bindgen_prelude::*,
     threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode},
@@ -84,13 +84,15 @@ pub struct Iroh(InnerIroh);
 enum InnerIroh {
     Fs(FsNode),
     Memory(MemNode),
+    Client(iroh::client::Iroh),
 }
 
 impl Iroh {
-    pub(crate) fn client(&self) -> &iroh::client::Iroh {
+    pub(crate) fn inner_client(&self) -> &iroh::client::Iroh {
         match &self.0 {
             InnerIroh::Fs(node) => node,
             InnerIroh::Memory(node) => node,
+            InnerIroh::Client(client) => client,
         }
     }
 }
@@ -126,6 +128,18 @@ impl Iroh {
         let node = builder.spawn().await?;
 
         Ok(Iroh(InnerIroh::Memory(node)))
+    }
+
+    /// Create a new iroh client, connecting to an existing node.
+    #[napi(factory)]
+    pub async fn client(addr: Option<String>) -> Result<Self> {
+        let addr = match addr {
+            Some(addr) => addr.parse().map_err(anyhow::Error::from)?,
+            None => DEFAULT_RPC_ADDR,
+        };
+        let client = iroh::client::Iroh::connect_addr(addr).await?;
+
+        Ok(Iroh(InnerIroh::Client(client)))
     }
 
     /// Access to node specific funtionaliy.
@@ -196,7 +210,7 @@ pub struct Node {
 
 impl Node {
     fn node(&self) -> &iroh::client::Iroh {
-        self.node.client()
+        self.node.inner_client()
     }
 }
 
@@ -241,6 +255,7 @@ impl Node {
         let addr = match self.node.0 {
             InnerIroh::Fs(ref n) => n.my_rpc_addr(),
             InnerIroh::Memory(ref n) => n.my_rpc_addr(),
+            InnerIroh::Client(_) => None, // Not yet available
         };
         addr.map(|a| a.to_string())
     }

@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt::Debug, path::PathBuf, sync::Arc, time::Duration};
 
-use iroh::node::{FsNode, MemNode};
+use iroh::node::{FsNode, MemNode, DEFAULT_RPC_ADDR};
 
 use crate::{BlobProvideEventCallback, IrohError, NodeAddr, PublicKey};
 
@@ -267,13 +267,15 @@ pub enum NodeDiscoveryConfig {
 pub enum Iroh {
     Fs(FsNode),
     Memory(MemNode),
+    Client(iroh::client::Iroh),
 }
 
 impl Iroh {
-    pub(crate) fn client(&self) -> &iroh::client::Iroh {
+    pub(crate) fn inner_client(&self) -> &iroh::client::Iroh {
         match self {
             Self::Fs(node) => node,
             Self::Memory(node) => node,
+            Self::Client(client) => client,
         }
     }
 }
@@ -322,6 +324,18 @@ impl Iroh {
         let node = builder.spawn().await?;
 
         Ok(Iroh::Memory(node))
+    }
+
+    /// Create a new iroh client, connecting to an existing node.
+    #[uniffi::constructor(async_runtime = "tokio")]
+    pub async fn client(addr: Option<String>) -> Result<Self, IrohError> {
+        let addr = match addr {
+            Some(addr) => addr.parse().map_err(anyhow::Error::from)?,
+            None => DEFAULT_RPC_ADDR,
+        };
+        let client = iroh::client::Iroh::connect_addr(addr).await?;
+
+        Ok(Iroh::Client(client))
     }
 
     /// Access to node specific funtionaliy.
@@ -386,7 +400,7 @@ pub struct Node {
 
 impl Node {
     fn node(&self) -> &iroh::client::Iroh {
-        self.node.client()
+        self.node.inner_client()
     }
 }
 
@@ -429,6 +443,7 @@ impl Node {
         let addr = match self.node {
             Iroh::Fs(ref n) => n.my_rpc_addr(),
             Iroh::Memory(ref n) => n.my_rpc_addr(),
+            Iroh::Client(_) => None, // Not available currently
         };
         addr.map(|a| a.to_string())
     }
@@ -513,5 +528,18 @@ mod tests {
         let node = Iroh::memory().await.unwrap();
         let id = node.net().node_id().await.unwrap();
         println!("{id}");
+    }
+
+    #[tokio::test]
+    async fn test_memory_rpc() {
+        let mut opts = NodeOptions::default();
+        opts.enable_rpc = true;
+        let node = Iroh::memory_with_options(opts).await.unwrap();
+        let rpc_addr = node.node().my_rpc_addr().unwrap();
+        let node_id = node.net().node_id().await.unwrap();
+
+        let client = Iroh::client(Some(rpc_addr)).await.unwrap();
+        let node_id_client = client.net().node_id().await.unwrap();
+        assert_eq!(node_id, node_id_client);
     }
 }

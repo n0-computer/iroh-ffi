@@ -3884,6 +3884,23 @@ inline fun <T : Disposable?, R> T.use(block: (T) -> R) =
 /** Used to instantiate an interface without an actual pointer, for fakes in tests, mostly. */
 object NoPointer
 
+public object FfiConverterUShort : FfiConverter<UShort, Short> {
+    override fun lift(value: Short): UShort = value.toUShort()
+
+    override fun read(buf: ByteBuffer): UShort = lift(buf.getShort())
+
+    override fun lower(value: UShort): Short = value.toShort()
+
+    override fun allocationSize(value: UShort) = 2UL
+
+    override fun write(
+        value: UShort,
+        buf: ByteBuffer,
+    ) {
+        buf.putShort(value.toShort())
+    }
+}
+
 public object FfiConverterUInt : FfiConverter<UInt, Int> {
     override fun lift(value: Int): UInt = value.toUInt()
 
@@ -20688,17 +20705,53 @@ data class NodeOptions(
      * How frequently the blob store should clean up unreferenced blobs, in milliseconds.
      * Set to 0 to disable gc
      */
-    var `gcIntervalMillis`: kotlin.ULong?,
+    var `gcIntervalMillis`: kotlin.ULong? = null,
     /**
      * Provide a callback to hook into events when the blobs component adds and provides blobs.
      */
-    var `blobEvents`: BlobProvideEventCallback?,
+    var `blobEvents`: BlobProvideEventCallback? = null,
+    /**
+     * Should docs be enabled? Defaults to `true`.
+     */
+    var `enableDocs`: kotlin.Boolean = true,
+    /**
+     * Overwrites the default bind port if set.
+     */
+    var `port`: kotlin.UShort? = null,
+    /**
+     * Enable RPC. Defaults to `false`.
+     */
+    var `enableRpc`: kotlin.Boolean = false,
+    /**
+     * Overwrite the default RPC address.
+     */
+    var `rpcAddr`: kotlin.String? = null,
+    /**
+     * Configure the node discovery. Defaults to the default set of config
+     */
+    var `nodeDiscovery`: NodeDiscoveryConfig? = null,
+    /**
+     * Provide a specific secret key, identifying this node. Must be 32 bytes long.
+     */
+    var `secretKey`: kotlin.ByteArray? = null,
 ) : Disposable {
     @Suppress("UNNECESSARY_SAFE_CALL") // codegen is much simpler if we unconditionally emit safe calls here
     override fun destroy() {
         Disposable.destroy(this.`gcIntervalMillis`)
 
         Disposable.destroy(this.`blobEvents`)
+
+        Disposable.destroy(this.`enableDocs`)
+
+        Disposable.destroy(this.`port`)
+
+        Disposable.destroy(this.`enableRpc`)
+
+        Disposable.destroy(this.`rpcAddr`)
+
+        Disposable.destroy(this.`nodeDiscovery`)
+
+        Disposable.destroy(this.`secretKey`)
     }
 
     companion object
@@ -20709,12 +20762,24 @@ public object FfiConverterTypeNodeOptions : FfiConverterRustBuffer<NodeOptions> 
         NodeOptions(
             FfiConverterOptionalULong.read(buf),
             FfiConverterOptionalTypeBlobProvideEventCallback.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterOptionalUShort.read(buf),
+            FfiConverterBoolean.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalTypeNodeDiscoveryConfig.read(buf),
+            FfiConverterOptionalByteArray.read(buf),
         )
 
     override fun allocationSize(value: NodeOptions) =
         (
             FfiConverterOptionalULong.allocationSize(value.`gcIntervalMillis`) +
-                FfiConverterOptionalTypeBlobProvideEventCallback.allocationSize(value.`blobEvents`)
+                FfiConverterOptionalTypeBlobProvideEventCallback.allocationSize(value.`blobEvents`) +
+                FfiConverterBoolean.allocationSize(value.`enableDocs`) +
+                FfiConverterOptionalUShort.allocationSize(value.`port`) +
+                FfiConverterBoolean.allocationSize(value.`enableRpc`) +
+                FfiConverterOptionalString.allocationSize(value.`rpcAddr`) +
+                FfiConverterOptionalTypeNodeDiscoveryConfig.allocationSize(value.`nodeDiscovery`) +
+                FfiConverterOptionalByteArray.allocationSize(value.`secretKey`)
         )
 
     override fun write(
@@ -20723,6 +20788,12 @@ public object FfiConverterTypeNodeOptions : FfiConverterRustBuffer<NodeOptions> 
     ) {
         FfiConverterOptionalULong.write(value.`gcIntervalMillis`, buf)
         FfiConverterOptionalTypeBlobProvideEventCallback.write(value.`blobEvents`, buf)
+        FfiConverterBoolean.write(value.`enableDocs`, buf)
+        FfiConverterOptionalUShort.write(value.`port`, buf)
+        FfiConverterBoolean.write(value.`enableRpc`, buf)
+        FfiConverterOptionalString.write(value.`rpcAddr`, buf)
+        FfiConverterOptionalTypeNodeDiscoveryConfig.write(value.`nodeDiscovery`, buf)
+        FfiConverterOptionalByteArray.write(value.`secretKey`, buf)
     }
 }
 
@@ -22155,6 +22226,59 @@ public object FfiConverterTypeMessageType : FfiConverterRustBuffer<MessageType> 
     }
 }
 
+enum class NodeDiscoveryConfig {
+    /**
+     * Use no node discovery mechanism.
+     */
+    NONE,
+
+    /**
+     * Use the default discovery mechanism.
+     *
+     * This uses two discovery services concurrently:
+     *
+     * - It publishes to a pkarr service operated by [number 0] which makes the information
+     * available via DNS in the `iroh.link` domain.
+     *
+     * - It uses an mDNS-like system to announce itself on the local network.
+     *
+     * # Usage during tests
+     *
+     * Note that the default changes when compiling with `cfg(test)` or the `test-utils`
+     * cargo feature from [iroh-net] is enabled.  In this case only the Pkarr/DNS service
+     * is used, but on the `iroh.test` domain.  This domain is not integrated with the
+     * global DNS network and thus node discovery is effectively disabled.  To use node
+     * discovery in a test use the [`iroh_net::test_utils::DnsPkarrServer`] in the test and
+     * configure it here as a custom discovery mechanism ([`DiscoveryConfig::Custom`]).
+     *
+     * [number 0]: https://n0.computer
+     * [iroh-net]: crate::net
+     */
+    DEFAULT,
+
+    ;
+
+    companion object
+}
+
+public object FfiConverterTypeNodeDiscoveryConfig : FfiConverterRustBuffer<NodeDiscoveryConfig> {
+    override fun read(buf: ByteBuffer) =
+        try {
+            NodeDiscoveryConfig.values()[buf.getInt() - 1]
+        } catch (e: IndexOutOfBoundsException) {
+            throw RuntimeException("invalid enum value, something is very wrong!!", e)
+        }
+
+    override fun allocationSize(value: NodeDiscoveryConfig) = 4UL
+
+    override fun write(
+        value: NodeDiscoveryConfig,
+        buf: ByteBuffer,
+    ) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
 /**
  * Why we performed a sync exchange
  */
@@ -22384,6 +22508,35 @@ public object FfiConverterTypeSyncReason : FfiConverterRustBuffer<SyncReason> {
     }
 }
 
+public object FfiConverterOptionalUShort : FfiConverterRustBuffer<kotlin.UShort?> {
+    override fun read(buf: ByteBuffer): kotlin.UShort? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterUShort.read(buf)
+    }
+
+    override fun allocationSize(value: kotlin.UShort?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterUShort.allocationSize(value)
+        }
+    }
+
+    override fun write(
+        value: kotlin.UShort?,
+        buf: ByteBuffer,
+    ) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterUShort.write(value, buf)
+        }
+    }
+}
+
 public object FfiConverterOptionalULong : FfiConverterRustBuffer<kotlin.ULong?> {
     override fun read(buf: ByteBuffer): kotlin.ULong? {
         if (buf.get().toInt() == 0) {
@@ -22438,6 +22591,35 @@ public object FfiConverterOptionalString : FfiConverterRustBuffer<kotlin.String?
         } else {
             buf.put(1)
             FfiConverterString.write(value, buf)
+        }
+    }
+}
+
+public object FfiConverterOptionalByteArray : FfiConverterRustBuffer<kotlin.ByteArray?> {
+    override fun read(buf: ByteBuffer): kotlin.ByteArray? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterByteArray.read(buf)
+    }
+
+    override fun allocationSize(value: kotlin.ByteArray?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterByteArray.allocationSize(value)
+        }
+    }
+
+    override fun write(
+        value: kotlin.ByteArray?,
+        buf: ByteBuffer,
+    ) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterByteArray.write(value, buf)
         }
     }
 }
@@ -22728,6 +22910,35 @@ public object FfiConverterOptionalTypeTransferStats : FfiConverterRustBuffer<Tra
         } else {
             buf.put(1)
             FfiConverterTypeTransferStats.write(value, buf)
+        }
+    }
+}
+
+public object FfiConverterOptionalTypeNodeDiscoveryConfig : FfiConverterRustBuffer<NodeDiscoveryConfig?> {
+    override fun read(buf: ByteBuffer): NodeDiscoveryConfig? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterTypeNodeDiscoveryConfig.read(buf)
+    }
+
+    override fun allocationSize(value: NodeDiscoveryConfig?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterTypeNodeDiscoveryConfig.allocationSize(value)
+        }
+    }
+
+    override fun write(
+        value: NodeDiscoveryConfig?,
+        buf: ByteBuffer,
+    ) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterTypeNodeDiscoveryConfig.write(value, buf)
         }
     }
 }

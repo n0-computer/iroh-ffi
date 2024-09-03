@@ -363,6 +363,8 @@ export declare class Iroh {
    * All data will be only persistet in memory.
    */
   static memory(opts?: NodeOptions | undefined | null): Promise<Iroh>
+  /** Create a new iroh client, connecting to an existing node. */
+  static client(addr?: string | undefined | null): Promise<Iroh>
   /** Access to node specific funtionaliy. */
   get node(): Node
 }

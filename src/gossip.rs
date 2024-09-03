@@ -134,7 +134,7 @@ impl Iroh {
 
 impl Gossip {
     fn client(&self) -> &iroh::client::Iroh {
-        self.node.client()
+        self.node.inner_client()
     }
 }
 
