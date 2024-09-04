@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt::Debug, path::PathBuf, sync::Arc, time::Duration};
 
-use iroh::node::{FsNode, MemNode};
+use iroh::node::{FsNode, MemNode, DEFAULT_RPC_ADDR};
 
 use crate::{BlobProvideEventCallback, IrohError, NodeAddr, PublicKey};
 
@@ -189,13 +189,34 @@ impl From<iroh::net::endpoint::ConnectionType> for ConnectionType {
     }
 }
 /// Options passed to [`IrohNode.new`]. Controls the behaviour of an iroh node.
-#[derive(uniffi::Record)]
+#[derive(derive_more::Debug, uniffi::Record)]
 pub struct NodeOptions {
     /// How frequently the blob store should clean up unreferenced blobs, in milliseconds.
     /// Set to 0 to disable gc
+    #[uniffi(default = None)]
     pub gc_interval_millis: Option<u64>,
     /// Provide a callback to hook into events when the blobs component adds and provides blobs.
+    #[debug("BlobProvideEventCallback")]
+    #[uniffi(default = None)]
     pub blob_events: Option<Arc<dyn BlobProvideEventCallback>>,
+    /// Should docs be enabled? Defaults to `true`.
+    #[uniffi(default = true)]
+    pub enable_docs: bool,
+    /// Overwrites the default bind port if set.
+    #[uniffi(default = None)]
+    pub port: Option<u16>,
+    /// Enable RPC. Defaults to `false`.
+    #[uniffi(default = false)]
+    pub enable_rpc: bool,
+    /// Overwrite the default RPC address.
+    #[uniffi(default = None)]
+    pub rpc_addr: Option<String>,
+    /// Configure the node discovery. Defaults to the default set of config
+    #[uniffi(default = None)]
+    pub node_discovery: Option<NodeDiscoveryConfig>,
+    /// Provide a specific secret key, identifying this node. Must be 32 bytes long.
+    #[uniffi(default = None)]
+    pub secret_key: Option<Vec<u8>>,
 }
 
 impl Default for NodeOptions {
@@ -203,19 +224,42 @@ impl Default for NodeOptions {
         NodeOptions {
             gc_interval_millis: Some(0),
             blob_events: None,
+            enable_docs: true,
+            enable_rpc: false,
+            rpc_addr: None,
+            port: None,
+            node_discovery: None,
+            secret_key: None,
         }
     }
 }
 
-impl Debug for NodeOptions {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "NodeOptions(gc_interval_millis: {:?}, blob_events: {})",
-            self.gc_interval_millis,
-            self.blob_events.is_some()
-        )
-    }
+#[derive(Debug, Default, uniffi::Enum)]
+pub enum NodeDiscoveryConfig {
+    /// Use no node discovery mechanism.
+    None,
+    /// Use the default discovery mechanism.
+    ///
+    /// This uses two discovery services concurrently:
+    ///
+    /// - It publishes to a pkarr service operated by [number 0] which makes the information
+    ///   available via DNS in the `iroh.link` domain.
+    ///
+    /// - It uses an mDNS-like system to announce itself on the local network.
+    ///
+    /// # Usage during tests
+    ///
+    /// Note that the default changes when compiling with `cfg(test)` or the `test-utils`
+    /// cargo feature from [iroh-net] is enabled.  In this case only the Pkarr/DNS service
+    /// is used, but on the `iroh.test` domain.  This domain is not integrated with the
+    /// global DNS network and thus node discovery is effectively disabled.  To use node
+    /// discovery in a test use the [`iroh_net::test_utils::DnsPkarrServer`] in the test and
+    /// configure it here as a custom discovery mechanism ([`DiscoveryConfig::Custom`]).
+    ///
+    /// [number 0]: https://n0.computer
+    /// [iroh-net]: crate::net
+    #[default]
+    Default,
 }
 
 /// An Iroh node. Allows you to sync, store, and transfer data.
@@ -223,13 +267,15 @@ impl Debug for NodeOptions {
 pub enum Iroh {
     Fs(FsNode),
     Memory(MemNode),
+    Client(iroh::client::Iroh),
 }
 
 impl Iroh {
-    pub(crate) fn client(&self) -> &iroh::client::Iroh {
+    pub(crate) fn inner_client(&self) -> &iroh::client::Iroh {
         match self {
             Self::Fs(node) => node,
             Self::Memory(node) => node,
+            Self::Client(client) => client,
         }
     }
 }
@@ -263,17 +309,8 @@ impl Iroh {
     ) -> Result<Self, IrohError> {
         let path = PathBuf::from(path);
 
-        let mut builder = iroh::node::Builder::default().persist(path).await?;
-        if let Some(millis) = options.gc_interval_millis {
-            let policy = match millis {
-                0 => iroh::node::GcPolicy::Disabled,
-                millis => iroh::node::GcPolicy::Interval(Duration::from_millis(millis)),
-            };
-            builder = builder.gc_policy(policy);
-        }
-        if let Some(blob_events_cb) = options.blob_events {
-            builder = builder.blobs_events(BlobProvideEvents::new(blob_events_cb))
-        }
+        let builder = iroh::node::Builder::default().persist(path).await?;
+        let builder = apply_options(builder, options).await?;
         let node = builder.spawn().await?;
 
         Ok(Iroh::Fs(node))
@@ -282,26 +319,77 @@ impl Iroh {
     /// Create a new in memory iroh node with options.
     #[uniffi::constructor(async_runtime = "tokio")]
     pub async fn memory_with_options(options: NodeOptions) -> Result<Self, IrohError> {
-        let mut builder = iroh::node::Builder::default();
-        if let Some(millis) = options.gc_interval_millis {
-            let policy = match millis {
-                0 => iroh::node::GcPolicy::Disabled,
-                millis => iroh::node::GcPolicy::Interval(Duration::from_millis(millis)),
-            };
-            builder = builder.gc_policy(policy);
-        }
-        if let Some(blob_events_cb) = options.blob_events {
-            builder = builder.blobs_events(BlobProvideEvents::new(blob_events_cb))
-        }
+        let builder = iroh::node::Builder::default();
+        let builder = apply_options(builder, options).await?;
         let node = builder.spawn().await?;
 
         Ok(Iroh::Memory(node))
+    }
+
+    /// Create a new iroh client, connecting to an existing node.
+    #[uniffi::constructor(async_runtime = "tokio")]
+    pub async fn client(addr: Option<String>) -> Result<Self, IrohError> {
+        let addr = match addr {
+            Some(addr) => addr.parse().map_err(anyhow::Error::from)?,
+            None => DEFAULT_RPC_ADDR,
+        };
+        let client = iroh::client::Iroh::connect_addr(addr).await?;
+
+        Ok(Iroh::Client(client))
     }
 
     /// Access to node specific funtionaliy.
     pub fn node(&self) -> Node {
         Node { node: self.clone() }
     }
+}
+
+async fn apply_options<S: iroh::blobs::store::Store>(
+    mut builder: iroh::node::Builder<S>,
+    options: NodeOptions,
+) -> anyhow::Result<iroh::node::Builder<S>> {
+    if let Some(millis) = options.gc_interval_millis {
+        let policy = match millis {
+            0 => iroh::node::GcPolicy::Disabled,
+            millis => iroh::node::GcPolicy::Interval(Duration::from_millis(millis)),
+        };
+        builder = builder.gc_policy(policy);
+    }
+    if let Some(blob_events_cb) = options.blob_events {
+        builder = builder.blobs_events(BlobProvideEvents::new(blob_events_cb))
+    }
+
+    if !options.enable_docs {
+        builder = builder.disable_docs();
+    }
+
+    if let Some(port) = options.port {
+        builder = builder.bind_port(port);
+    }
+
+    if options.enable_rpc {
+        builder = builder.enable_rpc().await?;
+    }
+
+    if let Some(addr) = options.rpc_addr {
+        builder = builder.enable_rpc_with_addr(addr.parse()?).await?;
+    }
+    builder = match options.node_discovery {
+        Some(NodeDiscoveryConfig::None) => {
+            builder.node_discovery(iroh::node::DiscoveryConfig::None)
+        }
+        Some(NodeDiscoveryConfig::Default) | None => {
+            builder.node_discovery(iroh::node::DiscoveryConfig::Default)
+        }
+    };
+
+    if let Some(secret_key) = options.secret_key {
+        let key: [u8; 32] = AsRef::<[u8]>::as_ref(&secret_key).try_into()?;
+        let key = iroh::net::key::SecretKey::from_bytes(&key);
+        builder = builder.secret_key(key);
+    }
+
+    Ok(builder)
 }
 
 /// Iroh node client.
@@ -312,7 +400,7 @@ pub struct Node {
 
 impl Node {
     fn node(&self) -> &iroh::client::Iroh {
-        self.node.client()
+        self.node.inner_client()
     }
 }
 
@@ -355,6 +443,7 @@ impl Node {
         let addr = match self.node {
             Iroh::Fs(ref n) => n.my_rpc_addr(),
             Iroh::Memory(ref n) => n.my_rpc_addr(),
+            Iroh::Client(_) => None, // Not available currently
         };
         addr.map(|a| a.to_string())
     }
@@ -439,5 +528,18 @@ mod tests {
         let node = Iroh::memory().await.unwrap();
         let id = node.net().node_id().await.unwrap();
         println!("{id}");
+    }
+
+    #[tokio::test]
+    async fn test_memory_rpc() {
+        let mut opts = NodeOptions::default();
+        opts.enable_rpc = true;
+        let node = Iroh::memory_with_options(opts).await.unwrap();
+        let rpc_addr = node.node().my_rpc_addr().unwrap();
+        let node_id = node.net().node_id().await.unwrap();
+
+        let client = Iroh::client(Some(rpc_addr)).await.unwrap();
+        let node_id_client = client.net().node_id().await.unwrap();
+        assert_eq!(node_id, node_id_client);
     }
 }
