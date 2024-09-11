@@ -1,15 +1,17 @@
-import iroh
-
 import argparse
 import asyncio
+import sys
+
+import iroh
+
 
 async def main():
     # setup event loop, to ensure async callbacks work
     iroh.iroh_ffi.uniffi_set_event_loop(asyncio.get_running_loop())
 
     # parse arguments
-    parser = argparse.ArgumentParser(description='Python Iroh Node Demo')
-    parser.add_argument('--ticket', type=str, help='ticket to join a document')
+    parser = argparse.ArgumentParser(description="Python Iroh Node Demo")
+    parser.add_argument("--ticket", type=str, help="ticket to join a document")
 
     args = parser.parse_args()
 
@@ -21,34 +23,34 @@ async def main():
         # create iroh node
         node = await iroh.Iroh.memory()
         node_id = await node.node().node_id()
-        print("Started Iroh node: {}".format(node_id))
+        print(f"Started Iroh node: {node_id}")
 
         # create doc
         doc = await node.docs().create()
         doc_id = doc.id()
-        print("Created doc: {}".format(doc_id))
+        print(f"Created doc: {doc_id}")
 
         doc = await node.docs().create()
         doc_id = doc.id()
-        print("Created doc: {}".format(doc_id))
+        print(f"Created doc: {doc_id}")
 
         # list docs
         docs = await node.docs().list()
-        print("List all {} docs:".format(len(docs)))
+        print(f"List all {len(docs)} docs:")
         for doc in docs:
-            print("\t{}".format(doc))
+            print(f"\t{doc}")
 
-        exit()
+        sys.exit()
 
     # create iroh node
     node = await iroh.Iroh.memory()
     node_id = await node.node().node_id()
-    print("Started Iroh node: {}".format(node_id))
+    print(f"Started Iroh node: {node_id}")
 
     # join doc
     doc = await node.doc_join(args.ticket)
     doc_id = doc.id()
-    print("Joined doc: {}".format(doc_id))
+    print(f"Joined doc: {doc_id}")
 
     # sync & print
     print("Waiting 5 seconds to let stuff sync...")

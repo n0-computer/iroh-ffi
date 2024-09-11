@@ -1,11 +1,24 @@
 # tests that correspond to the `src/doc.rs` rust api
-from iroh import Iroh, PublicKey, NodeAddr, AuthorId, Query, SortBy, SortDirection, QueryOptions, path_to_key, key_to_path
-import pytest
-import tempfile
+import asyncio
 import os
 import random
-import asyncio
+import tempfile
+
 import iroh
+import pytest
+from iroh import (
+    AuthorId,
+    Iroh,
+    NodeAddr,
+    PublicKey,
+    Query,
+    QueryOptions,
+    SortBy,
+    SortDirection,
+    key_to_path,
+    path_to_key,
+)
+
 
 def test_node_addr():
     #
@@ -51,22 +64,22 @@ def test_query():
     opts = QueryOptions(sort_by=SortBy.KEY_AUTHOR, direction=SortDirection.ASC, offset=10, limit=10)
     # all
     all = Query.all(opts)
-    assert 10 == all.offset()
-    assert 10 == all.limit()
+    assert all.offset() == 10
+    assert all.limit() == 10
 
     # single_latest_per_key
     opts.direction = SortDirection.DESC
     opts.limit = 0
     opts.offset = 0
     single_latest_per_key = Query.single_latest_per_key(opts)
-    assert 0 == single_latest_per_key.offset()
+    assert single_latest_per_key.offset() == 0
     assert single_latest_per_key.limit() is None
 
     # author
     opts.direction = SortDirection.ASC
     opts.offset = 100
     author = Query.author(AuthorId.from_string("mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q"), opts)
-    assert 100 == author.offset()
+    assert author.offset() == 100
     assert author.limit() is None
 
     # key_exact
@@ -75,21 +88,21 @@ def test_query():
     opts.offset = 0
     opts.limit = 100
     key_exact = Query.key_exact(
-        b'key',
-        opts
+        b"key",
+        opts,
     )
-    assert 0 == key_exact.offset()
-    assert 100 == key_exact.limit()
+    assert key_exact.offset() == 0
+    assert key_exact.limit() == 100
 
     # key_prefix
     key_prefix = Query.key_prefix(
-        b'prefix',
-        opts
+        b"prefix",
+        opts,
     )
-    assert 0 == key_prefix.offset()
-    assert 100 == key_prefix.limit()
+    assert key_prefix.offset() == 0
+    assert key_prefix.limit() == 100
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_doc_entry_basics():
     # setup event loop, to ensure async callbacks work
     iroh.iroh_ffi.uniffi_set_event_loop(asyncio.get_running_loop())
@@ -104,8 +117,8 @@ async def test_doc_entry_basics():
     author = await node.authors().create()
     #
     # create entry
-    val = b'hello world!'
-    key = b'foo'
+    val = b"hello world!"
+    key = b"foo"
     hash = await doc.set_bytes(author, key, val)
     #
     # get entry
@@ -116,7 +129,7 @@ async def test_doc_entry_basics():
     got_val = await entry.content_bytes(doc)
     assert val == got_val
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_doc_import_export():
     # setup event loop, to ensure async callbacks work
     iroh.iroh_ffi.uniffi_set_event_loop(asyncio.get_running_loop())
@@ -133,9 +146,8 @@ async def test_doc_import_export():
     path = os.path.join(in_root, "test")
     size = 100
     bytes = bytearray(map(random.getrandbits,(8,)*size))
-    file = open(path, "wb")
-    file.write(bytes)
-    file.close()
+    with open(path, "wb") as file:  # noqa: ASYNC230 blocking-open-call-in-async-function
+        file.write(bytes)
     #
     # create node
     iroh_dir = tempfile.TemporaryDirectory()
@@ -158,9 +170,6 @@ async def test_doc_import_export():
     await doc.export_file(entry, path, None)
     #
     # read file
-    file = open(path, "rb")
-    got_bytes = file.read()
-    file.close()
-    #
-    #
+    with open(path, "rb") as file:  # noqa: ASYNC230 blocking-open-call-in-async-function
+        got_bytes = file.read()
     assert bytes == got_bytes

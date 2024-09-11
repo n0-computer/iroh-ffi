@@ -1,12 +1,13 @@
 # tests that correspond to the `src/doc.rs` rust api
-import tempfile
-import pytest
 import asyncio
+import tempfile
+
 import iroh
+import pytest
+from iroh import AddrInfoOptions, Iroh, LiveEventType, ShareMode
 
-from iroh import Iroh, ShareMode, LiveEventType, AddrInfoOptions
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_basic_sync():
     # setup event loop, to ensure async callbacks work
     iroh.iroh_ffi.uniffi_set_event_loop(asyncio.get_running_loop())
@@ -59,5 +60,5 @@ async def test_basic_sync():
 
             # Get content from hash
             val = await node_1.blobs().read_to_bytes(hash)
-            assert b"world" == val
+            assert val == b"world"
             break
