@@ -15,22 +15,19 @@ class Subscriber : SubscribeCallback {
     val channel = Channel<LiveEvent>(8)
 
     override suspend fun `event`(`event`: LiveEvent) {
-        println(event.type())
         this.channel.send(event)
     }
 }
 
 runBlocking {
-    setLogLevel(LogLevel.DEBUG)
+    // setLogLevel(LogLevel.DEBUG)
     // Create node_0
-    val irohDir0 = kotlin.io.path.createTempDirectory("node-test-0")
-    println(irohDir0.toString())
-    val node0 = Iroh.persistent(irohDir0.toString())
+    val node0 = Iroh.memory()
 
     // Create node_1
-    val irohDir1 = kotlin.io.path.createTempDirectory("node-test-1")
-    println(irohDir1.toString())
-    val node1 = Iroh.persistent(irohDir1.toString())
+    val node1 = Iroh.memory()
+
+    println("setup node0")
 
     // Create doc on node_0
     val doc0 = node0.docs().create()
@@ -45,12 +42,16 @@ runBlocking {
     val doc1 = node1.docs().joinAndSubscribe(ticket, cb1)
 
     // wait for initial sync
+    println("waiting for sync")
     while (true) {
         val event = cb1.channel.receive()
+        println("node1: " + event.type())
         if (event.type() == LiveEventType.SYNC_FINISHED) {
             break
         }
     }
+
+    println("setup node1")
 
     // Create author on node_1
     val author = node1.authors().create()
@@ -62,9 +63,10 @@ runBlocking {
     // Wait for the content ready event
     while (true) {
         val event = cb0.channel.receive()
+        println("node0: " + event.type())
         if (event.type() == LiveEventType.CONTENT_READY) {
             val hash = event.asContentReady()
-            println(hash)
+            println("received hash: " + hash)
 
             // Get content from hash
             val v = node1.blobs().readToBytes(hash)
