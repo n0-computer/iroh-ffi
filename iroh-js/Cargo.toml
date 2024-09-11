@@ -31,6 +31,7 @@ futures = "0.3.28"
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.17" }
 chrono = "0.4.38"
+derive_more = { version = "=1.0.0-beta.7", features = ["debug"] }
 
 
 [build-dependencies]
