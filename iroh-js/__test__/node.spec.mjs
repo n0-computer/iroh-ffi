@@ -34,3 +34,63 @@ test('rpc client memory node', async (t) => {
 
   t.is(nodeId, clientId)
 })
+
+
+test('custom protocol', async (t) => {
+  const protocols = {
+    [Buffer.from('iroh-example/text-search/0', 'utf8')]: {
+      accept: async (err, connecting) => {
+        if (err) {
+          throw err
+        }
+        const alpn = await connecting.alpn()
+        const alpnString = Buffer.from(alpn).toString()
+        console.log(`incoming on ${alpn}`)
+        const conn = await connecting.connect()
+        const remote = await conn.getRemoteNodeId()
+        console.log(`connected id ${remote.toString()}`)
+
+        const bi = await conn.acceptBi()
+        const send = await bi.send()
+        const recv = await bi.recv()
+
+        const bytes = await recv.readToEnd(64)
+        const b = Array.from(Buffer.from(bytes))
+        console.log(`got ${b.toString()}`)
+        await send.writeAll(Uint8Array.from(Buffer.from('hello')))
+        await send.finish()
+        await send.stopped()
+      }
+    }
+  }
+  const node1 = await Iroh.memory({
+    protocols,
+  })
+
+  const nodeId = await node1.net.nodeId()
+
+  const node2 = await Iroh.memory({ protocols })
+  const status = await node2.node.status()
+  console.log(`status ${status.version}`)
+  const endpoint = node2.node.endpoint()
+  console.log(`connecting to ${nodeId}`)
+  const alpn = Array.from(Buffer.from('iroh-example/text-search/0'))
+  const conn = await endpoint.connectByNodeId(nodeId, alpn)
+  const remote = await conn.getRemoteNodeId()
+  console.log(`connected to ${remote.toString()}`)
+
+  const bi = await conn.openBi()
+  const send = await bi.send()
+  const recv = await bi.recv()
+  console.log(`send ${send}`)
+  await send.writeAll(Uint8Array.from(Buffer.from('yo')))
+  await send.finish()
+  await send.stopped()
+
+  let out = Uint8Array.from(Buffer.alloc(5))
+  await recv.readExact(out)
+
+  console.log(`read: ${out.toString()}`)
+
+  t.pass()
+})

@@ -1,12 +1,34 @@
-use std::any::Any;
-
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
 use tokio::sync::Mutex;
 
 use iroh::net::endpoint;
 
-use crate::PublicKey;
+use crate::{NodeAddr, PublicKey};
+
+#[napi]
+pub struct Endpoint(endpoint::Endpoint);
+
+#[napi]
+impl Endpoint {
+    pub fn new(ep: endpoint::Endpoint) -> Self {
+        Endpoint(ep)
+    }
+
+    #[napi]
+    pub async fn connect(&self, node_addr: NodeAddr, alpn: Vec<u8>) -> Result<Connection> {
+        let conn = self.0.connect(node_addr.try_into()?, &alpn).await?;
+        Ok(Connection(conn))
+    }
+
+    #[napi]
+    pub async fn connect_by_node_id(&self, node_id: String, alpn: Vec<u8>) -> Result<Connection> {
+        println!("connecting to {:?}", std::str::from_utf8(&alpn));
+        let node_id: iroh::net::NodeId = node_id.parse().map_err(anyhow::Error::from)?;
+        let conn = self.0.connect_by_node_id(node_id, &alpn).await?;
+        Ok(Connection(conn))
+    }
+}
 
 #[napi]
 pub struct Connecting(Mutex<Option<endpoint::Connecting>>);

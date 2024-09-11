@@ -9,7 +9,7 @@ use napi::{
 };
 use napi_derive::napi;
 
-use crate::{BlobProvideEvent, Connecting, CounterStats, NodeAddr};
+use crate::{BlobProvideEvent, Connecting, CounterStats, Endpoint, NodeAddr};
 
 /// Options passed to [`IrohNode.new`]. Controls the behaviour of an iroh node.#
 #[napi(object, object_to_js = false)]
@@ -228,6 +228,7 @@ async fn apply_options<S: iroh::blobs::store::Store>(
     let mut builder = builder.build().await?;
     if let Some(protocols) = options.protocols {
         for (alpn, protocol) in protocols {
+            println!("adding {:?}", std::str::from_utf8(&alpn));
             builder = builder.accept(alpn, Arc::new(protocol));
         }
     }
@@ -291,6 +292,15 @@ impl Node {
             InnerIroh::Client(_) => None, // Not yet available
         };
         addr.map(|a| a.to_string())
+    }
+
+    #[napi]
+    pub fn endpoint(&self) -> Option<Endpoint> {
+        match self.node.0 {
+            InnerIroh::Fs(ref n) => Some(Endpoint::new(n.endpoint().clone())),
+            InnerIroh::Memory(ref n) => Some(Endpoint::new(n.endpoint().clone())),
+            InnerIroh::Client(_) => None, // Not yet available
+        }
     }
 }
 
