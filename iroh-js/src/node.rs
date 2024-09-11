@@ -228,7 +228,6 @@ async fn apply_options<S: iroh::blobs::store::Store>(
     let mut builder = builder.build().await?;
     if let Some(protocols) = options.protocols {
         for (alpn, protocol) in protocols {
-            println!("adding {:?}", std::str::from_utf8(&alpn));
             builder = builder.accept(alpn, Arc::new(protocol));
         }
     }

@@ -23,7 +23,6 @@ impl Endpoint {
 
     #[napi]
     pub async fn connect_by_node_id(&self, node_id: String, alpn: Vec<u8>) -> Result<Connection> {
-        println!("connecting to {:?}", std::str::from_utf8(&alpn));
         let node_id: iroh::net::NodeId = node_id.parse().map_err(anyhow::Error::from)?;
         let conn = self.0.connect_by_node_id(node_id, &alpn).await?;
         Ok(Connection(conn))

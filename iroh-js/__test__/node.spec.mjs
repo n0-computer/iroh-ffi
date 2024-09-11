@@ -45,7 +45,7 @@ test('custom protocol', async (t) => {
         }
         const alpn = await connecting.alpn()
         const alpnString = Buffer.from(alpn).toString()
-        console.log(`incoming on ${alpn}`)
+        console.log(`incoming on ${alpnString}`)
         const conn = await connecting.connect()
         const remote = await conn.getRemoteNodeId()
         console.log(`connected id ${remote.toString()}`)
@@ -55,8 +55,8 @@ test('custom protocol', async (t) => {
         const recv = await bi.recv()
 
         const bytes = await recv.readToEnd(64)
-        const b = Array.from(Buffer.from(bytes))
-        console.log(`got ${b.toString()}`)
+        const b = Buffer.from(bytes)
+        console.log(`got: ${b.toString()}`)
         await send.writeAll(Uint8Array.from(Buffer.from('hello')))
         await send.finish()
         await send.stopped()
@@ -82,7 +82,7 @@ test('custom protocol', async (t) => {
   const bi = await conn.openBi()
   const send = await bi.send()
   const recv = await bi.recv()
-  console.log(`send ${send}`)
+
   await send.writeAll(Uint8Array.from(Buffer.from('yo')))
   await send.finish()
   await send.stopped()
@@ -90,7 +90,7 @@ test('custom protocol', async (t) => {
   let out = Uint8Array.from(Buffer.alloc(5))
   await recv.readExact(out)
 
-  console.log(`read: ${out.toString()}`)
+  console.log(`read: ${Buffer.from(out)}`)
 
   t.pass()
 })
