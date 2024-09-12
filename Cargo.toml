@@ -67,4 +67,4 @@ uniffi = { version = "0.28.0", features = ["build"] }
 lto = true
 
 [patch.crates-io]
-iroh = { path = "../iroh/iroh" }
+iroh = { git = "https://github.com/n0-computer/iroh", branch = "main" }
