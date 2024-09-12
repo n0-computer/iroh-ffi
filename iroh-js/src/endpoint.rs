@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
 use tokio::sync::Mutex;
@@ -16,13 +18,17 @@ impl Endpoint {
     }
 
     #[napi]
-    pub async fn connect(&self, node_addr: NodeAddr, alpn: Vec<u8>) -> Result<Connection> {
+    pub async fn connect(&self, node_addr: NodeAddr, alpn: Uint8Array) -> Result<Connection> {
         let conn = self.0.connect(node_addr.try_into()?, &alpn).await?;
         Ok(Connection(conn))
     }
 
     #[napi]
-    pub async fn connect_by_node_id(&self, node_id: String, alpn: Vec<u8>) -> Result<Connection> {
+    pub async fn connect_by_node_id(
+        &self,
+        node_id: String,
+        alpn: Uint8Array,
+    ) -> Result<Connection> {
         let node_id: iroh::net::NodeId = node_id.parse().map_err(anyhow::Error::from)?;
         let conn = self.0.connect_by_node_id(node_id, &alpn).await?;
         Ok(Connection(conn))
@@ -50,11 +56,11 @@ impl Connecting {
     }
 
     #[napi]
-    pub async fn alpn(&self) -> Result<Vec<u8>> {
+    pub async fn alpn(&self) -> Result<Buffer> {
         match &mut *self.0.lock().await {
             Some(conn) => {
                 let alpn = conn.alpn().await?;
-                Ok(alpn)
+                Ok(alpn.into())
             }
             None => Err(anyhow::anyhow!("already used").into()),
         }
@@ -97,21 +103,21 @@ impl Connection {
     #[napi]
     pub async fn open_uni(&self) -> Result<SendStream> {
         let s = self.0.open_uni().await.map_err(anyhow::Error::from)?;
-        Ok(SendStream(Mutex::new(s)))
+        Ok(SendStream::new(s))
     }
 
     #[napi]
     pub async fn accept_uni(&self) -> Result<RecvStream> {
         let r = self.0.accept_uni().await.map_err(anyhow::Error::from)?;
-        Ok(RecvStream(Mutex::new(r)))
+        Ok(RecvStream::new(r))
     }
 
     #[napi]
     pub async fn open_bi(&self) -> Result<BiStream> {
         let (s, r) = self.0.open_bi().await.map_err(anyhow::Error::from)?;
         Ok(BiStream {
-            send: Mutex::new(Some(SendStream(Mutex::new(s)))),
-            recv: Mutex::new(Some(RecvStream(Mutex::new(r)))),
+            send: SendStream::new(s),
+            recv: RecvStream::new(r),
         })
     }
 
@@ -119,15 +125,15 @@ impl Connection {
     pub async fn accept_bi(&self) -> Result<BiStream> {
         let (s, r) = self.0.accept_bi().await.map_err(anyhow::Error::from)?;
         Ok(BiStream {
-            send: Mutex::new(Some(SendStream(Mutex::new(s)))),
-            recv: Mutex::new(Some(RecvStream(Mutex::new(r)))),
+            send: SendStream::new(s),
+            recv: RecvStream::new(r),
         })
     }
 
     #[napi]
-    pub async fn read_datagram(&self) -> Result<Vec<u8>> {
+    pub async fn read_datagram(&self) -> Result<Buffer> {
         let res = self.0.read_datagram().await.map_err(anyhow::Error::from)?;
-        Ok(res.to_vec())
+        Ok(res.to_vec().into())
     }
 
     #[napi]
@@ -143,7 +149,7 @@ impl Connection {
     }
 
     #[napi]
-    pub fn close(&self, error_code: BigInt, reason: Vec<u8>) -> Result<()> {
+    pub fn close(&self, error_code: BigInt, reason: Uint8Array) -> Result<()> {
         let code =
             endpoint::VarInt::from_u64(error_code.get_u64().1).map_err(anyhow::Error::from)?;
         self.0.close(code, &reason);
@@ -151,17 +157,17 @@ impl Connection {
     }
 
     #[napi]
-    pub fn send_datagram(&self, data: Vec<u8>) -> Result<()> {
+    pub fn send_datagram(&self, data: Uint8Array) -> Result<()> {
         self.0
-            .send_datagram(data.into())
+            .send_datagram(data.to_vec().into())
             .map_err(anyhow::Error::from)?;
         Ok(())
     }
 
     #[napi]
-    pub async fn send_datagram_wait(&self, data: Vec<u8>) -> Result<()> {
+    pub async fn send_datagram_wait(&self, data: Uint8Array) -> Result<()> {
         self.0
-            .send_datagram_wait(data.into())
+            .send_datagram_wait(data.to_vec().into())
             .await
             .map_err(anyhow::Error::from)?;
         Ok(())
@@ -224,28 +230,33 @@ impl Connection {
 
 #[napi]
 pub struct BiStream {
-    send: Mutex<Option<SendStream>>,
-    recv: Mutex<Option<RecvStream>>,
+    send: SendStream,
+    recv: RecvStream,
 }
 
 #[napi]
 impl BiStream {
     #[napi]
-    pub async fn send(&self) -> Option<SendStream> {
-        self.send.lock().await.take()
+    pub async fn send(&self) -> SendStream {
+        self.send.clone()
     }
 
     #[napi]
-    pub async fn recv(&self) -> Option<RecvStream> {
-        self.recv.lock().await.take()
+    pub async fn recv(&self) -> RecvStream {
+        self.recv.clone()
     }
 }
 
+#[derive(Clone)]
 #[napi]
-pub struct SendStream(Mutex<endpoint::SendStream>);
+pub struct SendStream(Arc<Mutex<endpoint::SendStream>>);
 
 #[napi]
 impl SendStream {
+    fn new(s: endpoint::SendStream) -> Self {
+        SendStream(Arc::new(Mutex::new(s)))
+    }
+
     #[napi]
     pub async fn write(&self, buf: Uint8Array) -> Result<usize> {
         let mut s = self.0.lock().await;
@@ -305,11 +316,16 @@ impl SendStream {
     }
 }
 
+#[derive(Clone)]
 #[napi]
-pub struct RecvStream(Mutex<endpoint::RecvStream>);
+pub struct RecvStream(Arc<Mutex<endpoint::RecvStream>>);
 
 #[napi]
 impl RecvStream {
+    fn new(r: endpoint::RecvStream) -> Self {
+        RecvStream(Arc::new(Mutex::new(r)))
+    }
+
     #[napi]
     pub async fn read(&self, mut buf: Uint8Array) -> Result<Option<usize>> {
         let mut r = self.0.lock().await;
@@ -325,13 +341,13 @@ impl RecvStream {
     }
 
     #[napi]
-    pub async fn read_to_end(&self, size_limit: u32) -> Result<Vec<u8>> {
+    pub async fn read_to_end(&self, size_limit: u32) -> Result<Buffer> {
         let mut r = self.0.lock().await;
         let res = r
             .read_to_end(size_limit as _)
             .await
             .map_err(anyhow::Error::from)?;
-        Ok(res)
+        Ok(res.into())
     }
 
     #[napi]

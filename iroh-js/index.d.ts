@@ -65,8 +65,8 @@ export declare class Authors {
 }
 
 export declare class BiStream {
-  send(): Promise<SendStream | null>
-  recv(): Promise<RecvStream | null>
+  send(): Promise<SendStream>
+  recv(): Promise<RecvStream>
 }
 
 /** Options to download  data specified by the hash. */
@@ -210,7 +210,7 @@ export declare class Collection {
 
 export declare class Connecting {
   connect(): Promise<Connection>
-  alpn(): Promise<Array<number>>
+  alpn(): Promise<Buffer>
   localIp(): Promise<string | null>
   remoteAddress(): Promise<string>
 }
@@ -221,12 +221,12 @@ export declare class Connection {
   acceptUni(): Promise<RecvStream>
   openBi(): Promise<BiStream>
   acceptBi(): Promise<BiStream>
-  readDatagram(): Promise<Array<number>>
+  readDatagram(): Promise<Buffer>
   closed(): Promise<string>
   closeReason(): string | null
-  close(errorCode: bigint, reason: Array<number>): void
-  sendDatagram(data: Array<number>): void
-  sendDatagramWait(data: Array<number>): Promise<void>
+  close(errorCode: bigint, reason: Uint8Array): void
+  sendDatagram(data: Uint8Array): void
+  sendDatagramWait(data: Uint8Array): Promise<void>
   maxDatagramSize(): bigint | null
   datagramSendBufferSpace(): bigint
   remoteAddress(): string
@@ -341,8 +341,8 @@ export declare class DownloadPolicy {
 }
 
 export declare class Endpoint {
-  connect(nodeAddr: NodeAddr, alpn: Array<number>): Promise<Connection>
-  connectByNodeId(nodeId: string, alpn: Array<number>): Promise<Connection>
+  connect(nodeAddr: NodeAddr, alpn: Uint8Array): Promise<Connection>
+  connectByNodeId(nodeId: string, alpn: Uint8Array): Promise<Connection>
 }
 
 /** Filter strategy used in download policies. */
@@ -561,7 +561,7 @@ export declare class RangeSpec {
 export declare class RecvStream {
   read(buf: Uint8Array): Promise<bigint | null>
   readExact(buf: Uint8Array): Promise<void>
-  readToEnd(sizeLimit: number): Promise<Array<number>>
+  readToEnd(sizeLimit: number): Promise<Buffer>
   id(): Promise<string>
   stop(errorCode: bigint): Promise<void>
   receivedReset(): Promise<bigint | null>

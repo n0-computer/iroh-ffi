@@ -37,15 +37,17 @@ test('rpc client memory node', async (t) => {
 
 
 test('custom protocol', async (t) => {
+  const alpn = Buffer.from('iroh-example/hello/0')
+
   const protocols = {
-    [Buffer.from('iroh-example/text-search/0', 'utf8')]: {
+    [alpn]: {
       accept: async (err, connecting) => {
         if (err) {
           throw err
         }
         const alpn = await connecting.alpn()
-        const alpnString = Buffer.from(alpn).toString()
-        console.log(`incoming on ${alpnString}`)
+        console.log(`incoming on ${Buffer.from(alpn)}`)
+
         const conn = await connecting.connect()
         const remote = await conn.getRemoteNodeId()
         console.log(`connected id ${remote.toString()}`)
@@ -55,9 +57,9 @@ test('custom protocol', async (t) => {
         const recv = await bi.recv()
 
         const bytes = await recv.readToEnd(64)
-        const b = Buffer.from(bytes)
-        console.log(`got: ${b.toString()}`)
-        await send.writeAll(Uint8Array.from(Buffer.from('hello')))
+        console.log(`got: ${bytes.toString()}`)
+        t.is(bytes.toString(), 'yo')
+        await send.writeAll(Buffer.from('hello'))
         await send.finish()
         await send.stopped()
       }
@@ -74,7 +76,7 @@ test('custom protocol', async (t) => {
   console.log(`status ${status.version}`)
   const endpoint = node2.node.endpoint()
   console.log(`connecting to ${nodeId}`)
-  const alpn = Array.from(Buffer.from('iroh-example/text-search/0'))
+
   const conn = await endpoint.connectByNodeId(nodeId, alpn)
   const remote = await conn.getRemoteNodeId()
   console.log(`connected to ${remote.toString()}`)
@@ -83,14 +85,13 @@ test('custom protocol', async (t) => {
   const send = await bi.send()
   const recv = await bi.recv()
 
-  await send.writeAll(Uint8Array.from(Buffer.from('yo')))
+  await send.writeAll(Buffer.from('yo'))
   await send.finish()
   await send.stopped()
 
-  let out = Uint8Array.from(Buffer.alloc(5))
+  let out = Buffer.alloc(5)
   await recv.readExact(out)
 
-  console.log(`read: ${Buffer.from(out)}`)
-
-  t.pass()
+  console.log(`read: ${out.toString()}`)
+  t.is(out.toString(), 'hello')
 })
