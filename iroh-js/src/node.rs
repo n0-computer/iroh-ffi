@@ -8,6 +8,7 @@ use napi::{
     threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode},
 };
 use napi_derive::napi;
+use tracing::warn;
 
 use crate::{BlobProvideEvent, Connecting, CounterStats, Endpoint, NodeAddr};
 
@@ -40,7 +41,8 @@ pub struct NodeOptions {
 pub struct ProtocolHandler {
     #[debug("accept")]
     pub accept: ThreadsafeFunction<Connecting, ()>,
-    // TODO: shutdown
+    #[debug("shutdown")]
+    pub shutdown: Option<ThreadsafeFunction<(), ()>>,
 }
 
 impl iroh::node::ProtocolHandler for ProtocolHandler {
@@ -51,6 +53,16 @@ impl iroh::node::ProtocolHandler for ProtocolHandler {
         Box::pin(async move {
             self.accept.call_async(Ok(Connecting::new(conn))).await?;
             Ok(())
+        })
+    }
+
+    fn shutdown(self: Arc<Self>) -> Pin<Box<dyn Future<Output = ()> + Send>> {
+        Box::pin(async move {
+            if let Some(ref cb) = self.shutdown {
+                if let Err(err) = cb.call_async(Ok(())).await {
+                    warn!("shutdown failed: {:?}", err);
+                }
+            }
         })
     }
 }

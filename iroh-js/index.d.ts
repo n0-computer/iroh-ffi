@@ -1328,6 +1328,7 @@ export declare function pathToKey(path: string, prefix?: string | undefined | nu
 
 export interface ProtocolHandler {
   accept: (err: Error | null, arg: Connecting) => void
+  shutdown?: (err: Error | null, ) => void
 }
 
 /** Options for sorting and pagination for using [`Query`]s. */
