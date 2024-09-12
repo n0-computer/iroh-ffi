@@ -1327,7 +1327,7 @@ export declare const enum Origin {
 export declare function pathToKey(path: string, prefix?: string | undefined | null, root?: string | undefined | null): Array<number>
 
 export interface ProtocolHandler {
-  accept: (err: Error | null, arg: Connecting) => void
+  accept: (err: Error | null, arg0: Endpoint, arg1: Iroh, arg2: Connecting) => void
   shutdown?: (err: Error | null, ) => void
 }
 

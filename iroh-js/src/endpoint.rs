@@ -8,6 +8,7 @@ use iroh::net::endpoint;
 
 use crate::{NodeAddr, PublicKey};
 
+#[derive(Clone)]
 #[napi]
 pub struct Endpoint(endpoint::Endpoint);
 

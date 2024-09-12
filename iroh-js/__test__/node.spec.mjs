@@ -42,7 +42,7 @@ test('custom protocol', async (t) => {
 
   const protocols = {
     [alpn]: {
-      accept: async (err, connecting) => {
+      accept: async (err, ep, client, connecting) => {
         t.falsy(err)
         const alpn = await connecting.alpn()
         console.log(`incoming on ${Buffer.from(alpn)}`)
