@@ -41,32 +41,32 @@ test('custom protocol', async (t) => {
   const alpn = Buffer.from('iroh-example/hello/0')
 
   const protocols = {
-    [alpn]: {
-      accept: async (err, ep, client, connecting) => {
+    [alpn]: (err, ep, client) => ({
+      accept: async (err, connecting) => {
         t.falsy(err)
+        const nodeId = await client.net.nodeId()
+        console.log(`accepting on node ${nodeId}`)
         const alpn = await connecting.alpn()
-        console.log(`incoming on ${Buffer.from(alpn)}`)
+        console.log(`incoming on ${alpn.toString()}`)
 
         const conn = await connecting.connect()
         const remote = await conn.getRemoteNodeId()
         console.log(`connected id ${remote.toString()}`)
 
         const bi = await conn.acceptBi()
-        const send = await bi.send()
-        const recv = await bi.recv()
 
-        const bytes = await recv.readToEnd(64)
+        const bytes = await bi.recv.readToEnd(64)
         console.log(`got: ${bytes.toString()}`)
         t.is(bytes.toString(), 'yo')
-        await send.writeAll(Buffer.from('hello'))
-        await send.finish()
-        await send.stopped()
+        await bi.send.writeAll(Buffer.from('hello'))
+        await bi.send.finish()
+        await bi.send.stopped()
       },
       shutdown: (err) => {
         t.falsy(err)
         console.log('shutting down')
       }
-    }
+    })
   }
   const node1 = await Iroh.memory({
     protocols,
@@ -85,15 +85,13 @@ test('custom protocol', async (t) => {
   console.log(`connected to ${remote.toString()}`)
 
   const bi = await conn.openBi()
-  const send = await bi.send()
-  const recv = await bi.recv()
 
-  await send.writeAll(Buffer.from('yo'))
-  await send.finish()
-  await send.stopped()
+  await bi.send.writeAll(Buffer.from('yo'))
+  await bi.send.finish()
+  await bi.send.stopped()
 
   let out = Buffer.alloc(5)
-  await recv.readExact(out)
+  await bi.recv.readExact(out)
 
   console.log(`read: ${out.toString()}`)
   t.is(out.toString(), 'hello')

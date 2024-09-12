@@ -33,42 +33,32 @@ pub struct NodeOptions {
     /// Provide a specific secret key, identifying this node. Must be 32 bytes long.
     pub secret_key: Option<Vec<u8>>,
 
-    pub protocols: Option<HashMap<Vec<u8>, ProtocolHandler>>,
+    pub protocols: Option<HashMap<Vec<u8>, ThreadsafeFunction<(Endpoint, Iroh), ProtocolHandler>>>,
 }
 
 #[derive(derive_more::Debug)]
 #[napi(object, object_to_js = false)]
 pub struct ProtocolHandler {
     #[debug("accept")]
-    pub accept: ThreadsafeFunction<(Endpoint, Iroh, Connecting), ()>,
+    pub accept: ThreadsafeFunction<Connecting, ()>,
     #[debug("shutdown")]
     pub shutdown: Option<ThreadsafeFunction<(), ()>>,
 }
 
-#[derive(derive_more::Debug)]
-struct ProtocolHandlerWrapper {
-    handler: ProtocolHandler,
-    #[debug("endpoint")]
-    endpoint: Endpoint,
-    client: Iroh,
-}
-
-impl iroh::node::ProtocolHandler for ProtocolHandlerWrapper {
+impl iroh::node::ProtocolHandler for ProtocolHandler {
     fn accept(
         self: Arc<Self>,
         conn: iroh::net::endpoint::Connecting,
     ) -> Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send>> {
-        let endpoint = self.endpoint.clone();
-        let client = self.client.clone();
         Box::pin(async move {
-            self.handler.accept.call_async(Ok((endpoint, client, Connecting::new(conn)))).await?;
+            self.accept.call_async(Ok(Connecting::new(conn))).await?;
             Ok(())
         })
     }
 
     fn shutdown(self: Arc<Self>) -> Pin<Box<dyn Future<Output = ()> + Send>> {
         Box::pin(async move {
-            if let Some(ref cb) = self.handler.shutdown {
+            if let Some(ref cb) = self.shutdown {
                 if let Err(err) = cb.call_async(Ok(())).await {
                     warn!("shutdown failed: {:?}", err);
                 }
@@ -252,11 +242,10 @@ async fn apply_options<S: iroh::blobs::store::Store>(
         let endpoint = Endpoint::new(builder.endpoint().clone());
         let client = Iroh(InnerIroh::Client(builder.client().clone()));
         for (alpn, protocol) in protocols {
-            builder = builder.accept(alpn, Arc::new(ProtocolHandlerWrapper {
-                handler: protocol,
-                endpoint: endpoint.clone(),
-                client: client.clone(),
-            }));
+            let handler = protocol
+                .call_async(Ok((endpoint.clone(), client.clone())))
+                .await?;
+            builder = builder.accept(alpn, Arc::new(handler));
         }
     }
 

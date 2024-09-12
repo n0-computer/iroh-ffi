@@ -237,13 +237,13 @@ pub struct BiStream {
 
 #[napi]
 impl BiStream {
-    #[napi]
-    pub async fn send(&self) -> SendStream {
+    #[napi(getter)]
+    pub fn send(&self) -> SendStream {
         self.send.clone()
     }
 
-    #[napi]
-    pub async fn recv(&self) -> RecvStream {
+    #[napi(getter)]
+    pub fn recv(&self) -> RecvStream {
         self.recv.clone()
     }
 }

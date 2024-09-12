@@ -65,8 +65,8 @@ export declare class Authors {
 }
 
 export declare class BiStream {
-  send(): Promise<SendStream>
-  recv(): Promise<RecvStream>
+  get send(): SendStream
+  get recv(): RecvStream
 }
 
 /** Options to download  data specified by the hash. */
@@ -1280,7 +1280,7 @@ export interface NodeOptions {
   nodeDiscovery?: NodeDiscoveryConfig
   /** Provide a specific secret key, identifying this node. Must be 32 bytes long. */
   secretKey?: Array<number>
-  protocols?: Record<Array<number>, ProtocolHandler>
+  protocols?: Record<Array<number>, (err: Error | null, arg0: Endpoint, arg1: Iroh) => ProtocolHandler>
 }
 
 /** The response to a status request */
@@ -1327,7 +1327,7 @@ export declare const enum Origin {
 export declare function pathToKey(path: string, prefix?: string | undefined | null, root?: string | undefined | null): Array<number>
 
 export interface ProtocolHandler {
-  accept: (err: Error | null, arg0: Endpoint, arg1: Iroh, arg2: Connecting) => void
+  accept: (err: Error | null, arg: Connecting) => void
   shutdown?: (err: Error | null, ) => void
 }
 
