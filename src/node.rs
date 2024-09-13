@@ -2,7 +2,9 @@ use std::{collections::HashMap, fmt::Debug, path::PathBuf, sync::Arc, time::Dura
 
 use iroh::node::{FsNode, MemNode, DEFAULT_RPC_ADDR};
 
-use crate::{BlobProvideEventCallback, CallbackError, Connecting, Endpoint, IrohError, NodeAddr, PublicKey};
+use crate::{
+    BlobProvideEventCallback, CallbackError, Connecting, Endpoint, IrohError, NodeAddr, PublicKey,
+};
 
 /// Stats counter
 #[derive(Debug, uniffi::Record)]
@@ -241,7 +243,10 @@ struct ProtocolWrapper {
 }
 
 impl iroh::node::ProtocolHandler for ProtocolWrapper {
-    fn accept(self: Arc<Self>, conn: iroh::net::endpoint::Connecting) -> futures_lite::future::Boxed<anyhow::Result<()>> {
+    fn accept(
+        self: Arc<Self>,
+        conn: iroh::net::endpoint::Connecting,
+    ) -> futures_lite::future::Boxed<anyhow::Result<()>> {
         Box::pin(async move {
             let conn = Connecting::new(conn);
             self.handler.accept(Arc::new(conn)).await?;
