@@ -4462,23 +4462,6 @@ inline fun <T : Disposable?, R> T.use(block: (T) -> R) =
 /** Used to instantiate an interface without an actual pointer, for fakes in tests, mostly. */
 object NoPointer
 
-public object FfiConverterUShort : FfiConverter<UShort, Short> {
-    override fun lift(value: Short): UShort = value.toUShort()
-
-    override fun read(buf: ByteBuffer): UShort = lift(buf.getShort())
-
-    override fun lower(value: UShort): Short = value.toShort()
-
-    override fun allocationSize(value: UShort) = 2UL
-
-    override fun write(
-        value: UShort,
-        buf: ByteBuffer,
-    ) {
-        buf.putShort(value.toShort())
-    }
-}
-
 public object FfiConverterUInt : FfiConverter<UInt, Int> {
     override fun lift(value: Int): UInt = value.toUInt()
 
@@ -24093,9 +24076,13 @@ data class NodeOptions(
      */
     var `enableDocs`: kotlin.Boolean = true,
     /**
-     * Overwrites the default bind port if set.
+     * Overwrites the default IPv4 address to bind to
      */
-    var `port`: kotlin.UShort? = null,
+    var `ipv4Addr`: kotlin.String? = null,
+    /**
+     * Overwrites the default IPv6 address to bind to
+     */
+    var `ipv6Addr`: kotlin.String? = null,
     /**
      * Enable RPC. Defaults to `false`.
      */
@@ -24122,7 +24109,9 @@ data class NodeOptions(
 
         Disposable.destroy(this.`enableDocs`)
 
-        Disposable.destroy(this.`port`)
+        Disposable.destroy(this.`ipv4Addr`)
+
+        Disposable.destroy(this.`ipv6Addr`)
 
         Disposable.destroy(this.`enableRpc`)
 
@@ -24144,7 +24133,8 @@ public object FfiConverterTypeNodeOptions : FfiConverterRustBuffer<NodeOptions> 
             FfiConverterOptionalULong.read(buf),
             FfiConverterOptionalTypeBlobProvideEventCallback.read(buf),
             FfiConverterBoolean.read(buf),
-            FfiConverterOptionalUShort.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalString.read(buf),
             FfiConverterBoolean.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalTypeNodeDiscoveryConfig.read(buf),
@@ -24157,7 +24147,8 @@ public object FfiConverterTypeNodeOptions : FfiConverterRustBuffer<NodeOptions> 
             FfiConverterOptionalULong.allocationSize(value.`gcIntervalMillis`) +
                 FfiConverterOptionalTypeBlobProvideEventCallback.allocationSize(value.`blobEvents`) +
                 FfiConverterBoolean.allocationSize(value.`enableDocs`) +
-                FfiConverterOptionalUShort.allocationSize(value.`port`) +
+                FfiConverterOptionalString.allocationSize(value.`ipv4Addr`) +
+                FfiConverterOptionalString.allocationSize(value.`ipv6Addr`) +
                 FfiConverterBoolean.allocationSize(value.`enableRpc`) +
                 FfiConverterOptionalString.allocationSize(value.`rpcAddr`) +
                 FfiConverterOptionalTypeNodeDiscoveryConfig.allocationSize(value.`nodeDiscovery`) +
@@ -24172,7 +24163,8 @@ public object FfiConverterTypeNodeOptions : FfiConverterRustBuffer<NodeOptions> 
         FfiConverterOptionalULong.write(value.`gcIntervalMillis`, buf)
         FfiConverterOptionalTypeBlobProvideEventCallback.write(value.`blobEvents`, buf)
         FfiConverterBoolean.write(value.`enableDocs`, buf)
-        FfiConverterOptionalUShort.write(value.`port`, buf)
+        FfiConverterOptionalString.write(value.`ipv4Addr`, buf)
+        FfiConverterOptionalString.write(value.`ipv6Addr`, buf)
         FfiConverterBoolean.write(value.`enableRpc`, buf)
         FfiConverterOptionalString.write(value.`rpcAddr`, buf)
         FfiConverterOptionalTypeNodeDiscoveryConfig.write(value.`nodeDiscovery`, buf)
@@ -25889,35 +25881,6 @@ public object FfiConverterTypeSyncReason : FfiConverterRustBuffer<SyncReason> {
         buf: ByteBuffer,
     ) {
         buf.putInt(value.ordinal + 1)
-    }
-}
-
-public object FfiConverterOptionalUShort : FfiConverterRustBuffer<kotlin.UShort?> {
-    override fun read(buf: ByteBuffer): kotlin.UShort? {
-        if (buf.get().toInt() == 0) {
-            return null
-        }
-        return FfiConverterUShort.read(buf)
-    }
-
-    override fun allocationSize(value: kotlin.UShort?): ULong {
-        if (value == null) {
-            return 1UL
-        } else {
-            return 1UL + FfiConverterUShort.allocationSize(value)
-        }
-    }
-
-    override fun write(
-        value: kotlin.UShort?,
-        buf: ByteBuffer,
-    ) {
-        if (value == null) {
-            buf.put(0)
-        } else {
-            buf.put(1)
-            FfiConverterUShort.write(value, buf)
-        }
     }
 }
 

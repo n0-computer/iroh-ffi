@@ -1270,8 +1270,10 @@ export interface NodeOptions {
   blobEvents?: (err: Error | null, arg: BlobProvideEvent) => void
   /** Should docs be enabled? Defaults to `true`. */
   enableDocs?: boolean
-  /** Overwrites the default bind port if set. */
-  port?: number
+  /** Overwrites the default IPv4 address to bind to */
+  ipv4Addr?: string
+  /** Overwrites the default IPv6 address to bind to */
+  ipv6Addr?: string
   /** Enable RPC. Defaults to `false`. */
   enableRpc?: boolean
   /** Overwrite the default RPC address. */

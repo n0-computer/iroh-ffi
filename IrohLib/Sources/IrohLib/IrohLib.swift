@@ -383,19 +383,6 @@ private class UniffiHandleMap<T> {
 
 // Public interface members begin here.
 
-private struct FfiConverterUInt16: FfiConverterPrimitive {
-    typealias FfiType = UInt16
-    typealias SwiftType = UInt16
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UInt16 {
-        return try lift(readInt(&buf))
-    }
-
-    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
-        writeInt(&buf, lower(value))
-    }
-}
-
 private struct FfiConverterUInt32: FfiConverterPrimitive {
     typealias FfiType = UInt32
     typealias SwiftType = UInt32
@@ -12367,9 +12354,13 @@ public struct NodeOptions {
      */
     public var enableDocs: Bool
     /**
-     * Overwrites the default bind port if set.
+     * Overwrites the default IPv4 address to bind to
      */
-    public var port: UInt16?
+    public var ipv4Addr: String?
+    /**
+     * Overwrites the default IPv6 address to bind to
+     */
+    public var ipv6Addr: String?
     /**
      * Enable RPC. Defaults to `false`.
      */
@@ -12402,8 +12393,11 @@ public struct NodeOptions {
             * Should docs be enabled? Defaults to `true`.
             */ enableDocs: Bool = true,
         /**
-            * Overwrites the default bind port if set.
-            */ port: UInt16? = nil,
+            * Overwrites the default IPv4 address to bind to
+            */ ipv4Addr: String? = nil,
+        /**
+            * Overwrites the default IPv6 address to bind to
+            */ ipv6Addr: String? = nil,
         /**
             * Enable RPC. Defaults to `false`.
             */ enableRpc: Bool = false,
@@ -12420,7 +12414,8 @@ public struct NodeOptions {
         self.gcIntervalMillis = gcIntervalMillis
         self.blobEvents = blobEvents
         self.enableDocs = enableDocs
-        self.port = port
+        self.ipv4Addr = ipv4Addr
+        self.ipv6Addr = ipv6Addr
         self.enableRpc = enableRpc
         self.rpcAddr = rpcAddr
         self.nodeDiscovery = nodeDiscovery
@@ -12436,7 +12431,8 @@ public struct FfiConverterTypeNodeOptions: FfiConverterRustBuffer {
                 gcIntervalMillis: FfiConverterOptionUInt64.read(from: &buf),
                 blobEvents: FfiConverterOptionTypeBlobProvideEventCallback.read(from: &buf),
                 enableDocs: FfiConverterBool.read(from: &buf),
-                port: FfiConverterOptionUInt16.read(from: &buf),
+                ipv4Addr: FfiConverterOptionString.read(from: &buf),
+                ipv6Addr: FfiConverterOptionString.read(from: &buf),
                 enableRpc: FfiConverterBool.read(from: &buf),
                 rpcAddr: FfiConverterOptionString.read(from: &buf),
                 nodeDiscovery: FfiConverterOptionTypeNodeDiscoveryConfig.read(from: &buf),
@@ -12449,7 +12445,8 @@ public struct FfiConverterTypeNodeOptions: FfiConverterRustBuffer {
         FfiConverterOptionUInt64.write(value.gcIntervalMillis, into: &buf)
         FfiConverterOptionTypeBlobProvideEventCallback.write(value.blobEvents, into: &buf)
         FfiConverterBool.write(value.enableDocs, into: &buf)
-        FfiConverterOptionUInt16.write(value.port, into: &buf)
+        FfiConverterOptionString.write(value.ipv4Addr, into: &buf)
+        FfiConverterOptionString.write(value.ipv6Addr, into: &buf)
         FfiConverterBool.write(value.enableRpc, into: &buf)
         FfiConverterOptionString.write(value.rpcAddr, into: &buf)
         FfiConverterOptionTypeNodeDiscoveryConfig.write(value.nodeDiscovery, into: &buf)
@@ -14902,27 +14899,6 @@ public func FfiConverterTypeSyncReason_lower(_ value: SyncReason) -> RustBuffer 
 }
 
 extension SyncReason: Equatable, Hashable {}
-
-private struct FfiConverterOptionUInt16: FfiConverterRustBuffer {
-    typealias SwiftType = UInt16?
-
-    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
-        guard let value = value else {
-            writeInt(&buf, Int8(0))
-            return
-        }
-        writeInt(&buf, Int8(1))
-        FfiConverterUInt16.write(value, into: &buf)
-    }
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
-        switch try readInt(&buf) as Int8 {
-        case 0: return nil
-        case 1: return try FfiConverterUInt16.read(from: &buf)
-        default: throw UniffiInternalError.unexpectedOptionalTag
-        }
-    }
-}
 
 private struct FfiConverterOptionUInt64: FfiConverterRustBuffer {
     typealias SwiftType = UInt64?

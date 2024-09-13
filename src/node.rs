@@ -204,9 +204,12 @@ pub struct NodeOptions {
     /// Should docs be enabled? Defaults to `true`.
     #[uniffi(default = true)]
     pub enable_docs: bool,
-    /// Overwrites the default bind port if set.
+    /// Overwrites the default IPv4 address to bind to
     #[uniffi(default = None)]
-    pub port: Option<u16>,
+    pub ipv4_addr: Option<String>,
+    /// Overwrites the default IPv6 address to bind to
+    #[uniffi(default = None)]
+    pub ipv6_addr: Option<String>,
     /// Enable RPC. Defaults to `false`.
     #[uniffi(default = false)]
     pub enable_rpc: bool,
@@ -269,7 +272,8 @@ impl Default for NodeOptions {
             enable_docs: true,
             enable_rpc: false,
             rpc_addr: None,
-            port: None,
+            ipv4_addr: None,
+            ipv6_addr: None,
             node_discovery: None,
             secret_key: None,
             protocols: None,
@@ -406,9 +410,12 @@ async fn apply_options<S: iroh::blobs::store::Store>(
         builder = builder.disable_docs();
     }
 
-    if let Some(port) = options.port {
-        // TODO: update
-        // builder = builder.bind_port(port);
+    if let Some(addr) = options.ipv4_addr {
+        builder = builder.bind_addr_v4(addr.parse()?);
+    }
+
+    if let Some(addr) = options.ipv6_addr {
+        builder = builder.bind_addr_v6(addr.parse()?);
     }
 
     if options.enable_rpc {
