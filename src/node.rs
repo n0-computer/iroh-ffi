@@ -2,7 +2,7 @@ use std::{collections::HashMap, fmt::Debug, path::PathBuf, sync::Arc, time::Dura
 
 use iroh::node::{FsNode, MemNode, DEFAULT_RPC_ADDR};
 
-use crate::{BlobProvideEventCallback, IrohError, NodeAddr, PublicKey};
+use crate::{BlobProvideEventCallback, Endpoint, IrohError, NodeAddr, PublicKey};
 
 /// Stats counter
 #[derive(Debug, uniffi::Record)]
@@ -364,7 +364,8 @@ async fn apply_options<S: iroh::blobs::store::Store>(
     }
 
     if let Some(port) = options.port {
-        builder = builder.bind_port(port);
+        // TODO: update
+        // builder = builder.bind_port(port);
     }
 
     if options.enable_rpc {
@@ -433,12 +434,14 @@ impl Node {
     }
 
     /// Shutdown this iroh node.
+    #[uniffi::method(async_runtime = "tokio")]
     pub async fn shutdown(&self, force: bool) -> Result<(), IrohError> {
         self.node().shutdown(force).await?;
         Ok(())
     }
 
     /// Returns `Some(addr)` if an RPC endpoint is running, `None` otherwise.
+    #[uniffi::method]
     pub fn my_rpc_addr(&self) -> Option<String> {
         let addr = match self.node {
             Iroh::Fs(ref n) => n.my_rpc_addr(),
@@ -446,6 +449,15 @@ impl Node {
             Iroh::Client(_) => None, // Not available currently
         };
         addr.map(|a| a.to_string())
+    }
+
+    #[uniffi::method]
+    pub fn endpoint(&self) -> Endpoint {
+        match self.node {
+            Iroh::Fs(ref n) => Endpoint::new(n.endpoint().clone()),
+            Iroh::Memory(ref n) => Endpoint::new(n.endpoint().clone()),
+            Iroh::Client(_) => panic!("not available"), // Not yet available
+        }
     }
 }
 

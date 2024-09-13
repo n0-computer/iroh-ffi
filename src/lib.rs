@@ -1,6 +1,7 @@
 mod author;
 mod blob;
 mod doc;
+mod endpoint;
 mod error;
 mod gossip;
 mod key;
@@ -12,6 +13,7 @@ mod ticket;
 pub use self::author::*;
 pub use self::blob::*;
 pub use self::doc::*;
+pub use self::endpoint::*;
 pub use self::error::*;
 pub use self::gossip::*;
 pub use self::key::*;
