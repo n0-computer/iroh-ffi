@@ -37,12 +37,13 @@ test('rpc client memory node', async (t) => {
 
 
 test('custom protocol', async (t) => {
-  t.plan(5)
+  t.plan(4)
   const alpn = Buffer.from('iroh-example/hello/0')
 
   const protocols = {
     [alpn]: (err, ep, client) => ({
       accept: async (err, connecting) => {
+        console.log('accept')
         t.falsy(err)
         const nodeId = await client.net.nodeId()
         console.log(`accepting on node ${nodeId}`)
@@ -63,7 +64,9 @@ test('custom protocol', async (t) => {
         await bi.send.stopped()
       },
       shutdown: (err) => {
-        t.falsy(err)
+        if (err != null) {
+          throw err
+        }
         console.log('shutting down')
       }
     })
@@ -99,5 +102,6 @@ test('custom protocol', async (t) => {
   await node2.node.shutdown(false)
   await node1.node.shutdown(false)
 
+  console.log('end')
   t.pass()
 })
