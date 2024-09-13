@@ -72,15 +72,15 @@ test('custom protocol', async (t) => {
     protocols,
   })
 
-  const nodeId = await node1.net.nodeId()
+  const nodeAddr = await node1.net.nodeAddr()
 
   const node2 = await Iroh.memory({ protocols })
   const status = await node2.node.status()
   console.log(`status ${status.version}`)
   const endpoint = node2.node.endpoint()
-  console.log(`connecting to ${nodeId}`)
+  console.log(`connecting to ${nodeAddr.nodeId}`)
 
-  const conn = await endpoint.connectByNodeId(nodeId, alpn)
+  const conn = await endpoint.connect(nodeAddr, alpn)
   const remote = await conn.getRemoteNodeId()
   console.log(`connected to ${remote.toString()}`)
 
