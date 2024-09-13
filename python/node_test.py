@@ -4,7 +4,7 @@ import pytest
 import asyncio
 import iroh
 
-from iroh import Iroh, ShareMode, LiveEventType, AddrInfoOptions
+from iroh import Iroh, ShareMode, LiveEventType, AddrInfoOptions, NodeOptions
 
 @pytest.mark.asyncio
 async def test_basic_sync():
@@ -61,3 +61,62 @@ async def test_basic_sync():
             val = await node_1.blobs().read_to_bytes(hash)
             assert b"world" == val
             break
+
+@pytest.mark.asyncio
+async def test_custom_protocol():
+    # setup event loop, to ensure async callbacks work
+    iroh.iroh_ffi.uniffi_set_event_loop(asyncio.get_running_loop())
+
+    class MyProtocol:
+        async def accept(self, connecting):
+            conn = await connecting.connect()
+            remote = conn.get_remote_node_id()
+            print("accepting from ", remote)
+            bi = await conn.accept_bi()
+
+            bytes = await bi.recv().read_to_end(64)
+            print("got", bytes)
+            assert b"yo", bytes
+            await bi.send().write_all(b"hello")
+            await bi.send().finish()
+            await bi.send().stopped()
+
+        async def shutdown(self):
+            print("shutting down")
+
+    class ProtocolCreator:
+        def create(self, endpoint, client):
+            return MyProtocol()
+
+    protocols = {}
+    protocols[b"example/protocol/0"] = ProtocolCreator()
+
+    options = NodeOptions()
+    options.protocols = protocols
+
+    # Create node_0
+    node_1 = await Iroh.memory_with_options(options)
+
+    # Create node_1
+    node_2 = await Iroh.memory_with_options(options)
+
+    alpn = b"example/protocol/0"
+    node_id = await node_1.net().node_id()
+
+    endpoint = node_2.node().endpoint()
+    conn = await endpoint.connect_by_node_id(node_id, alpn)
+    remote = conn.get_remote_node_id()
+    print("", remote)
+
+    bi = await conn.open_bi()
+
+    await bi.send().write_all(b"yo")
+    await bi.send().finish()
+    await bi.send().stopped()
+
+    out = await bi.recv().read_exact(5)
+    print("", out)
+    assert b"hello", out
+
+    await node_2.node().shutdown(False)
+    await node_1.node().shutdown(False)

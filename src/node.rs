@@ -2,7 +2,7 @@ use std::{collections::HashMap, fmt::Debug, path::PathBuf, sync::Arc, time::Dura
 
 use iroh::node::{FsNode, MemNode, DEFAULT_RPC_ADDR};
 
-use crate::{BlobProvideEventCallback, Endpoint, IrohError, NodeAddr, PublicKey};
+use crate::{BlobProvideEventCallback, CallbackError, Connecting, Endpoint, IrohError, NodeAddr, PublicKey};
 
 /// Stats counter
 #[derive(Debug, uniffi::Record)]
@@ -217,6 +217,43 @@ pub struct NodeOptions {
     /// Provide a specific secret key, identifying this node. Must be 32 bytes long.
     #[uniffi(default = None)]
     pub secret_key: Option<Vec<u8>>,
+
+    #[uniffi(default = None)]
+    pub protocols: Option<HashMap<Vec<u8>, Arc<dyn ProtocolCreator>>>,
+}
+
+#[uniffi::export(with_foreign)]
+pub trait ProtocolCreator: std::fmt::Debug + Send + Sync + 'static {
+    fn create(&self, endpoint: Arc<Endpoint>, client: Arc<Iroh>) -> Arc<dyn ProtocolHandler>;
+}
+
+#[uniffi::export(with_foreign)]
+#[async_trait::async_trait]
+pub trait ProtocolHandler: Send + Sync + 'static {
+    async fn accept(&self, conn: Arc<Connecting>) -> Result<(), CallbackError>;
+    async fn shutdown(&self);
+}
+
+#[derive(derive_more::Debug)]
+struct ProtocolWrapper {
+    #[debug("handler")]
+    handler: Arc<dyn ProtocolHandler>,
+}
+
+impl iroh::node::ProtocolHandler for ProtocolWrapper {
+    fn accept(self: Arc<Self>, conn: iroh::net::endpoint::Connecting) -> futures_lite::future::Boxed<anyhow::Result<()>> {
+        Box::pin(async move {
+            let conn = Connecting::new(conn);
+            self.handler.accept(Arc::new(conn)).await?;
+            Ok(())
+        })
+    }
+
+    fn shutdown(self: Arc<Self>) -> futures_lite::future::Boxed<()> {
+        Box::pin(async move {
+            self.handler.shutdown().await;
+        })
+    }
 }
 
 impl Default for NodeOptions {
@@ -230,6 +267,7 @@ impl Default for NodeOptions {
             port: None,
             node_discovery: None,
             secret_key: None,
+            protocols: None,
         }
     }
 }
@@ -347,7 +385,7 @@ impl Iroh {
 async fn apply_options<S: iroh::blobs::store::Store>(
     mut builder: iroh::node::Builder<S>,
     options: NodeOptions,
-) -> anyhow::Result<iroh::node::Builder<S>> {
+) -> anyhow::Result<iroh::node::ProtocolBuilder<S>> {
     if let Some(millis) = options.gc_interval_millis {
         let policy = match millis {
             0 => iroh::node::GcPolicy::Disabled,
@@ -388,6 +426,16 @@ async fn apply_options<S: iroh::blobs::store::Store>(
         let key: [u8; 32] = AsRef::<[u8]>::as_ref(&secret_key).try_into()?;
         let key = iroh::net::key::SecretKey::from_bytes(&key);
         builder = builder.secret_key(key);
+    }
+
+    let mut builder = builder.build().await?;
+    let client = Arc::new(Iroh::Client(builder.client().clone()));
+    let endpoint = Arc::new(Endpoint::new(builder.endpoint().clone()));
+    if let Some(protocols) = options.protocols {
+        for (alpn, protocol) in protocols {
+            let handler = protocol.create(endpoint.clone(), client.clone());
+            builder = builder.accept(alpn, Arc::new(ProtocolWrapper { handler }));
+        }
     }
 
     Ok(builder)
