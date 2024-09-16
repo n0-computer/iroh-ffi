@@ -135,15 +135,15 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.88"
+version = "1.0.89"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4e1496f8fb1fbf272686b8d37f523dab3e4a7443300055e74cdaa449f3114356"
+checksum = "86fdf8605db99b54d3cd748a44c6d04df638eb5dafb219b135d0149bd0db01f6"
 
 [[package]]
 name = "arrayref"
-version = "0.3.8"
+version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9d151e35f61089500b617991b791fc8bfd237ae50cd5950803758a179b41e67a"
+checksum = "76a2e8124351fda1ef8aaaa3bbd7ebbcb486bbcd4225aca0aa0d84bb2db8fecb"
 
 [[package]]
 name = "arrayvec"
@@ -487,9 +487,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.1.18"
+version = "1.1.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b62ac837cdb5cb22e10a256099b4fc502b1dfe560cb282963a974d7abd80e476"
+checksum = "2d74707dde2ba56f86ae90effb3b43ddd369504387e718014de010cec7959800"
 dependencies = [
  "shlex",
 ]
@@ -1787,9 +1787,9 @@ dependencies = [
 
 [[package]]
 name = "iana-time-zone"
-version = "0.1.60"
+version = "0.1.61"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e7ffbb5a1b541ea2561f8c41c087286cc091e21e556a4f09a8f6cbf17b69b141"
+checksum = "235e081f3925a06703c2d0117ea8b91f042756fd6e7a6e5d901e8ca1a996b220"
 dependencies = [
  "android_system_properties",
  "core-foundation-sys",
@@ -1904,8 +1904,9 @@ checksum = "187674a687eed5fe42285b40c6291f9a01517d415fad1c3cbc6a9f778af7fcd4"
 
 [[package]]
 name = "iroh"
-version = "0.24.0"
-source = "git+https://github.com/n0-computer/iroh?branch=main#3d75dedbea26be51bff74e263691d9042d953a1b"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aa4fdb4406f9637ede6df54538a024d4c6d41172c5702b21229474f3a53e4e82"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -1948,8 +1949,9 @@ dependencies = [
 
 [[package]]
 name = "iroh-base"
-version = "0.24.0"
-source = "git+https://github.com/n0-computer/iroh?branch=main#3d75dedbea26be51bff74e263691d9042d953a1b"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "545424889bce87e44fd08dac9e6889635630fdbdaaa858a3c5a5f0adbb8d3779"
 dependencies = [
  "aead",
  "anyhow",
@@ -1964,7 +1966,7 @@ dependencies = [
  "postcard",
  "rand",
  "rand_core",
- "redb 2.1.2",
+ "redb 2.1.3",
  "serde",
  "serde-error",
  "ssh-key",
@@ -1989,8 +1991,9 @@ dependencies = [
 
 [[package]]
 name = "iroh-blobs"
-version = "0.24.0"
-source = "git+https://github.com/n0-computer/iroh?branch=main#3d75dedbea26be51bff74e263691d9042d953a1b"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d6ede5a40500cd76ff4d0ed48d206b036992b9f7aac0c1cc8d1977ef10c5da6a"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -2016,7 +2019,7 @@ dependencies = [
  "rand",
  "range-collections",
  "redb 1.5.1",
- "redb 2.1.2",
+ "redb 2.1.3",
  "reflink-copy",
  "self_cell",
  "serde",
@@ -2031,8 +2034,9 @@ dependencies = [
 
 [[package]]
 name = "iroh-docs"
-version = "0.24.0"
-source = "git+https://github.com/n0-computer/iroh?branch=main#3d75dedbea26be51bff74e263691d9042d953a1b"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e87f18b1c7934c8b55bc6aad89dad9e6705fc0cd639362cb930fdb903f9b5275"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -2055,7 +2059,7 @@ dependencies = [
  "rand",
  "rand_core",
  "redb 1.5.1",
- "redb 2.1.2",
+ "redb 2.1.3",
  "self_cell",
  "serde",
  "strum 0.25.0",
@@ -2069,7 +2073,7 @@ dependencies = [
 
 [[package]]
 name = "iroh-ffi"
-version = "0.24.0"
+version = "0.25.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2100,8 +2104,9 @@ dependencies = [
 
 [[package]]
 name = "iroh-gossip"
-version = "0.24.0"
-source = "git+https://github.com/n0-computer/iroh?branch=main#3d75dedbea26be51bff74e263691d9042d953a1b"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a5489a563e407fb2be654e950536da4230e46642111f12b16d7013228164aae"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -2140,8 +2145,9 @@ dependencies = [
 
 [[package]]
 name = "iroh-metrics"
-version = "0.24.0"
-source = "git+https://github.com/n0-computer/iroh?branch=main#3d75dedbea26be51bff74e263691d9042d953a1b"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9fb6ab80f7cccde80be07a643308e1ff925d5be91721ec65ba96b261a0bcb5e5"
 dependencies = [
  "anyhow",
  "erased_set",
@@ -2160,8 +2166,9 @@ dependencies = [
 
 [[package]]
 name = "iroh-net"
-version = "0.24.0"
-source = "git+https://github.com/n0-computer/iroh?branch=main#3d75dedbea26be51bff74e263691d9042d953a1b"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4a099a60478cb9319153756a9cf2ff41aa03d18403690a91e60f049ad467b057"
 dependencies = [
  "anyhow",
  "backoff",
@@ -2515,9 +2522,9 @@ dependencies = [
 
 [[package]]
 name = "napi"
-version = "3.0.0-alpha.8"
+version = "3.0.0-alpha.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "743b5a7769f54c95e20a26d9e66d1b43d5622b7dc8ec8f97b51ed8c58633841f"
+checksum = "63b6831e153625954de1e7c1b42176babad91282b85a2f39002ea51c9421f6aa"
 dependencies = [
  "anyhow",
  "bitflags 2.6.0",
@@ -2537,9 +2544,9 @@ checksum = "e1c0f5d67ee408a4685b61f5ab7e58605c8ae3f2b4189f0127d804ff13d5560a"
 
 [[package]]
 name = "napi-derive"
-version = "3.0.0-alpha.7"
+version = "3.0.0-alpha.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7619cfcc3985e1ed73d147d6950caabaedabcf5c98133502f9d18c3d0061320"
+checksum = "60e5c77a84ff574914e0b2cf3b609effedd9206f425bb49d6477203af06ebc2e"
 dependencies = [
  "cfg-if",
  "convert_case",
@@ -2551,9 +2558,9 @@ dependencies = [
 
 [[package]]
 name = "napi-derive-backend"
-version = "2.0.0-alpha.7"
+version = "2.0.0-alpha.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "584f6a91c05e8c6bf80622fcc2675c7d27934754d4f1141cfd422d531a3f51fb"
+checksum = "033601eb13a797fb39592a68e6b691a2840b44434fe4e3d075c9cf6027605361"
 dependencies = [
  "convert_case",
  "once_cell",
@@ -2812,7 +2819,7 @@ dependencies = [
 
 [[package]]
 name = "number0_iroh"
-version = "0.24.0"
+version = "0.25.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3554,9 +3561,9 @@ dependencies = [
 
 [[package]]
 name = "redb"
-version = "2.1.2"
+version = "2.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "58323dc32ea52a8ae105ff94bc0460c5d906307533ba3401aa63db3cbe491fe5"
+checksum = "e4760ad04a88ef77075ba86ba9ea79b919e6bab29c1764c5747237cd6eaedcaa"
 dependencies = [
  "libc",
 ]
@@ -4938,9 +4945,9 @@ dependencies = [
 
 [[package]]
 name = "unicode-segmentation"
-version = "1.11.0"
+version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d4c87d22b6e3f4a18d4d40ef354e97c90fcb14dd91d7dc0aa9d8a1172ebf7202"
+checksum = "f6ccf251212114b54433ec949fd6a7841275f9ada20dddd2f29e9ceea4501493"
 
 [[package]]
 name = "unicode-xid"
