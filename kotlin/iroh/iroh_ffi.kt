@@ -2706,6 +2706,8 @@ internal interface UniffiLib : Library {
         `msg`: RustBuffer.ByValue,
     ): Long
 
+    fun uniffi_iroh_ffi_fn_method_sender_cancel(`ptr`: Pointer): Long
+
     fun uniffi_iroh_ffi_fn_clone_settagoption(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
@@ -3442,6 +3444,8 @@ internal interface UniffiLib : Library {
     fun uniffi_iroh_ffi_checksum_method_sender_broadcast(): Short
 
     fun uniffi_iroh_ffi_checksum_method_sender_broadcast_neighbors(): Short
+
+    fun uniffi_iroh_ffi_checksum_method_sender_cancel(): Short
 
     fun uniffi_iroh_ffi_checksum_method_subscribecallback_event(): Short
 
@@ -4182,6 +4186,9 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_sender_broadcast_neighbors() != 14000.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_ffi_checksum_method_sender_cancel() != 24357.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_subscribecallback_event() != 35520.toShort()) {
@@ -21264,6 +21271,11 @@ public interface SenderInterface {
      */
     suspend fun `broadcastNeighbors`(`msg`: kotlin.ByteArray)
 
+    /**
+     * Closes the subscription, it is an error to use it afterwards
+     */
+    suspend fun `cancel`()
+
     companion object
 }
 
@@ -21387,6 +21399,27 @@ open class Sender :
                 UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_sender_broadcast_neighbors(
                     thisPtr,
                     FfiConverterByteArray.lower(`msg`),
+                )
+            },
+            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_void(future) },
+            // lift function
+            { Unit },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
+
+    /**
+     * Closes the subscription, it is an error to use it afterwards
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `cancel`() =
+        uniffiRustCallAsync(
+            callWithPointer { thisPtr ->
+                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_sender_cancel(
+                    thisPtr,
                 )
             },
             { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },

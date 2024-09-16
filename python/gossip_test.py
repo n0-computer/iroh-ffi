@@ -72,8 +72,8 @@ async def test_gossip_basic():
 
     assert found
 
-    await sink0.close()
-    await sink1.close()
+    await sink0.cancel()
+    await sink1.cancel()
 
     await n0.node().shutdown(False)
     await n1.node().shutdown(False)

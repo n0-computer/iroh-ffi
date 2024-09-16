@@ -72,8 +72,8 @@ runBlocking {
 
     assert(found)
 
-    sink0.close()
-    sink1.close()
+    sink0.cancel()
+    sink1.cancel()
 
     n0.node().shutdown(false)
     n1.node().shutdown(false)

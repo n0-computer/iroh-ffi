@@ -252,7 +252,7 @@ impl Sender {
 
     /// Closes the subscription, it is an error to use it afterwards
     #[uniffi::method(async_runtime = "tokio")]
-    pub async fn close(&self) -> Result<(), IrohError> {
+    pub async fn cancel(&self) -> Result<(), IrohError> {
         if self.cancel.is_cancelled() {
             return Err(IrohError::from(anyhow::anyhow!("already closed")));
         }
