@@ -1,4 +1,6 @@
-use std::{collections::HashMap, path::PathBuf, time::Duration};
+use std::{
+    collections::HashMap, future::Future, path::PathBuf, pin::Pin, sync::Arc, time::Duration,
+};
 
 use iroh::node::{FsNode, MemNode, DEFAULT_RPC_ADDR};
 use napi::{
@@ -6,8 +8,9 @@ use napi::{
     threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode},
 };
 use napi_derive::napi;
+use tracing::warn;
 
-use crate::{BlobProvideEvent, CounterStats, NodeAddr};
+use crate::{BlobProvideEvent, Connecting, CounterStats, Endpoint, NodeAddr};
 
 /// Options passed to [`IrohNode.new`]. Controls the behaviour of an iroh node.#
 #[napi(object, object_to_js = false)]
@@ -19,8 +22,10 @@ pub struct NodeOptions {
     pub blob_events: Option<ThreadsafeFunction<BlobProvideEvent, ()>>,
     /// Should docs be enabled? Defaults to `true`.
     pub enable_docs: Option<bool>,
-    /// Overwrites the default bind port if set.
-    pub port: Option<u16>,
+    /// Overwrites the default IPv4 address to bind to
+    pub ipv4_addr: Option<String>,
+    /// Overwrites the default IPv6 address to bind to
+    pub ipv6_addr: Option<String>,
     /// Enable RPC. Defaults to `false`.
     pub enable_rpc: Option<bool>,
     /// Overwrite the default RPC address.
@@ -29,6 +34,39 @@ pub struct NodeOptions {
     pub node_discovery: Option<NodeDiscoveryConfig>,
     /// Provide a specific secret key, identifying this node. Must be 32 bytes long.
     pub secret_key: Option<Vec<u8>>,
+
+    pub protocols: Option<HashMap<Vec<u8>, ThreadsafeFunction<(Endpoint, Iroh), ProtocolHandler>>>,
+}
+
+#[derive(derive_more::Debug)]
+#[napi(object, object_to_js = false)]
+pub struct ProtocolHandler {
+    #[debug("accept")]
+    pub accept: ThreadsafeFunction<Connecting, ()>,
+    #[debug("shutdown")]
+    pub shutdown: Option<ThreadsafeFunction<(), ()>>,
+}
+
+impl iroh::node::ProtocolHandler for ProtocolHandler {
+    fn accept(
+        self: Arc<Self>,
+        conn: iroh::net::endpoint::Connecting,
+    ) -> Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send>> {
+        Box::pin(async move {
+            self.accept.call_async(Ok(Connecting::new(conn))).await?;
+            Ok(())
+        })
+    }
+
+    fn shutdown(self: Arc<Self>) -> Pin<Box<dyn Future<Output = ()> + Send>> {
+        Box::pin(async move {
+            if let Some(ref cb) = self.shutdown {
+                if let Err(err) = cb.call_async(Ok(())).await {
+                    warn!("shutdown failed: {:?}", err);
+                }
+            }
+        })
+    }
 }
 
 impl Default for NodeOptions {
@@ -39,9 +77,11 @@ impl Default for NodeOptions {
             enable_docs: None,
             enable_rpc: None,
             rpc_addr: None,
-            port: None,
+            ipv4_addr: None,
+            ipv6_addr: None,
             node_discovery: None,
             secret_key: None,
+            protocols: None,
         }
     }
 }
@@ -152,7 +192,7 @@ impl Iroh {
 async fn apply_options<S: iroh::blobs::store::Store>(
     mut builder: iroh::node::Builder<S>,
     options: NodeOptions,
-) -> Result<iroh::node::Builder<S>> {
+) -> Result<iroh::node::ProtocolBuilder<S>> {
     if let Some(millis) = options.gc_interval_millis {
         let policy = match millis {
             0 => iroh::node::GcPolicy::Disabled,
@@ -169,8 +209,12 @@ async fn apply_options<S: iroh::blobs::store::Store>(
         builder = builder.disable_docs();
     }
 
-    if let Some(port) = options.port {
-        builder = builder.bind_port(port);
+    if let Some(addr) = options.ipv4_addr {
+        builder = builder.bind_addr_v4(addr.parse().map_err(anyhow::Error::from)?);
+    }
+
+    if let Some(addr) = options.ipv6_addr {
+        builder = builder.bind_addr_v6(addr.parse().map_err(anyhow::Error::from)?);
     }
 
     if options.enable_rpc.unwrap_or(false) {
@@ -197,6 +241,18 @@ async fn apply_options<S: iroh::blobs::store::Store>(
             .map_err(anyhow::Error::from)?;
         let key = iroh::net::key::SecretKey::from_bytes(&key);
         builder = builder.secret_key(key);
+    }
+
+    let mut builder = builder.build().await?;
+    if let Some(protocols) = options.protocols {
+        let endpoint = Endpoint::new(builder.endpoint().clone());
+        let client = Iroh(InnerIroh::Client(builder.client().clone()));
+        for (alpn, protocol) in protocols {
+            let handler = protocol
+                .call_async(Ok((endpoint.clone(), client.clone())))
+                .await?;
+            builder = builder.accept(alpn, Arc::new(handler));
+        }
     }
 
     Ok(builder)
@@ -258,6 +314,15 @@ impl Node {
             InnerIroh::Client(_) => None, // Not yet available
         };
         addr.map(|a| a.to_string())
+    }
+
+    #[napi]
+    pub fn endpoint(&self) -> Option<Endpoint> {
+        match self.node.0 {
+            InnerIroh::Fs(ref n) => Some(Endpoint::new(n.endpoint().clone())),
+            InnerIroh::Memory(ref n) => Some(Endpoint::new(n.endpoint().clone())),
+            InnerIroh::Client(_) => None, // Not yet available
+        }
     }
 }
 

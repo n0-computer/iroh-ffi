@@ -4,7 +4,7 @@ import iroh.*
 import kotlinx.coroutines.channels.*
 import kotlinx.coroutines.runBlocking
 
-class Callback: GossipMessageCallback {
+class Callback : GossipMessageCallback {
     val channel = Channel<Message>(8)
 
     override suspend fun onMessage(msg: Message) {
@@ -71,4 +71,10 @@ runBlocking {
     }
 
     assert(found)
+
+    sink0.cancel()
+    sink1.cancel()
+
+    n0.node().shutdown(false)
+    n1.node().shutdown(false)
 }

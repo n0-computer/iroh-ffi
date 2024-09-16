@@ -42,7 +42,7 @@ async def test_gossip_basic():
     await n1.net().add_node_addr(n0_addr)
 
     print("subscribe n1")
-    await n1.gossip().subscribe(topic, [n0_id], cb1)
+    sink1 = await n1.gossip().subscribe(topic, [n0_id], cb1)
 
     # Wait for n1 to show up for n0
     while (True):
@@ -50,7 +50,6 @@ async def test_gossip_basic():
         print("<<", event.type())
         if (event.type() == MessageType.JOINED):
             break
-
 
     # Broadcact message from node 0
     print("broadcasting message")
@@ -72,3 +71,9 @@ async def test_gossip_basic():
             break
 
     assert found
+
+    await sink0.cancel()
+    await sink1.cancel()
+
+    await n0.node().shutdown(False)
+    await n1.node().shutdown(False)

@@ -1,5 +1,3 @@
-// tests that correspond to the `src/doc.rs` rust api
-
 import iroh.*
 import kotlinx.coroutines.channels.*
 import kotlinx.coroutines.runBlocking
@@ -21,16 +19,12 @@ class Subscriber : SubscribeCallback {
 }
 
 runBlocking {
-    setLogLevel(LogLevel.DEBUG)
+    // setLogLevel(LogLevel.DEBUG)
     // Create node_0
-    val irohDir0 = kotlin.io.path.createTempDirectory("node-test-0")
-    println(irohDir0.toString())
-    val node0 = Iroh.persistent(irohDir0.toString())
+    val node0 = Iroh.memory()
 
     // Create node_1
-    val irohDir1 = kotlin.io.path.createTempDirectory("node-test-1")
-    println(irohDir1.toString())
-    val node1 = Iroh.persistent(irohDir1.toString())
+    val node1 = Iroh.memory()
 
     // Create doc on node_0
     val doc0 = node0.docs().create()
@@ -73,4 +67,71 @@ runBlocking {
             break
         }
     }
+}
+
+class MyProtocol : ProtocolHandler {
+    override suspend fun accept(connecting: Connecting) {
+        val conn = connecting.connect()
+        val remote = conn.getRemoteNodeId()
+        println("accepting from $remote")
+        val bi = conn.acceptBi()
+
+        val bytes = bi.recv().readToEnd(64u)
+        val b = bytes.toString(Charsets.UTF_8)
+        println("got $b")
+        assert("yo".toByteArray(Charsets.UTF_8) contentEquals bytes)
+        bi.send().writeAll("hello".toByteArray(Charsets.UTF_8))
+        bi.send().finish()
+        bi.send().stopped()
+    }
+
+    override suspend fun shutdown() {
+        println("shutting down")
+    }
+}
+
+class MyProtocolCreator : ProtocolCreator {
+    override fun create(
+        endpoint: Endpoint,
+        client: Iroh,
+    ): MyProtocol = MyProtocol()
+}
+
+runBlocking {
+    val protocols =
+        hashMapOf(
+            "example/protocol/0".toByteArray(Charsets.UTF_8)
+                to
+                MyProtocolCreator(),
+        )
+
+    val options = NodeOptions()
+    options.protocols = protocols
+
+    // Create node1
+    val node1 = Iroh.memoryWithOptions(options)
+
+    // Create node2
+    val node2 = Iroh.memoryWithOptions(options)
+
+    val alpn = "example/protocol/0".toByteArray(Charsets.UTF_8)
+    val nodeAddr = node1.net().nodeAddr()
+
+    val endpoint = node2.node().endpoint()
+    val conn = endpoint.connect(nodeAddr, alpn)
+    val remote = conn.getRemoteNodeId()
+    println(remote)
+
+    val bi = conn.openBi()
+
+    bi.send().writeAll("yo".toByteArray(Charsets.UTF_8))
+    bi.send().finish()
+    bi.send().stopped()
+
+    val o = bi.recv().readExact(5u)
+    println(o.toString(Charsets.UTF_8))
+    assert("hello".toByteArray(Charsets.UTF_8) contentEquals o)
+
+    node2.node().shutdown(false)
+    node1.node().shutdown(false)
 }

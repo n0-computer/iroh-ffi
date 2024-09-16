@@ -64,6 +64,11 @@ export declare class Authors {
   delete(author: AuthorId): Promise<void>
 }
 
+export declare class BiStream {
+  get send(): SendStream
+  get recv(): RecvStream
+}
+
 /** Options to download  data specified by the hash. */
 export declare class BlobDownloadOptions {
   /** Create a BlobDownloadRequest */
@@ -203,6 +208,36 @@ export declare class Collection {
   length(): bigint
 }
 
+export declare class Connecting {
+  connect(): Promise<Connection>
+  alpn(): Promise<Buffer>
+  localIp(): Promise<string | null>
+  remoteAddress(): Promise<string>
+}
+
+export declare class Connection {
+  getRemoteNodeId(): PublicKey
+  openUni(): Promise<SendStream>
+  acceptUni(): Promise<RecvStream>
+  openBi(): Promise<BiStream>
+  acceptBi(): Promise<BiStream>
+  readDatagram(): Promise<Buffer>
+  closed(): Promise<string>
+  closeReason(): string | null
+  close(errorCode: bigint, reason: Uint8Array): void
+  sendDatagram(data: Uint8Array): void
+  sendDatagramWait(data: Uint8Array): Promise<void>
+  maxDatagramSize(): bigint | null
+  datagramSendBufferSpace(): bigint
+  remoteAddress(): string
+  localIp(): string | null
+  rtt(): bigint
+  stableId(): bigint
+  setMaxConcurrentUniStream(count: bigint): void
+  setReceiveWindow(count: bigint): void
+  setMaxConcurrentBiiStream(count: bigint): void
+}
+
 /** A representation of a mutable, synchronizable key-value store. */
 export declare class Doc {
   /** Get the document id of this doc. */
@@ -305,6 +340,11 @@ export declare class DownloadPolicy {
   static everythingExcept(filters: Array<FilterKind>): DownloadPolicy
 }
 
+export declare class Endpoint {
+  connect(nodeAddr: NodeAddr, alpn: Uint8Array): Promise<Connection>
+  connectByNodeId(nodeId: string, alpn: Uint8Array): Promise<Connection>
+}
+
 /** Filter strategy used in download policies. */
 export declare class FilterKind {
   /** Verifies whether this filter matches a given key */
@@ -395,6 +435,7 @@ export declare class Node {
   shutdown(force: boolean): Promise<void>
   /** Returns `Some(addr)` if an RPC endpoint is running, `None` otherwise. */
   myRpcAddr(): string | null
+  endpoint(): Endpoint | null
 }
 
 /**
@@ -517,12 +558,34 @@ export declare class RangeSpec {
   isAll(): boolean
 }
 
+export declare class RecvStream {
+  read(buf: Uint8Array): Promise<bigint | null>
+  readExact(buf: Uint8Array): Promise<void>
+  readToEnd(sizeLimit: number): Promise<Buffer>
+  id(): Promise<string>
+  stop(errorCode: bigint): Promise<void>
+  receivedReset(): Promise<bigint | null>
+}
+
 /** Gossip sender */
 export declare class Sender {
   /** Broadcast a message to all nodes in the swarm */
   broadcast(msg: Array<number>): Promise<void>
   /** Broadcast a message to all direct neighbors. */
   broadcastNeighbors(msg: Array<number>): Promise<void>
+  /** Closes the subscription, it is an error to use it afterwards */
+  close(): Promise<void>
+}
+
+export declare class SendStream {
+  write(buf: Uint8Array): Promise<bigint>
+  writeAll(buf: Uint8Array): Promise<void>
+  finish(): Promise<void>
+  reset(errorCode: bigint): Promise<void>
+  setPriority(p: number): Promise<void>
+  priority(): Promise<number>
+  stopped(): Promise<bigint | null>
+  id(): Promise<string>
 }
 
 /** An option for commands that allow setting a Tag */
@@ -1209,8 +1272,10 @@ export interface NodeOptions {
   blobEvents?: (err: Error | null, arg: BlobProvideEvent) => void
   /** Should docs be enabled? Defaults to `true`. */
   enableDocs?: boolean
-  /** Overwrites the default bind port if set. */
-  port?: number
+  /** Overwrites the default IPv4 address to bind to */
+  ipv4Addr?: string
+  /** Overwrites the default IPv6 address to bind to */
+  ipv6Addr?: string
   /** Enable RPC. Defaults to `false`. */
   enableRpc?: boolean
   /** Overwrite the default RPC address. */
@@ -1219,6 +1284,7 @@ export interface NodeOptions {
   nodeDiscovery?: NodeDiscoveryConfig
   /** Provide a specific secret key, identifying this node. Must be 32 bytes long. */
   secretKey?: Array<number>
+  protocols?: Record<Array<number>, (err: Error | null, arg0: Endpoint, arg1: Iroh) => ProtocolHandler>
 }
 
 /** The response to a status request */
@@ -1263,6 +1329,11 @@ export declare const enum Origin {
  * Appends the null byte to the end of the key.
  */
 export declare function pathToKey(path: string, prefix?: string | undefined | null, root?: string | undefined | null): Array<number>
+
+export interface ProtocolHandler {
+  accept: (err: Error | null, arg: Connecting) => void
+  shutdown?: (err: Error | null, ) => void
+}
 
 /** Options for sorting and pagination for using [`Query`]s. */
 export interface QueryOptions {

@@ -6,6 +6,7 @@ use iroh::client::gossip::{SubscribeResponse, SubscribeUpdate};
 use iroh::gossip::net::GossipEvent;
 use iroh::net::NodeId;
 use tokio::sync::Mutex;
+use tokio_util::sync::CancellationToken;
 use tracing::warn;
 
 use crate::node::Iroh;
@@ -164,38 +165,55 @@ impl Gossip {
             .subscribe(topic_bytes, bootstrap)
             .await?;
 
+        let cancel_token = CancellationToken::new();
+        let cancel = cancel_token.clone();
         tokio::task::spawn(async move {
-            while let Some(event) = stream.next().await {
-                let message = match event {
-                    Ok(SubscribeResponse::Gossip(GossipEvent::NeighborUp(n))) => {
-                        Message::NeighborUp(n.to_string())
+            loop {
+                tokio::select! {
+                    biased;
+
+                    _ = cancel.cancelled() => {
+                        break;
                     }
-                    Ok(SubscribeResponse::Gossip(GossipEvent::NeighborDown(n))) => {
-                        Message::NeighborDown(n.to_string())
+                    Some(event) = stream.next() => {
+                        let message = match event {
+                            Ok(SubscribeResponse::Gossip(GossipEvent::NeighborUp(n))) => {
+                                Message::NeighborUp(n.to_string())
+                            }
+                            Ok(SubscribeResponse::Gossip(GossipEvent::NeighborDown(n))) => {
+                                Message::NeighborDown(n.to_string())
+                            }
+                            Ok(SubscribeResponse::Gossip(GossipEvent::Received(
+                                iroh::gossip::net::Message {
+                                    content,
+                                    delivered_from,
+                                    ..
+                                },
+                            ))) => Message::Received {
+                                content: content.to_vec(),
+                                delivered_from: delivered_from.to_string(),
+                            },
+                            Ok(SubscribeResponse::Gossip(GossipEvent::Joined(nodes))) => {
+                                Message::Joined(nodes.into_iter().map(|n| n.to_string()).collect())
+                            }
+                            Ok(SubscribeResponse::Lagged) => Message::Lagged,
+                            Err(err) => Message::Error(err.to_string()),
+                        };
+                        if let Err(err) = cb.on_message(Arc::new(message)).await {
+                            warn!("cb error, gossip: {:?}", err);
+                        }
                     }
-                    Ok(SubscribeResponse::Gossip(GossipEvent::Received(
-                        iroh::gossip::net::Message {
-                            content,
-                            delivered_from,
-                            ..
-                        },
-                    ))) => Message::Received {
-                        content: content.to_vec(),
-                        delivered_from: delivered_from.to_string(),
-                    },
-                    Ok(SubscribeResponse::Gossip(GossipEvent::Joined(nodes))) => {
-                        Message::Joined(nodes.into_iter().map(|n| n.to_string()).collect())
+                    else => {
+                        break;
                     }
-                    Ok(SubscribeResponse::Lagged) => Message::Lagged,
-                    Err(err) => Message::Error(err.to_string()),
-                };
-                if let Err(err) = cb.on_message(Arc::new(message)).await {
-                    warn!("cb error, gossip: {:?}", err);
                 }
             }
         });
 
-        let sender = Sender(Mutex::new(Box::pin(sink)));
+        let sender = Sender {
+            sink: Mutex::new(Box::pin(sink)),
+            cancel: cancel_token,
+        };
 
         Ok(sender)
     }
@@ -203,14 +221,17 @@ impl Gossip {
 
 /// Gossip sender
 #[derive(uniffi::Object)]
-pub struct Sender(Mutex<Pin<Box<dyn Sink<SubscribeUpdate, Error = anyhow::Error> + Sync + Send>>>);
+pub struct Sender {
+    sink: Mutex<Pin<Box<dyn Sink<SubscribeUpdate, Error = anyhow::Error> + Sync + Send>>>,
+    cancel: CancellationToken,
+}
 
 #[uniffi::export]
 impl Sender {
     /// Broadcast a message to all nodes in the swarm
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn broadcast(&self, msg: Vec<u8>) -> Result<(), IrohError> {
-        self.0
+        self.sink
             .lock()
             .await
             .send(SubscribeUpdate::Broadcast(msg.into()))
@@ -221,11 +242,22 @@ impl Sender {
     /// Broadcast a message to all direct neighbors.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn broadcast_neighbors(&self, msg: Vec<u8>) -> Result<(), IrohError> {
-        self.0
+        self.sink
             .lock()
             .await
             .send(SubscribeUpdate::BroadcastNeighbors(msg.into()))
             .await?;
+        Ok(())
+    }
+
+    /// Closes the subscription, it is an error to use it afterwards
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn cancel(&self) -> Result<(), IrohError> {
+        if self.cancel.is_cancelled() {
+            return Err(IrohError::from(anyhow::anyhow!("already closed")));
+        }
+        self.sink.lock().await.close().await?;
+        self.cancel.cancel();
         Ok(())
     }
 }
