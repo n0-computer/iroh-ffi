@@ -1,6 +1,6 @@
 [package]
 name = "iroh-ffi"
-version = "0.24.0"
+version = "0.25.0"
 edition = "2021"
 publish = false
 readme = "README.md"
@@ -65,3 +65,6 @@ uniffi = { version = "0.28.0", features = ["build"] }
 
 [profile.release]
 lto = true
+
+[patch.crates-io]
+iroh = { git = "https://github.com/n0-computer/iroh", branch = "main" }
