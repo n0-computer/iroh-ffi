@@ -65,5 +65,11 @@ test('gossip basic', async (t) => {
   t.is(n0Id.toString(), m.deliveredFrom)
   t.is(Buffer.from(m.content).toString(), 'hello')
 
+  await sink0.close()
+  await sink1.close()
+
+  await n0.node.shutdown(false)
+  await n1.node.shutdown(false)
+
   t.pass()
 })

@@ -8,6 +8,7 @@ use napi::bindgen_prelude::*;
 use napi::threadsafe_function::ThreadsafeFunction;
 use napi_derive::napi;
 use tokio::sync::Mutex;
+use tokio_util::sync::CancellationToken;
 use tracing::warn;
 
 use crate::node::Iroh;
@@ -117,16 +118,33 @@ impl Gossip {
             .subscribe(topic_bytes, bootstrap)
             .await?;
 
+        let cancel_token = CancellationToken::new();
+        let cancel = cancel_token.clone();
         tokio::task::spawn(async move {
-            while let Some(event) = stream.next().await {
-                let message: Result<Message> = event.map(Into::into).map_err(Into::into);
-                if let Err(err) = cb.call_async(message).await {
-                    warn!("cb error, gossip: {:?}", err);
+            loop {
+                tokio::select! {
+                    biased;
+
+                    _ = cancel_token.cancelled() => {
+                        break;
+                    }
+                    Some(event) = stream.next() => {
+                        let message: Result<Message> = event.map(Into::into).map_err(Into::into);
+                        if let Err(err) = cb.call_async(message).await {
+                            warn!("cb error, gossip: {:?}", err);
+                        }
+                    }
+                    else => {
+                        break;
+                    }
                 }
             }
         });
 
-        let sender = Sender(Mutex::new(Box::pin(sink)));
+        let sender = Sender {
+            sink: Mutex::new(Box::pin(sink)),
+            cancel,
+        };
 
         Ok(sender)
     }
@@ -134,14 +152,17 @@ impl Gossip {
 
 /// Gossip sender
 #[napi]
-pub struct Sender(Mutex<Pin<Box<dyn Sink<SubscribeUpdate, Error = anyhow::Error> + Sync + Send>>>);
+pub struct Sender {
+    sink: Mutex<Pin<Box<dyn Sink<SubscribeUpdate, Error = anyhow::Error> + Sync + Send>>>,
+    cancel: CancellationToken,
+}
 
 #[napi]
 impl Sender {
     /// Broadcast a message to all nodes in the swarm
     #[napi]
     pub async fn broadcast(&self, msg: Vec<u8>) -> Result<()> {
-        self.0
+        self.sink
             .lock()
             .await
             .send(SubscribeUpdate::Broadcast(msg.into()))
@@ -152,11 +173,22 @@ impl Sender {
     /// Broadcast a message to all direct neighbors.
     #[napi]
     pub async fn broadcast_neighbors(&self, msg: Vec<u8>) -> Result<()> {
-        self.0
+        self.sink
             .lock()
             .await
             .send(SubscribeUpdate::BroadcastNeighbors(msg.into()))
             .await?;
+        Ok(())
+    }
+
+    /// Closes the subscription, it is an error to use it afterwards
+    #[napi]
+    pub async fn close(&self) -> Result<()> {
+        if self.cancel.is_cancelled() {
+            return Err(anyhow::anyhow!("already closed").into());
+        }
+        self.sink.lock().await.close().await?;
+        self.cancel.cancel();
         Ok(())
     }
 }

@@ -573,6 +573,8 @@ export declare class Sender {
   broadcast(msg: Array<number>): Promise<void>
   /** Broadcast a message to all direct neighbors. */
   broadcastNeighbors(msg: Array<number>): Promise<void>
+  /** Closes the subscription, it is an error to use it afterwards */
+  close(): Promise<void>
 }
 
 export declare class SendStream {
