@@ -2164,6 +2164,11 @@ uint64_t uniffi_iroh_ffi_fn_method_sender_broadcast(void*_Nonnull ptr, RustBuffe
 uint64_t uniffi_iroh_ffi_fn_method_sender_broadcast_neighbors(void*_Nonnull ptr, RustBuffer msg
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_SENDER_CANCEL
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_SENDER_CANCEL
+uint64_t uniffi_iroh_ffi_fn_method_sender_cancel(void*_Nonnull ptr
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_SETTAGOPTION
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_SETTAGOPTION
 void*_Nonnull uniffi_iroh_ffi_fn_clone_settagoption(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -3840,6 +3845,12 @@ uint16_t uniffi_iroh_ffi_checksum_method_sender_broadcast(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_SENDER_BROADCAST_NEIGHBORS
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_SENDER_BROADCAST_NEIGHBORS
 uint16_t uniffi_iroh_ffi_checksum_method_sender_broadcast_neighbors(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_SENDER_CANCEL
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_SENDER_CANCEL
+uint16_t uniffi_iroh_ffi_checksum_method_sender_cancel(void
     
 );
 #endif
