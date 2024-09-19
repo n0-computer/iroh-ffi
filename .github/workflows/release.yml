@@ -20,6 +20,10 @@ on:
     tags:
     - "v*"
 
+permissions:
+  contents: write
+  pull-requests: write
+
 env:
   LIB_NAME: libiroh_ffi
   PACKAGE_NAME: libiroh
@@ -64,23 +68,28 @@ jobs:
         include:
           - name: ubuntu-arm-latest
             os: ubuntu-latest
+            cargo_target: "aarch64-unknown-linux-musl"
             target: linux-aarch64
             runner: [self-hosted, linux, ARM64]
           - name: ubuntu-latest
             os: ubuntu-latest
+            cargo_target: "x86_64-unknown-linux-musl"
             target: linux-x86_64
             runner: [self-hosted, linux, X64]
           - name: macOS-latest
             os: macOS-latest
+            cargo_target: "x86_64-apple-darwin"
             target: darwin-x86_64
-            runner: [self-hosted, macOS, X64]
+            runner: [self-hosted, macOS, ARM64]
           - name: macOS-arm-latest
             os: macOS-latest
+            cargo_target: "aarch64-apple-darwin"
             target: darwin-aarch64
             runner: [self-hosted, macOS, ARM64]
         # TODO: windows runner is not available on the org level
           - name: windows-latest
             os: windows-latest
+            cargo_target: "x86_64-pc-windows-msvc"
             target: windows-x86_64
             runner: [windows-latest]
     steps:
@@ -92,21 +101,30 @@ jobs:
       uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: ${{ matrix.rust }}
+        targets: ${{matrix.cargo_target}}
+    - name: Ensure musl support
+      if: ${{ contains(matrix.cargo_target, '-musl') }}
+      run: sudo apt-get install musl-tools -y
     - name: Build release binary
-      run: cargo build --verbose --release
+      run: |
+        if [ "${{ matrix.name }}" = "ubuntu-arm-latest" ]; then
+          export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-gnu-gcc
+          export CC=aarch64-linux-gnu-gcc
+        fi
+        cargo build --verbose --release --target ${{matrix.cargo_target}}
     - name: Build archive
       shell: bash
       run: |
-        outdir="./target/release"
+        outdir="./target/${{matrix.cargo_target}}/release"
         staging="${{ env.PACKAGE_NAME }}-${{ matrix.target }}"
         mkdir -p "$staging"
         if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          cp "target/release/iroh_ffi.lib" "$staging/iroh.lib"
+          cp "target/${{matrix.cargo_target}}/release/iroh_ffi.lib" "$staging/iroh.lib"
           cd "$staging"
           7z a "../$staging.zip" .
           echo "ASSET=$staging.zip" >> $GITHUB_ENV
         else
-          cp "target/release/${{ env.LIB_NAME }}.a" "$staging/${{ env.PACKAGE_NAME }}.a"
+          cp "target/${{matrix.cargo_target}}/release/${{ env.LIB_NAME }}.a" "$staging/${{ env.PACKAGE_NAME }}.a"
           tar czf "$staging.tar.gz" -C "$staging" .
           echo "ASSET=$staging.tar.gz" >> $GITHUB_ENV
         fi
@@ -143,6 +161,29 @@ jobs:
         asset_path: IrohLib.xcframework.zip 
         asset_name: IrohLib.xcframework.zip 
         asset_content_type: application/octet-stream
+    - name: Prep package details
+      run: |
+        zip -r IrohLib.xcframework.zip Iroh.xcframework/*
+        CHKSUM=$(swift package compute-checksum IrohLib.xcframework.zip)
+        TAGNAME=${{needs.create-release.outputs.release_version}}
+        VNUM=${TAGNAME#v}
+
+        # update IrohLib.podspec version
+        sed -i '' "s/spec.version      = \".*\"/spec.version      = \"$VNUM\"/" "IrohLib.podspec"
+        # update IrohLibFramework.podspec version
+        sed -i '' "s/spec.version      = \".*\"/spec.version      = \"$VNUM\"/" "IrohLibFramework.podspec"
+        # update Package.swift
+        sed -i '' "s|https://github.com/n0-computer/iroh-ffi/releases/download/v[0-9]*\.[0-9]*\.[0-9]*/IrohLib.xcframework.zip|https://github.com/n0-computer/iroh-ffi/releases/download/${TAGNAME}/IrohLib.xcframework.zip|" "Package.swift"
+        sed -i '' "s/checksum: \".*\"/checksum: \"$CHKSUM\"/" "Package.swift"
+    - name: Create Pull Request
+      uses: peter-evans/create-pull-request@v7
+      with:
+        commit-message: "chore: update swift package version to ${{needs.create-release.outputs.release_version}}"
+        branch: "bot/update-swift-package-${{needs.create-release.outputs.release_version}}"
+        title: "chore: update swift package version to ${{needs.create-release.outputs.release_version}}"
+        
+      
+
 
   build-and-publish-kotlin:
     name: Build & publish kotlin libraries
