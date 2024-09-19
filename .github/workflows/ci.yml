@@ -210,3 +210,4 @@ jobs:
         commit-message: "chore: update swift package version to ${{env.RELEASE_VERSION}}"
         branch: "bot/update-swift-package-${{env.RELEASE_VERSION}}"
         title: "chore: update swift package version to ${{env.RELEASE_VERSION}}"
+        base: main
