@@ -182,9 +182,6 @@ jobs:
         branch: "bot/update-swift-package-${{needs.create-release.outputs.release_version}}"
         title: "chore: update swift package version to ${{needs.create-release.outputs.release_version}}"
         
-      
-
-
   build-and-publish-kotlin:
     name: Build & publish kotlin libraries
     timeout-minutes: 30
