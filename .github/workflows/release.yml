@@ -20,10 +20,6 @@ on:
     tags:
     - "v*"
 
-permissions:
-  contents: write
-  pull-requests: write
-
 env:
   LIB_NAME: libiroh_ffi
   PACKAGE_NAME: libiroh
@@ -161,27 +157,6 @@ jobs:
         asset_path: IrohLib.xcframework.zip 
         asset_name: IrohLib.xcframework.zip 
         asset_content_type: application/octet-stream
-    - name: Prep package details
-      run: |
-        zip -r IrohLib.xcframework.zip Iroh.xcframework/*
-        CHKSUM=$(swift package compute-checksum IrohLib.xcframework.zip)
-        TAGNAME=${{needs.create-release.outputs.release_version}}
-        VNUM=${TAGNAME#v}
-
-        # update IrohLib.podspec version
-        sed -i '' "s/spec.version      = \".*\"/spec.version      = \"$VNUM\"/" "IrohLib.podspec"
-        # update IrohLibFramework.podspec version
-        sed -i '' "s/spec.version      = \".*\"/spec.version      = \"$VNUM\"/" "IrohLibFramework.podspec"
-        # update Package.swift
-        sed -i '' "s|https://github.com/n0-computer/iroh-ffi/releases/download/v[0-9]*\.[0-9]*\.[0-9]*/IrohLib.xcframework.zip|https://github.com/n0-computer/iroh-ffi/releases/download/${TAGNAME}/IrohLib.xcframework.zip|" "Package.swift"
-        sed -i '' "s/checksum: \".*\"/checksum: \"$CHKSUM\"/" "Package.swift"
-    - name: Create Pull Request
-      uses: peter-evans/create-pull-request@v7
-      with:
-        commit-message: "chore: update swift package version to ${{needs.create-release.outputs.release_version}}"
-        branch: "bot/update-swift-package-${{needs.create-release.outputs.release_version}}"
-        title: "chore: update swift package version to ${{needs.create-release.outputs.release_version}}"
-        base: main
         
   build-and-publish-kotlin:
     name: Build & publish kotlin libraries

@@ -11,10 +11,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
-permissions:
-  contents: write
-  pull-requests: write
-
 env:
   IROH_FORCE_STAGING_RELAYS: "1"
 
@@ -177,41 +173,3 @@ jobs:
         TEST_OS: ${{ matrix.os }}
       shell: bash
       run: ./test_kotlin.sh
-
-
-  build-and-publish-swift-test:
-    name: Build & publish swift libraries
-    timeout-minutes: 30
-    runs-on: [macOS, ARM64]
-    env:
-      RELEASE_VERSION: "v0.25.1"
-    steps:
-    - uses: actions/checkout@master
-    - uses: dtolnay/rust-toolchain@stable
-      with:
-        targets: aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios,aarch64-apple-darwin
-    - name: Make swift
-      run: |
-        ./make_swift.sh
-        zip -r IrohLib.xcframework.zip Iroh.xcframework/*
-    - name: Prep package details
-      run: |
-        zip -r IrohLib.xcframework.zip Iroh.xcframework/*
-        CHKSUM=$(swift package compute-checksum IrohLib.xcframework.zip)
-        TAGNAME=${{env.RELEASE_VERSION}}
-        VNUM=${TAGNAME#v}
-
-        # update IrohLib.podspec version
-        sed -i '' "s/spec.version      = \".*\"/spec.version      = \"$VNUM\"/" "IrohLib.podspec"
-        # update IrohLibFramework.podspec version
-        sed -i '' "s/spec.version      = \".*\"/spec.version      = \"$VNUM\"/" "IrohLibFramework.podspec"
-        # update Package.swift
-        sed -i '' "s|https://github.com/n0-computer/iroh-ffi/releases/download/v[0-9]*\.[0-9]*\.[0-9]*/IrohLib.xcframework.zip|https://github.com/n0-computer/iroh-ffi/releases/download/${TAGNAME}/IrohLib.xcframework.zip|" "Package.swift"
-        sed -i '' "s/checksum: \".*\"/checksum: \"$CHKSUM\"/" "Package.swift"
-    - name: Create Pull Request
-      uses: peter-evans/create-pull-request@v7
-      with:
-        commit-message: "chore: update swift package version to ${{env.RELEASE_VERSION}}"
-        branch: "bot/update-swift-package-${{env.RELEASE_VERSION}}"
-        title: "chore: update swift package version to ${{env.RELEASE_VERSION}}"
-        base: main
