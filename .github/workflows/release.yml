@@ -64,23 +64,28 @@ jobs:
         include:
           - name: ubuntu-arm-latest
             os: ubuntu-latest
+            cargo_target: "aarch64-unknown-linux-musl"
             target: linux-aarch64
             runner: [self-hosted, linux, ARM64]
           - name: ubuntu-latest
             os: ubuntu-latest
+            cargo_target: "x86_64-unknown-linux-musl"
             target: linux-x86_64
             runner: [self-hosted, linux, X64]
           - name: macOS-latest
             os: macOS-latest
+            cargo_target: "x86_64-apple-darwin"
             target: darwin-x86_64
-            runner: [self-hosted, macOS, X64]
+            runner: [self-hosted, macOS, ARM64]
           - name: macOS-arm-latest
             os: macOS-latest
+            cargo_target: "aarch64-apple-darwin"
             target: darwin-aarch64
             runner: [self-hosted, macOS, ARM64]
         # TODO: windows runner is not available on the org level
           - name: windows-latest
             os: windows-latest
+            cargo_target: "x86_64-pc-windows-msvc"
             target: windows-x86_64
             runner: [windows-latest]
     steps:
@@ -92,21 +97,30 @@ jobs:
       uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: ${{ matrix.rust }}
+        targets: ${{matrix.cargo_target}}
+    - name: Ensure musl support
+      if: ${{ contains(matrix.cargo_target, '-musl') }}
+      run: sudo apt-get install musl-tools -y
     - name: Build release binary
-      run: cargo build --verbose --release
+      run: |
+        if [ "${{ matrix.name }}" = "ubuntu-arm-latest" ]; then
+          export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=aarch64-linux-gnu-gcc
+          export CC=aarch64-linux-gnu-gcc
+        fi
+        cargo build --verbose --release --target ${{matrix.cargo_target}}
     - name: Build archive
       shell: bash
       run: |
-        outdir="./target/release"
+        outdir="./target/${{matrix.cargo_target}}/release"
         staging="${{ env.PACKAGE_NAME }}-${{ matrix.target }}"
         mkdir -p "$staging"
         if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          cp "target/release/iroh_ffi.lib" "$staging/iroh.lib"
+          cp "target/${{matrix.cargo_target}}/release/iroh_ffi.lib" "$staging/iroh.lib"
           cd "$staging"
           7z a "../$staging.zip" .
           echo "ASSET=$staging.zip" >> $GITHUB_ENV
         else
-          cp "target/release/${{ env.LIB_NAME }}.a" "$staging/${{ env.PACKAGE_NAME }}.a"
+          cp "target/${{matrix.cargo_target}}/release/${{ env.LIB_NAME }}.a" "$staging/${{ env.PACKAGE_NAME }}.a"
           tar czf "$staging.tar.gz" -C "$staging" .
           echo "ASSET=$staging.tar.gz" >> $GITHUB_ENV
         fi
@@ -143,7 +157,7 @@ jobs:
         asset_path: IrohLib.xcframework.zip 
         asset_name: IrohLib.xcframework.zip 
         asset_content_type: application/octet-stream
-
+        
   build-and-publish-kotlin:
     name: Build & publish kotlin libraries
     timeout-minutes: 30
