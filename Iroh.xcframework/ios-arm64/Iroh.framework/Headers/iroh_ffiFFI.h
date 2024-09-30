@@ -762,7 +762,7 @@ uint64_t uniffi_iroh_ffi_fn_method_blobs_list_incomplete(void*_Nonnull ptr
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_READ_AT_TO_BYTES
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_READ_AT_TO_BYTES
-uint64_t uniffi_iroh_ffi_fn_method_blobs_read_at_to_bytes(void*_Nonnull ptr, void*_Nonnull hash, uint64_t offset, RustBuffer len
+uint64_t uniffi_iroh_ffi_fn_method_blobs_read_at_to_bytes(void*_Nonnull ptr, void*_Nonnull hash, uint64_t offset, void*_Nonnull len
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_READ_TO_BYTES
@@ -2054,6 +2054,32 @@ int8_t uniffi_iroh_ffi_fn_method_rangespec_is_all(void*_Nonnull ptr, RustCallSta
 int8_t uniffi_iroh_ffi_fn_method_rangespec_is_empty(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_READATLEN
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_READATLEN
+void*_Nonnull uniffi_iroh_ffi_fn_clone_readatlen(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_READATLEN
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_READATLEN
+void uniffi_iroh_ffi_fn_free_readatlen(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_READATLEN_ALL
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_READATLEN_ALL
+void*_Nonnull uniffi_iroh_ffi_fn_constructor_readatlen_all(RustCallStatus *_Nonnull out_status
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_READATLEN_AT_MOST
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_READATLEN_AT_MOST
+void*_Nonnull uniffi_iroh_ffi_fn_constructor_readatlen_at_most(uint64_t size, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_READATLEN_EXACT
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_READATLEN_EXACT
+void*_Nonnull uniffi_iroh_ffi_fn_constructor_readatlen_exact(uint64_t size, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_RECVSTREAM
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_RECVSTREAM
 void*_Nonnull uniffi_iroh_ffi_fn_clone_recvstream(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -2162,6 +2188,11 @@ uint64_t uniffi_iroh_ffi_fn_method_sender_broadcast(void*_Nonnull ptr, RustBuffe
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_SENDER_BROADCAST_NEIGHBORS
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_SENDER_BROADCAST_NEIGHBORS
 uint64_t uniffi_iroh_ffi_fn_method_sender_broadcast_neighbors(void*_Nonnull ptr, RustBuffer msg
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_SENDER_CANCEL
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_SENDER_CANCEL
+uint64_t uniffi_iroh_ffi_fn_method_sender_cancel(void*_Nonnull ptr
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_SETTAGOPTION
@@ -3843,6 +3874,12 @@ uint16_t uniffi_iroh_ffi_checksum_method_sender_broadcast_neighbors(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_SENDER_CANCEL
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_SENDER_CANCEL
+uint16_t uniffi_iroh_ffi_checksum_method_sender_cancel(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_SUBSCRIBECALLBACK_EVENT
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_SUBSCRIBECALLBACK_EVENT
 uint16_t uniffi_iroh_ffi_checksum_method_subscribecallback_event(void
@@ -4050,6 +4087,24 @@ uint16_t uniffi_iroh_ffi_checksum_constructor_query_single_latest_per_key_exact(
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_QUERY_SINGLE_LATEST_PER_KEY_PREFIX
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_QUERY_SINGLE_LATEST_PER_KEY_PREFIX
 uint16_t uniffi_iroh_ffi_checksum_constructor_query_single_latest_per_key_prefix(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_READATLEN_ALL
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_READATLEN_ALL
+uint16_t uniffi_iroh_ffi_checksum_constructor_readatlen_all(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_READATLEN_AT_MOST
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_READATLEN_AT_MOST
+uint16_t uniffi_iroh_ffi_checksum_constructor_readatlen_at_most(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_READATLEN_EXACT
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_READATLEN_EXACT
+uint16_t uniffi_iroh_ffi_checksum_constructor_readatlen_exact(void
     
 );
 #endif
