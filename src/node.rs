@@ -269,7 +269,7 @@ impl Default for NodeOptions {
         NodeOptions {
             gc_interval_millis: Some(0),
             blob_events: None,
-            enable_docs: true,
+            enable_docs: false,
             enable_rpc: false,
             rpc_addr: None,
             ipv4_addr: None,

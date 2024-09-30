@@ -4,20 +4,23 @@ import pytest
 import asyncio
 import iroh
 
-from iroh import Iroh, ShareMode, LiveEventType, AddrInfoOptions, NodeOptions
+from iroh import Iroh, ShareMode, LiveEventType, AddrInfoOptions, NodeOptions, NodeOptions
 
 @pytest.mark.asyncio
 async def test_basic_sync():
     # setup event loop, to ensure async callbacks work
     iroh.iroh_ffi.uniffi_set_event_loop(asyncio.get_running_loop())
 
+    options = NodeOptions()
+    options.enable_docs = True
+
     # Create node_0
     iroh_dir_0 = tempfile.TemporaryDirectory()
-    node_0 = await Iroh.persistent(iroh_dir_0.name)
+    node_0 = await Iroh.persistent_with_options(iroh_dir_0.name, options)
 
     # Create node_1
     iroh_dir_1 = tempfile.TemporaryDirectory()
-    node_1 = await Iroh.persistent(iroh_dir_1.name)
+    node_1 = await Iroh.persistent_with_options(iroh_dir_1.name, options)
 
     # Create doc on node_0
     doc_0 = await node_0.docs().create()
