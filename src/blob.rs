@@ -85,16 +85,12 @@ impl Blobs {
         &self,
         hash: Arc<Hash>,
         offset: u64,
-        len: Option<u64>,
+        len: &ReadAtLen,
     ) -> Result<Vec<u8>, IrohError> {
-        let len = match len {
-            None => None,
-            Some(l) => Some(usize::try_from(l).map_err(anyhow::Error::from)?),
-        };
         let res = self
             .client()
             .blobs()
-            .read_at_to_bytes(hash.0, offset, len)
+            .read_at_to_bytes(hash.0, offset, (*len).into())
             .await
             .map(|b| b.to_vec())?;
         Ok(res)
@@ -368,6 +364,46 @@ impl From<iroh::client::blobs::AddOutcome> for BlobAddOutcome {
             format: value.format.into(),
             size: value.size,
             tag: value.tag.0.to_vec(),
+        }
+    }
+}
+
+/// Defines the way to read bytes.
+#[derive(Debug, uniffi::Object, Default, Clone, Copy)]
+pub enum ReadAtLen {
+    /// Reads all available bytes.
+    #[default]
+    All,
+    /// Reads exactly this many bytes, erroring out on larger or smaller.
+    Exact(u64),
+    /// Reads at most this many bytes.
+    AtMost(u64),
+}
+
+#[uniffi::export]
+impl ReadAtLen {
+    #[uniffi::constructor]
+    pub fn all() -> Self {
+        Self::All
+    }
+
+    #[uniffi::constructor]
+    pub fn exact(size: u64) -> Self {
+        Self::Exact(size)
+    }
+
+    #[uniffi::constructor]
+    pub fn at_most(size: u64) -> Self {
+        Self::AtMost(size)
+    }
+}
+
+impl From<ReadAtLen> for iroh::client::blobs::ReadAtLen {
+    fn from(value: ReadAtLen) -> Self {
+        match value {
+            ReadAtLen::All => iroh::client::blobs::ReadAtLen::All,
+            ReadAtLen::Exact(s) => iroh::client::blobs::ReadAtLen::Exact(s),
+            ReadAtLen::AtMost(s) => iroh::client::blobs::ReadAtLen::AtMost(s),
         }
     }
 }

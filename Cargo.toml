@@ -52,7 +52,7 @@ tracing-subscriber = { version = "0.3.17" }
 serde = { version = "1.0.196", features = ["derive"] }
 serde_json = "1.0.113"
 futures-lite = "2.3.0"
-derive_more = { version = "=1.0.0-beta.7", features = ["debug"] }
+derive_more = { version = "1.0.0", features = ["debug"] }
 
 [dev-dependencies]
 rand = "0.8"
@@ -65,3 +65,6 @@ uniffi = { version = "0.28.0", features = ["build"] }
 
 [profile.release]
 lto = true
+
+[patch.crates-io]
+iroh = { git = "https://github.com/n0-computer/iroh", branch = "main" }
