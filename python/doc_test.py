@@ -1,5 +1,5 @@
 # tests that correspond to the `src/doc.rs` rust api
-from iroh import Iroh, PublicKey, NodeAddr, AuthorId, Query, SortBy, SortDirection, QueryOptions, path_to_key, key_to_path
+from iroh import Iroh, PublicKey, NodeAddr, AuthorId, Query, SortBy, SortDirection, QueryOptions, path_to_key, key_to_path, NodeOptions
 import pytest
 import tempfile
 import os
@@ -97,7 +97,9 @@ async def test_doc_entry_basics():
     #
     # create node
     dir = tempfile.TemporaryDirectory()
-    node = await Iroh.persistent(dir.name)
+    options = NodeOptions()
+    options.enable_docs = True
+    node = await Iroh.persistent_with_options(dir.name, options)
     #
     # create doc and author
     doc = await node.docs().create()
@@ -139,7 +141,9 @@ async def test_doc_import_export():
     #
     # create node
     iroh_dir = tempfile.TemporaryDirectory()
-    node = await Iroh.persistent(iroh_dir.name)
+    options = NodeOptions()
+    options.enable_docs = True
+    node = await Iroh.persistent_with_options(iroh_dir.name, options)
     #
     # create doc and author
     doc = await node.docs().create()

@@ -402,6 +402,7 @@ module.exports.LogLevel = nativeBinding.LogLevel
 module.exports.NodeDiscoveryConfig = nativeBinding.NodeDiscoveryConfig
 module.exports.Origin = nativeBinding.Origin
 module.exports.pathToKey = nativeBinding.pathToKey
+module.exports.ReadAtLenType = nativeBinding.ReadAtLenType
 module.exports.setLogLevel = nativeBinding.setLogLevel
 module.exports.ShareMode = nativeBinding.ShareMode
 module.exports.SortBy = nativeBinding.SortBy

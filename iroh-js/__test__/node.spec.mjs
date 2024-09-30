@@ -19,7 +19,7 @@ test('node status', async (t) => {
   const iroh = await Iroh.memory()
   const status = await iroh.node.status()
 
-  t.is(status.version, '0.25.0')
+  t.is(status.version, '0.26.0')
 })
 
 test('rpc client memory node', async (t) => {

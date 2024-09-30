@@ -1,5 +1,5 @@
 # tests that correspond to the `src/author.rs` rust api
-from iroh import Iroh
+from iroh import Iroh, NodeOptions
 import pytest
 import iroh
 import asyncio
@@ -11,7 +11,9 @@ async def test_author_api():
 
     #
     # create node
-    node = await Iroh.memory()
+    options = NodeOptions()
+    options.enable_docs = True
+    node = await Iroh.memory_with_options(options)
     #
     # creating a node also creates an author
     assert len(await node.authors().list()) == 1

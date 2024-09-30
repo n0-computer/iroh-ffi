@@ -2306,7 +2306,7 @@ public protocol BlobsProtocol: AnyObject {
      * reading is small. If not sure, use [`Self::blobs_size`] and check the size with
      * before calling [`Self::blobs_read_at_to_bytes`].
      */
-    func readAtToBytes(hash: Hash, offset: UInt64, len: UInt64?) async throws -> Data
+    func readAtToBytes(hash: Hash, offset: UInt64, len: ReadAtLen) async throws -> Data
 
     /**
      * Read all bytes of single blob.
@@ -2628,13 +2628,13 @@ open class Blobs:
      * reading is small. If not sure, use [`Self::blobs_size`] and check the size with
      * before calling [`Self::blobs_read_at_to_bytes`].
      */
-    open func readAtToBytes(hash: Hash, offset: UInt64, len: UInt64?) async throws -> Data {
+    open func readAtToBytes(hash: Hash, offset: UInt64, len: ReadAtLen) async throws -> Data {
         return
             try await uniffiRustCallAsync(
                 rustFutureFunc: {
                     uniffi_iroh_ffi_fn_method_blobs_read_at_to_bytes(
                         self.uniffiClonePointer(),
-                        FfiConverterTypeHash.lower(hash), FfiConverterUInt64.lower(offset), FfiConverterOptionUInt64.lower(len)
+                        FfiConverterTypeHash.lower(hash), FfiConverterUInt64.lower(offset), FfiConverterTypeReadAtLen.lower(len)
                     )
                 },
                 pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
@@ -8995,6 +8995,116 @@ public func FfiConverterTypeRangeSpec_lower(_ value: RangeSpec) -> UnsafeMutable
     return FfiConverterTypeRangeSpec.lower(value)
 }
 
+/**
+ * Defines the way to read bytes.
+ */
+public protocol ReadAtLenProtocol: AnyObject {}
+
+/**
+ * Defines the way to read bytes.
+ */
+open class ReadAtLen:
+    ReadAtLenProtocol
+{
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    public required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    /// This constructor can be used to instantiate a fake object.
+    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    ///
+    /// - Warning:
+    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    public init(noPointer _: NoPointer) {
+        pointer = nil
+    }
+
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_readatlen(self.pointer, $0) }
+    }
+
+    // No primary constructor declared for this class.
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_iroh_ffi_fn_free_readatlen(pointer, $0) }
+    }
+
+    public static func all() -> ReadAtLen {
+        return try! FfiConverterTypeReadAtLen.lift(try! rustCall {
+            uniffi_iroh_ffi_fn_constructor_readatlen_all($0
+            )
+        })
+    }
+
+    public static func atMost(size: UInt64) -> ReadAtLen {
+        return try! FfiConverterTypeReadAtLen.lift(try! rustCall {
+            uniffi_iroh_ffi_fn_constructor_readatlen_at_most(
+                FfiConverterUInt64.lower(size), $0
+            )
+        })
+    }
+
+    public static func exact(size: UInt64) -> ReadAtLen {
+        return try! FfiConverterTypeReadAtLen.lift(try! rustCall {
+            uniffi_iroh_ffi_fn_constructor_readatlen_exact(
+                FfiConverterUInt64.lower(size), $0
+            )
+        })
+    }
+}
+
+public struct FfiConverterTypeReadAtLen: FfiConverter {
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = ReadAtLen
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> ReadAtLen {
+        return ReadAtLen(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: ReadAtLen) -> UnsafeMutableRawPointer {
+        return value.uniffiClonePointer()
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ReadAtLen {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: ReadAtLen, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+public func FfiConverterTypeReadAtLen_lift(_ pointer: UnsafeMutableRawPointer) throws -> ReadAtLen {
+    return try FfiConverterTypeReadAtLen.lift(pointer)
+}
+
+public func FfiConverterTypeReadAtLen_lower(_ value: ReadAtLen) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeReadAtLen.lower(value)
+}
+
 public protocol RecvStreamProtocol: AnyObject {
     func id() async -> String
 
@@ -9430,6 +9540,11 @@ public protocol SenderProtocol: AnyObject {
      * Broadcast a message to all direct neighbors.
      */
     func broadcastNeighbors(msg: Data) async throws
+
+    /**
+     * Closes the subscription, it is an error to use it afterwards
+     */
+    func cancel() async throws
 }
 
 /**
@@ -9505,6 +9620,25 @@ open class Sender:
                     uniffi_iroh_ffi_fn_method_sender_broadcast_neighbors(
                         self.uniffiClonePointer(),
                         FfiConverterData.lower(msg)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
+                freeFunc: ffi_iroh_ffi_rust_future_free_void,
+                liftFunc: { $0 },
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
+    }
+
+    /**
+     * Closes the subscription, it is an error to use it afterwards
+     */
+    open func cancel() async throws {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_sender_cancel(
+                        self.uniffiClonePointer()
                     )
                 },
                 pollFunc: ffi_iroh_ffi_rust_future_poll_void,
@@ -12350,7 +12484,7 @@ public struct NodeOptions {
      */
     public var blobEvents: BlobProvideEventCallback?
     /**
-     * Should docs be enabled? Defaults to `true`.
+     * Should docs be enabled? Defaults to `false`.
      */
     public var enableDocs: Bool
     /**
@@ -12390,8 +12524,8 @@ public struct NodeOptions {
             * Provide a callback to hook into events when the blobs component adds and provides blobs.
             */ blobEvents: BlobProvideEventCallback? = nil,
         /**
-            * Should docs be enabled? Defaults to `true`.
-            */ enableDocs: Bool = true,
+            * Should docs be enabled? Defaults to `false`.
+            */ enableDocs: Bool = false,
         /**
             * Overwrites the default IPv4 address to bind to
             */ ipv4Addr: String? = nil,
@@ -15915,7 +16049,7 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_method_blobs_list_incomplete() != 31740 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_method_blobs_read_at_to_bytes() != 29675 {
+    if uniffi_iroh_ffi_checksum_method_blobs_read_at_to_bytes() != 43209 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_blobs_read_to_bytes() != 13624 {
@@ -16419,6 +16553,9 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_method_sender_broadcast_neighbors() != 14000 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_ffi_checksum_method_sender_cancel() != 24357 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_ffi_checksum_method_subscribecallback_event() != 35520 {
         return InitializationResult.apiChecksumMismatch
     }
@@ -16522,6 +16659,15 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_constructor_query_single_latest_per_key_prefix() != 8914 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_constructor_readatlen_all() != 34450 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_constructor_readatlen_at_most() != 62414 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_constructor_readatlen_exact() != 12971 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_constructor_settagoption_auto() != 50496 {

@@ -1558,11 +1558,16 @@ mod tests {
     #[tokio::test]
     async fn test_doc_create() {
         let path = tempfile::tempdir().unwrap();
-        let node = Iroh::persistent(
+        let options = crate::NodeOptions {
+            enable_docs: true,
+            ..Default::default()
+        };
+        let node = Iroh::persistent_with_options(
             path.path()
                 .join("doc-create")
                 .to_string_lossy()
                 .into_owned(),
+            options,
         )
         .await
         .unwrap();
@@ -1584,24 +1589,34 @@ mod tests {
     async fn test_basic_sync() {
         // create node_0
         let iroh_dir = tempfile::tempdir().unwrap();
-
-        let node_0 = Iroh::persistent(
+        let options = crate::NodeOptions {
+            enable_docs: true,
+            ..Default::default()
+        };
+        let node_0 = Iroh::persistent_with_options(
             iroh_dir
                 .path()
                 .join("basic-sync-0")
                 .to_string_lossy()
                 .into_owned(),
+            options,
         )
         .await
         .unwrap();
 
         // create node_1
-        let node_1 = Iroh::persistent(
+        let options = crate::NodeOptions {
+            enable_docs: true,
+            ..Default::default()
+        };
+
+        let node_1 = Iroh::persistent_with_options(
             iroh_dir
                 .path()
                 .join("basic-sync-1")
                 .to_string_lossy()
                 .into_owned(),
+            options,
         )
         .await
         .unwrap();
@@ -1767,11 +1782,16 @@ mod tests {
     #[tokio::test]
     async fn test_doc_entry_basics() {
         let path = tempfile::tempdir().unwrap();
-        let node = crate::Iroh::persistent(
+        let options = crate::NodeOptions {
+            enable_docs: true,
+            ..Default::default()
+        };
+        let node = crate::Iroh::persistent_with_options(
             path.path()
                 .join("doc-entry-basics")
                 .to_string_lossy()
                 .into_owned(),
+            options,
         )
         .await
         .unwrap();
@@ -1818,12 +1838,18 @@ mod tests {
 
         // spawn node
         let iroh_dir = tempfile::tempdir().unwrap();
-        let node = crate::Iroh::persistent(
+        let options = crate::NodeOptions {
+            enable_docs: true,
+            ..Default::default()
+        };
+
+        let node = crate::Iroh::persistent_with_options(
             iroh_dir
                 .path()
                 .join("import-export-node")
                 .to_string_lossy()
                 .into_owned(),
+            options,
         )
         .await
         .unwrap();

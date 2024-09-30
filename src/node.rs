@@ -201,8 +201,8 @@ pub struct NodeOptions {
     #[debug("BlobProvideEventCallback")]
     #[uniffi(default = None)]
     pub blob_events: Option<Arc<dyn BlobProvideEventCallback>>,
-    /// Should docs be enabled? Defaults to `true`.
-    #[uniffi(default = true)]
+    /// Should docs be enabled? Defaults to `false`.
+    #[uniffi(default = false)]
     pub enable_docs: bool,
     /// Overwrites the default IPv4 address to bind to
     #[uniffi(default = None)]
@@ -269,7 +269,7 @@ impl Default for NodeOptions {
         NodeOptions {
             gc_interval_millis: Some(0),
             blob_events: None,
-            enable_docs: true,
+            enable_docs: false,
             enable_rpc: false,
             rpc_addr: None,
             ipv4_addr: None,
@@ -406,8 +406,8 @@ async fn apply_options<S: iroh::blobs::store::Store>(
         builder = builder.blobs_events(BlobProvideEvents::new(blob_events_cb))
     }
 
-    if !options.enable_docs {
-        builder = builder.disable_docs();
+    if options.enable_docs {
+        builder = builder.enable_docs();
     }
 
     if let Some(addr) = options.ipv4_addr {

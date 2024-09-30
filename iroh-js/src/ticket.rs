@@ -43,7 +43,7 @@ impl TryFrom<&BlobTicket> for iroh::base::ticket::BlobTicket {
         let ticket = iroh::base::ticket::BlobTicket::new(
             value.node_addr.clone().try_into()?,
             value.hash.parse()?,
-            value.format.into(),
+            value.format.clone().into(),
         )?;
         Ok(ticket)
     }
@@ -88,7 +88,7 @@ impl BlobTicket {
     #[napi]
     pub fn as_download_options(&self) -> Result<BlobDownloadOptions> {
         let res = iroh::client::blobs::DownloadOptions {
-            format: self.format.into(),
+            format: self.format.clone().into(),
             nodes: vec![self.node_addr.clone().try_into()?],
             tag: iroh::blobs::util::SetTagOption::Auto,
             mode: iroh::client::blobs::DownloadMode::Direct,
