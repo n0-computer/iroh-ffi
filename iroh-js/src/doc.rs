@@ -9,7 +9,7 @@ use tracing::warn;
 
 use crate::{AddrInfoOptions, AuthorId, DocTicket, Hash, Iroh, NodeAddr};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[napi(string_enum)]
 pub enum CapabilityKind {
     /// A writable replica.
@@ -587,7 +587,7 @@ impl TryFrom<Entry> for iroh::client::docs::Entry {
 }
 
 /// Fields by which the query can be sorted
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 #[napi(string_enum)]
 pub enum SortBy {
     /// Sort by key, then author.
@@ -616,7 +616,7 @@ impl From<SortBy> for iroh::docs::store::SortBy {
 }
 
 /// Sort direction
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 #[napi(string_enum)]
 pub enum SortDirection {
     /// Sort ascending
@@ -826,9 +826,9 @@ fn apply_opts_with_sort(
 ) -> iroh::docs::store::QueryBuilder<iroh::docs::store::FlatQuery> {
     builder = apply_opts(builder, opts);
     if let Some(opts) = opts {
-        if let Some(sort_by) = opts.sort_by {
-            let direction = opts.direction.unwrap_or_default();
-            builder = builder.sort_by(sort_by.into(), direction.into());
+        if let Some(ref sort_by) = opts.sort_by {
+            let direction = opts.direction.clone().unwrap_or_default();
+            builder = builder.sort_by(sort_by.clone().into(), direction.into());
         }
     }
     builder
@@ -1024,7 +1024,7 @@ impl From<iroh::client::docs::SyncReason> for SyncReason {
 }
 
 /// Why we performed a sync exchange
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[napi(string_enum)]
 pub enum Origin {
     /// Direct join request via API

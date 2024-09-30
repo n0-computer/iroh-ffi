@@ -8,7 +8,7 @@ import { join } from 'node:path'
 import { mkdtemp, mkdir, writeFile, readFile } from 'node:fs/promises'
 
 test('create doc', async (t) => {
-  const node = await Iroh.memory()
+  const node = await Iroh.memory({ enableDocs: true })
 
   const doc = await node.docs.create()
   const id = doc.id()
@@ -29,8 +29,8 @@ test('create doc', async (t) => {
 })
 
 test('basic sync', async (t) => {
-  const node0 = await Iroh.memory()
-  const node1 = await Iroh.memory()
+  const node0 = await Iroh.memory({ enableDocs: true })
+  const node1 = await Iroh.memory({ enableDocs: true })
 
   const doc0 = await node0.docs.create()
   const ticket = await doc0.share('Write', 'RelayAndAddresses')
@@ -156,7 +156,7 @@ test('import export', async (t) => {
   const bytes = randomBytes(size)
   await writeFile(filePath, bytes)
 
-  const node = await Iroh.memory()
+  const node = await Iroh.memory({ enableDocs: true })
   const author = await node.authors.default()
   const doc = await node.docs.create()
 

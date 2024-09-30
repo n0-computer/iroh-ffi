@@ -20,7 +20,7 @@ pub struct NodeOptions {
     pub gc_interval_millis: Option<u32>,
     /// Provide a callback to hook into events when the blobs component adds and provides blobs.
     pub blob_events: Option<ThreadsafeFunction<BlobProvideEvent, ()>>,
-    /// Should docs be enabled? Defaults to `true`.
+    /// Should docs be enabled? Defaults to `false`.
     pub enable_docs: Option<bool>,
     /// Overwrites the default IPv4 address to bind to
     pub ipv4_addr: Option<String>,
@@ -205,8 +205,8 @@ async fn apply_options<S: iroh::blobs::store::Store>(
         builder = builder.blobs_events(BlobProvideEvents::new(blob_events_cb))
     }
 
-    if !options.enable_docs.unwrap_or(true) {
-        builder = builder.disable_docs();
+    if options.enable_docs.unwrap_or(false) {
+        builder = builder.enable_docs();
     }
 
     if let Some(addr) = options.ipv4_addr {

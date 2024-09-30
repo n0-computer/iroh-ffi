@@ -4,14 +4,14 @@ import { Iroh, AuthorId } from '../index.js'
 
 
 test('has a default author', async (t) => {
-  const node = await Iroh.memory()
+  const node = await Iroh.memory({ enableDocs: true })
 
   const defaultAuthor = await node.authors.default()
   t.truthy(defaultAuthor)
 })
 
 test('list authors', async (t) => {
-  const node = await Iroh.memory()
+  const node = await Iroh.memory({ enableDocs: true })
 
   // create an author
   await node.authors.create()
@@ -21,7 +21,7 @@ test('list authors', async (t) => {
 })
 
 test('import export author', async (t) => {
-  const node = await Iroh.memory()
+  const node = await Iroh.memory({ enableDocs: true })
 
   // create an author
   const author = await node.authors.create()

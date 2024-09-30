@@ -105,7 +105,7 @@ export declare class Blobs {
    * reading is small. If not sure, use [`Self::blobs_size`] and check the size with
    * before calling [`Self::blobs_read_at_to_bytes`].
    */
-  readAtToBytes(hash: string, offset: bigint, len?: bigint | undefined | null): Promise<Array<number>>
+  readAtToBytes(hash: string, offset: bigint, len: ReadAtLen): Promise<Array<number>>
   /**
    * Import a blob from a filesystem path.
    *
@@ -114,7 +114,7 @@ export declare class Blobs {
    * If `in_place` is true, Iroh will assume that the data will not change and will share it in
    * place without copying to the Iroh data directory.
    */
-  addFromPath(path: string, inPlace: boolean, tag: SetTagOption, wrap: WrapOption, cb: (err: Error | null, arg: AddProgress) => void): Promise<void>
+  addFromPath(path: string, inPlace: boolean, tag: SetTagOption, wrap: WrapOption, cb: ((err: Error | null, arg: AddProgress) => void)): Promise<void>
   /**
    * Export the blob contents to a file path
    * The `path` field is expected to be the absolute path.
@@ -125,7 +125,7 @@ export declare class Blobs {
   /** Write a blob by passing bytes, setting an explicit tag name. */
   addBytesNamed(bytes: Array<number>, name: string): Promise<BlobAddOutcome>
   /** Download a blob from another node and add it to the local database. */
-  download(hash: string, opts: BlobDownloadOptions, cb: (err: Error | null, arg: DownloadProgress) => void): Promise<void>
+  download(hash: string, opts: BlobDownloadOptions, cb: ((err: Error | null, arg: DownloadProgress) => void)): Promise<void>
   /**
    * Export a blob from the internal blob store to a path on the node's filesystem.
    *
@@ -249,9 +249,9 @@ export declare class Doc {
   /** Set an entries on the doc via its key, hash, and size. */
   setHash(authorId: AuthorId, key: Array<number>, hash: string, size: bigint): Promise<void>
   /** Add an entry from an absolute file path */
-  importFile(author: AuthorId, key: Array<number>, path: string, inPlace: boolean, cb?: (err: Error | null, arg: DocImportProgress) => void | undefined | null): Promise<void>
+  importFile(author: AuthorId, key: Array<number>, path: string, inPlace: boolean, cb?: ((err: Error | null, arg: DocImportProgress) => void) | undefined | null): Promise<void>
   /** Export an entry as a file to a given absolute path */
-  exportFile(entry: Entry, path: string, cb?: (err: Error | null, arg: DocExportProgress) => void | undefined | null): Promise<void>
+  exportFile(entry: Entry, path: string, cb?: ((err: Error | null, arg: DocExportProgress) => void) | undefined | null): Promise<void>
   /**
    * Delete entries that match the given `author` and key `prefix`.
    *
@@ -279,7 +279,7 @@ export declare class Doc {
   /** Stop the live sync for this document. */
   leave(): Promise<void>
   /** Subscribe to events for this document. */
-  subscribe(cb: (err: Error | null, arg: LiveEvent) => void): Promise<void>
+  subscribe(cb: ((err: Error | null, arg: LiveEvent) => void)): Promise<void>
   /** Get status info for this document */
   status(): Promise<OpenState>
   /** Set the download policy for this document */
@@ -297,7 +297,7 @@ export declare class Docs {
   /** Join and sync with an already existing document. */
   join(ticket: DocTicket): Promise<Doc>
   /** Join and sync with an already existing document and subscribe to events on that document. */
-  joinAndSubscribe(ticket: DocTicket, cb: (err: Error | null, arg: LiveEvent) => void): Promise<Doc>
+  joinAndSubscribe(ticket: DocTicket, cb: ((err: Error | null, arg: LiveEvent) => void)): Promise<Doc>
   /** List all the docs we have access to on this node. */
   list(): Promise<Array<NamespaceAndCapability>>
   /**
@@ -357,7 +357,7 @@ export declare class FilterKind {
 
 /** Iroh gossip client. */
 export declare class Gossip {
-  subscribe(topic: Array<number>, bootstrap: Array<string>, cb: (err: Error | null, arg: Message) => void): Promise<Sender>
+  subscribe(topic: Array<number>, bootstrap: Array<string>, cb: ((err: Error | null, arg: Message) => void)): Promise<Sender>
 }
 
 /** Hash type used throughout Iroh. A blake3 hash. */
@@ -1269,8 +1269,8 @@ export interface NodeOptions {
    */
   gcIntervalMillis?: number
   /** Provide a callback to hook into events when the blobs component adds and provides blobs. */
-  blobEvents?: (err: Error | null, arg: BlobProvideEvent) => void
-  /** Should docs be enabled? Defaults to `true`. */
+  blobEvents?: ((err: Error | null, arg: BlobProvideEvent) => void)
+  /** Should docs be enabled? Defaults to `false`. */
   enableDocs?: boolean
   /** Overwrites the default IPv4 address to bind to */
   ipv4Addr?: string
@@ -1284,7 +1284,7 @@ export interface NodeOptions {
   nodeDiscovery?: NodeDiscoveryConfig
   /** Provide a specific secret key, identifying this node. Must be 32 bytes long. */
   secretKey?: Array<number>
-  protocols?: Record<Array<number>, (err: Error | null, arg0: Endpoint, arg1: Iroh) => ProtocolHandler>
+  protocols?: Record<Array<number>, ((err: Error | null, arg0: Endpoint, arg1: Iroh) => ProtocolHandler)>
 }
 
 /** The response to a status request */
@@ -1331,8 +1331,8 @@ export declare const enum Origin {
 export declare function pathToKey(path: string, prefix?: string | undefined | null, root?: string | undefined | null): Array<number>
 
 export interface ProtocolHandler {
-  accept: (err: Error | null, arg: Connecting) => void
-  shutdown?: (err: Error | null, ) => void
+  accept: ((err: Error | null, arg: Connecting) => void)
+  shutdown?: ((err: Error | null, ) => void)
 }
 
 /** Options for sorting and pagination for using [`Query`]s. */
@@ -1357,6 +1357,23 @@ export interface QueryOptions {
    * When the limit is 0, the limit does not exist.
    */
   limit?: bigint
+}
+
+/** Defines the way to read bytes. */
+export interface ReadAtLen {
+  type: ReadAtLenType
+  /** The size to read, must be set for `Exact` and `AtMost`. */
+  size?: bigint
+}
+
+/** Defines the way to read bytes. */
+export declare const enum ReadAtLenType {
+  /** Reads all available bytes. */
+  All = 'All',
+  /** Reads exactly this many bytes, erroring out on larger or smaller. */
+  Exact = 'Exact',
+  /** Reads at most this many bytes. */
+  AtMost = 'AtMost'
 }
 
 /** Information about a connection */

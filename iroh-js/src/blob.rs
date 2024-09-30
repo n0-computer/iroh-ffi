@@ -82,19 +82,15 @@ impl Blobs {
         &self,
         hash: String,
         offset: BigInt,
-        len: Option<BigInt>,
+        len: ReadAtLen,
     ) -> Result<Vec<u8>> {
-        let len = match len {
-            None => None,
-            Some(l) => Some(usize::try_from(l.get_u64().1).map_err(anyhow::Error::from)?),
-        };
         let res = self
             .client()
             .blobs()
             .read_at_to_bytes(
                 hash.parse().map_err(anyhow::Error::from)?,
                 offset.get_u64().1,
-                len,
+                len.into(),
             )
             .await
             .map(|b| b.to_vec())?;
@@ -641,8 +637,45 @@ impl AddProgress {
     }
 }
 
+/// Defines the way to read bytes.
+#[derive(Debug, Default, Clone, Copy)]
+#[napi(string_enum)]
+pub enum ReadAtLenType {
+    /// Reads all available bytes.
+    #[default]
+    All,
+    /// Reads exactly this many bytes, erroring out on larger or smaller.
+    Exact,
+    /// Reads at most this many bytes.
+    AtMost,
+}
+
+/// Defines the way to read bytes.
+#[napi(object)]
+pub struct ReadAtLen {
+    pub r#type: ReadAtLenType,
+    /// The size to read, must be set for `Exact` and `AtMost`.
+    pub size: Option<BigInt>,
+}
+
+impl From<ReadAtLen> for iroh::client::blobs::ReadAtLen {
+    fn from(value: ReadAtLen) -> Self {
+        match value.r#type {
+            ReadAtLenType::All => iroh::client::blobs::ReadAtLen::All,
+            ReadAtLenType::Exact => {
+                let (_, size, _) = value.size.expect("missing size").get_u64();
+                iroh::client::blobs::ReadAtLen::Exact(size)
+            }
+            ReadAtLenType::AtMost => {
+                let (_, size, _) = value.size.expect("missing size").get_u64();
+                iroh::client::blobs::ReadAtLen::AtMost(size)
+            }
+        }
+    }
+}
+
 /// A format identifier
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 #[napi(string_enum)]
 pub enum BlobFormat {
     /// Raw blob
