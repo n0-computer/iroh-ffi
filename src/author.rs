@@ -165,9 +165,14 @@ mod tests {
     #[tokio::test]
     async fn test_author_api() {
         let dir = tempfile::tempdir().unwrap();
-        let node = crate::Iroh::persistent(dir.into_path().display().to_string())
-            .await
-            .unwrap();
+        let options = crate::NodeOptions {
+            enable_docs: true,
+            ..Default::default()
+        };
+        let node =
+            crate::Iroh::persistent_with_options(dir.into_path().display().to_string(), options)
+                .await
+                .unwrap();
 
         assert_eq!(node.authors().list().await.unwrap().len(), 1);
         let author_id = node.authors().create().await.unwrap();
