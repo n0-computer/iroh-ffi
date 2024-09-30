@@ -3,7 +3,9 @@ import iroh.*
 
 kotlinx.coroutines.runBlocking {
     // create node
-    val node = Iroh.memory()
+    val options = NodeOptions()
+    options.enableDocs = true
+    val node = Iroh.memoryWithOptions(options)
 
     // creating a node also creates an author
     assert(node.authors().list().size == 1)
