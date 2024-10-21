@@ -3558,7 +3558,7 @@ internal interface UniffiLib : Library {
 
 private fun uniffiCheckContractApiVersion(lib: UniffiLib) {
     // Get the bindings contract version from our ComponentInterface
-    val bindings_contract_version = 26
+    val bindings_contract_version = 27
     // Get the scaffolding contract version by calling the into the dylib
     val scaffolding_contract_version = lib.ffi_iroh_ffi_uniffi_contract_version()
     if (bindings_contract_version != scaffolding_contract_version) {

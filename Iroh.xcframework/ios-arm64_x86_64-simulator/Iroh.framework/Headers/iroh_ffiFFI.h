@@ -1418,11 +1418,6 @@ void uniffi_iroh_ffi_fn_free_endpoint(void*_Nonnull ptr, RustCallStatus *_Nonnul
 uint64_t uniffi_iroh_ffi_fn_method_endpoint_connect(void*_Nonnull ptr, void*_Nonnull node_addr, RustBuffer alpn
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINT_CONNECT_BY_NODE_ID
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINT_CONNECT_BY_NODE_ID
-uint64_t uniffi_iroh_ffi_fn_method_endpoint_connect_by_node_id(void*_Nonnull ptr, RustBuffer node_id, RustBuffer alpn
-);
-#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_ENTRY
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_ENTRY
 void*_Nonnull uniffi_iroh_ffi_fn_clone_entry(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -3397,12 +3392,6 @@ uint16_t uniffi_iroh_ffi_checksum_method_downloadprogress_type(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_ENDPOINT_CONNECT
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_ENDPOINT_CONNECT
 uint16_t uniffi_iroh_ffi_checksum_method_endpoint_connect(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_ENDPOINT_CONNECT_BY_NODE_ID
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_ENDPOINT_CONNECT_BY_NODE_ID
-uint16_t uniffi_iroh_ffi_checksum_method_endpoint_connect_by_node_id(void
     
 );
 #endif
