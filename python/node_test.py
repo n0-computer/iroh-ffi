@@ -4,7 +4,7 @@ import pytest
 import asyncio
 import iroh
 
-from iroh import Iroh, ShareMode, LiveEventType, AddrInfoOptions, NodeOptions, NodeOptions
+from iroh import Iroh, ShareMode, LiveEventType, AddrInfoOptions, NodeOptions, NodeOptions, NodeAddr, PublicKey
 
 @pytest.mark.asyncio
 async def test_basic_sync():
@@ -107,7 +107,9 @@ async def test_custom_protocol():
     node_id = await node_1.net().node_id()
 
     endpoint = node_2.node().endpoint()
-    conn = await endpoint.connect_by_node_id(node_id, alpn)
+
+    node_addr = NodeAddr(PublicKey.from_string(node_id), None, [])
+    conn = await endpoint.connect(node_addr, alpn)
     remote = conn.get_remote_node_id()
     print("", remote)
 

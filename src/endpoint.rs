@@ -26,20 +26,6 @@ impl Endpoint {
         let conn = self.0.connect(node_addr, alpn).await?;
         Ok(Connection(conn))
     }
-
-    #[uniffi::method(async_runtime = "tokio")]
-    pub async fn connect_by_node_id(
-        &self,
-        node_id: String,
-        alpn: &[u8],
-    ) -> Result<Connection, IrohError> {
-        let node_id: iroh::net::NodeId = node_id.parse().map_err(anyhow::Error::from)?;
-        let conn = self
-            .0
-            .connect(iroh::net::NodeAddr::new(node_id), &alpn)
-            .await?;
-        Ok(Connection(conn))
-    }
 }
 
 #[derive(uniffi::Object)]

@@ -5761,8 +5761,6 @@ public func FfiConverterTypeDownloadProgress_lower(_ value: DownloadProgress) ->
 
 public protocol EndpointProtocol: AnyObject {
     func connect(nodeAddr: NodeAddr, alpn: Data) async throws -> Connection
-
-    func connectByNodeId(nodeId: String, alpn: Data) async throws -> Connection
 }
 
 open class Endpoint:
@@ -5812,23 +5810,6 @@ open class Endpoint:
                     uniffi_iroh_ffi_fn_method_endpoint_connect(
                         self.uniffiClonePointer(),
                         FfiConverterTypeNodeAddr.lower(nodeAddr), FfiConverterData.lower(alpn)
-                    )
-                },
-                pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
-                completeFunc: ffi_iroh_ffi_rust_future_complete_pointer,
-                freeFunc: ffi_iroh_ffi_rust_future_free_pointer,
-                liftFunc: FfiConverterTypeConnection.lift,
-                errorHandler: FfiConverterTypeIrohError__as_error.lift
-            )
-    }
-
-    open func connectByNodeId(nodeId: String, alpn: Data) async throws -> Connection {
-        return
-            try await uniffiRustCallAsync(
-                rustFutureFunc: {
-                    uniffi_iroh_ffi_fn_method_endpoint_connect_by_node_id(
-                        self.uniffiClonePointer(),
-                        FfiConverterString.lower(nodeId), FfiConverterData.lower(alpn)
                     )
                 },
                 pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
@@ -16314,9 +16295,6 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_endpoint_connect() != 29734 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_ffi_checksum_method_endpoint_connect_by_node_id() != 56155 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_entry_author() != 39787 {
