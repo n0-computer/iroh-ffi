@@ -20,7 +20,8 @@ impl Endpoint {
 
     #[napi]
     pub async fn connect(&self, node_addr: NodeAddr, alpn: Uint8Array) -> Result<Connection> {
-        let conn = self.0.connect(node_addr.try_into()?, &alpn).await?;
+        let node_addr: iroh::net::NodeAddr = node_addr.try_into()?;
+        let conn = self.0.connect(node_addr, &alpn).await?;
         Ok(Connection(conn))
     }
 
@@ -31,7 +32,10 @@ impl Endpoint {
         alpn: Uint8Array,
     ) -> Result<Connection> {
         let node_id: iroh::net::NodeId = node_id.parse().map_err(anyhow::Error::from)?;
-        let conn = self.0.connect_by_node_id(node_id, &alpn).await?;
+        let conn = self
+            .0
+            .connect(iroh::net::NodeAddr::new(node_id), &alpn)
+            .await?;
         Ok(Connection(conn))
     }
 }
