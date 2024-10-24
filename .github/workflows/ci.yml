@@ -89,6 +89,16 @@ jobs:
     - uses: actions/setup-python@v5
       with:
           python-version: 3.12
+    # pre-commit or ruff as example
+    - uses: pre-commit/action@v3.0.1
+    - uses: astral-sh/ruff-action@v1
+      with:
+        args: --check --fix ./python/
+        src: "./python"
+    - uses: astral-sh/ruff-action@v1
+      with:
+        args: "format --check"
+        src: "./python"
     - name: Install virtualenv
       run: pip install virtualenv
     - name: Python tests

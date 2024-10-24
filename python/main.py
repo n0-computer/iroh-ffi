@@ -13,32 +13,34 @@ async def main():
 
     args = parser.parse_args()
 
-    if not args.ticket:
-        print("In example mode")
-        print("(To run the sync demo, please provide a ticket to join a document)")
-        print()
-
-        # create iroh node
-        node = await iroh.Iroh.memory()
-        node_id = await node.node().node_id()
-        print("Started Iroh node: {}".format(node_id))
-
-        # create doc
-        doc = await node.docs().create()
-        doc_id = doc.id()
-        print("Created doc: {}".format(doc_id))
-
-        doc = await node.docs().create()
-        doc_id = doc.id()
-        print("Created doc: {}".format(doc_id))
-
-        # list docs
-        docs = await node.docs().list()
-        print("List all {} docs:".format(len(docs)))
-        for doc in docs:
-            print("\t{}".format(doc))
-
-        exit()
+    # if not args.ticket:
+    #     print("In example mode")
+    #     print("(To run the sync demo, please provide a ticket to join a document)")
+    #     print()
+    #
+    #     # create iroh node
+    #     options = iroh.NodeOptions()
+    #     options.enable_docs = True
+    #     node = await iroh.Iroh.memory_with_options(options)
+    #     # FIXME: Get Node ID
+    #     print(f"Started Iroh node")
+    #
+    #     # create doc
+    #     doc = await node.docs().create()
+    #     doc_id = doc.id()
+    #     print("Created doc: {}".format(doc_id))
+    #
+    #     doc = await node.docs().create()
+    #     doc_id = doc.id()
+    #     print("Created doc: {}".format(doc_id))
+    #
+    #     # list docs
+    #     docs = await node.docs().list()
+    #     print("List all {} docs:".format(len(docs)))
+    #     for doc in docs:
+    #         print("\t{}".format(doc))
+    #
+    #     exit()
 
     # create iroh node
     node = await iroh.Iroh.memory()

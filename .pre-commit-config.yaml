@@ -1,0 +1,40 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+default_language_version:
+    python: python3.12
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+    - id: trailing-whitespace
+    - id: end-of-file-fixer
+    - id: check-yaml
+    - id: check-added-large-files
+    - id: check-merge-conflict
+    - id: debug-statements
+    - id: check-toml
+    # All non-bat files should end with LF
+    - id: mixed-line-ending
+      name: Ensure LF endings on most files
+      args: [ "--fix=lf" ]
+      exclude: \.bat$
+    # Bat files should end with CRLF
+    - id: mixed-line-ending
+      name: Ensure CFLF endings on Windows files
+      args: [ "--fix=crlf" ]
+      files: \.bat$
+    - id: detect-private-key
+    - id: no-commit-to-branch
+      args: [ --branch, main, --branch, master ]
+      stages: [ commit-msg ]
+
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+    -   id: ruff
+        args: [--fix --line-length=120]
+    -   id: ruff-format
+        types_or: [ python, pyi ]
+ci:     
+    autofix_commit_msg: 🎨 [pre-commit.ci] Auto format from pre-commit.com hooks
+    autoupdate_commit_msg: ⬆ [pre-commit.ci] pre-commit autoupdate
