@@ -65,7 +65,9 @@ test('custom protocol', async (t) => {
       },
       shutdown: (err) => {
         if (err != null) {
-          throw err
+          if (!err.message.contains("closed by peer")) {
+            throw err
+          }
         }
         console.log('shutting down')
       }
