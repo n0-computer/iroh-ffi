@@ -8317,7 +8317,7 @@ public protocol NodeProtocol: AnyObject {
     /**
      * Shutdown this iroh node.
      */
-    func shutdown(force: Bool) async throws
+    func shutdown() async throws
 
     /**
      * Get statistics of the running node.
@@ -8400,13 +8400,12 @@ open class Node:
     /**
      * Shutdown this iroh node.
      */
-    open func shutdown(force: Bool) async throws {
+    open func shutdown() async throws {
         return
             try await uniffiRustCallAsync(
                 rustFutureFunc: {
                     uniffi_iroh_ffi_fn_method_node_shutdown(
-                        self.uniffiClonePointer(),
-                        FfiConverterBool.lower(force)
+                        self.uniffiClonePointer()
                     )
                 },
                 pollFunc: ffi_iroh_ffi_rust_future_poll_void,
@@ -18145,7 +18144,7 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_method_node_my_rpc_addr() != 34751 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_method_node_shutdown() != 21075 {
+    if uniffi_iroh_ffi_checksum_method_node_shutdown() != 49624 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_node_stats() != 13439 {

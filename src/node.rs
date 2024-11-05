@@ -495,8 +495,12 @@ impl Node {
 
     /// Shutdown this iroh node.
     #[uniffi::method(async_runtime = "tokio")]
-    pub async fn shutdown(&self, force: bool) -> Result<(), IrohError> {
-        self.node().shutdown(force).await?;
+    pub async fn shutdown(&self) -> Result<(), IrohError> {
+        match self.node {
+            Iroh::Fs(ref fs) => fs.clone().shutdown().await?,
+            Iroh::Memory(ref mem) => mem.clone().shutdown().await?,
+            Iroh::Client(ref client) => client.shutdown(false).await?,
+        }
         Ok(())
     }
 

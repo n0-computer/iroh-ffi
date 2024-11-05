@@ -99,8 +99,8 @@ test('custom protocol', async (t) => {
   console.log(`read: ${out.toString()}`)
   t.is(out.toString(), 'hello')
 
-  await node2.node.shutdown(false)
-  await node1.node.shutdown(false)
+  await node2.node.shutdown()
+  await node1.node.shutdown()
 
   console.log('end')
   t.pass()

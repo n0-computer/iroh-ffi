@@ -300,8 +300,12 @@ impl Node {
 
     /// Shutdown this iroh node.
     #[napi]
-    pub async fn shutdown(&self, force: bool) -> Result<()> {
-        self.node().shutdown(force).await?;
+    pub async fn shutdown(&self) -> Result<()> {
+        match self.node.0 {
+            InnerIroh::Fs(ref fs) => fs.clone().shutdown().await?,
+            InnerIroh::Memory(ref mem) => mem.clone().shutdown().await?,
+            InnerIroh::Client(ref client) => client.shutdown(false).await?,
+        }
         Ok(())
     }
 
