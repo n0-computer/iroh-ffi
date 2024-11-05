@@ -342,7 +342,6 @@ export declare class DownloadPolicy {
 
 export declare class Endpoint {
   connect(nodeAddr: NodeAddr, alpn: Uint8Array): Promise<Connection>
-  connectByNodeId(nodeId: string, alpn: Uint8Array): Promise<Connection>
 }
 
 /** Filter strategy used in download policies. */
@@ -1541,4 +1540,3 @@ export interface WrapOption {
   /** Override the filename in the wrapping collection. */
   wrapOverride?: string
 }
-

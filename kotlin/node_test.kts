@@ -21,10 +21,13 @@ class Subscriber : SubscribeCallback {
 runBlocking {
     // setLogLevel(LogLevel.DEBUG)
     // Create node_0
-    val node0 = Iroh.memory()
+    val options = NodeOptions()
+    options.enableDocs = true
+
+    val node0 = Iroh.memoryWithOptions(options)
 
     // Create node_1
-    val node1 = Iroh.memory()
+    val node1 = Iroh.memoryWithOptions(options)
 
     // Create doc on node_0
     val doc0 = node0.docs().create()

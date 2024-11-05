@@ -1,9 +1,9 @@
 use std::pin::Pin;
 
 use futures::{Sink, SinkExt, StreamExt};
-use iroh::client::gossip::{SubscribeResponse, SubscribeUpdate};
 use iroh::gossip::net::GossipEvent;
 use iroh::net::NodeId;
+use iroh_gossip::rpc::{SubscribeResponse, SubscribeUpdate};
 use napi::bindgen_prelude::*;
 use napi::threadsafe_function::ThreadsafeFunction;
 use napi_derive::napi;

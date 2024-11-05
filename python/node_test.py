@@ -104,11 +104,10 @@ async def test_custom_protocol():
     node_2 = await Iroh.memory_with_options(options)
 
     alpn = b"example/protocol/0"
-    node_id = await node_1.net().node_id()
+    node_addr = await node_1.net().node_addr()
 
     endpoint = node_2.node().endpoint()
 
-    node_addr = NodeAddr(PublicKey.from_string(node_id), None, [])
     conn = await endpoint.connect(node_addr, alpn)
     remote = conn.get_remote_node_id()
     print("", remote)
@@ -123,5 +122,5 @@ async def test_custom_protocol():
     print("", out)
     assert b"hello", out
 
-    await node_2.node().shutdown(False)
-    await node_1.node().shutdown(False)
+    await node_2.node().shutdown(True)
+    await node_1.node().shutdown(True)
