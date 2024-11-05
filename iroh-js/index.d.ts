@@ -431,7 +431,7 @@ export declare class Node {
   /** Get status information about a node */
   status(): Promise<NodeStatus>
   /** Shutdown this iroh node. */
-  shutdown(force: boolean): Promise<void>
+  shutdown(): Promise<void>
   /** Returns `Some(addr)` if an RPC endpoint is running, `None` otherwise. */
   myRpcAddr(): string | null
   endpoint(): Endpoint | null
