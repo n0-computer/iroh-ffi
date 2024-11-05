@@ -42,6 +42,9 @@ import kotlin.coroutines.resume
 // A rust-owned buffer is represented by its capacity, its current length, and a
 // pointer to the underlying data.
 
+/**
+ * @suppress
+ */
 @Structure.FieldOrder("capacity", "len", "data")
 open class RustBuffer : Structure() {
     // Note: `capacity` and `len` are actually `ULong` values, but JVM only supports signed values.
@@ -107,6 +110,8 @@ open class RustBuffer : Structure() {
  * Required for callbacks taking in an out pointer.
  *
  * Size is the sum of all values in the struct.
+ *
+ * @suppress
  */
 class RustBufferByReference : ByReference(16) {
     /**
@@ -141,7 +146,7 @@ class RustBufferByReference : ByReference(16) {
 // completeness.
 
 @Structure.FieldOrder("len", "data")
-open class ForeignBytes : Structure() {
+internal open class ForeignBytes : Structure() {
     @JvmField var len: Int = 0
 
     @JvmField var data: Pointer? = null
@@ -151,10 +156,14 @@ open class ForeignBytes : Structure() {
         Structure.ByValue
 }
 
-// The FfiConverter interface handles converter types to and from the FFI
-//
-// All implementing objects should be public to support external types.  When a
-// type is external we need to import it's FfiConverter.
+/**
+ * The FfiConverter interface handles converter types to and from the FFI
+ *
+ * All implementing objects should be public to support external types.  When a
+ * type is external we need to import it's FfiConverter.
+ *
+ * @suppress
+ */
 public interface FfiConverter<KotlinType, FfiType> {
     // Convert an FFI type to a Kotlin type
     fun lift(value: FfiType): KotlinType
@@ -221,7 +230,11 @@ public interface FfiConverter<KotlinType, FfiType> {
     }
 }
 
-// FfiConverter that uses `RustBuffer` as the FfiType
+/**
+ * FfiConverter that uses `RustBuffer` as the FfiType
+ *
+ * @suppress
+ */
 public interface FfiConverterRustBuffer<KotlinType> : FfiConverter<KotlinType, RustBuffer.ByValue> {
     override fun lift(value: RustBuffer.ByValue) = liftFromRustBuffer(value)
 
@@ -267,7 +280,11 @@ class InternalException(
     message: String,
 ) : kotlin.Exception(message)
 
-// Each top-level error class has a companion object that can lift the error from the call status's rust buffer
+/**
+ * Each top-level error class has a companion object that can lift the error from the call status's rust buffer
+ *
+ * @suppress
+ */
 interface UniffiRustCallStatusErrorHandler<E> {
     fun lift(error_buf: RustBuffer.ByValue): E
 }
@@ -310,7 +327,11 @@ private fun <E : kotlin.Exception> uniffiCheckCallStatus(
     }
 }
 
-// UniffiRustCallStatusErrorHandler implementation for times when we don't expect a CALL_ERROR
+/**
+ * UniffiRustCallStatusErrorHandler implementation for times when we don't expect a CALL_ERROR
+ *
+ * @suppress
+ */
 object UniffiNullRustCallStatusErrorHandler : UniffiRustCallStatusErrorHandler<InternalException> {
     override fun lift(error_buf: RustBuffer.ByValue): InternalException {
         RustBuffer.free(error_buf)
@@ -2003,12 +2024,6 @@ internal interface UniffiLib : Library {
         `alpn`: RustBuffer.ByValue,
     ): Long
 
-    fun uniffi_iroh_ffi_fn_method_endpoint_connect_by_node_id(
-        `ptr`: Pointer,
-        `nodeId`: RustBuffer.ByValue,
-        `alpn`: RustBuffer.ByValue,
-    ): Long
-
     fun uniffi_iroh_ffi_fn_clone_entry(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
@@ -3309,8 +3324,6 @@ internal interface UniffiLib : Library {
 
     fun uniffi_iroh_ffi_checksum_method_endpoint_connect(): Short
 
-    fun uniffi_iroh_ffi_checksum_method_endpoint_connect_by_node_id(): Short
-
     fun uniffi_iroh_ffi_checksum_method_entry_author(): Short
 
     fun uniffi_iroh_ffi_checksum_method_entry_content_bytes(): Short
@@ -3558,7 +3571,7 @@ internal interface UniffiLib : Library {
 
 private fun uniffiCheckContractApiVersion(lib: UniffiLib) {
     // Get the bindings contract version from our ComponentInterface
-    val bindings_contract_version = 27
+    val bindings_contract_version = 26
     // Get the scaffolding contract version by calling the into the dylib
     val scaffolding_contract_version = lib.ffi_iroh_ffi_uniffi_contract_version()
     if (bindings_contract_version != scaffolding_contract_version) {
@@ -3977,9 +3990,6 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_endpoint_connect() != 29734.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_connect_by_node_id() != 56155.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_entry_author() != 39787.toShort()) {
@@ -4491,6 +4501,9 @@ interface Disposable {
     }
 }
 
+/**
+ * @suppress
+ */
 inline fun <T : Disposable?, R> T.use(block: (T) -> R) =
     try {
         block(this)
@@ -4503,9 +4516,16 @@ inline fun <T : Disposable?, R> T.use(block: (T) -> R) =
         }
     }
 
-/** Used to instantiate an interface without an actual pointer, for fakes in tests, mostly. */
+/**
+ * Used to instantiate an interface without an actual pointer, for fakes in tests, mostly.
+ *
+ * @suppress
+ * */
 object NoPointer
 
+/**
+ * @suppress
+ */
 public object FfiConverterUInt : FfiConverter<UInt, Int> {
     override fun lift(value: Int): UInt = value.toUInt()
 
@@ -4523,6 +4543,9 @@ public object FfiConverterUInt : FfiConverter<UInt, Int> {
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterInt : FfiConverter<Int, Int> {
     override fun lift(value: Int): Int = value
 
@@ -4540,6 +4563,9 @@ public object FfiConverterInt : FfiConverter<Int, Int> {
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterULong : FfiConverter<ULong, Long> {
     override fun lift(value: Long): ULong = value.toULong()
 
@@ -4557,6 +4583,9 @@ public object FfiConverterULong : FfiConverter<ULong, Long> {
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterBoolean : FfiConverter<Boolean, Byte> {
     override fun lift(value: Byte): Boolean = value.toInt() != 0
 
@@ -4574,6 +4603,9 @@ public object FfiConverterBoolean : FfiConverter<Boolean, Byte> {
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterString : FfiConverter<String, RustBuffer.ByValue> {
     // Note: we don't inherit from FfiConverterRustBuffer, because we use a
     // special encoding when lowering/lifting.  We can use `RustBuffer.len` to
@@ -4631,6 +4663,9 @@ public object FfiConverterString : FfiConverter<String, RustBuffer.ByValue> {
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterByteArray : FfiConverterRustBuffer<ByteArray> {
     override fun read(buf: ByteBuffer): ByteArray {
         val len = buf.getInt()
@@ -4650,6 +4685,9 @@ public object FfiConverterByteArray : FfiConverterRustBuffer<ByteArray> {
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTimestamp : FfiConverterRustBuffer<java.time.Instant> {
     override fun read(buf: ByteBuffer): java.time.Instant {
         val seconds = buf.getLong()
@@ -4694,6 +4732,9 @@ public object FfiConverterTimestamp : FfiConverterRustBuffer<java.time.Instant> 
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterDuration : FfiConverterRustBuffer<java.time.Duration> {
     override fun read(buf: ByteBuffer): java.time.Duration {
         // Type mismatch (should be u64) but we check for overflow/underflow below
@@ -4831,12 +4872,16 @@ public object FfiConverterDuration : FfiConverterRustBuffer<java.time.Duration> 
 // [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
 //
 
-// The cleaner interface for Object finalization code to run.
-// This is the entry point to any implementation that we're using.
-//
-// The cleaner registers objects and returns cleanables, so now we are
-// defining a `UniffiCleaner` with a `UniffiClenaer.Cleanable` to abstract the
-// different implmentations available at compile time.
+/**
+ * The cleaner interface for Object finalization code to run.
+ * This is the entry point to any implementation that we're using.
+ *
+ * The cleaner registers objects and returns cleanables, so now we are
+ * defining a `UniffiCleaner` with a `UniffiClenaer.Cleanable` to abstract the
+ * different implmentations available at compile time.
+ *
+ * @suppress
+ */
 interface UniffiCleaner {
     interface Cleanable {
         fun clean()
@@ -5033,6 +5078,9 @@ internal const val UNIFFI_CALLBACK_SUCCESS = 0
 internal const val UNIFFI_CALLBACK_ERROR = 1
 internal const val UNIFFI_CALLBACK_UNEXPECTED_ERROR = 2
 
+/**
+ * @suppress
+ */
 public abstract class FfiConverterCallbackInterface<CallbackInterface : Any> : FfiConverter<CallbackInterface, Long> {
     internal val handleMap = UniffiHandleMap<CallbackInterface>()
 
@@ -5119,6 +5167,9 @@ internal object uniffiCallbackInterfaceAddCallback {
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeAddCallback : FfiConverter<AddCallback, Pointer> {
     internal val handleMap = UniffiHandleMap<AddCallback>()
 
@@ -5458,6 +5509,9 @@ open class AddProgress :
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeAddProgress : FfiConverter<AddProgress, Pointer> {
     override fun lower(value: AddProgress): Pointer = value.uniffiClonePointer()
 
@@ -5725,6 +5779,9 @@ open class Author :
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeAuthor : FfiConverter<Author, Pointer> {
     override fun lower(value: Author): Pointer = value.uniffiClonePointer()
 
@@ -5989,6 +6046,9 @@ open class AuthorId :
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeAuthorId : FfiConverter<AuthorId, Pointer> {
     override fun lower(value: AuthorId): Pointer = value.uniffiClonePointer()
 
@@ -6419,9 +6479,9 @@ open class Authors :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -6436,6 +6496,9 @@ open class Authors :
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeAuthors : FfiConverter<Authors, Pointer> {
     override fun lower(value: Authors): Pointer = value.uniffiClonePointer()
 
@@ -6675,6 +6738,9 @@ open class BiStream :
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeBiStream : FfiConverter<BiStream, Pointer> {
     override fun lower(value: BiStream): Pointer = value.uniffiClonePointer()
 
@@ -6907,6 +6973,9 @@ open class BlobDownloadOptions :
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeBlobDownloadOptions : FfiConverter<BlobDownloadOptions, Pointer> {
     override fun lower(value: BlobDownloadOptions): Pointer = value.uniffiClonePointer()
 
@@ -7304,6 +7373,9 @@ open class BlobProvideEvent :
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeBlobProvideEvent : FfiConverter<BlobProvideEvent, Pointer> {
     override fun lower(value: BlobProvideEvent): Pointer = value.uniffiClonePointer()
 
@@ -7609,6 +7681,9 @@ internal object uniffiCallbackInterfaceBlobProvideEventCallback {
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeBlobProvideEventCallback : FfiConverter<BlobProvideEventCallback, Pointer> {
     internal val handleMap = UniffiHandleMap<BlobProvideEventCallback>()
 
@@ -7953,6 +8028,9 @@ open class BlobTicket :
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeBlobTicket : FfiConverter<BlobTicket, Pointer> {
     override fun lower(value: BlobTicket): Pointer = value.uniffiClonePointer()
 
@@ -8330,9 +8408,9 @@ open class Blobs :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -8362,9 +8440,9 @@ open class Blobs :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -8435,9 +8513,9 @@ open class Blobs :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -8573,9 +8651,9 @@ open class Blobs :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -8603,9 +8681,9 @@ open class Blobs :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -8633,9 +8711,9 @@ open class Blobs :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -8671,9 +8749,9 @@ open class Blobs :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -8703,9 +8781,9 @@ open class Blobs :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -8798,6 +8876,9 @@ open class Blobs :
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeBlobs : FfiConverter<Blobs, Pointer> {
     override fun lower(value: Blobs): Pointer = value.uniffiClonePointer()
 
@@ -9158,6 +9239,9 @@ open class Collection :
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeCollection : FfiConverter<Collection, Pointer> {
     override fun lower(value: Collection): Pointer = value.uniffiClonePointer()
 
@@ -9384,9 +9468,9 @@ open class Connecting :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -9426,9 +9510,9 @@ open class Connecting :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -9450,9 +9534,9 @@ open class Connecting :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -9467,6 +9551,9 @@ open class Connecting :
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeConnecting : FfiConverter<Connecting, Pointer> {
     override fun lower(value: Connecting): Pointer = value.uniffiClonePointer()
 
@@ -9790,9 +9877,9 @@ open class Connection :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -9899,9 +9986,9 @@ open class Connection :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -10019,6 +10106,9 @@ open class Connection :
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeConnection : FfiConverter<Connection, Pointer> {
     override fun lower(value: Connection): Pointer = value.uniffiClonePointer()
 
@@ -10316,6 +10406,9 @@ open class ConnectionType :
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeConnectionType : FfiConverter<ConnectionType, Pointer> {
     override fun lower(value: ConnectionType): Pointer = value.uniffiClonePointer()
 
@@ -10613,6 +10706,9 @@ open class DirectAddrInfo :
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeDirectAddrInfo : FfiConverter<DirectAddrInfo, Pointer> {
     override fun lower(value: DirectAddrInfo): Pointer = value.uniffiClonePointer()
 
@@ -11074,9 +11170,9 @@ open class Doc :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -11105,9 +11201,9 @@ open class Doc :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -11133,9 +11229,9 @@ open class Doc :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -11160,9 +11256,9 @@ open class Doc :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -11381,9 +11477,9 @@ open class Doc :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -11420,6 +11516,9 @@ open class Doc :
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeDoc : FfiConverter<Doc, Pointer> {
     override fun lower(value: Doc): Pointer = value.uniffiClonePointer()
 
@@ -11725,6 +11824,9 @@ internal object uniffiCallbackInterfaceDocExportFileCallback {
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeDocExportFileCallback : FfiConverter<DocExportFileCallback, Pointer> {
     internal val handleMap = UniffiHandleMap<DocExportFileCallback>()
 
@@ -12024,6 +12126,9 @@ open class DocExportProgress :
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeDocExportProgress : FfiConverter<DocExportProgress, Pointer> {
     override fun lower(value: DocExportProgress): Pointer = value.uniffiClonePointer()
 
@@ -12329,6 +12434,9 @@ internal object uniffiCallbackInterfaceDocImportFileCallback {
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeDocImportFileCallback : FfiConverter<DocImportFileCallback, Pointer> {
     internal val handleMap = UniffiHandleMap<DocImportFileCallback>()
 
@@ -12668,6 +12776,9 @@ open class DocImportProgress :
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeDocImportProgress : FfiConverter<DocImportProgress, Pointer> {
     override fun lower(value: DocImportProgress): Pointer = value.uniffiClonePointer()
 
@@ -12906,6 +13017,9 @@ open class DocTicket :
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeDocTicket : FfiConverter<DocTicket, Pointer> {
     override fun lower(value: DocTicket): Pointer = value.uniffiClonePointer()
 
@@ -13267,9 +13381,9 @@ open class Docs :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -13297,9 +13411,9 @@ open class Docs :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -13314,6 +13428,9 @@ open class Docs :
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeDocs : FfiConverter<Docs, Pointer> {
     override fun lower(value: Docs): Pointer = value.uniffiClonePointer()
 
@@ -13619,6 +13736,9 @@ internal object uniffiCallbackInterfaceDownloadCallback {
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeDownloadCallback : FfiConverter<DownloadCallback, Pointer> {
     internal val handleMap = UniffiHandleMap<DownloadCallback>()
 
@@ -13888,6 +14008,9 @@ open class DownloadPolicy :
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeDownloadPolicy : FfiConverter<DownloadPolicy, Pointer> {
     override fun lower(value: DownloadPolicy): Pointer = value.uniffiClonePointer()
 
@@ -14267,6 +14390,9 @@ open class DownloadProgress :
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeDownloadProgress : FfiConverter<DownloadProgress, Pointer> {
     override fun lower(value: DownloadProgress): Pointer = value.uniffiClonePointer()
 
@@ -14393,11 +14519,6 @@ public interface EndpointInterface {
         `alpn`: kotlin.ByteArray,
     ): Connection
 
-    suspend fun `connectByNodeId`(
-        `nodeId`: kotlin.String,
-        `alpn`: kotlin.ByteArray,
-    ): Connection
-
     companion object
 }
 
@@ -14508,32 +14629,12 @@ open class Endpoint :
             IrohException.ErrorHandler,
         )
 
-    @Throws(IrohException::class)
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `connectByNodeId`(
-        `nodeId`: kotlin.String,
-        `alpn`: kotlin.ByteArray,
-    ): Connection =
-        uniffiRustCallAsync(
-            callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_endpoint_connect_by_node_id(
-                    thisPtr,
-                    FfiConverterString.lower(`nodeId`),
-                    FfiConverterByteArray.lower(`alpn`),
-                )
-            },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_pointer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_pointer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_pointer(future) },
-            // lift function
-            { FfiConverterTypeConnection.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
-
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeEndpoint : FfiConverter<Endpoint, Pointer> {
     override fun lower(value: Endpoint): Pointer = value.uniffiClonePointer()
 
@@ -14826,9 +14927,9 @@ open class Entry :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -14918,6 +15019,9 @@ open class Entry :
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeEntry : FfiConverter<Entry, Pointer> {
     override fun lower(value: Entry): Pointer = value.uniffiClonePointer()
 
@@ -15182,6 +15286,9 @@ open class FilterKind :
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeFilterKind : FfiConverter<FilterKind, Pointer> {
     override fun lower(value: FilterKind): Pointer = value.uniffiClonePointer()
 
@@ -15430,6 +15537,9 @@ open class Gossip :
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeGossip : FfiConverter<Gossip, Pointer> {
     override fun lower(value: Gossip): Pointer = value.uniffiClonePointer()
 
@@ -15725,6 +15835,9 @@ internal object uniffiCallbackInterfaceGossipMessageCallback {
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeGossipMessageCallback : FfiConverter<GossipMessageCallback, Pointer> {
     internal val handleMap = UniffiHandleMap<GossipMessageCallback>()
 
@@ -16058,6 +16171,9 @@ open class Hash :
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeHash : FfiConverter<Hash, Pointer> {
     override fun lower(value: Hash): Pointer = value.uniffiClonePointer()
 
@@ -16422,9 +16538,9 @@ open class Iroh :
             uniffiRustCallAsync(
                 UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_iroh_client(FfiConverterOptionalString.lower(`addr`)),
                 {
-                        future,
-                        callback,
-                        continuation,
+                    future,
+                    callback,
+                    continuation,
                     ->
                     UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_pointer(future, callback, continuation)
                 },
@@ -16447,9 +16563,9 @@ open class Iroh :
             uniffiRustCallAsync(
                 UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_iroh_memory(),
                 {
-                        future,
-                        callback,
-                        continuation,
+                    future,
+                    callback,
+                    continuation,
                     ->
                     UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_pointer(future, callback, continuation)
                 },
@@ -16470,9 +16586,9 @@ open class Iroh :
             uniffiRustCallAsync(
                 UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_iroh_memory_with_options(FfiConverterTypeNodeOptions.lower(`options`)),
                 {
-                        future,
-                        callback,
-                        continuation,
+                    future,
+                    callback,
+                    continuation,
                     ->
                     UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_pointer(future, callback, continuation)
                 },
@@ -16496,9 +16612,9 @@ open class Iroh :
             uniffiRustCallAsync(
                 UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_iroh_persistent(FfiConverterString.lower(`path`)),
                 {
-                        future,
-                        callback,
-                        continuation,
+                    future,
+                    callback,
+                    continuation,
                     ->
                     UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_pointer(future, callback, continuation)
                 },
@@ -16525,9 +16641,9 @@ open class Iroh :
                     FfiConverterTypeNodeOptions.lower(`options`),
                 ),
                 {
-                        future,
-                        callback,
-                        continuation,
+                    future,
+                    callback,
+                    continuation,
                     ->
                     UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_pointer(future, callback, continuation)
                 },
@@ -16541,6 +16657,9 @@ open class Iroh :
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeIroh : FfiConverter<Iroh, Pointer> {
     override fun lower(value: Iroh): Pointer = value.uniffiClonePointer()
 
@@ -16783,6 +16902,9 @@ open class IrohException :
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeIrohError : FfiConverter<IrohException, Pointer> {
     override fun lower(value: IrohException): Pointer = value.uniffiClonePointer()
 
@@ -17140,6 +17262,9 @@ open class LiveEvent :
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeLiveEvent : FfiConverter<LiveEvent, Pointer> {
     override fun lower(value: LiveEvent): Pointer = value.uniffiClonePointer()
 
@@ -17441,6 +17566,9 @@ open class Message :
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeMessage : FfiConverter<Message, Pointer> {
     override fun lower(value: Message): Pointer = value.uniffiClonePointer()
 
@@ -17720,9 +17848,9 @@ open class Net :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -17768,9 +17896,9 @@ open class Net :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -17796,9 +17924,9 @@ open class Net :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -17823,9 +17951,9 @@ open class Net :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -17840,6 +17968,9 @@ open class Net :
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeNet : FfiConverter<Net, Pointer> {
     override fun lower(value: Net): Pointer = value.uniffiClonePointer()
 
@@ -18138,9 +18269,9 @@ open class Node :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -18176,6 +18307,9 @@ open class Node :
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeNode : FfiConverter<Node, Pointer> {
     override fun lower(value: Node): Pointer = value.uniffiClonePointer()
 
@@ -18469,6 +18603,9 @@ open class NodeAddr :
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeNodeAddr : FfiConverter<NodeAddr, Pointer> {
     override fun lower(value: NodeAddr): Pointer = value.uniffiClonePointer()
 
@@ -18766,6 +18903,9 @@ open class NodeStatus :
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeNodeStatus : FfiConverter<NodeStatus, Pointer> {
     override fun lower(value: NodeStatus): Pointer = value.uniffiClonePointer()
 
@@ -19039,6 +19179,9 @@ internal object uniffiCallbackInterfaceProtocolCreator {
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeProtocolCreator : FfiConverter<ProtocolCreator, Pointer> {
     internal val handleMap = UniffiHandleMap<ProtocolCreator>()
 
@@ -19393,6 +19536,9 @@ internal object uniffiCallbackInterfaceProtocolHandler {
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeProtocolHandler : FfiConverter<ProtocolHandler, Pointer> {
     internal val handleMap = UniffiHandleMap<ProtocolHandler>()
 
@@ -19721,6 +19867,9 @@ open class PublicKey :
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypePublicKey : FfiConverter<PublicKey, Pointer> {
     override fun lower(value: PublicKey): Pointer = value.uniffiClonePointer()
 
@@ -20167,6 +20316,9 @@ open class Query :
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeQuery : FfiConverter<Query, Pointer> {
     override fun lower(value: Query): Pointer = value.uniffiClonePointer()
 
@@ -20424,6 +20576,9 @@ open class RangeSpec :
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeRangeSpec : FfiConverter<RangeSpec, Pointer> {
     override fun lower(value: RangeSpec): Pointer = value.uniffiClonePointer()
 
@@ -20670,6 +20825,9 @@ open class ReadAtLen :
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeReadAtLen : FfiConverter<ReadAtLen, Pointer> {
     override fun lower(value: ReadAtLen): Pointer = value.uniffiClonePointer()
 
@@ -20899,9 +21057,9 @@ open class RecvStream :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -20924,9 +21082,9 @@ open class RecvStream :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -20949,9 +21107,9 @@ open class RecvStream :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -20974,9 +21132,9 @@ open class RecvStream :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -20998,9 +21156,9 @@ open class RecvStream :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -21034,6 +21192,9 @@ open class RecvStream :
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeRecvStream : FfiConverter<RecvStream, Pointer> {
     override fun lower(value: RecvStream): Pointer = value.uniffiClonePointer()
 
@@ -21285,9 +21446,9 @@ open class SendStream :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -21365,9 +21526,9 @@ open class SendStream :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -21420,6 +21581,9 @@ open class SendStream :
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeSendStream : FfiConverter<SendStream, Pointer> {
     override fun lower(value: SendStream): Pointer = value.uniffiClonePointer()
 
@@ -21717,6 +21881,9 @@ open class Sender :
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeSender : FfiConverter<Sender, Pointer> {
     override fun lower(value: Sender): Pointer = value.uniffiClonePointer()
 
@@ -21959,6 +22126,9 @@ open class SetTagOption :
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeSetTagOption : FfiConverter<SetTagOption, Pointer> {
     override fun lower(value: SetTagOption): Pointer = value.uniffiClonePointer()
 
@@ -22264,6 +22434,9 @@ internal object uniffiCallbackInterfaceSubscribeCallback {
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeSubscribeCallback : FfiConverter<SubscribeCallback, Pointer> {
     internal val handleMap = UniffiHandleMap<SubscribeCallback>()
 
@@ -22531,9 +22704,9 @@ open class Tags :
                 )
             },
             {
-                    future,
-                    callback,
-                    continuation,
+                future,
+                callback,
+                continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -22548,6 +22721,9 @@ open class Tags :
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeTags : FfiConverter<Tags, Pointer> {
     override fun lower(value: Tags): Pointer = value.uniffiClonePointer()
 
@@ -22790,6 +22966,9 @@ open class WrapOption :
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeWrapOption : FfiConverter<WrapOption, Pointer> {
     override fun lower(value: WrapOption): Pointer = value.uniffiClonePointer()
 
@@ -22822,6 +23001,9 @@ data class AddProgressAbort(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeAddProgressAbort : FfiConverterRustBuffer<AddProgressAbort> {
     override fun read(buf: ByteBuffer): AddProgressAbort =
         AddProgressAbort(
@@ -22870,6 +23052,9 @@ data class AddProgressAllDone(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeAddProgressAllDone : FfiConverterRustBuffer<AddProgressAllDone> {
     override fun read(buf: ByteBuffer): AddProgressAllDone =
         AddProgressAllDone(
@@ -22918,6 +23103,9 @@ data class AddProgressDone(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeAddProgressDone : FfiConverterRustBuffer<AddProgressDone> {
     override fun read(buf: ByteBuffer): AddProgressDone =
         AddProgressDone(
@@ -22960,6 +23148,9 @@ data class AddProgressFound(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeAddProgressFound : FfiConverterRustBuffer<AddProgressFound> {
     override fun read(buf: ByteBuffer): AddProgressFound =
         AddProgressFound(
@@ -23001,6 +23192,9 @@ data class AddProgressProgress(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeAddProgressProgress : FfiConverterRustBuffer<AddProgressProgress> {
     override fun read(buf: ByteBuffer): AddProgressProgress =
         AddProgressProgress(
@@ -23058,6 +23252,9 @@ data class BlobAddOutcome(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeBlobAddOutcome : FfiConverterRustBuffer<BlobAddOutcome> {
     override fun read(buf: ByteBuffer): BlobAddOutcome =
         BlobAddOutcome(
@@ -23115,6 +23312,9 @@ data class BlobInfo(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeBlobInfo : FfiConverterRustBuffer<BlobInfo> {
     override fun read(buf: ByteBuffer): BlobInfo =
         BlobInfo(
@@ -23152,6 +23352,9 @@ data class ClientConnected(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeClientConnected : FfiConverterRustBuffer<ClientConnected> {
     override fun read(buf: ByteBuffer): ClientConnected =
         ClientConnected(
@@ -23210,6 +23413,9 @@ data class CollectionInfo(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeCollectionInfo : FfiConverterRustBuffer<CollectionInfo> {
     override fun read(buf: ByteBuffer): CollectionInfo =
         CollectionInfo(
@@ -23254,6 +23460,9 @@ data class ConnectionTypeMixed(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeConnectionTypeMixed : FfiConverterRustBuffer<ConnectionTypeMixed> {
     override fun read(buf: ByteBuffer): ConnectionTypeMixed =
         ConnectionTypeMixed(
@@ -23292,6 +23501,9 @@ data class CounterStats(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeCounterStats : FfiConverterRustBuffer<CounterStats> {
     override fun read(buf: ByteBuffer): CounterStats =
         CounterStats(
@@ -23326,6 +23538,9 @@ data class DocExportProgressAbort(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeDocExportProgressAbort : FfiConverterRustBuffer<DocExportProgressAbort> {
     override fun read(buf: ByteBuffer): DocExportProgressAbort =
         DocExportProgressAbort(
@@ -23357,6 +23572,9 @@ data class DocExportProgressDone(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeDocExportProgressDone : FfiConverterRustBuffer<DocExportProgressDone> {
     override fun read(buf: ByteBuffer): DocExportProgressDone =
         DocExportProgressDone(
@@ -23411,6 +23629,9 @@ data class DocExportProgressFound(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeDocExportProgressFound : FfiConverterRustBuffer<DocExportProgressFound> {
     override fun read(buf: ByteBuffer): DocExportProgressFound =
         DocExportProgressFound(
@@ -23455,6 +23676,9 @@ data class DocExportProgressProgress(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeDocExportProgressProgress : FfiConverterRustBuffer<DocExportProgressProgress> {
     override fun read(buf: ByteBuffer): DocExportProgressProgress =
         DocExportProgressProgress(
@@ -23489,6 +23713,9 @@ data class DocImportProgressAbort(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeDocImportProgressAbort : FfiConverterRustBuffer<DocImportProgressAbort> {
     override fun read(buf: ByteBuffer): DocImportProgressAbort =
         DocImportProgressAbort(
@@ -23520,6 +23747,9 @@ data class DocImportProgressAllDone(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeDocImportProgressAllDone : FfiConverterRustBuffer<DocImportProgressAllDone> {
     override fun read(buf: ByteBuffer): DocImportProgressAllDone =
         DocImportProgressAllDone(
@@ -23559,6 +23789,9 @@ data class DocImportProgressFound(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeDocImportProgressFound : FfiConverterRustBuffer<DocImportProgressFound> {
     override fun read(buf: ByteBuffer): DocImportProgressFound =
         DocImportProgressFound(
@@ -23607,6 +23840,9 @@ data class DocImportProgressIngestDone(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeDocImportProgressIngestDone : FfiConverterRustBuffer<DocImportProgressIngestDone> {
     override fun read(buf: ByteBuffer): DocImportProgressIngestDone =
         DocImportProgressIngestDone(
@@ -23645,6 +23881,9 @@ data class DocImportProgressProgress(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeDocImportProgressProgress : FfiConverterRustBuffer<DocImportProgressProgress> {
     override fun read(buf: ByteBuffer): DocImportProgressProgress =
         DocImportProgressProgress(
@@ -23676,6 +23915,9 @@ data class DownloadProgressAbort(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeDownloadProgressAbort : FfiConverterRustBuffer<DownloadProgressAbort> {
     override fun read(buf: ByteBuffer): DownloadProgressAbort =
         DownloadProgressAbort(
@@ -23715,6 +23957,9 @@ data class DownloadProgressAllDone(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeDownloadProgressAllDone : FfiConverterRustBuffer<DownloadProgressAllDone> {
     override fun read(buf: ByteBuffer): DownloadProgressAllDone =
         DownloadProgressAllDone(
@@ -23752,6 +23997,9 @@ data class DownloadProgressDone(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeDownloadProgressDone : FfiConverterRustBuffer<DownloadProgressDone> {
     override fun read(buf: ByteBuffer): DownloadProgressDone =
         DownloadProgressDone(
@@ -23806,6 +24054,9 @@ data class DownloadProgressFound(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeDownloadProgressFound : FfiConverterRustBuffer<DownloadProgressFound> {
     override fun read(buf: ByteBuffer): DownloadProgressFound =
         DownloadProgressFound(
@@ -23857,6 +24108,9 @@ data class DownloadProgressFoundHashSeq(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeDownloadProgressFoundHashSeq : FfiConverterRustBuffer<DownloadProgressFoundHashSeq> {
     override fun read(buf: ByteBuffer): DownloadProgressFoundHashSeq =
         DownloadProgressFoundHashSeq(
@@ -23914,6 +24168,9 @@ data class DownloadProgressFoundLocal(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeDownloadProgressFoundLocal : FfiConverterRustBuffer<DownloadProgressFoundLocal> {
     override fun read(buf: ByteBuffer): DownloadProgressFoundLocal =
         DownloadProgressFoundLocal(
@@ -23951,6 +24208,9 @@ data class DownloadProgressInitialState(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeDownloadProgressInitialState : FfiConverterRustBuffer<DownloadProgressInitialState> {
     override fun read(buf: ByteBuffer): DownloadProgressInitialState =
         DownloadProgressInitialState(
@@ -23986,6 +24246,9 @@ data class DownloadProgressProgress(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeDownloadProgressProgress : FfiConverterRustBuffer<DownloadProgressProgress> {
     override fun read(buf: ByteBuffer): DownloadProgressProgress =
         DownloadProgressProgress(
@@ -24037,6 +24300,9 @@ data class GetRequestReceived(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeGetRequestReceived : FfiConverterRustBuffer<GetRequestReceived> {
     override fun read(buf: ByteBuffer): GetRequestReceived =
         GetRequestReceived(
@@ -24085,6 +24351,9 @@ data class HashAndTag(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeHashAndTag : FfiConverterRustBuffer<HashAndTag> {
     override fun read(buf: ByteBuffer): HashAndTag =
         HashAndTag(
@@ -24136,6 +24405,9 @@ data class IncompleteBlobInfo(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeIncompleteBlobInfo : FfiConverterRustBuffer<IncompleteBlobInfo> {
     override fun read(buf: ByteBuffer): IncompleteBlobInfo =
         IncompleteBlobInfo(
@@ -24190,6 +24462,9 @@ data class InsertRemoteEvent(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeInsertRemoteEvent : FfiConverterRustBuffer<InsertRemoteEvent> {
     override fun read(buf: ByteBuffer): InsertRemoteEvent =
         InsertRemoteEvent(
@@ -24231,6 +24506,9 @@ data class LatencyAndControlMsg(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeLatencyAndControlMsg : FfiConverterRustBuffer<LatencyAndControlMsg> {
     override fun read(buf: ByteBuffer): LatencyAndControlMsg =
         LatencyAndControlMsg(
@@ -24276,6 +24554,9 @@ data class LinkAndName(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeLinkAndName : FfiConverterRustBuffer<LinkAndName> {
     override fun read(buf: ByteBuffer): LinkAndName =
         LinkAndName(
@@ -24314,6 +24595,9 @@ data class MessageContent(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeMessageContent : FfiConverterRustBuffer<MessageContent> {
     override fun read(buf: ByteBuffer): MessageContent =
         MessageContent(
@@ -24352,6 +24636,9 @@ data class NamespaceAndCapability(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeNamespaceAndCapability : FfiConverterRustBuffer<NamespaceAndCapability> {
     override fun read(buf: ByteBuffer): NamespaceAndCapability =
         NamespaceAndCapability(
@@ -24443,6 +24730,9 @@ data class NodeOptions(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeNodeOptions : FfiConverterRustBuffer<NodeOptions> {
     override fun read(buf: ByteBuffer): NodeOptions =
         NodeOptions(
@@ -24509,6 +24799,9 @@ data class OpenState(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeOpenState : FfiConverterRustBuffer<OpenState> {
     override fun read(buf: ByteBuffer): OpenState =
         OpenState(
@@ -24564,6 +24857,9 @@ data class QueryOptions(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeQueryOptions : FfiConverterRustBuffer<QueryOptions> {
     override fun read(buf: ByteBuffer): QueryOptions =
         QueryOptions(
@@ -24641,6 +24937,9 @@ data class RemoteInfo(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeRemoteInfo : FfiConverterRustBuffer<RemoteInfo> {
     override fun read(buf: ByteBuffer): RemoteInfo =
         RemoteInfo(
@@ -24716,6 +25015,9 @@ data class SyncEvent(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeSyncEvent : FfiConverterRustBuffer<SyncEvent> {
     override fun read(buf: ByteBuffer): SyncEvent =
         SyncEvent(
@@ -24776,6 +25078,9 @@ data class TagInfo(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeTagInfo : FfiConverterRustBuffer<TagInfo> {
     override fun read(buf: ByteBuffer): TagInfo =
         TagInfo(
@@ -24830,6 +25135,9 @@ data class TaggedBlobAdded(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeTaggedBlobAdded : FfiConverterRustBuffer<TaggedBlobAdded> {
     override fun read(buf: ByteBuffer): TaggedBlobAdded =
         TaggedBlobAdded(
@@ -24876,6 +25184,9 @@ data class TransferAborted(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeTransferAborted : FfiConverterRustBuffer<TransferAborted> {
     override fun read(buf: ByteBuffer): TransferAborted =
         TransferAborted(
@@ -24942,6 +25253,9 @@ data class TransferBlobCompleted(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeTransferBlobCompleted : FfiConverterRustBuffer<TransferBlobCompleted> {
     override fun read(buf: ByteBuffer): TransferBlobCompleted =
         TransferBlobCompleted(
@@ -24993,6 +25307,9 @@ data class TransferCompleted(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeTransferCompleted : FfiConverterRustBuffer<TransferCompleted> {
     override fun read(buf: ByteBuffer): TransferCompleted =
         TransferCompleted(
@@ -25038,6 +25355,9 @@ data class TransferHashSeqStarted(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeTransferHashSeqStarted : FfiConverterRustBuffer<TransferHashSeqStarted> {
     override fun read(buf: ByteBuffer): TransferHashSeqStarted =
         TransferHashSeqStarted(
@@ -25101,6 +25421,9 @@ data class TransferProgress(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeTransferProgress : FfiConverterRustBuffer<TransferProgress> {
     override fun read(buf: ByteBuffer): TransferProgress =
         TransferProgress(
@@ -25141,6 +25464,9 @@ data class TransferStats(
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeTransferStats : FfiConverterRustBuffer<TransferStats> {
     override fun read(buf: ByteBuffer): TransferStats =
         TransferStats(
@@ -25197,6 +25523,9 @@ enum class AddProgressType {
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeAddProgressType : FfiConverterRustBuffer<AddProgressType> {
     override fun read(buf: ByteBuffer) =
         try {
@@ -25247,6 +25576,9 @@ enum class AddrInfoOptions {
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeAddrInfoOptions : FfiConverterRustBuffer<AddrInfoOptions> {
     override fun read(buf: ByteBuffer) =
         try {
@@ -25293,6 +25625,9 @@ enum class BlobExportFormat {
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeBlobExportFormat : FfiConverterRustBuffer<BlobExportFormat> {
     override fun read(buf: ByteBuffer) =
         try {
@@ -25346,6 +25681,9 @@ enum class BlobExportMode {
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeBlobExportMode : FfiConverterRustBuffer<BlobExportMode> {
     override fun read(buf: ByteBuffer) =
         try {
@@ -25384,6 +25722,9 @@ enum class BlobFormat {
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeBlobFormat : FfiConverterRustBuffer<BlobFormat> {
     override fun read(buf: ByteBuffer) =
         try {
@@ -25454,6 +25795,9 @@ enum class BlobProvideEventType {
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeBlobProvideEventType : FfiConverterRustBuffer<BlobProvideEventType> {
     override fun read(buf: ByteBuffer) =
         try {
@@ -25483,6 +25827,9 @@ sealed class CallbackException : kotlin.Exception() {
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeCallbackError : FfiConverterRustBuffer<CallbackException> {
     override fun read(buf: ByteBuffer): CallbackException =
         when (buf.getInt()) {
@@ -25527,6 +25874,9 @@ enum class CapabilityKind {
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeCapabilityKind : FfiConverterRustBuffer<CapabilityKind> {
     override fun read(buf: ByteBuffer) =
         try {
@@ -25575,6 +25925,9 @@ enum class ConnType {
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeConnType : FfiConverterRustBuffer<ConnType> {
     override fun read(buf: ByteBuffer) =
         try {
@@ -25618,6 +25971,9 @@ enum class ContentStatus {
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeContentStatus : FfiConverterRustBuffer<ContentStatus> {
     override fun read(buf: ByteBuffer) =
         try {
@@ -25673,6 +26029,9 @@ enum class DocExportProgressType {
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeDocExportProgressType : FfiConverterRustBuffer<DocExportProgressType> {
     override fun read(buf: ByteBuffer) =
         try {
@@ -25728,6 +26087,9 @@ enum class DocImportProgressType {
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeDocImportProgressType : FfiConverterRustBuffer<DocImportProgressType> {
     override fun read(buf: ByteBuffer) =
         try {
@@ -25765,6 +26127,9 @@ enum class DownloadProgressType {
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeDownloadProgressType : FfiConverterRustBuffer<DownloadProgressType> {
     override fun read(buf: ByteBuffer) =
         try {
@@ -25836,6 +26201,9 @@ enum class LiveEventType {
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeLiveEventType : FfiConverterRustBuffer<LiveEventType> {
     override fun read(buf: ByteBuffer) =
         try {
@@ -25870,6 +26238,9 @@ enum class LogLevel {
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeLogLevel : FfiConverterRustBuffer<LogLevel> {
     override fun read(buf: ByteBuffer) =
         try {
@@ -25900,6 +26271,9 @@ enum class MessageType {
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeMessageType : FfiConverterRustBuffer<MessageType> {
     override fun read(buf: ByteBuffer) =
         try {
@@ -25953,6 +26327,9 @@ enum class NodeDiscoveryConfig {
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeNodeDiscoveryConfig : FfiConverterRustBuffer<NodeDiscoveryConfig> {
     override fun read(buf: ByteBuffer) =
         try {
@@ -25992,6 +26369,9 @@ sealed class Origin {
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeOrigin : FfiConverterRustBuffer<Origin> {
     override fun read(buf: ByteBuffer): Origin =
         when (buf.getInt()) {
@@ -26058,6 +26438,9 @@ enum class ShareMode {
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeShareMode : FfiConverterRustBuffer<ShareMode> {
     override fun read(buf: ByteBuffer) =
         try {
@@ -26096,6 +26479,9 @@ enum class SortBy {
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeSortBy : FfiConverterRustBuffer<SortBy> {
     override fun read(buf: ByteBuffer) =
         try {
@@ -26134,6 +26520,9 @@ enum class SortDirection {
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeSortDirection : FfiConverterRustBuffer<SortDirection> {
     override fun read(buf: ByteBuffer) =
         try {
@@ -26182,6 +26571,9 @@ enum class SyncReason {
     companion object
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterTypeSyncReason : FfiConverterRustBuffer<SyncReason> {
     override fun read(buf: ByteBuffer) =
         try {
@@ -26200,6 +26592,9 @@ public object FfiConverterTypeSyncReason : FfiConverterRustBuffer<SyncReason> {
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalULong : FfiConverterRustBuffer<kotlin.ULong?> {
     override fun read(buf: ByteBuffer): kotlin.ULong? {
         if (buf.get().toInt() == 0) {
@@ -26229,6 +26624,9 @@ public object FfiConverterOptionalULong : FfiConverterRustBuffer<kotlin.ULong?> 
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalString : FfiConverterRustBuffer<kotlin.String?> {
     override fun read(buf: ByteBuffer): kotlin.String? {
         if (buf.get().toInt() == 0) {
@@ -26258,6 +26656,9 @@ public object FfiConverterOptionalString : FfiConverterRustBuffer<kotlin.String?
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalByteArray : FfiConverterRustBuffer<kotlin.ByteArray?> {
     override fun read(buf: ByteBuffer): kotlin.ByteArray? {
         if (buf.get().toInt() == 0) {
@@ -26287,6 +26688,9 @@ public object FfiConverterOptionalByteArray : FfiConverterRustBuffer<kotlin.Byte
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalDuration : FfiConverterRustBuffer<java.time.Duration?> {
     override fun read(buf: ByteBuffer): java.time.Duration? {
         if (buf.get().toInt() == 0) {
@@ -26316,6 +26720,9 @@ public object FfiConverterOptionalDuration : FfiConverterRustBuffer<java.time.Du
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeBlobProvideEventCallback : FfiConverterRustBuffer<BlobProvideEventCallback?> {
     override fun read(buf: ByteBuffer): BlobProvideEventCallback? {
         if (buf.get().toInt() == 0) {
@@ -26345,6 +26752,9 @@ public object FfiConverterOptionalTypeBlobProvideEventCallback : FfiConverterRus
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeDoc : FfiConverterRustBuffer<Doc?> {
     override fun read(buf: ByteBuffer): Doc? {
         if (buf.get().toInt() == 0) {
@@ -26374,6 +26784,9 @@ public object FfiConverterOptionalTypeDoc : FfiConverterRustBuffer<Doc?> {
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeDocExportFileCallback : FfiConverterRustBuffer<DocExportFileCallback?> {
     override fun read(buf: ByteBuffer): DocExportFileCallback? {
         if (buf.get().toInt() == 0) {
@@ -26403,6 +26816,9 @@ public object FfiConverterOptionalTypeDocExportFileCallback : FfiConverterRustBu
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeDocImportFileCallback : FfiConverterRustBuffer<DocImportFileCallback?> {
     override fun read(buf: ByteBuffer): DocImportFileCallback? {
         if (buf.get().toInt() == 0) {
@@ -26432,6 +26848,9 @@ public object FfiConverterOptionalTypeDocImportFileCallback : FfiConverterRustBu
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeEntry : FfiConverterRustBuffer<Entry?> {
     override fun read(buf: ByteBuffer): Entry? {
         if (buf.get().toInt() == 0) {
@@ -26461,6 +26880,9 @@ public object FfiConverterOptionalTypeEntry : FfiConverterRustBuffer<Entry?> {
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeLatencyAndControlMsg : FfiConverterRustBuffer<LatencyAndControlMsg?> {
     override fun read(buf: ByteBuffer): LatencyAndControlMsg? {
         if (buf.get().toInt() == 0) {
@@ -26490,6 +26912,9 @@ public object FfiConverterOptionalTypeLatencyAndControlMsg : FfiConverterRustBuf
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeQueryOptions : FfiConverterRustBuffer<QueryOptions?> {
     override fun read(buf: ByteBuffer): QueryOptions? {
         if (buf.get().toInt() == 0) {
@@ -26519,6 +26944,9 @@ public object FfiConverterOptionalTypeQueryOptions : FfiConverterRustBuffer<Quer
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeRemoteInfo : FfiConverterRustBuffer<RemoteInfo?> {
     override fun read(buf: ByteBuffer): RemoteInfo? {
         if (buf.get().toInt() == 0) {
@@ -26548,6 +26976,9 @@ public object FfiConverterOptionalTypeRemoteInfo : FfiConverterRustBuffer<Remote
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeTransferStats : FfiConverterRustBuffer<TransferStats?> {
     override fun read(buf: ByteBuffer): TransferStats? {
         if (buf.get().toInt() == 0) {
@@ -26577,6 +27008,9 @@ public object FfiConverterOptionalTypeTransferStats : FfiConverterRustBuffer<Tra
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalTypeNodeDiscoveryConfig : FfiConverterRustBuffer<NodeDiscoveryConfig?> {
     override fun read(buf: ByteBuffer): NodeDiscoveryConfig? {
         if (buf.get().toInt() == 0) {
@@ -26606,6 +27040,9 @@ public object FfiConverterOptionalTypeNodeDiscoveryConfig : FfiConverterRustBuff
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalSequenceByteArray : FfiConverterRustBuffer<List<kotlin.ByteArray>?> {
     override fun read(buf: ByteBuffer): List<kotlin.ByteArray>? {
         if (buf.get().toInt() == 0) {
@@ -26635,6 +27072,9 @@ public object FfiConverterOptionalSequenceByteArray : FfiConverterRustBuffer<Lis
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalMapByteArrayTypeProtocolCreator : FfiConverterRustBuffer<Map<kotlin.ByteArray, ProtocolCreator>?> {
     override fun read(buf: ByteBuffer): Map<kotlin.ByteArray, ProtocolCreator>? {
         if (buf.get().toInt() == 0) {
@@ -26664,6 +27104,9 @@ public object FfiConverterOptionalMapByteArrayTypeProtocolCreator : FfiConverter
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceString : FfiConverterRustBuffer<List<kotlin.String>> {
     override fun read(buf: ByteBuffer): List<kotlin.String> {
         val len = buf.getInt()
@@ -26689,6 +27132,9 @@ public object FfiConverterSequenceString : FfiConverterRustBuffer<List<kotlin.St
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceByteArray : FfiConverterRustBuffer<List<kotlin.ByteArray>> {
     override fun read(buf: ByteBuffer): List<kotlin.ByteArray> {
         val len = buf.getInt()
@@ -26714,6 +27160,9 @@ public object FfiConverterSequenceByteArray : FfiConverterRustBuffer<List<kotlin
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceTypeAuthorId : FfiConverterRustBuffer<List<AuthorId>> {
     override fun read(buf: ByteBuffer): List<AuthorId> {
         val len = buf.getInt()
@@ -26739,6 +27188,9 @@ public object FfiConverterSequenceTypeAuthorId : FfiConverterRustBuffer<List<Aut
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceTypeDirectAddrInfo : FfiConverterRustBuffer<List<DirectAddrInfo>> {
     override fun read(buf: ByteBuffer): List<DirectAddrInfo> {
         val len = buf.getInt()
@@ -26764,6 +27216,9 @@ public object FfiConverterSequenceTypeDirectAddrInfo : FfiConverterRustBuffer<Li
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceTypeEntry : FfiConverterRustBuffer<List<Entry>> {
     override fun read(buf: ByteBuffer): List<Entry> {
         val len = buf.getInt()
@@ -26789,6 +27244,9 @@ public object FfiConverterSequenceTypeEntry : FfiConverterRustBuffer<List<Entry>
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceTypeFilterKind : FfiConverterRustBuffer<List<FilterKind>> {
     override fun read(buf: ByteBuffer): List<FilterKind> {
         val len = buf.getInt()
@@ -26814,6 +27272,9 @@ public object FfiConverterSequenceTypeFilterKind : FfiConverterRustBuffer<List<F
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceTypeHash : FfiConverterRustBuffer<List<Hash>> {
     override fun read(buf: ByteBuffer): List<Hash> {
         val len = buf.getInt()
@@ -26839,6 +27300,9 @@ public object FfiConverterSequenceTypeHash : FfiConverterRustBuffer<List<Hash>> 
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceTypeNodeAddr : FfiConverterRustBuffer<List<NodeAddr>> {
     override fun read(buf: ByteBuffer): List<NodeAddr> {
         val len = buf.getInt()
@@ -26864,6 +27328,9 @@ public object FfiConverterSequenceTypeNodeAddr : FfiConverterRustBuffer<List<Nod
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceTypeCollectionInfo : FfiConverterRustBuffer<List<CollectionInfo>> {
     override fun read(buf: ByteBuffer): List<CollectionInfo> {
         val len = buf.getInt()
@@ -26889,6 +27356,9 @@ public object FfiConverterSequenceTypeCollectionInfo : FfiConverterRustBuffer<Li
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceTypeIncompleteBlobInfo : FfiConverterRustBuffer<List<IncompleteBlobInfo>> {
     override fun read(buf: ByteBuffer): List<IncompleteBlobInfo> {
         val len = buf.getInt()
@@ -26914,6 +27384,9 @@ public object FfiConverterSequenceTypeIncompleteBlobInfo : FfiConverterRustBuffe
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceTypeLinkAndName : FfiConverterRustBuffer<List<LinkAndName>> {
     override fun read(buf: ByteBuffer): List<LinkAndName> {
         val len = buf.getInt()
@@ -26939,6 +27412,9 @@ public object FfiConverterSequenceTypeLinkAndName : FfiConverterRustBuffer<List<
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceTypeNamespaceAndCapability : FfiConverterRustBuffer<List<NamespaceAndCapability>> {
     override fun read(buf: ByteBuffer): List<NamespaceAndCapability> {
         val len = buf.getInt()
@@ -26964,6 +27440,9 @@ public object FfiConverterSequenceTypeNamespaceAndCapability : FfiConverterRustB
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceTypeRemoteInfo : FfiConverterRustBuffer<List<RemoteInfo>> {
     override fun read(buf: ByteBuffer): List<RemoteInfo> {
         val len = buf.getInt()
@@ -26989,6 +27468,9 @@ public object FfiConverterSequenceTypeRemoteInfo : FfiConverterRustBuffer<List<R
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterSequenceTypeTagInfo : FfiConverterRustBuffer<List<TagInfo>> {
     override fun read(buf: ByteBuffer): List<TagInfo> {
         val len = buf.getInt()
@@ -27014,6 +27496,9 @@ public object FfiConverterSequenceTypeTagInfo : FfiConverterRustBuffer<List<TagI
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterMapStringTypeCounterStats : FfiConverterRustBuffer<Map<kotlin.String, CounterStats>> {
     override fun read(buf: ByteBuffer): Map<kotlin.String, CounterStats> {
         val len = buf.getInt()
@@ -27052,6 +27537,9 @@ public object FfiConverterMapStringTypeCounterStats : FfiConverterRustBuffer<Map
     }
 }
 
+/**
+ * @suppress
+ */
 public object FfiConverterMapByteArrayTypeProtocolCreator : FfiConverterRustBuffer<Map<kotlin.ByteArray, ProtocolCreator>> {
     override fun read(buf: ByteBuffer): Map<kotlin.ByteArray, ProtocolCreator> {
         val len = buf.getInt()

@@ -2,9 +2,9 @@ use std::pin::Pin;
 use std::sync::Arc;
 
 use futures::{Sink, SinkExt, StreamExt};
-use iroh::client::gossip::{SubscribeResponse, SubscribeUpdate};
 use iroh::gossip::net::GossipEvent;
 use iroh::net::NodeId;
+use iroh_gossip::rpc::{SubscribeResponse, SubscribeUpdate};
 use tokio::sync::Mutex;
 use tokio_util::sync::CancellationToken;
 use tracing::warn;

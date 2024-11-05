@@ -47,7 +47,7 @@ pub struct ProtocolHandler {
     pub shutdown: Option<ThreadsafeFunction<(), ()>>,
 }
 
-impl iroh::node::ProtocolHandler for ProtocolHandler {
+impl iroh::router::ProtocolHandler for ProtocolHandler {
     fn accept(
         self: Arc<Self>,
         conn: iroh::net::endpoint::Connecting,
@@ -353,7 +353,7 @@ impl From<iroh::client::NodeStatus> for NodeStatus {
 
 #[derive(Clone)]
 struct BlobProvideEvents {
-    callback: ThreadsafeFunction<BlobProvideEvent, ()>,
+    callback: Arc<ThreadsafeFunction<BlobProvideEvent, ()>>,
 }
 
 impl std::fmt::Debug for BlobProvideEvents {
@@ -364,7 +364,9 @@ impl std::fmt::Debug for BlobProvideEvents {
 
 impl BlobProvideEvents {
     fn new(callback: ThreadsafeFunction<BlobProvideEvent, ()>) -> Self {
-        Self { callback }
+        Self {
+            callback: Arc::new(callback),
+        }
     }
 }
 

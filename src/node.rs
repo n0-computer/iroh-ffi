@@ -245,7 +245,7 @@ struct ProtocolWrapper {
     handler: Arc<dyn ProtocolHandler>,
 }
 
-impl iroh::node::ProtocolHandler for ProtocolWrapper {
+impl iroh::router::ProtocolHandler for ProtocolWrapper {
     fn accept(
         self: Arc<Self>,
         conn: iroh::net::endpoint::Connecting,
