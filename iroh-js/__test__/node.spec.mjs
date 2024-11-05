@@ -61,7 +61,7 @@ test('custom protocol', async (t) => {
         t.is(bytes.toString(), 'yo')
         await bi.send.writeAll(Buffer.from('hello'))
         await bi.send.finish()
-        await bi.send.stopped()
+        await conn.closed()
       },
       shutdown: (err) => {
         if (err != null) {
@@ -80,8 +80,7 @@ test('custom protocol', async (t) => {
   const nodeAddr = await node1.net.nodeAddr()
 
   const node2 = await Iroh.memory({ protocols })
-  const status = await node2.node.status()
-  console.log(`status ${status.version}`)
+
   const endpoint = node2.node.endpoint()
   console.log(`connecting to ${nodeAddr.nodeId}`)
 
@@ -93,7 +92,6 @@ test('custom protocol', async (t) => {
 
   await bi.send.writeAll(Buffer.from('yo'))
   await bi.send.finish()
-  await bi.send.stopped()
 
   let out = Buffer.alloc(5)
   await bi.recv.readExact(out)
