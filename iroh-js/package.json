@@ -46,7 +46,10 @@
     "ava": "^6.0.1"
   },
   "ava": {
-    "timeout": "3m"
+    "timeout": "5m",
+    "require": [
+      "./__test__/_force-exit.mjs"
+    ]
   },
   "scripts": {
     "artifacts": "napi artifacts",

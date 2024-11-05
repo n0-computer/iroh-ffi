@@ -37,6 +37,8 @@ test('add blob from path', async (t) => {
   t.is(allDone.format, 'Raw')
   t.truthy(allDone.tag)
   t.truthy(allDone.hash)
+
+  await node.node.shutdown(false)
 })
 
 test('hash basics', (t) => {
@@ -101,6 +103,8 @@ test('collections', async (t) => {
   t.is(collectionList.length, 1)
   t.is(collectionList[0].hash, res.hash)
   t.is(collectionList[0].totalBlobsCount, BigInt(numFiles + 1))
+
+  await node.node.shutdown(false)
 })
 
 test('share', async (t) => {
@@ -114,6 +118,8 @@ test('share', async (t) => {
   t.is(ticket.format, res.format)
   t.is(ticket.hash, res.hash)
   t.deepEqual(ticket.nodeAddr, nodeAddr)
+
+  await node.node.shutdown(false)
 })
 
 test('provide events', async (t) => {
@@ -167,4 +173,7 @@ test('provide events', async (t) => {
   await promise1
 
   t.is(events.length, 4)
+
+  await node1.node.shutdown(false)
+  await node2.node.shutdown(false)
 })
