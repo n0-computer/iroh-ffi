@@ -114,6 +114,8 @@ runBlocking {
     val gotBytes = node.blobs().readToBytes(hash)
     assert(gotBytes.size == blobSize)
     assert(gotBytes contentEquals bytes)
+
+    node.node().shutdown()
 }
 
 // test functionality between reading bytes from a path and writing bytes to a path
@@ -177,6 +179,8 @@ runBlocking {
     val gotBytesFile = java.io.File(outPath).readBytes()
     assert(gotBytesFile.size == blobSize)
     assert(gotBytesFile contentEquals bytes)
+
+    node.node().shutdown()
 }
 
 // Collections
@@ -250,6 +254,8 @@ runBlocking {
     // collections also create a metadata hash that is not accounted for
     // in the list of hashes
     assert(collectionHashes.size + 1 == gotHashes.size)
+
+    node.node().shutdown()
 }
 
 // List and delete
@@ -297,4 +303,6 @@ runBlocking {
             throw Exception(String.format("blob $removeHash should have been removed"))
         }
     }
+
+    node.node().shutdown()
 }

@@ -70,6 +70,9 @@ runBlocking {
             break
         }
     }
+
+    node1.node().shutdown()
+    node0.node().shutdown()
 }
 
 class MyProtocol : ProtocolHandler {

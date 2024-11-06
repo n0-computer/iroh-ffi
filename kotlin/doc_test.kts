@@ -103,6 +103,13 @@ runBlocking {
     val entry = doc.getOne(query)!!
     assert(hash.equal(entry.contentHash()))
     assert(v.size.toULong() == entry.contentLen())
-    val gotVal = entry.contentBytes(doc)
+    val gotVal: ByteArray = try {
+         entry.contentBytes(doc)
+    } catch (e: IrohException) {
+        println("failed content bytes ${e.message}")
+        throw e
+    }
+
     assert(v contentEquals gotVal)
+    node.node().shutdown()
 }
