@@ -667,10 +667,15 @@ impl Entry {
     /// before calling [`Self::content_bytes`].
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn content_bytes(&self, doc: Arc<Doc>) -> Result<Vec<u8>, IrohError> {
-        let res = self.0.content_bytes(&doc.inner).await.map(|c| c.to_vec()).map_err(|e| {
-            eprintln!(" failed content bytes: {:?}", e);
-            e
-        })?;
+        let res = self
+            .0
+            .content_bytes(&doc.inner)
+            .await
+            .map(|c| c.to_vec())
+            .map_err(|e| {
+                eprintln!(" failed content bytes: {:?}", e);
+                e
+            })?;
         Ok(res)
     }
 }
