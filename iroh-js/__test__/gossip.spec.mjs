@@ -68,8 +68,8 @@ test('gossip basic', async (t) => {
   await sink0.close()
   await sink1.close()
 
-  await n0.node.shutdown(false)
-  await n1.node.shutdown(false)
+  await n0.node.shutdown()
+  await n1.node.shutdown()
 
   t.pass()
 })

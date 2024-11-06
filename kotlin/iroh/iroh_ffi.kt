@@ -2386,10 +2386,7 @@ internal interface UniffiLib : Library {
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    fun uniffi_iroh_ffi_fn_method_node_shutdown(
-        `ptr`: Pointer,
-        `force`: Byte,
-    ): Long
+    fun uniffi_iroh_ffi_fn_method_node_shutdown(`ptr`: Pointer): Long
 
     fun uniffi_iroh_ffi_fn_method_node_stats(`ptr`: Pointer): Long
 
@@ -4118,7 +4115,7 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_method_node_my_rpc_addr() != 34751.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_node_shutdown() != 21075.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_node_shutdown() != 49624.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_node_stats() != 13439.toShort()) {
@@ -18105,7 +18102,7 @@ public interface NodeInterface {
     /**
      * Shutdown this iroh node.
      */
-    suspend fun `shutdown`(`force`: kotlin.Boolean)
+    suspend fun `shutdown`()
 
     /**
      * Get statistics of the running node.
@@ -18239,12 +18236,11 @@ open class Node :
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `shutdown`(`force`: kotlin.Boolean) =
+    override suspend fun `shutdown`() =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
                 UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_node_shutdown(
                     thisPtr,
-                    FfiConverterBoolean.lower(`force`),
                 )
             },
             { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },

@@ -70,6 +70,9 @@ runBlocking {
             break
         }
     }
+
+    node1.node().shutdown()
+    node0.node().shutdown()
 }
 
 class MyProtocol : ProtocolHandler {
@@ -135,6 +138,6 @@ runBlocking {
     println(o.toString(Charsets.UTF_8))
     assert("hello".toByteArray(Charsets.UTF_8) contentEquals o)
 
-    node2.node().shutdown(false)
-    node1.node().shutdown(false)
+    node2.node().shutdown()
+    node1.node().shutdown()
 }

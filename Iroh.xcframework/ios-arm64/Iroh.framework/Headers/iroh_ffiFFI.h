@@ -1806,7 +1806,7 @@ RustBuffer uniffi_iroh_ffi_fn_method_node_my_rpc_addr(void*_Nonnull ptr, RustCal
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_SHUTDOWN
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_SHUTDOWN
-uint64_t uniffi_iroh_ffi_fn_method_node_shutdown(void*_Nonnull ptr, int8_t force
+uint64_t uniffi_iroh_ffi_fn_method_node_shutdown(void*_Nonnull ptr
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_STATS

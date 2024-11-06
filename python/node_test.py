@@ -122,5 +122,5 @@ async def test_custom_protocol():
     print("", out)
     assert b"hello", out
 
-    await node_2.node().shutdown(True)
-    await node_1.node().shutdown(True)
+    await node_2.node().shutdown()
+    await node_1.node().shutdown()

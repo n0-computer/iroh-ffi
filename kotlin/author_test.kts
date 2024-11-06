@@ -31,4 +31,6 @@ kotlinx.coroutines.runBlocking {
 
     // check there is 1 author on the node
     assert(node.authors().list().size == 2)
+
+    node.node().shutdown()
 }
