@@ -41,7 +41,6 @@ test('rpc client memory node', async (t) => {
 
 
 test('custom protocol', async (t) => {
-  t.plan(4)
   const alpn = Buffer.from('iroh-example/hello/0')
 
   const protocols = {
