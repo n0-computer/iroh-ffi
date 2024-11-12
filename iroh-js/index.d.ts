@@ -648,20 +648,18 @@ export interface AddProgressProgress {
 }
 
 /** Options when creating a ticket */
-export declare const enum AddrInfoOptions {
-  /**
-   * Only the Node ID is added.
-   *
-   * This usually means that iroh-dns discovery is used to find address information.
-   */
-  Id = 'Id',
-  /** Include both the relay URL and the direct addresses. */
-  RelayAndAddresses = 'RelayAndAddresses',
-  /** Only include the relay URL. */
-  Relay = 'Relay',
-  /** Only include the direct addresses. */
-  Addresses = 'Addresses'
-}
+export type AddrInfoOptions = /**
+ * Only the Node ID is added.
+ *
+ * This usually means that iroh-dns discovery is used to find address information.
+ */
+'Id'|
+/** Include both the relay URL and the direct addresses. */
+'RelayAndAddresses'|
+/** Only include the relay URL. */
+'Relay'|
+/** Only include the direct addresses. */
+'Addresses';
 
 /** Outcome of a blob add operation. */
 export interface BlobAddOutcome {
@@ -676,22 +674,20 @@ export interface BlobAddOutcome {
 }
 
 /** The expected format of a hash being exported. */
-export declare const enum BlobExportFormat {
-  /** The hash refers to any blob and will be exported to a single file. */
-  Blob = 'Blob',
-  /**
-   * The hash refers to a [`crate::format::collection::Collection`] blob
-   * and all children of the collection shall be exported to one file per child.
-   *
-   * If the blob can be parsed as a [`BlobFormat::HashSeq`], and the first child contains
-   * collection metadata, all other children of the collection will be exported to
-   * a file each, with their collection name treated as a relative path to the export
-   * destination path.
-   *
-   * If the blob cannot be parsed as a collection, the operation will fail.
-   */
-  Collection = 'Collection'
-}
+export type BlobExportFormat = /** The hash refers to any blob and will be exported to a single file. */
+'Blob'|
+/**
+ * The hash refers to a [`crate::format::collection::Collection`] blob
+ * and all children of the collection shall be exported to one file per child.
+ *
+ * If the blob can be parsed as a [`BlobFormat::HashSeq`]| and the first child contains
+ * collection metadata| all other children of the collection will be exported to
+ * a file each| with their collection name treated as a relative path to the export
+ * destination path.
+ *
+ * If the blob cannot be parsed as a collection| the operation will fail.
+ */
+'Collection';
 
 /**
  * The export mode describes how files will be exported.
@@ -701,34 +697,30 @@ export declare const enum BlobExportFormat {
  * to copy the file into memory. Also, a disk based implementation might choose
  * to copy small files even if the mode is `Reference`.
  */
-export declare const enum BlobExportMode {
-  /**
-   * This mode will copy the file to the target directory.
-   *
-   * This is the safe default because the file can not be accidentally modified
-   * after it has been exported.
-   */
-  Copy = 'Copy',
-  /**
-   * This mode will try to move the file to the target directory and then reference it from
-   * the database.
-   *
-   * This has a large performance and storage benefit, but it is less safe since
-   * the file might be modified in the target directory after it has been exported.
-   *
-   * Stores are allowed to ignore this mode and always copy the file, e.g.
-   * if the file is very small or if the store does not support referencing files.
-   */
-  TryReference = 'TryReference'
-}
+export type BlobExportMode = /**
+ * This mode will copy the file to the target directory.
+ *
+ * This is the safe default because the file can not be accidentally modified
+ * after it has been exported.
+ */
+'Copy'|
+/**
+ * This mode will try to move the file to the target directory and then reference it from
+ * the database.
+ *
+ * This has a large performance and storage benefit| but it is less safe since
+ * the file might be modified in the target directory after it has been exported.
+ *
+ * Stores are allowed to ignore this mode and always copy the file| e.g.
+ * if the file is very small or if the store does not support referencing files.
+ */
+'TryReference';
 
 /** A format identifier */
-export declare const enum BlobFormat {
-  /** Raw blob */
-  Raw = 'Raw',
-  /** A sequence of BLAKE3 hashes */
-  HashSeq = 'HashSeq'
-}
+export type BlobFormat = /** Raw blob */
+'Raw'|
+/** A sequence of BLAKE3 hashes */
+'HashSeq';
 
 /** A response to a list blobs request */
 export interface BlobInfo {
@@ -765,12 +757,10 @@ export interface BlobProvideEvent {
   transferAborted?: TransferAborted
 }
 
-export declare const enum CapabilityKind {
-  /** A writable replica. */
-  Write = 'Write',
-  /** A readable replica. */
-  Read = 'Read'
-}
+export type CapabilityKind = /** A writable replica. */
+'Write'|
+/** A readable replica. */
+'Read';
 
 /** A new client connected to the node. */
 export interface ClientConnected {
@@ -807,26 +797,22 @@ export interface ConnectionType {
 }
 
 /** The type of the connection */
-export declare const enum ConnType {
-  /** Indicates you have a UDP connection. */
-  Direct = 'Direct',
-  /** Indicates you have a relayed connection. */
-  Relay = 'Relay',
-  /** Indicates you have an unverified UDP connection, and a relay connection for backup. */
-  Mixed = 'Mixed',
-  /** Indicates you have no proof of connection. */
-  None = 'None'
-}
+export type ConnType = /** Indicates you have a UDP connection. */
+'Direct'|
+/** Indicates you have a relayed connection. */
+'Relay'|
+/** Indicates you have an unverified UDP connection| and a relay connection for backup. */
+'Mixed'|
+/** Indicates you have no proof of connection. */
+'None';
 
 /** Whether the content status is available on a node. */
-export declare const enum ContentStatus {
-  /** The content is completely available. */
-  Complete = 'Complete',
-  /** The content is partially available. */
-  Incomplete = 'Incomplete',
-  /** The content is missing. */
-  Missing = 'Missing'
-}
+export type ContentStatus = /** The content is completely available. */
+'Complete'|
+/** The content is partially available. */
+'Incomplete'|
+/** The content is missing. */
+'Missing';
 
 /** Stats counter */
 export interface CounterStats {
@@ -940,22 +926,20 @@ export interface DocImportProgressProgress {
 }
 
 /** The type of `DocImportProgress` event */
-export declare const enum DocImportProgressType {
-  /** An item was found with name `name`, from now on referred to via `id` */
-  Found = 'Found',
-  /** We got progress ingesting item `id`. */
-  Progress = 'Progress',
-  /** We are done ingesting `id`, and the hash is `hash`. */
-  IngestDone = 'IngestDone',
-  /** We are done with the whole operation. */
-  AllDone = 'AllDone',
-  /**
-   * We got an error and need to abort.
-   *
-   * This will be the last message in the stream.
-   */
-  Abort = 'Abort'
-}
+export type DocImportProgressType = /** An item was found with name `name`| from now on referred to via `id` */
+'Found'|
+/** We got progress ingesting item `id`. */
+'Progress'|
+/** We are done ingesting `id`| and the hash is `hash`. */
+'IngestDone'|
+/** We are done with the whole operation. */
+'AllDone'|
+/**
+ * We got an error and need to abort.
+ *
+ * This will be the last message in the stream.
+ */
+'Abort';
 
 /** Progress updates for the get operation. */
 export interface DownloadProgress {
@@ -1185,14 +1169,12 @@ export interface LiveEventNeighborUp {
 }
 
 /** The logging level. See the rust (log crate)[https://docs.rs/log] for more information. */
-export declare const enum LogLevel {
-  Trace = 'Trace',
-  Debug = 'Debug',
-  Info = 'Info',
-  Warn = 'Warn',
-  Error = 'Error',
-  Off = 'Off'
-}
+export type LogLevel =  'Trace'|
+'Debug'|
+'Info'|
+'Warn'|
+'Error'|
+'Off';
 
 /** Gossip message */
 export interface Message {
@@ -1232,33 +1214,31 @@ export interface NodeAddr {
   addresses?: Array<string>
 }
 
-export declare const enum NodeDiscoveryConfig {
-  /** Use no node discovery mechanism. */
-  None = 'None',
-  /**
-   * Use the default discovery mechanism.
-   *
-   * This uses two discovery services concurrently:
-   *
-   * - It publishes to a pkarr service operated by [number 0] which makes the information
-   *   available via DNS in the `iroh.link` domain.
-   *
-   * - It uses an mDNS-like system to announce itself on the local network.
-   *
-   * # Usage during tests
-   *
-   * Note that the default changes when compiling with `cfg(test)` or the `test-utils`
-   * cargo feature from [iroh-net] is enabled.  In this case only the Pkarr/DNS service
-   * is used, but on the `iroh.test` domain.  This domain is not integrated with the
-   * global DNS network and thus node discovery is effectively disabled.  To use node
-   * discovery in a test use the [`iroh_net::test_utils::DnsPkarrServer`] in the test and
-   * configure it here as a custom discovery mechanism ([`DiscoveryConfig::Custom`]).
-   *
-   * [number 0]: https://n0.computer
-   * [iroh-net]: crate::net
-   */
-  Default = 'Default'
-}
+export type NodeDiscoveryConfig = /** Use no node discovery mechanism. */
+'None'|
+/**
+ * Use the default discovery mechanism.
+ *
+ * This uses two discovery services concurrently:
+ *
+ * - It publishes to a pkarr service operated by [number 0] which makes the information
+ *   available via DNS in the `iroh.link` domain.
+ *
+ * - It uses an mDNS-like system to announce itself on the local network.
+ *
+ * # Usage during tests
+ *
+ * Note that the default changes when compiling with `cfg(test)` or the `test-utils`
+ * cargo feature from [iroh-net] is enabled.  In this case only the Pkarr/DNS service
+ * is used| but on the `iroh.test` domain.  This domain is not integrated with the
+ * global DNS network and thus node discovery is effectively disabled.  To use node
+ * discovery in a test use the [`iroh_net::test_utils::DnsPkarrServer`] in the test and
+ * configure it here as a custom discovery mechanism ([`DiscoveryConfig::Custom`]).
+ *
+ * [number 0]: https://n0.computer
+ * [iroh-net]: crate::net
+ */
+'Default';
 
 /** Options passed to [`IrohNode.new`]. Controls the behaviour of an iroh node.# */
 export interface NodeOptions {
@@ -1309,18 +1289,16 @@ export interface OpenState {
 }
 
 /** Why we performed a sync exchange */
-export declare const enum Origin {
-  /** Direct join request via API */
-  ConnectDirectJoin = 'ConnectDirectJoin',
-  /** Peer showed up as new neighbor in the gossip swarm */
-  ConnectNewNeighbor = 'ConnectNewNeighbor',
-  /** We synced after receiving a sync report that indicated news for us */
-  ConnectSyncReport = 'ConnectSyncReport',
-  /** We received a sync report while a sync was running, so run again afterwars */
-  ConnectResync = 'ConnectResync',
-  /** A peer connected to us and we accepted the exchange */
-  Accept = 'Accept'
-}
+export type Origin = /** Direct join request via API */
+'ConnectDirectJoin'|
+/** Peer showed up as new neighbor in the gossip swarm */
+'ConnectNewNeighbor'|
+/** We synced after receiving a sync report that indicated news for us */
+'ConnectSyncReport'|
+/** We received a sync report while a sync was running| so run again afterwars */
+'ConnectResync'|
+/** A peer connected to us and we accepted the exchange */
+'Accept';
 
 /**
  * Helper function that creates a document key from a canonicalized path, removing the `root` and adding the `prefix`, if they exist
@@ -1366,14 +1344,12 @@ export interface ReadAtLen {
 }
 
 /** Defines the way to read bytes. */
-export declare const enum ReadAtLenType {
-  /** Reads all available bytes. */
-  All = 'All',
-  /** Reads exactly this many bytes, erroring out on larger or smaller. */
-  Exact = 'Exact',
-  /** Reads at most this many bytes. */
-  AtMost = 'AtMost'
-}
+export type ReadAtLenType = /** Reads all available bytes. */
+'All'|
+/** Reads exactly this many bytes| erroring out on larger or smaller. */
+'Exact'|
+/** Reads at most this many bytes. */
+'AtMost';
 
 /** Information about a connection */
 export interface RemoteInfo {
@@ -1398,28 +1374,22 @@ export interface RemoteInfo {
 export declare function setLogLevel(level: LogLevel): void
 
 /** Intended capability for document share tickets */
-export declare const enum ShareMode {
-  /** Read-only access */
-  Read = 'Read',
-  /** Write access */
-  Write = 'Write'
-}
+export type ShareMode = /** Read-only access */
+'Read'|
+/** Write access */
+'Write';
 
 /** Fields by which the query can be sorted */
-export declare const enum SortBy {
-  /** Sort by key, then author. */
-  KeyAuthor = 'KeyAuthor',
-  /** Sort by author, then key. */
-  AuthorKey = 'AuthorKey'
-}
+export type SortBy = /** Sort by key| then author. */
+'KeyAuthor'|
+/** Sort by author| then key. */
+'AuthorKey';
 
 /** Sort direction */
-export declare const enum SortDirection {
-  /** Sort ascending */
-  Asc = 'Asc',
-  /** Sort descending */
-  Desc = 'Desc'
-}
+export type SortDirection = /** Sort ascending */
+'Asc'|
+/** Sort descending */
+'Desc';
 
 /** Initialize the global metrics collection. */
 export declare function startMetricsCollection(): void
@@ -1439,16 +1409,14 @@ export interface SyncEvent {
 }
 
 /** Why we started a sync request */
-export declare const enum SyncReason {
-  /** Direct join request via API */
-  DirectJoin = 'DirectJoin',
-  /** Peer showed up as new neighbor in the gossip swarm */
-  NewNeighbor = 'NewNeighbor',
-  /** We synced after receiving a sync report that indicated news for us */
-  SyncReport = 'SyncReport',
-  /** We received a sync report while a sync was running, so run again afterwars */
-  Resync = 'Resync'
-}
+export type SyncReason = /** Direct join request via API */
+'DirectJoin'|
+/** Peer showed up as new neighbor in the gossip swarm */
+'NewNeighbor'|
+/** We synced after receiving a sync report that indicated news for us */
+'SyncReport'|
+/** We received a sync report while a sync was running| so run again afterwars */
+'Resync';
 
 /** An BlobProvide event indicating a new tagged blob or collection was added */
 export interface TaggedBlobAdded {
