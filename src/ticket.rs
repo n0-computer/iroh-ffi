@@ -29,8 +29,19 @@ impl std::fmt::Display for NodeTicket {
 
 #[uniffi::export]
 impl NodeTicket {
+    /// Wrap the given [`NodeAddr`] as a [`NodeTicket`].
+    ///
+    /// The returned ticket can easily be deserialized using its string presentation, and
+    /// later parsed again using [`Self::parse`].
     #[uniffi::constructor]
-    pub fn new(str: String) -> Result<Self, IrohError> {
+    pub fn new(addr: &NodeAddr) -> Result<Self, IrohError> {
+        let inner = TryInto::<iroh::base::node_addr::NodeAddr>::try_into(addr.clone())?;
+        Ok(iroh::base::ticket::NodeTicket::new(inner).into())
+    }
+
+    /// Parse back a [`NodeTicket`] from its string presentation.
+    #[uniffi::constructor]
+    pub fn parse(str: String) -> Result<Self, IrohError> {
         let ticket = iroh::base::ticket::NodeTicket::from_str(&str).map_err(anyhow::Error::from)?;
         Ok(NodeTicket(ticket))
     }
