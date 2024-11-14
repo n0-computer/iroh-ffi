@@ -5,6 +5,54 @@ use crate::blob::{BlobDownloadOptions, BlobFormat, Hash};
 use crate::doc::NodeAddr;
 use crate::error::IrohError;
 
+/// A token containing information for establishing a connection to a node.
+///
+/// This allows establishing a connection to the node in most circumstances where it is
+/// possible to do so.
+///
+/// It is a single item which can be easily serialized and deserialized.
+#[derive(Debug, uniffi::Object)]
+#[uniffi::export(Display)]
+pub struct NodeTicket(iroh::base::ticket::NodeTicket);
+
+impl From<iroh::base::ticket::NodeTicket> for NodeTicket {
+    fn from(ticket: iroh::base::ticket::NodeTicket) -> Self {
+        NodeTicket(ticket)
+    }
+}
+
+impl std::fmt::Display for NodeTicket {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+#[uniffi::export]
+impl NodeTicket {
+    /// Wrap the given [`NodeAddr`] as a [`NodeTicket`].
+    ///
+    /// The returned ticket can easily be deserialized using its string presentation, and
+    /// later parsed again using [`Self::parse`].
+    #[uniffi::constructor]
+    pub fn new(addr: &NodeAddr) -> Result<Self, IrohError> {
+        let inner = TryInto::<iroh::base::node_addr::NodeAddr>::try_into(addr.clone())?;
+        Ok(iroh::base::ticket::NodeTicket::new(inner).into())
+    }
+
+    /// Parse back a [`NodeTicket`] from its string presentation.
+    #[uniffi::constructor]
+    pub fn parse(str: String) -> Result<Self, IrohError> {
+        let ticket = iroh::base::ticket::NodeTicket::from_str(&str).map_err(anyhow::Error::from)?;
+        Ok(NodeTicket(ticket))
+    }
+
+    /// The [`NodeAddr`] of the provider for this ticket.
+    pub fn node_addr(&self) -> Arc<NodeAddr> {
+        let addr = self.0.node_addr().clone();
+        Arc::new(addr.into())
+    }
+}
+
 /// A token containing everything to get a file from the provider.
 ///
 /// It is a single item which can be easily serialized and deserialized.
