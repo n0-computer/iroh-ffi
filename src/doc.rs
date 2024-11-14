@@ -2,6 +2,7 @@ use std::{path::PathBuf, str::FromStr, sync::Arc, time::SystemTime};
 
 use bytes::Bytes;
 use futures::{StreamExt, TryStreamExt};
+use quic_rpc::transport::flume::FlumeConnector;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -28,20 +29,26 @@ impl From<iroh::docs::CapabilityKind> for CapabilityKind {
 /// Iroh docs client.
 #[derive(uniffi::Object)]
 pub struct Docs {
-    node: Iroh,
+    docs: Arc<iroh_docs::engine::Engine<iroh_blobs::store::fs::Store>>,
 }
 
 #[uniffi::export]
 impl Iroh {
     /// Access to docs specific funtionaliy.
     pub fn docs(&self) -> Docs {
-        Docs { node: self.clone() }
+        let docs = self
+            .get_protocol(iroh_docs::net::DOCS_ALPN)
+            .expect("missing docs");
+        Docs { docs }
     }
 }
 
+type MemConnector = FlumeConnector<iroh_docs::rpc::proto::Response, iroh_docs::rpc::proto::Request>;
+type MemClient = iroh_docs::rpc::client::docs::Client<MemConnector>;
+
 impl Docs {
-    fn client(&self) -> &iroh::client::Iroh {
-        self.node.inner_client()
+    fn client(&self) -> &MemClient {
+        self.docs.client()
     }
 }
 
@@ -50,7 +57,7 @@ impl Docs {
     /// Create a new doc.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn create(&self) -> Result<Arc<Doc>, IrohError> {
-        let doc = self.client().docs().create().await?;
+        let doc = self.client().create().await?;
 
         Ok(Arc::new(Doc { inner: doc }))
     }
@@ -58,7 +65,7 @@ impl Docs {
     /// Join and sync with an already existing document.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn join(&self, ticket: &DocTicket) -> Result<Arc<Doc>, IrohError> {
-        let doc = self.client().docs().import(ticket.clone().into()).await?;
+        let doc = self.client().import(ticket.clone().into()).await?;
         Ok(Arc::new(Doc { inner: doc }))
     }
 
@@ -71,7 +78,6 @@ impl Docs {
     ) -> Result<Arc<Doc>, IrohError> {
         let (doc, mut stream) = self
             .client()
-            .docs()
             .import_and_subscribe(ticket.clone().into())
             .await?;
 
@@ -98,7 +104,6 @@ impl Docs {
     pub async fn list(&self) -> Result<Vec<NamespaceAndCapability>, IrohError> {
         let docs = self
             .client()
-            .docs()
             .list()
             .await?
             .map_ok(|(namespace, capability)| NamespaceAndCapability {
@@ -117,7 +122,7 @@ impl Docs {
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn open(&self, id: String) -> Result<Option<Arc<Doc>>, IrohError> {
         let namespace_id = iroh::docs::NamespaceId::from_str(&id)?;
-        let doc = self.client().docs().open(namespace_id).await?;
+        let doc = self.client().open(namespace_id).await?;
 
         Ok(doc.map(|d| Arc::new(Doc { inner: d })))
     }
@@ -131,7 +136,6 @@ impl Docs {
     pub async fn drop_doc(&self, doc_id: String) -> Result<(), IrohError> {
         let doc_id = iroh::docs::NamespaceId::from_str(&doc_id)?;
         self.client()
-            .docs()
             .drop_doc(doc_id)
             .await
             .map_err(IrohError::from)
@@ -150,7 +154,7 @@ pub struct NamespaceAndCapability {
 /// A representation of a mutable, synchronizable key-value store.
 #[derive(Clone, uniffi::Object)]
 pub struct Doc {
-    pub(crate) inner: iroh::client::Doc,
+    pub(crate) inner: iroh::client::Doc<MemConnector>,
 }
 
 #[uniffi::export]
@@ -659,16 +663,6 @@ impl Entry {
     #[uniffi::method]
     pub fn timestamp(&self) -> u64 {
         self.0.timestamp()
-    }
-
-    /// Read all content of an [`Entry`] into a buffer.
-    /// This allocates a buffer for the full entry. Use only if you know that the entry you're
-    /// reading is small. If not sure, use [`Self::content_len`] and check the size with
-    /// before calling [`Self::content_bytes`].
-    #[uniffi::method(async_runtime = "tokio")]
-    pub async fn content_bytes(&self, doc: Arc<Doc>) -> Result<Vec<u8>, IrohError> {
-        let res = self.0.content_bytes(&doc.inner).await.map(|c| c.to_vec())?;
-        Ok(res)
     }
 }
 
@@ -1814,7 +1808,11 @@ mod tests {
 
         assert!(hash.equal(&entry.content_hash()));
 
-        let got_val = entry.content_bytes(doc).await.unwrap();
+        let got_val = node
+            .blobs()
+            .read_to_bytes(entry.content_hash())
+            .await
+            .unwrap();
         assert_eq!(val, got_val);
         assert_eq!(val.len() as u64, entry.content_len());
     }

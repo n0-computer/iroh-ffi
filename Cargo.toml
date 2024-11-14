@@ -14,9 +14,7 @@ documentation = "https://iroh.computer/docs"
 rust-version = "1.75"
 
 [workspace]
-members = [
-  "iroh-js",
-]
+members = ["iroh-js"]
 
 [package.metadata.maturin]
 name = "iroh"
@@ -37,6 +35,9 @@ bytes = "1"
 data-encoding = { version = "2.3.3" }
 iroh = { version = "0.28.1" }
 iroh-io = { version = "0.6" }
+iroh-gossip = { version = "0.28", features = ["rpc"] }
+iroh-docs = { version = "0.28", features = ["rpc"] }
+iroh-blobs = { version = "0.28", features = ["rpc"] }
 libc = "0.2.141"
 num_cpus = { version = "1.15.0" }
 range-collections = "0.4.0"
@@ -53,7 +54,8 @@ serde = { version = "1.0.196", features = ["derive"] }
 serde_json = "1.0.113"
 futures-lite = "2.3.0"
 derive_more = { version = "1.0.0", features = ["debug"] }
-iroh-gossip = "0.28.1"
+quic-rpc = "0.15"
+
 
 [dev-dependencies]
 rand = "0.8"
@@ -66,3 +68,11 @@ uniffi = { version = "0.28.0", features = ["build"] }
 
 [profile.release]
 lto = true
+
+[patch.crates-io]
+iroh-gossip = { git = "https://github.com/n0-computer/iroh-gossip", branch = "mem-client" }
+iroh-docs = { git = "https://github.com/n0-computer/iroh-docs", branch = "mem-rpc-client" }
+iroh-blobs = { git = "https://github.com/n0-computer/iroh-blobs", branch = "mem-rpc-client" }
+iroh-router = { git = "https://github.com/n0-computer/iroh", branch = "main" }
+iroh-net = { git = "https://github.com/n0-computer/iroh", branch = "main" }
+iroh = { git = "https://github.com/n0-computer/iroh", branch = "main" }

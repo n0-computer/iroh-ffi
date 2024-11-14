@@ -122,20 +122,23 @@ pub trait GossipMessageCallback: Send + Sync + 'static {
 /// Iroh gossip client.
 #[derive(uniffi::Object)]
 pub struct Gossip {
-    node: Iroh,
+    gossip: Arc<iroh_gossip::net::Gossip>,
 }
 
 #[uniffi::export]
 impl Iroh {
     /// Access to gossip specific funtionaliy.
     pub fn gossip(&self) -> Gossip {
-        Gossip { node: self.clone() }
+        let gossip = self
+            .get_protocol(iroh_gossip::net::GOSSIP_ALPN)
+            .expect("no gossip available");
+        Gossip { gossip }
     }
 }
 
 impl Gossip {
-    fn client(&self) -> &iroh::client::Iroh {
-        self.node.inner_client()
+    fn client(&self) -> &iroh_gossip::rpc::client::MemClient {
+        self.gossip.client()
     }
 }
 
@@ -159,11 +162,7 @@ impl Gossip {
             .collect::<Result<Vec<NodeId>, _>>()
             .map_err(|e| anyhow::anyhow!("{e}"))?;
 
-        let (sink, mut stream) = self
-            .client()
-            .gossip()
-            .subscribe(topic_bytes, bootstrap)
-            .await?;
+        let (sink, mut stream) = self.client().subscribe(topic_bytes, bootstrap).await?;
 
         let cancel_token = CancellationToken::new();
         let cancel = cancel_token.clone();

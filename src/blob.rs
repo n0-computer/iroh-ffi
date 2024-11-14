@@ -6,6 +6,7 @@ use std::{
 };
 
 use futures::{StreamExt, TryStreamExt};
+use quic_rpc::transport::flume::FlumeConnector;
 use serde::{Deserialize, Serialize};
 
 use crate::{node::Iroh, CallbackError};
@@ -15,20 +16,31 @@ use crate::{IrohError, NodeAddr};
 /// Iroh blobs client.
 #[derive(uniffi::Object)]
 pub struct Blobs {
-    node: Iroh,
+    client: MemClient,
+    net_client: iroh::client::net::Client,
 }
 
 #[uniffi::export]
 impl Iroh {
     /// Access to blob specific funtionaliy.
     pub fn blobs(&self) -> Blobs {
-        Blobs { node: self.clone() }
+        let blobs = self
+            .get_protocol::<iroh_blobs::net_protocol::Blobs<iroh_blobs::store::fs::Store>>(
+                iroh_blobs::protocol::ALPN,
+            )
+            .expect("missing blobs");
+        let client = blobs.client();
+        let net_client = self.inner_client().net().clone();
+        Blobs { client, net_client }
     }
 }
+type MemClient = iroh_blobs::rpc::client::blobs::Client<
+    FlumeConnector<iroh_blobs::rpc::proto::Response, iroh_blobs::rpc::proto::Request>,
+>;
 
 impl Blobs {
-    fn client(&self) -> &iroh::client::Iroh {
-        self.node.inner_client()
+    fn client(&self) -> &MemClient {
+        &self.client
     }
 }
 
@@ -40,7 +52,7 @@ impl Blobs {
     /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn list(&self) -> Result<Vec<Arc<Hash>>, IrohError> {
-        let response = self.client().blobs().list().await?;
+        let response = self.client().list().await?;
 
         let hashes: Vec<Arc<Hash>> = response
             .map_ok(|i| Arc::new(Hash(i.hash)))
@@ -55,7 +67,7 @@ impl Blobs {
     /// Method only exists in FFI
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn size(&self, hash: &Hash) -> Result<u64, IrohError> {
-        let r = self.client().blobs().read(hash.0).await?;
+        let r = self.client().read(hash.0).await?;
         Ok(r.size())
     }
 
@@ -68,7 +80,6 @@ impl Blobs {
     pub async fn read_to_bytes(&self, hash: Arc<Hash>) -> Result<Vec<u8>, IrohError> {
         let res = self
             .client()
-            .blobs()
             .read_to_bytes(hash.0)
             .await
             .map(|b| b.to_vec())?;
@@ -89,7 +100,6 @@ impl Blobs {
     ) -> Result<Vec<u8>, IrohError> {
         let res = self
             .client()
-            .blobs()
             .read_at_to_bytes(hash.0, offset, (*len).into())
             .await
             .map(|b| b.to_vec())?;
@@ -113,7 +123,6 @@ impl Blobs {
     ) -> Result<(), IrohError> {
         let mut stream = self
             .client()
-            .blobs()
             .add_from_path(
                 path.into(),
                 in_place,
@@ -132,7 +141,7 @@ impl Blobs {
     /// The `path` field is expected to be the absolute path.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn write_to_path(&self, hash: Arc<Hash>, path: String) -> Result<(), IrohError> {
-        let mut reader = self.client().blobs().read(hash.0).await?;
+        let mut reader = self.client().read(hash.0).await?;
         let path: PathBuf = path.into();
         if let Some(dir) = path.parent() {
             tokio::fs::create_dir_all(dir)
@@ -151,7 +160,7 @@ impl Blobs {
     /// Write a blob by passing bytes.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn add_bytes(&self, bytes: Vec<u8>) -> Result<BlobAddOutcome, IrohError> {
-        let res = self.client().blobs().add_bytes(bytes).await?;
+        let res = self.client().add_bytes(bytes).await?;
         Ok(res.into())
     }
 
@@ -164,7 +173,6 @@ impl Blobs {
     ) -> Result<BlobAddOutcome, IrohError> {
         let res = self
             .client()
-            .blobs()
             .add_bytes_named(bytes, iroh::blobs::Tag(name.into()))
             .await?;
         Ok(res.into())
@@ -180,7 +188,6 @@ impl Blobs {
     ) -> Result<(), IrohError> {
         let mut stream = self
             .client()
-            .blobs()
             .download_with_opts(hash.0, opts.0.clone())
             .await?;
         while let Some(progress) = stream.next().await {
@@ -216,7 +223,6 @@ impl Blobs {
 
         let stream = self
             .client()
-            .blobs()
             .export(hash.0, destination, format.into(), mode.into())
             .await?;
 
@@ -233,11 +239,9 @@ impl Blobs {
         blob_format: BlobFormat,
         ticket_options: AddrInfoOptions,
     ) -> Result<Arc<BlobTicket>, IrohError> {
-        let ticket = self
-            .client()
-            .blobs()
-            .share(hash.0, blob_format.into(), ticket_options.into())
-            .await?;
+        let mut addr = self.net_client.node_addr().await?;
+        addr.apply_options(ticket_options.into());
+        let ticket = iroh::base::ticket::BlobTicket::new(addr, hash.0, blob_format.into())?;
         Ok(Arc::new(ticket.into()))
     }
 
@@ -249,7 +253,6 @@ impl Blobs {
     pub async fn list_incomplete(&self) -> Result<Vec<IncompleteBlobInfo>, IrohError> {
         let blobs = self
             .client()
-            .blobs()
             .list_incomplete()
             .await?
             .map_ok(|res| res.into())
@@ -266,7 +269,6 @@ impl Blobs {
     pub async fn list_collections(&self) -> Result<Vec<CollectionInfo>, IrohError> {
         let blobs = self
             .client()
-            .blobs()
             .list_collections()?
             .map_ok(|res| res.into())
             .try_collect::<Vec<_>>()
@@ -277,7 +279,7 @@ impl Blobs {
     /// Read the content of a collection
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn get_collection(&self, hash: Arc<Hash>) -> Result<Arc<Collection>, IrohError> {
-        let collection = self.client().blobs().get_collection(hash.0).await?;
+        let collection = self.client().get_collection(hash.0).await?;
 
         Ok(Arc::new(collection.into()))
     }
@@ -296,7 +298,6 @@ impl Blobs {
         let collection = collection.0.read().unwrap().clone();
         let (hash, tag) = self
             .client()
-            .blobs()
             .create_collection(
                 collection,
                 (*tag).clone().into(),
@@ -328,7 +329,7 @@ impl Blobs {
 
         if let Some(name) = name {
             self.client().tags().delete(name).await?;
-            self.client().blobs().delete_blob((*hash).clone().0).await?;
+            self.client().delete_blob((*hash).clone().0).await?;
         }
 
         Ok(())
