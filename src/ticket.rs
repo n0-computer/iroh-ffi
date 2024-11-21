@@ -103,11 +103,11 @@ impl BlobTicket {
 
     /// Convert this ticket into input parameters for a call to blobs_download
     pub fn as_download_options(&self) -> Arc<BlobDownloadOptions> {
-        let r: BlobDownloadOptions = iroh::client::blobs::DownloadOptions {
+        let r: BlobDownloadOptions = iroh_blobs::rpc::client::blobs::DownloadOptions {
             format: self.0.format(),
             nodes: vec![self.0.node_addr().clone()],
-            tag: iroh::blobs::util::SetTagOption::Auto,
-            mode: iroh::client::blobs::DownloadMode::Direct,
+            tag: iroh_blobs::util::SetTagOption::Auto,
+            mode: iroh_blobs::net_protocol::DownloadMode::Direct,
         }
         .into();
         Arc::new(r)
@@ -145,15 +145,15 @@ impl From<AddrInfoOptions> for iroh::base::node_addr::AddrInfoOptions {
 /// Contains both a key (either secret or public) to a document, and a list of peers to join.
 #[derive(Debug, Clone, uniffi::Object)]
 #[uniffi::export(Display)]
-pub struct DocTicket(iroh::docs::DocTicket);
+pub struct DocTicket(iroh_docs::DocTicket);
 
-impl From<iroh::docs::DocTicket> for DocTicket {
-    fn from(value: iroh::docs::DocTicket) -> Self {
+impl From<iroh_docs::DocTicket> for DocTicket {
+    fn from(value: iroh_docs::DocTicket) -> Self {
         Self(value)
     }
 }
 
-impl From<DocTicket> for iroh::docs::DocTicket {
+impl From<DocTicket> for iroh_docs::DocTicket {
     fn from(value: DocTicket) -> Self {
         value.0
     }
@@ -163,7 +163,7 @@ impl From<DocTicket> for iroh::docs::DocTicket {
 impl DocTicket {
     #[uniffi::constructor]
     pub fn new(str: String) -> Result<Self, IrohError> {
-        let ticket = iroh::docs::DocTicket::from_str(&str).map_err(anyhow::Error::from)?;
+        let ticket = iroh_docs::DocTicket::from_str(&str).map_err(anyhow::Error::from)?;
         Ok(ticket.into())
     }
 }

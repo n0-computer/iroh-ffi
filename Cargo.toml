@@ -13,8 +13,9 @@ documentation = "https://iroh.computer/docs"
 
 rust-version = "1.75"
 
-[workspace]
-members = ["iroh-js"]
+# TODO: fixme
+# [workspace]
+# members = ["iroh-js"]
 
 [package.metadata.maturin]
 name = "iroh"
@@ -38,12 +39,13 @@ iroh-io = { version = "0.6" }
 iroh-gossip = { version = "0.28", features = ["rpc"] }
 iroh-docs = { version = "0.28", features = ["rpc"] }
 iroh-blobs = { version = "0.28", features = ["rpc"] }
+iroh-node-util = { version = "0.28", features = [] }
 libc = "0.2.141"
 num_cpus = { version = "1.15.0" }
 range-collections = "0.4.0"
 thiserror = "1.0.44"
 tokio = "1.25.0"
-tokio-util = { version = "0.7", features = ["io-util", "io"] }
+tokio-util = { version = "0.7", features = ["io-util", "io", "rt"] }
 uniffi = { version = "0.28.0", features = ["cli", "tokio"] }
 url = "2.4"
 flume = "0.11"
@@ -70,9 +72,11 @@ uniffi = { version = "0.28.0", features = ["build"] }
 lto = true
 
 [patch.crates-io]
-iroh-gossip = { git = "https://github.com/n0-computer/iroh-gossip", branch = "mem-client" }
-iroh-docs = { git = "https://github.com/n0-computer/iroh-docs", branch = "mem-rpc-client" }
-iroh-blobs = { git = "https://github.com/n0-computer/iroh-blobs", branch = "mem-rpc-client" }
-iroh-router = { git = "https://github.com/n0-computer/iroh", branch = "main" }
-iroh-net = { git = "https://github.com/n0-computer/iroh", branch = "main" }
-iroh = { git = "https://github.com/n0-computer/iroh", branch = "main" }
+iroh-gossip = { git = "https://github.com/n0-computer/iroh-gossip", branch = "main" }
+iroh-docs = { git = "https://github.com/n0-computer/iroh-docs", branch = "main" }
+iroh-blobs = { git = "https://github.com/n0-computer/iroh-blobs", branch = "main" }
+
+iroh-node-util = { git = "https://github.com/n0-computer/iroh", branch = "refactor-drop-external-protocols" }
+iroh-router = { git = "https://github.com/n0-computer/iroh", branch = "refactor-drop-external-protocols" }
+iroh-net = { git = "https://github.com/n0-computer/iroh", branch = "refactor-drop-external-protocols" }
+iroh = { git = "https://github.com/n0-computer/iroh", branch = "refactor-drop-external-protocols" }

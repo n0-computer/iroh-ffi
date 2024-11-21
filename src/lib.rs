@@ -85,7 +85,7 @@ pub fn key_to_path(
     prefix: Option<String>,
     root: Option<String>,
 ) -> Result<String, IrohError> {
-    let path = iroh::util::fs::key_to_path(key, prefix, root.map(std::path::PathBuf::from))?;
+    let path = iroh_blobs::util::fs::key_to_path(key, prefix, root.map(std::path::PathBuf::from))?;
     let path = path.to_str();
     let path = path.ok_or_else(|| anyhow::anyhow!("Unable to parse path {:?}", path))?;
     let path = path.to_string();
@@ -101,7 +101,7 @@ pub fn path_to_key(
     prefix: Option<String>,
     root: Option<String>,
 ) -> Result<Vec<u8>, IrohError> {
-    iroh::util::fs::path_to_key(
+    iroh_blobs::util::fs::path_to_key(
         std::path::PathBuf::from(path),
         prefix,
         root.map(std::path::PathBuf::from),

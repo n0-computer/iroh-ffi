@@ -1,13 +1,14 @@
 use std::{str::FromStr, sync::Arc};
 
 use futures::TryStreamExt;
+use quic_rpc::transport::flume::FlumeConnector;
 
-use crate::{Iroh, IrohError};
+use crate::{Iroh, IrohError, Storage};
 
 /// Identifier for an [`Author`]
 #[derive(Debug, Clone, PartialEq, Eq, uniffi::Object)]
 #[uniffi::export(Display)]
-pub struct AuthorId(pub(crate) iroh::docs::AuthorId);
+pub struct AuthorId(pub(crate) iroh_docs::AuthorId);
 
 impl std::fmt::Display for AuthorId {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -20,7 +21,7 @@ impl AuthorId {
     /// Get an [`AuthorId`] from a String.
     #[uniffi::constructor]
     pub fn from_string(str: String) -> Result<Self, IrohError> {
-        let author = iroh::docs::AuthorId::from_str(&str)?;
+        let author = iroh_docs::AuthorId::from_str(&str)?;
         Ok(AuthorId(author))
     }
 
@@ -36,14 +37,14 @@ impl AuthorId {
 /// Internally, an author is a `SigningKey` which is used to sign entries.
 #[derive(Debug, Clone, uniffi::Object)]
 #[uniffi::export(Display)]
-pub struct Author(pub(crate) iroh::docs::Author);
+pub struct Author(pub(crate) iroh_docs::Author);
 
 #[uniffi::export]
 impl Author {
     /// Get an [`Author`] from a String
     #[uniffi::constructor]
     pub fn from_string(str: String) -> Result<Self, IrohError> {
-        let author = iroh::docs::Author::from_str(&str)?;
+        let author = iroh_docs::Author::from_str(&str)?;
         Ok(Author(author))
     }
 
@@ -60,23 +61,46 @@ impl std::fmt::Display for Author {
     }
 }
 
+type MemClient = iroh_docs::rpc::client::authors::Client<
+    FlumeConnector<iroh_docs::rpc::proto::Response, iroh_docs::rpc::proto::Request>,
+>;
+
 /// Iroh authors client.
 #[derive(uniffi::Object)]
 pub struct Authors {
-    node: Iroh,
+    authors: MemClient,
 }
 
 #[uniffi::export]
 impl Iroh {
-    /// Access to authors specific funtionaliy.
+    /// Access to gossip specific funtionaliy.
     pub fn authors(&self) -> Authors {
-        Authors { node: self.clone() }
+        match self.storage {
+            Storage::Fs => {
+                let docs = self
+                    .get_protocol::<iroh_docs::engine::Engine<iroh_blobs::store::fs::Store>>(
+                        iroh_docs::net::DOCS_ALPN,
+                    )
+                    .expect("no docs available");
+                let authors = docs.client().authors();
+                Authors { authors }
+            }
+            Storage::Memory => {
+                let docs = self
+                    .get_protocol::<iroh_docs::engine::Engine<iroh_blobs::store::mem::Store>>(
+                        iroh_docs::net::DOCS_ALPN,
+                    )
+                    .expect("no docs available");
+                let authors = docs.client().authors();
+                Authors { authors }
+            }
+        }
     }
 }
 
 impl Authors {
-    fn client(&self) -> &iroh::client::Iroh {
-        self.node.inner_client()
+    fn client(&self) -> &MemClient {
+        &self.authors
     }
 }
 
@@ -90,7 +114,7 @@ impl Authors {
     /// The default author can be set with [`Self::set_default`].
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn default(&self) -> Result<Arc<AuthorId>, IrohError> {
-        let author = self.client().authors().default().await?;
+        let author = self.client().default().await?;
         Ok(Arc::new(AuthorId(author)))
     }
 
@@ -99,7 +123,6 @@ impl Authors {
     pub async fn list(&self) -> Result<Vec<Arc<AuthorId>>, IrohError> {
         let authors = self
             .client()
-            .authors()
             .list()
             .await?
             .map_ok(|id| Arc::new(AuthorId(id)))
@@ -116,7 +139,7 @@ impl Authors {
     /// If you need only a single author, use [`Self::default`].
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn create(&self) -> Result<Arc<AuthorId>, IrohError> {
-        let author = self.client().authors().create().await?;
+        let author = self.client().create().await?;
 
         Ok(Arc::new(AuthorId(author)))
     }
@@ -126,7 +149,7 @@ impl Authors {
     /// Warning: This contains sensitive data.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn export(&self, author: Arc<AuthorId>) -> Result<Arc<Author>, IrohError> {
-        let author = self.client().authors().export(author.0).await?;
+        let author = self.client().export(author.0).await?;
         match author {
             Some(author) => Ok(Arc::new(Author(author))),
             None => Err(anyhow::anyhow!("Author Not Found").into()),
@@ -138,7 +161,7 @@ impl Authors {
     /// Warning: This contains sensitive data.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn import(&self, author: Arc<Author>) -> Result<Arc<AuthorId>, IrohError> {
-        self.client().authors().import(author.0.clone()).await?;
+        self.client().import(author.0.clone()).await?;
         Ok(Arc::new(AuthorId(author.0.id())))
     }
 
@@ -156,7 +179,7 @@ impl Authors {
     /// Warning: This permanently removes this author.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn delete(&self, author: Arc<AuthorId>) -> Result<(), IrohError> {
-        self.client().authors().delete(author.0).await?;
+        self.client().delete(author.0).await?;
         Ok(())
     }
 }

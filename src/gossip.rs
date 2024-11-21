@@ -2,8 +2,8 @@ use std::pin::Pin;
 use std::sync::Arc;
 
 use futures::{Sink, SinkExt, StreamExt};
-use iroh::gossip::net::GossipEvent;
 use iroh::net::NodeId;
+use iroh_gossip::net::GossipEvent;
 use iroh_gossip::rpc::{SubscribeResponse, SubscribeUpdate};
 use tokio::sync::Mutex;
 use tokio_util::sync::CancellationToken;
@@ -183,7 +183,7 @@ impl Gossip {
                                 Message::NeighborDown(n.to_string())
                             }
                             Ok(SubscribeResponse::Gossip(GossipEvent::Received(
-                                iroh::gossip::net::Message {
+                                iroh_gossip::net::Message {
                                     content,
                                     delivered_from,
                                     ..
