@@ -76,7 +76,8 @@ iroh-gossip = { git = "https://github.com/n0-computer/iroh-gossip", branch = "ma
 iroh-docs = { git = "https://github.com/n0-computer/iroh-docs", branch = "main" }
 iroh-blobs = { git = "https://github.com/n0-computer/iroh-blobs", branch = "main" }
 
-iroh-node-util = { git = "https://github.com/n0-computer/iroh", branch = "refactor-drop-external-protocols" }
-iroh-router = { git = "https://github.com/n0-computer/iroh", branch = "refactor-drop-external-protocols" }
-iroh-net = { git = "https://github.com/n0-computer/iroh", branch = "refactor-drop-external-protocols" }
-iroh = { git = "https://github.com/n0-computer/iroh", branch = "refactor-drop-external-protocols" }
+iroh-node-util = { git = "https://github.com/n0-computer/iroh", branch = "main" }
+iroh-router = { git = "https://github.com/n0-computer/iroh", branch = "main" }
+iroh-net = { git = "https://github.com/n0-computer/iroh", branch = "main" }
+iroh = { git = "https://github.com/n0-computer/iroh", branch = "main" }
+iroh-base = { git = "https://github.com/n0-computer/iroh", branch = "main" }

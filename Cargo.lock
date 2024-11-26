@@ -2076,7 +2076,7 @@ checksum = "ddc24109865250148c2e0f3d25d4f0f479571723792d3802153c60922a4fb708"
 [[package]]
 name = "iroh"
 version = "0.28.1"
-source = "git+https://github.com/n0-computer/iroh?branch=refactor-drop-external-protocols#bc8389cf18ac15d216eb8a9d7f02f8a2a775d0ad"
+source = "git+https://github.com/n0-computer/iroh?branch=main#4abfd61fb662ab5b3cfbc2eeea2a23e8ee3c79d7"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -2114,11 +2114,11 @@ dependencies = [
 [[package]]
 name = "iroh-base"
 version = "0.28.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c21fd8eb71f166a172a9779c2244db992218e9a9bd929b9df6fc355d2b630c9"
+source = "git+https://github.com/n0-computer/iroh?branch=main#4abfd61fb662ab5b3cfbc2eeea2a23e8ee3c79d7"
 dependencies = [
  "aead",
  "anyhow",
+ "cc",
  "crypto_box",
  "data-encoding",
  "derive_more",
@@ -2352,7 +2352,7 @@ dependencies = [
 [[package]]
 name = "iroh-net"
 version = "0.28.1"
-source = "git+https://github.com/n0-computer/iroh?branch=refactor-drop-external-protocols#bc8389cf18ac15d216eb8a9d7f02f8a2a775d0ad"
+source = "git+https://github.com/n0-computer/iroh?branch=main#4abfd61fb662ab5b3cfbc2eeea2a23e8ee3c79d7"
 dependencies = [
  "anyhow",
  "axum",
@@ -2381,6 +2381,7 @@ dependencies = [
  "igd-next",
  "iroh-base",
  "iroh-metrics",
+ "iroh-net-report",
  "iroh-quinn",
  "iroh-quinn-proto",
  "iroh-quinn-udp",
@@ -2432,9 +2433,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "iroh-net-report"
+version = "0.28.0"
+source = "git+https://github.com/n0-computer/iroh?branch=main#4abfd61fb662ab5b3cfbc2eeea2a23e8ee3c79d7"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "derive_more",
+ "futures-buffered",
+ "futures-lite 2.5.0",
+ "hickory-resolver",
+ "iroh-base",
+ "iroh-metrics",
+ "iroh-relay",
+ "netwatch",
+ "portmapper",
+ "rand",
+ "reqwest",
+ "rustls",
+ "surge-ping",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "url",
+]
+
+[[package]]
 name = "iroh-node-util"
 version = "0.28.0"
-source = "git+https://github.com/n0-computer/iroh?branch=refactor-drop-external-protocols#bc8389cf18ac15d216eb8a9d7f02f8a2a775d0ad"
+source = "git+https://github.com/n0-computer/iroh?branch=main#4abfd61fb662ab5b3cfbc2eeea2a23e8ee3c79d7"
 dependencies = [
  "anyhow",
  "futures-lite 2.5.0",
@@ -2502,7 +2530,7 @@ dependencies = [
 [[package]]
 name = "iroh-relay"
 version = "0.28.0"
-source = "git+https://github.com/n0-computer/iroh?branch=refactor-drop-external-protocols#bc8389cf18ac15d216eb8a9d7f02f8a2a775d0ad"
+source = "git+https://github.com/n0-computer/iroh?branch=main#4abfd61fb662ab5b3cfbc2eeea2a23e8ee3c79d7"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -2562,7 +2590,7 @@ dependencies = [
 [[package]]
 name = "iroh-router"
 version = "0.28.0"
-source = "git+https://github.com/n0-computer/iroh?branch=refactor-drop-external-protocols#bc8389cf18ac15d216eb8a9d7f02f8a2a775d0ad"
+source = "git+https://github.com/n0-computer/iroh?branch=main#4abfd61fb662ab5b3cfbc2eeea2a23e8ee3c79d7"
 dependencies = [
  "anyhow",
  "futures-buffered",
@@ -2912,7 +2940,7 @@ dependencies = [
 [[package]]
 name = "netwatch"
 version = "0.1.0"
-source = "git+https://github.com/n0-computer/iroh?branch=refactor-drop-external-protocols#bc8389cf18ac15d216eb8a9d7f02f8a2a775d0ad"
+source = "git+https://github.com/n0-computer/iroh?branch=main#4abfd61fb662ab5b3cfbc2eeea2a23e8ee3c79d7"
 dependencies = [
  "anyhow",
  "bytes",
@@ -3429,7 +3457,7 @@ checksum = "cc9c68a3f6da06753e9335d63e27f6b9754dd1920d941135b7ea8224f141adb2"
 [[package]]
 name = "portmapper"
 version = "0.1.0"
-source = "git+https://github.com/n0-computer/iroh?branch=refactor-drop-external-protocols#bc8389cf18ac15d216eb8a9d7f02f8a2a775d0ad"
+source = "git+https://github.com/n0-computer/iroh?branch=main#4abfd61fb662ab5b3cfbc2eeea2a23e8ee3c79d7"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
