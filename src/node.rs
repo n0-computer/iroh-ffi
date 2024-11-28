@@ -7,6 +7,7 @@ use std::{
 };
 
 use iroh_blobs::{downloader::Downloader, net_protocol::Blobs, util::local_pool::LocalPool};
+use iroh_node_util::rpc::server::AbstractNode;
 use quic_rpc::{transport::flume::FlumeConnector, RpcClient, RpcServer};
 use tokio_util::task::AbortOnDropHandle;
 
@@ -321,6 +322,17 @@ pub struct Iroh {
     _handler: Arc<AbortOnDropHandle<()>>,
 }
 
+#[derive(Debug, Clone)]
+struct NetNode(iroh::Endpoint);
+
+impl AbstractNode for NetNode {
+    fn endpoint(&self) -> &iroh::Endpoint {
+        &self.0
+    }
+
+    fn shutdown(&self) {}
+}
+
 #[derive(Debug, Clone, Copy)]
 pub(crate) enum Storage {
     Fs,
@@ -393,9 +405,9 @@ impl Iroh {
         let (listener, connector) = quic_rpc::transport::flume::channel(1);
         let listener = RpcServer::new(listener);
         let client = RpcClient::new(connector);
+        let nn = Arc::new(NetNode(router.endpoint().clone()));
         let handler = listener.spawn_accept_loop(move |req, chan| {
-            todo!()
-            // clone().handle_rpc_request(req, chan)
+            iroh_node_util::rpc::server::handle_rpc_request(nn.clone(), req, chan)
         });
 
         Ok(Iroh {
@@ -436,9 +448,9 @@ impl Iroh {
         let (listener, connector) = quic_rpc::transport::flume::channel(1);
         let listener = RpcServer::new(listener);
         let client = RpcClient::new(connector);
+        let nn: Arc<dyn AbstractNode> = Arc::new(NetNode(router.endpoint().clone()));
         let handler = listener.spawn_accept_loop(move |req, chan| {
-            todo!()
-            // .clone().handle_rpc_request(req, chan)
+            iroh_node_util::rpc::server::handle_rpc_request(nn.clone(), req, chan)
         });
 
         Ok(Iroh {
@@ -453,9 +465,8 @@ impl Iroh {
     /// Access to node specific funtionaliy.
     pub fn node(&self) -> Node {
         let node = self.router.clone();
-        let client = self.client.clone();
+        let client = self.client.clone().boxed();
         let client = iroh_node_util::rpc::client::node::Client::new(client);
-
         Node { node, client }
     }
 }

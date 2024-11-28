@@ -12,7 +12,7 @@ pub struct Net {
 impl Iroh {
     /// Access to blob specific funtionaliy.
     pub fn net(&self) -> Net {
-        let client = self.client.clone();
+        let client = self.client.clone().boxed();
         let client = iroh_node_util::rpc::client::net::Client::new(client);
 
         Net { client }

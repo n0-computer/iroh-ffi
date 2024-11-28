@@ -43,7 +43,7 @@ impl Iroh {
             }
         };
 
-        let net_client = todo!();
+        let net_client = iroh_node_util::rpc::client::net::Client::new(self.client.clone().boxed());
         Blobs { client, net_client }
     }
 }
