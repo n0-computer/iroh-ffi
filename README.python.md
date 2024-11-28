@@ -11,8 +11,8 @@ The current best way to understand how the iroh python API can be used is to che
 
 We currently ship binary wheels on pypi for:
 - amd64 win
-- x86_64 manylinux2014
-- aarch64 manylinux2014
+- x86_64 manylinux 2_28
+- aarch64 manylinux 2_28
 - arm64 macosx
 - x86_64 macosx
 

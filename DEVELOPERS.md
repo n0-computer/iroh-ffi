@@ -96,7 +96,7 @@ will likely only work on your specific platform. To build a portable
 wheel for linux use:
 
 ```
-docker run --rm -v $(pwd):/mnt -w /mnt quay.io/pypa/manylinux2014_x86_64 /mnt/build_wheel.sh
+docker run --rm -v $(pwd):/mnt -w /mnt quay.io/pypa/manylinux_2_28_x86_64 /mnt/build_wheel.sh
 ```
 
 #### Translations
