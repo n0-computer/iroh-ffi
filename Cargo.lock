@@ -3,6 +3,20 @@
 version = 3
 
 [[package]]
+name = "acto"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "31c372578ce4215ccf94ec3f3585fbb6a902e47d07b064ff8a55d850ffb5025e"
+dependencies = [
+ "parking_lot",
+ "pin-project-lite",
+ "rustc_version",
+ "smol_str",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "addr2line"
 version = "0.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -475,9 +489,9 @@ checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
 
 [[package]]
 name = "bytes"
-version = "1.8.0"
+version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ac0150caa2ae65ca5bd83f25c7de183dea78d4d366469f148435e2acfbad0da"
+checksum = "325918d6fe32f23b19878fe4b34794ae41fc19ddbe53b10571a4874d44ffd39b"
 dependencies = [
  "serde",
 ]
@@ -1584,6 +1598,30 @@ checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
 name = "hickory-proto"
+version = "0.24.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "07698b8420e2f0d6447a436ba999ec85d8fbf2a398bbd737b82cac4a2e96e512"
+dependencies = [
+ "async-trait",
+ "cfg-if",
+ "data-encoding",
+ "enum-as-inner",
+ "futures-channel",
+ "futures-io",
+ "futures-util",
+ "idna 0.4.0",
+ "ipnet",
+ "once_cell",
+ "rand",
+ "thiserror 1.0.69",
+ "tinyvec",
+ "tokio",
+ "tracing",
+ "url",
+]
+
+[[package]]
+name = "hickory-proto"
 version = "0.25.0-alpha.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8270a1857fb962b9914aafd46a89a187a4e63d0eb4190c327e7c7b8256a2d055"
@@ -1616,7 +1654,7 @@ checksum = "46c110355b5703070d9e29c344d79818a7cde3de9c27fc35750defea6074b0ad"
 dependencies = [
  "cfg-if",
  "futures-util",
- "hickory-proto",
+ "hickory-proto 0.25.0-alpha.2",
  "ipconfig",
  "lru-cache",
  "once_cell",
@@ -1940,6 +1978,16 @@ dependencies = [
 
 [[package]]
 name = "idna"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7d20d6b07bfbc108882d88ed8e37d39636dcc260e15e30c45e6ba089610b917c"
+dependencies = [
+ "unicode-bidi",
+ "unicode-normalization",
+]
+
+[[package]]
+name = "idna"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "634d9b1461af396cad843f47fdba5597a4f9e6ddd4bfb6ff5d85028c25cb12f6"
@@ -2061,17 +2109,89 @@ checksum = "ddc24109865250148c2e0f3d25d4f0f479571723792d3802153c60922a4fb708"
 [[package]]
 name = "iroh"
 version = "0.28.1"
-source = "git+https://github.com/n0-computer/iroh?branch=main#32f1fcdd11af70ded2785ab7b1ed15ee74991586"
+source = "git+https://github.com/n0-computer/iroh?branch=main#73c9b75b5f37a916a2e046077963e519865a9b29"
 dependencies = [
+ "anyhow",
+ "axum",
+ "backoff",
+ "base64",
+ "bytes",
+ "der",
+ "derive_more",
+ "futures-buffered",
+ "futures-concurrency",
+ "futures-lite 2.5.0",
+ "futures-sink",
+ "futures-util",
+ "genawaiter",
+ "governor",
+ "hex",
+ "hickory-proto 0.25.0-alpha.2",
+ "hickory-resolver",
+ "hostname 0.4.0",
+ "http 1.1.0",
+ "http-body-util",
+ "hyper",
+ "hyper-util",
+ "igd-next",
  "iroh-base",
- "iroh-net",
- "iroh-router",
+ "iroh-metrics",
+ "iroh-net-report",
+ "iroh-quinn",
+ "iroh-quinn-proto",
+ "iroh-quinn-udp",
+ "iroh-relay",
+ "libc",
+ "netdev",
+ "netlink-packet-core",
+ "netlink-packet-route 0.19.0",
+ "netlink-packet-route 0.21.0",
+ "netlink-sys",
+ "netwatch",
+ "num_enum",
+ "once_cell",
+ "parking_lot",
+ "pin-project",
+ "pkarr",
+ "portmapper",
+ "postcard",
+ "rand",
+ "rcgen",
+ "reqwest",
+ "ring",
+ "rtnetlink 0.13.1",
+ "rtnetlink 0.14.1",
+ "rustls",
+ "rustls-webpki",
+ "serde",
+ "smallvec",
+ "socket2",
+ "strum",
+ "stun-rs",
+ "surge-ping",
+ "swarm-discovery",
+ "thiserror 2.0.3",
+ "time",
+ "tokio",
+ "tokio-rustls",
+ "tokio-stream",
+ "tokio-tungstenite 0.24.0",
+ "tokio-tungstenite-wasm",
+ "tokio-util",
+ "tracing",
+ "url",
+ "watchable",
+ "webpki-roots",
+ "windows 0.58.0",
+ "wmi",
+ "x509-parser",
+ "z32",
 ]
 
 [[package]]
 name = "iroh-base"
 version = "0.28.0"
-source = "git+https://github.com/n0-computer/iroh?branch=main#32f1fcdd11af70ded2785ab7b1ed15ee74991586"
+source = "git+https://github.com/n0-computer/iroh?branch=main#73c9b75b5f37a916a2e046077963e519865a9b29"
 dependencies = [
  "aead",
  "anyhow",
@@ -2111,7 +2231,7 @@ dependencies = [
 [[package]]
 name = "iroh-blobs"
 version = "0.28.1"
-source = "git+https://github.com/n0-computer/iroh-blobs?branch=main#8ab19fe2a61340f4fe29fe52e16a9ebd99df0e40"
+source = "git+https://github.com/n0-computer/iroh-blobs?branch=main#25525a824f7e804d62b0c55a4ab4cd89813f5198"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -2132,9 +2252,7 @@ dependencies = [
  "iroh-base",
  "iroh-io",
  "iroh-metrics",
- "iroh-net",
  "iroh-quinn",
- "iroh-router",
  "nested_enum_utils",
  "num_cpus",
  "oneshot",
@@ -2166,7 +2284,7 @@ dependencies = [
 [[package]]
 name = "iroh-docs"
 version = "0.28.0"
-source = "git+https://github.com/n0-computer/iroh-docs?branch=main#d4ab8db452bbefe7aab45ed25621dde6b6ee3f15"
+source = "git+https://github.com/n0-computer/iroh-docs?branch=main#c146f7a969926eb2624fbe3ba4f93f157fc04864"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -2177,13 +2295,12 @@ dependencies = [
  "futures-lite 2.5.0",
  "futures-util",
  "hex",
+ "iroh",
  "iroh-base",
  "iroh-blake3",
  "iroh-blobs",
  "iroh-gossip",
  "iroh-metrics",
- "iroh-net",
- "iroh-router",
  "nested_enum_utils",
  "num_enum",
  "portable-atomic",
@@ -2246,7 +2363,7 @@ dependencies = [
 [[package]]
 name = "iroh-gossip"
 version = "0.28.1"
-source = "git+https://github.com/n0-computer/iroh-gossip?branch=main#7c90c3f351585e7a364bfbf3941d07592b20dec6"
+source = "git+https://github.com/n0-computer/iroh-gossip?branch=main#89e91a34bd046fb7fbd504b2b8d0849e2865d410"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -2257,11 +2374,10 @@ dependencies = [
  "futures-lite 2.5.0",
  "futures-util",
  "indexmap",
+ "iroh",
  "iroh-base",
  "iroh-blake3",
  "iroh-metrics",
- "iroh-net",
- "iroh-router",
  "nested_enum_utils",
  "postcard",
  "quic-rpc",
@@ -2292,7 +2408,7 @@ dependencies = [
 [[package]]
 name = "iroh-metrics"
 version = "0.28.0"
-source = "git+https://github.com/n0-computer/iroh?branch=main#32f1fcdd11af70ded2785ab7b1ed15ee74991586"
+source = "git+https://github.com/n0-computer/iroh?branch=main#73c9b75b5f37a916a2e046077963e519865a9b29"
 dependencies = [
  "anyhow",
  "erased_set",
@@ -2310,90 +2426,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "iroh-net"
-version = "0.28.1"
-source = "git+https://github.com/n0-computer/iroh?branch=main#32f1fcdd11af70ded2785ab7b1ed15ee74991586"
-dependencies = [
- "anyhow",
- "axum",
- "backoff",
- "base64",
- "bytes",
- "der",
- "derive_more",
- "futures-buffered",
- "futures-concurrency",
- "futures-lite 2.5.0",
- "futures-sink",
- "futures-util",
- "genawaiter",
- "governor",
- "hex",
- "hickory-proto",
- "hickory-resolver",
- "hostname 0.4.0",
- "http 1.1.0",
- "http-body-util",
- "hyper",
- "hyper-util",
- "igd-next",
- "iroh-base",
- "iroh-metrics",
- "iroh-net-report",
- "iroh-quinn",
- "iroh-quinn-proto",
- "iroh-quinn-udp",
- "iroh-relay",
- "libc",
- "netdev",
- "netlink-packet-core",
- "netlink-packet-route 0.19.0",
- "netlink-packet-route 0.21.0",
- "netlink-sys",
- "netwatch",
- "num_enum",
- "once_cell",
- "parking_lot",
- "pin-project",
- "pkarr",
- "portmapper",
- "postcard",
- "rand",
- "rcgen",
- "reqwest",
- "ring",
- "rtnetlink 0.13.1",
- "rtnetlink 0.14.1",
- "rustls",
- "rustls-webpki",
- "serde",
- "smallvec",
- "socket2",
- "strum",
- "stun-rs",
- "surge-ping",
- "thiserror 2.0.3",
- "time",
- "tokio",
- "tokio-rustls",
- "tokio-stream",
- "tokio-tungstenite 0.24.0",
- "tokio-tungstenite-wasm",
- "tokio-util",
- "tracing",
- "url",
- "watchable",
- "webpki-roots",
- "windows 0.58.0",
- "wmi",
- "x509-parser",
- "z32",
-]
-
-[[package]]
 name = "iroh-net-report"
 version = "0.28.0"
-source = "git+https://github.com/n0-computer/iroh?branch=main#32f1fcdd11af70ded2785ab7b1ed15ee74991586"
+source = "git+https://github.com/n0-computer/iroh?branch=main#73c9b75b5f37a916a2e046077963e519865a9b29"
 dependencies = [
  "anyhow",
  "bytes",
@@ -2420,11 +2455,11 @@ dependencies = [
 [[package]]
 name = "iroh-node-util"
 version = "0.28.0"
-source = "git+https://github.com/n0-computer/iroh?branch=main#32f1fcdd11af70ded2785ab7b1ed15ee74991586"
+source = "git+https://github.com/n0-computer/iroh?branch=main#73c9b75b5f37a916a2e046077963e519865a9b29"
 dependencies = [
  "anyhow",
  "futures-lite 2.5.0",
- "iroh-net",
+ "iroh",
  "nested_enum_utils",
  "quic-rpc",
  "quic-rpc-derive",
@@ -2488,7 +2523,7 @@ dependencies = [
 [[package]]
 name = "iroh-relay"
 version = "0.28.0"
-source = "git+https://github.com/n0-computer/iroh?branch=main#32f1fcdd11af70ded2785ab7b1ed15ee74991586"
+source = "git+https://github.com/n0-computer/iroh?branch=main#73c9b75b5f37a916a2e046077963e519865a9b29"
 dependencies = [
  "anyhow",
  "base64",
@@ -2502,7 +2537,7 @@ dependencies = [
  "futures-util",
  "governor",
  "hex",
- "hickory-proto",
+ "hickory-proto 0.25.0-alpha.2",
  "hickory-resolver",
  "hostname 0.4.0",
  "http 1.1.0",
@@ -2542,21 +2577,6 @@ dependencies = [
  "tracing-subscriber",
  "url",
  "webpki-roots",
-]
-
-[[package]]
-name = "iroh-router"
-version = "0.28.0"
-source = "git+https://github.com/n0-computer/iroh?branch=main#32f1fcdd11af70ded2785ab7b1ed15ee74991586"
-dependencies = [
- "anyhow",
- "futures-buffered",
- "futures-lite 2.5.0",
- "futures-util",
- "iroh-net",
- "tokio",
- "tokio-util",
- "tracing",
 ]
 
 [[package]]
@@ -2920,7 +2940,7 @@ dependencies = [
 [[package]]
 name = "netwatch"
 version = "0.1.0"
-source = "git+https://github.com/n0-computer/iroh?branch=main#32f1fcdd11af70ded2785ab7b1ed15ee74991586"
+source = "git+https://github.com/n0-computer/iroh?branch=main#73c9b75b5f37a916a2e046077963e519865a9b29"
 dependencies = [
  "anyhow",
  "atomic-waker",
@@ -3457,7 +3477,7 @@ checksum = "280dc24453071f1b63954171985a0b0d30058d287960968b9b2aca264c8d4ee6"
 [[package]]
 name = "portmapper"
 version = "0.1.0"
-source = "git+https://github.com/n0-computer/iroh?branch=main#32f1fcdd11af70ded2785ab7b1ed15ee74991586"
+source = "git+https://github.com/n0-computer/iroh?branch=main#73c9b75b5f37a916a2e046077963e519865a9b29"
 dependencies = [
  "anyhow",
  "base64",
@@ -4543,6 +4563,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b7c388c1b5e93756d0c740965c41e8822f866621d41acbdf6336a6a168f8840c"
 
 [[package]]
+name = "smol_str"
+version = "0.1.24"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fad6c857cbab2627dcf01ec85a623ca4e7dcb5691cbaa3d7fb7653671f0d09c9"
+
+[[package]]
 name = "socket2"
 version = "0.5.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4733,6 +4759,21 @@ dependencies = [
  "rand",
  "socket2",
  "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "swarm-discovery"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "39769914108ae68e261d85ceac7bce7095947130f79c29d4535e9b31fc702a40"
+dependencies = [
+ "acto",
+ "anyhow",
+ "hickory-proto 0.24.1",
+ "rand",
+ "socket2",
  "tokio",
  "tracing",
 ]

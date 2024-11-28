@@ -7,6 +7,8 @@ use std::{
 };
 
 use iroh_blobs::{downloader::Downloader, net_protocol::Blobs, util::local_pool::LocalPool};
+use quic_rpc::{transport::flume::FlumeConnector, RpcClient, RpcServer};
+use tokio_util::task::AbortOnDropHandle;
 
 use crate::{
     BlobProvideEventCallback, CallbackError, Connecting, Endpoint, IrohError, NodeAddr, PublicKey,
@@ -23,7 +25,7 @@ pub struct CounterStats {
 
 /// Information about a direct address.
 #[derive(Debug, Clone, uniffi::Object)]
-pub struct DirectAddrInfo(pub(crate) iroh::net::endpoint::DirectAddrInfo);
+pub struct DirectAddrInfo(pub(crate) iroh::endpoint::DirectAddrInfo);
 
 #[uniffi::export]
 impl DirectAddrInfo {
@@ -65,7 +67,7 @@ pub struct LatencyAndControlMsg {
 
 // TODO: enable and use for `LatencyAndControlMsg.control_msg` field when iroh core makes this public
 // The kinds of control messages that can be sent
-// pub use iroh::net::magicsock::ControlMsg;
+// pub use iroh::magicsock::ControlMsg;
 
 /// Information about a remote node
 #[derive(Debug, uniffi::Record)]
@@ -85,8 +87,8 @@ pub struct RemoteInfo {
     pub last_used: Option<Duration>,
 }
 
-impl From<iroh::net::endpoint::RemoteInfo> for RemoteInfo {
-    fn from(value: iroh::net::endpoint::RemoteInfo) -> Self {
+impl From<iroh::endpoint::RemoteInfo> for RemoteInfo {
+    fn from(value: iroh::endpoint::RemoteInfo) -> Self {
         RemoteInfo {
             node_id: Arc::new(value.node_id.into()),
             relay_url: value.relay_url.map(|info| info.relay_url.to_string()),
@@ -180,19 +182,17 @@ pub struct ConnectionTypeMixed {
     pub relay_url: String,
 }
 
-impl From<iroh::net::endpoint::ConnectionType> for ConnectionType {
-    fn from(value: iroh::net::endpoint::ConnectionType) -> Self {
+impl From<iroh::endpoint::ConnectionType> for ConnectionType {
+    fn from(value: iroh::endpoint::ConnectionType) -> Self {
         match value {
-            iroh::net::endpoint::ConnectionType::Direct(addr) => {
+            iroh::endpoint::ConnectionType::Direct(addr) => {
                 ConnectionType::Direct(addr.to_string())
             }
-            iroh::net::endpoint::ConnectionType::Mixed(addr, url) => {
+            iroh::endpoint::ConnectionType::Mixed(addr, url) => {
                 ConnectionType::Mixed(addr.to_string(), url.to_string())
             }
-            iroh::net::endpoint::ConnectionType::Relay(url) => {
-                ConnectionType::Relay(url.to_string())
-            }
-            iroh::net::endpoint::ConnectionType::None => ConnectionType::None,
+            iroh::endpoint::ConnectionType::Relay(url) => ConnectionType::Relay(url.to_string()),
+            iroh::endpoint::ConnectionType::None => ConnectionType::None,
         }
     }
 }
@@ -245,10 +245,10 @@ struct ProtocolWrapper {
     handler: Arc<dyn ProtocolHandler>,
 }
 
-impl iroh::router::ProtocolHandler for ProtocolWrapper {
+impl iroh::protocol::ProtocolHandler for ProtocolWrapper {
     fn accept(
         self: Arc<Self>,
-        conn: iroh::net::endpoint::Connecting,
+        conn: iroh::endpoint::Connecting,
     ) -> futures_lite::future::Boxed<anyhow::Result<()>> {
         Box::pin(async move {
             let conn = Connecting::new(conn);
@@ -302,7 +302,6 @@ pub enum NodeDiscoveryConfig {
     /// configure it here as a custom discovery mechanism ([`DiscoveryConfig::Custom`]).
     ///
     /// [number 0]: https://n0.computer
-    /// [iroh-net]: crate::net
     #[default]
     Default,
 }
@@ -311,8 +310,15 @@ pub enum NodeDiscoveryConfig {
 #[derive(uniffi::Object, Debug, Clone)]
 pub struct Iroh {
     pub(crate) storage: Storage,
-    router: iroh::router::Router,
+    router: iroh::protocol::Router,
     _local_pool: Arc<LocalPool>,
+    /// RPC client for node and net to hand out
+    pub(crate) client: RpcClient<
+        iroh_node_util::rpc::proto::RpcService,
+        FlumeConnector<iroh_node_util::rpc::proto::Response, iroh_node_util::rpc::proto::Request>,
+    >,
+    /// Handler task
+    _handler: Arc<AbortOnDropHandle<()>>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -322,7 +328,7 @@ pub(crate) enum Storage {
 }
 
 impl Iroh {
-    pub(crate) fn get_protocol<T: iroh::router::ProtocolHandler>(
+    pub(crate) fn get_protocol<T: iroh::protocol::ProtocolHandler>(
         &self,
         alpn: &[u8],
     ) -> Option<Arc<T>> {
@@ -359,7 +365,7 @@ impl Iroh {
     ) -> Result<Self, IrohError> {
         let path = PathBuf::from(path);
 
-        let builder = iroh::net::Endpoint::builder();
+        let builder = iroh::Endpoint::builder();
         let (docs_store, author_store) = if options.enable_docs {
             let docs_store = iroh_docs::store::Store::persistent(path.join("docs.redb"))?;
             let author_store =
@@ -384,17 +390,27 @@ impl Iroh {
         .await?;
         let router = builder.spawn().await?;
 
+        let (listener, connector) = quic_rpc::transport::flume::channel(1);
+        let listener = RpcServer::new(listener);
+        let client = RpcClient::new(connector);
+        let handler = listener.spawn_accept_loop(move |req, chan| {
+            todo!()
+            // clone().handle_rpc_request(req, chan)
+        });
+
         Ok(Iroh {
             storage: Storage::Fs,
             router,
             _local_pool: Arc::new(local_pool),
+            client,
+            _handler: Arc::new(handler),
         })
     }
 
     /// Create a new in memory iroh node with options.
     #[uniffi::constructor(async_runtime = "tokio")]
     pub async fn memory_with_options(options: NodeOptions) -> Result<Self, IrohError> {
-        let builder = iroh::net::Endpoint::builder();
+        let builder = iroh::Endpoint::builder();
 
         let (docs_store, author_store) = if options.enable_docs {
             let docs_store = iroh_docs::store::Store::memory();
@@ -417,29 +433,41 @@ impl Iroh {
         .await?;
         let router = builder.spawn().await?;
 
+        let (listener, connector) = quic_rpc::transport::flume::channel(1);
+        let listener = RpcServer::new(listener);
+        let client = RpcClient::new(connector);
+        let handler = listener.spawn_accept_loop(move |req, chan| {
+            todo!()
+            // .clone().handle_rpc_request(req, chan)
+        });
+
         Ok(Iroh {
             storage: Storage::Memory,
             router,
             _local_pool: Arc::new(local_pool),
+            client,
+            _handler: Arc::new(handler),
         })
     }
 
     /// Access to node specific funtionaliy.
     pub fn node(&self) -> Node {
         let node = self.router.clone();
-        let client = todo!();
+        let client = self.client.clone();
+        let client = iroh_node_util::rpc::client::node::Client::new(client);
+
         Node { node, client }
     }
 }
 
 async fn apply_options<S: iroh_blobs::store::Store>(
-    mut builder: iroh::net::endpoint::Builder,
+    mut builder: iroh::endpoint::Builder,
     options: NodeOptions,
     blob_store: S,
     docs_store: Option<iroh_docs::store::Store>,
     author_store: Option<iroh_docs::engine::DefaultAuthorStorage>,
     local_pool: &LocalPool,
-) -> anyhow::Result<iroh::router::RouterBuilder> {
+) -> anyhow::Result<iroh::protocol::RouterBuilder> {
     let gc_period = if let Some(millis) = options.gc_interval_millis {
         match millis {
             0 => None,
@@ -468,12 +496,12 @@ async fn apply_options<S: iroh_blobs::store::Store>(
 
     if let Some(secret_key) = options.secret_key {
         let key: [u8; 32] = AsRef::<[u8]>::as_ref(&secret_key).try_into()?;
-        let key = iroh::net::key::SecretKey::from_bytes(&key);
+        let key = iroh::key::SecretKey::from_bytes(&key);
         builder = builder.secret_key(key);
     }
 
     let endpoint = builder.bind().await?;
-    let mut builder = iroh::router::Router::builder(endpoint);
+    let mut builder = iroh::protocol::Router::builder(endpoint);
 
     let endpoint = Arc::new(Endpoint::new(builder.endpoint().clone()));
 
@@ -551,7 +579,7 @@ async fn apply_options<S: iroh_blobs::store::Store>(
 /// Iroh node client.
 #[derive(uniffi::Object)]
 pub struct Node {
-    node: iroh::router::Router,
+    node: iroh::protocol::Router,
     client: iroh_node_util::rpc::client::node::Client,
 }
 

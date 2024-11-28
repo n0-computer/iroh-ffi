@@ -2,7 +2,7 @@ use std::pin::Pin;
 use std::sync::Arc;
 
 use futures::{Sink, SinkExt, StreamExt};
-use iroh::net::NodeId;
+use iroh::NodeId;
 use iroh_gossip::net::GossipEvent;
 use iroh_gossip::rpc::{SubscribeResponse, SubscribeUpdate};
 use tokio::sync::Mutex;

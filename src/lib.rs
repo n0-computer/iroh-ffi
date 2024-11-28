@@ -70,9 +70,9 @@ pub fn set_log_level(level: LogLevel) {
 #[uniffi::export]
 pub fn start_metrics_collection() -> Result<(), IrohError> {
     iroh_metrics::core::Core::try_init(|reg, metrics| {
-        metrics.insert(iroh::net::metrics::MagicsockMetrics::new(reg));
-        metrics.insert(iroh::net::metrics::NetReportMetrics::new(reg));
-        metrics.insert(iroh::net::metrics::PortmapMetrics::new(reg));
+        metrics.insert(iroh::metrics::MagicsockMetrics::new(reg));
+        metrics.insert(iroh::metrics::NetReportMetrics::new(reg));
+        metrics.insert(iroh::metrics::PortmapMetrics::new(reg));
         metrics.insert(iroh_blobs::metrics::Metrics::new(reg));
         metrics.insert(iroh_gossip::metrics::Metrics::new(reg));
         metrics.insert(iroh_docs::metrics::Metrics::new(reg));

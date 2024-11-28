@@ -254,7 +254,7 @@ impl Blobs {
     ) -> Result<Arc<BlobTicket>, IrohError> {
         let mut addr = self.net_client.node_addr().await?;
         addr.apply_options(ticket_options.into());
-        let ticket = iroh::base::ticket::BlobTicket::new(addr, hash.0, blob_format.into())?;
+        let ticket = iroh::ticket::BlobTicket::new(addr, hash.0, blob_format.into())?;
         Ok(Arc::new(ticket.into()))
     }
 

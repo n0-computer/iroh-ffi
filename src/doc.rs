@@ -558,10 +558,10 @@ impl NodeAddr {
     }
 }
 
-impl TryFrom<NodeAddr> for iroh::net::endpoint::NodeAddr {
+impl TryFrom<NodeAddr> for iroh::endpoint::NodeAddr {
     type Error = IrohError;
     fn try_from(value: NodeAddr) -> Result<Self, Self::Error> {
-        let mut node_addr = iroh::net::endpoint::NodeAddr::new((&*value.node_id).into());
+        let mut node_addr = iroh::endpoint::NodeAddr::new((&*value.node_id).into());
         let addresses = value
             .direct_addresses()
             .into_iter()
@@ -580,8 +580,8 @@ impl TryFrom<NodeAddr> for iroh::net::endpoint::NodeAddr {
     }
 }
 
-impl From<iroh::net::endpoint::NodeAddr> for NodeAddr {
-    fn from(value: iroh::net::endpoint::NodeAddr) -> Self {
+impl From<iroh::endpoint::NodeAddr> for NodeAddr {
+    fn from(value: iroh::endpoint::NodeAddr) -> Self {
         NodeAddr {
             node_id: Arc::new(value.node_id.into()),
             relay_url: value.info.relay_url.map(|url| url.to_string()),
