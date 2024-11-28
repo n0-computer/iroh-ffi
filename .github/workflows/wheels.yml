@@ -48,7 +48,7 @@ jobs:
           PATH=/opt/python/cp311-cp311/bin:$PATH
           export PATH
           maturin --version
-          maturin build --release --manylinux 2014
+          maturin build --release --manylinux 2_28
       - name: Upload wheel
         uses: actions/upload-artifact@v3
         with:
