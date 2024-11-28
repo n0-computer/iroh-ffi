@@ -216,12 +216,6 @@ pub struct NodeOptions {
     /// Overwrites the default IPv6 address to bind to
     #[uniffi(default = None)]
     pub ipv6_addr: Option<String>,
-    /// Enable RPC. Defaults to `false`.
-    #[uniffi(default = false)]
-    pub enable_rpc: bool,
-    /// Overwrite the default RPC address.
-    #[uniffi(default = None)]
-    pub rpc_addr: Option<String>,
     /// Configure the node discovery. Defaults to the default set of config
     #[uniffi(default = None)]
     pub node_discovery: Option<NodeDiscoveryConfig>,
@@ -276,8 +270,6 @@ impl Default for NodeOptions {
             gc_interval_millis: Some(0),
             blob_events: None,
             enable_docs: false,
-            enable_rpc: false,
-            rpc_addr: None,
             ipv4_addr: None,
             ipv6_addr: None,
             node_discovery: None,
@@ -319,8 +311,8 @@ pub enum NodeDiscoveryConfig {
 #[derive(uniffi::Object, Debug, Clone)]
 pub struct Iroh {
     pub(crate) storage: Storage,
-    node: iroh::node::Node,
-    local_pool: Arc<LocalPool>,
+    router: iroh::router::Router,
+    _local_pool: Arc<LocalPool>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -330,15 +322,11 @@ pub(crate) enum Storage {
 }
 
 impl Iroh {
-    pub(crate) fn inner_client(&self) -> &iroh::client::Iroh {
-        &self.node
-    }
-
     pub(crate) fn get_protocol<T: iroh::router::ProtocolHandler>(
         &self,
         alpn: &[u8],
     ) -> Option<Arc<T>> {
-        self.node.get_protocol(alpn)
+        self.router.get_protocol(alpn)
     }
 }
 
@@ -371,7 +359,7 @@ impl Iroh {
     ) -> Result<Self, IrohError> {
         let path = PathBuf::from(path);
 
-        let builder = iroh::node::Builder::memory().persist(&path).await?;
+        let builder = iroh::net::Endpoint::builder();
         let (docs_store, author_store) = if options.enable_docs {
             let docs_store = iroh_docs::store::Store::persistent(path.join("docs.redb"))?;
             let author_store =
@@ -394,19 +382,20 @@ impl Iroh {
             &local_pool,
         )
         .await?;
-        let node = builder.spawn().await?;
+        let router = builder.spawn().await?;
 
         Ok(Iroh {
             storage: Storage::Fs,
-            node,
-            local_pool: Arc::new(local_pool),
+            router,
+            _local_pool: Arc::new(local_pool),
         })
     }
 
     /// Create a new in memory iroh node with options.
     #[uniffi::constructor(async_runtime = "tokio")]
     pub async fn memory_with_options(options: NodeOptions) -> Result<Self, IrohError> {
-        let builder = iroh::node::Builder::memory();
+        let builder = iroh::net::Endpoint::builder();
+
         let (docs_store, author_store) = if options.enable_docs {
             let docs_store = iroh_docs::store::Store::memory();
             let author_store = iroh_docs::engine::DefaultAuthorStorage::Mem;
@@ -426,29 +415,31 @@ impl Iroh {
             &local_pool,
         )
         .await?;
-        let node = builder.spawn().await?;
+        let router = builder.spawn().await?;
 
         Ok(Iroh {
             storage: Storage::Memory,
-            node,
-            local_pool: Arc::new(local_pool),
+            router,
+            _local_pool: Arc::new(local_pool),
         })
     }
 
     /// Access to node specific funtionaliy.
     pub fn node(&self) -> Node {
-        Node { node: self.clone() }
+        let node = self.router.clone();
+        let client = todo!();
+        Node { node, client }
     }
 }
 
 async fn apply_options<S: iroh_blobs::store::Store>(
-    mut builder: iroh::node::Builder,
+    mut builder: iroh::net::endpoint::Builder,
     options: NodeOptions,
     blob_store: S,
     docs_store: Option<iroh_docs::store::Store>,
     author_store: Option<iroh_docs::engine::DefaultAuthorStorage>,
     local_pool: &LocalPool,
-) -> anyhow::Result<iroh::node::ProtocolBuilder> {
+) -> anyhow::Result<iroh::router::RouterBuilder> {
     let gc_period = if let Some(millis) = options.gc_interval_millis {
         match millis {
             0 => None,
@@ -470,21 +461,9 @@ async fn apply_options<S: iroh_blobs::store::Store>(
         builder = builder.bind_addr_v6(addr.parse()?);
     }
 
-    if options.enable_rpc {
-        builder = builder.enable_rpc().await?;
-    }
-
-    if let Some(addr) = options.rpc_addr {
-        builder = builder.enable_rpc_with_addr(addr.parse()?).await?;
-    }
-
     builder = match options.node_discovery {
-        Some(NodeDiscoveryConfig::None) => {
-            builder.node_discovery(iroh::node::DiscoveryConfig::None)
-        }
-        Some(NodeDiscoveryConfig::Default) | None => {
-            builder.node_discovery(iroh::node::DiscoveryConfig::Default)
-        }
+        Some(NodeDiscoveryConfig::None) => builder.clear_discovery(),
+        Some(NodeDiscoveryConfig::Default) | None => builder.discovery_n0(),
     };
 
     if let Some(secret_key) = options.secret_key {
@@ -493,7 +472,8 @@ async fn apply_options<S: iroh_blobs::store::Store>(
         builder = builder.secret_key(key);
     }
 
-    let mut builder = builder.build().await?;
+    let endpoint = builder.bind().await?;
+    let mut builder = iroh::router::Router::builder(endpoint);
 
     let endpoint = Arc::new(Endpoint::new(builder.endpoint().clone()));
 
@@ -534,7 +514,7 @@ async fn apply_options<S: iroh_blobs::store::Store>(
         builder.endpoint().clone(),
         local_pool.handle().clone(),
     );
-    let blobs = Arc::new(Blobs::new_with_events(
+    let blobs = Arc::new(Blobs::new(
         blob_store.clone(),
         local_pool.handle().clone(),
         Default::default(),
@@ -571,13 +551,8 @@ async fn apply_options<S: iroh_blobs::store::Store>(
 /// Iroh node client.
 #[derive(uniffi::Object)]
 pub struct Node {
-    node: Iroh,
-}
-
-impl Node {
-    fn node(&self) -> &iroh::client::Iroh {
-        self.node.inner_client()
-    }
+    node: iroh::router::Router,
+    client: iroh_node_util::rpc::client::node::Client,
 }
 
 #[uniffi::export]
@@ -585,7 +560,7 @@ impl Node {
     /// Get statistics of the running node.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn stats(&self) -> Result<HashMap<String, CounterStats>, IrohError> {
-        let stats = self.node().node().stats().await?;
+        let stats = self.client.stats().await?;
         let stats = stats
             .into_iter()
             .map(|(k, v)| {
@@ -604,32 +579,20 @@ impl Node {
     /// Get status information about a node
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn status(&self) -> Result<Arc<NodeStatus>, IrohError> {
-        let res = self
-            .node()
-            .node()
-            .status()
-            .await
-            .map(|n| Arc::new(n.into()))?;
+        let res = self.client.status().await.map(|n| Arc::new(n.into()))?;
         Ok(res)
     }
 
     /// Shutdown this iroh node.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn shutdown(&self) -> Result<(), IrohError> {
-        self.node.node.clone().shutdown().await?;
+        self.node.clone().shutdown().await?;
         Ok(())
-    }
-
-    /// Returns `Some(addr)` if an RPC endpoint is running, `None` otherwise.
-    #[uniffi::method]
-    pub fn my_rpc_addr(&self) -> Option<String> {
-        let addr = self.node.node.my_rpc_addr();
-        addr.map(|a| a.to_string())
     }
 
     #[uniffi::method]
     pub fn endpoint(&self) -> Endpoint {
-        Endpoint::new(self.node.node.endpoint().clone())
+        Endpoint::new(self.node.endpoint().clone())
     }
 }
 
@@ -712,14 +675,5 @@ mod tests {
         let node = Iroh::memory().await.unwrap();
         let id = node.net().node_id().await.unwrap();
         println!("{id}");
-    }
-
-    #[tokio::test]
-    async fn test_memory_rpc() {
-        let mut opts = NodeOptions::default();
-        opts.enable_rpc = true;
-        let node = Iroh::memory_with_options(opts).await.unwrap();
-        let _rpc_addr = node.node().my_rpc_addr().unwrap();
-        let _node_id = node.net().node_id().await.unwrap();
     }
 }

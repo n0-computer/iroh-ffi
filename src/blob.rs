@@ -17,7 +17,7 @@ use crate::{IrohError, NodeAddr};
 #[derive(uniffi::Object)]
 pub struct Blobs {
     client: MemClient,
-    net_client: iroh::client::net::Client,
+    net_client: iroh_node_util::rpc::client::net::Client,
 }
 
 #[uniffi::export]
@@ -43,7 +43,7 @@ impl Iroh {
             }
         };
 
-        let net_client = self.inner_client().net().clone();
+        let net_client = todo!();
         Blobs { client, net_client }
     }
 }

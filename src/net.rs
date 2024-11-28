@@ -5,49 +5,43 @@ use crate::{Iroh, IrohError, NodeAddr, PublicKey, RemoteInfo};
 /// Iroh net client.
 #[derive(uniffi::Object)]
 pub struct Net {
-    node: Iroh,
+    client: NetClient,
 }
 
 #[uniffi::export]
 impl Iroh {
     /// Access to blob specific funtionaliy.
     pub fn net(&self) -> Net {
-        Net { node: self.clone() }
+        let client = todo!();
+        Net { client }
     }
 }
 
-impl Net {
-    fn client(&self) -> &iroh::client::Iroh {
-        self.node.inner_client()
-    }
-}
+type NetClient = iroh_node_util::rpc::client::net::Client;
 
 #[uniffi::export]
 impl Net {
     /// The string representation of the PublicKey of this node.
     pub async fn node_id(&self) -> Result<String, IrohError> {
-        let id = self.client().net().node_id().await?;
+        let id = self.client.node_id().await?;
         Ok(id.to_string())
     }
 
     /// Return the [`NodeAddr`] for this node.
     pub async fn node_addr(&self) -> Result<NodeAddr, IrohError> {
-        let addr = self.client().net().node_addr().await?;
+        let addr = self.client.node_addr().await?;
         Ok(addr.into())
     }
 
     /// Add a known node address to the node.
     pub async fn add_node_addr(&self, addr: &NodeAddr) -> Result<(), IrohError> {
-        self.client()
-            .net()
-            .add_node_addr(addr.clone().try_into()?)
-            .await?;
+        self.client.add_node_addr(addr.clone().try_into()?).await?;
         Ok(())
     }
 
     /// Get the relay server we are connected to.
     pub async fn home_relay(&self) -> Result<Option<String>, IrohError> {
-        let relay = self.client().net().home_relay().await?;
+        let relay = self.client.home_relay().await?;
         Ok(relay.map(|u| u.to_string()))
     }
 
@@ -55,8 +49,7 @@ impl Net {
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn remote_info_list(&self) -> Result<Vec<RemoteInfo>, IrohError> {
         let infos = self
-            .client()
-            .net()
+            .client
             .remote_info_iter()
             .await?
             .map_ok(|info| info.into())
@@ -69,8 +62,7 @@ impl Net {
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn remote_info(&self, node_id: &PublicKey) -> Result<Option<RemoteInfo>, IrohError> {
         let info = self
-            .client()
-            .net()
+            .client
             .remote_info(node_id.into())
             .await
             .map(|i| i.map(|i| i.into()))?;
