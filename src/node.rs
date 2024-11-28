@@ -6,7 +6,9 @@ use std::{
     time::Duration,
 };
 
-use iroh_blobs::{downloader::Downloader, net_protocol::Blobs, util::local_pool::LocalPool};
+use iroh_blobs::{
+    downloader::Downloader, net_protocol::Blobs, provider::EventSender, util::local_pool::LocalPool,
+};
 use iroh_node_util::rpc::server::AbstractNode;
 use quic_rpc::{transport::flume::FlumeConnector, RpcClient, RpcServer};
 use tokio_util::task::AbortOnDropHandle;
@@ -490,10 +492,12 @@ async fn apply_options<S: iroh_blobs::store::Store>(
     } else {
         None
     };
-    // TODO:
-    // if let Some(blob_events_cb) = options.blob_events {
-    //     builder = builder.blobs_events(BlobProvideEvents::new(blob_events_cb))
-    // }
+
+    let blob_events = if let Some(blob_events_cb) = options.blob_events {
+        BlobProvideEvents::new(blob_events_cb).into()
+    } else {
+        EventSender::default()
+    };
 
     if let Some(addr) = options.ipv4_addr {
         builder = builder.bind_addr_v4(addr.parse()?);
@@ -559,7 +563,7 @@ async fn apply_options<S: iroh_blobs::store::Store>(
     let blobs = Arc::new(Blobs::new(
         blob_store.clone(),
         local_pool.handle().clone(),
-        Default::default(),
+        blob_events,
         downloader.clone(),
         builder.endpoint().clone(),
     ));
