@@ -15,7 +15,7 @@ env:
   IROH_FORCE_STAGING_RELAYS: "1"
   
 jobs:
-  manylinux2014:
+  manylinux:
     runs-on: ${{ matrix.runner }}
     container: ${{ matrix.container }}
     strategy:
