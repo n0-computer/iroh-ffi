@@ -376,6 +376,9 @@ impl Iroh {
         options: NodeOptions,
     ) -> Result<Self, IrohError> {
         let path = PathBuf::from(path);
+        tokio::fs::create_dir_all(&path)
+            .await
+            .map_err(|err| anyhow::anyhow!(err))?;
 
         let builder = iroh::Endpoint::builder();
         let (docs_store, author_store) = if options.enable_docs {
