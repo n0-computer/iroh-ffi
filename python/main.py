@@ -13,7 +13,7 @@ async def main():
     parser.add_argument('--ticket', type=str, help='ticket to join a document')
 
     args = parser.parse_args()
-    
+
     # create iroh node
     options = iroh.NodeOptions()
     options.enable_docs = True
@@ -32,12 +32,12 @@ async def main():
         doc_id = doc.id()
         # create ticket to share doc
         ticket = await doc.share(iroh.ShareMode.READ, iroh.AddrInfoOptions.RELAY_AND_ADDRESSES)
-        
+
         # add data to doc
         await doc.set_bytes(author, b"hello", b"world")
         await doc.set_bytes(author, b"foo", b"bar")
         await doc.set_bytes(author, b"baz", b"qux")
-        
+
         print("Created doc: {}".format(doc_id))
         print("Keep this running and in another terminal run:\n\npython main.py --ticket {}".format(ticket))
     else:
@@ -50,11 +50,11 @@ async def main():
         # sync & print
         print("Waiting 5 seconds to let stuff sync...")
         await asyncio.sleep(5)
-        
+
         # query all keys
         query = iroh.Query.all(None)
         keys = await doc.get_many(query)
-        
+
         print("Data:")
         for entry in keys:
             # get key, hash, and content for each entry
@@ -62,7 +62,7 @@ async def main():
             hash = entry.content_hash()
             content = await entry.content_bytes(doc)
             print("{} : {} (hash: {})".format(key.decode("utf8"), content.decode("utf8"), hash))
-            
+
     input("Press Enter to exit...")
 
 if __name__ == "__main__":

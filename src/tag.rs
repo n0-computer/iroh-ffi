@@ -1,13 +1,9 @@
 use std::sync::Arc;
 
-use crate::{BlobFormat, Hash, Iroh, IrohError, Storage};
+use crate::{BlobFormat, Hash, Iroh, IrohError, Storage, TagsClient};
 use bytes::Bytes;
 use futures::TryStreamExt;
 use quic_rpc::transport::flume::FlumeConnector;
-
-type MemClient = iroh_blobs::rpc::client::tags::Client<
-    FlumeConnector<iroh_blobs::rpc::proto::Response, iroh_blobs::rpc::proto::Request>,
->;
 
 /// A response to a list collections request
 #[derive(Debug, uniffi::Record)]
@@ -33,39 +29,21 @@ impl From<iroh_blobs::rpc::client::tags::TagInfo> for TagInfo {
 /// Iroh tags client.
 #[derive(uniffi::Object)]
 pub struct Tags {
-    tags: MemClient,
+    tags: TagsClient,
 }
 
 #[uniffi::export]
 impl Iroh {
     /// Access to tags specific funtionaliy.
     pub fn tags(&self) -> Tags {
-        let client = match self.storage {
-            Storage::Fs => {
-                let blobs = self
-                    .get_protocol::<iroh_blobs::net_protocol::Blobs<iroh_blobs::store::fs::Store>>(
-                        iroh_blobs::protocol::ALPN,
-                    )
-                    .expect("missing blobs");
-                blobs.client()
-            }
-            Storage::Memory => {
-                let blobs = self
-                    .get_protocol::<iroh_blobs::net_protocol::Blobs<iroh_blobs::store::mem::Store>>(
-                        iroh_blobs::protocol::ALPN,
-                    )
-                    .expect("missing blobs");
-                blobs.client()
-            }
-        };
-        let tags = client.tags();
-
-        Tags { tags }
+        Tags {
+            tags: self.tags_client.clone(),
+        }
     }
 }
 
 impl Tags {
-    fn client(&self) -> &MemClient {
+    fn client(&self) -> &TagsClient {
         &self.tags
     }
 }

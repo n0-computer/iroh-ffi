@@ -6,53 +6,32 @@ use std::{
 };
 
 use futures::{StreamExt, TryStreamExt};
-use quic_rpc::transport::flume::FlumeConnector;
 use serde::{Deserialize, Serialize};
 
-use crate::{node::Iroh, CallbackError, Storage};
+use crate::{node::Iroh, BlobsClient, CallbackError, NetClient};
 use crate::{ticket::AddrInfoOptions, BlobTicket};
 use crate::{IrohError, NodeAddr};
 
 /// Iroh blobs client.
 #[derive(uniffi::Object)]
 pub struct Blobs {
-    client: MemClient,
-    net_client: iroh_node_util::rpc::client::net::Client,
+    client: BlobsClient,
+    net_client: NetClient,
 }
 
 #[uniffi::export]
 impl Iroh {
     /// Access to blob specific funtionaliy.
     pub fn blobs(&self) -> Blobs {
-        let client = match self.storage {
-            Storage::Fs => {
-                let blobs = self
-                    .get_protocol::<iroh_blobs::net_protocol::Blobs<iroh_blobs::store::fs::Store>>(
-                        iroh_blobs::protocol::ALPN,
-                    )
-                    .expect("missing blobs");
-                blobs.client()
-            }
-            Storage::Memory => {
-                let blobs = self
-                    .get_protocol::<iroh_blobs::net_protocol::Blobs<iroh_blobs::store::mem::Store>>(
-                        iroh_blobs::protocol::ALPN,
-                    )
-                    .expect("missing blobs");
-                blobs.client()
-            }
-        };
-
-        let net_client = iroh_node_util::rpc::client::net::Client::new(self.client.clone().boxed());
-        Blobs { client, net_client }
+        Blobs {
+            client: self.blobs_client.clone(),
+            net_client: self.net_client.clone(),
+        }
     }
 }
-type MemClient = iroh_blobs::rpc::client::blobs::Client<
-    FlumeConnector<iroh_blobs::rpc::proto::Response, iroh_blobs::rpc::proto::Request>,
->;
 
 impl Blobs {
-    fn client(&self) -> &MemClient {
+    fn client(&self) -> &BlobsClient {
         &self.client
     }
 }

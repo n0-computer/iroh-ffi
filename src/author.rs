@@ -1,9 +1,8 @@
 use std::{str::FromStr, sync::Arc};
 
 use futures::TryStreamExt;
-use quic_rpc::transport::flume::FlumeConnector;
 
-use crate::{Iroh, IrohError, Storage};
+use crate::{AuthorsClient, Iroh, IrohError};
 
 /// Identifier for an [`Author`]
 #[derive(Debug, Clone, PartialEq, Eq, uniffi::Object)]
@@ -61,45 +60,24 @@ impl std::fmt::Display for Author {
     }
 }
 
-type MemClient = iroh_docs::rpc::client::authors::Client<
-    FlumeConnector<iroh_docs::rpc::proto::Response, iroh_docs::rpc::proto::Request>,
->;
-
 /// Iroh authors client.
 #[derive(uniffi::Object)]
 pub struct Authors {
-    authors: MemClient,
+    authors: AuthorsClient,
 }
 
 #[uniffi::export]
 impl Iroh {
     /// Access to gossip specific funtionaliy.
     pub fn authors(&self) -> Authors {
-        match self.storage {
-            Storage::Fs => {
-                let docs = self
-                    .get_protocol::<iroh_docs::engine::Engine<iroh_blobs::store::fs::Store>>(
-                        iroh_docs::net::DOCS_ALPN,
-                    )
-                    .expect("no docs available");
-                let authors = docs.client().authors();
-                Authors { authors }
-            }
-            Storage::Memory => {
-                let docs = self
-                    .get_protocol::<iroh_docs::engine::Engine<iroh_blobs::store::mem::Store>>(
-                        iroh_docs::net::DOCS_ALPN,
-                    )
-                    .expect("no docs available");
-                let authors = docs.client().authors();
-                Authors { authors }
-            }
+        Authors {
+            authors: self.authors_client.clone().expect("missing docs"),
         }
     }
 }
 
 impl Authors {
-    fn client(&self) -> &MemClient {
+    fn client(&self) -> &AuthorsClient {
         &self.authors
     }
 }

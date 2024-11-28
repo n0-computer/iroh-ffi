@@ -312,7 +312,6 @@ pub enum NodeDiscoveryConfig {
 /// An Iroh node. Allows you to sync, store, and transfer data.
 #[derive(uniffi::Object, Debug, Clone)]
 pub struct Iroh {
-    pub(crate) storage: Storage,
     router: iroh::protocol::Router,
     _local_pool: Arc<LocalPool>,
     /// RPC client for node and net to hand out
@@ -322,7 +321,26 @@ pub struct Iroh {
     >,
     /// Handler task
     _handler: Arc<AbortOnDropHandle<()>>,
+    pub(crate) blobs_client: BlobsClient,
+    pub(crate) tags_client: TagsClient,
+    pub(crate) net_client: NetClient,
+    pub(crate) authors_client: Option<AuthorsClient>,
+    pub(crate) docs_client: Option<DocsClient>,
 }
+
+pub(crate) type NetClient = iroh_node_util::rpc::client::net::Client;
+pub(crate) type BlobsClient = iroh_blobs::rpc::client::blobs::Client<
+    FlumeConnector<iroh_blobs::rpc::proto::Response, iroh_blobs::rpc::proto::Request>,
+>;
+pub(crate) type TagsClient = iroh_blobs::rpc::client::tags::Client<
+    FlumeConnector<iroh_blobs::rpc::proto::Response, iroh_blobs::rpc::proto::Request>,
+>;
+pub(crate) type AuthorsClient = iroh_docs::rpc::client::authors::Client<
+    FlumeConnector<iroh_docs::rpc::proto::Response, iroh_docs::rpc::proto::Request>,
+>;
+pub(crate) type DocsClient = iroh_docs::rpc::client::docs::Client<
+    FlumeConnector<iroh_docs::rpc::proto::Response, iroh_docs::rpc::proto::Request>,
+>;
 
 #[derive(Debug, Clone)]
 struct NetNode(iroh::Endpoint);
@@ -396,6 +414,7 @@ impl Iroh {
             .await
             .map_err(|err| anyhow::anyhow!(err))?;
         let local_pool = LocalPool::default();
+        let enable_docs = options.enable_docs;
         let builder = apply_options(
             builder,
             options,
@@ -415,12 +434,38 @@ impl Iroh {
             iroh_node_util::rpc::server::handle_rpc_request(nn.clone(), req, chan)
         });
 
+        let blobs_client = {
+            let blobs = router
+                .get_protocol::<iroh_blobs::net_protocol::Blobs<iroh_blobs::store::fs::Store>>(
+                    iroh_blobs::protocol::ALPN,
+                )
+                .expect("missing blobs");
+            blobs.client()
+        };
+
+        let net_client = iroh_node_util::rpc::client::net::Client::new(client.clone().boxed());
+
+        let docs_client = if enable_docs {
+            let docs = router
+                .get_protocol::<iroh_docs::engine::Engine<iroh_blobs::store::fs::Store>>(
+                    iroh_docs::net::DOCS_ALPN,
+                )
+                .expect("no docs available");
+            Some(docs.client().clone())
+        } else {
+            None
+        };
+
         Ok(Iroh {
-            storage: Storage::Fs,
             router,
             _local_pool: Arc::new(local_pool),
             client,
             _handler: Arc::new(handler),
+            tags_client: blobs_client.tags(),
+            blobs_client,
+            net_client,
+            authors_client: docs_client.as_ref().map(|d| d.authors()),
+            docs_client,
         })
     }
 
@@ -439,6 +484,7 @@ impl Iroh {
         };
         let blobs_store = iroh_blobs::store::mem::Store::default();
         let local_pool = LocalPool::default();
+        let enable_docs = options.enable_docs;
         let builder = apply_options(
             builder,
             options,
@@ -458,12 +504,37 @@ impl Iroh {
             iroh_node_util::rpc::server::handle_rpc_request(nn.clone(), req, chan)
         });
 
+        let blobs_client = {
+            let blobs = router
+                .get_protocol::<iroh_blobs::net_protocol::Blobs<iroh_blobs::store::mem::Store>>(
+                    iroh_blobs::protocol::ALPN,
+                )
+                .expect("missing blobs");
+            blobs.client()
+        };
+        let net_client = iroh_node_util::rpc::client::net::Client::new(client.clone().boxed());
+
+        let docs_client = if enable_docs {
+            let docs = router
+                .get_protocol::<iroh_docs::engine::Engine<iroh_blobs::store::mem::Store>>(
+                    iroh_docs::net::DOCS_ALPN,
+                )
+                .expect("no docs available");
+            Some(docs.client().clone())
+        } else {
+            None
+        };
+
         Ok(Iroh {
-            storage: Storage::Memory,
             router,
             _local_pool: Arc::new(local_pool),
             client,
             _handler: Arc::new(handler),
+            net_client,
+            tags_client: blobs_client.tags(),
+            blobs_client,
+            authors_client: docs_client.as_ref().map(|d| d.authors()),
+            docs_client,
         })
     }
 

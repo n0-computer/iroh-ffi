@@ -5,6 +5,7 @@ use futures::{StreamExt, TryStreamExt};
 use quic_rpc::transport::flume::FlumeConnector;
 use serde::{Deserialize, Serialize};
 
+use crate::DocsClient;
 use crate::{
     ticket::AddrInfoOptions, AuthorId, CallbackError, DocTicket, Hash, Iroh, IrohError, PublicKey,
 };
@@ -29,26 +30,24 @@ impl From<iroh_docs::CapabilityKind> for CapabilityKind {
 /// Iroh docs client.
 #[derive(uniffi::Object)]
 pub struct Docs {
-    docs: Arc<iroh_docs::engine::Engine<iroh_blobs::store::fs::Store>>,
+    docs: DocsClient,
 }
+
+type MemConnector = FlumeConnector<iroh_docs::rpc::proto::Response, iroh_docs::rpc::proto::Request>;
 
 #[uniffi::export]
 impl Iroh {
     /// Access to docs specific funtionaliy.
     pub fn docs(&self) -> Docs {
-        let docs = self
-            .get_protocol(iroh_docs::net::DOCS_ALPN)
-            .expect("missing docs");
-        Docs { docs }
+        Docs {
+            docs: self.docs_client.clone().expect("missing docs"),
+        }
     }
 }
 
-type MemConnector = FlumeConnector<iroh_docs::rpc::proto::Response, iroh_docs::rpc::proto::Request>;
-type MemClient = iroh_docs::rpc::client::docs::Client<MemConnector>;
-
 impl Docs {
-    fn client(&self) -> &MemClient {
-        self.docs.client()
+    fn client(&self) -> &DocsClient {
+        &self.docs
     }
 }
 

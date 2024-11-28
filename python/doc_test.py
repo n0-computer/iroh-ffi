@@ -115,7 +115,7 @@ async def test_doc_entry_basics():
     entry = await doc.get_one(query)
     assert hash.equal(entry.content_hash())
     assert len(val) == entry.content_len()
-    got_val = await entry.content_bytes(doc)
+    got_val = await node.blobs().read_to_bytes(entry.content_hash())
     assert val == got_val
 
 @pytest.mark.asyncio
