@@ -16,6 +16,7 @@ impl Endpoint {
 
 #[uniffi::export]
 impl Endpoint {
+    #[uniffi::method]
     /// The string representation of this endpoint's NodeId.
     pub fn node_id(&self) -> Result<String, IrohError> {
         let id = self.0.node_id();
