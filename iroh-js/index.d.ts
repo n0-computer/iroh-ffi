@@ -341,6 +341,8 @@ export declare class DownloadPolicy {
 }
 
 export declare class Endpoint {
+  /** The string representation of this endpoint's NodeId. */
+  nodeId(): string
   connect(nodeAddr: NodeAddr, alpn: Uint8Array): Promise<Connection>
 }
 

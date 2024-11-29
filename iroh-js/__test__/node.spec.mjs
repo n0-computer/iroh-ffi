@@ -88,6 +88,8 @@ test('custom protocol', async (t) => {
   const endpoint = node2.node.endpoint()
   // console.log(`connecting to ${nodeAddr.nodeId}`)
 
+  t.is(endpoint.nodeId(), await node2.net.nodeId())
+
   const conn = await endpoint.connect(nodeAddr, alpn)
   const remote = await conn.getRemoteNodeId()
   // console.log(`connected to ${remote.toString()}`)
