@@ -16,6 +16,12 @@ impl Endpoint {
 
 #[uniffi::export]
 impl Endpoint {
+    /// The string representation of this endpoint's NodeId.
+    pub fn node_id(&self) -> Result<String, IrohError> {
+        let id = self.0.node_id();
+        Ok(id.to_string())
+    }
+
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn connect(
         &self,
