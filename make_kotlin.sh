@@ -1,23 +1,33 @@
 set -eu
 
-# TODO: convert to rust
+# $CLASSPATH must include `jna` and `kotlinx-coroutines`
 
-# Compile the rust
+LIB_EXTENSION=""
+LIB_NAME="libiroh_ffi"
 
-# Needed on macos for ring
-CC_aarch64_linux_android=aarch64-linux-android29-clang
-CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER=aarch64-linux-android29-clang
+case "$TEST_OS" in
+    "mac")
+        LIB_EXTENSION="dylib"
+        ;;
+    "linux")
+        LIB_EXTENSION="so"
+        ;;
+    "windows")
+        LIB_EXTENSION="lib"
+        LIB_NAME="iroh_ffi"
+        ;;
+    *)
+        echo "Unknown OS specified in TEST_OS"
+        exit 1
+        ;;
+esac
 
-echo "Building x86_64-linux-android"
-cargo build --lib --target x86_64-linux-android
-echo "Building i686-linux-android"
-cargo build --lib --target i686-linux-android
-echo "Building armv7-linux-androideabi"
-cargo build --lib --target armv7-linux-androideabi
-echo "Building aarch64-linux-android"
-cargo build --lib --target aarch64-linux-android
-
+echo "building library"
+cargo build --lib
 
 # UniFfi bindgen
 echo "generating binding"
-cargo run --bin uniffi-bindgen generate --language kotlin --out-dir ./kotlin --config uniffi.toml --lib-file target/debug/libiroh.so
+cargo run --bin uniffi-bindgen generate --language kotlin --out-dir ./kotlin/lib/src/main/kotlin/ --config uniffi.toml --library target/debug/$LIB_NAME.$LIB_EXTENSION
+
+# copy cdylib to outdir
+cp ./target/debug/$LIB_NAME.$LIB_EXTENSION ./kotlin/lib/src/main/resources/

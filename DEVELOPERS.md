@@ -27,7 +27,8 @@ Please include tests when you add new pieces of the API to the ffi bindings
 ### Kotlin
 
 - See `README.kotlin.md` for setup
-- Run tests using `./test_kotlin.sh`
+- Build using `./make_kotlin.sh`
+- Tests using `./gradlew test` from `./kotlin`
 
 ### Python
 
