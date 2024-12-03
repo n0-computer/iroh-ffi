@@ -58,7 +58,7 @@ pub struct LatencyAndControlMsg {
 }
 
 // TODO: enable and use for `LatencyAndControlMsg.control_msg` field when iroh core makes this public
-/// The kinds of control messages that can be sent
+// The kinds of control messages that can be sent
 // pub use iroh::net::magicsock::ControlMsg;
 
 /// Information about a remote node

@@ -19,6 +19,13 @@ impl Endpoint {
     }
 
     #[napi]
+    /// The string representation of this endpoint's NodeId.
+    pub fn node_id(&self) -> Result<String> {
+        let id = self.0.node_id();
+        Ok(id.to_string())
+    }
+
+    #[napi]
     pub async fn connect(&self, node_addr: NodeAddr, alpn: Uint8Array) -> Result<Connection> {
         let node_addr: iroh::net::NodeAddr = node_addr.try_into()?;
         let conn = self.0.connect(node_addr, &alpn).await?;

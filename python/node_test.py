@@ -1,10 +1,11 @@
 # tests that correspond to the `src/doc.rs` rust api
 import tempfile
+import iroh.iroh_ffi
 import pytest
 import asyncio
-import iroh
 
-from iroh import Iroh, ShareMode, LiveEventType, AddrInfoOptions, NodeOptions, NodeOptions, NodeAddr, PublicKey
+from iroh import Iroh, ShareMode, LiveEventType, AddrInfoOptions, NodeOptions
+
 
 @pytest.mark.asyncio
 async def test_basic_sync():
@@ -45,9 +46,9 @@ async def test_basic_sync():
     doc_1 = await node_1.docs().join_and_subscribe(ticket, cb1)
 
     # wait for initial sync
-    while (True):
+    while True:
         event = await found_s_1.get()
-        if (event.type() == LiveEventType.SYNC_FINISHED):
+        if event.type() == LiveEventType.SYNC_FINISHED:
             break
 
     # Create author on node_1
@@ -55,15 +56,16 @@ async def test_basic_sync():
     await doc_1.set_bytes(author, b"hello", b"world")
 
     # Wait for the content ready event
-    while (True):
+    while True:
         event = await found_s_0.get()
-        if (event.type() == LiveEventType.CONTENT_READY):
+        if event.type() == LiveEventType.CONTENT_READY:
             hash = event.as_content_ready()
 
             # Get content from hash
             val = await node_1.blobs().read_to_bytes(hash)
             assert b"world" == val
             break
+
 
 @pytest.mark.asyncio
 async def test_custom_protocol():
@@ -107,6 +109,8 @@ async def test_custom_protocol():
     node_addr = await node_1.net().node_addr()
 
     endpoint = node_2.node().endpoint()
+
+    assert endpoint.node_id() == await node_2.net().node_id()
 
     conn = await endpoint.connect(node_addr, alpn)
     remote = conn.get_remote_node_id()
