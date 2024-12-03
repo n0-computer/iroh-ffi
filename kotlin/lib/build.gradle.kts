@@ -25,12 +25,12 @@ dependencies {
 
     // Use the JUnit 5 integration.
     testImplementation(libs.junit.jupiter.engine)
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
 
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
     implementation("net.java.dev.jna:jna:5.15.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
