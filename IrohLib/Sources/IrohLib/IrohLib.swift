@@ -6395,14 +6395,6 @@ public protocol EntryProtocol: AnyObject {
     func author() -> AuthorId
 
     /**
-     * Read all content of an [`Entry`] into a buffer.
-     * This allocates a buffer for the full entry. Use only if you know that the entry you're
-     * reading is small. If not sure, use [`Self::content_len`] and check the size with
-     * before calling [`Self::content_bytes`].
-     */
-    func contentBytes(doc: Doc) async throws -> Data
-
-    /**
      * Get the content_hash of this entry.
      */
     func contentHash() -> Hash
@@ -6491,29 +6483,6 @@ open class Entry:
         return try! FfiConverterTypeAuthorId.lift(try! rustCall {
             uniffi_iroh_ffi_fn_method_entry_author(self.uniffiClonePointer(), $0)
         })
-    }
-
-    /**
-     * Read all content of an [`Entry`] into a buffer.
-     * This allocates a buffer for the full entry. Use only if you know that the entry you're
-     * reading is small. If not sure, use [`Self::content_len`] and check the size with
-     * before calling [`Self::content_bytes`].
-     */
-    open func contentBytes(doc: Doc) async throws -> Data {
-        return
-            try await uniffiRustCallAsync(
-                rustFutureFunc: {
-                    uniffi_iroh_ffi_fn_method_entry_content_bytes(
-                        self.uniffiClonePointer(),
-                        FfiConverterTypeDoc.lower(doc)
-                    )
-                },
-                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
-                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
-                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
-                liftFunc: FfiConverterData.lift,
-                errorHandler: FfiConverterTypeIrohError__as_error.lift
-            )
     }
 
     /**
@@ -7252,7 +7221,7 @@ public func FfiConverterTypeHash_lower(_ value: Hash) -> UnsafeMutableRawPointer
  */
 public protocol IrohProtocol: AnyObject {
     /**
-     * Access to authors specific funtionaliy.
+     * Access to gossip specific funtionaliy.
      */
     func authors() -> Authors
 
@@ -7340,24 +7309,6 @@ open class Iroh:
     }
 
     /**
-     * Create a new iroh client, connecting to an existing node.
-     */
-    public static func client(addr: String?) async throws -> Iroh {
-        return
-            try await uniffiRustCallAsync(
-                rustFutureFunc: {
-                    uniffi_iroh_ffi_fn_constructor_iroh_client(FfiConverterOptionString.lower(addr)
-                    )
-                },
-                pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
-                completeFunc: ffi_iroh_ffi_rust_future_complete_pointer,
-                freeFunc: ffi_iroh_ffi_rust_future_free_pointer,
-                liftFunc: FfiConverterTypeIroh.lift,
-                errorHandler: FfiConverterTypeIrohError__as_error.lift
-            )
-    }
-
-    /**
      * Create a new iroh node.
      *
      * All data will be only persistet in memory.
@@ -7434,7 +7385,7 @@ open class Iroh:
     }
 
     /**
-     * Access to authors specific funtionaliy.
+     * Access to gossip specific funtionaliy.
      */
     open func authors() -> Authors {
         return try! FfiConverterTypeAuthors.lift(try! rustCall {
@@ -8310,11 +8261,6 @@ public protocol NodeProtocol: AnyObject {
     func endpoint() -> Endpoint
 
     /**
-     * Returns `Some(addr)` if an RPC endpoint is running, `None` otherwise.
-     */
-    func myRpcAddr() -> String?
-
-    /**
      * Shutdown this iroh node.
      */
     func shutdown() async throws
@@ -8385,15 +8331,6 @@ open class Node:
     open func endpoint() -> Endpoint {
         return try! FfiConverterTypeEndpoint.lift(try! rustCall {
             uniffi_iroh_ffi_fn_method_node_endpoint(self.uniffiClonePointer(), $0)
-        })
-    }
-
-    /**
-     * Returns `Some(addr)` if an RPC endpoint is running, `None` otherwise.
-     */
-    open func myRpcAddr() -> String? {
-        return try! FfiConverterOptionString.lift(try! rustCall {
-            uniffi_iroh_ffi_fn_method_node_my_rpc_addr(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -8824,8 +8761,171 @@ public func FfiConverterTypeNodeStatus_lower(_ value: NodeStatus) -> UnsafeMutab
     return FfiConverterTypeNodeStatus.lower(value)
 }
 
+/**
+ * A token containing information for establishing a connection to a node.
+ *
+ * This allows establishing a connection to the node in most circumstances where it is
+ * possible to do so.
+ *
+ * It is a single item which can be easily serialized and deserialized.
+ */
+public protocol NodeTicketProtocol: AnyObject {
+    /**
+     * The [`NodeAddr`] of the provider for this ticket.
+     */
+    func nodeAddr() -> NodeAddr
+}
+
+/**
+ * A token containing information for establishing a connection to a node.
+ *
+ * This allows establishing a connection to the node in most circumstances where it is
+ * possible to do so.
+ *
+ * It is a single item which can be easily serialized and deserialized.
+ */
+open class NodeTicket:
+    CustomStringConvertible,
+    NodeTicketProtocol
+{
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+    #if swift(>=5.8)
+        @_documentation(visibility: private)
+    #endif
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    public required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    #if swift(>=5.8)
+        @_documentation(visibility: private)
+    #endif
+    public init(noPointer _: NoPointer) {
+        pointer = nil
+    }
+
+    #if swift(>=5.8)
+        @_documentation(visibility: private)
+    #endif
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_nodeticket(self.pointer, $0) }
+    }
+
+    /**
+     * Wrap the given [`NodeAddr`] as a [`NodeTicket`].
+     *
+     * The returned ticket can easily be deserialized using its string presentation, and
+     * later parsed again using [`Self::parse`].
+     */
+    public convenience init(addr: NodeAddr) throws {
+        let pointer =
+            try rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
+                uniffi_iroh_ffi_fn_constructor_nodeticket_new(
+                    FfiConverterTypeNodeAddr.lower(addr), $0
+                )
+            }
+        self.init(unsafeFromRawPointer: pointer)
+    }
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_iroh_ffi_fn_free_nodeticket(pointer, $0) }
+    }
+
+    /**
+     * Parse back a [`NodeTicket`] from its string presentation.
+     */
+    public static func parse(str: String) throws -> NodeTicket {
+        return try FfiConverterTypeNodeTicket.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
+            uniffi_iroh_ffi_fn_constructor_nodeticket_parse(
+                FfiConverterString.lower(str), $0
+            )
+        })
+    }
+
+    /**
+     * The [`NodeAddr`] of the provider for this ticket.
+     */
+    open func nodeAddr() -> NodeAddr {
+        return try! FfiConverterTypeNodeAddr.lift(try! rustCall {
+            uniffi_iroh_ffi_fn_method_nodeticket_node_addr(self.uniffiClonePointer(), $0)
+        })
+    }
+
+    open var description: String {
+        return try! FfiConverterString.lift(
+            try! rustCall {
+                uniffi_iroh_ffi_fn_method_nodeticket_uniffi_trait_display(self.uniffiClonePointer(), $0)
+            }
+        )
+    }
+}
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeNodeTicket: FfiConverter {
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = NodeTicket
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> NodeTicket {
+        return NodeTicket(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: NodeTicket) -> UnsafeMutableRawPointer {
+        return value.uniffiClonePointer()
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> NodeTicket {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: NodeTicket, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+public func FfiConverterTypeNodeTicket_lift(_ pointer: UnsafeMutableRawPointer) throws -> NodeTicket {
+    return try FfiConverterTypeNodeTicket.lift(pointer)
+}
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+public func FfiConverterTypeNodeTicket_lower(_ value: NodeTicket) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeNodeTicket.lower(value)
+}
+
 public protocol ProtocolCreator: AnyObject {
-    func create(endpoint: Endpoint, client: Iroh) -> ProtocolHandler
+    func create(endpoint: Endpoint) -> ProtocolHandler
 }
 
 open class ProtocolCreatorImpl:
@@ -8877,11 +8977,10 @@ open class ProtocolCreatorImpl:
         try! rustCall { uniffi_iroh_ffi_fn_free_protocolcreator(pointer, $0) }
     }
 
-    open func create(endpoint: Endpoint, client: Iroh) -> ProtocolHandler {
+    open func create(endpoint: Endpoint) -> ProtocolHandler {
         return try! FfiConverterTypeProtocolHandler.lift(try! rustCall {
             uniffi_iroh_ffi_fn_method_protocolcreator_create(self.uniffiClonePointer(),
-                                                             FfiConverterTypeEndpoint.lower(endpoint),
-                                                             FfiConverterTypeIroh.lower(client), $0)
+                                                             FfiConverterTypeEndpoint.lower(endpoint), $0)
         })
     }
 }
@@ -8894,7 +8993,6 @@ private enum UniffiCallbackInterfaceProtocolCreator {
         create: { (
             uniffiHandle: UInt64,
             endpoint: UnsafeMutableRawPointer,
-            client: UnsafeMutableRawPointer,
             uniffiOutReturn: UnsafeMutablePointer<UnsafeMutableRawPointer>,
             uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
         ) in
@@ -8904,8 +9002,7 @@ private enum UniffiCallbackInterfaceProtocolCreator {
                     throw UniffiInternalError.unexpectedStaleHandle
                 }
                 return try uniffiObj.create(
-                    endpoint: FfiConverterTypeEndpoint.lift(endpoint),
-                    client: FfiConverterTypeIroh.lift(client)
+                    endpoint: FfiConverterTypeEndpoint.lift(endpoint)
                 )
             }
 
@@ -13793,14 +13890,6 @@ public struct NodeOptions {
      */
     public var ipv6Addr: String?
     /**
-     * Enable RPC. Defaults to `false`.
-     */
-    public var enableRpc: Bool
-    /**
-     * Overwrite the default RPC address.
-     */
-    public var rpcAddr: String?
-    /**
      * Configure the node discovery. Defaults to the default set of config
      */
     public var nodeDiscovery: NodeDiscoveryConfig?
@@ -13830,12 +13919,6 @@ public struct NodeOptions {
             * Overwrites the default IPv6 address to bind to
             */ ipv6Addr: String? = nil,
         /**
-            * Enable RPC. Defaults to `false`.
-            */ enableRpc: Bool = false,
-        /**
-            * Overwrite the default RPC address.
-            */ rpcAddr: String? = nil,
-        /**
             * Configure the node discovery. Defaults to the default set of config
             */ nodeDiscovery: NodeDiscoveryConfig? = nil,
         /**
@@ -13847,8 +13930,6 @@ public struct NodeOptions {
         self.enableDocs = enableDocs
         self.ipv4Addr = ipv4Addr
         self.ipv6Addr = ipv6Addr
-        self.enableRpc = enableRpc
-        self.rpcAddr = rpcAddr
         self.nodeDiscovery = nodeDiscovery
         self.secretKey = secretKey
         self.protocols = protocols
@@ -13867,8 +13948,6 @@ public struct FfiConverterTypeNodeOptions: FfiConverterRustBuffer {
                 enableDocs: FfiConverterBool.read(from: &buf),
                 ipv4Addr: FfiConverterOptionString.read(from: &buf),
                 ipv6Addr: FfiConverterOptionString.read(from: &buf),
-                enableRpc: FfiConverterBool.read(from: &buf),
-                rpcAddr: FfiConverterOptionString.read(from: &buf),
                 nodeDiscovery: FfiConverterOptionTypeNodeDiscoveryConfig.read(from: &buf),
                 secretKey: FfiConverterOptionData.read(from: &buf),
                 protocols: FfiConverterOptionDictionaryDataTypeProtocolCreator.read(from: &buf)
@@ -13881,8 +13960,6 @@ public struct FfiConverterTypeNodeOptions: FfiConverterRustBuffer {
         FfiConverterBool.write(value.enableDocs, into: &buf)
         FfiConverterOptionString.write(value.ipv4Addr, into: &buf)
         FfiConverterOptionString.write(value.ipv6Addr, into: &buf)
-        FfiConverterBool.write(value.enableRpc, into: &buf)
-        FfiConverterOptionString.write(value.rpcAddr, into: &buf)
         FfiConverterOptionTypeNodeDiscoveryConfig.write(value.nodeDiscovery, into: &buf)
         FfiConverterOptionData.write(value.secretKey, into: &buf)
         FfiConverterOptionDictionaryDataTypeProtocolCreator.write(value.protocols, into: &buf)
@@ -16265,7 +16342,6 @@ public enum NodeDiscoveryConfig {
      * configure it here as a custom discovery mechanism ([`DiscoveryConfig::Custom`]).
      *
      * [number 0]: https://n0.computer
-     * [iroh-net]: crate::net
      */
     case `default`
 }
@@ -18021,9 +18097,6 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_method_entry_author() != 39787 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_method_entry_content_bytes() != 18583 {
-        return InitializationResult.apiChecksumMismatch
-    }
     if uniffi_iroh_ffi_checksum_method_entry_content_hash() != 26949 {
         return InitializationResult.apiChecksumMismatch
     }
@@ -18057,7 +18130,7 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_method_hash_to_hex() != 52108 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_method_iroh_authors() != 25106 {
+    if uniffi_iroh_ffi_checksum_method_iroh_authors() != 61389 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_iroh_blobs() != 50340 {
@@ -18141,9 +18214,6 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_method_node_endpoint() != 6829 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_method_node_my_rpc_addr() != 34751 {
-        return InitializationResult.apiChecksumMismatch
-    }
     if uniffi_iroh_ffi_checksum_method_node_shutdown() != 49624 {
         return InitializationResult.apiChecksumMismatch
     }
@@ -18174,7 +18244,10 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_method_nodestatus_version() != 3183 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_method_protocolcreator_create() != 44945 {
+    if uniffi_iroh_ffi_checksum_method_nodeticket_node_addr() != 3397 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_method_protocolcreator_create() != 33391 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_protocolhandler_accept() != 54515 {
@@ -18309,9 +18382,6 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_constructor_hash_new() != 30613 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_constructor_iroh_client() != 40014 {
-        return InitializationResult.apiChecksumMismatch
-    }
     if uniffi_iroh_ffi_checksum_constructor_iroh_memory() != 49939 {
         return InitializationResult.apiChecksumMismatch
     }
@@ -18325,6 +18395,12 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_constructor_nodeaddr_new() != 5759 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_constructor_nodeticket_new() != 8609 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_constructor_nodeticket_parse() != 16834 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_constructor_publickey_from_bytes() != 64011 {

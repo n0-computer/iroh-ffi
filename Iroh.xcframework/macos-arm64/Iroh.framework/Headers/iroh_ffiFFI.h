@@ -289,7 +289,7 @@ typedef void (*UniffiCallbackInterfaceGossipMessageCallbackMethod0)(uint64_t, vo
 #endif
 #ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_PROTOCOL_CREATOR_METHOD0
 #define UNIFFI_FFIDEF_CALLBACK_INTERFACE_PROTOCOL_CREATOR_METHOD0
-typedef void (*UniffiCallbackInterfaceProtocolCreatorMethod0)(uint64_t, void*_Nonnull, void*_Nonnull, void*_Nonnull* _Nonnull, 
+typedef void (*UniffiCallbackInterfaceProtocolCreatorMethod0)(uint64_t, void*_Nonnull, void*_Nonnull* _Nonnull, 
         RustCallStatus *_Nonnull uniffiCallStatus
     );
 
@@ -1433,11 +1433,6 @@ void uniffi_iroh_ffi_fn_free_entry(void*_Nonnull ptr, RustCallStatus *_Nonnull o
 void*_Nonnull uniffi_iroh_ffi_fn_method_entry_author(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENTRY_CONTENT_BYTES
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENTRY_CONTENT_BYTES
-uint64_t uniffi_iroh_ffi_fn_method_entry_content_bytes(void*_Nonnull ptr, void*_Nonnull doc
-);
-#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENTRY_CONTENT_HASH
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENTRY_CONTENT_HASH
 void*_Nonnull uniffi_iroh_ffi_fn_method_entry_content_hash(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -1576,11 +1571,6 @@ void*_Nonnull uniffi_iroh_ffi_fn_clone_iroh(void*_Nonnull ptr, RustCallStatus *_
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_IROH
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_IROH
 void uniffi_iroh_ffi_fn_free_iroh(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_IROH_CLIENT
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_IROH_CLIENT
-uint64_t uniffi_iroh_ffi_fn_constructor_iroh_client(RustBuffer addr
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_IROH_MEMORY
@@ -1799,11 +1789,6 @@ void uniffi_iroh_ffi_fn_free_node(void*_Nonnull ptr, RustCallStatus *_Nonnull ou
 void*_Nonnull uniffi_iroh_ffi_fn_method_node_endpoint(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_MY_RPC_ADDR
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_MY_RPC_ADDR
-RustBuffer uniffi_iroh_ffi_fn_method_node_my_rpc_addr(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_SHUTDOWN
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODE_SHUTDOWN
 uint64_t uniffi_iroh_ffi_fn_method_node_shutdown(void*_Nonnull ptr
@@ -1879,6 +1864,36 @@ RustBuffer uniffi_iroh_ffi_fn_method_nodestatus_rpc_addr(void*_Nonnull ptr, Rust
 RustBuffer uniffi_iroh_ffi_fn_method_nodestatus_version(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_NODETICKET
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_NODETICKET
+void*_Nonnull uniffi_iroh_ffi_fn_clone_nodeticket(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_NODETICKET
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_NODETICKET
+void uniffi_iroh_ffi_fn_free_nodeticket(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_NODETICKET_NEW
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_NODETICKET_NEW
+void*_Nonnull uniffi_iroh_ffi_fn_constructor_nodeticket_new(void*_Nonnull addr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_NODETICKET_PARSE
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_NODETICKET_PARSE
+void*_Nonnull uniffi_iroh_ffi_fn_constructor_nodeticket_parse(RustBuffer str, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODETICKET_NODE_ADDR
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODETICKET_NODE_ADDR
+void*_Nonnull uniffi_iroh_ffi_fn_method_nodeticket_node_addr(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODETICKET_UNIFFI_TRAIT_DISPLAY
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODETICKET_UNIFFI_TRAIT_DISPLAY
+RustBuffer uniffi_iroh_ffi_fn_method_nodeticket_uniffi_trait_display(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_PROTOCOLCREATOR
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_PROTOCOLCREATOR
 void*_Nonnull uniffi_iroh_ffi_fn_clone_protocolcreator(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -1896,7 +1911,7 @@ void uniffi_iroh_ffi_fn_init_callback_vtable_protocolcreator(UniffiVTableCallbac
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_PROTOCOLCREATOR_CREATE
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_PROTOCOLCREATOR_CREATE
-void*_Nonnull uniffi_iroh_ffi_fn_method_protocolcreator_create(void*_Nonnull ptr, void*_Nonnull endpoint, void*_Nonnull client, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_iroh_ffi_fn_method_protocolcreator_create(void*_Nonnull ptr, void*_Nonnull endpoint, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_PROTOCOLHANDLER
@@ -3401,12 +3416,6 @@ uint16_t uniffi_iroh_ffi_checksum_method_entry_author(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_ENTRY_CONTENT_BYTES
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_ENTRY_CONTENT_BYTES
-uint16_t uniffi_iroh_ffi_checksum_method_entry_content_bytes(void
-    
-);
-#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_ENTRY_CONTENT_HASH
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_ENTRY_CONTENT_HASH
 uint16_t uniffi_iroh_ffi_checksum_method_entry_content_hash(void
@@ -3641,12 +3650,6 @@ uint16_t uniffi_iroh_ffi_checksum_method_node_endpoint(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_MY_RPC_ADDR
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_MY_RPC_ADDR
-uint16_t uniffi_iroh_ffi_checksum_method_node_my_rpc_addr(void
-    
-);
-#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_SHUTDOWN
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODE_SHUTDOWN
 uint16_t uniffi_iroh_ffi_checksum_method_node_shutdown(void
@@ -3704,6 +3707,12 @@ uint16_t uniffi_iroh_ffi_checksum_method_nodestatus_rpc_addr(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODESTATUS_VERSION
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODESTATUS_VERSION
 uint16_t uniffi_iroh_ffi_checksum_method_nodestatus_version(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODETICKET_NODE_ADDR
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_NODETICKET_NODE_ADDR
+uint16_t uniffi_iroh_ffi_checksum_method_nodeticket_node_addr(void
     
 );
 #endif
@@ -3977,12 +3986,6 @@ uint16_t uniffi_iroh_ffi_checksum_constructor_hash_new(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_IROH_CLIENT
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_IROH_CLIENT
-uint16_t uniffi_iroh_ffi_checksum_constructor_iroh_client(void
-    
-);
-#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_IROH_MEMORY
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_IROH_MEMORY
 uint16_t uniffi_iroh_ffi_checksum_constructor_iroh_memory(void
@@ -4010,6 +4013,18 @@ uint16_t uniffi_iroh_ffi_checksum_constructor_iroh_persistent_with_options(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_NODEADDR_NEW
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_NODEADDR_NEW
 uint16_t uniffi_iroh_ffi_checksum_constructor_nodeaddr_new(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_NODETICKET_NEW
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_NODETICKET_NEW
+uint16_t uniffi_iroh_ffi_checksum_constructor_nodeticket_new(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_NODETICKET_PARSE
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_NODETICKET_PARSE
+uint16_t uniffi_iroh_ffi_checksum_constructor_nodeticket_parse(void
     
 );
 #endif
