@@ -353,12 +353,6 @@ impl AbstractNode for NetNode {
     fn shutdown(&self) {}
 }
 
-#[derive(Debug, Clone, Copy)]
-pub(crate) enum Storage {
-    Fs,
-    Memory,
-}
-
 impl Iroh {
     pub(crate) fn get_protocol<T: iroh::protocol::ProtocolHandler>(
         &self,
@@ -448,7 +442,7 @@ impl Iroh {
         let docs_client = if enable_docs {
             let docs = router
                 .get_protocol::<iroh_docs::engine::Engine<iroh_blobs::store::fs::Store>>(
-                    iroh_docs::net::DOCS_ALPN,
+                    iroh_docs::ALPN,
                 )
                 .expect("no docs available");
             Some(docs.client().clone())
@@ -517,7 +511,7 @@ impl Iroh {
         let docs_client = if enable_docs {
             let docs = router
                 .get_protocol::<iroh_docs::engine::Engine<iroh_blobs::store::mem::Store>>(
-                    iroh_docs::net::DOCS_ALPN,
+                    iroh_docs::ALPN,
                 )
                 .expect("no docs available");
             Some(docs.client().clone())
@@ -651,7 +645,7 @@ async fn apply_options<S: iroh_blobs::store::Store>(
             local_pool.handle().clone(),
         )
         .await?;
-        builder = builder.accept(iroh_docs::net::DOCS_ALPN.to_vec(), Arc::new(docs));
+        builder = builder.accept(iroh_docs::ALPN, Arc::new(docs));
     }
 
     // Add custom protocols

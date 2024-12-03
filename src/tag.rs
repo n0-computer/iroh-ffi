@@ -1,9 +1,8 @@
 use std::sync::Arc;
 
-use crate::{BlobFormat, Hash, Iroh, IrohError, Storage, TagsClient};
+use crate::{BlobFormat, Hash, Iroh, IrohError, TagsClient};
 use bytes::Bytes;
 use futures::TryStreamExt;
-use quic_rpc::transport::flume::FlumeConnector;
 
 /// A response to a list collections request
 #[derive(Debug, uniffi::Record)]

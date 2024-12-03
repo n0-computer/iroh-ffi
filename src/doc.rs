@@ -1686,7 +1686,7 @@ mod tests {
     fn test_node_addr() {
         //
         // create a node_id
-        let key_str = "ki6htfv2252cj2lhq3hxu4qfcfjtpjnukzonevigudzjpmmruxva";
+        let key_str = "7db06b57aac9b3640961d281239c8f23487ac7f7265da21607c5612d3527a254";
         let node_id = PublicKey::from_string(key_str.into()).unwrap();
         //
         // create socketaddrs
@@ -1716,7 +1716,7 @@ mod tests {
     fn test_author_id() {
         //
         // create id from string
-        let author_str = "mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q";
+        let author_str = "7db06b57aac9b3640961d281239c8f23487ac7f7265da21607c5612d3527a254";
         let author = AuthorId::from_string(author_str.into()).unwrap();
         //
         // call to_string, ensure equal
@@ -1755,7 +1755,7 @@ mod tests {
         };
         let author = Query::author(
             &AuthorId::from_string(
-                "mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q".to_string(),
+                "7db06b57aac9b3640961d281239c8f23487ac7f7265da21607c5612d3527a254".to_string(),
             )
             .unwrap(),
             Some(opts),
