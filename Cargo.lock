@@ -2115,7 +2115,7 @@ dependencies = [
 [[package]]
 name = "iroh-blobs"
 version = "0.28.1"
-source = "git+https://github.com/n0-computer/iroh-blobs?branch=iroh-v0-29-0#560efd0743fb8a1af36150a1571054639badbf8a"
+source = "git+https://github.com/n0-computer/iroh-blobs?branch=iroh-v0-29-0#ee9427c1f94cee3bbb37628762ea67edf922ad97"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -2165,7 +2165,7 @@ dependencies = [
 [[package]]
 name = "iroh-docs"
 version = "0.28.0"
-source = "git+https://github.com/n0-computer/iroh-docs?branch=iroh-v0-29-0#b09f75159f312856bb2412a77deb1d7d0f6b6857"
+source = "git+https://github.com/n0-computer/iroh-docs?branch=iroh-v0-29-0#4880c529d63dcc7016ef1e2188419bd7b1a076d1"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -2242,7 +2242,7 @@ dependencies = [
 [[package]]
 name = "iroh-gossip"
 version = "0.28.1"
-source = "git+https://github.com/n0-computer/iroh-gossip?branch=iroh-v0-29-0#01a6b5fc517bea316ab89e7f7f95c1a9255cc539"
+source = "git+https://github.com/n0-computer/iroh-gossip?branch=iroh-v0-29-0#e973f8a76219e8d6b5b573b9aa7cbcedacc82fde"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -2336,7 +2336,7 @@ dependencies = [
 [[package]]
 name = "iroh-node-util"
 version = "0.28.0"
-source = "git+https://github.com/n0-computer/iroh-node-util?branch=iroh-v0-29-0#fca941886f885fc7891a3a4d221a0a40bd81744c"
+source = "git+https://github.com/n0-computer/iroh-node-util?branch=iroh-v0-29-0#8c4eeb28e1f12121da2864d16be807fe957046d7"
 dependencies = [
  "anyhow",
  "futures-lite 2.5.0",
@@ -3553,8 +3553,9 @@ dependencies = [
 
 [[package]]
 name = "quic-rpc"
-version = "0.16.0"
-source = "git+https://github.com/n0-computer/quic-rpc?branch=iroh-v0-29-0#02b25594bbfd210acb29b65c59d80c3063565193"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "64ae09230350898e9a243a7a4a5fdde934edfb6b010e6a9cfb4136f79b54dbbb"
 dependencies = [
  "anyhow",
  "derive_more",
@@ -3574,8 +3575,9 @@ dependencies = [
 
 [[package]]
 name = "quic-rpc-derive"
-version = "0.16.0"
-source = "git+https://github.com/n0-computer/quic-rpc?branch=iroh-v0-29-0#02b25594bbfd210acb29b65c59d80c3063565193"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "44bb53e37914f7e7c6670dc2c834b9299110620cded49e783e78e9d8baf80128"
 dependencies = [
  "proc-macro2",
  "quic-rpc",
@@ -4824,9 +4826,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokio"
-version = "1.41.1"
+version = "1.42.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22cfb5bee7a6a52939ca9224d6ac897bb669134078daa8735560897f69de4d33"
+checksum = "5cec9b21b0450273377fc97bd4c33a8acffc8c996c987a7c5b319a0083707551"
 dependencies = [
  "backtrace",
  "bytes",

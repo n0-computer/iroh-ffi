@@ -56,7 +56,7 @@ serde = { version = "1.0.196", features = ["derive"] }
 serde_json = "1.0.113"
 futures-lite = "2.3.0"
 derive_more = { version = "1.0.0", features = ["debug"] }
-quic-rpc = "0.16"
+quic-rpc = "0.17"
 rand = "0.8"
 
 
@@ -77,5 +77,3 @@ iroh-gossip = { git = "https://github.com/n0-computer/iroh-gossip", branch = "ir
 iroh-docs = { git = "https://github.com/n0-computer/iroh-docs", branch = "iroh-v0-29-0" }
 iroh-blobs = { git = "https://github.com/n0-computer/iroh-blobs", branch = "iroh-v0-29-0" }
 iroh-node-util = { git = "https://github.com/n0-computer/iroh-node-util", branch = "iroh-v0-29-0" }
-quic-rpc = { git = "https://github.com/n0-computer/quic-rpc", branch = "iroh-v0-29-0" }
-quic-rpc-derive = { git = "https://github.com/n0-computer/quic-rpc", branch = "iroh-v0-29-0" }
