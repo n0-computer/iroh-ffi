@@ -30,7 +30,7 @@ class DocTest {
     @Test fun authorId() =
         runTest {
             // create id from string
-            val authorStr = "mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q"
+            val authorStr = "7db06b57aac9b3640961d281239c8f23487ac7f7265da21607c5612d3527a254"
             val author = AuthorId.fromString(authorStr)
 
             // call to_string, ensure equal
@@ -64,7 +64,7 @@ class DocTest {
             // author
             opts.direction = SortDirection.ASC
             opts.offset = 100u
-            val author = Query.author(AuthorId.fromString("mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q"), opts)
+            val author = Query.author(AuthorId.fromString("7db06b57aac9b3640961d281239c8f23487ac7f7265da21607c5612d3527a254"), opts)
             assert(100UL == author.offset())
             assert(null == author.limit())
 

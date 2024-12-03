@@ -34,7 +34,7 @@ def test_node_addr():
 def test_author_id():
     #
     # create id from string
-    author_str = "mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q"
+    author_str = "7db06b57aac9b3640961d281239c8f23487ac7f7265da21607c5612d3527a254"
     author = AuthorId.from_string(author_str)
     #
     # call to_string, ensure equal
@@ -65,7 +65,7 @@ def test_query():
     # author
     opts.direction = SortDirection.ASC
     opts.offset = 100
-    author = Query.author(AuthorId.from_string("mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q"), opts)
+    author = Query.author(AuthorId.from_string("7db06b57aac9b3640961d281239c8f23487ac7f7265da21607c5612d3527a254"), opts)
     assert 100 == author.offset()
     assert author.limit() is None
 
