@@ -6265,6 +6265,11 @@ public func FfiConverterTypeDownloadProgress_lower(_ value: DownloadProgress) ->
 
 public protocol EndpointProtocol: AnyObject {
     func connect(nodeAddr: NodeAddr, alpn: Data) async throws -> Connection
+
+    /**
+     * The string representation of this endpoint's NodeId.
+     */
+    func nodeId() throws -> String
 }
 
 open class Endpoint:
@@ -6331,6 +6336,15 @@ open class Endpoint:
                 liftFunc: FfiConverterTypeConnection.lift,
                 errorHandler: FfiConverterTypeIrohError__as_error.lift
             )
+    }
+
+    /**
+     * The string representation of this endpoint's NodeId.
+     */
+    open func nodeId() throws -> String {
+        return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
+            uniffi_iroh_ffi_fn_method_endpoint_node_id(self.uniffiClonePointer(), $0)
+        })
     }
 }
 
@@ -14189,7 +14203,6 @@ public func FfiConverterTypeQueryOptions_lower(_ value: QueryOptions) -> RustBuf
 }
 
 /**
- * The kinds of control messages that can be sent
  * Information about a remote node
  */
 public struct RemoteInfo {
@@ -18092,6 +18105,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_endpoint_connect() != 29734 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_method_endpoint_node_id() != 54517 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_entry_author() != 39787 {
