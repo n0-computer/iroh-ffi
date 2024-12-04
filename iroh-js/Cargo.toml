@@ -1,7 +1,7 @@
 [package]
 edition = "2021"
 name = "number0_iroh"
-version = "0.28.1"
+version = "0.29.0"
 license = "MIT OR Apache-2.0"
 authors = ["n0 team"]
 repository = "https://github.com/n0-computer/iroh-ffi"
@@ -10,15 +10,15 @@ repository = "https://github.com/n0-computer/iroh-ffi"
 crate-type = ["cdylib"]
 
 [dependencies]
-napi = { version = "=3.0.0-alpha.19", default-features = false, features = ["napi8", "error_anyhow", "async", "chrono_date"] }
-napi-derive = "=3.0.0-alpha.17"
+napi = { version = "=3.0.0-alpha.22", default-features = false, features = ["napi8", "error_anyhow", "async", "chrono_date"] }
+napi-derive = "=3.0.0-alpha.21"
 anyhow = "1.0.69"
 async-trait = "0.1.80"
 blake3 = "1.3.3"
 bytes = "1"
 data-encoding = { version = "2.3.3" }
-iroh = "0.28.1"
-iroh-gossip = "0.28.1"
+iroh = "0.29.0"
+iroh-gossip = "0.29.0"
 iroh-io = { version = "0.6" }
 libc = "0.2.141"
 num_cpus = { version = "1.15.0" }

@@ -26,10 +26,6 @@ pub struct NodeOptions {
     pub ipv4_addr: Option<String>,
     /// Overwrites the default IPv6 address to bind to
     pub ipv6_addr: Option<String>,
-    /// Enable RPC. Defaults to `false`.
-    pub enable_rpc: Option<bool>,
-    /// Overwrite the default RPC address.
-    pub rpc_addr: Option<String>,
     /// Configure the node discovery.
     pub node_discovery: Option<NodeDiscoveryConfig>,
     /// Provide a specific secret key, identifying this node. Must be 32 bytes long.

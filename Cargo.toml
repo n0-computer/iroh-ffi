@@ -1,6 +1,6 @@
 [package]
 name = "iroh-ffi"
-version = "0.28.1"
+version = "0.29.0"
 edition = "2021"
 publish = false
 readme = "README.md"
@@ -13,9 +13,8 @@ documentation = "https://iroh.computer/docs"
 
 rust-version = "1.75"
 
-# TODO: fixme
-# [workspace]
-# members = ["iroh-js"]
+[workspace]
+members = ["iroh-js"]
 
 [package.metadata.maturin]
 name = "iroh"
@@ -36,11 +35,11 @@ bytes = "1"
 data-encoding = { version = "2.3.3" }
 iroh = { version = "0.29" }
 iroh-io = { version = "0.6" }
-iroh-gossip = { version = "0.28", features = ["rpc"] }
-iroh-docs = { version = "0.28", features = ["rpc"] }
-iroh-blobs = { version = "0.28", features = ["rpc"] }
+iroh-gossip = { version = "0.29", features = ["rpc"] }
+iroh-docs = { version = "0.29", features = ["rpc"] }
+iroh-blobs = { version = "0.29", features = ["rpc"] }
 iroh-metrics = { version = "0.29" }
-iroh-node-util = { version = "0.28", features = [] }
+iroh-node-util = { version = "0.29", features = [] }
 libc = "0.2.141"
 num_cpus = { version = "1.15.0" }
 range-collections = "0.4.0"
@@ -71,9 +70,3 @@ uniffi = { version = "0.28.0", features = ["build"] }
 
 [profile.release]
 lto = true
-
-[patch.crates-io]
-iroh-gossip = { git = "https://github.com/n0-computer/iroh-gossip", branch = "iroh-v0-29-0" }
-iroh-docs = { git = "https://github.com/n0-computer/iroh-docs", branch = "iroh-v0-29-0" }
-iroh-blobs = { git = "https://github.com/n0-computer/iroh-blobs", branch = "iroh-v0-29-0" }
-iroh-node-util = { git = "https://github.com/n0-computer/iroh-node-util", branch = "iroh-v0-29-0" }
