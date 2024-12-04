@@ -404,10 +404,9 @@ export declare class Iroh {
    * All data will be only persistet in memory.
    */
   static memory(opts?: NodeOptions | undefined | null): Promise<Iroh>
-  /** Create a new iroh client, connecting to an existing node. */
-  static client(addr?: string | undefined | null): Promise<Iroh>
   /** Access to node specific funtionaliy. */
   get node(): Node
+
 }
 
 /** Iroh net client. */
@@ -434,9 +433,7 @@ export declare class Node {
   status(): Promise<NodeStatus>
   /** Shutdown this iroh node. */
   shutdown(): Promise<void>
-  /** Returns `Some(addr)` if an RPC endpoint is running, `None` otherwise. */
-  myRpcAddr(): string | null
-  endpoint(): Endpoint | null
+  endpoint(): Endpoint
 }
 
 /**
@@ -599,6 +596,29 @@ export declare class SetTagOption {
   static auto(): SetTagOption
   /** Indicate you want a named tag */
   static named(tag: Array<number>): SetTagOption
+}
+
+/** A response to a list collections request */
+export declare class TagInfo {
+  /** The tag */
+  name: Array<number>
+  /** The format of the associated blob */
+  format: BlobFormat
+  /** The hash of the associated blob */
+  hash: string
+}
+
+/** Iroh tags client. */
+export declare class Tags {
+  /**
+   * List all tags
+   *
+   * Note: this allocates for each `ListTagsResponse`, if you have many `Tags`s this may be a prohibitively large list.
+   * Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
+   */
+  list(): Promise<Array<TagInfo>>
+  /** Delete a tag */
+  delete(name: Array<number>): Promise<void>
 }
 
 /** Progress updates for the add operation. */
@@ -1277,15 +1297,11 @@ export interface NodeOptions {
   ipv4Addr?: string
   /** Overwrites the default IPv6 address to bind to */
   ipv6Addr?: string
-  /** Enable RPC. Defaults to `false`. */
-  enableRpc?: boolean
-  /** Overwrite the default RPC address. */
-  rpcAddr?: string
   /** Configure the node discovery. */
   nodeDiscovery?: NodeDiscoveryConfig
   /** Provide a specific secret key, identifying this node. Must be 32 bytes long. */
   secretKey?: Array<number>
-  protocols?: Record<Array<number>, ((err: Error | null, arg0: Endpoint, arg1: Iroh) => ProtocolHandler)>
+  protocols?: Record<Array<number>, ((err: Error | null, arg: Endpoint) => ProtocolHandler)>
 }
 
 /** The response to a status request */

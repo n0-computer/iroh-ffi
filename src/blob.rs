@@ -8,27 +8,25 @@ use std::{
 use futures::{StreamExt, TryStreamExt};
 use serde::{Deserialize, Serialize};
 
-use crate::{node::Iroh, CallbackError};
+use crate::{node::Iroh, BlobsClient, CallbackError, NetClient};
 use crate::{ticket::AddrInfoOptions, BlobTicket};
 use crate::{IrohError, NodeAddr};
 
 /// Iroh blobs client.
 #[derive(uniffi::Object)]
 pub struct Blobs {
-    node: Iroh,
+    client: BlobsClient,
+    net_client: NetClient,
 }
 
 #[uniffi::export]
 impl Iroh {
     /// Access to blob specific funtionaliy.
     pub fn blobs(&self) -> Blobs {
-        Blobs { node: self.clone() }
-    }
-}
-
-impl Blobs {
-    fn client(&self) -> &iroh::client::Iroh {
-        self.node.inner_client()
+        Blobs {
+            client: self.blobs_client.clone(),
+            net_client: self.net_client.clone(),
+        }
     }
 }
 
@@ -40,7 +38,7 @@ impl Blobs {
     /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn list(&self) -> Result<Vec<Arc<Hash>>, IrohError> {
-        let response = self.client().blobs().list().await?;
+        let response = self.client.list().await?;
 
         let hashes: Vec<Arc<Hash>> = response
             .map_ok(|i| Arc::new(Hash(i.hash)))
@@ -55,7 +53,7 @@ impl Blobs {
     /// Method only exists in FFI
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn size(&self, hash: &Hash) -> Result<u64, IrohError> {
-        let r = self.client().blobs().read(hash.0).await?;
+        let r = self.client.read(hash.0).await?;
         Ok(r.size())
     }
 
@@ -67,8 +65,7 @@ impl Blobs {
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn read_to_bytes(&self, hash: Arc<Hash>) -> Result<Vec<u8>, IrohError> {
         let res = self
-            .client()
-            .blobs()
+            .client
             .read_to_bytes(hash.0)
             .await
             .map(|b| b.to_vec())?;
@@ -88,8 +85,7 @@ impl Blobs {
         len: &ReadAtLen,
     ) -> Result<Vec<u8>, IrohError> {
         let res = self
-            .client()
-            .blobs()
+            .client
             .read_at_to_bytes(hash.0, offset, (*len).into())
             .await
             .map(|b| b.to_vec())?;
@@ -112,8 +108,7 @@ impl Blobs {
         cb: Arc<dyn AddCallback>,
     ) -> Result<(), IrohError> {
         let mut stream = self
-            .client()
-            .blobs()
+            .client
             .add_from_path(
                 path.into(),
                 in_place,
@@ -132,7 +127,7 @@ impl Blobs {
     /// The `path` field is expected to be the absolute path.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn write_to_path(&self, hash: Arc<Hash>, path: String) -> Result<(), IrohError> {
-        let mut reader = self.client().blobs().read(hash.0).await?;
+        let mut reader = self.client.read(hash.0).await?;
         let path: PathBuf = path.into();
         if let Some(dir) = path.parent() {
             tokio::fs::create_dir_all(dir)
@@ -151,7 +146,7 @@ impl Blobs {
     /// Write a blob by passing bytes.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn add_bytes(&self, bytes: Vec<u8>) -> Result<BlobAddOutcome, IrohError> {
-        let res = self.client().blobs().add_bytes(bytes).await?;
+        let res = self.client.add_bytes(bytes).await?;
         Ok(res.into())
     }
 
@@ -163,9 +158,8 @@ impl Blobs {
         name: String,
     ) -> Result<BlobAddOutcome, IrohError> {
         let res = self
-            .client()
-            .blobs()
-            .add_bytes_named(bytes, iroh::blobs::Tag(name.into()))
+            .client
+            .add_bytes_named(bytes, iroh_blobs::Tag(name.into()))
             .await?;
         Ok(res.into())
     }
@@ -179,8 +173,7 @@ impl Blobs {
         cb: Arc<dyn DownloadCallback>,
     ) -> Result<(), IrohError> {
         let mut stream = self
-            .client()
-            .blobs()
+            .client
             .download_with_opts(hash.0, opts.0.clone())
             .await?;
         while let Some(progress) = stream.next().await {
@@ -215,8 +208,7 @@ impl Blobs {
         }
 
         let stream = self
-            .client()
-            .blobs()
+            .client
             .export(hash.0, destination, format.into(), mode.into())
             .await?;
 
@@ -233,11 +225,9 @@ impl Blobs {
         blob_format: BlobFormat,
         ticket_options: AddrInfoOptions,
     ) -> Result<Arc<BlobTicket>, IrohError> {
-        let ticket = self
-            .client()
-            .blobs()
-            .share(hash.0, blob_format.into(), ticket_options.into())
-            .await?;
+        let mut addr = self.net_client.node_addr().await?;
+        addr.apply_options(ticket_options.into());
+        let ticket = iroh::ticket::BlobTicket::new(addr, hash.0, blob_format.into())?;
         Ok(Arc::new(ticket.into()))
     }
 
@@ -248,8 +238,7 @@ impl Blobs {
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn list_incomplete(&self) -> Result<Vec<IncompleteBlobInfo>, IrohError> {
         let blobs = self
-            .client()
-            .blobs()
+            .client
             .list_incomplete()
             .await?
             .map_ok(|res| res.into())
@@ -265,8 +254,7 @@ impl Blobs {
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn list_collections(&self) -> Result<Vec<CollectionInfo>, IrohError> {
         let blobs = self
-            .client()
-            .blobs()
+            .client
             .list_collections()?
             .map_ok(|res| res.into())
             .try_collect::<Vec<_>>()
@@ -277,7 +265,7 @@ impl Blobs {
     /// Read the content of a collection
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn get_collection(&self, hash: Arc<Hash>) -> Result<Arc<Collection>, IrohError> {
-        let collection = self.client().blobs().get_collection(hash.0).await?;
+        let collection = self.client.get_collection(hash.0).await?;
 
         Ok(Arc::new(collection.into()))
     }
@@ -295,14 +283,13 @@ impl Blobs {
     ) -> Result<HashAndTag, IrohError> {
         let collection = collection.0.read().unwrap().clone();
         let (hash, tag) = self
-            .client()
-            .blobs()
+            .client
             .create_collection(
                 collection,
                 (*tag).clone().into(),
                 tags_to_delete
                     .into_iter()
-                    .map(iroh::blobs::Tag::from)
+                    .map(iroh_blobs::Tag::from)
                     .collect(),
             )
             .await?;
@@ -316,7 +303,7 @@ impl Blobs {
     /// Delete a blob.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn delete_blob(&self, hash: Arc<Hash>) -> Result<(), IrohError> {
-        let mut tags = self.client().tags().list().await?;
+        let mut tags = self.client.tags().list().await?;
 
         let mut name = None;
         while let Some(tag) = tags.next().await {
@@ -327,8 +314,8 @@ impl Blobs {
         }
 
         if let Some(name) = name {
-            self.client().tags().delete(name).await?;
-            self.client().blobs().delete_blob((*hash).clone().0).await?;
+            self.client.tags().delete(name).await?;
+            self.client.delete_blob((*hash).clone().0).await?;
         }
 
         Ok(())
@@ -357,8 +344,8 @@ pub struct BlobAddOutcome {
     pub tag: Vec<u8>,
 }
 
-impl From<iroh::client::blobs::AddOutcome> for BlobAddOutcome {
-    fn from(value: iroh::client::blobs::AddOutcome) -> Self {
+impl From<iroh_blobs::rpc::client::blobs::AddOutcome> for BlobAddOutcome {
+    fn from(value: iroh_blobs::rpc::client::blobs::AddOutcome) -> Self {
         BlobAddOutcome {
             hash: Arc::new(value.hash.into()),
             format: value.format.into(),
@@ -398,12 +385,12 @@ impl ReadAtLen {
     }
 }
 
-impl From<ReadAtLen> for iroh::client::blobs::ReadAtLen {
+impl From<ReadAtLen> for iroh_blobs::rpc::client::blobs::ReadAtLen {
     fn from(value: ReadAtLen) -> Self {
         match value {
-            ReadAtLen::All => iroh::client::blobs::ReadAtLen::All,
-            ReadAtLen::Exact(s) => iroh::client::blobs::ReadAtLen::Exact(s),
-            ReadAtLen::AtMost(s) => iroh::client::blobs::ReadAtLen::AtMost(s),
+            ReadAtLen::All => iroh_blobs::rpc::client::blobs::ReadAtLen::All,
+            ReadAtLen::Exact(s) => iroh_blobs::rpc::client::blobs::ReadAtLen::Exact(s),
+            ReadAtLen::AtMost(s) => iroh_blobs::rpc::client::blobs::ReadAtLen::AtMost(s),
         }
     }
 }
@@ -432,12 +419,12 @@ impl SetTagOption {
     }
 }
 
-impl From<SetTagOption> for iroh::blobs::util::SetTagOption {
+impl From<SetTagOption> for iroh_blobs::util::SetTagOption {
     fn from(value: SetTagOption) -> Self {
         match value {
-            SetTagOption::Auto => iroh::blobs::util::SetTagOption::Auto,
+            SetTagOption::Auto => iroh_blobs::util::SetTagOption::Auto,
             SetTagOption::Named(tag) => {
-                iroh::blobs::util::SetTagOption::Named(iroh::blobs::Tag(bytes::Bytes::from(tag)))
+                iroh_blobs::util::SetTagOption::Named(iroh_blobs::Tag(bytes::Bytes::from(tag)))
             }
         }
     }
@@ -470,11 +457,11 @@ impl WrapOption {
     }
 }
 
-impl From<WrapOption> for iroh::client::blobs::WrapOption {
+impl From<WrapOption> for iroh_blobs::rpc::client::blobs::WrapOption {
     fn from(value: WrapOption) -> Self {
         match value {
-            WrapOption::NoWrap => iroh::client::blobs::WrapOption::NoWrap,
-            WrapOption::Wrap { name } => iroh::client::blobs::WrapOption::Wrap { name },
+            WrapOption::NoWrap => iroh_blobs::rpc::client::blobs::WrapOption::NoWrap,
+            WrapOption::Wrap { name } => iroh_blobs::rpc::client::blobs::WrapOption::Wrap { name },
         }
     }
 }
@@ -482,10 +469,10 @@ impl From<WrapOption> for iroh::client::blobs::WrapOption {
 /// Hash type used throughout Iroh. A blake3 hash.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Object)]
 #[uniffi::export(Display)]
-pub struct Hash(pub(crate) iroh::blobs::Hash);
+pub struct Hash(pub(crate) iroh_blobs::Hash);
 
-impl From<iroh::blobs::Hash> for Hash {
-    fn from(h: iroh::blobs::Hash) -> Self {
+impl From<iroh_blobs::Hash> for Hash {
+    fn from(h: iroh_blobs::Hash) -> Self {
         Hash(h)
     }
 }
@@ -495,7 +482,7 @@ impl Hash {
     /// Calculate the hash of the provide bytes.
     #[uniffi::constructor]
     pub fn new(buf: Vec<u8>) -> Self {
-        Hash(iroh::blobs::Hash::new(buf))
+        Hash(iroh_blobs::Hash::new(buf))
     }
 
     /// Bytes of the hash.
@@ -509,13 +496,13 @@ impl Hash {
         let bytes: [u8; 32] = bytes.try_into().map_err(|b: Vec<u8>| {
             anyhow::anyhow!("expected byte array of length 32, got {}", b.len())
         })?;
-        Ok(Hash(iroh::blobs::Hash::from_bytes(bytes)))
+        Ok(Hash(iroh_blobs::Hash::from_bytes(bytes)))
     }
 
     /// Make a Hash from hex string
     #[uniffi::constructor]
     pub fn from_string(s: String) -> Result<Self, IrohError> {
-        let key = iroh::blobs::Hash::from_str(&s).map_err(anyhow::Error::from)?;
+        let key = iroh_blobs::Hash::from_str(&s).map_err(anyhow::Error::from)?;
         Ok(key.into())
     }
 
@@ -536,7 +523,7 @@ impl std::fmt::Display for Hash {
     }
 }
 
-impl From<Hash> for iroh::blobs::Hash {
+impl From<Hash> for iroh_blobs::Hash {
     fn from(value: Hash) -> Self {
         value.0
     }
@@ -545,10 +532,10 @@ impl From<Hash> for iroh::blobs::Hash {
 // /// Hash type used throughout Iroh. A blake3 hash.
 // #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Object)]
 // #[uniffi::export(Display)]
-// pub struct Tag(pub(crate) iroh::blobs::Tag);
+// pub struct Tag(pub(crate) iroh_blobs::Tag);
 
-// impl From<iroh::blobs::Tag> for Tag {
-//     fn from(h: iroh::blobs::Tag) -> Self {
+// impl From<iroh_blobs::Tag> for Tag {
+//     fn from(h: iroh_blobs::Tag) -> Self {
 //         Tag(h)
 //     }
 // }
@@ -690,8 +677,8 @@ pub struct TransferStats {
     pub duration: u64,
 }
 
-impl From<&iroh::blobs::provider::TransferStats> for TransferStats {
-    fn from(value: &iroh::blobs::provider::TransferStats) -> Self {
+impl From<&iroh_blobs::provider::TransferStats> for TransferStats {
+    fn from(value: &iroh_blobs::provider::TransferStats) -> Self {
         Self {
             duration: value
                 .duration
@@ -726,20 +713,20 @@ pub enum BlobProvideEvent {
     TransferAborted(TransferAborted),
 }
 
-impl From<iroh::blobs::provider::Event> for BlobProvideEvent {
-    fn from(value: iroh::blobs::provider::Event) -> Self {
+impl From<iroh_blobs::provider::Event> for BlobProvideEvent {
+    fn from(value: iroh_blobs::provider::Event) -> Self {
         match value {
-            iroh::blobs::provider::Event::TaggedBlobAdded { hash, format, tag } => {
+            iroh_blobs::provider::Event::TaggedBlobAdded { hash, format, tag } => {
                 BlobProvideEvent::TaggedBlobAdded(TaggedBlobAdded {
                     hash: Arc::new(hash.into()),
                     format: format.into(),
                     tag: tag.0.as_ref().to_vec(),
                 })
             }
-            iroh::blobs::provider::Event::ClientConnected { connection_id } => {
+            iroh_blobs::provider::Event::ClientConnected { connection_id } => {
                 BlobProvideEvent::ClientConnected(ClientConnected { connection_id })
             }
-            iroh::blobs::provider::Event::GetRequestReceived {
+            iroh_blobs::provider::Event::GetRequestReceived {
                 connection_id,
                 request_id,
                 hash,
@@ -748,7 +735,7 @@ impl From<iroh::blobs::provider::Event> for BlobProvideEvent {
                 request_id,
                 hash: Arc::new(hash.into()),
             }),
-            iroh::blobs::provider::Event::TransferHashSeqStarted {
+            iroh_blobs::provider::Event::TransferHashSeqStarted {
                 connection_id,
                 request_id,
                 num_blobs,
@@ -757,7 +744,7 @@ impl From<iroh::blobs::provider::Event> for BlobProvideEvent {
                 request_id,
                 num_blobs,
             }),
-            iroh::blobs::provider::Event::TransferProgress {
+            iroh_blobs::provider::Event::TransferProgress {
                 connection_id,
                 request_id,
                 hash,
@@ -768,7 +755,7 @@ impl From<iroh::blobs::provider::Event> for BlobProvideEvent {
                 hash: Arc::new(hash.into()),
                 end_offset,
             }),
-            iroh::blobs::provider::Event::TransferBlobCompleted {
+            iroh_blobs::provider::Event::TransferBlobCompleted {
                 connection_id,
                 request_id,
                 hash,
@@ -781,7 +768,7 @@ impl From<iroh::blobs::provider::Event> for BlobProvideEvent {
                 index,
                 size,
             }),
-            iroh::blobs::provider::Event::TransferCompleted {
+            iroh_blobs::provider::Event::TransferCompleted {
                 connection_id,
                 request_id,
                 stats,
@@ -790,7 +777,7 @@ impl From<iroh::blobs::provider::Event> for BlobProvideEvent {
                 request_id,
                 stats: stats.as_ref().into(),
             }),
-            iroh::blobs::provider::Event::TransferAborted {
+            iroh_blobs::provider::Event::TransferAborted {
                 connection_id,
                 request_id,
                 stats,
@@ -970,33 +957,31 @@ pub enum AddProgress {
     Abort(AddProgressAbort),
 }
 
-impl From<iroh::blobs::provider::AddProgress> for AddProgress {
-    fn from(value: iroh::blobs::provider::AddProgress) -> Self {
+impl From<iroh_blobs::provider::AddProgress> for AddProgress {
+    fn from(value: iroh_blobs::provider::AddProgress) -> Self {
         match value {
-            iroh::blobs::provider::AddProgress::Found { id, name, size } => {
+            iroh_blobs::provider::AddProgress::Found { id, name, size } => {
                 AddProgress::Found(AddProgressFound { id, name, size })
             }
-            iroh::blobs::provider::AddProgress::Progress { id, offset } => {
+            iroh_blobs::provider::AddProgress::Progress { id, offset } => {
                 AddProgress::Progress(AddProgressProgress { id, offset })
             }
-            iroh::blobs::provider::AddProgress::Done { id, hash } => {
+            iroh_blobs::provider::AddProgress::Done { id, hash } => {
                 AddProgress::Done(AddProgressDone {
                     id,
                     hash: Arc::new(hash.into()),
                 })
             }
-            iroh::blobs::provider::AddProgress::AllDone { hash, format, tag } => {
+            iroh_blobs::provider::AddProgress::AllDone { hash, format, tag } => {
                 AddProgress::AllDone(AddProgressAllDone {
                     hash: Arc::new(hash.into()),
                     format: format.into(),
                     tag: tag.0.to_vec(),
                 })
             }
-            iroh::blobs::provider::AddProgress::Abort(err) => {
-                AddProgress::Abort(AddProgressAbort {
-                    error: err.to_string(),
-                })
-            }
+            iroh_blobs::provider::AddProgress::Abort(err) => AddProgress::Abort(AddProgressAbort {
+                error: err.to_string(),
+            }),
         }
     }
 }
@@ -1062,27 +1047,27 @@ pub enum BlobFormat {
     HashSeq,
 }
 
-impl From<iroh::blobs::BlobFormat> for BlobFormat {
-    fn from(value: iroh::blobs::BlobFormat) -> Self {
+impl From<iroh_blobs::BlobFormat> for BlobFormat {
+    fn from(value: iroh_blobs::BlobFormat) -> Self {
         match value {
-            iroh::blobs::BlobFormat::Raw => BlobFormat::Raw,
-            iroh::blobs::BlobFormat::HashSeq => BlobFormat::HashSeq,
+            iroh_blobs::BlobFormat::Raw => BlobFormat::Raw,
+            iroh_blobs::BlobFormat::HashSeq => BlobFormat::HashSeq,
         }
     }
 }
 
-impl From<BlobFormat> for iroh::blobs::BlobFormat {
+impl From<BlobFormat> for iroh_blobs::BlobFormat {
     fn from(value: BlobFormat) -> Self {
         match value {
-            BlobFormat::Raw => iroh::blobs::BlobFormat::Raw,
-            BlobFormat::HashSeq => iroh::blobs::BlobFormat::HashSeq,
+            BlobFormat::Raw => iroh_blobs::BlobFormat::Raw,
+            BlobFormat::HashSeq => iroh_blobs::BlobFormat::HashSeq,
         }
     }
 }
 
 /// Options to download  data specified by the hash.
 #[derive(Debug, uniffi::Object)]
-pub struct BlobDownloadOptions(iroh::client::blobs::DownloadOptions);
+pub struct BlobDownloadOptions(iroh_blobs::rpc::client::blobs::DownloadOptions);
 
 #[uniffi::export]
 impl BlobDownloadOptions {
@@ -1093,20 +1078,22 @@ impl BlobDownloadOptions {
         nodes: Vec<Arc<NodeAddr>>,
         tag: Arc<SetTagOption>,
     ) -> Result<Self, IrohError> {
-        Ok(BlobDownloadOptions(iroh::client::blobs::DownloadOptions {
-            format: format.into(),
-            nodes: nodes
-                .into_iter()
-                .map(|node| (*node).clone().try_into())
-                .collect::<Result<_, _>>()?,
-            tag: (*tag).clone().into(),
-            mode: iroh::client::blobs::DownloadMode::Direct,
-        }))
+        Ok(BlobDownloadOptions(
+            iroh_blobs::rpc::client::blobs::DownloadOptions {
+                format: format.into(),
+                nodes: nodes
+                    .into_iter()
+                    .map(|node| (*node).clone().try_into())
+                    .collect::<Result<_, _>>()?,
+                tag: (*tag).clone().into(),
+                mode: iroh_blobs::rpc::client::blobs::DownloadMode::Direct,
+            },
+        ))
     }
 }
 
-impl From<iroh::client::blobs::DownloadOptions> for BlobDownloadOptions {
-    fn from(value: iroh::client::blobs::DownloadOptions) -> Self {
+impl From<iroh_blobs::rpc::client::blobs::DownloadOptions> for BlobDownloadOptions {
+    fn from(value: iroh_blobs::rpc::client::blobs::DownloadOptions) -> Self {
         BlobDownloadOptions(value)
     }
 }
@@ -1128,11 +1115,11 @@ pub enum BlobExportFormat {
     Collection,
 }
 
-impl From<BlobExportFormat> for iroh::blobs::store::ExportFormat {
+impl From<BlobExportFormat> for iroh_blobs::store::ExportFormat {
     fn from(value: BlobExportFormat) -> Self {
         match value {
-            BlobExportFormat::Blob => iroh::blobs::store::ExportFormat::Blob,
-            BlobExportFormat::Collection => iroh::blobs::store::ExportFormat::Collection,
+            BlobExportFormat::Blob => iroh_blobs::store::ExportFormat::Blob,
+            BlobExportFormat::Collection => iroh_blobs::store::ExportFormat::Collection,
         }
     }
 }
@@ -1161,11 +1148,11 @@ pub enum BlobExportMode {
     TryReference,
 }
 
-impl From<BlobExportMode> for iroh::blobs::store::ExportMode {
+impl From<BlobExportMode> for iroh_blobs::store::ExportMode {
     fn from(value: BlobExportMode) -> Self {
         match value {
-            BlobExportMode::Copy => iroh::blobs::store::ExportMode::Copy,
-            BlobExportMode::TryReference => iroh::blobs::store::ExportMode::TryReference,
+            BlobExportMode::Copy => iroh_blobs::store::ExportMode::Copy,
+            BlobExportMode::TryReference => iroh_blobs::store::ExportMode::TryReference,
         }
     }
 }
@@ -1301,15 +1288,15 @@ pub enum DownloadProgress {
     Abort(DownloadProgressAbort),
 }
 
-impl From<iroh::blobs::get::db::DownloadProgress> for DownloadProgress {
-    fn from(value: iroh::blobs::get::db::DownloadProgress) -> Self {
+impl From<iroh_blobs::get::db::DownloadProgress> for DownloadProgress {
+    fn from(value: iroh_blobs::get::db::DownloadProgress) -> Self {
         match value {
-            iroh::blobs::get::db::DownloadProgress::InitialState(transfer_state) => {
+            iroh_blobs::get::db::DownloadProgress::InitialState(transfer_state) => {
                 DownloadProgress::InitialState(DownloadProgressInitialState {
                     connected: transfer_state.connected,
                 })
             }
-            iroh::blobs::get::db::DownloadProgress::FoundLocal {
+            iroh_blobs::get::db::DownloadProgress::FoundLocal {
                 child,
                 hash,
                 size,
@@ -1321,8 +1308,8 @@ impl From<iroh::blobs::get::db::DownloadProgress> for DownloadProgress {
                 size: size.value(),
                 valid_ranges: Arc::new(valid_ranges.into()),
             }),
-            iroh::blobs::get::db::DownloadProgress::Connected => DownloadProgress::Connected,
-            iroh::blobs::get::db::DownloadProgress::Found {
+            iroh_blobs::get::db::DownloadProgress::Connected => DownloadProgress::Connected,
+            iroh_blobs::get::db::DownloadProgress::Found {
                 id,
                 hash,
                 child,
@@ -1333,26 +1320,26 @@ impl From<iroh::blobs::get::db::DownloadProgress> for DownloadProgress {
                 child: child.into(),
                 size,
             }),
-            iroh::blobs::get::db::DownloadProgress::FoundHashSeq { hash, children } => {
+            iroh_blobs::get::db::DownloadProgress::FoundHashSeq { hash, children } => {
                 DownloadProgress::FoundHashSeq(DownloadProgressFoundHashSeq {
                     hash: Arc::new(hash.into()),
                     children,
                 })
             }
-            iroh::blobs::get::db::DownloadProgress::Progress { id, offset } => {
+            iroh_blobs::get::db::DownloadProgress::Progress { id, offset } => {
                 DownloadProgress::Progress(DownloadProgressProgress { id, offset })
             }
-            iroh::blobs::get::db::DownloadProgress::Done { id } => {
+            iroh_blobs::get::db::DownloadProgress::Done { id } => {
                 DownloadProgress::Done(DownloadProgressDone { id })
             }
-            iroh::blobs::get::db::DownloadProgress::AllDone(stats) => {
+            iroh_blobs::get::db::DownloadProgress::AllDone(stats) => {
                 DownloadProgress::AllDone(DownloadProgressAllDone {
                     bytes_written: stats.bytes_written,
                     bytes_read: stats.bytes_read,
                     elapsed: stats.elapsed,
                 })
             }
-            iroh::blobs::get::db::DownloadProgress::Abort(err) => {
+            iroh_blobs::get::db::DownloadProgress::Abort(err) => {
                 DownloadProgress::Abort(DownloadProgressAbort {
                     error: err.to_string(),
                 })
@@ -1438,7 +1425,7 @@ impl DownloadProgress {
 
 /// A chunk range specification as a sequence of chunk offsets
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, uniffi::Object)]
-pub struct RangeSpec(pub(crate) iroh::blobs::protocol::RangeSpec);
+pub struct RangeSpec(pub(crate) iroh_blobs::protocol::RangeSpec);
 
 #[uniffi::export]
 impl RangeSpec {
@@ -1453,8 +1440,8 @@ impl RangeSpec {
     }
 }
 
-impl From<iroh::blobs::protocol::RangeSpec> for RangeSpec {
-    fn from(h: iroh::blobs::protocol::RangeSpec) -> Self {
+impl From<iroh_blobs::protocol::RangeSpec> for RangeSpec {
+    fn from(h: iroh_blobs::protocol::RangeSpec) -> Self {
         RangeSpec(h)
     }
 }
@@ -1470,8 +1457,8 @@ pub struct BlobInfo {
     pub size: u64,
 }
 
-impl From<iroh::client::blobs::BlobInfo> for BlobInfo {
-    fn from(value: iroh::client::blobs::BlobInfo) -> Self {
+impl From<iroh_blobs::rpc::client::blobs::BlobInfo> for BlobInfo {
+    fn from(value: iroh_blobs::rpc::client::blobs::BlobInfo) -> Self {
         BlobInfo {
             path: value.path,
             hash: Arc::new(value.hash.into()),
@@ -1491,8 +1478,8 @@ pub struct IncompleteBlobInfo {
     pub hash: Arc<Hash>,
 }
 
-impl From<iroh::client::blobs::IncompleteBlobInfo> for IncompleteBlobInfo {
-    fn from(value: iroh::client::blobs::IncompleteBlobInfo) -> Self {
+impl From<iroh_blobs::rpc::client::blobs::IncompleteBlobInfo> for IncompleteBlobInfo {
+    fn from(value: iroh_blobs::rpc::client::blobs::IncompleteBlobInfo) -> Self {
         IncompleteBlobInfo {
             size: value.size,
             expected_size: value.expected_size,
@@ -1518,8 +1505,8 @@ pub struct CollectionInfo {
     pub total_blobs_size: Option<u64>,
 }
 
-impl From<iroh::client::blobs::CollectionInfo> for CollectionInfo {
-    fn from(value: iroh::client::blobs::CollectionInfo) -> Self {
+impl From<iroh_blobs::rpc::client::blobs::CollectionInfo> for CollectionInfo {
+    fn from(value: iroh_blobs::rpc::client::blobs::CollectionInfo) -> Self {
         CollectionInfo {
             tag: value.tag.0.to_vec(),
             hash: Arc::new(value.hash.into()),
@@ -1531,15 +1518,15 @@ impl From<iroh::client::blobs::CollectionInfo> for CollectionInfo {
 
 /// A collection of blobs
 #[derive(Debug, uniffi::Object)]
-pub struct Collection(pub(crate) RwLock<iroh::blobs::format::collection::Collection>);
+pub struct Collection(pub(crate) RwLock<iroh_blobs::format::collection::Collection>);
 
-impl From<iroh::blobs::format::collection::Collection> for Collection {
-    fn from(value: iroh::blobs::format::collection::Collection) -> Self {
+impl From<iroh_blobs::format::collection::Collection> for Collection {
+    fn from(value: iroh_blobs::format::collection::Collection) -> Self {
         Collection(RwLock::new(value))
     }
 }
 
-impl From<Collection> for iroh::blobs::format::collection::Collection {
+impl From<Collection> for iroh_blobs::format::collection::Collection {
     fn from(value: Collection) -> Self {
         let col = value.0.read().expect("Collection lock poisoned");
         col.clone()
@@ -1553,7 +1540,7 @@ impl Collection {
     #[uniffi::constructor]
     pub fn new() -> Self {
         Collection(RwLock::new(
-            iroh::blobs::format::collection::Collection::default(),
+            iroh_blobs::format::collection::Collection::default(),
         ))
     }
 
@@ -1627,9 +1614,8 @@ mod tests {
     use super::*;
     use crate::node::Iroh;
     use crate::{CallbackError, NodeOptions};
-    use bytes::Bytes;
+
     use rand::RngCore;
-    use tokio::io::AsyncWriteExt;
     use tracing_subscriber::FmtSubscriber;
 
     #[test]
@@ -1949,138 +1935,6 @@ mod tests {
                 panic!("blob {} should have been removed", remove_hash);
             }
         }
-    }
-
-    async fn build_iroh_core(
-        path: &std::path::Path,
-    ) -> iroh::node::Node<iroh::blobs::store::fs::Store> {
-        iroh::node::Node::persistent(path)
-            .await
-            .unwrap()
-            .spawn()
-            .await
-            .unwrap()
-    }
-
-    #[tokio::test]
-    async fn iroh_core_blobs_add_get_bytes() {
-        let dir = tempfile::tempdir().unwrap();
-        let node = build_iroh_core(dir.path()).await;
-        let sizes = [1, 10, 100, 1000, 10000, 100000];
-        let mut hashes = Vec::new();
-        for size in sizes.iter() {
-            let hash = iroh_core_blobs_add_get_bytes_size(&node, *size);
-            hashes.push(hash)
-        }
-    }
-
-    async fn iroh_core_blobs_add_get_bytes_size(
-        node: &iroh::node::Node<iroh::blobs::store::fs::Store>,
-        size: usize,
-    ) -> iroh::blobs::Hash {
-        let client = node.client();
-        // create bytes
-        let mut bytes = vec![0; size];
-        rand::thread_rng().fill_bytes(&mut bytes);
-        let bytes: Bytes = bytes.into();
-        // add blob
-        let add_outcome = client.blobs().add_bytes(bytes.clone()).await.unwrap();
-        // check outcome
-        assert_eq!(add_outcome.format, iroh::blobs::BlobFormat::Raw);
-        assert_eq!(add_outcome.size, size as u64);
-        // check size
-        let hash = add_outcome.hash;
-        let reader = client.blobs().read(hash).await.unwrap();
-        let got_size = reader.size();
-        assert_eq!(got_size, size as u64);
-        //
-        // get blob
-        let got_bytes = client.blobs().read_to_bytes(hash).await.unwrap();
-        assert_eq!(got_bytes.len(), size);
-        assert_eq!(got_bytes, bytes);
-        hash
-    }
-
-    #[tokio::test]
-    async fn iroh_core_blobs_list_collections() {
-        let iroh_dir = tempfile::tempdir().unwrap();
-        let node = build_iroh_core(iroh_dir.path()).await;
-
-        // collection dir
-        let dir = tempfile::tempdir().unwrap();
-        let num_blobs = 3;
-        let blob_size = 100;
-        for i in 0..num_blobs {
-            let path = dir.path().join(i.to_string());
-            let mut file = tokio::fs::File::create(path).await.unwrap();
-            let mut bytes = vec![0; blob_size];
-            rand::thread_rng().fill_bytes(&mut bytes);
-            file.write_all(&bytes).await.unwrap()
-        }
-
-        let client = node.client();
-        // ensure there are no blobs to start
-        let blobs = client
-            .blobs()
-            .list()
-            .await
-            .unwrap()
-            .collect::<Vec<_>>()
-            .await;
-        assert_eq!(0, blobs.len());
-
-        let mut stream = client
-            .blobs()
-            .add_from_path(
-                dir.into_path(),
-                false,
-                iroh::blobs::util::SetTagOption::Auto,
-                iroh::client::blobs::WrapOption::NoWrap,
-            )
-            .await
-            .unwrap();
-
-        let mut collection_hash = None;
-        let mut collection_format = None;
-        let mut hashes = Vec::new();
-
-        while let Some(progress) = stream.next().await {
-            let progress = progress.unwrap();
-            match progress {
-                iroh::blobs::provider::AddProgress::AllDone { hash, format, .. } => {
-                    collection_hash = Some(hash);
-                    collection_format = Some(format);
-                }
-                iroh::blobs::provider::AddProgress::Abort(err) => {
-                    panic!("{}", err);
-                }
-                iroh::blobs::provider::AddProgress::Done { hash, .. } => hashes.push(hash),
-                _ => {}
-            }
-        }
-
-        let collection_hash = collection_hash.unwrap();
-        let collection_format = collection_format.unwrap();
-
-        assert_eq!(iroh::blobs::BlobFormat::HashSeq, collection_format);
-
-        let collections = client
-            .blobs()
-            .list_collections()
-            .unwrap()
-            .try_collect::<Vec<_>>()
-            .await
-            .unwrap();
-        assert_eq!(1, collections.len());
-        assert_eq!(collections[0].hash, collection_hash);
-        // add length for the metadata blob
-        let total_blobs_count = hashes.len() + 1;
-        assert_eq!(
-            collections[0].total_blobs_count.unwrap(),
-            total_blobs_count as u64
-        );
-        // this is always `None`
-        // assert_eq!(collections[0].total_blobs_size.unwrap(), 300 as u64);
     }
 
     pub fn setup_logging() {

@@ -20,35 +20,19 @@ test('node status', async (t) => {
   const iroh = await Iroh.memory()
   const status = await iroh.node.status()
 
-  t.is(status.version, '0.28.1')
+  t.is(status.version, '0.29.0')
   await iroh.node.shutdown()
 })
-
-test('rpc client memory node', async (t) => {
-  const node = await Iroh.memory({
-    enableRpc: true
-  })
-
-  const nodeId = await node.net.nodeId()
-
-  const client = await Iroh.client()
-  const clientId = await client.net.nodeId()
-
-  t.is(nodeId, clientId)
-
-  await node.node.shutdown()
-})
-
 
 test('custom protocol', async (t) => {
   const alpn = Buffer.from('iroh-example/hello/0')
 
   const protocols = {
-    [alpn]: (err, ep, client) => ({
+    [alpn]: (err, ep) => ({
       accept: async (err, connecting) => {
         // console.log('accept')
         t.falsy(err)
-        const nodeId = await client.net.nodeId()
+        const nodeId = await ep.nodeId()
         // console.log(`accepting on node ${nodeId}`)
         const alpn = await connecting.alpn()
         // console.log(`incoming on ${alpn.toString()}`)

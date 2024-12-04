@@ -27,7 +27,8 @@ Please include tests when you add new pieces of the API to the ffi bindings
 ### Kotlin
 
 - See `README.kotlin.md` for setup
-- Run tests using `./test_kotlin.sh`
+- Build using `./make_kotlin.sh`
+- Tests using `./gradlew test` from `./kotlin`
 
 ### Python
 
@@ -96,7 +97,7 @@ will likely only work on your specific platform. To build a portable
 wheel for linux use:
 
 ```
-docker run --rm -v $(pwd):/mnt -w /mnt quay.io/pypa/manylinux2014_x86_64 /mnt/build_wheel.sh
+docker run --rm -v $(pwd):/mnt -w /mnt quay.io/pypa/manylinux_2_28_x86_64 /mnt/build_wheel.sh
 ```
 
 #### Translations

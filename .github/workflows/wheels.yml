@@ -11,11 +11,10 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
   IROH_FORCE_STAGING_RELAYS: "1"
   
 jobs:
-  manylinux2014:
+  manylinux:
     runs-on: ${{ matrix.runner }}
     container: ${{ matrix.container }}
     strategy:
@@ -25,19 +24,19 @@ jobs:
           - name: ubuntu-latest
             python: 3.11
             os: ubuntu-latest
-            release-os: manylinux2014
+            release-os: manylinux_2_28
             release-arch: x86_64
-            container: quay.io/pypa/manylinux2014_x86_64
+            container: quay.io/pypa/manylinux_2_28_x86_64
             runner: [ubuntu-latest]
           - name: ubuntu-arm-latest
             python: 3.11
             os: ubuntu-latest
-            release-os: manylinux2014
+            release-os: manylinux_2_28
             release-arch: aarch64
-            container: quay.io/pypa/manylinux2014_aarch64
+            container: quay.io/pypa/manylinux_2_28_aarch64
             runner: [self-hosted, linux, ARM64]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install stable rust
         run: curl --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
       - name: Install maturin & uniffi-bindgen
@@ -49,7 +48,7 @@ jobs:
           PATH=/opt/python/cp311-cp311/bin:$PATH
           export PATH
           maturin --version
-          maturin build --release --manylinux 2014
+          maturin build --release --manylinux 2_28
       - name: Upload wheel
         uses: actions/upload-artifact@v3
         with:
@@ -75,7 +74,7 @@ jobs:
             release-arch: aarch64
             runner: [self-hosted, macOS, ARM64]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: actions/setup-python@v4
         with:
@@ -96,7 +95,7 @@ jobs:
   windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: actions/setup-python@v4
         with:

@@ -5,9 +5,10 @@ use futures::{StreamExt, TryStreamExt};
 use napi::bindgen_prelude::*;
 use napi::threadsafe_function::ThreadsafeFunction;
 use napi_derive::napi;
+use quic_rpc::transport::flume::FlumeConnector;
 use tracing::warn;
 
-use crate::{AddrInfoOptions, AuthorId, DocTicket, Hash, Iroh, NodeAddr};
+use crate::{AddrInfoOptions, AuthorId, DocTicket, DocsClient, Hash, Iroh, NodeAddr};
 
 #[derive(Debug, Clone)]
 #[napi(string_enum)]
@@ -18,11 +19,11 @@ pub enum CapabilityKind {
     Read,
 }
 
-impl From<iroh::docs::CapabilityKind> for CapabilityKind {
-    fn from(value: iroh::docs::CapabilityKind) -> Self {
+impl From<iroh_docs::CapabilityKind> for CapabilityKind {
+    fn from(value: iroh_docs::CapabilityKind) -> Self {
         match value {
-            iroh::docs::CapabilityKind::Write => Self::Write,
-            iroh::docs::CapabilityKind::Read => Self::Read,
+            iroh_docs::CapabilityKind::Write => Self::Write,
+            iroh_docs::CapabilityKind::Read => Self::Read,
         }
     }
 }
@@ -30,21 +31,19 @@ impl From<iroh::docs::CapabilityKind> for CapabilityKind {
 /// Iroh docs client.
 #[napi]
 pub struct Docs {
-    node: Iroh,
+    docs: DocsClient,
 }
+
+type MemConnector = FlumeConnector<iroh_docs::rpc::proto::Response, iroh_docs::rpc::proto::Request>;
 
 #[napi]
 impl Iroh {
     /// Access to docs specific funtionaliy.
     #[napi(getter)]
     pub fn docs(&self) -> Docs {
-        Docs { node: self.clone() }
-    }
-}
-
-impl Docs {
-    fn client(&self) -> &iroh::client::Iroh {
-        self.node.inner_client()
+        Docs {
+            docs: self.docs_client.clone().expect("missing docs"),
+        }
     }
 }
 
@@ -53,7 +52,7 @@ impl Docs {
     /// Create a new doc.
     #[napi]
     pub async fn create(&self) -> Result<Doc> {
-        let doc = self.client().docs().create().await?;
+        let doc = self.docs.create().await?;
 
         Ok(Doc { inner: doc })
     }
@@ -62,7 +61,7 @@ impl Docs {
     #[napi]
     pub async fn join(&self, ticket: &DocTicket) -> Result<Doc> {
         let ticket = ticket.try_into()?;
-        let doc = self.client().docs().import(ticket).await?;
+        let doc = self.docs.import(ticket).await?;
         Ok(Doc { inner: doc })
     }
 
@@ -74,7 +73,7 @@ impl Docs {
         cb: ThreadsafeFunction<LiveEvent, ()>,
     ) -> Result<Doc> {
         let ticket = ticket.try_into()?;
-        let (doc, mut stream) = self.client().docs().import_and_subscribe(ticket).await?;
+        let (doc, mut stream) = self.docs.import_and_subscribe(ticket).await?;
 
         tokio::spawn(async move {
             while let Some(event) = stream.next().await {
@@ -92,8 +91,7 @@ impl Docs {
     #[napi]
     pub async fn list(&self) -> Result<Vec<NamespaceAndCapability>> {
         let docs = self
-            .client()
-            .docs()
+            .docs
             .list()
             .await?
             .map_ok(|(namespace, capability)| NamespaceAndCapability {
@@ -111,8 +109,8 @@ impl Docs {
     /// Returns None if the document cannot be found.
     #[napi]
     pub async fn open(&self, id: String) -> Result<Option<Doc>> {
-        let namespace_id = iroh::docs::NamespaceId::from_str(&id)?;
-        let doc = self.client().docs().open(namespace_id).await?;
+        let namespace_id = iroh_docs::NamespaceId::from_str(&id)?;
+        let doc = self.docs.open(namespace_id).await?;
 
         Ok(doc.map(|d| Doc { inner: d }))
     }
@@ -124,8 +122,8 @@ impl Docs {
     /// through garbage collection unless they are referenced from another document or tag.
     #[napi]
     pub async fn drop_doc(&self, doc_id: String) -> Result<()> {
-        let doc_id = iroh::docs::NamespaceId::from_str(&doc_id)?;
-        self.client().docs().drop_doc(doc_id).await?;
+        let doc_id = iroh_docs::NamespaceId::from_str(&doc_id)?;
+        self.docs.drop_doc(doc_id).await?;
         Ok(())
     }
 }
@@ -144,7 +142,7 @@ pub struct NamespaceAndCapability {
 #[derive(Clone)]
 #[napi]
 pub struct Doc {
-    pub(crate) inner: iroh::client::Doc,
+    pub(crate) inner: iroh_docs::rpc::client::docs::Doc<MemConnector>,
 }
 
 #[napi]
@@ -232,7 +230,7 @@ impl Doc {
                 entry.try_into()?,
                 std::path::PathBuf::from(path),
                 // TODO(b5) - plumb up the export mode, currently it's always copy
-                iroh::blobs::store::ExportMode::Copy,
+                iroh_blobs::store::ExportMode::Copy,
             )
             .await?;
         while let Some(event) = stream.next().await {
@@ -430,14 +428,14 @@ impl DownloadPolicy {
     }
 }
 
-impl From<iroh::docs::store::DownloadPolicy> for DownloadPolicy {
-    fn from(value: iroh::docs::store::DownloadPolicy) -> Self {
+impl From<iroh_docs::store::DownloadPolicy> for DownloadPolicy {
+    fn from(value: iroh_docs::store::DownloadPolicy) -> Self {
         match value {
-            iroh::docs::store::DownloadPolicy::NothingExcept(filters) => DownloadPolicy {
+            iroh_docs::store::DownloadPolicy::NothingExcept(filters) => DownloadPolicy {
                 nothing_except: Some(filters.into_iter().map(|f| f.into()).collect()),
                 everything_except: None,
             },
-            iroh::docs::store::DownloadPolicy::EverythingExcept(filters) => DownloadPolicy {
+            iroh_docs::store::DownloadPolicy::EverythingExcept(filters) => DownloadPolicy {
                 everything_except: Some(filters.into_iter().map(|f| f.into()).collect()),
                 nothing_except: None,
             },
@@ -445,16 +443,16 @@ impl From<iroh::docs::store::DownloadPolicy> for DownloadPolicy {
     }
 }
 
-impl From<&DownloadPolicy> for iroh::docs::store::DownloadPolicy {
+impl From<&DownloadPolicy> for iroh_docs::store::DownloadPolicy {
     fn from(value: &DownloadPolicy) -> Self {
         if let Some(ref filters) = value.nothing_except {
-            return iroh::docs::store::DownloadPolicy::NothingExcept(
+            return iroh_docs::store::DownloadPolicy::NothingExcept(
                 filters.iter().map(|f| f.0.clone()).collect(),
             );
         }
 
         if let Some(ref filters) = value.everything_except {
-            return iroh::docs::store::DownloadPolicy::EverythingExcept(
+            return iroh_docs::store::DownloadPolicy::EverythingExcept(
                 filters.iter().map(|f| f.0.clone()).collect(),
             );
         }
@@ -466,7 +464,7 @@ impl From<&DownloadPolicy> for iroh::docs::store::DownloadPolicy {
 /// Filter strategy used in download policies.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[napi]
-pub struct FilterKind(pub(crate) iroh::docs::store::FilterKind);
+pub struct FilterKind(pub(crate) iroh_docs::store::FilterKind);
 
 #[napi]
 impl FilterKind {
@@ -479,18 +477,18 @@ impl FilterKind {
     /// Returns a FilterKind that matches if the contained bytes are a prefix of the key.
     #[napi(factory)]
     pub fn prefix(prefix: Vec<u8>) -> FilterKind {
-        FilterKind(iroh::docs::store::FilterKind::Prefix(Bytes::from(prefix)))
+        FilterKind(iroh_docs::store::FilterKind::Prefix(Bytes::from(prefix)))
     }
 
     /// Returns a FilterKind that matches if the contained bytes and the key are the same.
     #[napi(factory)]
     pub fn exact(key: Vec<u8>) -> FilterKind {
-        FilterKind(iroh::docs::store::FilterKind::Exact(Bytes::from(key)))
+        FilterKind(iroh_docs::store::FilterKind::Exact(Bytes::from(key)))
     }
 }
 
-impl From<iroh::docs::store::FilterKind> for FilterKind {
-    fn from(value: iroh::docs::store::FilterKind) -> Self {
+impl From<iroh_docs::store::FilterKind> for FilterKind {
+    fn from(value: iroh_docs::store::FilterKind) -> Self {
         FilterKind(value)
     }
 }
@@ -507,8 +505,8 @@ pub struct OpenState {
     pub handles: BigInt,
 }
 
-impl From<iroh::docs::actor::OpenState> for OpenState {
-    fn from(value: iroh::docs::actor::OpenState) -> Self {
+impl From<iroh_docs::actor::OpenState> for OpenState {
+    fn from(value: iroh_docs::actor::OpenState) -> Self {
         OpenState {
             sync: value.sync,
             subscribers: (value.subscribers as u64).into(),
@@ -527,11 +525,11 @@ pub enum ShareMode {
     Write,
 }
 
-impl From<ShareMode> for iroh::client::docs::ShareMode {
+impl From<ShareMode> for iroh_docs::rpc::client::docs::ShareMode {
     fn from(mode: ShareMode) -> Self {
         match mode {
-            ShareMode::Read => iroh::client::docs::ShareMode::Read,
-            ShareMode::Write => iroh::client::docs::ShareMode::Write,
+            ShareMode::Read => iroh_docs::rpc::client::docs::ShareMode::Read,
+            ShareMode::Write => iroh_docs::rpc::client::docs::ShareMode::Write,
         }
     }
 }
@@ -558,8 +556,8 @@ pub struct Entry {
     pub timestamp: BigInt,
 }
 
-impl From<iroh::client::docs::Entry> for Entry {
-    fn from(e: iroh::client::docs::Entry) -> Self {
+impl From<iroh_docs::rpc::client::docs::Entry> for Entry {
+    fn from(e: iroh_docs::rpc::client::docs::Entry) -> Self {
         Self {
             namespace: e.id().namespace().to_string(),
             author: e.author().to_string(),
@@ -571,17 +569,17 @@ impl From<iroh::client::docs::Entry> for Entry {
     }
 }
 
-impl TryFrom<Entry> for iroh::client::docs::Entry {
+impl TryFrom<Entry> for iroh_docs::rpc::client::docs::Entry {
     type Error = anyhow::Error;
     fn try_from(value: Entry) -> std::prelude::v1::Result<Self, Self::Error> {
-        let author: iroh::docs::AuthorId = value.author.parse()?;
-        let namespace: iroh::docs::NamespaceId = value.namespace.parse()?;
-        let id = iroh::docs::RecordIdentifier::new(namespace, author, value.key);
-        let hash: iroh::blobs::Hash = value.hash.parse()?;
+        let author: iroh_docs::AuthorId = value.author.parse()?;
+        let namespace: iroh_docs::NamespaceId = value.namespace.parse()?;
+        let id = iroh_docs::RecordIdentifier::new(namespace, author, value.key);
+        let hash: iroh::hash::Hash = value.hash.parse()?;
         let len = value.len.get_u64().1;
         let timestamp = value.timestamp.get_u64().1;
-        let record = iroh::docs::Record::new(hash, len, timestamp);
-        let entry = iroh::docs::Entry::new(id, record);
+        let record = iroh_docs::Record::new(hash, len, timestamp);
+        let entry = iroh_docs::Entry::new(id, record);
         Ok(entry.into())
     }
 }
@@ -597,20 +595,20 @@ pub enum SortBy {
     AuthorKey,
 }
 
-impl From<iroh::docs::store::SortBy> for SortBy {
-    fn from(value: iroh::docs::store::SortBy) -> Self {
+impl From<iroh_docs::store::SortBy> for SortBy {
+    fn from(value: iroh_docs::store::SortBy) -> Self {
         match value {
-            iroh::docs::store::SortBy::AuthorKey => SortBy::AuthorKey,
-            iroh::docs::store::SortBy::KeyAuthor => SortBy::KeyAuthor,
+            iroh_docs::store::SortBy::AuthorKey => SortBy::AuthorKey,
+            iroh_docs::store::SortBy::KeyAuthor => SortBy::KeyAuthor,
         }
     }
 }
 
-impl From<SortBy> for iroh::docs::store::SortBy {
+impl From<SortBy> for iroh_docs::store::SortBy {
     fn from(value: SortBy) -> Self {
         match value {
-            SortBy::AuthorKey => iroh::docs::store::SortBy::AuthorKey,
-            SortBy::KeyAuthor => iroh::docs::store::SortBy::KeyAuthor,
+            SortBy::AuthorKey => iroh_docs::store::SortBy::AuthorKey,
+            SortBy::KeyAuthor => iroh_docs::store::SortBy::KeyAuthor,
         }
     }
 }
@@ -626,20 +624,20 @@ pub enum SortDirection {
     Desc,
 }
 
-impl From<iroh::docs::store::SortDirection> for SortDirection {
-    fn from(value: iroh::docs::store::SortDirection) -> Self {
+impl From<iroh_docs::store::SortDirection> for SortDirection {
+    fn from(value: iroh_docs::store::SortDirection) -> Self {
         match value {
-            iroh::docs::store::SortDirection::Asc => SortDirection::Asc,
-            iroh::docs::store::SortDirection::Desc => SortDirection::Desc,
+            iroh_docs::store::SortDirection::Asc => SortDirection::Asc,
+            iroh_docs::store::SortDirection::Desc => SortDirection::Desc,
         }
     }
 }
 
-impl From<SortDirection> for iroh::docs::store::SortDirection {
+impl From<SortDirection> for iroh_docs::store::SortDirection {
     fn from(value: SortDirection) -> Self {
         match value {
-            SortDirection::Asc => iroh::docs::store::SortDirection::Asc,
-            SortDirection::Desc => iroh::docs::store::SortDirection::Desc,
+            SortDirection::Asc => iroh_docs::store::SortDirection::Asc,
+            SortDirection::Desc => iroh_docs::store::SortDirection::Desc,
         }
     }
 }
@@ -649,7 +647,7 @@ impl From<SortDirection> for iroh::docs::store::SortDirection {
 /// Use this with `QueryOptions` to determine sorting, grouping, and pagination.
 #[derive(Clone, Debug)]
 #[napi]
-pub struct Query(pub(crate) iroh::docs::store::Query);
+pub struct Query(pub(crate) iroh_docs::store::Query);
 
 /// Options for sorting and pagination for using [`Query`]s.
 #[derive(Clone, Debug)]
@@ -698,7 +696,7 @@ impl Query {
     ///     limit: None
     #[napi(factory)]
     pub fn all(opts: Option<QueryOptions>) -> Self {
-        let builder = iroh::docs::store::Query::all();
+        let builder = iroh_docs::store::Query::all();
         let builder = apply_opts_with_sort(builder, opts.as_ref());
         Query(builder.build())
     }
@@ -712,7 +710,7 @@ impl Query {
     ///     limit: None
     #[napi(factory)]
     pub fn single_latest_per_key(opts: Option<QueryOptions>) -> Self {
-        let builder = iroh::docs::store::Query::single_latest_per_key();
+        let builder = iroh_docs::store::Query::single_latest_per_key();
         let builder = apply_opts(builder, opts.as_ref());
         Query(builder.build())
     }
@@ -721,7 +719,7 @@ impl Query {
     /// to by multiple authors.
     #[napi(factory)]
     pub fn single_latest_per_key_exact(key: Vec<u8>) -> Self {
-        let builder = iroh::docs::store::Query::single_latest_per_key()
+        let builder = iroh_docs::store::Query::single_latest_per_key()
             .key_exact(key)
             .build();
         Query(builder)
@@ -736,7 +734,7 @@ impl Query {
     ///     limit: None
     #[napi(factory)]
     pub fn single_latest_per_key_prefix(prefix: Vec<u8>, opts: Option<QueryOptions>) -> Self {
-        let builder = iroh::docs::store::Query::single_latest_per_key().key_prefix(prefix);
+        let builder = iroh_docs::store::Query::single_latest_per_key().key_prefix(prefix);
         let builder = apply_opts(builder, opts.as_ref());
         Query(builder.build())
     }
@@ -750,7 +748,7 @@ impl Query {
     ///     limit: None
     #[napi(factory)]
     pub fn author(author: &AuthorId, opts: Option<QueryOptions>) -> Self {
-        let builder = iroh::docs::store::Query::author(author.0);
+        let builder = iroh_docs::store::Query::author(author.0);
         let builder = apply_opts_with_sort(builder, opts.as_ref());
         Query(builder.build())
     }
@@ -764,7 +762,7 @@ impl Query {
     ///     limit: None
     #[napi(factory)]
     pub fn key_exact(key: Vec<u8>, opts: Option<QueryOptions>) -> Self {
-        let builder = iroh::docs::store::Query::key_exact(key);
+        let builder = iroh_docs::store::Query::key_exact(key);
         let builder = apply_opts_with_sort(builder, opts.as_ref());
         Query(builder.build())
     }
@@ -772,7 +770,7 @@ impl Query {
     /// Create a Query for a single key and author.
     #[napi(factory)]
     pub fn author_key_exact(author: &AuthorId, key: Vec<u8>) -> Self {
-        let builder = iroh::docs::store::Query::author(author.0).key_exact(key);
+        let builder = iroh_docs::store::Query::author(author.0).key_exact(key);
         Query(builder.build())
     }
 
@@ -785,7 +783,7 @@ impl Query {
     ///     limit: None
     #[napi(factory)]
     pub fn key_prefix(prefix: Vec<u8>, opts: Option<QueryOptions>) -> Self {
-        let builder = iroh::docs::store::Query::key_prefix(prefix);
+        let builder = iroh_docs::store::Query::key_prefix(prefix);
         let builder = apply_opts_with_sort(builder, opts.as_ref());
         Query(builder.build())
     }
@@ -802,7 +800,7 @@ impl Query {
         prefix: Vec<u8>,
         opts: Option<QueryOptions>,
     ) -> Self {
-        let builder = iroh::docs::store::Query::author(author.0).key_prefix(prefix);
+        let builder = iroh_docs::store::Query::author(author.0).key_prefix(prefix);
         let builder = apply_opts_with_sort(builder, opts.as_ref());
         Query(builder.build())
     }
@@ -821,9 +819,9 @@ impl Query {
 }
 
 fn apply_opts_with_sort(
-    mut builder: iroh::docs::store::QueryBuilder<iroh::docs::store::FlatQuery>,
+    mut builder: iroh_docs::store::QueryBuilder<iroh_docs::store::FlatQuery>,
     opts: Option<&QueryOptions>,
-) -> iroh::docs::store::QueryBuilder<iroh::docs::store::FlatQuery> {
+) -> iroh_docs::store::QueryBuilder<iroh_docs::store::FlatQuery> {
     builder = apply_opts(builder, opts);
     if let Some(opts) = opts {
         if let Some(ref sort_by) = opts.sort_by {
@@ -835,9 +833,9 @@ fn apply_opts_with_sort(
 }
 
 fn apply_opts<K>(
-    mut builder: iroh::docs::store::QueryBuilder<K>,
+    mut builder: iroh_docs::store::QueryBuilder<K>,
     opts: Option<&QueryOptions>,
-) -> iroh::docs::store::QueryBuilder<K> {
+) -> iroh_docs::store::QueryBuilder<K> {
     if let Some(opts) = opts {
         if let Some(offset) = opts.offset() {
             builder = builder.offset(offset);
@@ -916,16 +914,16 @@ pub struct LiveEventNeighborDown {
     pub neighbor: String,
 }
 
-impl From<iroh::client::docs::LiveEvent> for LiveEvent {
-    fn from(value: iroh::client::docs::LiveEvent) -> Self {
+impl From<iroh_docs::rpc::client::docs::LiveEvent> for LiveEvent {
+    fn from(value: iroh_docs::rpc::client::docs::LiveEvent) -> Self {
         match value {
-            iroh::client::docs::LiveEvent::InsertLocal { entry } => LiveEvent {
+            iroh_docs::rpc::client::docs::LiveEvent::InsertLocal { entry } => LiveEvent {
                 insert_local: Some(LiveEventInsertLocal {
                     entry: entry.into(),
                 }),
                 ..Default::default()
             },
-            iroh::client::docs::LiveEvent::InsertRemote {
+            iroh_docs::rpc::client::docs::LiveEvent::InsertRemote {
                 from,
                 entry,
                 content_status,
@@ -937,29 +935,29 @@ impl From<iroh::client::docs::LiveEvent> for LiveEvent {
                 }),
                 ..Default::default()
             },
-            iroh::client::docs::LiveEvent::ContentReady { hash } => LiveEvent {
+            iroh_docs::rpc::client::docs::LiveEvent::ContentReady { hash } => LiveEvent {
                 content_ready: Some(LiveEventContentReady {
                     hash: hash.to_string(),
                 }),
                 ..Default::default()
             },
-            iroh::client::docs::LiveEvent::NeighborUp(key) => LiveEvent {
+            iroh_docs::rpc::client::docs::LiveEvent::NeighborUp(key) => LiveEvent {
                 neighbor_up: Some(LiveEventNeighborUp {
                     neighbor: key.to_string(),
                 }),
                 ..Default::default()
             },
-            iroh::client::docs::LiveEvent::NeighborDown(key) => LiveEvent {
+            iroh_docs::rpc::client::docs::LiveEvent::NeighborDown(key) => LiveEvent {
                 neighbor_down: Some(LiveEventNeighborDown {
                     neighbor: key.to_string(),
                 }),
                 ..Default::default()
             },
-            iroh::client::docs::LiveEvent::SyncFinished(e) => LiveEvent {
+            iroh_docs::rpc::client::docs::LiveEvent::SyncFinished(e) => LiveEvent {
                 sync_finished: Some(e.into()),
                 ..Default::default()
             },
-            iroh::client::docs::LiveEvent::PendingContentReady => LiveEvent {
+            iroh_docs::rpc::client::docs::LiveEvent::PendingContentReady => LiveEvent {
                 pending_content_ready: true,
                 ..Default::default()
             },
@@ -983,8 +981,8 @@ pub struct SyncEvent {
     pub result: Option<String>,
 }
 
-impl From<iroh::client::docs::SyncEvent> for SyncEvent {
-    fn from(value: iroh::client::docs::SyncEvent) -> Self {
+impl From<iroh_docs::rpc::client::docs::SyncEvent> for SyncEvent {
+    fn from(value: iroh_docs::rpc::client::docs::SyncEvent) -> Self {
         SyncEvent {
             peer: value.peer.to_string(),
             origin: value.origin.into(),
@@ -1012,13 +1010,13 @@ pub enum SyncReason {
     Resync,
 }
 
-impl From<iroh::client::docs::SyncReason> for SyncReason {
-    fn from(value: iroh::client::docs::SyncReason) -> Self {
+impl From<iroh_docs::rpc::client::docs::SyncReason> for SyncReason {
+    fn from(value: iroh_docs::rpc::client::docs::SyncReason) -> Self {
         match value {
-            iroh::client::docs::SyncReason::DirectJoin => Self::DirectJoin,
-            iroh::client::docs::SyncReason::NewNeighbor => Self::NewNeighbor,
-            iroh::client::docs::SyncReason::SyncReport => Self::SyncReport,
-            iroh::client::docs::SyncReason::Resync => Self::Resync,
+            iroh_docs::rpc::client::docs::SyncReason::DirectJoin => Self::DirectJoin,
+            iroh_docs::rpc::client::docs::SyncReason::NewNeighbor => Self::NewNeighbor,
+            iroh_docs::rpc::client::docs::SyncReason::SyncReport => Self::SyncReport,
+            iroh_docs::rpc::client::docs::SyncReason::Resync => Self::Resync,
         }
     }
 }
@@ -1039,16 +1037,16 @@ pub enum Origin {
     Accept,
 }
 
-impl From<iroh::client::docs::Origin> for Origin {
-    fn from(value: iroh::client::docs::Origin) -> Self {
+impl From<iroh_docs::rpc::client::docs::Origin> for Origin {
+    fn from(value: iroh_docs::rpc::client::docs::Origin) -> Self {
         match value {
-            iroh::client::docs::Origin::Connect(reason) => match reason {
-                iroh::client::docs::SyncReason::DirectJoin => Self::ConnectDirectJoin,
-                iroh::client::docs::SyncReason::NewNeighbor => Self::ConnectNewNeighbor,
-                iroh::client::docs::SyncReason::SyncReport => Self::ConnectSyncReport,
-                iroh::client::docs::SyncReason::Resync => Self::ConnectResync,
+            iroh_docs::rpc::client::docs::Origin::Connect(reason) => match reason {
+                iroh_docs::rpc::client::docs::SyncReason::DirectJoin => Self::ConnectDirectJoin,
+                iroh_docs::rpc::client::docs::SyncReason::NewNeighbor => Self::ConnectNewNeighbor,
+                iroh_docs::rpc::client::docs::SyncReason::SyncReport => Self::ConnectSyncReport,
+                iroh_docs::rpc::client::docs::SyncReason::Resync => Self::ConnectResync,
             },
-            iroh::client::docs::Origin::Accept => Self::Accept,
+            iroh_docs::rpc::client::docs::Origin::Accept => Self::Accept,
         }
     }
 }
@@ -1077,12 +1075,12 @@ pub enum ContentStatus {
     Missing,
 }
 
-impl From<iroh::docs::ContentStatus> for ContentStatus {
-    fn from(value: iroh::docs::ContentStatus) -> Self {
+impl From<iroh_docs::ContentStatus> for ContentStatus {
+    fn from(value: iroh_docs::ContentStatus) -> Self {
         match value {
-            iroh::docs::ContentStatus::Complete => Self::Complete,
-            iroh::docs::ContentStatus::Incomplete => Self::Incomplete,
-            iroh::docs::ContentStatus::Missing => Self::Missing,
+            iroh_docs::ContentStatus::Complete => Self::Complete,
+            iroh_docs::ContentStatus::Incomplete => Self::Incomplete,
+            iroh_docs::ContentStatus::Missing => Self::Missing,
         }
     }
 }
@@ -1160,9 +1158,11 @@ pub struct DocImportProgress {
 }
 
 impl DocImportProgress {
-    fn convert(value: anyhow::Result<iroh::client::docs::ImportProgress>) -> Result<Self> {
+    fn convert(
+        value: anyhow::Result<iroh_docs::rpc::client::docs::ImportProgress>,
+    ) -> Result<Self> {
         match value {
-            Ok(iroh::client::docs::ImportProgress::Found { id, name, size }) => {
+            Ok(iroh_docs::rpc::client::docs::ImportProgress::Found { id, name, size }) => {
                 Ok(DocImportProgress {
                     found: Some(DocImportProgressFound {
                         id: id.into(),
@@ -1172,7 +1172,7 @@ impl DocImportProgress {
                     ..Default::default()
                 })
             }
-            Ok(iroh::client::docs::ImportProgress::Progress { id, offset }) => {
+            Ok(iroh_docs::rpc::client::docs::ImportProgress::Progress { id, offset }) => {
                 Ok(DocImportProgress {
                     progress: Some(DocImportProgressProgress {
                         id: id.into(),
@@ -1181,7 +1181,7 @@ impl DocImportProgress {
                     ..Default::default()
                 })
             }
-            Ok(iroh::client::docs::ImportProgress::IngestDone { id, hash }) => {
+            Ok(iroh_docs::rpc::client::docs::ImportProgress::IngestDone { id, hash }) => {
                 Ok(DocImportProgress {
                     ingest_done: Some(DocImportProgressIngestDone {
                         id: id.into(),
@@ -1190,11 +1190,13 @@ impl DocImportProgress {
                     ..Default::default()
                 })
             }
-            Ok(iroh::client::docs::ImportProgress::AllDone { key }) => Ok(DocImportProgress {
-                all_done: Some(DocImportProgressAllDone { key: key.into() }),
-                ..Default::default()
-            }),
-            Ok(iroh::client::docs::ImportProgress::Abort(err)) => {
+            Ok(iroh_docs::rpc::client::docs::ImportProgress::AllDone { key }) => {
+                Ok(DocImportProgress {
+                    all_done: Some(DocImportProgressAllDone { key: key.into() }),
+                    ..Default::default()
+                })
+            }
+            Ok(iroh_docs::rpc::client::docs::ImportProgress::Abort(err)) => {
                 Err(anyhow::Error::from(err).into())
             }
             Err(err) => Err(err.into()),
@@ -1257,10 +1259,10 @@ pub struct DocExportProgress {
 }
 
 impl DocExportProgress {
-    fn convert(value: anyhow::Result<iroh::blobs::export::ExportProgress>) -> Result<Self> {
+    fn convert(value: anyhow::Result<iroh_blobs::export::ExportProgress>) -> Result<Self> {
         match value {
             Ok(value) => match value {
-                iroh::blobs::export::ExportProgress::Found {
+                iroh_blobs::export::ExportProgress::Found {
                     id,
                     hash,
                     size,
@@ -1275,7 +1277,7 @@ impl DocExportProgress {
                     }),
                     ..Default::default()
                 }),
-                iroh::blobs::export::ExportProgress::Progress { id, offset } => {
+                iroh_blobs::export::ExportProgress::Progress { id, offset } => {
                     Ok(DocExportProgress {
                         progress: Some(DocExportProgressProgress {
                             id: id.into(),
@@ -1284,15 +1286,15 @@ impl DocExportProgress {
                         ..Default::default()
                     })
                 }
-                iroh::blobs::export::ExportProgress::Done { id } => Ok(DocExportProgress {
+                iroh_blobs::export::ExportProgress::Done { id } => Ok(DocExportProgress {
                     done: Some(DocExportProgressDone { id: id.into() }),
                     ..Default::default()
                 }),
-                iroh::blobs::export::ExportProgress::AllDone => Ok(DocExportProgress {
+                iroh_blobs::export::ExportProgress::AllDone => Ok(DocExportProgress {
                     all_done: true,
                     ..Default::default()
                 }),
-                iroh::blobs::export::ExportProgress::Abort(err) => {
+                iroh_blobs::export::ExportProgress::Abort(err) => {
                     Err(anyhow::Error::from(err).into())
                 }
             },

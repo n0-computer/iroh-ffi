@@ -2,8 +2,8 @@ use std::pin::Pin;
 use std::sync::Arc;
 
 use futures::{Sink, SinkExt, StreamExt};
-use iroh::gossip::net::GossipEvent;
-use iroh::net::NodeId;
+use iroh::NodeId;
+use iroh_gossip::net::GossipEvent;
 use iroh_gossip::rpc::{SubscribeResponse, SubscribeUpdate};
 use tokio::sync::Mutex;
 use tokio_util::sync::CancellationToken;
@@ -122,20 +122,17 @@ pub trait GossipMessageCallback: Send + Sync + 'static {
 /// Iroh gossip client.
 #[derive(uniffi::Object)]
 pub struct Gossip {
-    node: Iroh,
+    gossip: Arc<iroh_gossip::net::Gossip>,
 }
 
 #[uniffi::export]
 impl Iroh {
     /// Access to gossip specific funtionaliy.
     pub fn gossip(&self) -> Gossip {
-        Gossip { node: self.clone() }
-    }
-}
-
-impl Gossip {
-    fn client(&self) -> &iroh::client::Iroh {
-        self.node.inner_client()
+        let gossip = self
+            .get_protocol(iroh_gossip::net::GOSSIP_ALPN)
+            .expect("no gossip available");
+        Gossip { gossip }
     }
 }
 
@@ -160,8 +157,8 @@ impl Gossip {
             .map_err(|e| anyhow::anyhow!("{e}"))?;
 
         let (sink, mut stream) = self
+            .gossip
             .client()
-            .gossip()
             .subscribe(topic_bytes, bootstrap)
             .await?;
 
@@ -184,7 +181,7 @@ impl Gossip {
                                 Message::NeighborDown(n.to_string())
                             }
                             Ok(SubscribeResponse::Gossip(GossipEvent::Received(
-                                iroh::gossip::net::Message {
+                                iroh_gossip::net::Message {
                                     content,
                                     delivered_from,
                                     ..

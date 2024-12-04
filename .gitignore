@@ -39,18 +39,15 @@ __pycache__/
 .Python
 .venv/
 env/
-bin/
 build/
 develop-eggs/
 dist/
 eggs/
-lib/
 lib64/
 parts/
 sdist/
 var/
 include/
-man/
 venv/
 *.egg-info/
 .installed.cfg
@@ -114,4 +111,4 @@ package-lock.json
 # Kotlin
 
 kotlin/*.jar
-kotlin/*.dylib
+kotlin/**/*.dylib

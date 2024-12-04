@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use iroh::net::endpoint;
+use iroh::endpoint;
 use tokio::sync::Mutex;
 
 use crate::{IrohError, NodeAddr, PublicKey};
@@ -29,7 +29,7 @@ impl Endpoint {
         node_addr: &NodeAddr,
         alpn: &[u8],
     ) -> Result<Connection, IrohError> {
-        let node_addr: iroh::net::NodeAddr = node_addr.clone().try_into()?;
+        let node_addr: iroh::NodeAddr = node_addr.clone().try_into()?;
         let conn = self.0.connect(node_addr, alpn).await?;
         Ok(Connection(conn))
     }

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::{BlobFormat, Hash, Iroh, IrohError};
+use crate::{BlobFormat, Hash, Iroh, IrohError, TagsClient};
 use bytes::Bytes;
 use futures::TryStreamExt;
 
@@ -15,8 +15,8 @@ pub struct TagInfo {
     pub hash: Arc<Hash>,
 }
 
-impl From<iroh::client::tags::TagInfo> for TagInfo {
-    fn from(res: iroh::client::tags::TagInfo) -> Self {
+impl From<iroh_blobs::rpc::client::tags::TagInfo> for TagInfo {
+    fn from(res: iroh_blobs::rpc::client::tags::TagInfo) -> Self {
         TagInfo {
             name: res.name.0.to_vec(),
             format: res.format.into(),
@@ -28,20 +28,16 @@ impl From<iroh::client::tags::TagInfo> for TagInfo {
 /// Iroh tags client.
 #[derive(uniffi::Object)]
 pub struct Tags {
-    node: Iroh,
+    client: TagsClient,
 }
 
 #[uniffi::export]
 impl Iroh {
     /// Access to tags specific funtionaliy.
     pub fn tags(&self) -> Tags {
-        Tags { node: self.clone() }
-    }
-}
-
-impl Tags {
-    fn client(&self) -> &iroh::client::Iroh {
-        self.node.inner_client()
+        Tags {
+            client: self.tags_client.clone(),
+        }
     }
 }
 
@@ -54,8 +50,7 @@ impl Tags {
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn list(&self) -> Result<Vec<TagInfo>, IrohError> {
         let tags = self
-            .client()
-            .tags()
+            .client
             .list()
             .await?
             .map_ok(|l| l.into())
@@ -67,8 +62,8 @@ impl Tags {
     /// Delete a tag
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn delete(&self, name: Vec<u8>) -> Result<(), IrohError> {
-        let tag = iroh::blobs::Tag(Bytes::from(name));
-        self.client().tags().delete(tag).await?;
+        let tag = iroh_blobs::Tag(Bytes::from(name));
+        self.client.delete(tag).await?;
         Ok(())
     }
 }

@@ -14,16 +14,16 @@ pub struct PublicKey {
     pub(crate) key: [u8; 32],
 }
 
-impl From<iroh::net::key::PublicKey> for PublicKey {
-    fn from(key: iroh::net::key::PublicKey) -> Self {
+impl From<iroh::key::PublicKey> for PublicKey {
+    fn from(key: iroh::key::PublicKey) -> Self {
         PublicKey {
             key: *key.as_bytes(),
         }
     }
 }
-impl From<&PublicKey> for iroh::net::key::PublicKey {
+impl From<&PublicKey> for iroh::key::PublicKey {
     fn from(key: &PublicKey) -> Self {
-        iroh::net::key::PublicKey::from_bytes(&key.key).unwrap()
+        iroh::key::PublicKey::from_bytes(&key.key).unwrap()
     }
 }
 
@@ -42,7 +42,7 @@ impl PublicKey {
     /// Make a PublicKey from base32 string
     #[uniffi::constructor]
     pub fn from_string(s: String) -> Result<Self, IrohError> {
-        let key = iroh::net::key::PublicKey::from_str(&s).map_err(anyhow::Error::from)?;
+        let key = iroh::key::PublicKey::from_str(&s).map_err(anyhow::Error::from)?;
         Ok(key.into())
     }
 
@@ -53,14 +53,14 @@ impl PublicKey {
             return Err(anyhow::anyhow!("the PublicKey must be 32 bytes in length").into());
         }
         let bytes: [u8; 32] = bytes.try_into().expect("checked above");
-        let key = iroh::net::key::PublicKey::from_bytes(&bytes).map_err(anyhow::Error::from)?;
+        let key = iroh::key::PublicKey::from_bytes(&bytes).map_err(anyhow::Error::from)?;
         Ok(key.into())
     }
 
     /// Convert to a base32 string limited to the first 10 bytes for a friendly string
     /// representation of the key.
     pub fn fmt_short(&self) -> String {
-        iroh::net::key::PublicKey::from(self).fmt_short()
+        iroh::key::PublicKey::from(self).fmt_short()
     }
 }
 
@@ -72,7 +72,7 @@ impl PartialEq for PublicKey {
 
 impl std::fmt::Display for PublicKey {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        iroh::net::key::PublicKey::from(self).fmt(f)
+        iroh::key::PublicKey::from(self).fmt(f)
     }
 }
 

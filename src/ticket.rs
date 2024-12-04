@@ -13,10 +13,10 @@ use crate::error::IrohError;
 /// It is a single item which can be easily serialized and deserialized.
 #[derive(Debug, uniffi::Object)]
 #[uniffi::export(Display)]
-pub struct NodeTicket(iroh::base::ticket::NodeTicket);
+pub struct NodeTicket(iroh::ticket::NodeTicket);
 
-impl From<iroh::base::ticket::NodeTicket> for NodeTicket {
-    fn from(ticket: iroh::base::ticket::NodeTicket) -> Self {
+impl From<iroh::ticket::NodeTicket> for NodeTicket {
+    fn from(ticket: iroh::ticket::NodeTicket) -> Self {
         NodeTicket(ticket)
     }
 }
@@ -35,14 +35,14 @@ impl NodeTicket {
     /// later parsed again using [`Self::parse`].
     #[uniffi::constructor]
     pub fn new(addr: &NodeAddr) -> Result<Self, IrohError> {
-        let inner = TryInto::<iroh::base::node_addr::NodeAddr>::try_into(addr.clone())?;
-        Ok(iroh::base::ticket::NodeTicket::new(inner).into())
+        let inner = TryInto::<iroh::NodeAddr>::try_into(addr.clone())?;
+        Ok(iroh::ticket::NodeTicket::new(inner).into())
     }
 
     /// Parse back a [`NodeTicket`] from its string presentation.
     #[uniffi::constructor]
     pub fn parse(str: String) -> Result<Self, IrohError> {
-        let ticket = iroh::base::ticket::NodeTicket::from_str(&str).map_err(anyhow::Error::from)?;
+        let ticket = iroh::ticket::NodeTicket::from_str(&str).map_err(anyhow::Error::from)?;
         Ok(NodeTicket(ticket))
     }
 
@@ -58,10 +58,10 @@ impl NodeTicket {
 /// It is a single item which can be easily serialized and deserialized.
 #[derive(Debug, uniffi::Object)]
 #[uniffi::export(Display)]
-pub struct BlobTicket(iroh::base::ticket::BlobTicket);
+pub struct BlobTicket(iroh::ticket::BlobTicket);
 
-impl From<iroh::base::ticket::BlobTicket> for BlobTicket {
-    fn from(ticket: iroh::base::ticket::BlobTicket) -> Self {
+impl From<iroh::ticket::BlobTicket> for BlobTicket {
+    fn from(ticket: iroh::ticket::BlobTicket) -> Self {
         BlobTicket(ticket)
     }
 }
@@ -76,7 +76,7 @@ impl std::fmt::Display for BlobTicket {
 impl BlobTicket {
     #[uniffi::constructor]
     pub fn new(str: String) -> Result<Self, IrohError> {
-        let ticket = iroh::base::ticket::BlobTicket::from_str(&str).map_err(anyhow::Error::from)?;
+        let ticket = iroh::ticket::BlobTicket::from_str(&str).map_err(anyhow::Error::from)?;
         Ok(BlobTicket(ticket))
     }
 
@@ -103,11 +103,11 @@ impl BlobTicket {
 
     /// Convert this ticket into input parameters for a call to blobs_download
     pub fn as_download_options(&self) -> Arc<BlobDownloadOptions> {
-        let r: BlobDownloadOptions = iroh::client::blobs::DownloadOptions {
+        let r: BlobDownloadOptions = iroh_blobs::rpc::client::blobs::DownloadOptions {
             format: self.0.format(),
             nodes: vec![self.0.node_addr().clone()],
-            tag: iroh::blobs::util::SetTagOption::Auto,
-            mode: iroh::client::blobs::DownloadMode::Direct,
+            tag: iroh_blobs::util::SetTagOption::Auto,
+            mode: iroh_blobs::net_protocol::DownloadMode::Direct,
         }
         .into();
         Arc::new(r)
@@ -129,15 +129,13 @@ pub enum AddrInfoOptions {
     Addresses,
 }
 
-impl From<AddrInfoOptions> for iroh::base::node_addr::AddrInfoOptions {
-    fn from(options: AddrInfoOptions) -> iroh::base::node_addr::AddrInfoOptions {
+impl From<AddrInfoOptions> for iroh::AddrInfoOptions {
+    fn from(options: AddrInfoOptions) -> iroh::AddrInfoOptions {
         match options {
-            AddrInfoOptions::Id => iroh::base::node_addr::AddrInfoOptions::Id,
-            AddrInfoOptions::RelayAndAddresses => {
-                iroh::base::node_addr::AddrInfoOptions::RelayAndAddresses
-            }
-            AddrInfoOptions::Relay => iroh::base::node_addr::AddrInfoOptions::Relay,
-            AddrInfoOptions::Addresses => iroh::base::node_addr::AddrInfoOptions::Addresses,
+            AddrInfoOptions::Id => iroh::AddrInfoOptions::Id,
+            AddrInfoOptions::RelayAndAddresses => iroh::AddrInfoOptions::RelayAndAddresses,
+            AddrInfoOptions::Relay => iroh::AddrInfoOptions::Relay,
+            AddrInfoOptions::Addresses => iroh::AddrInfoOptions::Addresses,
         }
     }
 }
@@ -145,15 +143,15 @@ impl From<AddrInfoOptions> for iroh::base::node_addr::AddrInfoOptions {
 /// Contains both a key (either secret or public) to a document, and a list of peers to join.
 #[derive(Debug, Clone, uniffi::Object)]
 #[uniffi::export(Display)]
-pub struct DocTicket(iroh::docs::DocTicket);
+pub struct DocTicket(iroh_docs::DocTicket);
 
-impl From<iroh::docs::DocTicket> for DocTicket {
-    fn from(value: iroh::docs::DocTicket) -> Self {
+impl From<iroh_docs::DocTicket> for DocTicket {
+    fn from(value: iroh_docs::DocTicket) -> Self {
         Self(value)
     }
 }
 
-impl From<DocTicket> for iroh::docs::DocTicket {
+impl From<DocTicket> for iroh_docs::DocTicket {
     fn from(value: DocTicket) -> Self {
         value.0
     }
@@ -163,7 +161,7 @@ impl From<DocTicket> for iroh::docs::DocTicket {
 impl DocTicket {
     #[uniffi::constructor]
     pub fn new(str: String) -> Result<Self, IrohError> {
-        let ticket = iroh::docs::DocTicket::from_str(&str).map_err(anyhow::Error::from)?;
+        let ticket = iroh_docs::DocTicket::from_str(&str).map_err(anyhow::Error::from)?;
         Ok(ticket.into())
     }
 }

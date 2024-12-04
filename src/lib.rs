@@ -22,8 +22,7 @@ pub use self::node::*;
 pub use self::tag::*;
 pub use self::ticket::*;
 
-use iroh::metrics::try_init_metrics_collection;
-
+use iroh_metrics::core::Metric;
 use tracing_subscriber::filter::LevelFilter;
 
 // This macro includes the scaffolding for the Iroh FFI bindings.
@@ -70,7 +69,15 @@ pub fn set_log_level(level: LogLevel) {
 /// Initialize the global metrics collection.
 #[uniffi::export]
 pub fn start_metrics_collection() -> Result<(), IrohError> {
-    try_init_metrics_collection().map_err(|e| anyhow::Error::from(e).into())
+    iroh_metrics::core::Core::try_init(|reg, metrics| {
+        metrics.insert(iroh::metrics::MagicsockMetrics::new(reg));
+        metrics.insert(iroh::metrics::NetReportMetrics::new(reg));
+        metrics.insert(iroh::metrics::PortmapMetrics::new(reg));
+        metrics.insert(iroh_blobs::metrics::Metrics::new(reg));
+        metrics.insert(iroh_gossip::metrics::Metrics::new(reg));
+        metrics.insert(iroh_docs::metrics::Metrics::new(reg));
+    })
+    .map_err(|e| anyhow::Error::from(e).into())
 }
 
 /// Helper function that translates a key that was derived from the [`path_to_key`] function back
@@ -85,7 +92,7 @@ pub fn key_to_path(
     prefix: Option<String>,
     root: Option<String>,
 ) -> Result<String, IrohError> {
-    let path = iroh::util::fs::key_to_path(key, prefix, root.map(std::path::PathBuf::from))?;
+    let path = iroh_blobs::util::fs::key_to_path(key, prefix, root.map(std::path::PathBuf::from))?;
     let path = path.to_str();
     let path = path.ok_or_else(|| anyhow::anyhow!("Unable to parse path {:?}", path))?;
     let path = path.to_string();
@@ -101,7 +108,7 @@ pub fn path_to_key(
     prefix: Option<String>,
     root: Option<String>,
 ) -> Result<Vec<u8>, IrohError> {
-    iroh::util::fs::path_to_key(
+    iroh_blobs::util::fs::path_to_key(
         std::path::PathBuf::from(path),
         prefix,
         root.map(std::path::PathBuf::from),

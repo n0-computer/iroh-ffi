@@ -90,7 +90,7 @@ async def test_custom_protocol():
             print("shutting down")
 
     class ProtocolCreator:
-        def create(self, endpoint, client):
+        def create(self, endpoint):
             return MyProtocol()
 
     protocols = {}

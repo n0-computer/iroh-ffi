@@ -33,7 +33,7 @@ test('import export author', async (t) => {
 })
 
 test('create author id', (t) => {
-  const authorStr = 'mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q'
+  const authorStr = '7db06b57aac9b3640961d281239c8f23487ac7f7265da21607c5612d3527a254'
   const author = AuthorId.fromString(authorStr)
   t.is(author.toString(), authorStr)
 

@@ -1,8 +1,9 @@
 use std::pin::Pin;
+use std::sync::Arc;
 
 use futures::{Sink, SinkExt, StreamExt};
-use iroh::gossip::net::GossipEvent;
-use iroh::net::NodeId;
+use iroh::NodeId;
+use iroh_gossip::net::GossipEvent;
 use iroh_gossip::rpc::{SubscribeResponse, SubscribeUpdate};
 use napi::bindgen_prelude::*;
 use napi::threadsafe_function::ThreadsafeFunction;
@@ -49,7 +50,7 @@ impl From<SubscribeResponse> for Message {
                 neighbor_down: Some(n.to_string()),
                 ..Default::default()
             },
-            SubscribeResponse::Gossip(GossipEvent::Received(iroh::gossip::net::Message {
+            SubscribeResponse::Gossip(GossipEvent::Received(iroh_gossip::net::Message {
                 content,
                 delivered_from,
                 ..
@@ -75,7 +76,7 @@ impl From<SubscribeResponse> for Message {
 /// Iroh gossip client.
 #[napi]
 pub struct Gossip {
-    node: Iroh,
+    gossip: Arc<iroh_gossip::net::Gossip>,
 }
 
 #[napi]
@@ -83,13 +84,11 @@ impl Iroh {
     /// Access to gossip specific funtionaliy.
     #[napi(getter)]
     pub fn gossip(&self) -> Gossip {
-        Gossip { node: self.clone() }
-    }
-}
-
-impl Gossip {
-    fn client(&self) -> &iroh::client::Iroh {
-        self.node.inner_client()
+        let gossip = self
+            .router
+            .get_protocol(iroh_gossip::net::GOSSIP_ALPN)
+            .expect("no gossip available");
+        Gossip { gossip }
     }
 }
 
@@ -113,8 +112,8 @@ impl Gossip {
             .collect::<anyhow::Result<Vec<NodeId>>>()?;
 
         let (sink, mut stream) = self
+            .gossip
             .client()
-            .gossip()
             .subscribe(topic_bytes, bootstrap)
             .await?;
 

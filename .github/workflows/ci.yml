@@ -162,14 +162,16 @@ jobs:
     - name: install ktlint
       uses: arqu/action-ktlint-setup@main
 
-    - name: fetch jna
-      run: curl -L https://repo1.maven.org/maven2/net/java/dev/jna/jna/5.14.0/jna-5.14.0.jar -o jna.jar
-    - name: fetch kotlinx-coroutines
-      run: curl -L https://repo1.maven.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.6.4/kotlinx-coroutines-core-jvm-1.6.4.jar -o kotlinx-coroutines.jar
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v4
 
-    - name: run kotlin tests
+    - name: build kotlin
       env:
-        CLASSPATH: ./jna.jar:./kotlinx-coroutines.jar
         TEST_OS: ${{ matrix.os }}
       shell: bash
-      run: ./test_kotlin.sh
+      run: ./make_kotlin.sh
+
+    - name: Gradle Test
+      run: |
+        cd kotlin
+        ./gradlew test

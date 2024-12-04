@@ -2,12 +2,12 @@ use futures::TryStreamExt;
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
 
-use crate::{Iroh, PublicKey};
+use crate::{Iroh, NetClient, PublicKey};
 
 /// Iroh net client.
 #[napi]
 pub struct Net {
-    node: Iroh,
+    client: NetClient,
 }
 
 #[napi]
@@ -15,13 +15,10 @@ impl Iroh {
     /// Access to net specific funtionaliy.
     #[napi(getter)]
     pub fn net(&self) -> Net {
-        Net { node: self.clone() }
-    }
-}
+        let client = self.client.clone().boxed();
+        let client = iroh_node_util::rpc::client::net::Client::new(client);
 
-impl Net {
-    fn client(&self) -> &iroh::client::Iroh {
-        self.node.inner_client()
+        Net { client }
     }
 }
 
@@ -31,8 +28,7 @@ impl Net {
     #[napi]
     pub async fn remote_info_list(&self) -> Result<Vec<RemoteInfo>> {
         let infos = self
-            .client()
-            .net()
+            .client
             .remote_info_iter()
             .await?
             .map_ok(|info| info.into())
@@ -45,8 +41,7 @@ impl Net {
     #[napi]
     pub async fn remote_info(&self, node_id: &PublicKey) -> Result<Option<RemoteInfo>> {
         let info = self
-            .client()
-            .net()
+            .client
             .remote_info(node_id.into())
             .await
             .map(|i| i.map(|i| i.into()))?;
@@ -56,31 +51,28 @@ impl Net {
     /// The string representation of the PublicKey of this node.
     #[napi]
     pub async fn node_id(&self) -> Result<String> {
-        let id = self.client().net().node_id().await?;
+        let id = self.client.node_id().await?;
         Ok(id.to_string())
     }
 
     /// Return the [`NodeAddr`] for this node.
     #[napi]
     pub async fn node_addr(&self) -> Result<NodeAddr> {
-        let addr = self.client().net().node_addr().await?;
+        let addr = self.client.node_addr().await?;
         Ok(addr.into())
     }
 
     /// Add a known node address to the node.
     #[napi]
     pub async fn add_node_addr(&self, addr: NodeAddr) -> Result<()> {
-        self.client()
-            .net()
-            .add_node_addr(addr.clone().try_into()?)
-            .await?;
+        self.client.add_node_addr(addr.clone().try_into()?).await?;
         Ok(())
     }
 
     /// Get the relay server we are connected to.
     #[napi]
     pub async fn home_relay(&self) -> Result<Option<String>> {
-        let relay = self.client().net().home_relay().await?;
+        let relay = self.client.home_relay().await?;
         Ok(relay.map(|u| u.to_string()))
     }
 }
@@ -112,8 +104,8 @@ pub struct DirectAddrInfo {
     pub last_alive: Option<u32>,
 }
 
-impl From<iroh::net::endpoint::DirectAddrInfo> for DirectAddrInfo {
-    fn from(value: iroh::net::endpoint::DirectAddrInfo) -> Self {
+impl From<iroh::endpoint::DirectAddrInfo> for DirectAddrInfo {
+    fn from(value: iroh::endpoint::DirectAddrInfo) -> Self {
         Self {
             addr: value.addr.to_string(),
             latency: value.latency.map(|d| u32::try_from(d.as_millis()).unwrap()),
@@ -161,8 +153,8 @@ pub struct RemoteInfo {
     pub last_used: Option<u32>,
 }
 
-impl From<iroh::net::endpoint::RemoteInfo> for RemoteInfo {
-    fn from(value: iroh::net::endpoint::RemoteInfo) -> Self {
+impl From<iroh::endpoint::RemoteInfo> for RemoteInfo {
+    fn from(value: iroh::endpoint::RemoteInfo) -> Self {
         RemoteInfo {
             node_id: value.node_id.as_bytes().to_vec(),
             relay_url: value.relay_url.map(|info| info.relay_url.to_string()),
@@ -200,22 +192,22 @@ pub struct ConnectionType {
     pub details: Option<String>,
 }
 
-impl From<iroh::net::endpoint::ConnectionType> for ConnectionType {
-    fn from(value: iroh::net::endpoint::ConnectionType) -> Self {
+impl From<iroh::endpoint::ConnectionType> for ConnectionType {
+    fn from(value: iroh::endpoint::ConnectionType) -> Self {
         match value {
-            iroh::net::endpoint::ConnectionType::Direct(addr) => ConnectionType {
+            iroh::endpoint::ConnectionType::Direct(addr) => ConnectionType {
                 r#type: ConnType::Direct,
                 details: Some(addr.to_string()),
             },
-            iroh::net::endpoint::ConnectionType::Mixed(addr, url) => ConnectionType {
+            iroh::endpoint::ConnectionType::Mixed(addr, url) => ConnectionType {
                 r#type: ConnType::Mixed,
                 details: Some(format!("{} - {}", addr, url)),
             },
-            iroh::net::endpoint::ConnectionType::Relay(url) => ConnectionType {
+            iroh::endpoint::ConnectionType::Relay(url) => ConnectionType {
                 r#type: ConnType::Relay,
                 details: Some(url.to_string()),
             },
-            iroh::net::endpoint::ConnectionType::None => ConnectionType {
+            iroh::endpoint::ConnectionType::None => ConnectionType {
                 r#type: ConnType::None,
                 details: None,
             },
@@ -237,16 +229,16 @@ pub struct NodeAddr {
 /// Verify a `NodeAddr`.
 #[napi]
 pub fn verify_node_addr(addr: NodeAddr) -> Result<()> {
-    let _addr: iroh::net::endpoint::NodeAddr = addr.try_into()?;
+    let _addr: iroh::endpoint::NodeAddr = addr.try_into()?;
     Ok(())
 }
 
-impl TryFrom<NodeAddr> for iroh::net::endpoint::NodeAddr {
+impl TryFrom<NodeAddr> for iroh::endpoint::NodeAddr {
     type Error = anyhow::Error;
 
     fn try_from(value: NodeAddr) -> anyhow::Result<Self> {
-        let key: iroh::net::key::PublicKey = value.node_id.parse().map_err(anyhow::Error::from)?;
-        let mut node_addr = iroh::net::endpoint::NodeAddr::new(key);
+        let key: iroh::key::PublicKey = value.node_id.parse().map_err(anyhow::Error::from)?;
+        let mut node_addr = iroh::endpoint::NodeAddr::new(key);
         let addresses = value
             .addresses
             .unwrap_or_default()
@@ -267,8 +259,8 @@ impl TryFrom<NodeAddr> for iroh::net::endpoint::NodeAddr {
     }
 }
 
-impl From<iroh::net::endpoint::NodeAddr> for NodeAddr {
-    fn from(value: iroh::net::endpoint::NodeAddr) -> Self {
+impl From<iroh::endpoint::NodeAddr> for NodeAddr {
+    fn from(value: iroh::endpoint::NodeAddr) -> Self {
         let addresses: Vec<_> = value
             .info
             .direct_addresses

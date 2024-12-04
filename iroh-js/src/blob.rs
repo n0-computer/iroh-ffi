@@ -6,11 +6,13 @@ use napi::threadsafe_function::ThreadsafeFunction;
 use napi_derive::napi;
 
 use crate::{node::Iroh, AddrInfoOptions, BlobTicket, NodeAddr};
+use crate::{BlobsClient, NetClient};
 
 /// Iroh blobs client.
 #[napi]
 pub struct Blobs {
-    node: Iroh,
+    client: BlobsClient,
+    net_client: NetClient,
 }
 
 #[napi]
@@ -18,13 +20,10 @@ impl Iroh {
     /// Access to blob specific funtionaliy.
     #[napi(getter)]
     pub fn blobs(&self) -> Blobs {
-        Blobs { node: self.clone() }
-    }
-}
-
-impl Blobs {
-    fn client(&self) -> &iroh::client::Iroh {
-        self.node.inner_client()
+        Blobs {
+            client: self.blobs_client.clone(),
+            net_client: self.net_client.clone(),
+        }
     }
 }
 
@@ -36,7 +35,7 @@ impl Blobs {
     /// Please file an [issue](https://github.com/n0-computer/iroh-ffi/issues/new) if you run into this issue
     #[napi]
     pub async fn list(&self) -> Result<Vec<Hash>> {
-        let response = self.client().blobs().list().await?;
+        let response = self.client.list().await?;
 
         let hashes: Vec<Hash> = response.map_ok(|i| i.hash.into()).try_collect().await?;
 
@@ -49,8 +48,7 @@ impl Blobs {
     #[napi]
     pub async fn size(&self, hash: String) -> Result<u64> {
         let r = self
-            .client()
-            .blobs()
+            .client
             .read(hash.parse().map_err(anyhow::Error::from)?)
             .await?;
         Ok(r.size())
@@ -64,8 +62,7 @@ impl Blobs {
     #[napi]
     pub async fn read_to_bytes(&self, hash: String) -> Result<Vec<u8>> {
         let res = self
-            .client()
-            .blobs()
+            .client
             .read_to_bytes(hash.parse().map_err(anyhow::Error::from)?)
             .await
             .map(|b| b.to_vec())?;
@@ -85,8 +82,7 @@ impl Blobs {
         len: ReadAtLen,
     ) -> Result<Vec<u8>> {
         let res = self
-            .client()
-            .blobs()
+            .client
             .read_at_to_bytes(
                 hash.parse().map_err(anyhow::Error::from)?,
                 offset.get_u64().1,
@@ -113,8 +109,7 @@ impl Blobs {
         cb: ThreadsafeFunction<AddProgress, ()>,
     ) -> Result<()> {
         let mut stream = self
-            .client()
-            .blobs()
+            .client
             .add_from_path(path.into(), in_place, tag.into(), wrap.into())
             .await?;
         while let Some(progress) = stream.next().await {
@@ -129,8 +124,7 @@ impl Blobs {
     #[napi]
     pub async fn write_to_path(&self, hash: String, path: String) -> Result<()> {
         let mut reader = self
-            .client()
-            .blobs()
+            .client
             .read(hash.parse().map_err(anyhow::Error::from)?)
             .await?;
         let path: PathBuf = path.into();
@@ -151,7 +145,7 @@ impl Blobs {
     /// Write a blob by passing bytes.
     #[napi]
     pub async fn add_bytes(&self, bytes: Vec<u8>) -> Result<BlobAddOutcome> {
-        let res = self.client().blobs().add_bytes(bytes).await?;
+        let res = self.client.add_bytes(bytes).await?;
         Ok(res.into())
     }
 
@@ -159,9 +153,8 @@ impl Blobs {
     #[napi]
     pub async fn add_bytes_named(&self, bytes: Vec<u8>, name: String) -> Result<BlobAddOutcome> {
         let res = self
-            .client()
-            .blobs()
-            .add_bytes_named(bytes, iroh::blobs::Tag(name.into()))
+            .client
+            .add_bytes_named(bytes, iroh_blobs::Tag(name.into()))
             .await?;
         Ok(res.into())
     }
@@ -175,8 +168,7 @@ impl Blobs {
         cb: ThreadsafeFunction<DownloadProgress, ()>,
     ) -> Result<()> {
         let mut stream = self
-            .client()
-            .blobs()
+            .client
             .download_with_opts(hash.parse().map_err(anyhow::Error::from)?, opts.0.clone())
             .await?;
         while let Some(progress) = stream.next().await {
@@ -214,8 +206,7 @@ impl Blobs {
         }
 
         let stream = self
-            .client()
-            .blobs()
+            .client
             .export(
                 hash.parse().map_err(anyhow::Error::from)?,
                 destination,
@@ -237,15 +228,11 @@ impl Blobs {
         blob_format: BlobFormat,
         ticket_options: AddrInfoOptions,
     ) -> Result<BlobTicket> {
-        let ticket = self
-            .client()
-            .blobs()
-            .share(
-                hash.parse().map_err(anyhow::Error::from)?,
-                blob_format.into(),
-                ticket_options.into(),
-            )
-            .await?;
+        let hash = hash.parse().map_err(anyhow::Error::from)?;
+
+        let mut addr = self.net_client.node_addr().await?;
+        addr.apply_options(ticket_options.into());
+        let ticket = iroh::ticket::BlobTicket::new(addr, hash, blob_format.into())?;
         Ok(ticket.into())
     }
 
@@ -256,8 +243,7 @@ impl Blobs {
     #[napi]
     pub async fn list_incomplete(&self) -> Result<Vec<IncompleteBlobInfo>> {
         let blobs = self
-            .client()
-            .blobs()
+            .client
             .list_incomplete()
             .await?
             .map_ok(|res| res.into())
@@ -273,8 +259,7 @@ impl Blobs {
     #[napi]
     pub async fn list_collections(&self) -> Result<Vec<CollectionInfo>> {
         let blobs = self
-            .client()
-            .blobs()
+            .client
             .list_collections()?
             .map_ok(|res| res.into())
             .try_collect::<Vec<_>>()
@@ -286,8 +271,7 @@ impl Blobs {
     #[napi]
     pub async fn get_collection(&self, hash: String) -> Result<Collection> {
         let collection = self
-            .client()
-            .blobs()
+            .client
             .get_collection(hash.parse().map_err(anyhow::Error::from)?)
             .await?;
 
@@ -307,14 +291,13 @@ impl Blobs {
     ) -> Result<HashAndTag> {
         let collection = collection.0.read().unwrap().clone();
         let (hash, tag) = self
-            .client()
-            .blobs()
+            .client
             .create_collection(
                 collection,
                 tag.into(),
                 tags_to_delete
                     .into_iter()
-                    .map(iroh::blobs::Tag::from)
+                    .map(iroh_blobs::Tag::from)
                     .collect(),
             )
             .await?;
@@ -328,8 +311,8 @@ impl Blobs {
     /// Delete a blob.
     #[napi]
     pub async fn delete_blob(&self, hash: String) -> Result<()> {
-        let mut tags = self.client().tags().list().await?;
-        let hash: iroh::blobs::Hash = hash.parse().map_err(anyhow::Error::from)?;
+        let mut tags = self.client.tags().list().await?;
+        let hash: iroh_blobs::Hash = hash.parse().map_err(anyhow::Error::from)?;
 
         let mut name = None;
         while let Some(tag) = tags.next().await {
@@ -340,8 +323,8 @@ impl Blobs {
         }
 
         if let Some(name) = name {
-            self.client().tags().delete(name).await?;
-            self.client().blobs().delete_blob(hash).await?;
+            self.client.tags().delete(name).await?;
+            self.client.delete_blob(hash).await?;
         }
 
         Ok(())
@@ -372,8 +355,8 @@ pub struct BlobAddOutcome {
     pub tag: Vec<u8>,
 }
 
-impl From<iroh::client::blobs::AddOutcome> for BlobAddOutcome {
-    fn from(value: iroh::client::blobs::AddOutcome) -> Self {
+impl From<iroh_blobs::rpc::client::blobs::AddOutcome> for BlobAddOutcome {
+    fn from(value: iroh_blobs::rpc::client::blobs::AddOutcome) -> Self {
         BlobAddOutcome {
             hash: value.hash.to_string(),
             format: value.format.into(),
@@ -416,14 +399,12 @@ impl SetTagOption {
     }
 }
 
-impl From<&SetTagOption> for iroh::blobs::util::SetTagOption {
+impl From<&SetTagOption> for iroh_blobs::util::SetTagOption {
     fn from(value: &SetTagOption) -> Self {
         if let Some(ref tag) = value.name {
-            iroh::blobs::util::SetTagOption::Named(iroh::blobs::Tag(bytes::Bytes::from(
-                tag.clone(),
-            )))
+            iroh_blobs::util::SetTagOption::Named(iroh_blobs::Tag(bytes::Bytes::from(tag.clone())))
         } else if value.auto {
-            iroh::blobs::util::SetTagOption::Auto
+            iroh_blobs::util::SetTagOption::Auto
         } else {
             panic!("invalid settagoption state");
         }
@@ -440,14 +421,14 @@ pub struct WrapOption {
     pub wrap_override: Option<String>,
 }
 
-impl From<WrapOption> for iroh::client::blobs::WrapOption {
+impl From<WrapOption> for iroh_blobs::rpc::client::blobs::WrapOption {
     fn from(value: WrapOption) -> Self {
         if value.wrap {
-            iroh::client::blobs::WrapOption::Wrap {
+            iroh_blobs::rpc::client::blobs::WrapOption::Wrap {
                 name: value.wrap_override,
             }
         } else {
-            iroh::client::blobs::WrapOption::NoWrap
+            iroh_blobs::rpc::client::blobs::WrapOption::NoWrap
         }
     }
 }
@@ -461,8 +442,8 @@ pub struct Hash {
     pub value: String,
 }
 
-impl From<iroh::blobs::Hash> for Hash {
-    fn from(h: iroh::blobs::Hash) -> Self {
+impl From<iroh_blobs::Hash> for Hash {
+    fn from(h: iroh_blobs::Hash) -> Self {
         Hash {
             value: h.to_string(),
         }
@@ -475,7 +456,7 @@ impl Hash {
     #[napi(constructor)]
     pub fn new(buf: Vec<u8>) -> Self {
         Hash {
-            value: iroh::blobs::Hash::new(buf).to_string(),
+            value: iroh_blobs::Hash::new(buf).to_string(),
         }
     }
 
@@ -488,7 +469,7 @@ impl Hash {
     /// Bytes of the hash.
     #[napi]
     pub fn to_bytes(&self) -> Vec<u8> {
-        let h: iroh::blobs::Hash = self.value.parse().unwrap();
+        let h: iroh_blobs::Hash = self.value.parse().unwrap();
         h.as_bytes().to_vec()
     }
 
@@ -500,14 +481,14 @@ impl Hash {
         })?;
 
         Ok(Hash {
-            value: iroh::blobs::Hash::from_bytes(bytes).to_string(),
+            value: iroh_blobs::Hash::from_bytes(bytes).to_string(),
         })
     }
 
     /// Make a Hash from base32 or hex string
     #[napi(factory)]
     pub fn from_string(s: String) -> Result<Self> {
-        let key = iroh::blobs::Hash::from_str(&s).map_err(anyhow::Error::from)?;
+        let key = iroh_blobs::Hash::from_str(&s).map_err(anyhow::Error::from)?;
         Ok(key.into())
     }
 
@@ -517,7 +498,7 @@ impl Hash {
         match target {
             Some(target) => {
                 if target == "hex" {
-                    let key = iroh::blobs::Hash::from_str(&self.value).unwrap();
+                    let key = iroh_blobs::Hash::from_str(&self.value).unwrap();
                     key.to_hex()
                 } else {
                     panic!("invalid target: {}", target);
@@ -528,7 +509,7 @@ impl Hash {
     }
 }
 
-impl From<&Hash> for iroh::blobs::Hash {
+impl From<&Hash> for iroh_blobs::Hash {
     fn from(value: &Hash) -> Self {
         value.value.parse().unwrap()
     }
@@ -593,10 +574,10 @@ pub struct AddProgress {
 }
 
 impl AddProgress {
-    fn convert(value: anyhow::Result<iroh::blobs::provider::AddProgress>) -> Result<Self> {
+    fn convert(value: anyhow::Result<iroh_blobs::provider::AddProgress>) -> Result<Self> {
         match value {
             Ok(value) => match value {
-                iroh::blobs::provider::AddProgress::Found { id, name, size } => Ok(AddProgress {
+                iroh_blobs::provider::AddProgress::Found { id, name, size } => Ok(AddProgress {
                     found: Some(AddProgressFound {
                         id: id.into(),
                         name,
@@ -604,21 +585,21 @@ impl AddProgress {
                     }),
                     ..Default::default()
                 }),
-                iroh::blobs::provider::AddProgress::Progress { id, offset } => Ok(AddProgress {
+                iroh_blobs::provider::AddProgress::Progress { id, offset } => Ok(AddProgress {
                     progress: Some(AddProgressProgress {
                         id: id.into(),
                         offset: offset.into(),
                     }),
                     ..Default::default()
                 }),
-                iroh::blobs::provider::AddProgress::Done { id, hash } => Ok(AddProgress {
+                iroh_blobs::provider::AddProgress::Done { id, hash } => Ok(AddProgress {
                     done: Some(AddProgressDone {
                         id: id.into(),
                         hash: hash.to_string(),
                     }),
                     ..Default::default()
                 }),
-                iroh::blobs::provider::AddProgress::AllDone { hash, format, tag } => {
+                iroh_blobs::provider::AddProgress::AllDone { hash, format, tag } => {
                     Ok(AddProgress {
                         all_done: Some(AddProgressAllDone {
                             hash: hash.to_string(),
@@ -628,7 +609,7 @@ impl AddProgress {
                         ..Default::default()
                     })
                 }
-                iroh::blobs::provider::AddProgress::Abort(err) => {
+                iroh_blobs::provider::AddProgress::Abort(err) => {
                     Err(anyhow::Error::from(err).into())
                 }
             },
@@ -658,17 +639,17 @@ pub struct ReadAtLen {
     pub size: Option<BigInt>,
 }
 
-impl From<ReadAtLen> for iroh::client::blobs::ReadAtLen {
+impl From<ReadAtLen> for iroh_blobs::rpc::client::blobs::ReadAtLen {
     fn from(value: ReadAtLen) -> Self {
         match value.r#type {
-            ReadAtLenType::All => iroh::client::blobs::ReadAtLen::All,
+            ReadAtLenType::All => iroh_blobs::rpc::client::blobs::ReadAtLen::All,
             ReadAtLenType::Exact => {
                 let (_, size, _) = value.size.expect("missing size").get_u64();
-                iroh::client::blobs::ReadAtLen::Exact(size)
+                iroh_blobs::rpc::client::blobs::ReadAtLen::Exact(size)
             }
             ReadAtLenType::AtMost => {
                 let (_, size, _) = value.size.expect("missing size").get_u64();
-                iroh::client::blobs::ReadAtLen::AtMost(size)
+                iroh_blobs::rpc::client::blobs::ReadAtLen::AtMost(size)
             }
         }
     }
@@ -684,20 +665,20 @@ pub enum BlobFormat {
     HashSeq,
 }
 
-impl From<iroh::blobs::BlobFormat> for BlobFormat {
-    fn from(value: iroh::blobs::BlobFormat) -> Self {
+impl From<iroh_blobs::BlobFormat> for BlobFormat {
+    fn from(value: iroh_blobs::BlobFormat) -> Self {
         match value {
-            iroh::blobs::BlobFormat::Raw => BlobFormat::Raw,
-            iroh::blobs::BlobFormat::HashSeq => BlobFormat::HashSeq,
+            iroh_blobs::BlobFormat::Raw => BlobFormat::Raw,
+            iroh_blobs::BlobFormat::HashSeq => BlobFormat::HashSeq,
         }
     }
 }
 
-impl From<BlobFormat> for iroh::blobs::BlobFormat {
+impl From<BlobFormat> for iroh_blobs::BlobFormat {
     fn from(value: BlobFormat) -> Self {
         match value {
-            BlobFormat::Raw => iroh::blobs::BlobFormat::Raw,
-            BlobFormat::HashSeq => iroh::blobs::BlobFormat::HashSeq,
+            BlobFormat::Raw => iroh_blobs::BlobFormat::Raw,
+            BlobFormat::HashSeq => iroh_blobs::BlobFormat::HashSeq,
         }
     }
 }
@@ -705,7 +686,7 @@ impl From<BlobFormat> for iroh::blobs::BlobFormat {
 /// Options to download  data specified by the hash.
 #[derive(Debug)]
 #[napi]
-pub struct BlobDownloadOptions(iroh::client::blobs::DownloadOptions);
+pub struct BlobDownloadOptions(iroh_blobs::rpc::client::blobs::DownloadOptions);
 
 #[napi]
 impl BlobDownloadOptions {
@@ -716,17 +697,19 @@ impl BlobDownloadOptions {
             .into_iter()
             .map(|node| node.try_into())
             .collect::<std::result::Result<_, _>>()?;
-        Ok(BlobDownloadOptions(iroh::client::blobs::DownloadOptions {
-            format: format.into(),
-            nodes,
-            tag: tag.into(),
-            mode: iroh::client::blobs::DownloadMode::Direct,
-        }))
+        Ok(BlobDownloadOptions(
+            iroh_blobs::rpc::client::blobs::DownloadOptions {
+                format: format.into(),
+                nodes,
+                tag: tag.into(),
+                mode: iroh_blobs::rpc::client::blobs::DownloadMode::Direct,
+            },
+        ))
     }
 }
 
-impl From<iroh::client::blobs::DownloadOptions> for BlobDownloadOptions {
-    fn from(value: iroh::client::blobs::DownloadOptions) -> Self {
+impl From<iroh_blobs::rpc::client::blobs::DownloadOptions> for BlobDownloadOptions {
+    fn from(value: iroh_blobs::rpc::client::blobs::DownloadOptions) -> Self {
         BlobDownloadOptions(value)
     }
 }
@@ -749,11 +732,11 @@ pub enum BlobExportFormat {
     Collection,
 }
 
-impl From<BlobExportFormat> for iroh::blobs::store::ExportFormat {
+impl From<BlobExportFormat> for iroh_blobs::store::ExportFormat {
     fn from(value: BlobExportFormat) -> Self {
         match value {
-            BlobExportFormat::Blob => iroh::blobs::store::ExportFormat::Blob,
-            BlobExportFormat::Collection => iroh::blobs::store::ExportFormat::Collection,
+            BlobExportFormat::Blob => iroh_blobs::store::ExportFormat::Blob,
+            BlobExportFormat::Collection => iroh_blobs::store::ExportFormat::Collection,
         }
     }
 }
@@ -783,11 +766,11 @@ pub enum BlobExportMode {
     TryReference,
 }
 
-impl From<BlobExportMode> for iroh::blobs::store::ExportMode {
+impl From<BlobExportMode> for iroh_blobs::store::ExportMode {
     fn from(value: BlobExportMode) -> Self {
         match value {
-            BlobExportMode::Copy => iroh::blobs::store::ExportMode::Copy,
-            BlobExportMode::TryReference => iroh::blobs::store::ExportMode::TryReference,
+            BlobExportMode::Copy => iroh_blobs::store::ExportMode::Copy,
+            BlobExportMode::TryReference => iroh_blobs::store::ExportMode::TryReference,
         }
     }
 }
@@ -907,10 +890,10 @@ pub struct DownloadProgress {
 }
 
 impl DownloadProgress {
-    fn convert(value: anyhow::Result<iroh::blobs::get::db::DownloadProgress>) -> Result<Self> {
+    fn convert(value: anyhow::Result<iroh_blobs::get::db::DownloadProgress>) -> Result<Self> {
         match value {
             Ok(value) => match value {
-                iroh::blobs::get::db::DownloadProgress::InitialState(transfer_state) => {
+                iroh_blobs::get::db::DownloadProgress::InitialState(transfer_state) => {
                     Ok(DownloadProgress {
                         initial_state: Some(DownloadProgressInitialState {
                             connected: transfer_state.connected,
@@ -918,7 +901,7 @@ impl DownloadProgress {
                         ..Default::default()
                     })
                 }
-                iroh::blobs::get::db::DownloadProgress::FoundLocal {
+                iroh_blobs::get::db::DownloadProgress::FoundLocal {
                     child, hash, size, ..
                 } => Ok(DownloadProgress {
                     found_local: Some(DownloadProgressFoundLocal {
@@ -928,11 +911,11 @@ impl DownloadProgress {
                     }),
                     ..Default::default()
                 }),
-                iroh::blobs::get::db::DownloadProgress::Connected => Ok(DownloadProgress {
+                iroh_blobs::get::db::DownloadProgress::Connected => Ok(DownloadProgress {
                     connected: Some(()),
                     ..Default::default()
                 }),
-                iroh::blobs::get::db::DownloadProgress::Found {
+                iroh_blobs::get::db::DownloadProgress::Found {
                     id,
                     hash,
                     child,
@@ -946,7 +929,7 @@ impl DownloadProgress {
                     }),
                     ..Default::default()
                 }),
-                iroh::blobs::get::db::DownloadProgress::FoundHashSeq { hash, children } => {
+                iroh_blobs::get::db::DownloadProgress::FoundHashSeq { hash, children } => {
                     Ok(DownloadProgress {
                         found_hash_seq: Some(DownloadProgressFoundHashSeq {
                             hash: hash.to_string(),
@@ -955,7 +938,7 @@ impl DownloadProgress {
                         ..Default::default()
                     })
                 }
-                iroh::blobs::get::db::DownloadProgress::Progress { id, offset } => {
+                iroh_blobs::get::db::DownloadProgress::Progress { id, offset } => {
                     Ok(DownloadProgress {
                         progress: Some(DownloadProgressProgress {
                             id: id.into(),
@@ -964,11 +947,11 @@ impl DownloadProgress {
                         ..Default::default()
                     })
                 }
-                iroh::blobs::get::db::DownloadProgress::Done { id } => Ok(DownloadProgress {
+                iroh_blobs::get::db::DownloadProgress::Done { id } => Ok(DownloadProgress {
                     done: Some(DownloadProgressDone { id: id.into() }),
                     ..Default::default()
                 }),
-                iroh::blobs::get::db::DownloadProgress::AllDone(stats) => Ok(DownloadProgress {
+                iroh_blobs::get::db::DownloadProgress::AllDone(stats) => Ok(DownloadProgress {
                     all_done: Some(DownloadProgressAllDone {
                         bytes_written: stats.bytes_written.into(),
                         bytes_read: stats.bytes_read.into(),
@@ -976,7 +959,7 @@ impl DownloadProgress {
                     }),
                     ..Default::default()
                 }),
-                iroh::blobs::get::db::DownloadProgress::Abort(err) => {
+                iroh_blobs::get::db::DownloadProgress::Abort(err) => {
                     Err(anyhow::Error::from(err).into())
                 }
             },
@@ -988,7 +971,7 @@ impl DownloadProgress {
 /// A chunk range specification as a sequence of chunk offsets
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[napi]
-pub struct RangeSpec(pub(crate) iroh::blobs::protocol::RangeSpec);
+pub struct RangeSpec(pub(crate) iroh_blobs::protocol::RangeSpec);
 
 #[napi]
 impl RangeSpec {
@@ -1005,8 +988,8 @@ impl RangeSpec {
     }
 }
 
-impl From<iroh::blobs::protocol::RangeSpec> for RangeSpec {
-    fn from(h: iroh::blobs::protocol::RangeSpec) -> Self {
+impl From<iroh_blobs::protocol::RangeSpec> for RangeSpec {
+    fn from(h: iroh_blobs::protocol::RangeSpec) -> Self {
         RangeSpec(h)
     }
 }
@@ -1023,8 +1006,8 @@ pub struct BlobInfo {
     pub size: BigInt,
 }
 
-impl From<iroh::client::blobs::BlobInfo> for BlobInfo {
-    fn from(value: iroh::client::blobs::BlobInfo) -> Self {
+impl From<iroh_blobs::rpc::client::blobs::BlobInfo> for BlobInfo {
+    fn from(value: iroh_blobs::rpc::client::blobs::BlobInfo) -> Self {
         BlobInfo {
             path: value.path,
             hash: value.hash.to_string(),
@@ -1045,8 +1028,8 @@ pub struct IncompleteBlobInfo {
     pub hash: String,
 }
 
-impl From<iroh::client::blobs::IncompleteBlobInfo> for IncompleteBlobInfo {
-    fn from(value: iroh::client::blobs::IncompleteBlobInfo) -> Self {
+impl From<iroh_blobs::rpc::client::blobs::IncompleteBlobInfo> for IncompleteBlobInfo {
+    fn from(value: iroh_blobs::rpc::client::blobs::IncompleteBlobInfo) -> Self {
         IncompleteBlobInfo {
             size: value.size.into(),
             expected_size: value.expected_size.into(),
@@ -1073,8 +1056,8 @@ pub struct CollectionInfo {
     pub total_blobs_size: Option<BigInt>,
 }
 
-impl From<iroh::client::blobs::CollectionInfo> for CollectionInfo {
-    fn from(value: iroh::client::blobs::CollectionInfo) -> Self {
+impl From<iroh_blobs::rpc::client::blobs::CollectionInfo> for CollectionInfo {
+    fn from(value: iroh_blobs::rpc::client::blobs::CollectionInfo) -> Self {
         CollectionInfo {
             tag: value.tag.0.to_vec(),
             hash: value.hash.to_string(),
@@ -1087,15 +1070,15 @@ impl From<iroh::client::blobs::CollectionInfo> for CollectionInfo {
 /// A collection of blobs
 #[derive(Debug)]
 #[napi]
-pub struct Collection(pub(crate) RwLock<iroh::blobs::format::collection::Collection>);
+pub struct Collection(pub(crate) RwLock<iroh_blobs::format::collection::Collection>);
 
-impl From<iroh::blobs::format::collection::Collection> for Collection {
-    fn from(value: iroh::blobs::format::collection::Collection) -> Self {
+impl From<iroh_blobs::format::collection::Collection> for Collection {
+    fn from(value: iroh_blobs::format::collection::Collection) -> Self {
         Collection(RwLock::new(value))
     }
 }
 
-impl From<Collection> for iroh::blobs::format::collection::Collection {
+impl From<Collection> for iroh_blobs::format::collection::Collection {
     fn from(value: Collection) -> Self {
         let col = value.0.read().expect("Collection lock poisoned");
         col.clone()
@@ -1109,7 +1092,7 @@ impl Collection {
     #[napi(constructor)]
     pub fn new() -> Self {
         Collection(RwLock::new(
-            iroh::blobs::format::collection::Collection::default(),
+            iroh_blobs::format::collection::Collection::default(),
         ))
     }
 
@@ -1323,9 +1306,9 @@ pub struct TransferStats {
 }
 
 impl BlobProvideEvent {
-    pub(crate) fn convert(value: iroh::blobs::provider::Event) -> Result<Self> {
+    pub(crate) fn convert(value: iroh_blobs::provider::Event) -> Result<Self> {
         match value {
-            iroh::blobs::provider::Event::TaggedBlobAdded { hash, format, tag } => {
+            iroh_blobs::provider::Event::TaggedBlobAdded { hash, format, tag } => {
                 Ok(BlobProvideEvent {
                     tagged_blob_added: Some(TaggedBlobAdded {
                         hash: hash.to_string(),
@@ -1335,7 +1318,7 @@ impl BlobProvideEvent {
                     ..Default::default()
                 })
             }
-            iroh::blobs::provider::Event::ClientConnected { connection_id } => {
+            iroh_blobs::provider::Event::ClientConnected { connection_id } => {
                 Ok(BlobProvideEvent {
                     client_connected: Some(ClientConnected {
                         connection_id: connection_id.into(),
@@ -1343,7 +1326,7 @@ impl BlobProvideEvent {
                     ..Default::default()
                 })
             }
-            iroh::blobs::provider::Event::GetRequestReceived {
+            iroh_blobs::provider::Event::GetRequestReceived {
                 connection_id,
                 request_id,
                 hash,
@@ -1355,7 +1338,7 @@ impl BlobProvideEvent {
                 }),
                 ..Default::default()
             }),
-            iroh::blobs::provider::Event::TransferHashSeqStarted {
+            iroh_blobs::provider::Event::TransferHashSeqStarted {
                 connection_id,
                 request_id,
                 num_blobs,
@@ -1367,7 +1350,7 @@ impl BlobProvideEvent {
                 }),
                 ..Default::default()
             }),
-            iroh::blobs::provider::Event::TransferProgress {
+            iroh_blobs::provider::Event::TransferProgress {
                 connection_id,
                 request_id,
                 hash,
@@ -1381,7 +1364,7 @@ impl BlobProvideEvent {
                 }),
                 ..Default::default()
             }),
-            iroh::blobs::provider::Event::TransferBlobCompleted {
+            iroh_blobs::provider::Event::TransferBlobCompleted {
                 connection_id,
                 request_id,
                 hash,
@@ -1397,7 +1380,7 @@ impl BlobProvideEvent {
                 }),
                 ..Default::default()
             }),
-            iroh::blobs::provider::Event::TransferCompleted {
+            iroh_blobs::provider::Event::TransferCompleted {
                 connection_id,
                 request_id,
                 stats,
@@ -1409,7 +1392,7 @@ impl BlobProvideEvent {
                 }),
                 ..Default::default()
             }),
-            iroh::blobs::provider::Event::TransferAborted {
+            iroh_blobs::provider::Event::TransferAborted {
                 connection_id,
                 request_id,
                 stats,
@@ -1425,8 +1408,8 @@ impl BlobProvideEvent {
     }
 }
 
-impl From<&iroh::blobs::provider::TransferStats> for TransferStats {
-    fn from(value: &iroh::blobs::provider::TransferStats) -> Self {
+impl From<&iroh_blobs::provider::TransferStats> for TransferStats {
+    fn from(value: &iroh_blobs::provider::TransferStats) -> Self {
         Self {
             duration: value.duration.as_millis().into(),
         }
