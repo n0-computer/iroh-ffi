@@ -2023,6 +2023,11 @@ internal interface UniffiLib : Library {
         `alpn`: RustBuffer.ByValue,
     ): Long
 
+    fun uniffi_iroh_ffi_fn_method_endpoint_node_id(
+        `ptr`: Pointer,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+
     fun uniffi_iroh_ffi_fn_clone_entry(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
@@ -3337,6 +3342,8 @@ internal interface UniffiLib : Library {
 
     fun uniffi_iroh_ffi_checksum_method_endpoint_connect(): Short
 
+    fun uniffi_iroh_ffi_checksum_method_endpoint_node_id(): Short
+
     fun uniffi_iroh_ffi_checksum_method_entry_author(): Short
 
     fun uniffi_iroh_ffi_checksum_method_entry_content_hash(): Short
@@ -4003,6 +4010,9 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_endpoint_connect() != 29734.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_node_id() != 54517.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_entry_author() != 39787.toShort()) {
@@ -14532,6 +14542,11 @@ public interface EndpointInterface {
         `alpn`: kotlin.ByteArray,
     ): Connection
 
+    /**
+     * The string representation of this endpoint's NodeId.
+     */
+    fun `nodeId`(): kotlin.String
+
     companion object
 }
 
@@ -14640,6 +14655,22 @@ open class Endpoint :
             { FfiConverterTypeConnection.lift(it) },
             // Error FFI converter
             IrohException.ErrorHandler,
+        )
+
+    /**
+     * The string representation of this endpoint's NodeId.
+     */
+    @Throws(IrohException::class)
+    override fun `nodeId`(): kotlin.String =
+        FfiConverterString.lift(
+            callWithPointer {
+                uniffiRustCallWithError(IrohException) { _status ->
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_endpoint_node_id(
+                        it,
+                        _status,
+                    )
+                }
+            },
         )
 
     companion object
@@ -25084,7 +25115,6 @@ public object FfiConverterTypeQueryOptions : FfiConverterRustBuffer<QueryOptions
 }
 
 /**
- * The kinds of control messages that can be sent
  * Information about a remote node
  */
 data class RemoteInfo(
