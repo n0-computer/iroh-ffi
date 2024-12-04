@@ -89,7 +89,7 @@ test('basic sync', async (t) => {
 
 
 test('node addr', (t) => {
-  const keyStr = 'ki6htfv2252cj2lhq3hxu4qfcfjtpjnukzonevigudzjpmmruxva'
+  const keyStr = '7db06b57aac9b3640961d281239c8f23487ac7f7265da21607c5612d3527a254'
   const nodeId = PublicKey.fromString(keyStr)
 
   const ipv4 = '127.0.0.1:3000'
@@ -113,7 +113,7 @@ test('query', async (t) => {
   t.is(query1.limit(), null)
 
   const query2 = Query.author(
-    AuthorId.fromString('mqtlzayyv4pb4xvnqnw5wxb2meivzq5ze6jihpa7fv5lfwdoya4q'),
+    AuthorId.fromString('7db06b57aac9b3640961d281239c8f23487ac7f7265da21607c5612d3527a254'),
     {
       direction: 'Asc',
       offset: BigInt(100),
