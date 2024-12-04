@@ -26,8 +26,8 @@ pub struct BlobTicket {
     pub hash: String,
 }
 
-impl From<iroh::base::ticket::BlobTicket> for BlobTicket {
-    fn from(value: iroh::base::ticket::BlobTicket) -> Self {
+impl From<iroh::ticket::BlobTicket> for BlobTicket {
+    fn from(value: iroh::ticket::BlobTicket) -> Self {
         Self {
             node_addr: value.node_addr().clone().into(),
             format: value.format().into(),
@@ -36,11 +36,11 @@ impl From<iroh::base::ticket::BlobTicket> for BlobTicket {
     }
 }
 
-impl TryFrom<&BlobTicket> for iroh::base::ticket::BlobTicket {
+impl TryFrom<&BlobTicket> for iroh::ticket::BlobTicket {
     type Error = anyhow::Error;
 
     fn try_from(value: &BlobTicket) -> anyhow::Result<Self> {
-        let ticket = iroh::base::ticket::BlobTicket::new(
+        let ticket = iroh::ticket::BlobTicket::new(
             value.node_addr.clone().try_into()?,
             value.hash.parse()?,
             value.format.clone().into(),
@@ -62,7 +62,7 @@ impl BlobTicket {
 
     #[napi(factory)]
     pub fn from_string(str: String) -> Result<Self> {
-        let ticket = iroh::base::ticket::BlobTicket::from_str(&str).map_err(anyhow::Error::from)?;
+        let ticket = iroh::ticket::BlobTicket::from_str(&str).map_err(anyhow::Error::from)?;
         Ok(ticket.into())
     }
 
@@ -74,7 +74,7 @@ impl BlobTicket {
 
     #[napi]
     pub fn to_string(&self) -> Result<String> {
-        let ticket: iroh::base::ticket::BlobTicket = self.try_into()?;
+        let ticket: iroh::ticket::BlobTicket = self.try_into()?;
         Ok(ticket.to_string())
     }
 
@@ -87,11 +87,11 @@ impl BlobTicket {
     /// Convert this ticket into input parameters for a call to blobs_download
     #[napi]
     pub fn as_download_options(&self) -> Result<BlobDownloadOptions> {
-        let res = iroh::client::blobs::DownloadOptions {
+        let res = iroh_blobs::rpc::client::blobs::DownloadOptions {
             format: self.format.clone().into(),
             nodes: vec![self.node_addr.clone().try_into()?],
-            tag: iroh::blobs::util::SetTagOption::Auto,
-            mode: iroh::client::blobs::DownloadMode::Direct,
+            tag: iroh_blobs::util::SetTagOption::Auto,
+            mode: iroh_blobs::rpc::client::blobs::DownloadMode::Direct,
         }
         .into();
         Ok(res)
@@ -114,15 +114,13 @@ pub enum AddrInfoOptions {
     Addresses,
 }
 
-impl From<AddrInfoOptions> for iroh::base::node_addr::AddrInfoOptions {
-    fn from(options: AddrInfoOptions) -> iroh::base::node_addr::AddrInfoOptions {
+impl From<AddrInfoOptions> for iroh::AddrInfoOptions {
+    fn from(options: AddrInfoOptions) -> iroh::AddrInfoOptions {
         match options {
-            AddrInfoOptions::Id => iroh::base::node_addr::AddrInfoOptions::Id,
-            AddrInfoOptions::RelayAndAddresses => {
-                iroh::base::node_addr::AddrInfoOptions::RelayAndAddresses
-            }
-            AddrInfoOptions::Relay => iroh::base::node_addr::AddrInfoOptions::Relay,
-            AddrInfoOptions::Addresses => iroh::base::node_addr::AddrInfoOptions::Addresses,
+            AddrInfoOptions::Id => iroh::AddrInfoOptions::Id,
+            AddrInfoOptions::RelayAndAddresses => iroh::AddrInfoOptions::RelayAndAddresses,
+            AddrInfoOptions::Relay => iroh::AddrInfoOptions::Relay,
+            AddrInfoOptions::Addresses => iroh::AddrInfoOptions::Addresses,
         }
     }
 }
@@ -142,11 +140,11 @@ pub struct DocTicket {
     pub nodes: Vec<NodeAddr>,
 }
 
-impl From<iroh::docs::DocTicket> for DocTicket {
-    fn from(value: iroh::docs::DocTicket) -> Self {
+impl From<iroh_docs::DocTicket> for DocTicket {
+    fn from(value: iroh_docs::DocTicket) -> Self {
         let (capability, kind) = match value.capability {
-            iroh::docs::Capability::Read(v) => (v.to_string(), CapabilityKind::Read),
-            iroh::docs::Capability::Write(v) => (v.to_string(), CapabilityKind::Write),
+            iroh_docs::Capability::Read(v) => (v.to_string(), CapabilityKind::Read),
+            iroh_docs::Capability::Write(v) => (v.to_string(), CapabilityKind::Write),
         };
         Self {
             capability,
@@ -156,7 +154,7 @@ impl From<iroh::docs::DocTicket> for DocTicket {
     }
 }
 
-impl TryFrom<&DocTicket> for iroh::docs::DocTicket {
+impl TryFrom<&DocTicket> for iroh_docs::DocTicket {
     type Error = anyhow::Error;
 
     fn try_from(value: &DocTicket) -> anyhow::Result<Self> {
@@ -167,11 +165,11 @@ impl TryFrom<&DocTicket> for iroh::docs::DocTicket {
             .collect::<anyhow::Result<_>>()?;
 
         let capability = match value.capability_kind {
-            CapabilityKind::Read => iroh::docs::Capability::Read(value.capability.parse()?),
-            CapabilityKind::Write => iroh::docs::Capability::Write(value.capability.parse()?),
+            CapabilityKind::Read => iroh_docs::Capability::Read(value.capability.parse()?),
+            CapabilityKind::Write => iroh_docs::Capability::Write(value.capability.parse()?),
         };
 
-        let ticket = iroh::docs::DocTicket::new(capability, peers);
+        let ticket = iroh_docs::DocTicket::new(capability, peers);
         Ok(ticket)
     }
 }
@@ -180,13 +178,13 @@ impl TryFrom<&DocTicket> for iroh::docs::DocTicket {
 impl DocTicket {
     #[napi(factory)]
     pub fn from_string(str: String) -> Result<Self> {
-        let ticket = iroh::docs::DocTicket::from_str(&str).map_err(anyhow::Error::from)?;
+        let ticket = iroh_docs::DocTicket::from_str(&str).map_err(anyhow::Error::from)?;
         Ok(ticket.into())
     }
 
     #[napi]
     pub fn to_string(&self) -> Result<String> {
-        let ticket: iroh::docs::DocTicket = self.try_into()?;
+        let ticket: iroh_docs::DocTicket = self.try_into()?;
         Ok(ticket.to_string())
     }
 }

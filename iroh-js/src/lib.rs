@@ -1,4 +1,4 @@
-use iroh::metrics::try_init_metrics_collection;
+use iroh_metrics::core::Metric;
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
 use tracing_subscriber::filter::LevelFilter;
@@ -11,6 +11,7 @@ mod gossip;
 mod key;
 mod net;
 mod node;
+mod tag;
 mod ticket;
 
 pub use author::*;
@@ -21,6 +22,7 @@ pub use gossip::*;
 pub use key::*;
 pub use net::*;
 pub use node::*;
+pub use tag::*;
 pub use ticket::*;
 
 /// The logging level. See the rust (log crate)[https://docs.rs/log] for more information.
@@ -65,8 +67,15 @@ pub fn set_log_level(level: LogLevel) {
 /// Initialize the global metrics collection.
 #[napi]
 pub fn start_metrics_collection() -> Result<()> {
-    try_init_metrics_collection()?;
-    Ok(())
+    iroh_metrics::core::Core::try_init(|reg, metrics| {
+        metrics.insert(iroh::metrics::MagicsockMetrics::new(reg));
+        metrics.insert(iroh::metrics::NetReportMetrics::new(reg));
+        metrics.insert(iroh::metrics::PortmapMetrics::new(reg));
+        metrics.insert(iroh_blobs::metrics::Metrics::new(reg));
+        metrics.insert(iroh_gossip::metrics::Metrics::new(reg));
+        metrics.insert(iroh_docs::metrics::Metrics::new(reg));
+    })
+    .map_err(|e| anyhow::Error::from(e).into())
 }
 
 /// Helper function that translates a key that was derived from the [`path_to_key`] function back
@@ -77,7 +86,7 @@ pub fn start_metrics_collection() -> Result<()> {
 /// Removes any null byte that has been appened to the key
 #[napi]
 pub fn key_to_path(key: Vec<u8>, prefix: Option<String>, root: Option<String>) -> Result<String> {
-    let path = iroh::util::fs::key_to_path(key, prefix, root.map(std::path::PathBuf::from))?;
+    let path = iroh_blobs::util::fs::key_to_path(key, prefix, root.map(std::path::PathBuf::from))?;
     let path = path.to_str();
     let path = path.ok_or_else(|| anyhow::anyhow!("Unable to parse path {:?}", path))?;
     let path = path.to_string();
@@ -90,7 +99,7 @@ pub fn key_to_path(key: Vec<u8>, prefix: Option<String>, root: Option<String>) -
 /// Appends the null byte to the end of the key.
 #[napi]
 pub fn path_to_key(path: String, prefix: Option<String>, root: Option<String>) -> Result<Vec<u8>> {
-    let key = iroh::util::fs::path_to_key(
+    let key = iroh_blobs::util::fs::path_to_key(
         std::path::PathBuf::from(path),
         prefix,
         root.map(std::path::PathBuf::from),

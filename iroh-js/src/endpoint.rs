@@ -4,7 +4,7 @@ use napi::bindgen_prelude::*;
 use napi_derive::napi;
 use tokio::sync::Mutex;
 
-use iroh::net::endpoint;
+use iroh::endpoint;
 
 use crate::{NodeAddr, PublicKey};
 
@@ -27,7 +27,7 @@ impl Endpoint {
 
     #[napi]
     pub async fn connect(&self, node_addr: NodeAddr, alpn: Uint8Array) -> Result<Connection> {
-        let node_addr: iroh::net::NodeAddr = node_addr.try_into()?;
+        let node_addr: iroh::NodeAddr = node_addr.try_into()?;
         let conn = self.0.connect(node_addr, &alpn).await?;
         Ok(Connection(conn))
     }

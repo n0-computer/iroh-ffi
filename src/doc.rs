@@ -30,7 +30,7 @@ impl From<iroh_docs::CapabilityKind> for CapabilityKind {
 /// Iroh docs client.
 #[derive(uniffi::Object)]
 pub struct Docs {
-    docs: DocsClient,
+    client: DocsClient,
 }
 
 type MemConnector = FlumeConnector<iroh_docs::rpc::proto::Response, iroh_docs::rpc::proto::Request>;
@@ -40,14 +40,8 @@ impl Iroh {
     /// Access to docs specific funtionaliy.
     pub fn docs(&self) -> Docs {
         Docs {
-            docs: self.docs_client.clone().expect("missing docs"),
+            client: self.docs_client.clone().expect("missing docs"),
         }
-    }
-}
-
-impl Docs {
-    fn client(&self) -> &DocsClient {
-        &self.docs
     }
 }
 
@@ -56,7 +50,7 @@ impl Docs {
     /// Create a new doc.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn create(&self) -> Result<Arc<Doc>, IrohError> {
-        let doc = self.client().create().await?;
+        let doc = self.client.create().await?;
 
         Ok(Arc::new(Doc { inner: doc }))
     }
@@ -64,7 +58,7 @@ impl Docs {
     /// Join and sync with an already existing document.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn join(&self, ticket: &DocTicket) -> Result<Arc<Doc>, IrohError> {
-        let doc = self.client().import(ticket.clone().into()).await?;
+        let doc = self.client.import(ticket.clone().into()).await?;
         Ok(Arc::new(Doc { inner: doc }))
     }
 
@@ -76,7 +70,7 @@ impl Docs {
         cb: Arc<dyn SubscribeCallback>,
     ) -> Result<Arc<Doc>, IrohError> {
         let (doc, mut stream) = self
-            .client()
+            .client
             .import_and_subscribe(ticket.clone().into())
             .await?;
 
@@ -102,7 +96,7 @@ impl Docs {
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn list(&self) -> Result<Vec<NamespaceAndCapability>, IrohError> {
         let docs = self
-            .client()
+            .client
             .list()
             .await?
             .map_ok(|(namespace, capability)| NamespaceAndCapability {
@@ -121,7 +115,7 @@ impl Docs {
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn open(&self, id: String) -> Result<Option<Arc<Doc>>, IrohError> {
         let namespace_id = iroh_docs::NamespaceId::from_str(&id)?;
-        let doc = self.client().open(namespace_id).await?;
+        let doc = self.client.open(namespace_id).await?;
 
         Ok(doc.map(|d| Arc::new(Doc { inner: d })))
     }
@@ -134,10 +128,7 @@ impl Docs {
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn drop_doc(&self, doc_id: String) -> Result<(), IrohError> {
         let doc_id = iroh_docs::NamespaceId::from_str(&doc_id)?;
-        self.client()
-            .drop_doc(doc_id)
-            .await
-            .map_err(IrohError::from)
+        self.client.drop_doc(doc_id).await.map_err(IrohError::from)
     }
 }
 

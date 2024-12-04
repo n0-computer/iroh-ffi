@@ -136,12 +136,6 @@ impl Iroh {
     }
 }
 
-impl Gossip {
-    fn client(&self) -> &iroh_gossip::rpc::client::MemClient {
-        self.gossip.client()
-    }
-}
-
 #[uniffi::export]
 impl Gossip {
     #[uniffi::method(async_runtime = "tokio")]
@@ -162,7 +156,11 @@ impl Gossip {
             .collect::<Result<Vec<NodeId>, _>>()
             .map_err(|e| anyhow::anyhow!("{e}"))?;
 
-        let (sink, mut stream) = self.client().subscribe(topic_bytes, bootstrap).await?;
+        let (sink, mut stream) = self
+            .gossip
+            .client()
+            .subscribe(topic_bytes, bootstrap)
+            .await?;
 
         let cancel_token = CancellationToken::new();
         let cancel = cancel_token.clone();

@@ -534,10 +534,10 @@ impl Iroh {
 
     /// Access to node specific funtionaliy.
     pub fn node(&self) -> Node {
-        let node = self.router.clone();
+        let router = self.router.clone();
         let client = self.client.clone().boxed();
         let client = iroh_node_util::rpc::client::node::Client::new(client);
-        Node { node, client }
+        Node { router, client }
     }
 }
 
@@ -662,7 +662,7 @@ async fn apply_options<S: iroh_blobs::store::Store>(
 /// Iroh node client.
 #[derive(uniffi::Object)]
 pub struct Node {
-    node: iroh::protocol::Router,
+    router: iroh::protocol::Router,
     client: iroh_node_util::rpc::client::node::Client,
 }
 
@@ -697,13 +697,13 @@ impl Node {
     /// Shutdown this iroh node.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn shutdown(&self) -> Result<(), IrohError> {
-        self.node.clone().shutdown().await?;
+        self.router.shutdown().await?;
         Ok(())
     }
 
     #[uniffi::method]
     pub fn endpoint(&self) -> Endpoint {
-        Endpoint::new(self.node.endpoint().clone())
+        Endpoint::new(self.router.endpoint().clone())
     }
 }
 
