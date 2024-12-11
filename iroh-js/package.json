@@ -34,7 +34,8 @@
       "armv7-unknown-linux-musleabihf",
       "armv7-linux-androideabi",
       "universal-apple-darwin"
-    ]
+    ],
+    "constEnum": false
   },
   "repository": {
     "type": "git",
