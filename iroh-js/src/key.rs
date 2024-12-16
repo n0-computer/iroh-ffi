@@ -14,15 +14,15 @@ pub struct PublicKey {
     key: [u8; 32],
 }
 
-impl From<iroh::key::PublicKey> for PublicKey {
-    fn from(key: iroh::key::PublicKey) -> Self {
+impl From<iroh::PublicKey> for PublicKey {
+    fn from(key: iroh::PublicKey) -> Self {
         PublicKey {
             key: *key.as_bytes(),
         }
     }
 }
 
-impl From<&PublicKey> for iroh::key::PublicKey {
+impl From<&PublicKey> for iroh::PublicKey {
     fn from(key: &PublicKey) -> Self {
         let key: &[u8] = &key.key[..];
         key.try_into().unwrap()
@@ -46,7 +46,7 @@ impl PublicKey {
     /// Make a PublicKey from base32 string
     #[napi(factory)]
     pub fn from_string(s: String) -> Result<Self> {
-        let key = iroh::key::PublicKey::from_str(&s).map_err(anyhow::Error::from)?;
+        let key = iroh::PublicKey::from_str(&s).map_err(anyhow::Error::from)?;
         Ok(key.into())
     }
 
@@ -57,7 +57,7 @@ impl PublicKey {
             return Err(anyhow::anyhow!("the PublicKey must be 32 bytes in length").into());
         }
         let bytes: [u8; 32] = bytes.try_into().expect("checked above");
-        let key = iroh::key::PublicKey::from_bytes(&bytes).map_err(anyhow::Error::from)?;
+        let key = iroh::PublicKey::from_bytes(&bytes).map_err(anyhow::Error::from)?;
         Ok(key.into())
     }
 
@@ -65,13 +65,13 @@ impl PublicKey {
     /// representation of the key.
     #[napi]
     pub fn fmt_short(&self) -> String {
-        iroh::key::PublicKey::from(self).fmt_short()
+        iroh::PublicKey::from(self).fmt_short()
     }
 
     /// Converts the public key into base32 string.
     #[napi]
     pub fn to_string(&self) -> String {
-        iroh::key::PublicKey::from(self).to_string()
+        iroh::PublicKey::from(self).to_string()
     }
 }
 

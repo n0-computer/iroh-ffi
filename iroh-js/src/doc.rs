@@ -575,12 +575,12 @@ impl TryFrom<Entry> for iroh_docs::rpc::client::docs::Entry {
         let author: iroh_docs::AuthorId = value.author.parse()?;
         let namespace: iroh_docs::NamespaceId = value.namespace.parse()?;
         let id = iroh_docs::RecordIdentifier::new(namespace, author, value.key);
-        let hash: iroh::hash::Hash = value.hash.parse()?;
+        let hash: iroh_blobs::Hash = value.hash.parse()?;
         let len = value.len.get_u64().1;
         let timestamp = value.timestamp.get_u64().1;
         let record = iroh_docs::Record::new(hash, len, timestamp);
         let entry = iroh_docs::Entry::new(id, record);
-        Ok(entry.into())
+        Ok(entry)
     }
 }
 

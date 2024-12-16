@@ -1,5 +1,4 @@
 use std::pin::Pin;
-use std::sync::Arc;
 
 use futures::{Sink, SinkExt, StreamExt};
 use iroh::NodeId;
@@ -76,7 +75,7 @@ impl From<SubscribeResponse> for Message {
 /// Iroh gossip client.
 #[napi]
 pub struct Gossip {
-    gossip: Arc<iroh_gossip::net::Gossip>,
+    gossip: iroh_gossip::net::Gossip,
 }
 
 #[napi]
@@ -84,10 +83,7 @@ impl Iroh {
     /// Access to gossip specific funtionaliy.
     #[napi(getter)]
     pub fn gossip(&self) -> Gossip {
-        let gossip = self
-            .router
-            .get_protocol(iroh_gossip::net::GOSSIP_ALPN)
-            .expect("no gossip available");
+        let gossip = self.gossip.clone();
         Gossip { gossip }
     }
 }

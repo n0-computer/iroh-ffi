@@ -1,15 +1,13 @@
 use std::{
-    collections::{BTreeSet, HashMap},
-    future::Future,
-    path::PathBuf,
-    pin::Pin,
-    sync::Arc,
-    time::Duration,
+    collections::HashMap, future::Future, path::PathBuf, pin::Pin, sync::Arc, time::Duration,
 };
 
 use iroh_blobs::{
-    downloader::Downloader, net_protocol::Blobs, provider::EventSender, util::local_pool::LocalPool,
+    downloader::Downloader, net_protocol::Blobs, provider::EventSender, store::GcConfig,
+    util::local_pool::LocalPool,
 };
+use iroh_docs::protocol::Docs;
+use iroh_gossip::net::Gossip;
 use iroh_node_util::rpc::server::AbstractNode;
 use napi::{
     bindgen_prelude::*,
@@ -48,25 +46,27 @@ pub struct NodeOptions {
 #[napi(object, object_to_js = false)]
 pub struct ProtocolHandler {
     #[debug("accept")]
-    pub accept: ThreadsafeFunction<Connecting, ()>,
+    pub accept: Arc<ThreadsafeFunction<Connecting, ()>>,
     #[debug("shutdown")]
-    pub shutdown: Option<ThreadsafeFunction<(), ()>>,
+    pub shutdown: Option<Arc<ThreadsafeFunction<(), ()>>>,
 }
 
 impl iroh::protocol::ProtocolHandler for ProtocolHandler {
     fn accept(
-        self: Arc<Self>,
+        &self,
         conn: iroh::endpoint::Connecting,
     ) -> Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send>> {
+        let accept = self.accept.clone();
         Box::pin(async move {
-            self.accept.call_async(Ok(Connecting::new(conn))).await?;
+            accept.call_async(Ok(Connecting::new(conn))).await?;
             Ok(())
         })
     }
 
-    fn shutdown(self: Arc<Self>) -> Pin<Box<dyn Future<Output = ()> + Send>> {
+    fn shutdown(&self) -> Pin<Box<dyn Future<Output = ()> + Send>> {
+        let shutdown = self.shutdown.clone();
         Box::pin(async move {
-            if let Some(ref cb) = self.shutdown {
+            if let Some(ref cb) = shutdown {
                 if let Err(err) = cb.call_async(Ok(())).await {
                     warn!("shutdown failed: {:?}", err);
                 }
@@ -137,6 +137,7 @@ pub struct Iroh {
     pub(crate) net_client: NetClient,
     pub(crate) authors_client: Option<AuthorsClient>,
     pub(crate) docs_client: Option<DocsClient>,
+    pub(crate) gossip: Gossip,
 }
 
 pub(crate) type NetClient = iroh_node_util::rpc::client::net::Client;
@@ -175,7 +176,6 @@ impl Iroh {
         let options = opts.unwrap_or_default();
 
         let path = PathBuf::from(path);
-        let path = PathBuf::from(path);
         tokio::fs::create_dir_all(&path)
             .await
             .map_err(|err| anyhow::anyhow!(err))?;
@@ -194,8 +194,7 @@ impl Iroh {
             .await
             .map_err(|err| anyhow::anyhow!(err))?;
         let local_pool = LocalPool::default();
-        let enable_docs = options.enable_docs.unwrap_or_default();
-        let builder = apply_options(
+        let (builder, gossip, blobs, docs) = apply_options(
             builder,
             options,
             blobs_store,
@@ -214,27 +213,9 @@ impl Iroh {
             iroh_node_util::rpc::server::handle_rpc_request(nn.clone(), req, chan)
         });
 
-        let blobs_client = {
-            let blobs = router
-                .get_protocol::<iroh_blobs::net_protocol::Blobs<iroh_blobs::store::fs::Store>>(
-                    iroh_blobs::protocol::ALPN,
-                )
-                .expect("missing blobs");
-            blobs.client()
-        };
-
+        let blobs_client = blobs.client().clone();
         let net_client = iroh_node_util::rpc::client::net::Client::new(client.clone().boxed());
-
-        let docs_client = if enable_docs {
-            let docs = router
-                .get_protocol::<iroh_docs::engine::Engine<iroh_blobs::store::fs::Store>>(
-                    iroh_docs::ALPN,
-                )
-                .expect("no docs available");
-            Some(docs.client().clone())
-        } else {
-            None
-        };
+        let docs_client = docs.map(|d| d.client().clone());
 
         Ok(Iroh {
             router,
@@ -246,6 +227,7 @@ impl Iroh {
             net_client,
             authors_client: docs_client.as_ref().map(|d| d.authors()),
             docs_client,
+            gossip,
         })
     }
 
@@ -267,8 +249,7 @@ impl Iroh {
         };
         let blobs_store = iroh_blobs::store::mem::Store::default();
         let local_pool = LocalPool::default();
-        let enable_docs = options.enable_docs.unwrap_or_default();
-        let builder = apply_options(
+        let (builder, gossip, blobs, docs) = apply_options(
             builder,
             options,
             blobs_store,
@@ -287,26 +268,9 @@ impl Iroh {
             iroh_node_util::rpc::server::handle_rpc_request(nn.clone(), req, chan)
         });
 
-        let blobs_client = {
-            let blobs = router
-                .get_protocol::<iroh_blobs::net_protocol::Blobs<iroh_blobs::store::mem::Store>>(
-                    iroh_blobs::protocol::ALPN,
-                )
-                .expect("missing blobs");
-            blobs.client()
-        };
+        let blobs_client = blobs.client().clone();
         let net_client = iroh_node_util::rpc::client::net::Client::new(client.clone().boxed());
-
-        let docs_client = if enable_docs {
-            let docs = router
-                .get_protocol::<iroh_docs::engine::Engine<iroh_blobs::store::mem::Store>>(
-                    iroh_docs::ALPN,
-                )
-                .expect("no docs available");
-            Some(docs.client().clone())
-        } else {
-            None
-        };
+        let docs_client = docs.map(|d| d.client().clone());
 
         Ok(Iroh {
             router,
@@ -318,6 +282,7 @@ impl Iroh {
             blobs_client,
             authors_client: docs_client.as_ref().map(|d| d.authors()),
             docs_client,
+            gossip,
         })
     }
 
@@ -338,7 +303,12 @@ async fn apply_options<S: iroh_blobs::store::Store>(
     docs_store: Option<iroh_docs::store::Store>,
     author_store: Option<iroh_docs::engine::DefaultAuthorStorage>,
     local_pool: &LocalPool,
-) -> anyhow::Result<iroh::protocol::RouterBuilder> {
+) -> anyhow::Result<(
+    iroh::protocol::RouterBuilder,
+    Gossip,
+    Blobs<S>,
+    Option<Docs<S>>,
+)> {
     let gc_period = if let Some(millis) = options.gc_interval_millis {
         match millis {
             0 => None,
@@ -369,7 +339,7 @@ async fn apply_options<S: iroh_blobs::store::Store>(
 
     if let Some(secret_key) = options.secret_key {
         let key: [u8; 32] = AsRef::<[u8]>::as_ref(&secret_key).try_into()?;
-        let key = iroh::key::SecretKey::from_bytes(&key);
+        let key = iroh::SecretKey::from_bytes(&key);
         builder = builder.secret_key(key);
     }
 
@@ -381,53 +351,32 @@ async fn apply_options<S: iroh_blobs::store::Store>(
     // Add default protocols for now
 
     // iroh gossip
-    let addr = builder.endpoint().node_addr().await?;
-    let gossip = iroh_gossip::net::Gossip::from_endpoint(
-        builder.endpoint().clone(),
-        Default::default(),
-        &addr.info,
-    );
-    builder = builder.accept(
-        iroh_gossip::net::GOSSIP_ALPN.to_vec(),
-        Arc::new(gossip.clone()),
-    );
+    let gossip = iroh_gossip::net::Gossip::builder()
+        .spawn(builder.endpoint().clone())
+        .await?;
+
+    builder = builder.accept(iroh_gossip::ALPN, gossip.clone());
 
     // iroh blobs
-    if let Some(period) = gc_period {
-        let store = blob_store.clone();
-        local_pool.spawn_detached(move || async move {
-            store
-                .gc_run(
-                    iroh_blobs::store::GcConfig {
-                        period,
-                        done_callback: None,
-                    },
-                    || async move {
-                        // TODO: protected
-                        BTreeSet::new()
-                    },
-                )
-                .await
-        });
-    }
     let downloader = Downloader::new(
         blob_store.clone(),
         builder.endpoint().clone(),
         local_pool.handle().clone(),
     );
-    let blobs = Arc::new(Blobs::new(
+    let blobs = Blobs::new(
         blob_store.clone(),
         local_pool.handle().clone(),
         blob_events,
         downloader.clone(),
         builder.endpoint().clone(),
-    ));
-    builder = builder.accept(iroh_blobs::protocol::ALPN.to_vec(), blobs);
+    );
 
-    if options.enable_docs.unwrap_or_default() {
-        let docs = iroh_docs::engine::Engine::spawn(
+    builder = builder.accept(iroh_blobs::ALPN, blobs.clone());
+
+    let docs = if options.enable_docs.unwrap_or_default() {
+        let engine = iroh_docs::engine::Engine::spawn(
             builder.endpoint().clone(),
-            gossip,
+            gossip.clone(),
             docs_store.expect("docs enabled"),
             blob_store.clone(),
             downloader,
@@ -435,18 +384,30 @@ async fn apply_options<S: iroh_blobs::store::Store>(
             local_pool.handle().clone(),
         )
         .await?;
-        builder = builder.accept(iroh_docs::ALPN, Arc::new(docs));
+        let docs = Docs::new(engine);
+        builder = builder.accept(iroh_docs::ALPN, docs.clone());
+        blobs.add_protected(docs.protect_cb())?;
+        Some(docs)
+    } else {
+        None
+    };
+
+    if let Some(period) = gc_period {
+        blobs.start_gc(GcConfig {
+            period,
+            done_callback: None,
+        })?;
     }
 
     // Add custom protocols
     if let Some(protocols) = options.protocols {
         for (alpn, protocol) in protocols {
             let handler = protocol.call_async(Ok(endpoint.clone())).await?;
-            builder = builder.accept(alpn, Arc::new(handler));
+            builder = builder.accept(alpn, handler);
         }
     }
 
-    Ok(builder)
+    Ok((builder, gossip, blobs, docs))
 }
 
 /// Iroh node client.

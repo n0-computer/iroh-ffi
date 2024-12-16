@@ -96,7 +96,7 @@ impl Authors {
             .client
             .list()
             .await?
-            .map_ok(|id| AuthorId(id))
+            .map_ok(AuthorId)
             .try_collect::<Vec<_>>()
             .await?;
         Ok(authors)

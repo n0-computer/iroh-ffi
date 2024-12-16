@@ -39,7 +39,7 @@ iroh-io = { version = "0.6" }
 iroh-gossip = { version = "0.29", features = ["rpc"] }
 iroh-docs = { version = "0.29", features = ["rpc"] }
 iroh-blobs = { version = "0.29", features = ["rpc"] }
-iroh-metrics = { version = "0.29" }
+iroh-metrics = { version = "0.30" }
 iroh-node-util = { version = "0.29", features = [] }
 libc = "0.2.141"
 num_cpus = { version = "1.15.0" }

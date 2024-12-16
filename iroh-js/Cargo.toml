@@ -17,10 +17,11 @@ async-trait = "0.1.80"
 blake3 = "1.3.3"
 bytes = "1"
 data-encoding = { version = "2.3.3" }
+iroh-base = { version = "0.29", features = ["ticket"] }
 iroh-gossip = { version = "0.29", features = ["rpc"] }
 iroh-docs = { version = "0.29", features = ["rpc"] }
 iroh-blobs = { version = "0.29", features = ["rpc"] }
-iroh-metrics = { version = "0.29" }
+iroh-metrics = { version = "0.30" }
 iroh-node-util = { version = "0.29", features = [] }
 iroh = "0.29"
 iroh-io = { version = "0.6" }

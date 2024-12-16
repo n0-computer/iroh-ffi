@@ -421,11 +421,7 @@ impl Iroh {
         let blobs_client = blobs.client().clone();
         let net_client = iroh_node_util::rpc::client::net::Client::new(client.clone().boxed());
 
-        let docs_client = if let Some(docs) = docs {
-            Some(docs.client().clone())
-        } else {
-            None
-        };
+        let docs_client = docs.map(|d| d.client().clone());
 
         Ok(Iroh {
             router,
@@ -478,11 +474,7 @@ impl Iroh {
         let blobs_client = blobs.client().clone();
         let net_client = iroh_node_util::rpc::client::net::Client::new(client.clone().boxed());
 
-        let docs_client = if let Some(docs) = docs {
-            Some(docs.client().clone())
-        } else {
-            None
-        };
+        let docs_client = docs.map(|d| d.client().clone());
 
         Ok(Iroh {
             router,
@@ -579,7 +571,7 @@ async fn apply_options<S: iroh_blobs::store::Store>(
         builder.endpoint().clone(),
     );
 
-    builder = builder.accept(iroh_blobs::protocol::ALPN.to_vec(), blobs.clone());
+    builder = builder.accept(iroh_blobs::ALPN, blobs.clone());
 
     let docs = if options.enable_docs {
         let engine = iroh_docs::engine::Engine::spawn(
@@ -611,7 +603,7 @@ async fn apply_options<S: iroh_blobs::store::Store>(
     if let Some(protocols) = options.protocols {
         for (alpn, protocol) in protocols {
             let handler = protocol.create(endpoint.clone());
-            builder = builder.accept(alpn, Arc::new(ProtocolWrapper { handler }));
+            builder = builder.accept(alpn, ProtocolWrapper { handler });
         }
     }
 
