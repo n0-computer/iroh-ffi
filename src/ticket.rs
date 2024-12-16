@@ -13,10 +13,10 @@ use crate::error::IrohError;
 /// It is a single item which can be easily serialized and deserialized.
 #[derive(Debug, uniffi::Object)]
 #[uniffi::export(Display)]
-pub struct NodeTicket(iroh::ticket::NodeTicket);
+pub struct NodeTicket(iroh_base::ticket::NodeTicket);
 
-impl From<iroh::ticket::NodeTicket> for NodeTicket {
-    fn from(ticket: iroh::ticket::NodeTicket) -> Self {
+impl From<iroh_base::ticket::NodeTicket> for NodeTicket {
+    fn from(ticket: iroh_base::ticket::NodeTicket) -> Self {
         NodeTicket(ticket)
     }
 }
@@ -36,13 +36,13 @@ impl NodeTicket {
     #[uniffi::constructor]
     pub fn new(addr: &NodeAddr) -> Result<Self, IrohError> {
         let inner = TryInto::<iroh::NodeAddr>::try_into(addr.clone())?;
-        Ok(iroh::ticket::NodeTicket::new(inner).into())
+        Ok(iroh_base::ticket::NodeTicket::new(inner).into())
     }
 
     /// Parse back a [`NodeTicket`] from its string presentation.
     #[uniffi::constructor]
     pub fn parse(str: String) -> Result<Self, IrohError> {
-        let ticket = iroh::ticket::NodeTicket::from_str(&str).map_err(anyhow::Error::from)?;
+        let ticket = iroh_base::ticket::NodeTicket::from_str(&str).map_err(anyhow::Error::from)?;
         Ok(NodeTicket(ticket))
     }
 
@@ -58,10 +58,10 @@ impl NodeTicket {
 /// It is a single item which can be easily serialized and deserialized.
 #[derive(Debug, uniffi::Object)]
 #[uniffi::export(Display)]
-pub struct BlobTicket(iroh::ticket::BlobTicket);
+pub struct BlobTicket(iroh_blobs::ticket::BlobTicket);
 
-impl From<iroh::ticket::BlobTicket> for BlobTicket {
-    fn from(ticket: iroh::ticket::BlobTicket) -> Self {
+impl From<iroh_blobs::ticket::BlobTicket> for BlobTicket {
+    fn from(ticket: iroh_blobs::ticket::BlobTicket) -> Self {
         BlobTicket(ticket)
     }
 }
@@ -76,7 +76,7 @@ impl std::fmt::Display for BlobTicket {
 impl BlobTicket {
     #[uniffi::constructor]
     pub fn new(str: String) -> Result<Self, IrohError> {
-        let ticket = iroh::ticket::BlobTicket::from_str(&str).map_err(anyhow::Error::from)?;
+        let ticket = iroh_blobs::ticket::BlobTicket::from_str(&str).map_err(anyhow::Error::from)?;
         Ok(BlobTicket(ticket))
     }
 
@@ -129,13 +129,15 @@ pub enum AddrInfoOptions {
     Addresses,
 }
 
-impl From<AddrInfoOptions> for iroh::AddrInfoOptions {
-    fn from(options: AddrInfoOptions) -> iroh::AddrInfoOptions {
+impl From<AddrInfoOptions> for iroh_docs::rpc::AddrInfoOptions {
+    fn from(options: AddrInfoOptions) -> iroh_docs::rpc::AddrInfoOptions {
         match options {
-            AddrInfoOptions::Id => iroh::AddrInfoOptions::Id,
-            AddrInfoOptions::RelayAndAddresses => iroh::AddrInfoOptions::RelayAndAddresses,
-            AddrInfoOptions::Relay => iroh::AddrInfoOptions::Relay,
-            AddrInfoOptions::Addresses => iroh::AddrInfoOptions::Addresses,
+            AddrInfoOptions::Id => iroh_docs::rpc::AddrInfoOptions::Id,
+            AddrInfoOptions::RelayAndAddresses => {
+                iroh_docs::rpc::AddrInfoOptions::RelayAndAddresses
+            }
+            AddrInfoOptions::Relay => iroh_docs::rpc::AddrInfoOptions::Relay,
+            AddrInfoOptions::Addresses => iroh_docs::rpc::AddrInfoOptions::Addresses,
         }
     }
 }
