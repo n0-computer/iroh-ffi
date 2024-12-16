@@ -2015,7 +2015,7 @@ checksum = "ddc24109865250148c2e0f3d25d4f0f479571723792d3802153c60922a4fb708"
 [[package]]
 name = "iroh"
 version = "0.29.0"
-source = "git+https://github.com/n0-computer/iroh?branch=main#1ba140f143a472821f989aa9d05b057909bbc6fd"
+source = "git+https://github.com/n0-computer/iroh?branch=main#ac74c53a26aada4ce87660dcf5452838943e2dd7"
 dependencies = [
  "aead",
  "anyhow",
@@ -2096,7 +2096,7 @@ dependencies = [
 [[package]]
 name = "iroh-base"
 version = "0.29.0"
-source = "git+https://github.com/n0-computer/iroh?branch=main#1ba140f143a472821f989aa9d05b057909bbc6fd"
+source = "git+https://github.com/n0-computer/iroh?branch=main#ac74c53a26aada4ce87660dcf5452838943e2dd7"
 dependencies = [
  "curve25519-dalek",
  "data-encoding",
@@ -2177,7 +2177,7 @@ dependencies = [
 [[package]]
 name = "iroh-docs"
 version = "0.29.0"
-source = "git+https://github.com/n0-computer/iroh-docs?branch=iroh-v0-30-0#72042b7a985e842d59ebb87b8ee732b70b0fa63b"
+source = "git+https://github.com/n0-computer/iroh-docs?branch=iroh-v0-30-0#3c64d7d9887ac4cd7a293d20748508167f28a726"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -2256,7 +2256,7 @@ dependencies = [
 [[package]]
 name = "iroh-gossip"
 version = "0.29.0"
-source = "git+https://github.com/n0-computer/iroh-gossip?branch=iroh-v0-30-0#0478523cc36b18ec5bfa35b6471cbf9d940094dd"
+source = "git+https://github.com/n0-computer/iroh-gossip?branch=iroh-v0-30-0#2b258b4dcd6fbc5e77e644d618ab68092dff4bd9"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -2322,7 +2322,7 @@ dependencies = [
 [[package]]
 name = "iroh-net-report"
 version = "0.29.0"
-source = "git+https://github.com/n0-computer/iroh?branch=main#1ba140f143a472821f989aa9d05b057909bbc6fd"
+source = "git+https://github.com/n0-computer/iroh?branch=main#ac74c53a26aada4ce87660dcf5452838943e2dd7"
 dependencies = [
  "anyhow",
  "bytes",
@@ -2350,7 +2350,7 @@ dependencies = [
 [[package]]
 name = "iroh-node-util"
 version = "0.29.0"
-source = "git+https://github.com/n0-computer/iroh-node-util?branch=iroh-v0-30-0#d603c9e79ccf661f98d597ba7bbeee25c13bb042"
+source = "git+https://github.com/n0-computer/iroh-node-util?branch=iroh-v0-30-0#b914b35c9195940869532ca4aae993c8a6f96456"
 dependencies = [
  "anyhow",
  "futures-lite 2.5.0",
@@ -2420,7 +2420,7 @@ dependencies = [
 [[package]]
 name = "iroh-relay"
 version = "0.29.0"
-source = "git+https://github.com/n0-computer/iroh?branch=main#1ba140f143a472821f989aa9d05b057909bbc6fd"
+source = "git+https://github.com/n0-computer/iroh?branch=main#ac74c53a26aada4ce87660dcf5452838943e2dd7"
 dependencies = [
  "anyhow",
  "base64",

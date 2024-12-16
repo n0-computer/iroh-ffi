@@ -1,13 +1,8 @@
-use std::{
-    collections::{BTreeSet, HashMap},
-    fmt::Debug,
-    path::PathBuf,
-    sync::Arc,
-    time::Duration,
-};
+use std::{collections::HashMap, fmt::Debug, path::PathBuf, sync::Arc, time::Duration};
 
 use iroh_blobs::{
-    downloader::Downloader, net_protocol::Blobs, provider::EventSender, util::local_pool::LocalPool,
+    downloader::Downloader, net_protocol::Blobs, provider::EventSender, store::GcConfig,
+    util::local_pool::LocalPool,
 };
 use iroh_docs::protocol::Docs;
 use iroh_gossip::net::Gossip;
@@ -571,23 +566,6 @@ async fn apply_options<S: iroh_blobs::store::Store>(
     builder = builder.accept(iroh_gossip::ALPN, gossip.clone());
 
     // iroh blobs
-    if let Some(period) = gc_period {
-        let store = blob_store.clone();
-        local_pool.spawn_detached(move || async move {
-            store
-                .gc_run(
-                    iroh_blobs::store::GcConfig {
-                        period,
-                        done_callback: None,
-                    },
-                    || async move {
-                        // TODO: protected
-                        BTreeSet::new()
-                    },
-                )
-                .await
-        });
-    }
     let downloader = Downloader::new(
         blob_store.clone(),
         builder.endpoint().clone(),
@@ -600,6 +578,7 @@ async fn apply_options<S: iroh_blobs::store::Store>(
         downloader.clone(),
         builder.endpoint().clone(),
     );
+
     builder = builder.accept(iroh_blobs::protocol::ALPN.to_vec(), blobs.clone());
 
     let docs = if options.enable_docs {
@@ -615,10 +594,18 @@ async fn apply_options<S: iroh_blobs::store::Store>(
         .await?;
         let docs = Docs::new(engine);
         builder = builder.accept(iroh_docs::ALPN, docs.clone());
+        blobs.add_protected(docs.protect_cb())?;
+
         Some(docs)
     } else {
         None
     };
+    if let Some(period) = gc_period {
+        blobs.start_gc(GcConfig {
+            period,
+            done_callback: None,
+        })?;
+    }
 
     // Add custom protocols
     if let Some(protocols) = options.protocols {

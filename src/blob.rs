@@ -1614,10 +1614,9 @@ mod tests {
 
     use super::*;
     use crate::node::Iroh;
-    use crate::{CallbackError, NodeOptions};
+    use crate::{setup_logging, CallbackError, NodeOptions};
 
     use rand::RngCore;
-    use tracing_subscriber::FmtSubscriber;
 
     #[test]
     fn test_hash() {
@@ -1936,17 +1935,5 @@ mod tests {
                 panic!("blob {} should have been removed", remove_hash);
             }
         }
-    }
-
-    pub fn setup_logging() {
-        let subscriber = FmtSubscriber::builder()
-            .with_env_filter(format!(
-                "{}=debug",
-                env!("CARGO_PKG_NAME").replace('-', "_")
-            ))
-            .compact()
-            .finish();
-
-        tracing::subscriber::set_global_default(subscriber).ok();
     }
 }

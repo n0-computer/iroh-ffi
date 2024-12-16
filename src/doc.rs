@@ -302,6 +302,8 @@ impl Doc {
         mode: ShareMode,
         addr_options: AddrInfoOptions,
     ) -> Result<Arc<DocTicket>, IrohError> {
+        println!("SHARE");
+
         let res = self
             .inner
             .share(mode.into(), addr_options.into())
@@ -1544,7 +1546,7 @@ impl DocExportProgress {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::PublicKey;
+    use crate::{setup_logging, PublicKey};
     use rand::RngCore;
     use tokio::{io::AsyncWriteExt, sync::mpsc};
 
@@ -1580,6 +1582,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_basic_sync() {
+        setup_logging();
+
         // create node_0
         let iroh_dir = tempfile::tempdir().unwrap();
         let options = crate::NodeOptions {
@@ -1596,6 +1600,8 @@ mod tests {
         )
         .await
         .unwrap();
+
+        tracing::warn!("first node started");
 
         // create node_1
         let options = crate::NodeOptions {
@@ -1614,12 +1620,17 @@ mod tests {
         .await
         .unwrap();
 
+        tracing::warn!("second ndoe  started");
+
         // create doc on node_0
         let doc_0 = node_0.docs().create().await.unwrap();
+        tracing::warn!("doc created");
         let ticket = doc_0
             .share(ShareMode::Write, AddrInfoOptions::RelayAndAddresses)
             .await
             .unwrap();
+
+        tracing::warn!("ticket created");
 
         // subscribe to sync events
         let (found_s, mut found_r) = mpsc::channel(8);
@@ -1645,6 +1656,8 @@ mod tests {
             .join_and_subscribe(&ticket, Arc::new(cb_1))
             .await
             .unwrap();
+
+        tracing::warn!("joined");
 
         // wait for initial sync to be one
         while let Some(event) = found_r_1.recv().await {

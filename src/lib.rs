@@ -152,3 +152,14 @@ mod tests {
         assert_eq!(path, got_path);
     }
 }
+
+#[cfg(test)]
+fn setup_logging() {
+    use tracing_subscriber::{fmt, prelude::*, EnvFilter};
+
+    tracing_subscriber::registry()
+        .with(fmt::layer())
+        .with(EnvFilter::from_default_env())
+        .try_init()
+        .ok();
+}
