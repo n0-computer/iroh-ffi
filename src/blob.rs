@@ -225,9 +225,10 @@ impl Blobs {
         blob_format: BlobFormat,
         ticket_options: AddrInfoOptions,
     ) -> Result<Arc<BlobTicket>, IrohError> {
-        let mut addr = self.net_client.node_addr().await?;
-        addr.apply_options(ticket_options.into());
-        let ticket = iroh::ticket::BlobTicket::new(addr, hash.0, blob_format.into())?;
+        let addr = self.net_client.node_addr().await?;
+        let opts: iroh_docs::rpc::AddrInfoOptions = ticket_options.into();
+        let addr = opts.apply(&addr);
+        let ticket = iroh_blobs::ticket::BlobTicket::new(addr, hash.0, blob_format.into())?;
         Ok(Arc::new(ticket.into()))
     }
 
@@ -1613,10 +1614,9 @@ mod tests {
 
     use super::*;
     use crate::node::Iroh;
-    use crate::{CallbackError, NodeOptions};
+    use crate::{setup_logging, CallbackError, NodeOptions};
 
     use rand::RngCore;
-    use tracing_subscriber::FmtSubscriber;
 
     #[test]
     fn test_hash() {
@@ -1935,17 +1935,5 @@ mod tests {
                 panic!("blob {} should have been removed", remove_hash);
             }
         }
-    }
-
-    pub fn setup_logging() {
-        let subscriber = FmtSubscriber::builder()
-            .with_env_filter(format!(
-                "{}=debug",
-                env!("CARGO_PKG_NAME").replace('-', "_")
-            ))
-            .compact()
-            .finish();
-
-        tracing::subscriber::set_global_default(subscriber).ok();
     }
 }

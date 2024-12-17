@@ -14,16 +14,16 @@ pub struct PublicKey {
     pub(crate) key: [u8; 32],
 }
 
-impl From<iroh::key::PublicKey> for PublicKey {
-    fn from(key: iroh::key::PublicKey) -> Self {
+impl From<iroh::PublicKey> for PublicKey {
+    fn from(key: iroh::PublicKey) -> Self {
         PublicKey {
             key: *key.as_bytes(),
         }
     }
 }
-impl From<&PublicKey> for iroh::key::PublicKey {
+impl From<&PublicKey> for iroh::PublicKey {
     fn from(key: &PublicKey) -> Self {
-        iroh::key::PublicKey::from_bytes(&key.key).unwrap()
+        iroh::PublicKey::from_bytes(&key.key).unwrap()
     }
 }
 
@@ -42,7 +42,7 @@ impl PublicKey {
     /// Make a PublicKey from base32 string
     #[uniffi::constructor]
     pub fn from_string(s: String) -> Result<Self, IrohError> {
-        let key = iroh::key::PublicKey::from_str(&s).map_err(anyhow::Error::from)?;
+        let key = iroh::PublicKey::from_str(&s).map_err(anyhow::Error::from)?;
         Ok(key.into())
     }
 
@@ -53,14 +53,14 @@ impl PublicKey {
             return Err(anyhow::anyhow!("the PublicKey must be 32 bytes in length").into());
         }
         let bytes: [u8; 32] = bytes.try_into().expect("checked above");
-        let key = iroh::key::PublicKey::from_bytes(&bytes).map_err(anyhow::Error::from)?;
+        let key = iroh::PublicKey::from_bytes(&bytes).map_err(anyhow::Error::from)?;
         Ok(key.into())
     }
 
     /// Convert to a base32 string limited to the first 10 bytes for a friendly string
     /// representation of the key.
     pub fn fmt_short(&self) -> String {
-        iroh::key::PublicKey::from(self).fmt_short()
+        iroh::PublicKey::from(self).fmt_short()
     }
 }
 
@@ -72,7 +72,7 @@ impl PartialEq for PublicKey {
 
 impl std::fmt::Display for PublicKey {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        iroh::key::PublicKey::from(self).fmt(f)
+        iroh::PublicKey::from(self).fmt(f)
     }
 }
 
@@ -82,8 +82,9 @@ mod tests {
 
     #[test]
     fn test_public_key() {
-        let key_str = String::from("ki6htfv2252cj2lhq3hxu4qfcfjtpjnukzonevigudzjpmmruxva");
-        let fmt_str = String::from("ki6htfv2252cj2lh");
+        let key_str =
+            String::from("523c7996bad77424e96786cf7a7205115337a5b4565cd25506a0f297b191a5ea");
+        let fmt_str = String::from("523c7996ba");
         let bytes = b"\x52\x3c\x79\x96\xba\xd7\x74\x24\xe9\x67\x86\xcf\x7a\x72\x05\x11\x53\x37\xa5\xb4\x56\x5c\xd2\x55\x06\xa0\xf2\x97\xb1\x91\xa5\xea";
         //
         // create key from string

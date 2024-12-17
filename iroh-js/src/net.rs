@@ -229,16 +229,16 @@ pub struct NodeAddr {
 /// Verify a `NodeAddr`.
 #[napi]
 pub fn verify_node_addr(addr: NodeAddr) -> Result<()> {
-    let _addr: iroh::endpoint::NodeAddr = addr.try_into()?;
+    let _addr: iroh::NodeAddr = addr.try_into()?;
     Ok(())
 }
 
-impl TryFrom<NodeAddr> for iroh::endpoint::NodeAddr {
+impl TryFrom<NodeAddr> for iroh::NodeAddr {
     type Error = anyhow::Error;
 
     fn try_from(value: NodeAddr) -> anyhow::Result<Self> {
-        let key: iroh::key::PublicKey = value.node_id.parse().map_err(anyhow::Error::from)?;
-        let mut node_addr = iroh::endpoint::NodeAddr::new(key);
+        let key: iroh::PublicKey = value.node_id.parse().map_err(anyhow::Error::from)?;
+        let mut node_addr = iroh::NodeAddr::new(key);
         let addresses = value
             .addresses
             .unwrap_or_default()
@@ -259,10 +259,9 @@ impl TryFrom<NodeAddr> for iroh::endpoint::NodeAddr {
     }
 }
 
-impl From<iroh::endpoint::NodeAddr> for NodeAddr {
-    fn from(value: iroh::endpoint::NodeAddr) -> Self {
+impl From<iroh::NodeAddr> for NodeAddr {
+    fn from(value: iroh::NodeAddr) -> Self {
         let addresses: Vec<_> = value
-            .info
             .direct_addresses
             .into_iter()
             .map(|d| d.to_string())
@@ -274,7 +273,7 @@ impl From<iroh::endpoint::NodeAddr> for NodeAddr {
         };
         NodeAddr {
             node_id: value.node_id.to_string(),
-            relay_url: value.info.relay_url.map(|url| url.to_string()),
+            relay_url: value.relay_url.map(|url| url.to_string()),
             addresses,
         }
     }

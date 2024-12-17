@@ -4,8 +4,8 @@ import kotlin.test.Test
 
 class KeyTest {
     @Test fun basics() {
-        val keyStr = "ki6htfv2252cj2lhq3hxu4qfcfjtpjnukzonevigudzjpmmruxva"
-        val fmtStr = "ki6htfv2252cj2lh"
+        val keyStr = "523c7996bad77424e96786cf7a7205115337a5b4565cd25506a0f297b191a5ea"
+        val fmtStr = "523c7996ba"
         val bytesU =
             ubyteArrayOf(
                 0x52u,

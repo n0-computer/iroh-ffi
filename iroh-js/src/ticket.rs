@@ -26,8 +26,8 @@ pub struct BlobTicket {
     pub hash: String,
 }
 
-impl From<iroh::ticket::BlobTicket> for BlobTicket {
-    fn from(value: iroh::ticket::BlobTicket) -> Self {
+impl From<iroh_blobs::ticket::BlobTicket> for BlobTicket {
+    fn from(value: iroh_blobs::ticket::BlobTicket) -> Self {
         Self {
             node_addr: value.node_addr().clone().into(),
             format: value.format().into(),
@@ -36,11 +36,11 @@ impl From<iroh::ticket::BlobTicket> for BlobTicket {
     }
 }
 
-impl TryFrom<&BlobTicket> for iroh::ticket::BlobTicket {
+impl TryFrom<&BlobTicket> for iroh_blobs::ticket::BlobTicket {
     type Error = anyhow::Error;
 
     fn try_from(value: &BlobTicket) -> anyhow::Result<Self> {
-        let ticket = iroh::ticket::BlobTicket::new(
+        let ticket = iroh_blobs::ticket::BlobTicket::new(
             value.node_addr.clone().try_into()?,
             value.hash.parse()?,
             value.format.clone().into(),
@@ -62,7 +62,7 @@ impl BlobTicket {
 
     #[napi(factory)]
     pub fn from_string(str: String) -> Result<Self> {
-        let ticket = iroh::ticket::BlobTicket::from_str(&str).map_err(anyhow::Error::from)?;
+        let ticket = iroh_blobs::ticket::BlobTicket::from_str(&str).map_err(anyhow::Error::from)?;
         Ok(ticket.into())
     }
 
@@ -74,7 +74,7 @@ impl BlobTicket {
 
     #[napi]
     pub fn to_string(&self) -> Result<String> {
-        let ticket: iroh::ticket::BlobTicket = self.try_into()?;
+        let ticket: iroh_blobs::ticket::BlobTicket = self.try_into()?;
         Ok(ticket.to_string())
     }
 
@@ -114,13 +114,15 @@ pub enum AddrInfoOptions {
     Addresses,
 }
 
-impl From<AddrInfoOptions> for iroh::AddrInfoOptions {
-    fn from(options: AddrInfoOptions) -> iroh::AddrInfoOptions {
+impl From<AddrInfoOptions> for iroh_docs::rpc::AddrInfoOptions {
+    fn from(options: AddrInfoOptions) -> iroh_docs::rpc::AddrInfoOptions {
         match options {
-            AddrInfoOptions::Id => iroh::AddrInfoOptions::Id,
-            AddrInfoOptions::RelayAndAddresses => iroh::AddrInfoOptions::RelayAndAddresses,
-            AddrInfoOptions::Relay => iroh::AddrInfoOptions::Relay,
-            AddrInfoOptions::Addresses => iroh::AddrInfoOptions::Addresses,
+            AddrInfoOptions::Id => iroh_docs::rpc::AddrInfoOptions::Id,
+            AddrInfoOptions::RelayAndAddresses => {
+                iroh_docs::rpc::AddrInfoOptions::RelayAndAddresses
+            }
+            AddrInfoOptions::Relay => iroh_docs::rpc::AddrInfoOptions::Relay,
+            AddrInfoOptions::Addresses => iroh_docs::rpc::AddrInfoOptions::Addresses,
         }
     }
 }

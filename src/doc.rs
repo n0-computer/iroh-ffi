@@ -4,6 +4,7 @@ use bytes::Bytes;
 use futures::{StreamExt, TryStreamExt};
 use quic_rpc::transport::flume::FlumeConnector;
 use serde::{Deserialize, Serialize};
+use tracing::warn;
 
 use crate::DocsClient;
 use crate::{
@@ -79,11 +80,11 @@ impl Docs {
                 match event {
                     Ok(event) => {
                         if let Err(err) = cb.event(Arc::new(event.into())).await {
-                            println!("cb error: {:?}", err);
+                            warn!("cb error: {:?}", err);
                         }
                     }
                     Err(err) => {
-                        println!("rpc error: {:?}", err);
+                        warn!("rpc error: {:?}", err);
                     }
                 }
             }
@@ -341,11 +342,11 @@ impl Doc {
                 match event {
                     Ok(event) => {
                         if let Err(err) = cb.event(Arc::new(event.into())).await {
-                            println!("cb error: {:?}", err);
+                            warn!("cb error: {:?}", err);
                         }
                     }
                     Err(err) => {
-                        println!("rpc error: {:?}", err);
+                        warn!("rpc error: {:?}", err);
                     }
                 }
             }
@@ -548,10 +549,10 @@ impl NodeAddr {
     }
 }
 
-impl TryFrom<NodeAddr> for iroh::endpoint::NodeAddr {
+impl TryFrom<NodeAddr> for iroh::NodeAddr {
     type Error = IrohError;
     fn try_from(value: NodeAddr) -> Result<Self, Self::Error> {
-        let mut node_addr = iroh::endpoint::NodeAddr::new((&*value.node_id).into());
+        let mut node_addr = iroh::NodeAddr::new((&*value.node_id).into());
         let addresses = value
             .direct_addresses()
             .into_iter()
@@ -570,13 +571,12 @@ impl TryFrom<NodeAddr> for iroh::endpoint::NodeAddr {
     }
 }
 
-impl From<iroh::endpoint::NodeAddr> for NodeAddr {
-    fn from(value: iroh::endpoint::NodeAddr) -> Self {
+impl From<iroh::NodeAddr> for NodeAddr {
+    fn from(value: iroh::NodeAddr) -> Self {
         NodeAddr {
             node_id: Arc::new(value.node_id.into()),
-            relay_url: value.info.relay_url.map(|url| url.to_string()),
+            relay_url: value.relay_url.map(|url| url.to_string()),
             addresses: value
-                .info
                 .direct_addresses
                 .into_iter()
                 .map(|d| d.to_string())
@@ -1545,7 +1545,7 @@ impl DocExportProgress {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::PublicKey;
+    use crate::{setup_logging, PublicKey};
     use rand::RngCore;
     use tokio::{io::AsyncWriteExt, sync::mpsc};
 
@@ -1581,6 +1581,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_basic_sync() {
+        setup_logging();
+
         // create node_0
         let iroh_dir = tempfile::tempdir().unwrap();
         let options = crate::NodeOptions {
@@ -1597,6 +1599,8 @@ mod tests {
         )
         .await
         .unwrap();
+
+        tracing::warn!("first node started");
 
         // create node_1
         let options = crate::NodeOptions {
@@ -1615,12 +1619,17 @@ mod tests {
         .await
         .unwrap();
 
+        tracing::warn!("second ndoe  started");
+
         // create doc on node_0
         let doc_0 = node_0.docs().create().await.unwrap();
+        tracing::warn!("doc created");
         let ticket = doc_0
             .share(ShareMode::Write, AddrInfoOptions::RelayAndAddresses)
             .await
             .unwrap();
+
+        tracing::warn!("ticket created");
 
         // subscribe to sync events
         let (found_s, mut found_r) = mpsc::channel(8);
@@ -1646,6 +1655,8 @@ mod tests {
             .join_and_subscribe(&ticket, Arc::new(cb_1))
             .await
             .unwrap();
+
+        tracing::warn!("joined");
 
         // wait for initial sync to be one
         while let Some(event) = found_r_1.recv().await {

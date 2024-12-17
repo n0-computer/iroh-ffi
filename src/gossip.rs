@@ -122,16 +122,14 @@ pub trait GossipMessageCallback: Send + Sync + 'static {
 /// Iroh gossip client.
 #[derive(uniffi::Object)]
 pub struct Gossip {
-    gossip: Arc<iroh_gossip::net::Gossip>,
+    gossip: iroh_gossip::net::Gossip,
 }
 
 #[uniffi::export]
 impl Iroh {
     /// Access to gossip specific funtionaliy.
     pub fn gossip(&self) -> Gossip {
-        let gossip = self
-            .get_protocol(iroh_gossip::net::GOSSIP_ALPN)
-            .expect("no gossip available");
+        let gossip = self.gossip.clone();
         Gossip { gossip }
     }
 }

@@ -266,7 +266,7 @@ impl SendStream {
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn write_all(&self, buf: &[u8]) -> Result<(), IrohError> {
         let mut s = self.0.lock().await;
-        s.write_all(&buf).await.map_err(anyhow::Error::from)?;
+        s.write_all(buf).await.map_err(anyhow::Error::from)?;
         Ok(())
     }
 
@@ -303,7 +303,7 @@ impl SendStream {
     pub async fn stopped(&self) -> Result<Option<u64>, IrohError> {
         let mut s = self.0.lock().await;
         let res = s.stopped().await.map_err(anyhow::Error::from)?;
-        let res = res.map(|r| r.into_inner().into());
+        let res = res.map(|r| r.into_inner());
         Ok(res)
     }
 
