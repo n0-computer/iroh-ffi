@@ -38,7 +38,7 @@ iroh-base = { version = "0.30", features = ["ticket"] }
 iroh-io = { version = "0.6" }
 iroh-gossip = { version = "0.30", features = ["rpc"] }
 iroh-docs = { version = "0.29", features = ["rpc"] }
-iroh-blobs = { version = "0.29", features = ["rpc"] }
+iroh-blobs = { version = "0.30", features = ["rpc"] }
 iroh-metrics = { version = "0.30" }
 iroh-node-util = { version = "0.30", features = [] }
 libc = "0.2.141"
@@ -73,5 +73,4 @@ uniffi = { version = "0.28.0", features = ["build"] }
 lto = true
 
 [patch.crates-io]
-iroh-blobs = { git = "https://github.com/n0-computer/iroh-blobs", branch = "iroh-v0-30-0" }
 iroh-docs = { git = "https://github.com/n0-computer/iroh-docs", branch = "iroh-v0-30-0" }

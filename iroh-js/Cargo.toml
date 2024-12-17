@@ -20,7 +20,7 @@ data-encoding = { version = "2.3.3" }
 iroh-base = { version = "0.30", features = ["ticket"] }
 iroh-gossip = { version = "0.30", features = ["rpc"] }
 iroh-docs = { version = "0.29", features = ["rpc"] }
-iroh-blobs = { version = "0.29", features = ["rpc"] }
+iroh-blobs = { version = "0.30", features = ["rpc"] }
 iroh-metrics = { version = "0.30" }
 iroh-node-util = { version = "0.30", features = [] }
 iroh = "0.30"
