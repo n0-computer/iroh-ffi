@@ -4,6 +4,7 @@ use bytes::Bytes;
 use futures::{StreamExt, TryStreamExt};
 use quic_rpc::transport::flume::FlumeConnector;
 use serde::{Deserialize, Serialize};
+use tracing::warn;
 
 use crate::DocsClient;
 use crate::{
@@ -79,11 +80,11 @@ impl Docs {
                 match event {
                     Ok(event) => {
                         if let Err(err) = cb.event(Arc::new(event.into())).await {
-                            println!("cb error: {:?}", err);
+                            warn!("cb error: {:?}", err);
                         }
                     }
                     Err(err) => {
-                        println!("rpc error: {:?}", err);
+                        warn!("rpc error: {:?}", err);
                     }
                 }
             }
@@ -302,8 +303,6 @@ impl Doc {
         mode: ShareMode,
         addr_options: AddrInfoOptions,
     ) -> Result<Arc<DocTicket>, IrohError> {
-        println!("SHARE");
-
         let res = self
             .inner
             .share(mode.into(), addr_options.into())
@@ -343,11 +342,11 @@ impl Doc {
                 match event {
                     Ok(event) => {
                         if let Err(err) = cb.event(Arc::new(event.into())).await {
-                            println!("cb error: {:?}", err);
+                            warn!("cb error: {:?}", err);
                         }
                     }
                     Err(err) => {
-                        println!("rpc error: {:?}", err);
+                        warn!("rpc error: {:?}", err);
                     }
                 }
             }
