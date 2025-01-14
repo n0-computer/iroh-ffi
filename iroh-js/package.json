@@ -42,21 +42,14 @@
   },
   "license": "MIT OR Apache-2.0",
   "devDependencies": {
-    "@napi-rs/cli": "^3.0.0-alpha.64",
-    "ava": "^6.0.1"
-  },
-  "ava": {
-    "timeout": "5m",
-    "require": [
-      "./__test__/_force-exit.mjs"
-    ]
+    "@napi-rs/cli": "^3.0.0-alpha.64"
   },
   "scripts": {
     "artifacts": "napi artifacts",
     "build": "napi build --platform --release --strip",
     "build:debug": "napi build",
     "prepublishOnly": "napi prepublish -t npm --no-gh-release",
-    "test": "ava",
+    "test": "node --test",
     "version": "napi version"
   },
   "packageManager": "yarn@1.22.22"
