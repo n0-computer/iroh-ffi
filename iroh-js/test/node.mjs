@@ -20,7 +20,7 @@ suite('node', () => {
     const iroh = await Iroh.memory()
     const status = await iroh.node.status()
 
-    assert.equal(status.version, '0.30.0')
+    assert.equal(status.version, '0.31.0')
     await iroh.node.shutdown()
   })
 

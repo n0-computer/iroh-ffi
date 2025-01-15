@@ -6502,9 +6502,9 @@ open class Authors :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -8431,9 +8431,9 @@ open class Blobs :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -8463,9 +8463,9 @@ open class Blobs :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -8536,9 +8536,9 @@ open class Blobs :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -8674,9 +8674,9 @@ open class Blobs :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -8704,9 +8704,9 @@ open class Blobs :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -8734,9 +8734,9 @@ open class Blobs :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -8772,9 +8772,9 @@ open class Blobs :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -8804,9 +8804,9 @@ open class Blobs :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -9491,9 +9491,9 @@ open class Connecting :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -9533,9 +9533,9 @@ open class Connecting :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -9557,9 +9557,9 @@ open class Connecting :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -9900,9 +9900,9 @@ open class Connection :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -10009,9 +10009,9 @@ open class Connection :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -11193,9 +11193,9 @@ open class Doc :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -11224,9 +11224,9 @@ open class Doc :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -11252,9 +11252,9 @@ open class Doc :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -11279,9 +11279,9 @@ open class Doc :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -11500,9 +11500,9 @@ open class Doc :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -13404,9 +13404,9 @@ open class Docs :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -13434,9 +13434,9 @@ open class Docs :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -16545,9 +16545,9 @@ open class Iroh :
             uniffiRustCallAsync(
                 UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_iroh_memory(),
                 {
-                    future,
-                    callback,
-                    continuation,
+                        future,
+                        callback,
+                        continuation,
                     ->
                     UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_pointer(future, callback, continuation)
                 },
@@ -16568,9 +16568,9 @@ open class Iroh :
             uniffiRustCallAsync(
                 UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_iroh_memory_with_options(FfiConverterTypeNodeOptions.lower(`options`)),
                 {
-                    future,
-                    callback,
-                    continuation,
+                        future,
+                        callback,
+                        continuation,
                     ->
                     UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_pointer(future, callback, continuation)
                 },
@@ -16594,9 +16594,9 @@ open class Iroh :
             uniffiRustCallAsync(
                 UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_iroh_persistent(FfiConverterString.lower(`path`)),
                 {
-                    future,
-                    callback,
-                    continuation,
+                        future,
+                        callback,
+                        continuation,
                     ->
                     UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_pointer(future, callback, continuation)
                 },
@@ -16623,9 +16623,9 @@ open class Iroh :
                     FfiConverterTypeNodeOptions.lower(`options`),
                 ),
                 {
-                    future,
-                    callback,
-                    continuation,
+                        future,
+                        callback,
+                        continuation,
                     ->
                     UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_pointer(future, callback, continuation)
                 },
@@ -17830,9 +17830,9 @@ open class Net :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -17878,9 +17878,9 @@ open class Net :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -17906,9 +17906,9 @@ open class Net :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -17933,9 +17933,9 @@ open class Net :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -18230,9 +18230,9 @@ open class Node :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -21301,9 +21301,9 @@ open class RecvStream :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -21326,9 +21326,9 @@ open class RecvStream :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -21351,9 +21351,9 @@ open class RecvStream :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -21376,9 +21376,9 @@ open class RecvStream :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -21400,9 +21400,9 @@ open class RecvStream :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -21690,9 +21690,9 @@ open class SendStream :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -21770,9 +21770,9 @@ open class SendStream :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -22948,9 +22948,9 @@ open class Tags :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
