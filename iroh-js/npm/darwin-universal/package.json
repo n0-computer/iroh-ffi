@@ -1,6 +1,6 @@
 {
   "name": "@number0/iroh-darwin-universal",
-  "version": "0.0.0",
+  "version": "0.31.0",
   "os": [
     "darwin"
   ],

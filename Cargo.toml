@@ -1,6 +1,6 @@
 [package]
 name = "iroh-ffi"
-version = "0.30.0"
+version = "0.31.0"
 edition = "2021"
 publish = false
 readme = "README.md"
@@ -33,14 +33,14 @@ async-trait = "0.1.80"
 blake3 = "1.3.3"
 bytes = "1"
 data-encoding = { version = "2.3.3" }
-iroh = { version = "0.30" }
-iroh-base = { version = "0.30", features = ["ticket"] }
+iroh = { version = "0.31" }
+iroh-base = { version = "0.31", features = ["ticket"] }
 iroh-io = { version = "0.6" }
-iroh-gossip = { version = "0.30", features = ["rpc"] }
-iroh-docs = { version = "0.30", features = ["rpc"] }
-iroh-blobs = { version = "0.30", features = ["rpc"] }
+iroh-gossip = { version = "0.31", features = ["rpc"] }
+iroh-docs = { version = "0.31", features = ["rpc"] }
+iroh-blobs = { version = "0.31", features = ["rpc"] }
 iroh-metrics = { version = "0.31" }
-iroh-node-util = { version = "0.30", features = [] }
+iroh-node-util = { version = "0.31", features = [] }
 libc = "0.2.141"
 num_cpus = { version = "1.15.0" }
 range-collections = "0.4.0"
@@ -71,11 +71,3 @@ uniffi = { version = "0.28.0", features = ["build"] }
 
 [profile.release]
 lto = true
-
-[patch.crates-io]
-iroh = { git = "https://github.com/n0-computer/iroh.git", branch = "iroh-0-31-0" }
-iroh-base = { git = "https://github.com/n0-computer/iroh.git", branch = "iroh-0-31-0" }
-iroh-docs = { git = "https://github.com/n0-computer/iroh-docs.git", branch = "iroh-0-31-0" }
-iroh-blobs = { git = "https://github.com/n0-computer/iroh-blobs.git", branch = "iroh-0-31-0" }
-iroh-gossip = { git = "https://github.com/n0-computer/iroh-gossip.git", branch = "iroh-0-31-0" }
-iroh-node-util = { git = "https://github.com/n0-computer/iroh-node-util.git", branch = "iroh-0-31-0" }

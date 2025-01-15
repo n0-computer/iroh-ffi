@@ -118,6 +118,17 @@ pub fn path_to_key(
 }
 
 #[cfg(test)]
+fn setup_logging() {
+    use tracing_subscriber::{fmt, prelude::*, EnvFilter};
+
+    tracing_subscriber::registry()
+        .with(fmt::layer())
+        .with(EnvFilter::from_default_env())
+        .try_init()
+        .ok();
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
     #[test]
@@ -151,15 +162,4 @@ mod tests {
             key_to_path(got_key.clone(), Some(prefix.clone()), Some(root.clone())).unwrap();
         assert_eq!(path, got_path);
     }
-}
-
-#[cfg(test)]
-fn setup_logging() {
-    use tracing_subscriber::{fmt, prelude::*, EnvFilter};
-
-    tracing_subscriber::registry()
-        .with(fmt::layer())
-        .with(EnvFilter::from_default_env())
-        .try_init()
-        .ok();
 }
