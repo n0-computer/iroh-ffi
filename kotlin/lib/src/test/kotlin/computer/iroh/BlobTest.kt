@@ -116,6 +116,10 @@ class BlobTest {
             assert(gotBytes.size == blobSize)
             assert(gotBytes contentEquals bytes)
 
+            // check the blob exists
+            val blobExists = node.blobs().has(hash)
+            assert(blobExists)
+
             node.node().shutdown()
         }
 

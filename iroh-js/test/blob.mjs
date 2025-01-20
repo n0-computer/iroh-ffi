@@ -39,6 +39,10 @@ suite('blob', () => {
     assert.ok(allDone.tag)
     assert.ok(allDone.hash)
 
+    // check for existence
+    const blobExists = await node.blobs.has(allDone.hash)
+    assert.ok(blobExists)
+
     await node.node.shutdown()
   })
 
