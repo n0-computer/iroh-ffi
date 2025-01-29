@@ -2,7 +2,6 @@
 name = "iroh-ffi"
 version = "0.31.0"
 edition = "2021"
-publish = false
 readme = "README.md"
 description = "A toolkit for building distributed applications"
 license = "MIT OR Apache-2.0"
@@ -21,7 +20,7 @@ name = "iroh"
 
 [lib]
 name = "iroh_ffi"
-crate-type = ["staticlib", "cdylib"]
+crate-type = ["staticlib", "cdylib", "rlib"]
 
 [[bin]]
 name = "uniffi-bindgen"

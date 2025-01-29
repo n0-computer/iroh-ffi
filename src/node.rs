@@ -1,3 +1,4 @@
+use std::sync::Mutex;
 use std::{collections::HashMap, fmt::Debug, path::PathBuf, sync::Arc, time::Duration};
 
 use iroh_blobs::{
@@ -326,6 +327,7 @@ pub struct Iroh {
     pub(crate) authors_client: Option<AuthorsClient>,
     pub(crate) docs_client: Option<DocsClient>,
     pub(crate) gossip: Gossip,
+    pub(crate) node_client: iroh_node_util::rpc::client::node::Client,
 }
 
 pub(crate) type NetClient = iroh_node_util::rpc::client::net::Client;
@@ -351,6 +353,59 @@ impl AbstractNode for NetNode {
     }
 
     fn shutdown(&self) {}
+}
+
+/// An Iroh node builder
+#[derive(uniffi::Object, Debug)]
+pub struct IrohBuilder {
+    // set to `None` after building
+    router: Mutex<Option<iroh::protocol::RouterBuilder>>,
+}
+
+#[uniffi::export]
+impl IrohBuilder {
+    #[uniffi::constructor(async_runtime = "tokio")]
+    pub async fn create(options: NodeOptions) -> Result<Self, IrohError> {
+        let mut ep_builder = iroh::Endpoint::builder();
+        ep_builder = match options.node_discovery {
+            Some(NodeDiscoveryConfig::None) => ep_builder.clear_discovery(),
+            Some(NodeDiscoveryConfig::Default) | None => ep_builder.discovery_n0(),
+        };
+        let endpoint = ep_builder.bind().await?;
+        let router = iroh::protocol::Router::builder(endpoint);
+
+        Ok(Self {
+            router: Mutex::new(Some(router)),
+        })
+    }
+
+    #[uniffi::method]
+    pub fn endpoint(&self) -> Endpoint {
+        let ep = self
+            .router
+            .lock()
+            .unwrap()
+            .as_ref()
+            .expect("already built")
+            .endpoint()
+            .clone();
+        Endpoint::new(ep)
+    }
+
+    #[uniffi::method]
+    pub fn accept(&self, alpn: &[u8], handler: Arc<dyn ProtocolHandler>) {
+        let mut router_lock = self.router.lock().unwrap();
+        let mut router = router_lock.take().expect("already built");
+
+        router = router.accept(alpn, ProtocolWrapper { handler });
+        router_lock.replace(router);
+    }
+
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn build(&self) -> Result<Iroh, IrohError> {
+        let mut router = self.router.lock().unwrap().take().expect("already built");
+        todo!()
+    }
 }
 
 #[uniffi::export]
@@ -423,6 +478,8 @@ impl Iroh {
 
         let docs_client = docs.map(|d| d.client().clone());
 
+        let node_client = iroh_node_util::rpc::client::node::Client::new(client.clone().boxed());
+
         Ok(Iroh {
             router,
             _local_pool: Arc::new(local_pool),
@@ -434,6 +491,7 @@ impl Iroh {
             authors_client: docs_client.as_ref().map(|d| d.authors()),
             docs_client,
             gossip,
+            node_client,
         })
     }
 
@@ -476,6 +534,7 @@ impl Iroh {
 
         let docs_client = docs.map(|d| d.client().clone());
 
+        let node_client = iroh_node_util::rpc::client::node::Client::new(client.clone().boxed());
         Ok(Iroh {
             router,
             _local_pool: Arc::new(local_pool),
@@ -487,15 +546,50 @@ impl Iroh {
             authors_client: docs_client.as_ref().map(|d| d.authors()),
             docs_client,
             gossip,
+            node_client,
         })
     }
 
-    /// Access to node specific funtionaliy.
-    pub fn node(&self) -> Node {
-        let router = self.router.clone();
-        let client = self.client.clone().boxed();
-        let client = iroh_node_util::rpc::client::node::Client::new(client);
-        Node { router, client }
+    /// Get statistics of the running node.
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn stats(&self) -> Result<HashMap<String, CounterStats>, IrohError> {
+        let stats = self.node_client.stats().await?;
+        let stats = stats
+            .into_iter()
+            .map(|(k, v)| {
+                (
+                    k,
+                    CounterStats {
+                        value: u32::try_from(v.value).expect("value too large"),
+                        description: v.description,
+                    },
+                )
+            })
+            .collect();
+        Ok(stats)
+    }
+
+    /// Get status information about a node
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn status(&self) -> Result<Arc<NodeStatus>, IrohError> {
+        let res = self
+            .node_client
+            .status()
+            .await
+            .map(|n| Arc::new(n.into()))?;
+        Ok(res)
+    }
+
+    /// Shutdown this iroh node.
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn shutdown(&self) -> Result<(), IrohError> {
+        self.router.shutdown().await?;
+        Ok(())
+    }
+
+    #[uniffi::method]
+    pub fn endpoint(&self) -> Endpoint {
+        Endpoint::new(self.router.endpoint().clone())
     }
 }
 
@@ -608,54 +702,6 @@ async fn apply_options<S: iroh_blobs::store::Store>(
     }
 
     Ok((builder, gossip, blobs, docs))
-}
-
-/// Iroh node client.
-#[derive(uniffi::Object)]
-pub struct Node {
-    router: iroh::protocol::Router,
-    client: iroh_node_util::rpc::client::node::Client,
-}
-
-#[uniffi::export]
-impl Node {
-    /// Get statistics of the running node.
-    #[uniffi::method(async_runtime = "tokio")]
-    pub async fn stats(&self) -> Result<HashMap<String, CounterStats>, IrohError> {
-        let stats = self.client.stats().await?;
-        let stats = stats
-            .into_iter()
-            .map(|(k, v)| {
-                (
-                    k,
-                    CounterStats {
-                        value: u32::try_from(v.value).expect("value too large"),
-                        description: v.description,
-                    },
-                )
-            })
-            .collect();
-        Ok(stats)
-    }
-
-    /// Get status information about a node
-    #[uniffi::method(async_runtime = "tokio")]
-    pub async fn status(&self) -> Result<Arc<NodeStatus>, IrohError> {
-        let res = self.client.status().await.map(|n| Arc::new(n.into()))?;
-        Ok(res)
-    }
-
-    /// Shutdown this iroh node.
-    #[uniffi::method(async_runtime = "tokio")]
-    pub async fn shutdown(&self) -> Result<(), IrohError> {
-        self.router.shutdown().await?;
-        Ok(())
-    }
-
-    #[uniffi::method]
-    pub fn endpoint(&self) -> Endpoint {
-        Endpoint::new(self.router.endpoint().clone())
-    }
 }
 
 /// The response to a status request

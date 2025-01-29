@@ -8,6 +8,12 @@ use crate::{IrohError, NodeAddr, PublicKey};
 #[derive(Clone, uniffi::Object)]
 pub struct Endpoint(endpoint::Endpoint);
 
+impl From<&Endpoint> for endpoint::Endpoint {
+    fn from(value: &Endpoint) -> Self {
+        value.0.clone()
+    }
+}
+
 impl Endpoint {
     pub fn new(ep: endpoint::Endpoint) -> Self {
         Endpoint(ep)
@@ -41,6 +47,12 @@ pub struct Connecting(Mutex<Option<endpoint::Connecting>>);
 impl Connecting {
     pub fn new(conn: endpoint::Connecting) -> Self {
         Connecting(Mutex::new(Some(conn)))
+    }
+}
+
+impl Connecting {
+    pub async fn into_iroh(self) -> Option<endpoint::Connecting> {
+        self.0.lock().await.take()
     }
 }
 
