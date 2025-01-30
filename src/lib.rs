@@ -72,7 +72,6 @@ pub fn start_metrics_collection() -> Result<(), IrohError> {
         metrics.insert(iroh::metrics::NetReportMetrics::new(reg));
         metrics.insert(iroh::metrics::PortmapMetrics::new(reg));
         metrics.insert(iroh_blobs::metrics::Metrics::new(reg));
-        metrics.insert(iroh_gossip::metrics::Metrics::new(reg));
         metrics.insert(iroh_docs::metrics::Metrics::new(reg));
     })
     .map_err(|e| anyhow::Error::from(e).into())

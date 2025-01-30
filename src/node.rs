@@ -1,12 +1,6 @@
 use std::sync::Mutex;
 use std::{collections::HashMap, fmt::Debug, sync::Arc, time::Duration};
 
-use iroh_blobs::{
-    downloader::Downloader, net_protocol::Blobs, provider::EventSender, store::GcConfig,
-    util::local_pool::LocalPool,
-};
-use iroh_docs::protocol::Docs;
-use iroh_gossip::net::Gossip;
 use iroh_node_util::rpc::server::AbstractNode;
 use quic_rpc::{transport::flume::FlumeConnector, RpcClient, RpcServer};
 use tokio_util::task::AbortOnDropHandle;
@@ -471,117 +465,6 @@ impl Iroh {
     pub fn endpoint(&self) -> Endpoint {
         Endpoint::new(self.router.endpoint().clone())
     }
-}
-
-async fn apply_options<S: iroh_blobs::store::Store>(
-    mut builder: iroh::endpoint::Builder,
-    options: NodeOptions,
-    blob_store: S,
-    docs_store: Option<iroh_docs::store::Store>,
-    author_store: Option<iroh_docs::engine::DefaultAuthorStorage>,
-    local_pool: &LocalPool,
-) -> anyhow::Result<(
-    iroh::protocol::RouterBuilder,
-    Gossip,
-    Blobs<S>,
-    Option<Docs<S>>,
-)> {
-    let gc_period = if let Some(millis) = options.gc_interval_millis {
-        match millis {
-            0 => None,
-            millis => Some(Duration::from_millis(millis)),
-        }
-    } else {
-        None
-    };
-
-    let blob_events = if let Some(blob_events_cb) = options.blob_events {
-        BlobProvideEvents::new(blob_events_cb).into()
-    } else {
-        EventSender::default()
-    };
-
-    if let Some(addr) = options.ipv4_addr {
-        builder = builder.bind_addr_v4(addr.parse()?);
-    }
-
-    if let Some(addr) = options.ipv6_addr {
-        builder = builder.bind_addr_v6(addr.parse()?);
-    }
-
-    builder = match options.node_discovery {
-        Some(NodeDiscoveryConfig::None) => builder.clear_discovery(),
-        Some(NodeDiscoveryConfig::Default) | None => builder.discovery_n0(),
-    };
-
-    if let Some(secret_key) = options.secret_key {
-        let key: [u8; 32] = AsRef::<[u8]>::as_ref(&secret_key).try_into()?;
-        let key = iroh::SecretKey::from_bytes(&key);
-        builder = builder.secret_key(key);
-    }
-
-    let endpoint = builder.bind().await?;
-    let mut builder = iroh::protocol::Router::builder(endpoint);
-
-    let endpoint = Arc::new(Endpoint::new(builder.endpoint().clone()));
-
-    // Add default protocols for now
-
-    // iroh gossip
-    let gossip = Gossip::builder().spawn(builder.endpoint().clone()).await?;
-    builder = builder.accept(iroh_gossip::ALPN, gossip.clone());
-
-    // iroh blobs
-    let downloader = Downloader::new(
-        blob_store.clone(),
-        builder.endpoint().clone(),
-        local_pool.handle().clone(),
-    );
-    let blobs = Blobs::new(
-        blob_store.clone(),
-        local_pool.handle().clone(),
-        blob_events,
-        downloader.clone(),
-        builder.endpoint().clone(),
-    );
-
-    builder = builder.accept(iroh_blobs::ALPN, blobs.clone());
-
-    let docs = if options.enable_docs {
-        let engine = iroh_docs::engine::Engine::spawn(
-            builder.endpoint().clone(),
-            gossip.clone(),
-            docs_store.expect("docs enabled"),
-            blob_store.clone(),
-            downloader,
-            author_store.expect("docs enabled"),
-            local_pool.handle().clone(),
-        )
-        .await?;
-        let docs = Docs::new(engine);
-        builder = builder.accept(iroh_docs::ALPN, docs.clone());
-        blobs.add_protected(docs.protect_cb())?;
-
-        Some(docs)
-    } else {
-        None
-    };
-    if let Some(period) = gc_period {
-        blobs.start_gc(GcConfig {
-            period,
-            done_callback: None,
-        })?;
-    }
-
-    // Add custom protocols
-    if let Some(protocols) = options.protocols {
-        for (alpn, protocol) in protocols {
-            let handler = protocol.create(endpoint.clone());
-            builder = builder.accept(alpn, ProtocolWrapper { handler });
-        }
-    }
-
-    Ok((builder, gossip, blobs, docs))
 }
 
 /// The response to a status request

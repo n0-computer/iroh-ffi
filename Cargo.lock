@@ -2249,7 +2249,6 @@ dependencies = [
  "iroh-base",
  "iroh-blobs",
  "iroh-docs",
- "iroh-gossip",
  "iroh-io",
  "iroh-metrics",
  "iroh-node-util",
