@@ -1,5 +1,5 @@
 use std::sync::Mutex;
-use std::{collections::HashMap, fmt::Debug, path::PathBuf, sync::Arc, time::Duration};
+use std::{collections::HashMap, fmt::Debug, sync::Arc, time::Duration};
 
 use iroh_blobs::{
     downloader::Downloader, net_protocol::Blobs, provider::EventSender, store::GcConfig,
@@ -313,7 +313,6 @@ pub enum NodeDiscoveryConfig {
 #[derive(uniffi::Object, Debug, Clone)]
 pub struct Iroh {
     router: iroh::protocol::Router,
-    _local_pool: Arc<LocalPool>,
     /// RPC client for node and net to hand out
     pub(crate) client: RpcClient<
         iroh_node_util::rpc::proto::RpcService,
@@ -321,12 +320,6 @@ pub struct Iroh {
     >,
     /// Handler task
     _handler: Arc<AbortOnDropHandle<()>>,
-    pub(crate) blobs_client: BlobsClient,
-    pub(crate) tags_client: TagsClient,
-    pub(crate) net_client: NetClient,
-    pub(crate) authors_client: Option<AuthorsClient>,
-    pub(crate) docs_client: Option<DocsClient>,
-    pub(crate) gossip: Gossip,
     pub(crate) node_client: iroh_node_util::rpc::client::node::Client,
 }
 
@@ -360,6 +353,7 @@ impl AbstractNode for NetNode {
 pub struct IrohBuilder {
     // set to `None` after building
     router: Mutex<Option<iroh::protocol::RouterBuilder>>,
+    endpoint: Endpoint,
 }
 
 #[uniffi::export]
@@ -367,29 +361,38 @@ impl IrohBuilder {
     #[uniffi::constructor(async_runtime = "tokio")]
     pub async fn create(options: NodeOptions) -> Result<Self, IrohError> {
         let mut ep_builder = iroh::Endpoint::builder();
+        if let Some(addr) = options.ipv4_addr {
+            ep_builder = ep_builder.bind_addr_v4(addr.parse().map_err(anyhow::Error::from)?);
+        }
+
+        if let Some(addr) = options.ipv6_addr {
+            ep_builder = ep_builder.bind_addr_v6(addr.parse().map_err(anyhow::Error::from)?);
+        }
+
         ep_builder = match options.node_discovery {
             Some(NodeDiscoveryConfig::None) => ep_builder.clear_discovery(),
             Some(NodeDiscoveryConfig::Default) | None => ep_builder.discovery_n0(),
         };
+        if let Some(secret_key) = options.secret_key {
+            let key: [u8; 32] = AsRef::<[u8]>::as_ref(&secret_key)
+                .try_into()
+                .map_err(anyhow::Error::from)?;
+            let key = iroh::SecretKey::from_bytes(&key);
+            ep_builder = ep_builder.secret_key(key);
+        }
+
         let endpoint = ep_builder.bind().await?;
-        let router = iroh::protocol::Router::builder(endpoint);
+        let router = iroh::protocol::Router::builder(endpoint.clone());
 
         Ok(Self {
             router: Mutex::new(Some(router)),
+            endpoint: Endpoint::new(endpoint),
         })
     }
 
     #[uniffi::method]
     pub fn endpoint(&self) -> Endpoint {
-        let ep = self
-            .router
-            .lock()
-            .unwrap()
-            .as_ref()
-            .expect("already built")
-            .endpoint()
-            .clone();
-        Endpoint::new(ep)
+        self.endpoint.clone()
     }
 
     #[uniffi::method]
@@ -403,122 +406,8 @@ impl IrohBuilder {
 
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn build(&self) -> Result<Iroh, IrohError> {
-        let mut router = self.router.lock().unwrap().take().expect("already built");
-        todo!()
-    }
-}
+        let builder = self.router.lock().unwrap().take().expect("already built");
 
-#[uniffi::export]
-impl Iroh {
-    /// Create a new iroh node.
-    ///
-    /// The `path` param should be a directory where we can store or load
-    /// iroh data from a previous session.
-    #[uniffi::constructor(async_runtime = "tokio")]
-    pub async fn persistent(path: String) -> Result<Self, IrohError> {
-        let options = NodeOptions::default();
-        Self::persistent_with_options(path, options).await
-    }
-
-    /// Create a new iroh node.
-    ///
-    /// All data will be only persistet in memory.
-    #[uniffi::constructor(async_runtime = "tokio")]
-    pub async fn memory() -> Result<Self, IrohError> {
-        let options = NodeOptions::default();
-        Self::memory_with_options(options).await
-    }
-
-    /// Create a new iroh node with options.
-    #[uniffi::constructor(async_runtime = "tokio")]
-    pub async fn persistent_with_options(
-        path: String,
-        options: NodeOptions,
-    ) -> Result<Self, IrohError> {
-        let path = PathBuf::from(path);
-        tokio::fs::create_dir_all(&path)
-            .await
-            .map_err(|err| anyhow::anyhow!(err))?;
-
-        let builder = iroh::Endpoint::builder();
-        let (docs_store, author_store) = if options.enable_docs {
-            let docs_store = iroh_docs::store::Store::persistent(path.join("docs.redb"))?;
-            let author_store =
-                iroh_docs::engine::DefaultAuthorStorage::Persistent(path.join("default-author"));
-
-            (Some(docs_store), Some(author_store))
-        } else {
-            (None, None)
-        };
-        let blobs_store = iroh_blobs::store::fs::Store::load(path.join("blobs"))
-            .await
-            .map_err(|err| anyhow::anyhow!(err))?;
-        let local_pool = LocalPool::default();
-        let (builder, gossip, blobs, docs) = apply_options(
-            builder,
-            options,
-            blobs_store,
-            docs_store,
-            author_store,
-            &local_pool,
-        )
-        .await?;
-        let router = builder.spawn().await?;
-
-        let (listener, connector) = quic_rpc::transport::flume::channel(1);
-        let listener = RpcServer::new(listener);
-        let client = RpcClient::new(connector);
-        let nn = Arc::new(NetNode(router.endpoint().clone()));
-        let handler = listener.spawn_accept_loop(move |req, chan| {
-            iroh_node_util::rpc::server::handle_rpc_request(nn.clone(), req, chan)
-        });
-
-        let blobs_client = blobs.client().clone();
-        let net_client = iroh_node_util::rpc::client::net::Client::new(client.clone().boxed());
-
-        let docs_client = docs.map(|d| d.client().clone());
-
-        let node_client = iroh_node_util::rpc::client::node::Client::new(client.clone().boxed());
-
-        Ok(Iroh {
-            router,
-            _local_pool: Arc::new(local_pool),
-            client,
-            _handler: Arc::new(handler),
-            tags_client: blobs_client.tags(),
-            blobs_client,
-            net_client,
-            authors_client: docs_client.as_ref().map(|d| d.authors()),
-            docs_client,
-            gossip,
-            node_client,
-        })
-    }
-
-    /// Create a new in memory iroh node with options.
-    #[uniffi::constructor(async_runtime = "tokio")]
-    pub async fn memory_with_options(options: NodeOptions) -> Result<Self, IrohError> {
-        let builder = iroh::Endpoint::builder();
-
-        let (docs_store, author_store) = if options.enable_docs {
-            let docs_store = iroh_docs::store::Store::memory();
-            let author_store = iroh_docs::engine::DefaultAuthorStorage::Mem;
-
-            (Some(docs_store), Some(author_store))
-        } else {
-            (None, None)
-        };
-        let blobs_store = iroh_blobs::store::mem::Store::default();
-        let local_pool = LocalPool::default();
-        let (builder, gossip, blobs, docs) = apply_options(
-            builder,
-            options,
-            blobs_store,
-            docs_store,
-            author_store,
-            &local_pool,
-        )
-        .await?;
         let router = builder.spawn().await?;
 
         let (listener, connector) = quic_rpc::transport::flume::channel(1);
@@ -528,28 +417,19 @@ impl Iroh {
         let handler = listener.spawn_accept_loop(move |req, chan| {
             iroh_node_util::rpc::server::handle_rpc_request(nn.clone(), req, chan)
         });
-
-        let blobs_client = blobs.client().clone();
-        let net_client = iroh_node_util::rpc::client::net::Client::new(client.clone().boxed());
-
-        let docs_client = docs.map(|d| d.client().clone());
-
         let node_client = iroh_node_util::rpc::client::node::Client::new(client.clone().boxed());
+
         Ok(Iroh {
             router,
-            _local_pool: Arc::new(local_pool),
             client,
             _handler: Arc::new(handler),
-            net_client,
-            tags_client: blobs_client.tags(),
-            blobs_client,
-            authors_client: docs_client.as_ref().map(|d| d.authors()),
-            docs_client,
-            gossip,
             node_client,
         })
     }
+}
 
+#[uniffi::export]
+impl Iroh {
     /// Get statistics of the running node.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn stats(&self) -> Result<HashMap<String, CounterStats>, IrohError> {
@@ -771,17 +651,5 @@ impl iroh_blobs::provider::CustomEventSender for BlobProvideEvents {
         tokio::task::spawn(async move {
             cb.blob_event(Arc::new(event.into())).await.ok();
         });
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn test_memory() {
-        let node = Iroh::memory().await.unwrap();
-        let id = node.net().node_id().await.unwrap();
-        println!("{id}");
     }
 }

@@ -35,9 +35,10 @@ pub struct Tags {
 impl Iroh {
     /// Access to tags specific funtionaliy.
     pub fn tags(&self) -> Tags {
-        Tags {
-            client: self.tags_client.clone(),
-        }
+        todo!()
+        // Tags {
+        //     client: self.tags_client.clone(),
+        // }
     }
 }
 

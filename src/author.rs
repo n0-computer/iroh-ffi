@@ -70,9 +70,10 @@ pub struct Authors {
 impl Iroh {
     /// Access to gossip specific funtionaliy.
     pub fn authors(&self) -> Authors {
-        Authors {
-            client: self.authors_client.clone().expect("missing docs"),
-        }
+        todo!()
+        // Authors {
+        //     client: self.authors_client.clone().expect("missing docs"),
+        // }
     }
 }
 
@@ -164,10 +165,12 @@ mod tests {
             enable_docs: true,
             ..Default::default()
         };
-        let node =
-            crate::Iroh::persistent_with_options(dir.into_path().display().to_string(), options)
-                .await
-                .unwrap();
+        let node = crate::IrohBuilder::create(options)
+            .await
+            .unwrap()
+            .build()
+            .await
+            .unwrap();
 
         assert_eq!(node.authors().list().await.unwrap().len(), 1);
         let author_id = node.authors().create().await.unwrap();

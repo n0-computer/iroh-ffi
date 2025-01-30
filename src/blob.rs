@@ -23,10 +23,11 @@ pub struct Blobs {
 impl Iroh {
     /// Access to blob specific funtionaliy.
     pub fn blobs(&self) -> Blobs {
-        Blobs {
-            client: self.blobs_client.clone(),
-            net_client: self.net_client.clone(),
-        }
+        todo!()
+        // Blobs {
+        //     client: self.blobs_client.clone(),
+        //     net_client: self.net_client.clone(),
+        // }
     }
 }
 
@@ -1614,7 +1615,7 @@ mod tests {
 
     use super::*;
     use crate::node::Iroh;
-    use crate::{setup_logging, CallbackError, NodeOptions};
+    use crate::{setup_logging, CallbackError, IrohBuilder, NodeOptions};
 
     use rand::RngCore;
 
@@ -1648,7 +1649,10 @@ mod tests {
     #[tokio::test]
     async fn test_blobs_add_get_bytes() {
         let dir = tempfile::tempdir().unwrap();
-        let node = Iroh::persistent(dir.into_path().display().to_string())
+        let node = IrohBuilder::create(NodeOptions::default())
+            .await
+            .unwrap()
+            .build()
             .await
             .unwrap();
 
@@ -1684,7 +1688,10 @@ mod tests {
     #[tokio::test]
     async fn test_blob_read_write_path() {
         let iroh_dir = tempfile::tempdir().unwrap();
-        let node = Iroh::persistent(iroh_dir.into_path().display().to_string())
+        let node = IrohBuilder::create(NodeOptions::default())
+            .await
+            .unwrap()
+            .build()
             .await
             .unwrap();
 
@@ -1793,8 +1800,10 @@ mod tests {
             file.write_all(&bytes).unwrap()
         }
 
-        let iroh_dir = tempfile::tempdir().unwrap();
-        let node = Iroh::persistent(iroh_dir.into_path().display().to_string())
+        let node = IrohBuilder::create(NodeOptions::default())
+            .await
+            .unwrap()
+            .build()
             .await
             .unwrap();
 
@@ -1892,7 +1901,10 @@ mod tests {
             gc_interval_millis: Some(50),
             ..Default::default()
         };
-        let node = Iroh::persistent_with_options(iroh_dir.into_path().display().to_string(), opts)
+        let node = IrohBuilder::create(opts)
+            .await
+            .unwrap()
+            .build()
             .await
             .unwrap();
 

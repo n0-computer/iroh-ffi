@@ -40,9 +40,10 @@ type MemConnector = FlumeConnector<iroh_docs::rpc::proto::Response, iroh_docs::r
 impl Iroh {
     /// Access to docs specific funtionaliy.
     pub fn docs(&self) -> Docs {
-        Docs {
-            client: self.docs_client.clone().expect("missing docs"),
-        }
+        todo!()
+        // Docs {
+        //     client: self.docs_client.clone().expect("missing docs"),
+        // }
     }
 }
 
@@ -1545,7 +1546,7 @@ impl DocExportProgress {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{setup_logging, PublicKey};
+    use crate::{setup_logging, IrohBuilder, PublicKey};
     use rand::RngCore;
     use tokio::{io::AsyncWriteExt, sync::mpsc};
 
@@ -1556,15 +1557,13 @@ mod tests {
             enable_docs: true,
             ..Default::default()
         };
-        let node = Iroh::persistent_with_options(
-            path.path()
-                .join("doc-create")
-                .to_string_lossy()
-                .into_owned(),
-            options,
-        )
-        .await
-        .unwrap();
+        let node = IrohBuilder::create(options)
+            .await
+            .unwrap()
+            .build()
+            .await
+            .unwrap();
+
         let node_id = node.net().node_id().await.unwrap();
         println!("id: {}", node_id);
         let doc = node.docs().create().await.unwrap();
@@ -1589,16 +1588,13 @@ mod tests {
             enable_docs: true,
             ..Default::default()
         };
-        let node_0 = Iroh::persistent_with_options(
-            iroh_dir
-                .path()
-                .join("basic-sync-0")
-                .to_string_lossy()
-                .into_owned(),
-            options,
-        )
-        .await
-        .unwrap();
+
+        let node_0 = IrohBuilder::create(options)
+            .await
+            .unwrap()
+            .build()
+            .await
+            .unwrap();
 
         tracing::warn!("first node started");
 
@@ -1607,17 +1603,12 @@ mod tests {
             enable_docs: true,
             ..Default::default()
         };
-
-        let node_1 = Iroh::persistent_with_options(
-            iroh_dir
-                .path()
-                .join("basic-sync-1")
-                .to_string_lossy()
-                .into_owned(),
-            options,
-        )
-        .await
-        .unwrap();
+        let node_1 = IrohBuilder::create(options)
+            .await
+            .unwrap()
+            .build()
+            .await
+            .unwrap();
 
         tracing::warn!("second ndoe  started");
 
@@ -1791,15 +1782,12 @@ mod tests {
             enable_docs: true,
             ..Default::default()
         };
-        let node = crate::Iroh::persistent_with_options(
-            path.path()
-                .join("doc-entry-basics")
-                .to_string_lossy()
-                .into_owned(),
-            options,
-        )
-        .await
-        .unwrap();
+        let node = IrohBuilder::create(options)
+            .await
+            .unwrap()
+            .build()
+            .await
+            .unwrap();
 
         // create doc  and author
         let doc = node.docs().create().await.unwrap();
@@ -1852,16 +1840,12 @@ mod tests {
             ..Default::default()
         };
 
-        let node = crate::Iroh::persistent_with_options(
-            iroh_dir
-                .path()
-                .join("import-export-node")
-                .to_string_lossy()
-                .into_owned(),
-            options,
-        )
-        .await
-        .unwrap();
+        let node = IrohBuilder::create(options)
+            .await
+            .unwrap()
+            .build()
+            .await
+            .unwrap();
 
         // create doc & author
         let doc = node.docs().create().await.unwrap();

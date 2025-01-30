@@ -5,7 +5,7 @@ use tokio::sync::Mutex;
 
 use crate::{IrohError, NodeAddr, PublicKey};
 
-#[derive(Clone, uniffi::Object)]
+#[derive(Clone, uniffi::Object, Debug)]
 pub struct Endpoint(endpoint::Endpoint);
 
 impl From<&Endpoint> for endpoint::Endpoint {
@@ -51,7 +51,7 @@ impl Connecting {
 }
 
 impl Connecting {
-    pub async fn into_iroh(self) -> Option<endpoint::Connecting> {
+    pub async fn into_iroh(&self) -> Option<endpoint::Connecting> {
         self.0.lock().await.take()
     }
 }
