@@ -650,6 +650,16 @@ void uniffi_iroh_ffi_fn_init_callback_vtable_blobprovideeventcallback(UniffiVTab
 uint64_t uniffi_iroh_ffi_fn_method_blobprovideeventcallback_blob_event(void*_Nonnull ptr, void*_Nonnull event
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_BLOBSTATUS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_BLOBSTATUS
+void*_Nonnull uniffi_iroh_ffi_fn_clone_blobstatus(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_BLOBSTATUS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_BLOBSTATUS
+void uniffi_iroh_ffi_fn_free_blobstatus(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_BLOBTICKET
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_BLOBTICKET
 void*_Nonnull uniffi_iroh_ffi_fn_clone_blobticket(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -745,6 +755,11 @@ uint64_t uniffi_iroh_ffi_fn_method_blobs_export(void*_Nonnull ptr, void*_Nonnull
 uint64_t uniffi_iroh_ffi_fn_method_blobs_get_collection(void*_Nonnull ptr, void*_Nonnull hash
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_HAS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_HAS
+uint64_t uniffi_iroh_ffi_fn_method_blobs_has(void*_Nonnull ptr, void*_Nonnull hash
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_LIST
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_LIST
 uint64_t uniffi_iroh_ffi_fn_method_blobs_list(void*_Nonnull ptr
@@ -778,6 +793,11 @@ uint64_t uniffi_iroh_ffi_fn_method_blobs_share(void*_Nonnull ptr, void*_Nonnull 
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_SIZE
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_SIZE
 uint64_t uniffi_iroh_ffi_fn_method_blobs_size(void*_Nonnull ptr, void*_Nonnull hash
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_STATUS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_STATUS
+uint64_t uniffi_iroh_ffi_fn_method_blobs_status(void*_Nonnull ptr, void*_Nonnull hash
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_BLOBS_WRITE_TO_PATH
@@ -2863,6 +2883,12 @@ uint16_t uniffi_iroh_ffi_checksum_method_blobs_get_collection(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_HAS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_HAS
+uint16_t uniffi_iroh_ffi_checksum_method_blobs_has(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_LIST
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_LIST
 uint16_t uniffi_iroh_ffi_checksum_method_blobs_list(void
@@ -2902,6 +2928,12 @@ uint16_t uniffi_iroh_ffi_checksum_method_blobs_share(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_SIZE
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_SIZE
 uint16_t uniffi_iroh_ffi_checksum_method_blobs_size(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_STATUS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_BLOBS_STATUS
+uint16_t uniffi_iroh_ffi_checksum_method_blobs_status(void
     
 );
 #endif

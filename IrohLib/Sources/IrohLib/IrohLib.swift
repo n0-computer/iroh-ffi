@@ -2236,6 +2236,111 @@ public func FfiConverterTypeBlobProvideEventCallback_lower(_ value: BlobProvideE
 }
 
 /**
+ * Status information about a blob.
+ */
+public protocol BlobStatusProtocol: AnyObject {}
+
+/**
+ * Status information about a blob.
+ */
+open class BlobStatus:
+    BlobStatusProtocol
+{
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+    #if swift(>=5.8)
+        @_documentation(visibility: private)
+    #endif
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    public required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    #if swift(>=5.8)
+        @_documentation(visibility: private)
+    #endif
+    public init(noPointer _: NoPointer) {
+        pointer = nil
+    }
+
+    #if swift(>=5.8)
+        @_documentation(visibility: private)
+    #endif
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_iroh_ffi_fn_clone_blobstatus(self.pointer, $0) }
+    }
+
+    // No primary constructor declared for this class.
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_iroh_ffi_fn_free_blobstatus(pointer, $0) }
+    }
+}
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeBlobStatus: FfiConverter {
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = BlobStatus
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> BlobStatus {
+        return BlobStatus(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: BlobStatus) -> UnsafeMutableRawPointer {
+        return value.uniffiClonePointer()
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BlobStatus {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: BlobStatus, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+public func FfiConverterTypeBlobStatus_lift(_ pointer: UnsafeMutableRawPointer) throws -> BlobStatus {
+    return try FfiConverterTypeBlobStatus.lift(pointer)
+}
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+public func FfiConverterTypeBlobStatus_lower(_ value: BlobStatus) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeBlobStatus.lower(value)
+}
+
+/**
  * A token containing everything to get a file from the provider.
  *
  * It is a single item which can be easily serialized and deserialized.
@@ -2492,6 +2597,13 @@ public protocol BlobsProtocol: AnyObject {
     func getCollection(hash: Hash) async throws -> Collection
 
     /**
+     * Check if a blob is completely stored on the node.
+     *
+     * This is just a convenience wrapper around `status` that returns a boolean.
+     */
+    func has(hash: Hash) async throws -> Bool
+
+    /**
      * List all complete blobs.
      *
      * Note: this allocates for each `BlobListResponse`, if you have many `BlobListReponse`s this may be a prohibitively large list.
@@ -2544,6 +2656,11 @@ public protocol BlobsProtocol: AnyObject {
      * Method only exists in FFI
      */
     func size(hash: Hash) async throws -> UInt64
+
+    /**
+     * Check the storage status of a blob on this node.
+     */
+    func status(hash: Hash) async throws -> BlobStatus
 
     /**
      * Export the blob contents to a file path
@@ -2781,6 +2898,28 @@ open class Blobs:
     }
 
     /**
+     * Check if a blob is completely stored on the node.
+     *
+     * This is just a convenience wrapper around `status` that returns a boolean.
+     */
+    open func has(hash: Hash) async throws -> Bool {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_blobs_has(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeHash.lower(hash)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_i8,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_i8,
+                freeFunc: ffi_iroh_ffi_rust_future_free_i8,
+                liftFunc: FfiConverterBool.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
+    }
+
+    /**
      * List all complete blobs.
      *
      * Note: this allocates for each `BlobListResponse`, if you have many `BlobListReponse`s this may be a prohibitively large list.
@@ -2932,6 +3071,26 @@ open class Blobs:
                 completeFunc: ffi_iroh_ffi_rust_future_complete_u64,
                 freeFunc: ffi_iroh_ffi_rust_future_free_u64,
                 liftFunc: FfiConverterUInt64.lift,
+                errorHandler: FfiConverterTypeIrohError__as_error.lift
+            )
+    }
+
+    /**
+     * Check the storage status of a blob on this node.
+     */
+    open func status(hash: Hash) async throws -> BlobStatus {
+        return
+            try await uniffiRustCallAsync(
+                rustFutureFunc: {
+                    uniffi_iroh_ffi_fn_method_blobs_status(
+                        self.uniffiClonePointer(),
+                        FfiConverterTypeHash.lower(hash)
+                    )
+                },
+                pollFunc: ffi_iroh_ffi_rust_future_poll_pointer,
+                completeFunc: ffi_iroh_ffi_rust_future_complete_pointer,
+                freeFunc: ffi_iroh_ffi_rust_future_free_pointer,
+                liftFunc: FfiConverterTypeBlobStatus.lift,
                 errorHandler: FfiConverterTypeIrohError__as_error.lift
             )
     }
@@ -17831,6 +17990,9 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_method_blobs_get_collection() != 57130 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_ffi_checksum_method_blobs_has() != 1301 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_ffi_checksum_method_blobs_list() != 9714 {
         return InitializationResult.apiChecksumMismatch
     }
@@ -17850,6 +18012,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_blobs_size() != 20254 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_method_blobs_status() != 34093 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_blobs_write_to_path() != 47517 {

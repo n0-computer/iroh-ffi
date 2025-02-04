@@ -66,6 +66,10 @@ async def test_blob_add_get_bytes():
     assert len(got_bytes) == blob_size
     assert got_bytes == bytes
 
+    # check that it exists
+    blob_exists = await node.blobs().has(hash)
+    assert blob_exists
+
 # test functionality between reading bytes from a path and writing bytes to
 # a path
 @pytest.mark.asyncio

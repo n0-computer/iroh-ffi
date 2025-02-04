@@ -91,6 +91,14 @@ export declare class Blobs {
    */
   size(hash: string): Promise<bigint>
   /**
+   * Check if a blob is completely stored on the node.
+   *
+   * This is just a convenience wrapper around `status` that returns a boolean.
+   */
+  has(hash: string): Promise<boolean>
+  /** Check the storage status of a blob on this node. */
+  status(hash: string): Promise<BlobStatus>
+  /**
    * Read all bytes of single blob.
    *
    * This allocates a buffer for the full blob. Use only if you know that the blob you're
@@ -786,6 +794,15 @@ export interface BlobProvideEvent {
   /** A request was aborted because the client disconnected. */
   transferAborted?: TransferAborted
 }
+
+/** Status information about a blob. */
+export type BlobStatus =
+  | { type: 'NotFound' }
+  | { type: 'Partial', /** The size of the currently stored partial blob. */
+  size: bigint, /** If the size is verified. */
+sizeIsVerified: boolean }
+| { type: 'Complete', /** The size of the blob. */
+size: bigint }
 
 export declare const enum CapabilityKind {
   /** A writable replica. */

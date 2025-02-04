@@ -1,6 +1,7 @@
 use std::{path::PathBuf, str::FromStr, sync::RwLock};
 
 use futures::{StreamExt, TryStreamExt};
+use iroh_blobs::store::BaoBlobSize;
 use napi::bindgen_prelude::*;
 use napi::threadsafe_function::ThreadsafeFunction;
 use napi_derive::napi;
@@ -52,6 +53,25 @@ impl Blobs {
             .read(hash.parse().map_err(anyhow::Error::from)?)
             .await?;
         Ok(r.size())
+    }
+
+    /// Check if a blob is completely stored on the node.
+    ///
+    /// This is just a convenience wrapper around `status` that returns a boolean.
+    #[napi]
+    pub async fn has(&self, hash: String) -> Result<bool> {
+        let hash = hash.parse().map_err(anyhow::Error::from)?;
+        let has_blob = self.client.has(hash).await?;
+        Ok(has_blob)
+    }
+
+    /// Check the storage status of a blob on this node.
+    #[napi]
+    pub async fn status(&self, hash: String) -> Result<BlobStatus> {
+        let hash = hash.parse().map_err(anyhow::Error::from)?;
+        let status = self.client.status(hash).await?;
+
+        Ok(status.into())
     }
 
     /// Read all bytes of single blob.
@@ -615,6 +635,47 @@ impl AddProgress {
                 }
             },
             Err(err) => Err(err.into()),
+        }
+    }
+}
+
+/// Status information about a blob.
+#[derive(Debug, Clone)]
+#[napi(string_enum)]
+pub enum BlobStatus {
+    /// The blob is not stored at all.
+    NotFound,
+    /// The blob is only stored partially.
+    Partial {
+        /// The size of the currently stored partial blob.
+        size: BigInt,
+        /// If the size is verified.
+        size_is_verified: bool,
+    },
+    /// The blob is stored completely.
+    Complete {
+        /// The size of the blob.
+        size: BigInt,
+    },
+}
+
+impl From<iroh_blobs::rpc::client::blobs::BlobStatus> for BlobStatus {
+    fn from(value: iroh_blobs::rpc::client::blobs::BlobStatus) -> Self {
+        match value {
+            iroh_blobs::rpc::client::blobs::BlobStatus::NotFound => Self::NotFound,
+            iroh_blobs::rpc::client::blobs::BlobStatus::Partial { size } => match size {
+                BaoBlobSize::Unverified(size) => Self::Partial {
+                    size: size.into(),
+                    size_is_verified: false,
+                },
+                BaoBlobSize::Verified(size) => Self::Partial {
+                    size: size.into(),
+                    size_is_verified: true,
+                },
+            },
+            iroh_blobs::rpc::client::blobs::BlobStatus::Complete { size } => {
+                Self::Complete { size: size.into() }
+            }
         }
     }
 }

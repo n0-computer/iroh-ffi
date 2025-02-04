@@ -6,6 +6,7 @@ use std::{
 };
 
 use futures::{StreamExt, TryStreamExt};
+use iroh_blobs::store::BaoBlobSize;
 use serde::{Deserialize, Serialize};
 
 use crate::{node::Iroh, BlobsClient, CallbackError, NetClient};
@@ -55,6 +56,23 @@ impl Blobs {
     pub async fn size(&self, hash: &Hash) -> Result<u64, IrohError> {
         let r = self.client.read(hash.0).await?;
         Ok(r.size())
+    }
+
+    /// Check if a blob is completely stored on the node.
+    ///
+    /// This is just a convenience wrapper around `status` that returns a boolean.
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn has(&self, hash: &Hash) -> Result<bool, IrohError> {
+        let has_blob = self.client.has(hash.0).await?;
+        Ok(has_blob)
+    }
+
+    /// Check the storage status of a blob on this node.
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn status(&self, hash: &Hash) -> Result<BlobStatus, IrohError> {
+        let status = self.client.status(hash.0).await?;
+
+        Ok(status.into())
     }
 
     /// Read all bytes of single blob.
@@ -352,6 +370,46 @@ impl From<iroh_blobs::rpc::client::blobs::AddOutcome> for BlobAddOutcome {
             format: value.format.into(),
             size: value.size,
             tag: value.tag.0.to_vec(),
+        }
+    }
+}
+
+/// Status information about a blob.
+#[derive(Debug, uniffi::Object, Clone, Copy)]
+pub enum BlobStatus {
+    /// The blob is not stored at all.
+    NotFound,
+    /// The blob is only stored partially.
+    Partial {
+        /// The size of the currently stored partial blob.
+        size: u64,
+        /// If the size is verified.
+        size_is_verified: bool,
+    },
+    /// The blob is stored completely.
+    Complete {
+        /// The size of the blob.
+        size: u64,
+    },
+}
+
+impl From<iroh_blobs::rpc::client::blobs::BlobStatus> for BlobStatus {
+    fn from(value: iroh_blobs::rpc::client::blobs::BlobStatus) -> Self {
+        match value {
+            iroh_blobs::rpc::client::blobs::BlobStatus::NotFound => Self::NotFound,
+            iroh_blobs::rpc::client::blobs::BlobStatus::Partial { size } => match size {
+                BaoBlobSize::Unverified(size) => Self::Partial {
+                    size,
+                    size_is_verified: false,
+                },
+                BaoBlobSize::Verified(size) => Self::Partial {
+                    size,
+                    size_is_verified: true,
+                },
+            },
+            iroh_blobs::rpc::client::blobs::BlobStatus::Complete { size } => {
+                Self::Complete { size }
+            }
         }
     }
 }
@@ -1919,6 +1977,10 @@ mod tests {
         assert_eq!(num_blobs, got_hashes.len());
         hashes_exist(&hashes, &got_hashes);
 
+        for hash in &got_hashes {
+            assert!(node.blobs().has(hash).await.unwrap());
+        }
+
         let remove_hash = hashes.pop().unwrap();
         let remove_tag = tags.pop().unwrap();
         // delete the tag for the first blob
@@ -1935,5 +1997,7 @@ mod tests {
                 panic!("blob {} should have been removed", remove_hash);
             }
         }
+
+        assert!(!node.blobs().has(&remove_hash).await.unwrap());
     }
 }
