@@ -60,7 +60,7 @@ async def main():
             # get key, hash, and content for each entry
             key = entry.key()
             hash = entry.content_hash()
-            content = await entry.content_bytes(doc)
+            content = await node.blobs().read_to_bytes(entry.content_hash())
             print("{} : {} (hash: {})".format(key.decode("utf8"), content.decode("utf8"), hash))
 
     input("Press Enter to exit...")
