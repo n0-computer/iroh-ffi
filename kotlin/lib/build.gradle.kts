@@ -156,7 +156,7 @@ val cleanStagingDir by tasks.register<Delete>("cleanStagingDir") {
     delete(stagingDir)
 }
 
-val zipStagingDir by tasks.register<Zip>("zipStagingDir") {
+val stagingDirJar by tasks.register<Jar>("stagingDirJar") {
     from(stagingDir)
     archiveFileName.set("deploy.jar")
 }
@@ -166,5 +166,5 @@ tasks.named("publishMavenPublicationToStagingRepository") {
 }
 
 tasks.publish {
-    finalizedBy(zipStagingDir)
+    finalizedBy(stagingDirJar)
 }
