@@ -164,10 +164,9 @@ mod tests {
             enable_docs: true,
             ..Default::default()
         };
-        let node =
-            crate::Iroh::persistent_with_options(dir.into_path().display().to_string(), options)
-                .await
-                .unwrap();
+        let node = crate::Iroh::persistent_with_options(dir.keep().display().to_string(), options)
+            .await
+            .unwrap();
 
         assert_eq!(node.authors().list().await.unwrap().len(), 1);
         let author_id = node.authors().create().await.unwrap();

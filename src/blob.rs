@@ -1706,7 +1706,7 @@ mod tests {
     #[tokio::test]
     async fn test_blobs_add_get_bytes() {
         let dir = tempfile::tempdir().unwrap();
-        let node = Iroh::persistent(dir.into_path().display().to_string())
+        let node = Iroh::persistent(dir.keep().display().to_string())
             .await
             .unwrap();
 
@@ -1742,7 +1742,7 @@ mod tests {
     #[tokio::test]
     async fn test_blob_read_write_path() {
         let iroh_dir = tempfile::tempdir().unwrap();
-        let node = Iroh::persistent(iroh_dir.into_path().display().to_string())
+        let node = Iroh::persistent(iroh_dir.keep().display().to_string())
             .await
             .unwrap();
 
@@ -1852,7 +1852,7 @@ mod tests {
         }
 
         let iroh_dir = tempfile::tempdir().unwrap();
-        let node = Iroh::persistent(iroh_dir.into_path().display().to_string())
+        let node = Iroh::persistent(iroh_dir.keep().display().to_string())
             .await
             .unwrap();
 
@@ -1903,7 +1903,7 @@ mod tests {
 
         node.blobs()
             .add_from_path(
-                dir.into_path().display().to_string(),
+                dir.keep().display().to_string(),
                 false,
                 Arc::new(SetTagOption::Auto),
                 Arc::new(WrapOption::NoWrap),
@@ -1950,7 +1950,7 @@ mod tests {
             gc_interval_millis: Some(50),
             ..Default::default()
         };
-        let node = Iroh::persistent_with_options(iroh_dir.into_path().display().to_string(), opts)
+        let node = Iroh::persistent_with_options(iroh_dir.keep().display().to_string(), opts)
             .await
             .unwrap();
 

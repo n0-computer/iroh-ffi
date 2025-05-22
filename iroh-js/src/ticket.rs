@@ -16,8 +16,7 @@ use crate::{
 #[napi]
 pub struct BlobTicket {
     /// The provider to get a file from.
-    #[napi(readonly)]
-    pub node_addr: NodeAddr,
+    node_addr: NodeAddr,
     /// The format of the blob.
     #[napi(readonly)]
     pub format: BlobFormat,
@@ -64,6 +63,11 @@ impl BlobTicket {
     pub fn from_string(str: String) -> Result<Self> {
         let ticket = iroh_blobs::ticket::BlobTicket::from_str(&str).map_err(anyhow::Error::from)?;
         Ok(ticket.into())
+    }
+
+    #[napi(getter)]
+    pub fn node_addr(&self) -> NodeAddr {
+        self.node_addr.clone()
     }
 
     /// Checks if the two tickets are equal
@@ -138,8 +142,7 @@ pub struct DocTicket {
     #[napi(readonly)]
     pub capability_kind: CapabilityKind,
     /// A list of nodes to contact.
-    #[napi(readonly)]
-    pub nodes: Vec<NodeAddr>,
+    nodes: Vec<NodeAddr>,
 }
 
 impl From<iroh_docs::DocTicket> for DocTicket {
@@ -188,5 +191,10 @@ impl DocTicket {
     pub fn to_string(&self) -> Result<String> {
         let ticket: iroh_docs::DocTicket = self.try_into()?;
         Ok(ticket.to_string())
+    }
+
+    #[napi(getter)]
+    pub fn nodes(&self) -> Vec<NodeAddr> {
+        self.nodes.clone()
     }
 }
