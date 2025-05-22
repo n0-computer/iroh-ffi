@@ -108,7 +108,7 @@ jobs:
           maturin --version
           maturin build --release
       - name: Upload wheel
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: wheels-windows-x86_64
           path: target/wheels/*.whl
