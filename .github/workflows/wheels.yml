@@ -50,7 +50,7 @@ jobs:
           maturin --version
           maturin build --release --manylinux 2_28
       - name: Upload wheel
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: wheels-${{ matrix.release-os }}-${{ matrix.release-arch }}
           path: target/wheels/*.whl
@@ -87,7 +87,7 @@ jobs:
           maturin --version
           maturin build --release
       - name: Upload wheel
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: wheels-${{ matrix.release-os }}-${{ matrix.release-arch }}
           path: target/wheels/*.whl
