@@ -22,7 +22,6 @@ pub use self::node::*;
 pub use self::tag::*;
 pub use self::ticket::*;
 
-use iroh_metrics::core::Metric;
 use tracing_subscriber::filter::LevelFilter;
 
 // This macro includes the scaffolding for the Iroh FFI bindings.
@@ -64,20 +63,6 @@ pub fn set_log_level(level: LogLevel) {
         .with(filter)
         .with(layer)
         .init();
-}
-
-/// Initialize the global metrics collection.
-#[uniffi::export]
-pub fn start_metrics_collection() -> Result<(), IrohError> {
-    iroh_metrics::core::Core::try_init(|reg, metrics| {
-        metrics.insert(iroh::metrics::MagicsockMetrics::new(reg));
-        metrics.insert(iroh::metrics::NetReportMetrics::new(reg));
-        metrics.insert(iroh::metrics::PortmapMetrics::new(reg));
-        metrics.insert(iroh_blobs::metrics::Metrics::new(reg));
-        metrics.insert(iroh_gossip::metrics::Metrics::new(reg));
-        metrics.insert(iroh_docs::metrics::Metrics::new(reg));
-    })
-    .map_err(|e| anyhow::Error::from(e).into())
 }
 
 /// Helper function that translates a key that was derived from the [`path_to_key`] function back

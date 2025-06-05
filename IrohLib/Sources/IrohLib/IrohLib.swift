@@ -3368,10 +3368,6 @@ public protocol ConnectingProtocol: AnyObject {
     func alpn() async throws -> Data
 
     func connect() async throws -> Connection
-
-    func localIp() async throws -> String?
-
-    func remoteAddress() async throws -> String
 }
 
 open class Connecting:
@@ -3454,38 +3450,6 @@ open class Connecting:
                 errorHandler: FfiConverterTypeIrohError__as_error.lift
             )
     }
-
-    open func localIp() async throws -> String? {
-        return
-            try await uniffiRustCallAsync(
-                rustFutureFunc: {
-                    uniffi_iroh_ffi_fn_method_connecting_local_ip(
-                        self.uniffiClonePointer()
-                    )
-                },
-                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
-                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
-                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
-                liftFunc: FfiConverterOptionString.lift,
-                errorHandler: FfiConverterTypeIrohError__as_error.lift
-            )
-    }
-
-    open func remoteAddress() async throws -> String {
-        return
-            try await uniffiRustCallAsync(
-                rustFutureFunc: {
-                    uniffi_iroh_ffi_fn_method_connecting_remote_address(
-                        self.uniffiClonePointer()
-                    )
-                },
-                pollFunc: ffi_iroh_ffi_rust_future_poll_rust_buffer,
-                completeFunc: ffi_iroh_ffi_rust_future_complete_rust_buffer,
-                freeFunc: ffi_iroh_ffi_rust_future_free_rust_buffer,
-                liftFunc: FfiConverterString.lift,
-                errorHandler: FfiConverterTypeIrohError__as_error.lift
-            )
-    }
 }
 
 #if swift(>=5.8)
@@ -3540,6 +3504,8 @@ public protocol ConnectionProtocol: AnyObject {
 
     func acceptUni() async throws -> RecvStream
 
+    func alpn() -> Data?
+
     func close(errorCode: UInt64, reason: Data) throws
 
     func closeReason() -> String?
@@ -3547,10 +3513,6 @@ public protocol ConnectionProtocol: AnyObject {
     func closed() async -> String
 
     func datagramSendBufferSpace() -> UInt64
-
-    func getRemoteNodeId() throws -> PublicKey
-
-    func localIp() -> String?
 
     func maxDatagramSize() -> UInt64?
 
@@ -3560,13 +3522,11 @@ public protocol ConnectionProtocol: AnyObject {
 
     func readDatagram() async throws -> Data
 
-    func remoteAddress() -> String
+    func remoteNodeId() throws -> String
 
     func rtt() -> UInt64
 
     func sendDatagram(data: Data) throws
-
-    func sendDatagramWait(data: Data) async throws
 
     func setMaxConcurrentBiiStream(count: UInt64) throws
 
@@ -3658,6 +3618,12 @@ open class Connection:
             )
     }
 
+    open func alpn() -> Data? {
+        return try! FfiConverterOptionData.lift(try! rustCall {
+            uniffi_iroh_ffi_fn_method_connection_alpn(self.uniffiClonePointer(), $0)
+        })
+    }
+
     open func close(errorCode: UInt64, reason: Data) throws { try rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
         uniffi_iroh_ffi_fn_method_connection_close(self.uniffiClonePointer(),
                                                    FfiConverterUInt64.lower(errorCode),
@@ -3690,18 +3656,6 @@ open class Connection:
     open func datagramSendBufferSpace() -> UInt64 {
         return try! FfiConverterUInt64.lift(try! rustCall {
             uniffi_iroh_ffi_fn_method_connection_datagram_send_buffer_space(self.uniffiClonePointer(), $0)
-        })
-    }
-
-    open func getRemoteNodeId() throws -> PublicKey {
-        return try FfiConverterTypePublicKey.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-            uniffi_iroh_ffi_fn_method_connection_get_remote_node_id(self.uniffiClonePointer(), $0)
-        })
-    }
-
-    open func localIp() -> String? {
-        return try! FfiConverterOptionString.lift(try! rustCall {
-            uniffi_iroh_ffi_fn_method_connection_local_ip(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -3759,9 +3713,9 @@ open class Connection:
             )
     }
 
-    open func remoteAddress() -> String {
-        return try! FfiConverterString.lift(try! rustCall {
-            uniffi_iroh_ffi_fn_method_connection_remote_address(self.uniffiClonePointer(), $0)
+    open func remoteNodeId() throws -> String {
+        return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
+            uniffi_iroh_ffi_fn_method_connection_remote_node_id(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -3775,23 +3729,6 @@ open class Connection:
         uniffi_iroh_ffi_fn_method_connection_send_datagram(self.uniffiClonePointer(),
                                                            FfiConverterData.lower(data), $0)
     }
-    }
-
-    open func sendDatagramWait(data: Data) async throws {
-        return
-            try await uniffiRustCallAsync(
-                rustFutureFunc: {
-                    uniffi_iroh_ffi_fn_method_connection_send_datagram_wait(
-                        self.uniffiClonePointer(),
-                        FfiConverterData.lower(data)
-                    )
-                },
-                pollFunc: ffi_iroh_ffi_rust_future_poll_void,
-                completeFunc: ffi_iroh_ffi_rust_future_complete_void,
-                freeFunc: ffi_iroh_ffi_rust_future_free_void,
-                liftFunc: { $0 },
-                errorHandler: FfiConverterTypeIrohError__as_error.lift
-            )
     }
 
     open func setMaxConcurrentBiiStream(count: UInt64) throws { try rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
@@ -9252,7 +9189,7 @@ public func FfiConverterTypeProtocolCreator_lower(_ value: ProtocolCreator) -> U
 }
 
 public protocol ProtocolHandler: AnyObject {
-    func accept(conn: Connecting) async throws
+    func accept(conn: Connection) async throws
 
     func shutdown() async
 }
@@ -9306,13 +9243,13 @@ open class ProtocolHandlerImpl:
         try! rustCall { uniffi_iroh_ffi_fn_free_protocolhandler(pointer, $0) }
     }
 
-    open func accept(conn: Connecting) async throws {
+    open func accept(conn: Connection) async throws {
         return
             try await uniffiRustCallAsync(
                 rustFutureFunc: {
                     uniffi_iroh_ffi_fn_method_protocolhandler_accept(
                         self.uniffiClonePointer(),
-                        FfiConverterTypeConnecting.lower(conn)
+                        FfiConverterTypeConnection.lower(conn)
                     )
                 },
                 pollFunc: ffi_iroh_ffi_rust_future_poll_void,
@@ -9358,7 +9295,7 @@ private enum UniffiCallbackInterfaceProtocolHandler {
                     throw UniffiInternalError.unexpectedStaleHandle
                 }
                 return try await uniffiObj.accept(
-                    conn: FfiConverterTypeConnecting.lift(conn)
+                    conn: FfiConverterTypeConnection.lift(conn)
                 )
             }
 
@@ -17830,15 +17767,6 @@ public func setLogLevel(level: LogLevel) { try! rustCall {
 }
 }
 
-/**
- * Initialize the global metrics collection.
- */
-public func startMetricsCollection() throws { try rustCallWithError(FfiConverterTypeIrohError__as_error.lift) {
-    uniffi_iroh_ffi_fn_func_start_metrics_collection($0
-    )
-}
-}
-
 private enum InitializationResult {
     case ok
     case contractVersionMismatch
@@ -17862,9 +17790,6 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_func_set_log_level() != 52619 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_ffi_checksum_func_start_metrics_collection() != 23413 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_addcallback_progress() != 62116 {
@@ -18044,16 +17969,13 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_method_connecting_connect() != 64341 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_method_connecting_local_ip() != 3368 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_ffi_checksum_method_connecting_remote_address() != 25819 {
-        return InitializationResult.apiChecksumMismatch
-    }
     if uniffi_iroh_ffi_checksum_method_connection_accept_bi() != 10996 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_connection_accept_uni() != 17891 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_method_connection_alpn() != 53975 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_connection_close() != 61009 {
@@ -18068,12 +17990,6 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_method_connection_datagram_send_buffer_space() != 52904 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_method_connection_get_remote_node_id() != 64024 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_ffi_checksum_method_connection_local_ip() != 11203 {
-        return InitializationResult.apiChecksumMismatch
-    }
     if uniffi_iroh_ffi_checksum_method_connection_max_datagram_size() != 49257 {
         return InitializationResult.apiChecksumMismatch
     }
@@ -18086,16 +18002,13 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_method_connection_read_datagram() != 23201 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_method_connection_remote_address() != 60000 {
+    if uniffi_iroh_ffi_checksum_method_connection_remote_node_id() != 59577 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_connection_rtt() != 61654 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_connection_send_datagram() != 105 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_ffi_checksum_method_connection_send_datagram_wait() != 3162 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_connection_set_max_concurrent_bii_stream() != 13576 {
@@ -18431,7 +18344,7 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_method_protocolcreator_create() != 33391 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_method_protocolhandler_accept() != 54515 {
+    if uniffi_iroh_ffi_checksum_method_protocolhandler_accept() != 45944 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_protocolhandler_shutdown() != 55574 {

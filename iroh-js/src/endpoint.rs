@@ -63,38 +63,27 @@ impl Connecting {
             None => Err(anyhow::anyhow!("already used").into()),
         }
     }
-
-    #[napi]
-    pub async fn local_ip(&self) -> Result<Option<String>> {
-        match &*self.0.lock().await {
-            Some(conn) => {
-                let ip = conn.local_ip();
-                Ok(ip.map(|ip| ip.to_string()))
-            }
-            None => Err(anyhow::anyhow!("already used").into()),
-        }
-    }
-
-    #[napi]
-    pub async fn remote_address(&self) -> Result<String> {
-        match &*self.0.lock().await {
-            Some(conn) => {
-                let addr = conn.remote_address();
-                Ok(addr.to_string())
-            }
-            None => Err(anyhow::anyhow!("already used").into()),
-        }
-    }
 }
 
 #[napi]
 pub struct Connection(endpoint::Connection);
 
+impl From<endpoint::Connection> for Connection {
+    fn from(value: endpoint::Connection) -> Self {
+        Self(value)
+    }
+}
+
 #[napi]
 impl Connection {
     #[napi]
-    pub fn get_remote_node_id(&self) -> Result<PublicKey> {
-        let id = endpoint::get_remote_node_id(&self.0)?;
+    pub fn alpn(&self) -> Option<Buffer> {
+        self.0.alpn().map(Into::into)
+    }
+
+    #[napi]
+    pub fn remote_node_id(&self) -> Result<PublicKey> {
+        let id = self.0.remote_node_id()?;
         Ok(id.into())
     }
 
@@ -163,15 +152,6 @@ impl Connection {
     }
 
     #[napi]
-    pub async fn send_datagram_wait(&self, data: Uint8Array) -> Result<()> {
-        self.0
-            .send_datagram_wait(data.to_vec().into())
-            .await
-            .map_err(anyhow::Error::from)?;
-        Ok(())
-    }
-
-    #[napi]
     pub fn max_datagram_size(&self) -> Option<usize> {
         self.0.max_datagram_size()
     }
@@ -179,16 +159,6 @@ impl Connection {
     #[napi]
     pub fn datagram_send_buffer_space(&self) -> usize {
         self.0.datagram_send_buffer_space()
-    }
-
-    #[napi]
-    pub fn remote_address(&self) -> String {
-        self.0.remote_address().to_string()
-    }
-
-    #[napi]
-    pub fn local_ip(&self) -> Option<String> {
-        self.0.local_ip().map(|s| s.to_string())
     }
 
     #[napi]
@@ -327,14 +297,18 @@ impl RecvStream {
     #[napi]
     pub async fn read(&self, mut buf: Uint8Array) -> Result<Option<usize>> {
         let mut r = self.0.lock().await;
-        let res = r.read(&mut buf).await.map_err(anyhow::Error::from)?;
+        let buffer_mut_ref: &mut [u8] = unsafe { buf.as_mut() };
+        let res = r.read(buffer_mut_ref).await.map_err(anyhow::Error::from)?;
         Ok(res)
     }
 
     #[napi]
     pub async fn read_exact(&self, mut buf: Uint8Array) -> Result<()> {
         let mut r = self.0.lock().await;
-        r.read_exact(&mut buf).await.map_err(anyhow::Error::from)?;
+        let buffer_mut_ref: &mut [u8] = unsafe { buf.as_mut() };
+        r.read_exact(buffer_mut_ref)
+            .await
+            .map_err(anyhow::Error::from)?;
         Ok(())
     }
 

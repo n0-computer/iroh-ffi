@@ -12,7 +12,7 @@
     "network",
     "protocol"
   ],
-  "version": "0.31.0",
+  "version": "0.35.0",
   "type": "commonjs",
   "main": "iroh-js/index.js",
   "types": "iroh-js/index.d.ts",
@@ -42,7 +42,7 @@
   },
   "license": "MIT OR Apache-2.0",
   "devDependencies": {
-    "@napi-rs/cli": "^3.0.0-alpha.64"
+    "@napi-rs/cli": "^3.0.0-alpha.80"
   },
   "scripts": {
     "artifacts": "napi artifacts",
