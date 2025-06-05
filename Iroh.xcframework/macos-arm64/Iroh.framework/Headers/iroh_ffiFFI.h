@@ -871,16 +871,6 @@ uint64_t uniffi_iroh_ffi_fn_method_connecting_alpn(void*_Nonnull ptr
 uint64_t uniffi_iroh_ffi_fn_method_connecting_connect(void*_Nonnull ptr
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_CONNECTING_LOCAL_IP
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_CONNECTING_LOCAL_IP
-uint64_t uniffi_iroh_ffi_fn_method_connecting_local_ip(void*_Nonnull ptr
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_CONNECTING_REMOTE_ADDRESS
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_CONNECTING_REMOTE_ADDRESS
-uint64_t uniffi_iroh_ffi_fn_method_connecting_remote_address(void*_Nonnull ptr
-);
-#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_CONNECTION
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_CONNECTION
 void*_Nonnull uniffi_iroh_ffi_fn_clone_connection(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -899,6 +889,11 @@ uint64_t uniffi_iroh_ffi_fn_method_connection_accept_bi(void*_Nonnull ptr
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_CONNECTION_ACCEPT_UNI
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_CONNECTION_ACCEPT_UNI
 uint64_t uniffi_iroh_ffi_fn_method_connection_accept_uni(void*_Nonnull ptr
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_CONNECTION_ALPN
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_CONNECTION_ALPN
+RustBuffer uniffi_iroh_ffi_fn_method_connection_alpn(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_CONNECTION_CLOSE
@@ -921,16 +916,6 @@ uint64_t uniffi_iroh_ffi_fn_method_connection_closed(void*_Nonnull ptr
 uint64_t uniffi_iroh_ffi_fn_method_connection_datagram_send_buffer_space(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_CONNECTION_GET_REMOTE_NODE_ID
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_CONNECTION_GET_REMOTE_NODE_ID
-void*_Nonnull uniffi_iroh_ffi_fn_method_connection_get_remote_node_id(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_CONNECTION_LOCAL_IP
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_CONNECTION_LOCAL_IP
-RustBuffer uniffi_iroh_ffi_fn_method_connection_local_ip(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_CONNECTION_MAX_DATAGRAM_SIZE
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_CONNECTION_MAX_DATAGRAM_SIZE
 RustBuffer uniffi_iroh_ffi_fn_method_connection_max_datagram_size(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -951,9 +936,9 @@ uint64_t uniffi_iroh_ffi_fn_method_connection_open_uni(void*_Nonnull ptr
 uint64_t uniffi_iroh_ffi_fn_method_connection_read_datagram(void*_Nonnull ptr
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_CONNECTION_REMOTE_ADDRESS
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_CONNECTION_REMOTE_ADDRESS
-RustBuffer uniffi_iroh_ffi_fn_method_connection_remote_address(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_CONNECTION_REMOTE_NODE_ID
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_CONNECTION_REMOTE_NODE_ID
+RustBuffer uniffi_iroh_ffi_fn_method_connection_remote_node_id(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_CONNECTION_RTT
@@ -964,11 +949,6 @@ uint64_t uniffi_iroh_ffi_fn_method_connection_rtt(void*_Nonnull ptr, RustCallSta
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_CONNECTION_SEND_DATAGRAM
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_CONNECTION_SEND_DATAGRAM
 void uniffi_iroh_ffi_fn_method_connection_send_datagram(void*_Nonnull ptr, RustBuffer data, RustCallStatus *_Nonnull out_status
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_CONNECTION_SEND_DATAGRAM_WAIT
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_CONNECTION_SEND_DATAGRAM_WAIT
-uint64_t uniffi_iroh_ffi_fn_method_connection_send_datagram_wait(void*_Nonnull ptr, RustBuffer data
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_CONNECTION_SET_MAX_CONCURRENT_BII_STREAM
@@ -2327,12 +2307,6 @@ RustBuffer uniffi_iroh_ffi_fn_func_path_to_key(RustBuffer path, RustBuffer prefi
 void uniffi_iroh_ffi_fn_func_set_log_level(RustBuffer level, RustCallStatus *_Nonnull out_status
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FUNC_START_METRICS_COLLECTION
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FUNC_START_METRICS_COLLECTION
-void uniffi_iroh_ffi_fn_func_start_metrics_collection(RustCallStatus *_Nonnull out_status
-    
-);
-#endif
 #ifndef UNIFFI_FFIDEF_FFI_IROH_FFI_RUSTBUFFER_ALLOC
 #define UNIFFI_FFIDEF_FFI_IROH_FFI_RUSTBUFFER_ALLOC
 RustBuffer ffi_iroh_ffi_rustbuffer_alloc(uint64_t size, RustCallStatus *_Nonnull out_status
@@ -2628,12 +2602,6 @@ uint16_t uniffi_iroh_ffi_checksum_func_path_to_key(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_FUNC_SET_LOG_LEVEL
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_FUNC_SET_LOG_LEVEL
 uint16_t uniffi_iroh_ffi_checksum_func_set_log_level(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_FUNC_START_METRICS_COLLECTION
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_FUNC_START_METRICS_COLLECTION
-uint16_t uniffi_iroh_ffi_checksum_func_start_metrics_collection(void
     
 );
 #endif
@@ -2991,18 +2959,6 @@ uint16_t uniffi_iroh_ffi_checksum_method_connecting_connect(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_CONNECTING_LOCAL_IP
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_CONNECTING_LOCAL_IP
-uint16_t uniffi_iroh_ffi_checksum_method_connecting_local_ip(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_CONNECTING_REMOTE_ADDRESS
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_CONNECTING_REMOTE_ADDRESS
-uint16_t uniffi_iroh_ffi_checksum_method_connecting_remote_address(void
-    
-);
-#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_CONNECTION_ACCEPT_BI
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_CONNECTION_ACCEPT_BI
 uint16_t uniffi_iroh_ffi_checksum_method_connection_accept_bi(void
@@ -3012,6 +2968,12 @@ uint16_t uniffi_iroh_ffi_checksum_method_connection_accept_bi(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_CONNECTION_ACCEPT_UNI
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_CONNECTION_ACCEPT_UNI
 uint16_t uniffi_iroh_ffi_checksum_method_connection_accept_uni(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_CONNECTION_ALPN
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_CONNECTION_ALPN
+uint16_t uniffi_iroh_ffi_checksum_method_connection_alpn(void
     
 );
 #endif
@@ -3039,18 +3001,6 @@ uint16_t uniffi_iroh_ffi_checksum_method_connection_datagram_send_buffer_space(v
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_CONNECTION_GET_REMOTE_NODE_ID
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_CONNECTION_GET_REMOTE_NODE_ID
-uint16_t uniffi_iroh_ffi_checksum_method_connection_get_remote_node_id(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_CONNECTION_LOCAL_IP
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_CONNECTION_LOCAL_IP
-uint16_t uniffi_iroh_ffi_checksum_method_connection_local_ip(void
-    
-);
-#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_CONNECTION_MAX_DATAGRAM_SIZE
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_CONNECTION_MAX_DATAGRAM_SIZE
 uint16_t uniffi_iroh_ffi_checksum_method_connection_max_datagram_size(void
@@ -3075,9 +3025,9 @@ uint16_t uniffi_iroh_ffi_checksum_method_connection_read_datagram(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_CONNECTION_REMOTE_ADDRESS
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_CONNECTION_REMOTE_ADDRESS
-uint16_t uniffi_iroh_ffi_checksum_method_connection_remote_address(void
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_CONNECTION_REMOTE_NODE_ID
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_CONNECTION_REMOTE_NODE_ID
+uint16_t uniffi_iroh_ffi_checksum_method_connection_remote_node_id(void
     
 );
 #endif
@@ -3090,12 +3040,6 @@ uint16_t uniffi_iroh_ffi_checksum_method_connection_rtt(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_CONNECTION_SEND_DATAGRAM
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_CONNECTION_SEND_DATAGRAM
 uint16_t uniffi_iroh_ffi_checksum_method_connection_send_datagram(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_CONNECTION_SEND_DATAGRAM_WAIT
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_CONNECTION_SEND_DATAGRAM_WAIT
-uint16_t uniffi_iroh_ffi_checksum_method_connection_send_datagram_wait(void
     
 );
 #endif

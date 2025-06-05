@@ -1515,10 +1515,6 @@ internal interface UniffiLib : Library {
 
     fun uniffi_iroh_ffi_fn_method_connecting_connect(`ptr`: Pointer): Long
 
-    fun uniffi_iroh_ffi_fn_method_connecting_local_ip(`ptr`: Pointer): Long
-
-    fun uniffi_iroh_ffi_fn_method_connecting_remote_address(`ptr`: Pointer): Long
-
     fun uniffi_iroh_ffi_fn_clone_connection(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
@@ -1532,6 +1528,11 @@ internal interface UniffiLib : Library {
     fun uniffi_iroh_ffi_fn_method_connection_accept_bi(`ptr`: Pointer): Long
 
     fun uniffi_iroh_ffi_fn_method_connection_accept_uni(`ptr`: Pointer): Long
+
+    fun uniffi_iroh_ffi_fn_method_connection_alpn(
+        `ptr`: Pointer,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
 
     fun uniffi_iroh_ffi_fn_method_connection_close(
         `ptr`: Pointer,
@@ -1552,16 +1553,6 @@ internal interface UniffiLib : Library {
         uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    fun uniffi_iroh_ffi_fn_method_connection_get_remote_node_id(
-        `ptr`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Pointer
-
-    fun uniffi_iroh_ffi_fn_method_connection_local_ip(
-        `ptr`: Pointer,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
     fun uniffi_iroh_ffi_fn_method_connection_max_datagram_size(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
@@ -1573,7 +1564,7 @@ internal interface UniffiLib : Library {
 
     fun uniffi_iroh_ffi_fn_method_connection_read_datagram(`ptr`: Pointer): Long
 
-    fun uniffi_iroh_ffi_fn_method_connection_remote_address(
+    fun uniffi_iroh_ffi_fn_method_connection_remote_node_id(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
@@ -1588,11 +1579,6 @@ internal interface UniffiLib : Library {
         `data`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
-
-    fun uniffi_iroh_ffi_fn_method_connection_send_datagram_wait(
-        `ptr`: Pointer,
-        `data`: RustBuffer.ByValue,
-    ): Long
 
     fun uniffi_iroh_ffi_fn_method_connection_set_max_concurrent_bii_stream(
         `ptr`: Pointer,
@@ -2870,8 +2856,6 @@ internal interface UniffiLib : Library {
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    fun uniffi_iroh_ffi_fn_func_start_metrics_collection(uniffi_out_err: UniffiRustCallStatus): Unit
-
     fun ffi_iroh_ffi_rustbuffer_alloc(
         `size`: Long,
         uniffi_out_err: UniffiRustCallStatus,
@@ -3094,8 +3078,6 @@ internal interface UniffiLib : Library {
 
     fun uniffi_iroh_ffi_checksum_func_set_log_level(): Short
 
-    fun uniffi_iroh_ffi_checksum_func_start_metrics_collection(): Short
-
     fun uniffi_iroh_ffi_checksum_method_addcallback_progress(): Short
 
     fun uniffi_iroh_ffi_checksum_method_addprogress_as_abort(): Short
@@ -3214,13 +3196,11 @@ internal interface UniffiLib : Library {
 
     fun uniffi_iroh_ffi_checksum_method_connecting_connect(): Short
 
-    fun uniffi_iroh_ffi_checksum_method_connecting_local_ip(): Short
-
-    fun uniffi_iroh_ffi_checksum_method_connecting_remote_address(): Short
-
     fun uniffi_iroh_ffi_checksum_method_connection_accept_bi(): Short
 
     fun uniffi_iroh_ffi_checksum_method_connection_accept_uni(): Short
+
+    fun uniffi_iroh_ffi_checksum_method_connection_alpn(): Short
 
     fun uniffi_iroh_ffi_checksum_method_connection_close(): Short
 
@@ -3230,10 +3210,6 @@ internal interface UniffiLib : Library {
 
     fun uniffi_iroh_ffi_checksum_method_connection_datagram_send_buffer_space(): Short
 
-    fun uniffi_iroh_ffi_checksum_method_connection_get_remote_node_id(): Short
-
-    fun uniffi_iroh_ffi_checksum_method_connection_local_ip(): Short
-
     fun uniffi_iroh_ffi_checksum_method_connection_max_datagram_size(): Short
 
     fun uniffi_iroh_ffi_checksum_method_connection_open_bi(): Short
@@ -3242,13 +3218,11 @@ internal interface UniffiLib : Library {
 
     fun uniffi_iroh_ffi_checksum_method_connection_read_datagram(): Short
 
-    fun uniffi_iroh_ffi_checksum_method_connection_remote_address(): Short
+    fun uniffi_iroh_ffi_checksum_method_connection_remote_node_id(): Short
 
     fun uniffi_iroh_ffi_checksum_method_connection_rtt(): Short
 
     fun uniffi_iroh_ffi_checksum_method_connection_send_datagram(): Short
-
-    fun uniffi_iroh_ffi_checksum_method_connection_send_datagram_wait(): Short
 
     fun uniffi_iroh_ffi_checksum_method_connection_set_max_concurrent_bii_stream(): Short
 
@@ -3634,9 +3608,6 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_func_set_log_level() != 52619.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_func_start_metrics_collection() != 23413.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
     if (lib.uniffi_iroh_ffi_checksum_method_addcallback_progress() != 62116.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -3814,16 +3785,13 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_method_connecting_connect() != 64341.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_connecting_local_ip() != 3368.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_ffi_checksum_method_connecting_remote_address() != 25819.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
     if (lib.uniffi_iroh_ffi_checksum_method_connection_accept_bi() != 10996.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_connection_accept_uni() != 17891.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_ffi_checksum_method_connection_alpn() != 53975.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_connection_close() != 61009.toShort()) {
@@ -3838,12 +3806,6 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_method_connection_datagram_send_buffer_space() != 52904.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_connection_get_remote_node_id() != 64024.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_ffi_checksum_method_connection_local_ip() != 11203.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
     if (lib.uniffi_iroh_ffi_checksum_method_connection_max_datagram_size() != 49257.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -3856,16 +3818,13 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_method_connection_read_datagram() != 23201.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_connection_remote_address() != 60000.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connection_remote_node_id() != 59577.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_connection_rtt() != 61654.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_connection_send_datagram() != 105.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_ffi_checksum_method_connection_send_datagram_wait() != 3162.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_connection_set_max_concurrent_bii_stream() != 13576.toShort()) {
@@ -4201,7 +4160,7 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_method_protocolcreator_create() != 33391.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_protocolhandler_accept() != 54515.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_protocolhandler_accept() != 45944.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_protocolhandler_shutdown() != 55574.toShort()) {
@@ -6532,9 +6491,9 @@ open class Authors :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -8693,9 +8652,9 @@ open class Blobs :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -8725,9 +8684,9 @@ open class Blobs :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -8798,9 +8757,9 @@ open class Blobs :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -8960,9 +8919,9 @@ open class Blobs :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -8990,9 +8949,9 @@ open class Blobs :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -9020,9 +8979,9 @@ open class Blobs :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -9058,9 +9017,9 @@ open class Blobs :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -9090,9 +9049,9 @@ open class Blobs :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -9698,10 +9657,6 @@ public interface ConnectingInterface {
 
     suspend fun `connect`(): Connection
 
-    suspend fun `localIp`(): kotlin.String?
-
-    suspend fun `remoteAddress`(): kotlin.String
-
     companion object
 }
 
@@ -9799,9 +9754,9 @@ open class Connecting :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -9827,54 +9782,6 @@ open class Connecting :
             { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_pointer(future) },
             // lift function
             { FfiConverterTypeConnection.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
-
-    @Throws(IrohException::class)
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `localIp`(): kotlin.String? =
-        uniffiRustCallAsync(
-            callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_connecting_local_ip(
-                    thisPtr,
-                )
-            },
-            {
-                future,
-                callback,
-                continuation,
-                ->
-                UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
-            },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
-            // lift function
-            { FfiConverterOptionalString.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
-
-    @Throws(IrohException::class)
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `remoteAddress`(): kotlin.String =
-        uniffiRustCallAsync(
-            callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_connecting_remote_address(
-                    thisPtr,
-                )
-            },
-            {
-                future,
-                callback,
-                continuation,
-                ->
-                UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
-            },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
-            // lift function
-            { FfiConverterString.lift(it) },
             // Error FFI converter
             IrohException.ErrorHandler,
         )
@@ -10010,6 +9917,8 @@ public interface ConnectionInterface {
 
     suspend fun `acceptUni`(): RecvStream
 
+    fun `alpn`(): kotlin.ByteArray?
+
     fun `close`(
         `errorCode`: kotlin.ULong,
         `reason`: kotlin.ByteArray,
@@ -10021,10 +9930,6 @@ public interface ConnectionInterface {
 
     fun `datagramSendBufferSpace`(): kotlin.ULong
 
-    fun `getRemoteNodeId`(): PublicKey
-
-    fun `localIp`(): kotlin.String?
-
     fun `maxDatagramSize`(): kotlin.ULong?
 
     suspend fun `openBi`(): BiStream
@@ -10033,13 +9938,11 @@ public interface ConnectionInterface {
 
     suspend fun `readDatagram`(): kotlin.ByteArray
 
-    fun `remoteAddress`(): kotlin.String
+    fun `remoteNodeId`(): kotlin.String
 
     fun `rtt`(): kotlin.ULong
 
     fun `sendDatagram`(`data`: kotlin.ByteArray)
-
-    suspend fun `sendDatagramWait`(`data`: kotlin.ByteArray)
 
     fun `setMaxConcurrentBiiStream`(`count`: kotlin.ULong)
 
@@ -10172,6 +10075,18 @@ open class Connection :
             IrohException.ErrorHandler,
         )
 
+    override fun `alpn`(): kotlin.ByteArray? =
+        FfiConverterOptionalByteArray.lift(
+            callWithPointer {
+                uniffiRustCall { _status ->
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_connection_alpn(
+                        it,
+                        _status,
+                    )
+                }
+            },
+        )
+
     @Throws(IrohException::class)
     override fun `close`(
         `errorCode`: kotlin.ULong,
@@ -10208,9 +10123,9 @@ open class Connection :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -10227,31 +10142,6 @@ open class Connection :
             callWithPointer {
                 uniffiRustCall { _status ->
                     UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_connection_datagram_send_buffer_space(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
-
-    @Throws(IrohException::class)
-    override fun `getRemoteNodeId`(): PublicKey =
-        FfiConverterTypePublicKey.lift(
-            callWithPointer {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_connection_get_remote_node_id(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
-
-    override fun `localIp`(): kotlin.String? =
-        FfiConverterOptionalString.lift(
-            callWithPointer {
-                uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_connection_local_ip(
                         it,
                         _status,
                     )
@@ -10317,9 +10207,9 @@ open class Connection :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -10331,11 +10221,12 @@ open class Connection :
             IrohException.ErrorHandler,
         )
 
-    override fun `remoteAddress`(): kotlin.String =
+    @Throws(IrohException::class)
+    override fun `remoteNodeId`(): kotlin.String =
         FfiConverterString.lift(
             callWithPointer {
-                uniffiRustCall { _status ->
-                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_connection_remote_address(
+                uniffiRustCallWithError(IrohException) { _status ->
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_connection_remote_node_id(
                         it,
                         _status,
                     )
@@ -10366,25 +10257,6 @@ open class Connection :
                 )
             }
         }
-
-    @Throws(IrohException::class)
-    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `sendDatagramWait`(`data`: kotlin.ByteArray) =
-        uniffiRustCallAsync(
-            callWithPointer { thisPtr ->
-                UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_connection_send_datagram_wait(
-                    thisPtr,
-                    FfiConverterByteArray.lower(`data`),
-                )
-            },
-            { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_free_void(future) },
-            // lift function
-            { Unit },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
 
     @Throws(IrohException::class)
     override fun `setMaxConcurrentBiiStream`(`count`: kotlin.ULong) =
@@ -11501,9 +11373,9 @@ open class Doc :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -11532,9 +11404,9 @@ open class Doc :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -11560,9 +11432,9 @@ open class Doc :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -11587,9 +11459,9 @@ open class Doc :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -11808,9 +11680,9 @@ open class Doc :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -13712,9 +13584,9 @@ open class Docs :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -13742,9 +13614,9 @@ open class Docs :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -16853,9 +16725,9 @@ open class Iroh :
             uniffiRustCallAsync(
                 UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_iroh_memory(),
                 {
-                    future,
-                    callback,
-                    continuation,
+                        future,
+                        callback,
+                        continuation,
                     ->
                     UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_pointer(future, callback, continuation)
                 },
@@ -16876,9 +16748,9 @@ open class Iroh :
             uniffiRustCallAsync(
                 UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_iroh_memory_with_options(FfiConverterTypeNodeOptions.lower(`options`)),
                 {
-                    future,
-                    callback,
-                    continuation,
+                        future,
+                        callback,
+                        continuation,
                     ->
                     UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_pointer(future, callback, continuation)
                 },
@@ -16902,9 +16774,9 @@ open class Iroh :
             uniffiRustCallAsync(
                 UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_constructor_iroh_persistent(FfiConverterString.lower(`path`)),
                 {
-                    future,
-                    callback,
-                    continuation,
+                        future,
+                        callback,
+                        continuation,
                     ->
                     UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_pointer(future, callback, continuation)
                 },
@@ -16931,9 +16803,9 @@ open class Iroh :
                     FfiConverterTypeNodeOptions.lower(`options`),
                 ),
                 {
-                    future,
-                    callback,
-                    continuation,
+                        future,
+                        callback,
+                        continuation,
                     ->
                     UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_pointer(future, callback, continuation)
                 },
@@ -18138,9 +18010,9 @@ open class Net :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -18186,9 +18058,9 @@ open class Net :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -18214,9 +18086,9 @@ open class Net :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -18241,9 +18113,9 @@ open class Net :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -18538,9 +18410,9 @@ open class Node :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -19857,7 +19729,7 @@ public object FfiConverterTypeProtocolCreator : FfiConverter<ProtocolCreator, Po
 //
 
 public interface ProtocolHandler {
-    suspend fun `accept`(`conn`: Connecting)
+    suspend fun `accept`(`conn`: Connection)
 
     suspend fun `shutdown`()
 
@@ -19950,12 +19822,12 @@ open class ProtocolHandlerImpl :
 
     @Throws(CallbackException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `accept`(`conn`: Connecting) =
+    override suspend fun `accept`(`conn`: Connection) =
         uniffiRustCallAsync(
             callWithPointer { thisPtr ->
                 UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_protocolhandler_accept(
                     thisPtr,
-                    FfiConverterTypeConnecting.lower(`conn`),
+                    FfiConverterTypeConnection.lower(`conn`),
                 )
             },
             { future, callback, continuation -> UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
@@ -20000,7 +19872,7 @@ internal object uniffiCallbackInterfaceProtocolHandler {
             val uniffiObj = FfiConverterTypeProtocolHandler.handleMap.get(uniffiHandle)
             val makeCall =
                 suspend {  uniffiObj.`accept`(
-                    FfiConverterTypeConnecting.lift(`conn`),
+                    FfiConverterTypeConnection.lift(`conn`),
                 )
                 }
             val uniffiHandleSuccess = { _: Unit ->
@@ -21609,9 +21481,9 @@ open class RecvStream :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -21634,9 +21506,9 @@ open class RecvStream :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -21659,9 +21531,9 @@ open class RecvStream :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -21684,9 +21556,9 @@ open class RecvStream :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -21708,9 +21580,9 @@ open class RecvStream :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -21998,9 +21870,9 @@ open class SendStream :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -22078,9 +21950,9 @@ open class SendStream :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -23256,9 +23128,9 @@ open class Tags :
                 )
             },
             {
-                future,
-                callback,
-                continuation,
+                    future,
+                    callback,
+                    continuation,
                 ->
                 UniffiLib.INSTANCE.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation)
             },
@@ -28164,17 +28036,6 @@ fun `setLogLevel`(`level`: LogLevel) =
     uniffiRustCall { _status ->
         UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_func_set_log_level(
             FfiConverterTypeLogLevel.lower(`level`),
-            _status,
-        )
-    }
-
-/**
- * Initialize the global metrics collection.
- */
-@Throws(IrohException::class)
-fun `startMetricsCollection`() =
-    uniffiRustCallWithError(IrohException) { _status ->
-        UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_func_start_metrics_collection(
             _status,
         )
     }
