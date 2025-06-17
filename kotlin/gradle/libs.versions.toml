@@ -13,3 +13,5 @@ junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", vers
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version = "2.0.20" }
+dokka = { id = "org.jetbrains.dokka", version = "2.0.0" }
+
