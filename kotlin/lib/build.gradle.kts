@@ -54,6 +54,52 @@ kotlin {
     }
 }
 
+val nativeLibraryDir = rootDir.resolve("..").normalize()
+val profile = providers.gradleProperty("profile").orElse("release")
+
+val buildNativeLibraryTask by tasks.register<Exec>("buildNativeLibrary") {
+    inputs.dir(nativeLibraryDir.resolve("src"))
+    inputs.files(
+        nativeLibraryDir.resolve("Cargo.toml"),
+        nativeLibraryDir.resolve("Cargo.lock"),
+        nativeLibraryDir.resolve("build.rs"),
+    )
+    outputs.dir(nativeLibraryDir.resolve("target"))
+
+    workingDir = nativeLibraryDir
+    commandLine = listOf(
+        "cargo", "build",
+        "--lib", "--profile", profile.get(),
+        "--color", "always",
+    )
+}
+
+val generateNativeBindingsTask by tasks.register<Exec>("generateNativeBindings") {
+    dependsOn(buildNativeLibraryTask)
+
+    val libName = System.mapLibraryName("iroh_ffi")
+    val libFile = nativeLibraryDir.resolve("target/${profile.get()}/$libName")
+    val generatedFFIDir = layout.buildDirectory.dir("generated/uniffi/main/kotlin")
+
+    inputs.file(libFile)
+    outputs.dir(generatedFFIDir)
+
+    workingDir = nativeLibraryDir
+    commandLine = listOf(
+        "cargo", "run", "--bin", "uniffi-bindgen",
+        "generate",
+        "--language", "kotlin",
+        "--out-dir", generatedFFIDir.get().asFile.absolutePath,
+        "--config", "uniffi.toml",
+        "--library", libFile.absolutePath,
+        "--no-format", // roughly 60x speedup
+    )
+}
+
+sourceSets.main {
+    kotlin.srcDir(generateNativeBindingsTask)
+}
+
 tasks.named<Test>("test") {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()

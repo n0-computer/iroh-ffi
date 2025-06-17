@@ -22,13 +22,10 @@ case "$TEST_OS" in
         ;;
 esac
 
-echo "building library"
-cargo build --lib
+cd kotlin
 
-# UniFfi bindgen
-echo "generating binding"
-cargo run --bin uniffi-bindgen generate --language kotlin --out-dir kotlin/lib/src/main/kotlin/ --config uniffi.toml --library target/debug/$LIB_NAME.$LIB_EXTENSION
+./gradlew generateNativeBindings
 
 # copy cdylib to outdir
-mkdir -p kotlin/lib/src/main/resources/
-cp target/debug/$LIB_NAME.$LIB_EXTENSION kotlin/lib/src/main/resources/
+mkdir -p lib/src/main/resources/
+cp ../target/debug/$LIB_NAME.$LIB_EXTENSION lib/src/main/resources/
