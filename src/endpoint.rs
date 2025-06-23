@@ -3,7 +3,7 @@ use std::sync::Arc;
 use iroh::endpoint;
 use tokio::sync::Mutex;
 
-use crate::{IrohError, NodeAddr, PublicKey};
+use crate::{IrohError, NodeAddr};
 
 #[derive(Clone, uniffi::Object)]
 pub struct Endpoint(endpoint::Endpoint);
@@ -67,39 +67,22 @@ impl Connecting {
             None => Err(anyhow::anyhow!("already used").into()),
         }
     }
-
-    #[uniffi::method(async_runtime = "tokio")]
-    pub async fn local_ip(&self) -> Result<Option<String>, IrohError> {
-        match &*self.0.lock().await {
-            Some(conn) => {
-                let ip = conn.local_ip();
-                Ok(ip.map(|ip| ip.to_string()))
-            }
-            None => Err(anyhow::anyhow!("already used").into()),
-        }
-    }
-
-    #[uniffi::method(async_runtime = "tokio")]
-    pub async fn remote_address(&self) -> Result<String, IrohError> {
-        match &*self.0.lock().await {
-            Some(conn) => {
-                let addr = conn.remote_address();
-                Ok(addr.to_string())
-            }
-            None => Err(anyhow::anyhow!("already used").into()),
-        }
-    }
 }
 
 #[derive(uniffi::Object)]
 pub struct Connection(endpoint::Connection);
 
+impl From<endpoint::Connection> for Connection {
+    fn from(value: endpoint::Connection) -> Self {
+        Self(value)
+    }
+}
+
 #[uniffi::export]
 impl Connection {
     #[uniffi::method]
-    pub fn get_remote_node_id(&self) -> Result<PublicKey, IrohError> {
-        let id = endpoint::get_remote_node_id(&self.0)?;
-        Ok(id.into())
+    pub fn alpn(&self) -> Option<Vec<u8>> {
+        self.0.alpn()
     }
 
     #[uniffi::method(async_runtime = "tokio")]
@@ -165,15 +148,6 @@ impl Connection {
         Ok(())
     }
 
-    #[uniffi::method(async_runtime = "tokio")]
-    pub async fn send_datagram_wait(&self, data: Vec<u8>) -> Result<(), IrohError> {
-        self.0
-            .send_datagram_wait(data.into())
-            .await
-            .map_err(anyhow::Error::from)?;
-        Ok(())
-    }
-
     #[uniffi::method]
     pub fn max_datagram_size(&self) -> Option<u64> {
         self.0.max_datagram_size().map(|s| s as _)
@@ -185,13 +159,9 @@ impl Connection {
     }
 
     #[uniffi::method]
-    pub fn remote_address(&self) -> String {
-        self.0.remote_address().to_string()
-    }
-
-    #[uniffi::method]
-    pub fn local_ip(&self) -> Option<String> {
-        self.0.local_ip().map(|s| s.to_string())
+    pub fn remote_node_id(&self) -> Result<String, IrohError> {
+        let id = self.0.remote_node_id()?;
+        Ok(id.to_string())
     }
 
     #[uniffi::method]

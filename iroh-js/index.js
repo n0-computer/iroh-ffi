@@ -35,7 +35,11 @@ const isMuslFromFilesystem = () => {
 }
 
 const isMuslFromReport = () => {
-  const report = typeof process.report.getReport === 'function' ? process.report.getReport() : null
+  let report = null
+  if (typeof process.report?.getReport === 'function') {
+    process.report.excludeNetwork = true
+    report = process.report.getReport()
+  }
   if (!report) {
     return null
   }
@@ -60,7 +64,13 @@ const isMuslFromChildProcess = () => {
 }
 
 function requireNative() {
-  if (process.platform === 'android') {
+  if (process.env.NAPI_RS_NATIVE_LIBRARY_PATH) {
+    try {
+      nativeBinding = require(process.env.NAPI_RS_NATIVE_LIBRARY_PATH);
+    } catch (err) {
+      loadErrors.push(err)
+    }
+  } else if (process.platform === 'android') {
     if (process.arch === 'arm64') {
       try {
         return require('./iroh.android-arm64.node')
@@ -364,6 +374,7 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
+module.exports = nativeBinding
 module.exports.Author = nativeBinding.Author
 module.exports.AuthorId = nativeBinding.AuthorId
 module.exports.Authors = nativeBinding.Authors
@@ -412,6 +423,5 @@ module.exports.setLogLevel = nativeBinding.setLogLevel
 module.exports.ShareMode = nativeBinding.ShareMode
 module.exports.SortBy = nativeBinding.SortBy
 module.exports.SortDirection = nativeBinding.SortDirection
-module.exports.startMetricsCollection = nativeBinding.startMetricsCollection
 module.exports.SyncReason = nativeBinding.SyncReason
 module.exports.verifyNodeAddr = nativeBinding.verifyNodeAddr

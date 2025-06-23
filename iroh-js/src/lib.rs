@@ -1,4 +1,3 @@
-use iroh_metrics::core::Metric;
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
 use tracing_subscriber::filter::LevelFilter;
@@ -62,20 +61,6 @@ pub fn set_log_level(level: LogLevel) {
         .with(filter)
         .with(layer)
         .init();
-}
-
-/// Initialize the global metrics collection.
-#[napi]
-pub fn start_metrics_collection() -> Result<()> {
-    iroh_metrics::core::Core::try_init(|reg, metrics| {
-        metrics.insert(iroh::metrics::MagicsockMetrics::new(reg));
-        metrics.insert(iroh::metrics::NetReportMetrics::new(reg));
-        metrics.insert(iroh::metrics::PortmapMetrics::default());
-        metrics.insert(iroh_blobs::metrics::Metrics::new(reg));
-        metrics.insert(iroh_gossip::metrics::Metrics::new(reg));
-        metrics.insert(iroh_docs::metrics::Metrics::new(reg));
-    })
-    .map_err(|e| anyhow::Error::from(e).into())
 }
 
 /// Helper function that translates a key that was derived from the [`path_to_key`] function back

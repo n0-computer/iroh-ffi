@@ -181,14 +181,13 @@ export declare class Blobs {
  * It is a single item which can be easily serialized and deserialized.
  */
 export declare class BlobTicket {
-  /** The provider to get a file from. */
-  readonly nodeAddr: NodeAddr
   /** The format of the blob. */
   readonly format: BlobFormat
   /** The hash to retrieve. */
   readonly hash: string
   constructor(nodeAddr: NodeAddr, hash: string, format: BlobFormat)
   static fromString(str: string): BlobTicket
+  get nodeAddr(): NodeAddr
   /** Checks if the two tickets are equal */
   isEqual(other: BlobTicket): boolean
   toString(): string
@@ -219,12 +218,11 @@ export declare class Collection {
 export declare class Connecting {
   connect(): Promise<Connection>
   alpn(): Promise<Buffer>
-  localIp(): Promise<string | null>
-  remoteAddress(): Promise<string>
 }
 
 export declare class Connection {
-  getRemoteNodeId(): PublicKey
+  alpn(): Buffer | null
+  remoteNodeId(): PublicKey
   openUni(): Promise<SendStream>
   acceptUni(): Promise<RecvStream>
   openBi(): Promise<BiStream>
@@ -234,11 +232,8 @@ export declare class Connection {
   closeReason(): string | null
   close(errorCode: bigint, reason: Uint8Array): void
   sendDatagram(data: Uint8Array): void
-  sendDatagramWait(data: Uint8Array): Promise<void>
   maxDatagramSize(): bigint | null
   datagramSendBufferSpace(): bigint
-  remoteAddress(): string
-  localIp(): string | null
   rtt(): bigint
   stableId(): bigint
   setMaxConcurrentUniStream(count: bigint): void
@@ -330,10 +325,9 @@ export declare class DocTicket {
   readonly capability: string
   /** The capabillity kind */
   readonly capabilityKind: CapabilityKind
-  /** A list of nodes to contact. */
-  readonly nodes: Array<NodeAddr>
   static fromString(str: string): DocTicket
   toString(): string
+  get nodes(): Array<NodeAddr>
 }
 
 /** Download policy to decide which content blobs shall be downloaded. */
@@ -1365,7 +1359,7 @@ export declare const enum Origin {
 export declare function pathToKey(path: string, prefix?: string | undefined | null, root?: string | undefined | null): Array<number>
 
 export interface ProtocolHandler {
-  accept: ((err: Error | null, arg: Connecting) => void)
+  accept: ((err: Error | null, arg: Connection) => void)
   shutdown?: ((err: Error | null, ) => void)
 }
 
@@ -1455,9 +1449,6 @@ export declare const enum SortDirection {
   /** Sort descending */
   Desc = 'Desc'
 }
-
-/** Initialize the global metrics collection. */
-export declare function startMetricsCollection(): void
 
 /** Outcome of a sync operation */
 export interface SyncEvent {

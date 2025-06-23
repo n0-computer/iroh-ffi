@@ -14,9 +14,8 @@ class Subscriber : SubscribeCallback {
 }
 
 class MyProtocol : ProtocolHandler {
-    override suspend fun accept(connecting: Connecting) {
-        val conn = connecting.connect()
-        val remote = conn.getRemoteNodeId()
+    override suspend fun accept(conn: Connection) {
+        val remote = conn.remoteNodeId()
         println("accepting from $remote")
         val bi = conn.acceptBi()
 
@@ -122,7 +121,7 @@ class NodeTest {
 
             val endpoint = node2.node().endpoint()
             val conn = endpoint.connect(nodeAddr, alpn)
-            val remote = conn.getRemoteNodeId()
+            val remote = conn.remoteNodeId()
             println(remote)
 
             val bi = conn.openBi()

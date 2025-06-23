@@ -11,7 +11,7 @@ use quic_rpc::{transport::flume::FlumeConnector, RpcClient, RpcServer};
 use tokio_util::task::AbortOnDropHandle;
 
 use crate::{
-    BlobProvideEventCallback, CallbackError, Connecting, Endpoint, IrohError, NodeAddr, PublicKey,
+    BlobProvideEventCallback, CallbackError, Connection, Endpoint, IrohError, NodeAddr, PublicKey,
 };
 
 /// Stats counter
@@ -235,7 +235,7 @@ pub trait ProtocolCreator: std::fmt::Debug + Send + Sync + 'static {
 #[uniffi::export(with_foreign)]
 #[async_trait::async_trait]
 pub trait ProtocolHandler: Send + Sync + 'static {
-    async fn accept(&self, conn: Arc<Connecting>) -> Result<(), CallbackError>;
+    async fn accept(&self, conn: Arc<Connection>) -> Result<(), CallbackError>;
     async fn shutdown(&self);
 }
 
@@ -248,12 +248,11 @@ struct ProtocolWrapper {
 impl iroh::protocol::ProtocolHandler for ProtocolWrapper {
     fn accept(
         &self,
-        conn: iroh::endpoint::Connecting,
+        conn: iroh::endpoint::Connection,
     ) -> futures_lite::future::Boxed<anyhow::Result<()>> {
         let this = self.clone();
         Box::pin(async move {
-            let conn = Connecting::new(conn);
-            this.handler.accept(Arc::new(conn)).await?;
+            this.handler.accept(Arc::new(conn.into())).await?;
             Ok(())
         })
     }
@@ -408,7 +407,7 @@ impl Iroh {
             &local_pool,
         )
         .await?;
-        let router = builder.spawn().await?;
+        let router = builder.spawn();
 
         let (listener, connector) = quic_rpc::transport::flume::channel(1);
         let listener = RpcServer::new(listener);
@@ -461,7 +460,7 @@ impl Iroh {
             &local_pool,
         )
         .await?;
-        let router = builder.spawn().await?;
+        let router = builder.spawn();
 
         let (listener, connector) = quic_rpc::transport::flume::channel(1);
         let listener = RpcServer::new(listener);
@@ -563,13 +562,9 @@ async fn apply_options<S: iroh_blobs::store::Store>(
         builder.endpoint().clone(),
         local_pool.handle().clone(),
     );
-    let blobs = Blobs::new(
-        blob_store.clone(),
-        local_pool.handle().clone(),
-        blob_events,
-        downloader.clone(),
-        builder.endpoint().clone(),
-    );
+    let blobs = Blobs::builder(blob_store.clone())
+        .events(blob_events)
+        .build(builder.endpoint());
 
     builder = builder.accept(iroh_blobs::ALPN, blobs.clone());
 

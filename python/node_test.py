@@ -73,9 +73,8 @@ async def test_custom_protocol():
     iroh.iroh_ffi.uniffi_set_event_loop(asyncio.get_running_loop())
 
     class MyProtocol:
-        async def accept(self, connecting):
-            conn = await connecting.connect()
-            remote = conn.get_remote_node_id()
+        async def accept(self, conn):
+            remote = conn.remote_node_id()
             print("accepting from ", remote)
             bi = await conn.accept_bi()
 
@@ -113,7 +112,7 @@ async def test_custom_protocol():
     assert endpoint.node_id() == await node_2.net().node_id()
 
     conn = await endpoint.connect(node_addr, alpn)
-    remote = conn.get_remote_node_id()
+    remote = conn.remote_node_id()
     print("", remote)
 
     bi = await conn.open_bi()

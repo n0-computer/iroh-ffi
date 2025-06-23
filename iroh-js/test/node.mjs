@@ -20,7 +20,7 @@ suite('node', () => {
     const iroh = await Iroh.memory()
     const status = await iroh.node.status()
 
-    assert.equal(status.version, '0.31.0')
+    assert.equal(status.version, '0.35.0')
     await iroh.node.shutdown()
   })
 
@@ -29,16 +29,15 @@ suite('node', () => {
 
     const protocols = {
       [alpn]: (err, ep) => ({
-        accept: async (err, connecting) => {
+       accept: async (err, conn) => {
           // console.log('accept')
           assert.ifError(err)
           const nodeId = await ep.nodeId()
           // console.log(`accepting on node ${nodeId}`)
-          const alpn = await connecting.alpn()
+          const alpn = conn.alpn()
           // console.log(`incoming on ${alpn.toString()}`)
 
-          const conn = await connecting.connect()
-          const remote = await conn.getRemoteNodeId()
+          const remote = await conn.remoteNodeId()
           // console.log(`connected id ${remote.toString()}`)
 
           const bi = await conn.acceptBi()
@@ -75,7 +74,7 @@ suite('node', () => {
     assert.equal(endpoint.nodeId(), await node2.net.nodeId())
 
     const conn = await endpoint.connect(nodeAddr, alpn)
-    const remote = await conn.getRemoteNodeId()
+    const remote = await conn.remoteNodeId()
     // console.log(`connected to ${remote.toString()}`)
 
     const bi = await conn.openBi()
