@@ -5,6 +5,7 @@ mod endpoint;
 mod error;
 mod gossip;
 mod key;
+mod metrics;
 mod net;
 mod node;
 mod tag;
