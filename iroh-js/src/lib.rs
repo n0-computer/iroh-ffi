@@ -8,7 +8,6 @@ mod doc;
 mod endpoint;
 mod gossip;
 mod key;
-mod metrics;
 mod net;
 mod node;
 mod tag;

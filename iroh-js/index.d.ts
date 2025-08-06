@@ -347,13 +347,8 @@ export declare class Endpoint {
   nodeId(): string
   connect(nodeAddr: NodeAddr, alpn: Uint8Array): Promise<Connection>
   /**
-   * Returns an EndpointMetrics struct that allows you to look at
-   * individual metrics for the magicsock, net_report, and portmapper.
-   */
-  metrics(): EndpointMetrics
-  /**
-   * Returns a map of with the key as the metric name and the value as
-   * the metric count.
+   * Returns a map of the endpoint metrics where the key is the metric
+   * name and the value is the metric count.
    */
   metricsMap(): Record<string, bigint>
 }
@@ -1084,16 +1079,6 @@ export interface DownloadProgressProgress {
   offset: bigint
 }
 
-/** Metrics collected by an [`crate::endpoint::Endpoint`]. */
-export interface EndpointMetrics {
-  /** Metrics collected by the endpoint's socket. */
-  magicsock: MagicsockMetrics
-  /** Metrics collected by net reports. */
-  netReport: NetReportMetrics
-  /** Metrics collected by the portmapper service. */
-  portmapper: PortmapMetrics
-}
-
 /**
  * A single entry in a [`Doc`]
  *
@@ -1247,64 +1232,6 @@ export declare const enum LogLevel {
   Off = 'Off'
 }
 
-export interface MagicsockMetrics {
-  reStunCalls: bigint
-  updateDirectAddrs: bigint
-  sendIpv4: bigint
-  sendIpv6: bigint
-  sendRelay: bigint
-  sendRelayError: bigint
-  sendData: bigint
-  sendDataNetworkDown: bigint
-  recvDataRelay: bigint
-  recvDataIpv4: bigint
-  recvDataIpv6: bigint
-  /** Number of QUIC datagrams received. */
-  recvDatagrams: bigint
-  /** Number of datagrams received using GRO */
-  recvGroDatagrams: bigint
-  sendDiscoUdp: bigint
-  sendDiscoRelay: bigint
-  sentDiscoUdp: bigint
-  sentDiscoRelay: bigint
-  sentDiscoPing: bigint
-  sentDiscoPong: bigint
-  sentDiscoCallMeMaybe: bigint
-  recvDiscoBadKey: bigint
-  recvDiscoBadParse: bigint
-  recvDiscoUdp: bigint
-  recvDiscoRelay: bigint
-  recvDiscoPing: bigint
-  recvDiscoPong: bigint
-  recvDiscoCallMeMaybe: bigint
-  recvDiscoCallMeMaybeBadDisco: bigint
-  relayHomeChange: bigint
-  /** The number of direct connections we have made to peers. */
-  numDirectConnsAdded: bigint
-  /** The number of direct connections we have lost to peers. */
-  numDirectConnsRemoved: bigint
-  /** The number of connections to peers we have added over relay. */
-  numRelayConnsAdded: bigint
-  /** The number of connections to peers we have removed over relay. */
-  numRelayConnsRemoved: bigint
-  actorTickMain: bigint
-  actorTickMsg: bigint
-  actorTickReStun: bigint
-  actorTickPortmapChanged: bigint
-  actorTickDirectAddrHeartbeat: bigint
-  actorTickDirectAddrUpdateReceiver: bigint
-  actorLinkChange: bigint
-  actorTickOther: bigint
-  /** Number of nodes we have attempted to contact. */
-  nodesContacted: bigint
-  /** Number of nodes we have managed to contact directly. */
-  nodesContactedDirectly: bigint
-  /** Number of connections with a successful handshake. */
-  connectionHandshakeSuccess: bigint
-  /** Number of connections with a successful handshake that became direct. */
-  connectionBecameDirect: bigint
-}
-
 /** Gossip message */
 export interface Message {
   /** We have a new, direct neighbor in the swarm membership layer for this topic */
@@ -1332,24 +1259,6 @@ export interface NamespaceAndCapability {
   namespace: string
   /** The capability you have for the doc (read/write) */
   capability: CapabilityKind
-}
-
-/** Metrics collected by net reports. */
-export interface NetReportMetrics {
-  /** Incoming STUN packets dropped due to a full receiving queue. */
-  stunPacketsDropped: bigint
-  /** Number of IPv4 STUN packets sent. */
-  stunPacketsSentIpv4: bigint
-  /** Number of IPv6 STUN packets sent. */
-  stunPacketsSentIpv6: bigint
-  /** Number of IPv4 STUN packets received. */
-  stunPacketsRecvIpv4: bigint
-  /** Number of IPv6 STUN packets received. */
-  stunPacketsRecvIpv6: bigint
-  /** Number of reports executed by net_report, including full reports. */
-  reports: bigint
-  /** Number of full reports executed by net_report */
-  reportsFull: bigint
 }
 
 /** A peer and it's addressing information. */
@@ -1453,32 +1362,6 @@ export declare const enum Origin {
  * Appends the null byte to the end of the key.
  */
 export declare function pathToKey(path: string, prefix?: string | undefined | null, root?: string | undefined | null): Array<number>
-
-/** Metrics collected by the portmapper service. */
-export interface PortmapMetrics {
-  /** Number of probing tasks started. */
-  probesStarted: bigint
-  /** Number of updates to the local port. */
-  localPortUpdates: bigint
-  /** Number of mapping tasks started. */
-  mappingAttempts: bigint
-  /** Number of failed mapping tasks. */
-  mappingFailures: bigint
-  /** Number of times the external address obtained via port mapping was updated. */
-  externalAddressUpdated: bigint
-  /** Number of UPnP probes executed. */
-  upnpProbes: bigint
-  /** Number of failed Upnp probes. */
-  upnpProbesFailed: bigint
-  /** Number of UPnP probes that found it available. */
-  upnpAvailable: bigint
-  /** Number of UPnP probes that resulted in a gateway different to the previous one, */
-  upnpGatewayUpdated: bigint
-  /** Number of PCP probes executed. */
-  pcpProbes: bigint
-  /** Number of PCP probes that found it available. */
-  pcpAvailable: bigint
-}
 
 export interface ProtocolHandler {
   accept: ((err: Error | null, arg: Connection) => void)

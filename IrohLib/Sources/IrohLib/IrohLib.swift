@@ -6363,14 +6363,8 @@ public protocol EndpointProtocol: AnyObject {
     func connect(nodeAddr: NodeAddr, alpn: Data) async throws -> Connection
 
     /**
-     * Returns an EndpointMetrics struct that allows you to look at
-     * individual metrics for the magicsock, net_report, and portmapper.
-     */
-    func metrics() -> EndpointMetrics
-
-    /**
-     * Returns a map of with the key as the metric name and the value as
-     * the metric count.
+     * Returns a map of the endpoint metrics where the key is the metric
+     * name and the value as the metric count.
      */
     func metricsMap() -> [String: UInt64]
 
@@ -6447,18 +6441,8 @@ open class Endpoint:
     }
 
     /**
-     * Returns an EndpointMetrics struct that allows you to look at
-     * individual metrics for the magicsock, net_report, and portmapper.
-     */
-    open func metrics() -> EndpointMetrics {
-        return try! FfiConverterTypeEndpointMetrics.lift(try! rustCall {
-            uniffi_iroh_ffi_fn_method_endpoint_metrics(self.uniffiClonePointer(), $0)
-        })
-    }
-
-    /**
-     * Returns a map of with the key as the metric name and the value as
-     * the metric count.
+     * Returns a map of the endpoint metrics where the key is the metric
+     * name and the value as the metric count.
      */
     open func metricsMap() -> [String: UInt64] {
         return try! FfiConverterDictionaryStringUInt64.lift(try! rustCall {
@@ -6521,111 +6505,6 @@ public func FfiConverterTypeEndpoint_lift(_ pointer: UnsafeMutableRawPointer) th
 #endif
 public func FfiConverterTypeEndpoint_lower(_ value: Endpoint) -> UnsafeMutableRawPointer {
     return FfiConverterTypeEndpoint.lower(value)
-}
-
-/**
- * Metrics collected by an [`crate::endpoint::Endpoint`].
- */
-public protocol EndpointMetricsProtocol: AnyObject {}
-
-/**
- * Metrics collected by an [`crate::endpoint::Endpoint`].
- */
-open class EndpointMetrics:
-    EndpointMetricsProtocol
-{
-    fileprivate let pointer: UnsafeMutableRawPointer!
-
-    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
-    public struct NoPointer {
-        public init() {}
-    }
-
-    // TODO: We'd like this to be `private` but for Swifty reasons,
-    // we can't implement `FfiConverter` without making this `required` and we can't
-    // make it `required` without making it `public`.
-    public required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
-        self.pointer = pointer
-    }
-
-    // This constructor can be used to instantiate a fake object.
-    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    //
-    // - Warning:
-    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
-    public init(noPointer _: NoPointer) {
-        pointer = nil
-    }
-
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
-    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_ffi_fn_clone_endpointmetrics(self.pointer, $0) }
-    }
-
-    // No primary constructor declared for this class.
-
-    deinit {
-        guard let pointer = pointer else {
-            return
-        }
-
-        try! rustCall { uniffi_iroh_ffi_fn_free_endpointmetrics(pointer, $0) }
-    }
-}
-
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
-public struct FfiConverterTypeEndpointMetrics: FfiConverter {
-    typealias FfiType = UnsafeMutableRawPointer
-    typealias SwiftType = EndpointMetrics
-
-    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> EndpointMetrics {
-        return EndpointMetrics(unsafeFromRawPointer: pointer)
-    }
-
-    public static func lower(_ value: EndpointMetrics) -> UnsafeMutableRawPointer {
-        return value.uniffiClonePointer()
-    }
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> EndpointMetrics {
-        let v: UInt64 = try readInt(&buf)
-        // The Rust code won't compile if a pointer won't fit in a UInt64.
-        // We have to go via `UInt` because that's the thing that's the size of a pointer.
-        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if ptr == nil {
-            throw UniffiInternalError.unexpectedNullPointer
-        }
-        return try lift(ptr!)
-    }
-
-    public static func write(_ value: EndpointMetrics, into buf: inout [UInt8]) {
-        // This fiddling is because `Int` is the thing that's the same size as a pointer.
-        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
-        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
-    }
-}
-
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
-public func FfiConverterTypeEndpointMetrics_lift(_ pointer: UnsafeMutableRawPointer) throws -> EndpointMetrics {
-    return try FfiConverterTypeEndpointMetrics.lift(pointer)
-}
-
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
-public func FfiConverterTypeEndpointMetrics_lower(_ value: EndpointMetrics) -> UnsafeMutableRawPointer {
-    return FfiConverterTypeEndpointMetrics.lower(value)
 }
 
 /**
@@ -6971,6 +6850,12 @@ public func FfiConverterTypeFilterKind_lower(_ value: FilterKind) -> UnsafeMutab
  * Iroh gossip client.
  */
 public protocol GossipProtocol: AnyObject {
+    /**
+     * Returns a map of the gossip metrics where the key is the metric
+     * name and the value as the metric count.
+     */
+    func metricsMap() -> [String: UInt64]
+
     func subscribe(topic: Data, bootstrap: [String], cb: GossipMessageCallback) async throws -> Sender
 }
 
@@ -7024,6 +6909,16 @@ open class Gossip:
         }
 
         try! rustCall { uniffi_iroh_ffi_fn_free_gossip(pointer, $0) }
+    }
+
+    /**
+     * Returns a map of the gossip metrics where the key is the metric
+     * name and the value as the metric count.
+     */
+    open func metricsMap() -> [String: UInt64] {
+        return try! FfiConverterDictionaryStringUInt64.lift(try! rustCall {
+            uniffi_iroh_ffi_fn_method_gossip_metrics_map(self.uniffiClonePointer(), $0)
+        })
     }
 
     open func subscribe(topic: Data, bootstrap: [String], cb: GossipMessageCallback) async throws -> Sender {
@@ -8097,105 +7992,6 @@ public func FfiConverterTypeLiveEvent_lower(_ value: LiveEvent) -> UnsafeMutable
     return FfiConverterTypeLiveEvent.lower(value)
 }
 
-public protocol MagicsockMetricsProtocol: AnyObject {}
-
-open class MagicsockMetrics:
-    MagicsockMetricsProtocol
-{
-    fileprivate let pointer: UnsafeMutableRawPointer!
-
-    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
-    public struct NoPointer {
-        public init() {}
-    }
-
-    // TODO: We'd like this to be `private` but for Swifty reasons,
-    // we can't implement `FfiConverter` without making this `required` and we can't
-    // make it `required` without making it `public`.
-    public required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
-        self.pointer = pointer
-    }
-
-    // This constructor can be used to instantiate a fake object.
-    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    //
-    // - Warning:
-    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
-    public init(noPointer _: NoPointer) {
-        pointer = nil
-    }
-
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
-    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_ffi_fn_clone_magicsockmetrics(self.pointer, $0) }
-    }
-
-    // No primary constructor declared for this class.
-
-    deinit {
-        guard let pointer = pointer else {
-            return
-        }
-
-        try! rustCall { uniffi_iroh_ffi_fn_free_magicsockmetrics(pointer, $0) }
-    }
-}
-
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
-public struct FfiConverterTypeMagicsockMetrics: FfiConverter {
-    typealias FfiType = UnsafeMutableRawPointer
-    typealias SwiftType = MagicsockMetrics
-
-    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> MagicsockMetrics {
-        return MagicsockMetrics(unsafeFromRawPointer: pointer)
-    }
-
-    public static func lower(_ value: MagicsockMetrics) -> UnsafeMutableRawPointer {
-        return value.uniffiClonePointer()
-    }
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> MagicsockMetrics {
-        let v: UInt64 = try readInt(&buf)
-        // The Rust code won't compile if a pointer won't fit in a UInt64.
-        // We have to go via `UInt` because that's the thing that's the size of a pointer.
-        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if ptr == nil {
-            throw UniffiInternalError.unexpectedNullPointer
-        }
-        return try lift(ptr!)
-    }
-
-    public static func write(_ value: MagicsockMetrics, into buf: inout [UInt8]) {
-        // This fiddling is because `Int` is the thing that's the same size as a pointer.
-        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
-        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
-    }
-}
-
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
-public func FfiConverterTypeMagicsockMetrics_lift(_ pointer: UnsafeMutableRawPointer) throws -> MagicsockMetrics {
-    return try FfiConverterTypeMagicsockMetrics.lift(pointer)
-}
-
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
-public func FfiConverterTypeMagicsockMetrics_lower(_ value: MagicsockMetrics) -> UnsafeMutableRawPointer {
-    return FfiConverterTypeMagicsockMetrics.lower(value)
-}
-
 /**
  * Gossip message
  */
@@ -8598,111 +8394,6 @@ public func FfiConverterTypeNet_lift(_ pointer: UnsafeMutableRawPointer) throws 
 #endif
 public func FfiConverterTypeNet_lower(_ value: Net) -> UnsafeMutableRawPointer {
     return FfiConverterTypeNet.lower(value)
-}
-
-/**
- * Metrics collected by net reports.
- */
-public protocol NetReportMetricsProtocol: AnyObject {}
-
-/**
- * Metrics collected by net reports.
- */
-open class NetReportMetrics:
-    NetReportMetricsProtocol
-{
-    fileprivate let pointer: UnsafeMutableRawPointer!
-
-    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
-    public struct NoPointer {
-        public init() {}
-    }
-
-    // TODO: We'd like this to be `private` but for Swifty reasons,
-    // we can't implement `FfiConverter` without making this `required` and we can't
-    // make it `required` without making it `public`.
-    public required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
-        self.pointer = pointer
-    }
-
-    // This constructor can be used to instantiate a fake object.
-    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    //
-    // - Warning:
-    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
-    public init(noPointer _: NoPointer) {
-        pointer = nil
-    }
-
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
-    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_ffi_fn_clone_netreportmetrics(self.pointer, $0) }
-    }
-
-    // No primary constructor declared for this class.
-
-    deinit {
-        guard let pointer = pointer else {
-            return
-        }
-
-        try! rustCall { uniffi_iroh_ffi_fn_free_netreportmetrics(pointer, $0) }
-    }
-}
-
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
-public struct FfiConverterTypeNetReportMetrics: FfiConverter {
-    typealias FfiType = UnsafeMutableRawPointer
-    typealias SwiftType = NetReportMetrics
-
-    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> NetReportMetrics {
-        return NetReportMetrics(unsafeFromRawPointer: pointer)
-    }
-
-    public static func lower(_ value: NetReportMetrics) -> UnsafeMutableRawPointer {
-        return value.uniffiClonePointer()
-    }
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> NetReportMetrics {
-        let v: UInt64 = try readInt(&buf)
-        // The Rust code won't compile if a pointer won't fit in a UInt64.
-        // We have to go via `UInt` because that's the thing that's the size of a pointer.
-        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if ptr == nil {
-            throw UniffiInternalError.unexpectedNullPointer
-        }
-        return try lift(ptr!)
-    }
-
-    public static func write(_ value: NetReportMetrics, into buf: inout [UInt8]) {
-        // This fiddling is because `Int` is the thing that's the same size as a pointer.
-        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
-        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
-    }
-}
-
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
-public func FfiConverterTypeNetReportMetrics_lift(_ pointer: UnsafeMutableRawPointer) throws -> NetReportMetrics {
-    return try FfiConverterTypeNetReportMetrics.lift(pointer)
-}
-
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
-public func FfiConverterTypeNetReportMetrics_lower(_ value: NetReportMetrics) -> UnsafeMutableRawPointer {
-    return FfiConverterTypeNetReportMetrics.lower(value)
 }
 
 /**
@@ -9373,111 +9064,6 @@ public func FfiConverterTypeNodeTicket_lift(_ pointer: UnsafeMutableRawPointer) 
 #endif
 public func FfiConverterTypeNodeTicket_lower(_ value: NodeTicket) -> UnsafeMutableRawPointer {
     return FfiConverterTypeNodeTicket.lower(value)
-}
-
-/**
- * Metrics collected by the portmapper service.
- */
-public protocol PortmapMetricsProtocol: AnyObject {}
-
-/**
- * Metrics collected by the portmapper service.
- */
-open class PortmapMetrics:
-    PortmapMetricsProtocol
-{
-    fileprivate let pointer: UnsafeMutableRawPointer!
-
-    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
-    public struct NoPointer {
-        public init() {}
-    }
-
-    // TODO: We'd like this to be `private` but for Swifty reasons,
-    // we can't implement `FfiConverter` without making this `required` and we can't
-    // make it `required` without making it `public`.
-    public required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
-        self.pointer = pointer
-    }
-
-    // This constructor can be used to instantiate a fake object.
-    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    //
-    // - Warning:
-    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
-    public init(noPointer _: NoPointer) {
-        pointer = nil
-    }
-
-    #if swift(>=5.8)
-        @_documentation(visibility: private)
-    #endif
-    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_iroh_ffi_fn_clone_portmapmetrics(self.pointer, $0) }
-    }
-
-    // No primary constructor declared for this class.
-
-    deinit {
-        guard let pointer = pointer else {
-            return
-        }
-
-        try! rustCall { uniffi_iroh_ffi_fn_free_portmapmetrics(pointer, $0) }
-    }
-}
-
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
-public struct FfiConverterTypePortmapMetrics: FfiConverter {
-    typealias FfiType = UnsafeMutableRawPointer
-    typealias SwiftType = PortmapMetrics
-
-    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> PortmapMetrics {
-        return PortmapMetrics(unsafeFromRawPointer: pointer)
-    }
-
-    public static func lower(_ value: PortmapMetrics) -> UnsafeMutableRawPointer {
-        return value.uniffiClonePointer()
-    }
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PortmapMetrics {
-        let v: UInt64 = try readInt(&buf)
-        // The Rust code won't compile if a pointer won't fit in a UInt64.
-        // We have to go via `UInt` because that's the thing that's the size of a pointer.
-        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if ptr == nil {
-            throw UniffiInternalError.unexpectedNullPointer
-        }
-        return try lift(ptr!)
-    }
-
-    public static func write(_ value: PortmapMetrics, into buf: inout [UInt8]) {
-        // This fiddling is because `Int` is the thing that's the same size as a pointer.
-        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
-        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
-    }
-}
-
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
-public func FfiConverterTypePortmapMetrics_lift(_ pointer: UnsafeMutableRawPointer) throws -> PortmapMetrics {
-    return try FfiConverterTypePortmapMetrics.lift(pointer)
-}
-
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
-public func FfiConverterTypePortmapMetrics_lower(_ value: PortmapMetrics) -> UnsafeMutableRawPointer {
-    return FfiConverterTypePortmapMetrics.lower(value)
 }
 
 public protocol ProtocolCreator: AnyObject {
@@ -18657,10 +18243,7 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_method_endpoint_connect() != 29734 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_iroh_ffi_checksum_method_endpoint_metrics() != 27393 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_iroh_ffi_checksum_method_endpoint_metrics_map() != 49646 {
+    if uniffi_iroh_ffi_checksum_method_endpoint_metrics_map() != 3774 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_endpoint_node_id() != 54517 {
@@ -18685,6 +18268,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_filterkind_matches() != 24522 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_method_gossip_metrics_map() != 47418 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_gossip_subscribe() != 6414 {

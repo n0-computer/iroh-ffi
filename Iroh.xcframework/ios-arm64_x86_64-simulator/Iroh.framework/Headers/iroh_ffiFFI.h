@@ -1418,11 +1418,6 @@ void uniffi_iroh_ffi_fn_free_endpoint(void*_Nonnull ptr, RustCallStatus *_Nonnul
 uint64_t uniffi_iroh_ffi_fn_method_endpoint_connect(void*_Nonnull ptr, void*_Nonnull node_addr, RustBuffer alpn
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINT_METRICS
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINT_METRICS
-void*_Nonnull uniffi_iroh_ffi_fn_method_endpoint_metrics(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINT_METRICS_MAP
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINT_METRICS_MAP
 RustBuffer uniffi_iroh_ffi_fn_method_endpoint_metrics_map(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -1431,16 +1426,6 @@ RustBuffer uniffi_iroh_ffi_fn_method_endpoint_metrics_map(void*_Nonnull ptr, Rus
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINT_NODE_ID
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINT_NODE_ID
 RustBuffer uniffi_iroh_ffi_fn_method_endpoint_node_id(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_ENDPOINTMETRICS
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_ENDPOINTMETRICS
-void*_Nonnull uniffi_iroh_ffi_fn_clone_endpointmetrics(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_ENDPOINTMETRICS
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_ENDPOINTMETRICS
-void uniffi_iroh_ffi_fn_free_endpointmetrics(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_ENTRY
@@ -1516,6 +1501,11 @@ void*_Nonnull uniffi_iroh_ffi_fn_clone_gossip(void*_Nonnull ptr, RustCallStatus 
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_GOSSIP
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_GOSSIP
 void uniffi_iroh_ffi_fn_free_gossip(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_GOSSIP_METRICS_MAP
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_GOSSIP_METRICS_MAP
+RustBuffer uniffi_iroh_ffi_fn_method_gossip_metrics_map(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_GOSSIP_SUBSCRIBE
@@ -1719,16 +1709,6 @@ RustBuffer uniffi_iroh_ffi_fn_method_liveevent_as_sync_finished(void*_Nonnull pt
 RustBuffer uniffi_iroh_ffi_fn_method_liveevent_type(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_MAGICSOCKMETRICS
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_MAGICSOCKMETRICS
-void*_Nonnull uniffi_iroh_ffi_fn_clone_magicsockmetrics(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_MAGICSOCKMETRICS
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_MAGICSOCKMETRICS
-void uniffi_iroh_ffi_fn_free_magicsockmetrics(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_MESSAGE
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_MESSAGE
 void*_Nonnull uniffi_iroh_ffi_fn_clone_message(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -1807,16 +1787,6 @@ uint64_t uniffi_iroh_ffi_fn_method_net_remote_info(void*_Nonnull ptr, void*_Nonn
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NET_REMOTE_INFO_LIST
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NET_REMOTE_INFO_LIST
 uint64_t uniffi_iroh_ffi_fn_method_net_remote_info_list(void*_Nonnull ptr
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_NETREPORTMETRICS
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_NETREPORTMETRICS
-void*_Nonnull uniffi_iroh_ffi_fn_clone_netreportmetrics(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_NETREPORTMETRICS
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_NETREPORTMETRICS
-void uniffi_iroh_ffi_fn_free_netreportmetrics(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_NODE
@@ -1937,16 +1907,6 @@ void*_Nonnull uniffi_iroh_ffi_fn_method_nodeticket_node_addr(void*_Nonnull ptr, 
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODETICKET_UNIFFI_TRAIT_DISPLAY
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_NODETICKET_UNIFFI_TRAIT_DISPLAY
 RustBuffer uniffi_iroh_ffi_fn_method_nodeticket_uniffi_trait_display(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_PORTMAPMETRICS
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_PORTMAPMETRICS
-void*_Nonnull uniffi_iroh_ffi_fn_clone_portmapmetrics(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_PORTMAPMETRICS
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_PORTMAPMETRICS
-void uniffi_iroh_ffi_fn_free_portmapmetrics(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_PROTOCOLCREATOR
@@ -3441,12 +3401,6 @@ uint16_t uniffi_iroh_ffi_checksum_method_endpoint_connect(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_ENDPOINT_METRICS
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_ENDPOINT_METRICS
-uint16_t uniffi_iroh_ffi_checksum_method_endpoint_metrics(void
-    
-);
-#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_ENDPOINT_METRICS_MAP
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_ENDPOINT_METRICS_MAP
 uint16_t uniffi_iroh_ffi_checksum_method_endpoint_metrics_map(void
@@ -3498,6 +3452,12 @@ uint16_t uniffi_iroh_ffi_checksum_method_entry_timestamp(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_FILTERKIND_MATCHES
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_FILTERKIND_MATCHES
 uint16_t uniffi_iroh_ffi_checksum_method_filterkind_matches(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_GOSSIP_METRICS_MAP
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_GOSSIP_METRICS_MAP
+uint16_t uniffi_iroh_ffi_checksum_method_gossip_metrics_map(void
     
 );
 #endif
