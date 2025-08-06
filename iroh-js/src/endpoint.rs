@@ -7,7 +7,7 @@ use tokio::sync::Mutex;
 use iroh::endpoint;
 use iroh_metrics::{MetricValue, MetricsGroupSet};
 
-use crate::{metrics::EndpointMetrics, NodeAddr, PublicKey};
+use crate::{NodeAddr, PublicKey};
 
 #[derive(Clone)]
 #[napi]
@@ -34,20 +34,8 @@ impl Endpoint {
     }
 
     #[napi]
-    /// Returns an EndpointMetrics struct that allows you to look at
-    /// individual metrics for the magicsock, net_report, and portmapper.
-    pub fn metrics(&self) -> EndpointMetrics {
-        let metrics = self.0.metrics();
-        EndpointMetrics {
-            magicsock: metrics.magicsock.clone().into(),
-            net_report: metrics.net_report.clone().into(),
-            portmapper: metrics.portmapper.clone().into(),
-        }
-    }
-
-    #[napi]
-    /// Returns a map of with the key as the metric name and the value as
-    /// the metric count.
+    /// Returns a map of the endpoint metrics where the key is the metric
+    /// name and the value is the metric count.
     pub fn metrics_map(&self) -> std::collections::HashMap<String, BigInt> {
         self.0
             .metrics()

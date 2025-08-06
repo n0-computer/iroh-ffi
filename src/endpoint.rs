@@ -4,7 +4,7 @@ use iroh::endpoint;
 use iroh_metrics::{MetricValue, MetricsGroupSet};
 use tokio::sync::Mutex;
 
-use crate::{metrics::EndpointMetrics, IrohError, NodeAddr};
+use crate::{IrohError, NodeAddr};
 
 #[derive(Clone, uniffi::Object)]
 pub struct Endpoint(endpoint::Endpoint);
@@ -36,20 +36,8 @@ impl Endpoint {
     }
 
     #[uniffi::method]
-    /// Returns an EndpointMetrics struct that allows you to look at
-    /// individual metrics for the magicsock, net_report, and portmapper.
-    pub fn metrics(&self) -> EndpointMetrics {
-        let metrics = self.0.metrics();
-        EndpointMetrics {
-            magicsock: metrics.magicsock.clone().into(),
-            net_report: metrics.net_report.clone().into(),
-            portmapper: metrics.portmapper.clone().into(),
-        }
-    }
-
-    #[uniffi::method]
-    /// Returns a map of with the key as the metric name and the value as
-    /// the metric count.
+    /// Returns a map of the endpoint metrics where the key is the metric
+    /// name and the value as the metric count.
     pub fn metrics_map(&self) -> std::collections::HashMap<String, u64> {
         self.0
             .metrics()
