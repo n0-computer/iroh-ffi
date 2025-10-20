@@ -1,8 +1,8 @@
 use std::{str::FromStr, sync::Arc};
 
-use futures::TryStreamExt;
+use n0_future::TryStreamExt;
 
-use crate::{AuthorsClient, Iroh, IrohError};
+use crate::{DocsClient, Iroh, IrohError};
 
 /// Identifier for an [`Author`]
 #[derive(Debug, Clone, PartialEq, Eq, uniffi::Object)]
@@ -63,7 +63,7 @@ impl std::fmt::Display for Author {
 /// Iroh authors client.
 #[derive(uniffi::Object)]
 pub struct Authors {
-    client: AuthorsClient,
+    client: DocsClient,
 }
 
 #[uniffi::export]
@@ -86,7 +86,7 @@ impl Authors {
     /// The default author can be set with [`Self::set_default`].
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn default(&self) -> Result<Arc<AuthorId>, IrohError> {
-        let author = self.client.default().await?;
+        let author = self.client.author_default().await?;
         Ok(Arc::new(AuthorId(author)))
     }
 
@@ -95,7 +95,7 @@ impl Authors {
     pub async fn list(&self) -> Result<Vec<Arc<AuthorId>>, IrohError> {
         let authors = self
             .client
-            .list()
+            .author_list()
             .await?
             .map_ok(|id| Arc::new(AuthorId(id)))
             .try_collect::<Vec<_>>()
@@ -111,7 +111,7 @@ impl Authors {
     /// If you need only a single author, use [`Self::default`].
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn create(&self) -> Result<Arc<AuthorId>, IrohError> {
-        let author = self.client.create().await?;
+        let author = self.client.author_create().await?;
 
         Ok(Arc::new(AuthorId(author)))
     }
@@ -121,7 +121,7 @@ impl Authors {
     /// Warning: This contains sensitive data.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn export(&self, author: Arc<AuthorId>) -> Result<Arc<Author>, IrohError> {
-        let author = self.client.export(author.0).await?;
+        let author = self.client.author_export(author.0).await?;
         match author {
             Some(author) => Ok(Arc::new(Author(author))),
             None => Err(anyhow::anyhow!("Author Not Found").into()),
@@ -133,7 +133,7 @@ impl Authors {
     /// Warning: This contains sensitive data.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn import(&self, author: Arc<Author>) -> Result<Arc<AuthorId>, IrohError> {
-        self.client.import(author.0.clone()).await?;
+        self.client.author_import(author.0.clone()).await?;
         Ok(Arc::new(AuthorId(author.0.id())))
     }
 
@@ -151,7 +151,7 @@ impl Authors {
     /// Warning: This permanently removes this author.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn delete(&self, author: Arc<AuthorId>) -> Result<(), IrohError> {
-        self.client.delete(author.0).await?;
+        self.client.author_delete(author.0).await?;
         Ok(())
     }
 }

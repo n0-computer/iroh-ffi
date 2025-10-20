@@ -17,13 +17,12 @@ async-trait = "0.1.80"
 blake3 = "1.3.3"
 bytes = "1"
 data-encoding = { version = "2.3.3" }
-iroh-base = { version = "0.35", features = ["ticket"] }
-iroh-gossip = { version = "0.35", features = ["rpc"] }
-iroh-docs = { version = "0.35", features = ["rpc"] }
-iroh-blobs = { version = "0.35", features = ["rpc"] }
-iroh-metrics = { version = "0.34" }
-iroh-node-util = { version = "0.35", features = [] }
-iroh = "0.35"
+iroh-base = { version = "0.93", features = ["ticket"] }
+iroh-gossip = { version = "0.93", features = [] }
+iroh-docs = { version = "0.93", features = [] }
+iroh-blobs = { version = "0.95", features = [] }
+iroh-metrics = { version = "0.36" }
+iroh = "0.93"
 iroh-io = { version = "0.6" }
 libc = "0.2.141"
 num_cpus = { version = "1.15.0" }
@@ -37,8 +36,7 @@ futures = "0.3.28"
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.17" }
 chrono = "0.4.38"
-derive_more = { version = "1.0.0", features = ["debug"] }
-quic-rpc = "0.20"
+derive_more = { version = "2.0.0", features = ["debug"] }
 
 
 [build-dependencies]

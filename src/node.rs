@@ -1,14 +1,10 @@
 use std::{collections::HashMap, fmt::Debug, path::PathBuf, sync::Arc, time::Duration};
 
-use iroh_blobs::{
-    downloader::Downloader, net_protocol::Blobs, provider::EventSender, store::GcConfig,
-    util::local_pool::LocalPool,
-};
+use iroh::protocol::AcceptError;
+use iroh_blobs::BlobsProtocol as Blobs;
+use iroh_blobs::store::fs::options::GcConfig;
 use iroh_docs::protocol::Docs;
 use iroh_gossip::net::Gossip;
-use iroh_node_util::rpc::server::AbstractNode;
-use quic_rpc::{transport::flume::FlumeConnector, RpcClient, RpcServer};
-use tokio_util::task::AbortOnDropHandle;
 
 use crate::{
     BlobProvideEventCallback, CallbackError, Connection, Endpoint, IrohError, NodeAddr, PublicKey,
@@ -62,46 +58,6 @@ pub struct LatencyAndControlMsg {
     pub latency: Duration,
     /// The type of control message, represented as a string
     pub control_msg: String,
-    // control_msg: ControlMsg
-}
-
-// TODO: enable and use for `LatencyAndControlMsg.control_msg` field when iroh core makes this public
-// The kinds of control messages that can be sent
-// pub use iroh::magicsock::ControlMsg;
-
-/// Information about a remote node
-#[derive(Debug, uniffi::Record)]
-pub struct RemoteInfo {
-    /// The node identifier of the endpoint. Also a public key.
-    pub node_id: Arc<PublicKey>,
-    /// Relay url, if available.
-    pub relay_url: Option<String>,
-    /// List of addresses at which this node might be reachable, plus any latency information we
-    /// have about that address and the last time the address was used.
-    pub addrs: Vec<Arc<DirectAddrInfo>>,
-    /// The type of connection we have to the peer, either direct or over relay.
-    pub conn_type: Arc<ConnectionType>,
-    /// The latency of the `conn_type`.
-    pub latency: Option<Duration>,
-    /// Duration since the last time this peer was used.
-    pub last_used: Option<Duration>,
-}
-
-impl From<iroh::endpoint::RemoteInfo> for RemoteInfo {
-    fn from(value: iroh::endpoint::RemoteInfo) -> Self {
-        RemoteInfo {
-            node_id: Arc::new(value.node_id.into()),
-            relay_url: value.relay_url.map(|info| info.relay_url.to_string()),
-            addrs: value
-                .addrs
-                .iter()
-                .map(|a| Arc::new(DirectAddrInfo(a.clone())))
-                .collect(),
-            conn_type: Arc::new(value.conn_type.into()),
-            latency: value.latency,
-            last_used: value.last_used,
-        }
-    }
 }
 
 /// The type of the connection
@@ -246,22 +202,18 @@ struct ProtocolWrapper {
 }
 
 impl iroh::protocol::ProtocolHandler for ProtocolWrapper {
-    fn accept(
-        &self,
-        conn: iroh::endpoint::Connection,
-    ) -> futures_lite::future::Boxed<anyhow::Result<()>> {
+    async fn accept(&self, conn: iroh::endpoint::Connection) -> Result<(), AcceptError> {
         let this = self.clone();
-        Box::pin(async move {
-            this.handler.accept(Arc::new(conn.into())).await?;
-            Ok(())
-        })
+        this.handler
+            .accept(Arc::new(conn.into()))
+            .await
+            .map_err(|err| AcceptError::from_err(err))?;
+        Ok(())
     }
 
-    fn shutdown(&self) -> futures_lite::future::Boxed<()> {
+    async fn shutdown(&self) {
         let this = self.clone();
-        Box::pin(async move {
-            this.handler.shutdown().await;
-        })
+        this.handler.shutdown().await;
     }
 }
 
@@ -311,46 +263,15 @@ pub enum NodeDiscoveryConfig {
 #[derive(uniffi::Object, Debug, Clone)]
 pub struct Iroh {
     router: iroh::protocol::Router,
-    _local_pool: Arc<LocalPool>,
-    /// RPC client for node and net to hand out
-    pub(crate) client: RpcClient<
-        iroh_node_util::rpc::proto::RpcService,
-        FlumeConnector<iroh_node_util::rpc::proto::Response, iroh_node_util::rpc::proto::Request>,
-    >,
-    /// Handler task
-    _handler: Arc<AbortOnDropHandle<()>>,
     pub(crate) blobs_client: BlobsClient,
     pub(crate) tags_client: TagsClient,
-    pub(crate) net_client: NetClient,
-    pub(crate) authors_client: Option<AuthorsClient>,
     pub(crate) docs_client: Option<DocsClient>,
     pub(crate) gossip: Gossip,
 }
 
-pub(crate) type NetClient = iroh_node_util::rpc::client::net::Client;
-pub(crate) type BlobsClient = iroh_blobs::rpc::client::blobs::Client<
-    FlumeConnector<iroh_blobs::rpc::proto::Response, iroh_blobs::rpc::proto::Request>,
->;
-pub(crate) type TagsClient = iroh_blobs::rpc::client::tags::Client<
-    FlumeConnector<iroh_blobs::rpc::proto::Response, iroh_blobs::rpc::proto::Request>,
->;
-pub(crate) type AuthorsClient = iroh_docs::rpc::client::authors::Client<
-    FlumeConnector<iroh_docs::rpc::proto::Response, iroh_docs::rpc::proto::Request>,
->;
-pub(crate) type DocsClient = iroh_docs::rpc::client::docs::Client<
-    FlumeConnector<iroh_docs::rpc::proto::Response, iroh_docs::rpc::proto::Request>,
->;
-
-#[derive(Debug, Clone)]
-struct NetNode(iroh::Endpoint);
-
-impl AbstractNode for NetNode {
-    fn endpoint(&self) -> &iroh::Endpoint {
-        &self.0
-    }
-
-    fn shutdown(&self) {}
-}
+pub(crate) type BlobsClient = iroh_blobs::api::blobs::Blobs;
+pub(crate) type TagsClient = iroh_blobs::api::tags::Tags;
+pub(crate) type DocsClient = iroh_docs::api::DocsApi;
 
 #[uniffi::export]
 impl Iroh {
@@ -394,7 +315,7 @@ impl Iroh {
         } else {
             (None, None)
         };
-        let blobs_store = iroh_blobs::store::fs::Store::load(path.join("blobs"))
+        let blobs_store = iroh_blobs::store::fs::FsStore::load(path.join("blobs"))
             .await
             .map_err(|err| anyhow::anyhow!(err))?;
         let local_pool = LocalPool::default();
@@ -409,28 +330,13 @@ impl Iroh {
         .await?;
         let router = builder.spawn();
 
-        let (listener, connector) = quic_rpc::transport::flume::channel(1);
-        let listener = RpcServer::new(listener);
-        let client = RpcClient::new(connector);
-        let nn = Arc::new(NetNode(router.endpoint().clone()));
-        let handler = listener.spawn_accept_loop(move |req, chan| {
-            iroh_node_util::rpc::server::handle_rpc_request(nn.clone(), req, chan)
-        });
-
         let blobs_client = blobs.client().clone();
-        let net_client = iroh_node_util::rpc::client::net::Client::new(client.clone().boxed());
-
         let docs_client = docs.map(|d| d.client().clone());
 
         Ok(Iroh {
             router,
-            _local_pool: Arc::new(local_pool),
-            client,
-            _handler: Arc::new(handler),
             tags_client: blobs_client.tags(),
             blobs_client,
-            net_client,
-            authors_client: docs_client.as_ref().map(|d| d.authors()),
             docs_client,
             gossip,
         })
@@ -449,7 +355,7 @@ impl Iroh {
         } else {
             (None, None)
         };
-        let blobs_store = iroh_blobs::store::mem::Store::default();
+        let blobs_store = iroh_blobs::store::mem::MemStore::default();
         let local_pool = LocalPool::default();
         let (builder, gossip, blobs, docs) = apply_options(
             builder,
@@ -462,28 +368,13 @@ impl Iroh {
         .await?;
         let router = builder.spawn();
 
-        let (listener, connector) = quic_rpc::transport::flume::channel(1);
-        let listener = RpcServer::new(listener);
-        let client = RpcClient::new(connector);
-        let nn: Arc<dyn AbstractNode> = Arc::new(NetNode(router.endpoint().clone()));
-        let handler = listener.spawn_accept_loop(move |req, chan| {
-            iroh_node_util::rpc::server::handle_rpc_request(nn.clone(), req, chan)
-        });
-
         let blobs_client = blobs.client().clone();
-        let net_client = iroh_node_util::rpc::client::net::Client::new(client.clone().boxed());
-
         let docs_client = docs.map(|d| d.client().clone());
 
         Ok(Iroh {
             router,
-            _local_pool: Arc::new(local_pool),
-            client,
-            _handler: Arc::new(handler),
-            net_client,
             tags_client: blobs_client.tags(),
             blobs_client,
-            authors_client: docs_client.as_ref().map(|d| d.authors()),
             docs_client,
             gossip,
         })
@@ -492,25 +383,17 @@ impl Iroh {
     /// Access to node specific funtionaliy.
     pub fn node(&self) -> Node {
         let router = self.router.clone();
-        let client = self.client.clone().boxed();
-        let client = iroh_node_util::rpc::client::node::Client::new(client);
-        Node { router, client }
+        Node { router }
     }
 }
 
-async fn apply_options<S: iroh_blobs::store::Store>(
+async fn apply_options(
     mut builder: iroh::endpoint::Builder,
     options: NodeOptions,
-    blob_store: S,
+    blobs_store: &iroh_blobs::api::Store,
     docs_store: Option<iroh_docs::store::Store>,
     author_store: Option<iroh_docs::engine::DefaultAuthorStorage>,
-    local_pool: &LocalPool,
-) -> anyhow::Result<(
-    iroh::protocol::RouterBuilder,
-    Gossip,
-    Blobs<S>,
-    Option<Docs<S>>,
-)> {
+) -> anyhow::Result<(iroh::protocol::RouterBuilder, Gossip, Blobs, Option<Docs>)> {
     let gc_period = if let Some(millis) = options.gc_interval_millis {
         match millis {
             0 => None,
@@ -521,9 +404,7 @@ async fn apply_options<S: iroh_blobs::store::Store>(
     };
 
     let blob_events = if let Some(blob_events_cb) = options.blob_events {
-        BlobProvideEvents::new(blob_events_cb).into()
-    } else {
-        EventSender::default()
+        Some(BlobProvideEvents::new(blob_events_cb).into())
     };
 
     if let Some(addr) = options.ipv4_addr {
@@ -557,14 +438,9 @@ async fn apply_options<S: iroh_blobs::store::Store>(
     builder = builder.accept(iroh_gossip::ALPN, gossip.clone());
 
     // iroh blobs
-    let downloader = Downloader::new(
-        blob_store.clone(),
-        builder.endpoint().clone(),
-        local_pool.handle().clone(),
-    );
-    let blobs = Blobs::builder(blob_store.clone())
-        .events(blob_events)
-        .build(builder.endpoint());
+
+    let blobs = Blobs::new(blobs_store, blob_events);
+    let downloader = blobs.downloader(&endpoint);
 
     builder = builder.accept(iroh_blobs::ALPN, blobs.clone());
 
@@ -573,15 +449,15 @@ async fn apply_options<S: iroh_blobs::store::Store>(
             builder.endpoint().clone(),
             gossip.clone(),
             docs_store.expect("docs enabled"),
-            blob_store.clone(),
+            (*blobs).clone(),
             downloader,
             author_store.expect("docs enabled"),
-            local_pool.handle().clone(),
+            None,
         )
         .await?;
         let docs = Docs::new(engine);
-        builder = builder.accept(iroh_docs::ALPN, docs.clone());
         blobs.add_protected(docs.protect_cb())?;
+        builder = builder.accept(iroh_docs::ALPN, docs.clone());
 
         Some(docs)
     } else {
@@ -609,7 +485,6 @@ async fn apply_options<S: iroh_blobs::store::Store>(
 #[derive(uniffi::Object)]
 pub struct Node {
     router: iroh::protocol::Router,
-    client: iroh_node_util::rpc::client::node::Client,
 }
 
 #[uniffi::export]
@@ -633,13 +508,6 @@ impl Node {
         Ok(stats)
     }
 
-    /// Get status information about a node
-    #[uniffi::method(async_runtime = "tokio")]
-    pub async fn status(&self) -> Result<Arc<NodeStatus>, IrohError> {
-        let res = self.client.status().await.map(|n| Arc::new(n.into()))?;
-        Ok(res)
-    }
-
     /// Shutdown this iroh node.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn shutdown(&self) -> Result<(), IrohError> {
@@ -653,40 +521,9 @@ impl Node {
     }
 }
 
-/// The response to a status request
-#[derive(Debug, uniffi::Object)]
-pub struct NodeStatus(iroh_node_util::rpc::client::net::NodeStatus);
-
-impl From<iroh_node_util::rpc::client::net::NodeStatus> for NodeStatus {
-    fn from(n: iroh_node_util::rpc::client::net::NodeStatus) -> Self {
-        NodeStatus(n)
-    }
-}
-
-#[uniffi::export]
-impl NodeStatus {
-    /// The node id and socket addresses of this node.
-    pub fn node_addr(&self) -> Arc<NodeAddr> {
-        Arc::new(self.0.addr.clone().into())
-    }
-
-    /// The bound listening addresses of the node
-    pub fn listen_addrs(&self) -> Vec<String> {
-        self.0
-            .listen_addrs
-            .iter()
-            .map(|addr| addr.to_string())
-            .collect()
-    }
-
-    /// The version of the node
-    pub fn version(&self) -> String {
-        self.0.version.clone()
-    }
-
-    /// The address of the RPC of the node
-    pub fn rpc_addr(&self) -> Option<String> {
-        self.0.rpc_addr.map(|a| a.to_string())
+impl Node {
+    pub(crate) fn raw_endpoint(&self) -> &iroh::Endpoint {
+        self.router.endpoint()
     }
 }
 
@@ -704,22 +541,6 @@ impl Debug for BlobProvideEvents {
 impl BlobProvideEvents {
     fn new(callback: Arc<dyn BlobProvideEventCallback>) -> Self {
         Self { callback }
-    }
-}
-
-impl iroh_blobs::provider::CustomEventSender for BlobProvideEvents {
-    fn send(&self, event: iroh_blobs::provider::Event) -> futures_lite::future::Boxed<()> {
-        let cb = self.callback.clone();
-        Box::pin(async move {
-            cb.blob_event(Arc::new(event.into())).await.ok();
-        })
-    }
-
-    fn try_send(&self, event: iroh_blobs::provider::Event) {
-        let cb = self.callback.clone();
-        tokio::task::spawn(async move {
-            cb.blob_event(Arc::new(event.into())).await.ok();
-        });
     }
 }
 
