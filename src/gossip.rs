@@ -1,5 +1,4 @@
-use std::pin::Pin;
-use std::sync::Arc;
+use std::{pin::Pin, sync::Arc};
 
 use iroh::NodeId;
 use iroh_gossip::api::Event;
@@ -8,8 +7,7 @@ use tokio::sync::Mutex;
 use tokio_util::sync::CancellationToken;
 use tracing::warn;
 
-use crate::node::Iroh;
-use crate::{CallbackError, IrohError};
+use crate::{node::Iroh, CallbackError, IrohError};
 
 /// Gossip message
 #[derive(Debug, uniffi::Object)]

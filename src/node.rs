@@ -1,8 +1,7 @@
 use std::{collections::HashMap, fmt::Debug, path::PathBuf, sync::Arc, time::Duration};
 
 use iroh::protocol::AcceptError;
-use iroh_blobs::BlobsProtocol as Blobs;
-use iroh_blobs::store::fs::options::GcConfig;
+use iroh_blobs::{store::fs::options::GcConfig, BlobsProtocol as Blobs};
 use iroh_docs::protocol::Docs;
 use iroh_gossip::net::Gossip;
 

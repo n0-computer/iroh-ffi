@@ -2,12 +2,10 @@ use std::{path::PathBuf, str::FromStr, sync::RwLock};
 
 use futures::{StreamExt, TryStreamExt};
 use iroh_blobs::store::BaoBlobSize;
-use napi::bindgen_prelude::*;
-use napi::threadsafe_function::ThreadsafeFunction;
+use napi::{bindgen_prelude::*, threadsafe_function::ThreadsafeFunction};
 use napi_derive::napi;
 
-use crate::{node::Iroh, AddrInfoOptions, BlobTicket, NodeAddr};
-use crate::{BlobsClient, NetClient};
+use crate::{node::Iroh, AddrInfoOptions, BlobTicket, BlobsClient, NetClient, NodeAddr};
 
 /// Iroh blobs client.
 #[napi]

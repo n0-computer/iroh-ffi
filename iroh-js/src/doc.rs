@@ -2,8 +2,7 @@ use std::{path::PathBuf, str::FromStr};
 
 use bytes::Bytes;
 use futures::{StreamExt, TryStreamExt};
-use napi::bindgen_prelude::*;
-use napi::threadsafe_function::ThreadsafeFunction;
+use napi::{bindgen_prelude::*, threadsafe_function::ThreadsafeFunction};
 use napi_derive::napi;
 use quic_rpc::transport::flume::FlumeConnector;
 use tracing::warn;

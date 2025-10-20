@@ -5,9 +5,9 @@ use n0_future::{StreamExt, TryStreamExt};
 use serde::{Deserialize, Serialize};
 use tracing::warn;
 
-use crate::DocsClient;
 use crate::{
-    AuthorId, CallbackError, DocTicket, Hash, Iroh, IrohError, PublicKey, ticket::AddrInfoOptions,
+    ticket::AddrInfoOptions, AuthorId, CallbackError, DocTicket, DocsClient, Hash, Iroh, IrohError,
+    PublicKey,
 };
 
 #[derive(Debug, uniffi::Enum)]
@@ -1532,10 +1532,11 @@ impl DocExportProgress {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{PublicKey, setup_logging};
     use rand::RngCore;
     use tokio::{io::AsyncWriteExt, sync::mpsc};
+
+    use super::*;
+    use crate::{setup_logging, PublicKey};
 
     #[tokio::test]
     async fn test_doc_create() {

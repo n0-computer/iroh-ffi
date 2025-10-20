@@ -2,10 +2,11 @@ use std::pin::Pin;
 
 use futures::{Sink, SinkExt, StreamExt};
 use iroh::NodeId;
-use iroh_gossip::net::GossipEvent;
-use iroh_gossip::rpc::{SubscribeResponse, SubscribeUpdate};
-use napi::bindgen_prelude::*;
-use napi::threadsafe_function::ThreadsafeFunction;
+use iroh_gossip::{
+    net::GossipEvent,
+    rpc::{SubscribeResponse, SubscribeUpdate},
+};
+use napi::{bindgen_prelude::*, threadsafe_function::ThreadsafeFunction};
 use napi_derive::napi;
 use tokio::sync::Mutex;
 use tokio_util::sync::CancellationToken;
