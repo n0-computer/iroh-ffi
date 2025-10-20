@@ -10,24 +10,15 @@ mod node;
 mod tag;
 mod ticket;
 
-use std::path::Component;
-use std::path::Path;
-use std::path::PathBuf;
-
-pub use self::author::*;
-pub use self::blob::*;
-pub use self::doc::*;
-pub use self::endpoint::*;
-pub use self::error::*;
-pub use self::gossip::*;
-pub use self::key::*;
-pub use self::net::*;
-pub use self::node::*;
-pub use self::tag::*;
-pub use self::ticket::*;
+use std::path::{Component, Path, PathBuf};
 
 use bytes::Bytes;
 use tracing_subscriber::filter::LevelFilter;
+
+pub use self::{
+    author::*, blob::*, doc::*, endpoint::*, error::*, gossip::*, key::*, net::*, node::*, tag::*,
+    ticket::*,
+};
 
 // This macro includes the scaffolding for the Iroh FFI bindings.
 uniffi::setup_scaffolding!();
@@ -215,7 +206,7 @@ fn canonicalized_path_to_string(
 
 #[cfg(test)]
 fn setup_logging() {
-    use tracing_subscriber::{EnvFilter, fmt, prelude::*};
+    use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
     tracing_subscriber::registry()
         .with(fmt::layer())

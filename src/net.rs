@@ -1,5 +1,6 @@
-use crate::{Iroh, IrohError, NodeAddr, PublicKey};
 use iroh::Endpoint;
+
+use crate::{Iroh, IrohError, NodeAddr, PublicKey};
 
 /// Iroh net client.
 #[derive(uniffi::Object)]

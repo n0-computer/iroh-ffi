@@ -8,9 +8,10 @@ use std::{
 use n0_future::{StreamExt, TryStreamExt};
 use serde::{Deserialize, Serialize};
 
-use crate::{BlobTicket, ticket::AddrInfoOptions};
-use crate::{BlobsClient, CallbackError, node::Iroh};
-use crate::{IrohError, NodeAddr, TagInfo};
+use crate::{
+    node::Iroh, ticket::AddrInfoOptions, BlobTicket, BlobsClient, CallbackError, IrohError,
+    NodeAddr, TagInfo,
+};
 
 /// Iroh blobs client.
 #[derive(uniffi::Object)]
@@ -1430,14 +1431,15 @@ pub struct LinkAndName {
 
 #[cfg(test)]
 mod tests {
-    use std::io::Write;
-    use std::sync::{Arc, Mutex};
-
-    use super::*;
-    use crate::node::Iroh;
-    use crate::{CallbackError, NodeOptions, setup_logging};
+    use std::{
+        io::Write,
+        sync::{Arc, Mutex},
+    };
 
     use rand::RngCore;
+
+    use super::*;
+    use crate::{node::Iroh, setup_logging, CallbackError, NodeOptions};
 
     #[test]
     fn test_hash() {

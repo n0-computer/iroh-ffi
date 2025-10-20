@@ -1,9 +1,10 @@
-use std::str::FromStr;
-use std::sync::Arc;
+use std::{str::FromStr, sync::Arc};
 
-use crate::blob::{BlobFormat, Hash};
-use crate::doc::NodeAddr;
-use crate::error::IrohError;
+use crate::{
+    blob::{BlobFormat, Hash},
+    doc::NodeAddr,
+    error::IrohError,
+};
 
 /// A token containing information for establishing a connection to a node.
 ///
