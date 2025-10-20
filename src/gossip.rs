@@ -1,10 +1,9 @@
 use std::pin::Pin;
 use std::sync::Arc;
 
-use futures::{Sink, SinkExt, StreamExt};
 use iroh::NodeId;
-use iroh_gossip::net::GossipEvent;
-use iroh_gossip::rpc::{SubscribeResponse, SubscribeUpdate};
+use iroh_gossip::api::Event;
+use n0_future::{Sink, SinkExt, StreamExt};
 use tokio::sync::Mutex;
 use tokio_util::sync::CancellationToken;
 use tracing::warn;
@@ -172,26 +171,26 @@ impl Gossip {
                     }
                     Some(event) = stream.next() => {
                         let message = match event {
-                            Ok(SubscribeResponse::Gossip(GossipEvent::NeighborUp(n))) => {
+                            Ok(Event::NeighborUp(n)) => {
                                 Message::NeighborUp(n.to_string())
                             }
-                            Ok(SubscribeResponse::Gossip(GossipEvent::NeighborDown(n))) => {
+                            Ok(Event::NeighborDown(n)) => {
                                 Message::NeighborDown(n.to_string())
                             }
-                            Ok(SubscribeResponse::Gossip(GossipEvent::Received(
-                                iroh_gossip::net::Message {
+                            Ok(Event::Received(
+                                iroh_gossip::api::Message {
                                     content,
                                     delivered_from,
                                     ..
                                 },
-                            ))) => Message::Received {
+                            )) => Message::Received {
                                 content: content.to_vec(),
                                 delivered_from: delivered_from.to_string(),
                             },
-                            Ok(SubscribeResponse::Gossip(GossipEvent::Joined(nodes))) => {
+                            Ok(Event::Joined(nodes)) => {
                                 Message::Joined(nodes.into_iter().map(|n| n.to_string()).collect())
                             }
-                            Ok(SubscribeResponse::Lagged) => Message::Lagged,
+                            Ok(Event::Lagged) => Message::Lagged,
                             Err(err) => Message::Error(err.to_string()),
                         };
                         if let Err(err) = cb.on_message(Arc::new(message)).await {
@@ -217,7 +216,7 @@ impl Gossip {
 /// Gossip sender
 #[derive(uniffi::Object)]
 pub struct Sender {
-    sink: Mutex<Pin<Box<dyn Sink<SubscribeUpdate, Error = anyhow::Error> + Sync + Send>>>,
+    sink: Mutex<Pin<Box<dyn Sink<Event, Error = anyhow::Error> + Sync + Send>>>,
     cancel: CancellationToken,
 }
 
