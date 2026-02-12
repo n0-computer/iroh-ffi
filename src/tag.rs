@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
-use crate::{BlobFormat, Hash, Iroh, IrohError, TagsClient};
 use bytes::Bytes;
-use futures::TryStreamExt;
+use n0_future::TryStreamExt;
+
+use crate::{BlobFormat, Hash, Iroh, IrohError, TagsClient};
 
 /// A response to a list collections request
 #[derive(Debug, uniffi::Record)]
@@ -15,8 +16,8 @@ pub struct TagInfo {
     pub hash: Arc<Hash>,
 }
 
-impl From<iroh_blobs::rpc::client::tags::TagInfo> for TagInfo {
-    fn from(res: iroh_blobs::rpc::client::tags::TagInfo) -> Self {
+impl From<iroh_blobs::api::tags::TagInfo> for TagInfo {
+    fn from(res: iroh_blobs::api::tags::TagInfo) -> Self {
         TagInfo {
             name: res.name.0.to_vec(),
             format: res.format.into(),
@@ -62,7 +63,7 @@ impl Tags {
     /// Delete a tag
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn delete(&self, name: Vec<u8>) -> Result<(), IrohError> {
-        let tag = iroh_blobs::Tag(Bytes::from(name));
+        let tag = iroh_blobs::api::Tag(Bytes::from(name));
         self.client.delete(tag).await?;
         Ok(())
     }

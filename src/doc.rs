@@ -1,14 +1,13 @@
 use std::{path::PathBuf, str::FromStr, sync::Arc, time::SystemTime};
 
 use bytes::Bytes;
-use futures::{StreamExt, TryStreamExt};
-use quic_rpc::transport::flume::FlumeConnector;
+use n0_future::{StreamExt, TryStreamExt};
 use serde::{Deserialize, Serialize};
 use tracing::warn;
 
-use crate::DocsClient;
 use crate::{
-    ticket::AddrInfoOptions, AuthorId, CallbackError, DocTicket, Hash, Iroh, IrohError, PublicKey,
+    ticket::AddrInfoOptions, AuthorId, CallbackError, DocTicket, DocsClient, Hash, Iroh, IrohError,
+    PublicKey,
 };
 
 #[derive(Debug, uniffi::Enum)]
@@ -33,8 +32,6 @@ impl From<iroh_docs::CapabilityKind> for CapabilityKind {
 pub struct Docs {
     client: DocsClient,
 }
-
-type MemConnector = FlumeConnector<iroh_docs::rpc::proto::Response, iroh_docs::rpc::proto::Request>;
 
 #[uniffi::export]
 impl Iroh {
@@ -145,7 +142,7 @@ pub struct NamespaceAndCapability {
 /// A representation of a mutable, synchronizable key-value store.
 #[derive(Clone, uniffi::Object)]
 pub struct Doc {
-    pub(crate) inner: iroh_docs::rpc::client::docs::Doc<MemConnector>,
+    pub(crate) inner: iroh_docs::api::Doc,
 }
 
 #[uniffi::export]
@@ -225,7 +222,7 @@ impl Doc {
                 entry.0.clone(),
                 std::path::PathBuf::from(path),
                 // TODO(b5) - plumb up the export mode, currently it's always copy
-                iroh_blobs::store::ExportMode::Copy,
+                iroh_blobs::api::blobs::ExportMode::Copy,
             )
             .await?;
         while let Some(progress) = stream.next().await {
@@ -594,11 +591,11 @@ pub enum ShareMode {
     Write,
 }
 
-impl From<ShareMode> for iroh_docs::rpc::client::docs::ShareMode {
+impl From<ShareMode> for iroh_docs::api::protocol::ShareMode {
     fn from(mode: ShareMode) -> Self {
         match mode {
-            ShareMode::Read => iroh_docs::rpc::client::docs::ShareMode::Read,
-            ShareMode::Write => iroh_docs::rpc::client::docs::ShareMode::Write,
+            ShareMode::Read => iroh_docs::api::protocol::ShareMode::Read,
+            ShareMode::Write => iroh_docs::api::protocol::ShareMode::Write,
         }
     }
 }
@@ -609,10 +606,10 @@ impl From<ShareMode> for iroh_docs::rpc::client::docs::ShareMode {
 /// namespace id. Its value is the 32-byte BLAKE3 [`hash`]
 /// of the entry's content data, the size of this content data, and a timestamp.
 #[derive(Debug, Clone, Serialize, Deserialize, uniffi::Object)]
-pub struct Entry(pub(crate) iroh_docs::rpc::client::docs::Entry);
+pub struct Entry(pub(crate) iroh_docs::sync::Entry);
 
-impl From<iroh_docs::rpc::client::docs::Entry> for Entry {
-    fn from(e: iroh_docs::rpc::client::docs::Entry) -> Self {
+impl From<iroh_docs::sync::Entry> for Entry {
+    fn from(e: iroh_docs::sync::Entry) -> Self {
         Entry(e)
     }
 }
@@ -1086,15 +1083,13 @@ impl LiveEvent {
     }
 }
 
-impl From<iroh_docs::rpc::client::docs::LiveEvent> for LiveEvent {
-    fn from(value: iroh_docs::rpc::client::docs::LiveEvent) -> Self {
+impl From<iroh_docs::engine::LiveEvent> for LiveEvent {
+    fn from(value: iroh_docs::engine::LiveEvent) -> Self {
         match value {
-            iroh_docs::rpc::client::docs::LiveEvent::InsertLocal { entry } => {
-                LiveEvent::InsertLocal {
-                    entry: entry.into(),
-                }
-            }
-            iroh_docs::rpc::client::docs::LiveEvent::InsertRemote {
+            iroh_docs::engine::LiveEvent::InsertLocal { entry } => LiveEvent::InsertLocal {
+                entry: entry.into(),
+            },
+            iroh_docs::engine::LiveEvent::InsertRemote {
                 from,
                 entry,
                 content_status,
@@ -1103,21 +1098,13 @@ impl From<iroh_docs::rpc::client::docs::LiveEvent> for LiveEvent {
                 entry: entry.into(),
                 content_status: content_status.into(),
             },
-            iroh_docs::rpc::client::docs::LiveEvent::ContentReady { hash } => {
+            iroh_docs::engine::LiveEvent::ContentReady { hash } => {
                 LiveEvent::ContentReady { hash: hash.into() }
             }
-            iroh_docs::rpc::client::docs::LiveEvent::NeighborUp(key) => {
-                LiveEvent::NeighborUp(key.into())
-            }
-            iroh_docs::rpc::client::docs::LiveEvent::NeighborDown(key) => {
-                LiveEvent::NeighborDown(key.into())
-            }
-            iroh_docs::rpc::client::docs::LiveEvent::SyncFinished(e) => {
-                LiveEvent::SyncFinished(e.into())
-            }
-            iroh_docs::rpc::client::docs::LiveEvent::PendingContentReady => {
-                LiveEvent::PendingContentReady
-            }
+            iroh_docs::engine::LiveEvent::NeighborUp(key) => LiveEvent::NeighborUp(key.into()),
+            iroh_docs::engine::LiveEvent::NeighborDown(key) => LiveEvent::NeighborDown(key.into()),
+            iroh_docs::engine::LiveEvent::SyncFinished(e) => LiveEvent::SyncFinished(e.into()),
+            iroh_docs::engine::LiveEvent::PendingContentReady => LiveEvent::PendingContentReady,
         }
     }
 }
@@ -1137,8 +1124,8 @@ pub struct SyncEvent {
     pub result: Option<String>,
 }
 
-impl From<iroh_docs::rpc::client::docs::SyncEvent> for SyncEvent {
-    fn from(value: iroh_docs::rpc::client::docs::SyncEvent) -> Self {
+impl From<iroh_docs::engine::SyncEvent> for SyncEvent {
+    fn from(value: iroh_docs::engine::SyncEvent) -> Self {
         SyncEvent {
             peer: Arc::new(value.peer.into()),
             origin: value.origin.into(),
@@ -1165,13 +1152,13 @@ pub enum SyncReason {
     Resync,
 }
 
-impl From<iroh_docs::rpc::client::docs::SyncReason> for SyncReason {
-    fn from(value: iroh_docs::rpc::client::docs::SyncReason) -> Self {
+impl From<iroh_docs::engine::SyncReason> for SyncReason {
+    fn from(value: iroh_docs::engine::SyncReason) -> Self {
         match value {
-            iroh_docs::rpc::client::docs::SyncReason::DirectJoin => Self::DirectJoin,
-            iroh_docs::rpc::client::docs::SyncReason::NewNeighbor => Self::NewNeighbor,
-            iroh_docs::rpc::client::docs::SyncReason::SyncReport => Self::SyncReport,
-            iroh_docs::rpc::client::docs::SyncReason::Resync => Self::Resync,
+            iroh_docs::engine::SyncReason::DirectJoin => Self::DirectJoin,
+            iroh_docs::engine::SyncReason::NewNeighbor => Self::NewNeighbor,
+            iroh_docs::engine::SyncReason::SyncReport => Self::SyncReport,
+            iroh_docs::engine::SyncReason::Resync => Self::Resync,
         }
     }
 }
@@ -1185,13 +1172,13 @@ pub enum Origin {
     Accept,
 }
 
-impl From<iroh_docs::rpc::client::docs::Origin> for Origin {
-    fn from(value: iroh_docs::rpc::client::docs::Origin) -> Self {
+impl From<iroh_docs::engine::Origin> for Origin {
+    fn from(value: iroh_docs::engine::Origin) -> Self {
         match value {
-            iroh_docs::rpc::client::docs::Origin::Connect(reason) => Self::Connect {
+            iroh_docs::engine::Origin::Connect(reason) => Self::Connect {
                 reason: reason.into(),
             },
-            iroh_docs::rpc::client::docs::Origin::Accept => Self::Accept,
+            iroh_docs::engine::Origin::Accept => Self::Accept,
         }
     }
 }
@@ -1314,25 +1301,26 @@ pub enum DocImportProgress {
     Abort(DocImportProgressAbort),
 }
 
-impl From<iroh_docs::rpc::client::docs::ImportProgress> for DocImportProgress {
-    fn from(value: iroh_docs::rpc::client::docs::ImportProgress) -> Self {
+impl From<iroh_docs::api::ImportFileProgress> for DocImportProgress {
+    fn from(value: iroh_docs::api::ImportFileProgress) -> Self {
         match value {
-            iroh_docs::rpc::client::docs::ImportProgress::Found { id, name, size } => {
+            iroh_docs::api::ImportFileProgress::Found { id, name, size } => {
                 DocImportProgress::Found(DocImportProgressFound { id, name, size })
             }
-            iroh_docs::rpc::client::docs::ImportProgress::Progress { id, offset } => {
+            iroh_docs::api::ImportFileProgress::Progress { id, offset } => {
                 DocImportProgress::Progress(DocImportProgressProgress { id, offset })
             }
-            iroh_docs::rpc::client::docs::ImportProgress::IngestDone { id, hash } => {
+            iroh_docs::api::ImportFileProgress::IngestDone { id, hash } => {
                 DocImportProgress::IngestDone(DocImportProgressIngestDone {
                     id,
                     hash: Arc::new(hash.into()),
                 })
             }
-            iroh_docs::rpc::client::docs::ImportProgress::AllDone { key } => {
+            iroh_docs::api::ImportFileProgress::AllDone { key } => {
                 DocImportProgress::AllDone(DocImportProgressAllDone { key: key.into() })
             }
-            iroh_docs::rpc::client::docs::ImportProgress::Abort(err) => {
+
+            iroh_docs::api::ImportFileProgress::Abort(err) => {
                 DocImportProgress::Abort(DocImportProgressAbort {
                     error: err.to_string(),
                 })
@@ -1474,10 +1462,10 @@ pub enum DocExportProgress {
     Abort(DocExportProgressAbort),
 }
 
-impl From<iroh_blobs::export::ExportProgress> for DocExportProgress {
-    fn from(value: iroh_blobs::export::ExportProgress) -> Self {
+impl From<iroh_blobs::api::blobs::ExportProgress> for DocExportProgress {
+    fn from(value: iroh_blobs::api::blobs::ExportProgress) -> Self {
         match value {
-            iroh_blobs::export::ExportProgress::Found {
+            iroh_blobs::api::blobs::ExportProgress::Found {
                 id,
                 hash,
                 size,
@@ -1491,14 +1479,14 @@ impl From<iroh_blobs::export::ExportProgress> for DocExportProgress {
                 size: size.value(),
                 outpath: outpath.to_string_lossy().to_string(),
             }),
-            iroh_blobs::export::ExportProgress::Progress { id, offset } => {
+            iroh_blobs::api::blobs::ExportProgress::Progress { id, offset } => {
                 DocExportProgress::Progress(DocExportProgressProgress { id, offset })
             }
-            iroh_blobs::export::ExportProgress::Done { id } => {
+            iroh_blobs::api::blobs::ExportProgress::Done { id } => {
                 DocExportProgress::Done(DocExportProgressDone { id })
             }
-            iroh_blobs::export::ExportProgress::AllDone => DocExportProgress::AllDone,
-            iroh_blobs::export::ExportProgress::Abort(err) => {
+            iroh_blobs::api::blobs::ExportProgress::AllDone => DocExportProgress::AllDone,
+            iroh_blobs::api::blobs::ExportProgress::Abort(err) => {
                 DocExportProgress::Abort(DocExportProgressAbort {
                     error: err.to_string(),
                 })
@@ -1544,10 +1532,11 @@ impl DocExportProgress {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{setup_logging, PublicKey};
     use rand::RngCore;
     use tokio::{io::AsyncWriteExt, sync::mpsc};
+
+    use super::*;
+    use crate::{setup_logging, PublicKey};
 
     #[tokio::test]
     async fn test_doc_create() {

@@ -1,9 +1,10 @@
-use std::str::FromStr;
-use std::sync::Arc;
+use std::{str::FromStr, sync::Arc};
 
-use crate::blob::{BlobDownloadOptions, BlobFormat, Hash};
-use crate::doc::NodeAddr;
-use crate::error::IrohError;
+use crate::{
+    blob::{BlobFormat, Hash},
+    doc::NodeAddr,
+    error::IrohError,
+};
 
 /// A token containing information for establishing a connection to a node.
 ///
@@ -100,18 +101,6 @@ impl BlobTicket {
     pub fn recursive(&self) -> bool {
         self.0.format().is_hash_seq()
     }
-
-    /// Convert this ticket into input parameters for a call to blobs_download
-    pub fn as_download_options(&self) -> Arc<BlobDownloadOptions> {
-        let r: BlobDownloadOptions = iroh_blobs::rpc::client::blobs::DownloadOptions {
-            format: self.0.format(),
-            nodes: vec![self.0.node_addr().clone()],
-            tag: iroh_blobs::util::SetTagOption::Auto,
-            mode: iroh_blobs::net_protocol::DownloadMode::Direct,
-        }
-        .into();
-        Arc::new(r)
-    }
 }
 
 /// Options when creating a ticket
@@ -129,15 +118,15 @@ pub enum AddrInfoOptions {
     Addresses,
 }
 
-impl From<AddrInfoOptions> for iroh_docs::rpc::AddrInfoOptions {
-    fn from(options: AddrInfoOptions) -> iroh_docs::rpc::AddrInfoOptions {
+impl From<AddrInfoOptions> for iroh_docs::api::protocol::AddrInfoOptions {
+    fn from(options: AddrInfoOptions) -> iroh_docs::api::protocol::AddrInfoOptions {
         match options {
-            AddrInfoOptions::Id => iroh_docs::rpc::AddrInfoOptions::Id,
+            AddrInfoOptions::Id => iroh_docs::api::protocol::AddrInfoOptions::Id,
             AddrInfoOptions::RelayAndAddresses => {
-                iroh_docs::rpc::AddrInfoOptions::RelayAndAddresses
+                iroh_docs::api::protocol::AddrInfoOptions::RelayAndAddresses
             }
-            AddrInfoOptions::Relay => iroh_docs::rpc::AddrInfoOptions::Relay,
-            AddrInfoOptions::Addresses => iroh_docs::rpc::AddrInfoOptions::Addresses,
+            AddrInfoOptions::Relay => iroh_docs::api::protocol::AddrInfoOptions::Relay,
+            AddrInfoOptions::Addresses => iroh_docs::api::protocol::AddrInfoOptions::Addresses,
         }
     }
 }

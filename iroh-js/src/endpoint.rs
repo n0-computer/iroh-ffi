@@ -1,10 +1,9 @@
 use std::sync::Arc;
 
+use iroh::endpoint;
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
 use tokio::sync::Mutex;
-
-use iroh::endpoint;
 
 use crate::{NodeAddr, PublicKey};
 

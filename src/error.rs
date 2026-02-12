@@ -1,3 +1,5 @@
+use iroh_blobs::api::{ExportBaoError, RequestError};
+
 /// An Error.
 #[derive(Debug, thiserror::Error, uniffi::Object)]
 #[error("{e:?}")]
@@ -16,6 +18,30 @@ impl IrohError {
 impl From<anyhow::Error> for IrohError {
     fn from(e: anyhow::Error) -> Self {
         Self { e }
+    }
+}
+
+impl From<RequestError> for IrohError {
+    fn from(value: RequestError) -> Self {
+        Self {
+            e: anyhow::anyhow!("{:?}", value),
+        }
+    }
+}
+
+impl From<irpc::Error> for IrohError {
+    fn from(value: irpc::Error) -> Self {
+        Self {
+            e: anyhow::anyhow!("{:?}", value),
+        }
+    }
+}
+
+impl From<ExportBaoError> for IrohError {
+    fn from(value: ExportBaoError) -> Self {
+        Self {
+            e: anyhow::anyhow!("{:?}", value),
+        }
     }
 }
 
