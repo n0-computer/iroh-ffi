@@ -5,6 +5,7 @@ use futures::{Sink, SinkExt, StreamExt};
 use iroh::NodeId;
 use iroh_gossip::net::GossipEvent;
 use iroh_gossip::rpc::{SubscribeResponse, SubscribeUpdate};
+use iroh_metrics::{MetricValue, MetricsGroup};
 use tokio::sync::Mutex;
 use tokio_util::sync::CancellationToken;
 use tracing::warn;
@@ -211,6 +212,25 @@ impl Gossip {
         };
 
         Ok(sender)
+    }
+
+    #[uniffi::method]
+    /// Returns a map of the gossip metrics where the key is the metric
+    /// name and the value as the metric count.
+    pub fn metrics_map(&self) -> std::collections::HashMap<String, u64> {
+        self.gossip
+            .metrics()
+            .iter()
+            .map(|metric| {
+                let name = ["gossip", metric.name()].join(":");
+                let val = match metric.value() {
+                    MetricValue::Counter(count) => count,
+                    // all metrics in 0.35 are MetricValue::Counter
+                    _ => unreachable!(),
+                };
+                (name, val)
+            })
+            .collect()
     }
 }
 

@@ -346,6 +346,11 @@ export declare class Endpoint {
   /** The string representation of this endpoint's NodeId. */
   nodeId(): string
   connect(nodeAddr: NodeAddr, alpn: Uint8Array): Promise<Connection>
+  /**
+   * Returns a map of the endpoint metrics where the key is the metric
+   * name and the value is the metric count.
+   */
+  metricsMap(): Record<string, bigint>
 }
 
 /** Filter strategy used in download policies. */

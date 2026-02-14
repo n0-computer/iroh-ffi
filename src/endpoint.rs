@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use iroh::endpoint;
+use iroh_metrics::{MetricValue, MetricsGroupSet};
 use tokio::sync::Mutex;
 
 use crate::{IrohError, NodeAddr};
@@ -32,6 +33,25 @@ impl Endpoint {
         let node_addr: iroh::NodeAddr = node_addr.clone().try_into()?;
         let conn = self.0.connect(node_addr, alpn).await?;
         Ok(Connection(conn))
+    }
+
+    #[uniffi::method]
+    /// Returns a map of the endpoint metrics where the key is the metric
+    /// name and the value as the metric count.
+    pub fn metrics_map(&self) -> std::collections::HashMap<String, u64> {
+        self.0
+            .metrics()
+            .iter()
+            .map(|(group, metric)| {
+                let name = [group, metric.name()].join(":");
+                let val = match metric.value() {
+                    MetricValue::Counter(count) => count,
+                    // all metrics in 0.35 are MetricValue::Counter
+                    _ => unreachable!(),
+                };
+                (name, val)
+            })
+            .collect()
     }
 }
 

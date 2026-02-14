@@ -1418,6 +1418,11 @@ void uniffi_iroh_ffi_fn_free_endpoint(void*_Nonnull ptr, RustCallStatus *_Nonnul
 uint64_t uniffi_iroh_ffi_fn_method_endpoint_connect(void*_Nonnull ptr, void*_Nonnull node_addr, RustBuffer alpn
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINT_METRICS_MAP
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINT_METRICS_MAP
+RustBuffer uniffi_iroh_ffi_fn_method_endpoint_metrics_map(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINT_NODE_ID
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINT_NODE_ID
 RustBuffer uniffi_iroh_ffi_fn_method_endpoint_node_id(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -1496,6 +1501,11 @@ void*_Nonnull uniffi_iroh_ffi_fn_clone_gossip(void*_Nonnull ptr, RustCallStatus 
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_GOSSIP
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FREE_GOSSIP
 void uniffi_iroh_ffi_fn_free_gossip(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_GOSSIP_METRICS_MAP
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_GOSSIP_METRICS_MAP
+RustBuffer uniffi_iroh_ffi_fn_method_gossip_metrics_map(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_GOSSIP_SUBSCRIBE
@@ -3391,6 +3401,12 @@ uint16_t uniffi_iroh_ffi_checksum_method_endpoint_connect(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_ENDPOINT_METRICS_MAP
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_ENDPOINT_METRICS_MAP
+uint16_t uniffi_iroh_ffi_checksum_method_endpoint_metrics_map(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_ENDPOINT_NODE_ID
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_ENDPOINT_NODE_ID
 uint16_t uniffi_iroh_ffi_checksum_method_endpoint_node_id(void
@@ -3436,6 +3452,12 @@ uint16_t uniffi_iroh_ffi_checksum_method_entry_timestamp(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_FILTERKIND_MATCHES
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_FILTERKIND_MATCHES
 uint16_t uniffi_iroh_ffi_checksum_method_filterkind_matches(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_GOSSIP_METRICS_MAP
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_GOSSIP_METRICS_MAP
+uint16_t uniffi_iroh_ffi_checksum_method_gossip_metrics_map(void
     
 );
 #endif

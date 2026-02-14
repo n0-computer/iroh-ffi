@@ -5,6 +5,7 @@ use napi_derive::napi;
 use tokio::sync::Mutex;
 
 use iroh::endpoint;
+use iroh_metrics::{MetricValue, MetricsGroupSet};
 
 use crate::{NodeAddr, PublicKey};
 
@@ -30,6 +31,25 @@ impl Endpoint {
         let node_addr: iroh::NodeAddr = node_addr.try_into()?;
         let conn = self.0.connect(node_addr, &alpn).await?;
         Ok(Connection(conn))
+    }
+
+    #[napi]
+    /// Returns a map of the endpoint metrics where the key is the metric
+    /// name and the value is the metric count.
+    pub fn metrics_map(&self) -> std::collections::HashMap<String, BigInt> {
+        self.0
+            .metrics()
+            .iter()
+            .map(|(group, metric)| {
+                let name = [group, metric.name()].join(":");
+                let val = match metric.value() {
+                    MetricValue::Counter(count) => count,
+                    // all metrics in 0.35 are MetricValue::Counter
+                    _ => unreachable!(),
+                };
+                (name, val.into())
+            })
+            .collect()
     }
 }
 

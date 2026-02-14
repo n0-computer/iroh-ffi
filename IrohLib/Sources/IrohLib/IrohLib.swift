@@ -6363,6 +6363,12 @@ public protocol EndpointProtocol: AnyObject {
     func connect(nodeAddr: NodeAddr, alpn: Data) async throws -> Connection
 
     /**
+     * Returns a map of the endpoint metrics where the key is the metric
+     * name and the value as the metric count.
+     */
+    func metricsMap() -> [String: UInt64]
+
+    /**
      * The string representation of this endpoint's NodeId.
      */
     func nodeId() throws -> String
@@ -6432,6 +6438,16 @@ open class Endpoint:
                 liftFunc: FfiConverterTypeConnection.lift,
                 errorHandler: FfiConverterTypeIrohError__as_error.lift
             )
+    }
+
+    /**
+     * Returns a map of the endpoint metrics where the key is the metric
+     * name and the value as the metric count.
+     */
+    open func metricsMap() -> [String: UInt64] {
+        return try! FfiConverterDictionaryStringUInt64.lift(try! rustCall {
+            uniffi_iroh_ffi_fn_method_endpoint_metrics_map(self.uniffiClonePointer(), $0)
+        })
     }
 
     /**
@@ -6834,6 +6850,12 @@ public func FfiConverterTypeFilterKind_lower(_ value: FilterKind) -> UnsafeMutab
  * Iroh gossip client.
  */
 public protocol GossipProtocol: AnyObject {
+    /**
+     * Returns a map of the gossip metrics where the key is the metric
+     * name and the value as the metric count.
+     */
+    func metricsMap() -> [String: UInt64]
+
     func subscribe(topic: Data, bootstrap: [String], cb: GossipMessageCallback) async throws -> Sender
 }
 
@@ -6887,6 +6909,16 @@ open class Gossip:
         }
 
         try! rustCall { uniffi_iroh_ffi_fn_free_gossip(pointer, $0) }
+    }
+
+    /**
+     * Returns a map of the gossip metrics where the key is the metric
+     * name and the value as the metric count.
+     */
+    open func metricsMap() -> [String: UInt64] {
+        return try! FfiConverterDictionaryStringUInt64.lift(try! rustCall {
+            uniffi_iroh_ffi_fn_method_gossip_metrics_map(self.uniffiClonePointer(), $0)
+        })
     }
 
     open func subscribe(topic: Data, bootstrap: [String], cb: GossipMessageCallback) async throws -> Sender {
@@ -17562,6 +17594,32 @@ private struct FfiConverterSequenceTypeTagInfo: FfiConverterRustBuffer {
 #if swift(>=5.8)
     @_documentation(visibility: private)
 #endif
+private struct FfiConverterDictionaryStringUInt64: FfiConverterRustBuffer {
+    public static func write(_ value: [String: UInt64], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for (key, value) in value {
+            FfiConverterString.write(key, into: &buf)
+            FfiConverterUInt64.write(value, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [String: UInt64] {
+        let len: Int32 = try readInt(&buf)
+        var dict = [String: UInt64]()
+        dict.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            let key = try FfiConverterString.read(from: &buf)
+            let value = try FfiConverterUInt64.read(from: &buf)
+            dict[key] = value
+        }
+        return dict
+    }
+}
+
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
 private struct FfiConverterDictionaryStringTypeCounterStats: FfiConverterRustBuffer {
     public static func write(_ value: [String: CounterStats], into buf: inout [UInt8]) {
         let len = Int32(value.count)
@@ -18185,6 +18243,9 @@ private var initializationResult: InitializationResult = {
     if uniffi_iroh_ffi_checksum_method_endpoint_connect() != 29734 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_iroh_ffi_checksum_method_endpoint_metrics_map() != 3774 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_iroh_ffi_checksum_method_endpoint_node_id() != 54517 {
         return InitializationResult.apiChecksumMismatch
     }
@@ -18207,6 +18268,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_filterkind_matches() != 24522 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_iroh_ffi_checksum_method_gossip_metrics_map() != 47418 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_iroh_ffi_checksum_method_gossip_subscribe() != 6414 {

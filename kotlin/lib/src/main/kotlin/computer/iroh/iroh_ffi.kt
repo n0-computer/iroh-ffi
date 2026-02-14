@@ -2029,6 +2029,11 @@ internal interface UniffiLib : Library {
         `alpn`: RustBuffer.ByValue,
     ): Long
 
+    fun uniffi_iroh_ffi_fn_method_endpoint_metrics_map(
+        `ptr`: Pointer,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+
     fun uniffi_iroh_ffi_fn_method_endpoint_node_id(
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
@@ -2109,6 +2114,11 @@ internal interface UniffiLib : Library {
         `ptr`: Pointer,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
+
+    fun uniffi_iroh_ffi_fn_method_gossip_metrics_map(
+        `ptr`: Pointer,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
 
     fun uniffi_iroh_ffi_fn_method_gossip_subscribe(
         `ptr`: Pointer,
@@ -3340,6 +3350,8 @@ internal interface UniffiLib : Library {
 
     fun uniffi_iroh_ffi_checksum_method_endpoint_connect(): Short
 
+    fun uniffi_iroh_ffi_checksum_method_endpoint_metrics_map(): Short
+
     fun uniffi_iroh_ffi_checksum_method_endpoint_node_id(): Short
 
     fun uniffi_iroh_ffi_checksum_method_entry_author(): Short
@@ -3355,6 +3367,8 @@ internal interface UniffiLib : Library {
     fun uniffi_iroh_ffi_checksum_method_entry_timestamp(): Short
 
     fun uniffi_iroh_ffi_checksum_method_filterkind_matches(): Short
+
+    fun uniffi_iroh_ffi_checksum_method_gossip_metrics_map(): Short
 
     fun uniffi_iroh_ffi_checksum_method_gossip_subscribe(): Short
 
@@ -4001,6 +4015,9 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_method_endpoint_connect() != 29734.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_metrics_map() != 3774.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_iroh_ffi_checksum_method_endpoint_node_id() != 54517.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -4023,6 +4040,9 @@ private fun uniffiCheckApiChecksums(lib: UniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_filterkind_matches() != 24522.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_ffi_checksum_method_gossip_metrics_map() != 47418.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_gossip_subscribe() != 6414.toShort()) {
@@ -14723,6 +14743,12 @@ public interface EndpointInterface {
     ): Connection
 
     /**
+     * Returns a map of the endpoint metrics where the key is the metric
+     * name and the value as the metric count.
+     */
+    fun `metricsMap`(): Map<kotlin.String, kotlin.ULong>
+
+    /**
      * The string representation of this endpoint's NodeId.
      */
     fun `nodeId`(): kotlin.String
@@ -14835,6 +14861,22 @@ open class Endpoint :
             { FfiConverterTypeConnection.lift(it) },
             // Error FFI converter
             IrohException.ErrorHandler,
+        )
+
+    /**
+     * Returns a map of the endpoint metrics where the key is the metric
+     * name and the value as the metric count.
+     */
+    override fun `metricsMap`(): Map<kotlin.String, kotlin.ULong> =
+        FfiConverterMapStringULong.lift(
+            callWithPointer {
+                uniffiRustCall { _status ->
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_endpoint_metrics_map(
+                        it,
+                        _status,
+                    )
+                }
+            },
         )
 
     /**
@@ -15598,6 +15640,12 @@ public object FfiConverterTypeFilterKind : FfiConverter<FilterKind, Pointer> {
  * Iroh gossip client.
  */
 public interface GossipInterface {
+    /**
+     * Returns a map of the gossip metrics where the key is the metric
+     * name and the value as the metric count.
+     */
+    fun `metricsMap`(): Map<kotlin.String, kotlin.ULong>
+
     suspend fun `subscribe`(
         `topic`: kotlin.ByteArray,
         `bootstrap`: List<kotlin.String>,
@@ -15693,6 +15741,22 @@ open class Gossip :
         uniffiRustCall { status ->
             UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_clone_gossip(pointer!!, status)
         }
+
+    /**
+     * Returns a map of the gossip metrics where the key is the metric
+     * name and the value as the metric count.
+     */
+    override fun `metricsMap`(): Map<kotlin.String, kotlin.ULong> =
+        FfiConverterMapStringULong.lift(
+            callWithPointer {
+                uniffiRustCall { _status ->
+                    UniffiLib.INSTANCE.uniffi_iroh_ffi_fn_method_gossip_metrics_map(
+                        it,
+                        _status,
+                    )
+                }
+            },
+        )
 
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
@@ -27896,6 +27960,47 @@ public object FfiConverterSequenceTypeTagInfo : FfiConverterRustBuffer<List<TagI
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypeTagInfo.write(it, buf)
+        }
+    }
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterMapStringULong : FfiConverterRustBuffer<Map<kotlin.String, kotlin.ULong>> {
+    override fun read(buf: ByteBuffer): Map<kotlin.String, kotlin.ULong> {
+        val len = buf.getInt()
+        return buildMap<kotlin.String, kotlin.ULong>(len) {
+            repeat(len) {
+                val k = FfiConverterString.read(buf)
+                val v = FfiConverterULong.read(buf)
+                this[k] = v
+            }
+        }
+    }
+
+    override fun allocationSize(value: Map<kotlin.String, kotlin.ULong>): ULong {
+        val spaceForMapSize = 4UL
+        val spaceForChildren =
+            value
+                .map { (k, v) ->
+                    FfiConverterString.allocationSize(k) +
+                        FfiConverterULong.allocationSize(v)
+                }.sum()
+        return spaceForMapSize + spaceForChildren
+    }
+
+    override fun write(
+        value: Map<kotlin.String, kotlin.ULong>,
+        buf: ByteBuffer,
+    ) {
+        buf.putInt(value.size)
+        // The parens on `(k, v)` here ensure we're calling the right method,
+        // which is important for compatibility with older android devices.
+        // Ref https://blog.danlew.net/2017/03/16/kotlin-puzzler-whose-line-is-it-anyways/
+        value.forEach { (k, v) ->
+            FfiConverterString.write(k, buf)
+            FfiConverterULong.write(v, buf)
         }
     }
 }
