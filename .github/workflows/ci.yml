@@ -96,21 +96,7 @@ jobs:
         run: cargo make test-js
 
   swift:
-    name: Swift - Build and test (macOS slice)
-    timeout-minutes: 30
-    runs-on: [macOS, ARM64]
-    steps:
-      - uses: actions/checkout@master
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: aarch64-apple-darwin
-      - uses: Swatinem/rust-cache@v2
-      - uses: davidB/rust-cargo-make@v1
-      - name: cargo make test-swift
-        run: cargo make test-swift
-
-  swift-xcframework:
-    name: Swift - Full xcframework build (iOS + macOS)
+    name: Swift - Full xcframework build + test (iOS + macOS)
     timeout-minutes: 60
     runs-on: [macOS, ARM64]
     steps:
@@ -120,10 +106,8 @@ jobs:
           targets: aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios,aarch64-apple-darwin
       - uses: Swatinem/rust-cache@v2
       - uses: davidB/rust-cargo-make@v1
-      - name: cargo make swift-xcframework
-        run: cargo make swift-xcframework
-      - name: Smoke-build the Swift package against the fresh xcframework
-        run: cd IrohLib && swift build
+      - name: cargo make test-swift
+        run: cargo make test-swift
 
   kotlin:
     runs-on: ${{ matrix.runner }}
