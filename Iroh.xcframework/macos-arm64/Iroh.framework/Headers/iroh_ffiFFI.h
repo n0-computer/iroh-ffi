@@ -1257,9 +1257,9 @@ uint64_t uniffi_iroh_ffi_fn_clone_servicesclient(uint64_t handle, RustCallStatus
 void uniffi_iroh_ffi_fn_free_servicesclient(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_SERVICESCLIENT_NEW
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_SERVICESCLIENT_NEW
-uint64_t uniffi_iroh_ffi_fn_constructor_servicesclient_new(uint64_t endpoint, RustBuffer options
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_SERVICESCLIENT_CREATE
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_SERVICESCLIENT_CREATE
+uint64_t uniffi_iroh_ffi_fn_constructor_servicesclient_create(uint64_t endpoint, RustBuffer options
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_SERVICESCLIENT_NAME
@@ -2485,9 +2485,9 @@ uint16_t uniffi_iroh_ffi_checksum_constructor_relaymode_staging(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_SERVICESCLIENT_NEW
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_SERVICESCLIENT_NEW
-uint16_t uniffi_iroh_ffi_checksum_constructor_servicesclient_new(void
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_SERVICESCLIENT_CREATE
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_SERVICESCLIENT_CREATE
+uint16_t uniffi_iroh_ffi_checksum_constructor_servicesclient_create(void
     
 );
 #endif
