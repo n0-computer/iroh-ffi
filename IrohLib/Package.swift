@@ -20,7 +20,9 @@ let package = Package(
                 .byName(name: "Iroh")
             ],
             linkerSettings: [
-              .linkedFramework("SystemConfiguration")
+              .linkedFramework("SystemConfiguration"),
+              // iroh's netwatch queries WiFi interfaces via CoreWLAN on macOS.
+              .linkedFramework("CoreWLAN", .when(platforms: [.macOS]))
             ]),
         .binaryTarget(
             name: "Iroh",

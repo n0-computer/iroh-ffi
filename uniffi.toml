@@ -3,6 +3,13 @@ package_name = "computer.iroh"
 cdylib_name = "iroh_ffi"
 # android = true
 
+# `Endpoint::close()` collides with `java.lang.AutoCloseable.close()` which
+# uniffi-kotlin implements (non-suspend) on every object. Our close() is async,
+# so the JVM sees conflicting overloads. Rename only for the Kotlin binding;
+# all other languages keep `close()`.
+[bindings.kotlin.rename]
+"Endpoint.close" = "shutdown"
+
 [bindings.python]
 cdylib_name = "iroh_ffi"
 

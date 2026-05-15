@@ -145,9 +145,10 @@ jobs:
     - uses: dtolnay/rust-toolchain@stable
       with:
         targets: aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios,aarch64-apple-darwin
+    - uses: davidB/rust-cargo-make@v1
     - name: Make swift
       run: |
-        ./make_swift.sh
+        cargo make swift-xcframework
         zip -r IrohLib.xcframework.zip Iroh.xcframework/*
     - name: Upload release archive
       uses: actions/upload-release-asset@v1.0.2
