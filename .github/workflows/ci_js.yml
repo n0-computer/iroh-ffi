@@ -89,8 +89,8 @@ jobs:
             build: |-
               set -e
               mkdir -p "$HOME/zigshim"
-              printf '#!/bin/sh\nexec python3 -m ziglang cc -target aarch64-linux-musl "$@"\n' > "$HOME/zigshim/zcc"
-              printf '#!/bin/sh\nexec python3 -m ziglang c++ -target aarch64-linux-musl "$@"\n' > "$HOME/zigshim/zcxx"
+              printf '#!/bin/sh\nA=;for x in "$@";do case "$x" in --target=*) ;; *) A="$A $x";; esac;done;exec python3 -m ziglang cc -target aarch64-linux-musl $A\n' > "$HOME/zigshim/zcc"
+              printf '#!/bin/sh\nA=;for x in "$@";do case "$x" in --target=*) ;; *) A="$A $x";; esac;done;exec python3 -m ziglang c++ -target aarch64-linux-musl $A\n' > "$HOME/zigshim/zcxx"
               chmod +x "$HOME/zigshim/zcc" "$HOME/zigshim/zcxx"
               export CC_aarch64_unknown_linux_musl="$HOME/zigshim/zcc"
               export CXX_aarch64_unknown_linux_musl="$HOME/zigshim/zcxx"
