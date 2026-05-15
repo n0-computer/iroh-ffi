@@ -86,8 +86,18 @@ jobs:
             target: aarch64-unknown-linux-musl
             setup: |
               pip3 install ziglang
-              cargo install --locked cargo-zigbuild
-            build: yarn build --target aarch64-unknown-linux-musl --zig
+            build: |-
+              set -e
+              mkdir -p "$HOME/zigshim"
+              printf '#!/bin/sh\nexec python3 -m ziglang cc -target aarch64-linux-musl "$@"\n' > "$HOME/zigshim/zcc"
+              printf '#!/bin/sh\nexec python3 -m ziglang c++ -target aarch64-linux-musl "$@"\n' > "$HOME/zigshim/zcxx"
+              chmod +x "$HOME/zigshim/zcc" "$HOME/zigshim/zcxx"
+              export CC_aarch64_unknown_linux_musl="$HOME/zigshim/zcc"
+              export CXX_aarch64_unknown_linux_musl="$HOME/zigshim/zcxx"
+              export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER="$HOME/zigshim/zcc"
+              export TARGET_CC="$HOME/zigshim/zcc"
+              export TARGET_CXX="$HOME/zigshim/zcxx"
+              yarn build --target aarch64-unknown-linux-musl
           - host: windows-latest
             target: aarch64-pc-windows-msvc
             build: yarn build --target aarch64-pc-windows-msvc
