@@ -55,7 +55,15 @@ jobs:
             build: yarn build --target aarch64-apple-darwin
           - host: ubuntu-latest
             target: aarch64-unknown-linux-gnu
-            build: yarn build --target aarch64-unknown-linux-gnu --use-napi-cross
+            setup: |
+              sudo apt-get update
+              sudo apt-get -y install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+            build: |-
+              set -e &&
+              export CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc &&
+              export CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++ &&
+              export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc &&
+              yarn build --target aarch64-unknown-linux-gnu --use-napi-cross
           - host: ubuntu-latest
             target: armv7-unknown-linux-gnueabihf
             setup: |
@@ -78,8 +86,12 @@ jobs:
             target: aarch64-unknown-linux-musl
             setup: |
               sudo apt-get update
-              sudo apt-get -y install musl-tools musl-dev
-            build: yarn build --target aarch64-unknown-linux-musl --use-napi-cross
+              sudo apt-get -y install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu musl-tools musl-dev
+            build: |-
+              set -e &&
+              export CC_aarch64_unknown_linux_musl=aarch64-linux-gnu-gcc &&
+              export CXX_aarch64_unknown_linux_musl=aarch64-linux-gnu-g++ &&
+              yarn build --target aarch64-unknown-linux-musl --use-napi-cross
           - host: windows-latest
             target: aarch64-pc-windows-msvc
             build: yarn build --target aarch64-pc-windows-msvc
