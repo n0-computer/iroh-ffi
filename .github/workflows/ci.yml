@@ -1,11 +1,13 @@
 name: CI
 
 on:
+  workflow_dispatch:
   pull_request:
   merge_group:
   push:
     branches:
       - main
+      - feat-1-0
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -88,11 +90,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Enable corepack (yarn)
+        run: corepack enable
       - name: cargo make test-js
         run: cargo make test-js
 
   swift:
-    name: Swift - Build and test
+    name: Swift - Build and test (macOS slice)
     timeout-minutes: 30
     runs-on: [macOS, ARM64]
     steps:
@@ -100,14 +104,31 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
       - uses: davidB/rust-cargo-make@v1
       - name: cargo make test-swift
         run: cargo make test-swift
 
+  swift-xcframework:
+    name: Swift - Full xcframework build (iOS + macOS)
+    timeout-minutes: 60
+    runs-on: [macOS, ARM64]
+    steps:
+      - uses: actions/checkout@master
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios,aarch64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+      - uses: davidB/rust-cargo-make@v1
+      - name: cargo make swift-xcframework
+        run: cargo make swift-xcframework
+      - name: Smoke-build the Swift package against the fresh xcframework
+        run: cd IrohLib && swift build
+
   kotlin:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
-    name: Kotlin - ${{ matrix.name }}
+    name: Kotlin - JVM test (${{ matrix.name }})
     strategy:
       fail-fast: false
       matrix:
@@ -122,6 +143,7 @@ jobs:
         with:
           submodules: recursive
       - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
       - uses: davidB/rust-cargo-make@v1
       - uses: actions/setup-java@v4
         with:
@@ -130,3 +152,32 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: cargo make test-kotlin
         run: cargo make test-kotlin
+
+  kotlin-android:
+    name: Kotlin - Android cross-build
+    timeout-minutes: 45
+    runs-on: [linux, X64]
+    steps:
+      - uses: actions/checkout@master
+        with:
+          submodules: recursive
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+      - uses: Swatinem/rust-cache@v2
+      - uses: davidB/rust-cargo-make@v1
+      - uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "21"
+      - uses: android-actions/setup-android@v3
+      - name: Setup Android NDK
+        uses: arqu/setup-ndk@main
+        id: setup-ndk
+        with:
+          ndk-version: r23
+          add-to-path: true
+      - name: cargo make kotlin-android
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+        run: cargo make kotlin-android

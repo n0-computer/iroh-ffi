@@ -1,9 +1,11 @@
 name: Python Wheels
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
+      - feat-1-0
   pull_request:
 
 concurrency:

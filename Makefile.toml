@@ -104,12 +104,45 @@ STATIC="$TARGET_DIR/aarch64-apple-darwin/debug/${LIB_NAME}.a"
 mkdir -p include/apple
 cargo run --bin uniffi-bindgen generate --language swift \
   --out-dir ./include/apple --config "$UNIFFI_CONFIG" --library "$DYLIB"
-FW=Iroh.xcframework/macos-arm64/Iroh.framework
+sed "s/iroh_ffiFFI/Iroh/g" include/apple/iroh_ffi.swift > IrohLib/Sources/IrohLib/IrohLib.swift
+# Assemble a self-contained macOS-only xcframework directly into
+# IrohLib/artifacts (which is gitignored / absent on a fresh checkout). The
+# iOS slices are intentionally omitted here so SwiftPM only validates the
+# macOS slice — the full multi-slice xcframework is built by
+# `cargo make swift-xcframework`.
+ART=IrohLib/artifacts/Iroh.xcframework
+FW="$ART/macos-arm64/Iroh.framework"
+rm -rf "$ART"
+mkdir -p "$FW/Headers" "$FW/Modules"
 cp "$STATIC" "$FW/Iroh"
 cp include/apple/iroh_ffiFFI.h "$FW/Headers/iroh_ffiFFI.h"
-sed "s/iroh_ffiFFI/Iroh/g" include/apple/iroh_ffi.swift > IrohLib/Sources/IrohLib/IrohLib.swift
-rm -rf IrohLib/artifacts/Iroh.xcframework
-cp -R Iroh.xcframework IrohLib/artifacts/
+cp Iroh.xcframework/macos-arm64/Iroh.framework/Headers/Export.h "$FW/Headers/Export.h"
+cp Iroh.xcframework/macos-arm64/Iroh.framework/Modules/module.modulemap "$FW/Modules/module.modulemap"
+cat > "$ART/Info.plist" <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <key>AvailableLibraries</key>
+        <array>
+            <dict>
+                <key>LibraryIdentifier</key>
+                <string>macos-arm64</string>
+                <key>LibraryPath</key>
+                <string>Iroh.framework</string>
+                <key>SupportedArchitectures</key>
+                <array><string>arm64</string></array>
+                <key>SupportedPlatform</key>
+                <string>macos</string>
+            </dict>
+        </array>
+        <key>CFBundlePackageType</key>
+        <string>XFWK</string>
+        <key>XCFrameworkFormatVersion</key>
+        <string>1.0</string>
+    </dict>
+</plist>
+PLIST
 '''
 
 # ---------------------------------------------------------------------------
@@ -177,13 +210,31 @@ cwd = "iroh-js"
 # ---------------------------------------------------------------------------
 
 [tasks.test-kotlin]
-description = "Generate the Kotlin binding + run the Gradle test suite."
+description = "Generate the Kotlin binding + run the Gradle test suite (JVM)."
 dependencies = ["bindgen-kotlin"]
 script_runner = "@shell"
 script = '''
 set -eu
 cd kotlin
 ./gradlew test --no-daemon --console=plain
+'''
+
+[tasks.kotlin-android]
+description = "Cross-compile the Android .so's for all ABIs + generate the binding (build verification). Needs Android NDK + cargo-ndk."
+script_runner = "@shell"
+script = '''
+set -eu
+command -v cargo-ndk >/dev/null 2>&1 || cargo install --version 3.5.4 cargo-ndk --locked
+# Host lib only needed so uniffi-bindgen can read metadata.
+cargo build --lib
+TARGET_DIR=$(cargo metadata --format-version 1 --no-deps | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+cargo ndk -o ./kotlin/lib/src/main/jniLibs \
+  --manifest-path ./Cargo.toml \
+  -t armeabi-v7a -t arm64-v8a -t x86 -t x86_64 \
+  build --release
+cargo run --bin uniffi-bindgen generate --language kotlin \
+  --out-dir kotlin/lib/src/main/kotlin/ --config "$UNIFFI_CONFIG" \
+  --library "$TARGET_DIR/debug/libiroh_ffi.so"
 '''
 
 # ---------------------------------------------------------------------------

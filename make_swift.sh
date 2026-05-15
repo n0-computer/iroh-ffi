@@ -74,5 +74,8 @@ rm -f "$SWIFT_INTERFACE/Sources/$SWIFT_INTERFACE/$SWIFT_INTERFACE.swift"
 cp "$INCLUDE_DIR/$SWIFT_INTERFACE.swift" \
     "$SWIFT_INTERFACE/Sources/$SWIFT_INTERFACE/$SWIFT_INTERFACE.swift"
 
+# IrohLib/artifacts is gitignored, so absent on a fresh checkout — create it
+# before copying, otherwise `cp -R src dest/` copies *as* `dest`.
+mkdir -p "$SWIFT_INTERFACE/artifacts"
 rm -rf "$SWIFT_INTERFACE/artifacts/Iroh.xcframework"
 cp -R "$FRAMEWORK_NAME.xcframework" "$SWIFT_INTERFACE/artifacts/"
