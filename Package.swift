@@ -5,18 +5,32 @@ import Foundation
 // Single source of truth for the Swift package. The `Iroh` xcframework binary
 // is resolved one of two ways, chosen at manifest-evaluation time:
 //
-//   * default (consumers / Swift Package Index): the pinned, prebuilt
-//     xcframework zip attached to a GitHub release.
-//   * IROH_LOCAL_XCFRAMEWORK set (local dev / CI): the freshly built
-//     `Iroh.xcframework` at the repo root (produced by `cargo make
-//     swift-xcframework`).
+//   * a locally built xcframework, when this is a source checkout that has
+//     actually been built (`cargo make swift-xcframework` / `test-swift`).
+//     This is what local dev, CI, and source consumers (e.g. an app pointing
+//     at a local clone) get — so the binding always matches the source.
+//   * otherwise (git-URL / Swift Package Index consumers): the pinned,
+//     prebuilt xcframework zip attached to a GitHub release.
+//
+// Presence is keyed on the macOS slice *binary*, which is gitignored — the
+// committed tree only carries an xcframework skeleton (Info.plist/Headers/
+// Modules), so a fresh consumer checkout correctly falls through to the
+// release zip. Set IROH_FORCE_REMOTE_XCFRAMEWORK to force the release zip
+// even in a built checkout.
 //
 // The two release literals below are the only things the release workflow
 // rewrites — there is no second manifest to keep in sync.
 let releaseTag = "v0.20.0"
 let releaseChecksum = "8123c2d43690c423e9bc8993c935b2fe009731f3b65b95754358570077037858"
 
-let irohBinary: Target = ProcessInfo.processInfo.environment["IROH_LOCAL_XCFRAMEWORK"] != nil
+let packageDir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+let localBuiltBinary = packageDir
+    .appendingPathComponent("Iroh.xcframework/macos-arm64/Iroh.framework/Iroh")
+let forceRemote = ProcessInfo.processInfo.environment["IROH_FORCE_REMOTE_XCFRAMEWORK"] != nil
+let useLocalXcframework = !forceRemote
+    && FileManager.default.fileExists(atPath: localBuiltBinary.path)
+
+let irohBinary: Target = useLocalXcframework
     ? .binaryTarget(
         name: "Iroh",
         path: "Iroh.xcframework")
