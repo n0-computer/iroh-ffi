@@ -6547,7 +6547,7 @@ public func FfiConverterTypeSendStream_lower(_ value: SendStream) -> UInt64 {
 /**
  * Client for services.iroh.computer.
  *
- * Construct with [`Self::new`]; metrics are pushed automatically while the
+ * Construct with [`Self::create`]; metrics are pushed automatically while the
  * client is alive. Drop the client (or let it go out of scope) to stop.
  */
 public protocol ServicesClientProtocol: AnyObject, Sendable {
@@ -6583,7 +6583,7 @@ public protocol ServicesClientProtocol: AnyObject, Sendable {
 /**
  * Client for services.iroh.computer.
  *
- * Construct with [`Self::new`]; metrics are pushed automatically while the
+ * Construct with [`Self::create`]; metrics are pushed automatically while the
  * client is alive. Drop the client (or let it go out of scope) to stop.
  */
 open class ServicesClient: ServicesClientProtocol, @unchecked Sendable {
@@ -6625,26 +6625,7 @@ open class ServicesClient: ServicesClientProtocol, @unchecked Sendable {
     public func uniffiCloneHandle() -> UInt64 {
         return try! rustCall { uniffi_iroh_ffi_fn_clone_servicesclient(self.handle, $0) }
     }
-    /**
-     * Build a new client bound to the given endpoint.
-     */
-public convenience init(endpoint: Endpoint, options: ServicesOptions)async throws  {
-    let handle =
-        try  await uniffiRustCallAsync(
-            rustFutureFunc: {
-                uniffi_iroh_ffi_fn_constructor_servicesclient_new(FfiConverterTypeEndpoint_lower(endpoint),FfiConverterTypeServicesOptions_lower(options)
-                )
-            },
-            pollFunc: ffi_iroh_ffi_rust_future_poll_u64,
-            completeFunc: ffi_iroh_ffi_rust_future_complete_u64,
-            freeFunc: ffi_iroh_ffi_rust_future_free_u64,
-            liftFunc: FfiConverterTypeServicesClient_lift,
-            errorHandler: FfiConverterTypeIrohError__as_error_lift
-        )
-        
-        .uniffiCloneHandle()
-    self.init(unsafeFromHandle: handle)
-}
+    // No primary constructor declared for this class.
 
     deinit {
         if handle == 0 {
@@ -6655,6 +6636,24 @@ public convenience init(endpoint: Endpoint, options: ServicesOptions)async throw
         try! rustCall { uniffi_iroh_ffi_fn_free_servicesclient(handle, $0) }
     }
 
+    
+    /**
+     * Build a new client bound to the given endpoint.
+     */
+public static func create(endpoint: Endpoint, options: ServicesOptions)async throws  -> ServicesClient  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_iroh_ffi_fn_constructor_servicesclient_create(FfiConverterTypeEndpoint_lower(endpoint),FfiConverterTypeServicesOptions_lower(options)
+                )
+            },
+            pollFunc: ffi_iroh_ffi_rust_future_poll_u64,
+            completeFunc: ffi_iroh_ffi_rust_future_complete_u64,
+            freeFunc: ffi_iroh_ffi_rust_future_free_u64,
+            liftFunc: FfiConverterTypeServicesClient_lift,
+            errorHandler: FfiConverterTypeIrohError__as_error_lift
+        )
+}
     
 
     
@@ -9533,7 +9532,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_iroh_ffi_checksum_constructor_relaymode_staging() != 32490) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_iroh_ffi_checksum_constructor_servicesclient_new() != 33048) {
+    if (uniffi_iroh_ffi_checksum_constructor_servicesclient_create() != 11042) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_iroh_ffi_checksum_constructor_endpointticket_new() != 39793) {

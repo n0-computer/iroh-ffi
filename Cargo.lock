@@ -1926,8 +1926,9 @@ dependencies = [
 
 [[package]]
 name = "iroh-services"
-version = "0.14.0"
-source = "git+https://github.com/n0-computer/iroh-services?branch=main#d3a944c77dc16bfa814fc1c75005ad58e37806cf"
+version = "1.0.0-rc.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "58e6292ec763f9cffd2aa8ca78faa38961d98a56efa0ce9b85e19e3dce5343f1"
 dependencies = [
  "anyhow",
  "base64",

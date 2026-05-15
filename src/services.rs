@@ -1,6 +1,6 @@
 //! Binding for `iroh-services` — push metrics to services.iroh.computer.
 //!
-//! Mirrors `iroh_services::Client`. Construct via [`ServicesClient::new`] with
+//! Mirrors `iroh_services::Client`. Construct via [`ServicesClient::create`] with
 //! a built [`Endpoint`] plus credentials supplied through [`ServicesOptions`].
 
 use std::time::Duration;
@@ -83,7 +83,7 @@ impl From<iroh_services::net_diagnostics::DiagnosticsReport> for DiagnosticsSumm
 
 /// Client for services.iroh.computer.
 ///
-/// Construct with [`Self::new`]; metrics are pushed automatically while the
+/// Construct with [`Self::create`]; metrics are pushed automatically while the
 /// client is alive. Drop the client (or let it go out of scope) to stop.
 #[derive(Clone, uniffi::Object)]
 pub struct ServicesClient {
@@ -94,7 +94,7 @@ pub struct ServicesClient {
 impl ServicesClient {
     /// Build a new client bound to the given endpoint.
     #[uniffi::constructor(async_runtime = "tokio")]
-    pub async fn new(endpoint: &Endpoint, options: ServicesOptions) -> Result<Self, IrohError> {
+    pub async fn create(endpoint: &Endpoint, options: ServicesOptions) -> Result<Self, IrohError> {
         let mut builder: ClientBuilder = Client::builder(endpoint.raw());
 
         let creds_set = [
@@ -203,5 +203,82 @@ impl ServicesClient {
             .await
             .map_err(|e| anyhow::anyhow!("{e:?}"))?;
         Ok(report.into())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{Endpoint, EndpointOptions};
+
+    /// A well-formed (but fake) `services1...` API secret. The remote it points
+    /// at does not exist, so no connection will ever succeed — but the client
+    /// connects lazily, so construction must still succeed. This validates the
+    /// whole options -> builder -> client plumbing without network.
+    const FAKE_API_SECRET: &str = "servicesaaqaobyha4dqobyha4dqobyha4dqobyha4dqobyha4dqobyha4dqob75c4sdqwvay5nwj63yzvqc7iozsh66x53lcpcy5vyc5ledl2pwdaaa";
+
+    async fn minimal_endpoint() -> Endpoint {
+        Endpoint::bind(EndpointOptions {
+            preset: Some(crate::preset_minimal()),
+            ..Default::default()
+        })
+        .await
+        .unwrap()
+    }
+
+    #[tokio::test]
+    async fn test_services_client_boots_with_fake_secret() {
+        let ep = minimal_endpoint().await;
+        let client = ServicesClient::create(
+            &ep,
+            ServicesOptions {
+                api_secret: Some(FAKE_API_SECRET.to_string()),
+                ..Default::default()
+            },
+        )
+        .await
+        .expect("client should construct (lazy connection)");
+        // Drop the client; never call ping() — that needs a live service.
+        drop(client);
+        ep.close().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_services_client_rejects_no_credentials() {
+        let ep = minimal_endpoint().await;
+        let res = ServicesClient::create(&ep, ServicesOptions::default()).await;
+        assert!(res.is_err(), "must reject when no credential is supplied");
+        ep.close().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_services_client_rejects_two_credentials() {
+        let ep = minimal_endpoint().await;
+        let res = ServicesClient::create(
+            &ep,
+            ServicesOptions {
+                api_secret: Some(FAKE_API_SECRET.to_string()),
+                api_secret_from_env: Some(true),
+                ..Default::default()
+            },
+        )
+        .await;
+        assert!(res.is_err(), "must reject when >1 credentials supplied");
+        ep.close().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_services_client_rejects_malformed_secret() {
+        let ep = minimal_endpoint().await;
+        let res = ServicesClient::create(
+            &ep,
+            ServicesOptions {
+                api_secret: Some("not-a-valid-ticket".to_string()),
+                ..Default::default()
+            },
+        )
+        .await;
+        assert!(res.is_err(), "must reject a malformed api secret");
+        ep.close().await.unwrap();
     }
 }

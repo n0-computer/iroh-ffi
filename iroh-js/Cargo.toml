@@ -18,7 +18,7 @@ iroh = "=1.0.0-rc.0"
 iroh-base = "=1.0.0-rc.0"
 iroh-metrics = "=1.0.0-rc.0"
 iroh-relay = { version = "=1.0.0-rc.0", default-features = false }
-iroh-services = { git = "https://github.com/n0-computer/iroh-services", branch = "main", default-features = false }
+iroh-services = { version = "=1.0.0-rc.0", default-features = false }
 iroh-tickets = "=1.0.0-rc.0"
 n0-future = "0.3"
 tokio = "1.25.0"
