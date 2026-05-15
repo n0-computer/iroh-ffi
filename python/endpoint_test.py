@@ -7,6 +7,20 @@ from iroh import Endpoint, EndpointOptions, EndpointTicket, RelayMode, preset_mi
 ALPN = b"iroh-ffi/test/0"
 
 
+class CustomPreset(iroh.Preset):
+    """A user-implemented Preset: minimal baseline + a custom ALPN."""
+
+    def apply(self, builder):
+        builder.apply_minimal()
+        builder.alpns([b"custom/preset/1"])
+
+
+async def test_custom_preset():
+    ep = await Endpoint.bind(EndpointOptions(preset=CustomPreset()))
+    assert len(ep.bound_sockets()) > 0
+    await ep.close()
+
+
 async def test_bind_lifecycle():
     ep = await Endpoint.bind(EndpointOptions(preset=preset_minimal()))
     id_ = ep.id()

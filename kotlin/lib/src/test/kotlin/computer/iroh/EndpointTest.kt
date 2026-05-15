@@ -6,7 +6,21 @@ import kotlin.test.Test
 
 private val ALPN = "iroh-ffi/test/0".toByteArray()
 
+/** A user-implemented Preset: minimal baseline + a custom ALPN. */
+class CustomPreset : Preset {
+    override fun apply(builder: EndpointBuilder) {
+        builder.applyMinimal()
+        builder.alpns(listOf("custom/preset/1".toByteArray()))
+    }
+}
+
 class EndpointTest {
+    @Test fun customPreset() = runBlocking {
+        val ep = Endpoint.bind(EndpointOptions(preset = CustomPreset()))
+        assert(ep.boundSockets().isNotEmpty())
+        ep.shutdown()
+    }
+
     @Test fun bindLifecycle() = runBlocking {
         val ep = Endpoint.bind(EndpointOptions(preset = presetMinimal()))
         val id = ep.id()

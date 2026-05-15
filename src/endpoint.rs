@@ -842,6 +842,28 @@ impl RecvStream {
 mod tests {
     use super::*;
 
+    /// A user-implemented [`Preset`]: minimal baseline + a custom ALPN.
+    #[derive(Debug)]
+    struct CustomPreset;
+    impl Preset for CustomPreset {
+        fn apply(&self, builder: Arc<EndpointBuilder>) {
+            builder.apply_minimal();
+            builder.alpns(vec![b"custom/preset/1".to_vec()]);
+        }
+    }
+
+    #[tokio::test]
+    async fn test_custom_preset() {
+        let ep = Endpoint::bind(EndpointOptions {
+            preset: Some(Arc::new(CustomPreset)),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+        assert!(!ep.bound_sockets().is_empty());
+        ep.close().await.unwrap();
+    }
+
     #[tokio::test]
     async fn test_bind() {
         let ep = Endpoint::bind(EndpointOptions {
