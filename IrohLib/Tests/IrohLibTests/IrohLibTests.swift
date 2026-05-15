@@ -211,3 +211,57 @@ final class EndpointTests: XCTestCase {
         try await server.close()
     }
 }
+
+// Well-formed (but fake) API secret — the remote does not exist, but the
+// client connects lazily so construction still succeeds.
+private let FAKE_API_SECRET =
+    "servicesaaqaobyha4dqobyha4dqobyha4dqobyha4dqobyha4dqobyha4dqob"
+    + "75c4sdqwvay5nwj63yzvqc7iozsh66x53lcpcy5vyc5ledl2pwdaaa"
+
+final class ServicesTests: XCTestCase {
+    private func endpoint() async throws -> Endpoint {
+        try await Endpoint.bind(options: EndpointOptions(preset: presetMinimal()))
+    }
+
+    func testBootsWithFakeSecret() async throws {
+        let ep = try await endpoint()
+        _ = try await ServicesClient.create(
+            endpoint: ep,
+            options: ServicesOptions(apiSecret: FAKE_API_SECRET)
+        )
+        try await ep.close()
+    }
+
+    func testRejectsNoCredentials() async throws {
+        let ep = try await endpoint()
+        do {
+            _ = try await ServicesClient.create(endpoint: ep, options: ServicesOptions())
+            XCTFail("expected rejection")
+        } catch {}
+        try await ep.close()
+    }
+
+    func testRejectsTwoCredentials() async throws {
+        let ep = try await endpoint()
+        do {
+            _ = try await ServicesClient.create(
+                endpoint: ep,
+                options: ServicesOptions(apiSecret: FAKE_API_SECRET, apiSecretFromEnv: true)
+            )
+            XCTFail("expected rejection")
+        } catch {}
+        try await ep.close()
+    }
+
+    func testRejectsMalformedSecret() async throws {
+        let ep = try await endpoint()
+        do {
+            _ = try await ServicesClient.create(
+                endpoint: ep,
+                options: ServicesOptions(apiSecret: "not-a-valid-ticket")
+            )
+            XCTFail("expected rejection")
+        } catch {}
+        try await ep.close()
+    }
+}

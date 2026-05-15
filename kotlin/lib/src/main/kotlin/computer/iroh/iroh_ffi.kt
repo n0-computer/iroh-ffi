@@ -1268,7 +1268,7 @@ internal object IntegrityCheckingUniffiLib {
 
     external fun uniffi_iroh_ffi_checksum_constructor_relaymode_staging(): Short
 
-    external fun uniffi_iroh_ffi_checksum_constructor_servicesclient_new(): Short
+    external fun uniffi_iroh_ffi_checksum_constructor_servicesclient_create(): Short
 
     external fun uniffi_iroh_ffi_checksum_constructor_endpointticket_new(): Short
 
@@ -2086,7 +2086,7 @@ internal object UniffiLib {
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_iroh_ffi_fn_constructor_servicesclient_new(
+    external fun uniffi_iroh_ffi_fn_constructor_servicesclient_create(
         `endpoint`: Long,
         `options`: RustBuffer.ByValue,
     ): Long
@@ -2829,7 +2829,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_constructor_relaymode_staging() != 32490.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_constructor_servicesclient_new() != 33048.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_servicesclient_create() != 11042.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_constructor_endpointticket_new() != 39793.toShort()) {
@@ -12433,7 +12433,7 @@ public object FfiConverterTypeSendStream : FfiConverter<SendStream, Long> {
 /**
  * Client for services.iroh.computer.
  *
- * Construct with [`Self::new`]; metrics are pushed automatically while the
+ * Construct with [`Self::create`]; metrics are pushed automatically while the
  * client is alive. Drop the client (or let it go out of scope) to stop.
  */
 public interface ServicesClientInterface {
@@ -12470,7 +12470,7 @@ public interface ServicesClientInterface {
 /**
  * Client for services.iroh.computer.
  *
- * Construct with [`Self::new`]; metrics are pushed automatically while the
+ * Construct with [`Self::create`]; metrics are pushed automatically while the
  * client is alive. Drop the client (or let it go out of scope) to stop.
  */
 open class ServicesClient :
@@ -12498,7 +12498,6 @@ open class ServicesClient :
         this.handle = 0
         this.cleanable = null
     }
-    // Note no constructor generated for this object as it is async.
 
     protected val handle: Long
     protected val cleanable: UniffiCleaner.Cleanable?
@@ -12682,10 +12681,30 @@ open class ServicesClient :
             IrohException.ErrorHandler,
         )
 
-    /**
-     * @suppress
-     */
-    companion object
+    companion object {
+        /**
+         * Build a new client bound to the given endpoint.
+         */
+        @Throws(IrohException::class)
+        @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+        suspend fun `create`(
+            `endpoint`: Endpoint,
+            `options`: ServicesOptions,
+        ): ServicesClient =
+            uniffiRustCallAsync(
+                UniffiLib.uniffi_iroh_ffi_fn_constructor_servicesclient_create(
+                    FfiConverterTypeEndpoint.lower(`endpoint`),
+                    FfiConverterTypeServicesOptions.lower(`options`),
+                ),
+                { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
+                { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
+                { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
+                // lift function
+                { FfiConverterTypeServicesClient.lift(it) },
+                // Error FFI converter
+                IrohException.ErrorHandler,
+            )
+    }
 }
 
 /**
