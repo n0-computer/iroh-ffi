@@ -93,7 +93,21 @@ final class RelayTests: XCTestCase {
     }
 }
 
+/// A user-implemented Preset: minimal baseline + a custom ALPN.
+final class CustomPreset: Preset {
+    func apply(builder: EndpointBuilder) {
+        builder.applyMinimal()
+        builder.alpns(alpns: [Data("custom/preset/1".utf8)])
+    }
+}
+
 final class EndpointTests: XCTestCase {
+    func testCustomPreset() async throws {
+        let ep = try await Endpoint.bind(options: EndpointOptions(preset: CustomPreset()))
+        XCTAssertFalse(ep.boundSockets().isEmpty)
+        try await ep.close()
+    }
+
     func testBindLifecycle() async throws {
         let ep = try await Endpoint.bind(options: EndpointOptions(preset: presetMinimal()))
         let id = ep.id()
