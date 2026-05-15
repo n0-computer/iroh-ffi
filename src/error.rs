@@ -1,5 +1,3 @@
-use iroh_blobs::api::{ExportBaoError, RequestError};
-
 /// An Error.
 #[derive(Debug, thiserror::Error, uniffi::Object)]
 #[error("{e:?}")]
@@ -21,28 +19,41 @@ impl From<anyhow::Error> for IrohError {
     }
 }
 
-impl From<RequestError> for IrohError {
-    fn from(value: RequestError) -> Self {
-        Self {
-            e: anyhow::anyhow!("{:?}", value),
-        }
-    }
+/// Catch-all conversion for the n0-error / snafu typed errors that iroh now
+/// returns from its public APIs. Wraps them in an `anyhow::Error` via Debug
+/// so we get the full stack trace in the FFI message.
+macro_rules! from_iroh_err {
+    ($($path:path),* $(,)?) => {
+        $(
+            impl From<$path> for IrohError {
+                fn from(value: $path) -> Self {
+                    Self {
+                        e: anyhow::anyhow!("{:?}", value),
+                    }
+                }
+            }
+        )*
+    };
 }
 
-impl From<irpc::Error> for IrohError {
-    fn from(value: irpc::Error) -> Self {
-        Self {
-            e: anyhow::anyhow!("{:?}", value),
-        }
-    }
-}
-
-impl From<ExportBaoError> for IrohError {
-    fn from(value: ExportBaoError) -> Self {
-        Self {
-            e: anyhow::anyhow!("{:?}", value),
-        }
-    }
+from_iroh_err! {
+    iroh::endpoint::BindError,
+    iroh::endpoint::ConnectError,
+    iroh::endpoint::ConnectionError,
+    iroh::endpoint::AlpnError,
+    iroh::endpoint::RemoteEndpointIdError,
+    iroh::endpoint::VarIntBoundsExceeded,
+    iroh::endpoint::WriteError,
+    iroh::endpoint::ClosedStream,
+    iroh::endpoint::ReadError,
+    iroh::endpoint::ReadExactError,
+    iroh::endpoint::ReadToEndError,
+    iroh::endpoint::StoppedError,
+    iroh::endpoint::SendDatagramError,
+    iroh::endpoint::ResetError,
+    iroh_base::KeyParsingError,
+    iroh_tickets::ParseError,
+    n0_future::task::JoinError,
 }
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq, uniffi::Error)]

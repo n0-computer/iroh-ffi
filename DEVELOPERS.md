@@ -1,115 +1,121 @@
 # Developers
 
-`iroh-ffi` uses [`uniffi-rs`](https://mozilla.github.io/uniffi-rs/) for building the different language bindings.
+`iroh-ffi` exposes a minimal, 1.0-track slice of [`iroh`](https://github.com/n0-computer/iroh)
+to Python, Swift, Kotlin, and JavaScript. Python/Swift/Kotlin use
+[`uniffi-rs`](https://mozilla.github.io/uniffi-rs/); JavaScript uses
+[`napi-rs`](https://napi.rs/).
 
-## General
+## One tool for everything: `cargo make`
 
-### Translating the iroh API into iroh-ffi bindings
+All build / test / bindgen / publish flows live in `Makefile.toml`. The same
+commands run locally and in CI, so they never drift. Install once:
 
-Use these general guidelines when translating the rust API featured in the rust
-`iroh` library with the API we detail in this crate:
-- `PathBuf` -> `String`
-- `Bytes`, `[u8]`, etc -> Vec<u8>
-- Any methods that stream files or have `Reader` inputs or outputs should instead expect to read from or write to a file. Also, see if it's logical for any structs or enums that have a method to return a `Reader` to instead have `size` method, so that the user can investigate the size of the data before attempting to save it or load it in memory.
-- Any methods that return a `Stream` of structs (such as a `list` method), should return a `Vec` instead. You should also add a comment that warns the user that this method will load all the entries into memory.
-- Any methods that return progress or events should instead take a call back. Check out the `Doc::subscribe` method and the `SubscribeCallback` trait for how this should be implemented
-- Most methods that return a `Result` should likely get their own unique `IrohError`s, follow the pattern laid out in `error.rs`.
-- Except for unit enums, every struct and enum should be represented in the `udl` file as an interface. It should be expected that the foreign language use constructor methods in order to create structs, and use setters and getters to manipulate the struct, rather than having access to the internal fields themselves.
-- Anything that can be represented as a string, should have a `to_string` and `from_string` method, eg `NamespaceId`, `DocTicket`
-- Enums that have enum variants which contain data should look at the `SocketAddr` or `LiveEvent` enums for the expected translation.
+```sh
+cargo install cargo-make
+```
 
-### Testing
+### Test
 
-Please include tests when you add new pieces of the API to the ffi bindings
+```sh
+cargo make test-all        # rust + python + js + kotlin + swift
+cargo make test-rust
+cargo make test-python     # activate your virtualenv first (see below)
+cargo make test-js
+cargo make test-kotlin
+cargo make test-swift      # macOS-arm64 slice (fast)
+```
 
-## Languages
+### Lint / format / docs
 
-### Kotlin
+```sh
+cargo make format          # rustfmt (workspace)
+cargo make format-check
+cargo make clippy
+cargo make docs
+cargo make ci-rust         # everything the Rust CI job runs
+```
 
-- See `README.kotlin.md` for setup
-- Build using `./make_kotlin.sh`
-- Tests using `./gradlew test` from `./kotlin`
+### Bindgen / packaging
+
+```sh
+cargo make bindgen-kotlin       # generate Kotlin binding + stage the cdylib
+cargo make bindgen-swift-macos  # generate Swift binding + stage the macOS slice
+cargo make swift-xcframework    # full 4-target Apple xcframework (release)
+cargo make python-wheel         # release wheel into target/wheels
+cargo make js-build-release     # stripped release napi addon
+```
+
+`cargo make --list-all-steps` shows every task with its description.
+
+## Scope
+
+The FFI mirrors the iroh 1.0 surface: `Endpoint`, `Connection`, streams,
+datagrams, `EndpointId` / `EndpointAddr` / `EndpointTicket`, `SecretKey` /
+`Signature`, custom relays (`RelayMap` / `RelayMode`), watchers, multipath
+snapshots, and the `iroh-services` client. `docs`, `gossip`, and `blobs` are
+intentionally **not** exposed (they are not 1.0 APIs).
+
+## Translating the iroh API into bindings
+
+General guidelines when surfacing an `iroh` API:
+
+- `PathBuf` → `String`; `Bytes` / `[u8]` → `Vec<u8>`
+- Anything streaming should read from / write to explicit buffers, or expose a
+  `size` accessor so callers can decide how to handle the data.
+- Methods returning a `Stream` (e.g. a `list`) should return a `Vec`. Add a
+  comment warning that everything is loaded into memory.
+- Methods that emit progress/events take a callback trait
+  (`#[uniffi::export(with_foreign)]` on the uniffi side, `ThreadsafeFunction`
+  on the napi side). See the watcher callbacks in `src/watch.rs`.
+- Fallible methods return `IrohError` — follow the pattern in `src/error.rs`.
+- Mirror upstream names. Where a name collides with a host-language builtin
+  (e.g. Kotlin `AutoCloseable.close()`), rename **only** for that binding via
+  `uniffi.toml`'s `[bindings.kotlin.rename]`, not globally.
+- Every value type that has a sensible textual form implements `Display`
+  (uniffi `#[uniffi::export(Display)]`) and a `to_string()`/`toString()` on the
+  napi side, so it feels native in every language.
+
+## Testing
+
+When you add a piece of the API, add a test for it in **every** binding:
+`src/*.rs` (`#[cfg(test)]`), `python/*_test.py`, `iroh-js/test/*.mjs`,
+`kotlin/lib/src/test/kotlin/computer/iroh/*Test.kt`, and
+`IrohLib/Tests/IrohLibTests/IrohLibTests.swift`. The end-to-end connectivity
+tests use the loopback pattern from iroh's own suite (`Preset::N0` +
+`RelayMode::disabled()`, dial via `endpoint.addr()`).
+
+## Per-language notes
 
 ### Python
 
-#### Development setup
-
-- Install [`maturin`](https://www.maturin.rs/installation) for python development and packaging.
-- Create and activate a virtual environment
-- Install `uniffi-bindgen` with `pip`
-- `maturin build` will build a wheel in `targets/wheels`
-- `maturin develop` will build the wheel and install into the current virtual env. It expects you to use `virtualenv` to manage your virtual environment.
-
-See below for example commands that do all this.
-
-#### Running the example
-
-This repo includes a very small, but working example for using the python API, at [`python/main.py`](python/main.py).
-
-To run it with the latest version of iroh published on pypi:
+Install [`maturin`](https://www.maturin.rs/installation), create + activate a
+virtualenv, then:
 
 ```sh
-# Install iroh with pip
-pip install iroh
-# Run the example
-python3 python/main.py --help
+pip install pytest pytest-asyncio maturin uniffi-bindgen
+cargo make test-python
 ```
 
-To run with a locally-built wheel:
+`cargo make python-develop` builds + installs into the active venv;
+`cargo make python-wheel` builds a release wheel. For a portable manylinux
+wheel: `docker run --rm -v $(pwd):/mnt -w /mnt quay.io/pypa/manylinux_2_28_x86_64 /mnt/build_wheel.sh`.
+
+### JavaScript
 
 ```sh
-# Create and activate a virtual env
-virtualenv .
-source ./bin/activate
-# Install dependencies
-pip install uniffi-bindgen
-# Build wheel
-maturin develop
-# Run the example
-python3 python/main.py --help
-
+cargo make test-js   # yarn install + napi build --platform + node --test
 ```
 
-#### Testing
+Requires Node ≥ 20 and yarn.
 
-We use [`pytest`](https://docs.pytest.org/en/7.1.x/contents.html) to test the python API.
+### Kotlin
 
-Execute the following commands to prepare and run all tests:
-```sh
-# Create and activate a virtual env
-virtualenv .
-source ./bin/activate
-# Install dependencies
-pip install uniffi-bindgen pytest pytest-asyncio
-# Build wheel
-maturin develop
-# Run tests
-python -m pytest
-```
+Requires `java`, `gradle`, and a JDK. `cargo make test-kotlin` generates the
+binding and runs the Gradle suite. Android cross-builds are handled in the
+release workflow.
 
-When developing the python API, create a test file for each rust module that you create, and test all pieces of the API in that module in the python test file. The file should be named `[MODULENAME]_test.py`.
-For example, the `iroh::net` ffi bindings crate should have a corresponding `net_test.py` file.
+### Swift
 
-#### Building portable wheels
-
-Invoking `maturin build` will build a wheel in `target/wheels`.  This
-will likely only work on your specific platform. To build a portable
-wheel for linux use:
-
-```
-docker run --rm -v $(pwd):/mnt -w /mnt quay.io/pypa/manylinux_2_28_x86_64 /mnt/build_wheel.sh
-```
-
-#### Translations
-
-Uniffi translates the rust to python in a systematic way. The biggest discrepancy between the rust and python syntax are around how new objects are constructed
-
-- constructor methods w/ `new` name:
-    `Ipv4Addr::new(127, 0, 0, 1)` in rust would be `Ipv4Addr(127, 0, 0, 1)` in python
-- constructor methods with any other name in rust:
-    `SocketAddr::from_ipv4(..)` in rust would be `SocketAddr.from_ipv4(..)` in python
-- method names will stay the same:
-     `SocketAddr.as_ipv4` in rust will be called `SocketAddr.as_ipv4` in python
-- unit enums will have the same names:
-    `SocketAddrType::V4` in rust will be `SocketAddrType.V4` in python
-- methods that return `Result` in rust will potentially throw exceptions on error in python
+`cargo make test-swift` builds the macOS-arm64 slice and runs `swift test`.
+`cargo make swift-xcframework` builds the full iOS + macOS xcframework. iroh's
+netwatch needs `CoreWLAN` on macOS; it is declared in `IrohLib/Package.swift`.

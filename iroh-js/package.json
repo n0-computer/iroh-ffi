@@ -42,14 +42,14 @@
   },
   "license": "MIT OR Apache-2.0",
   "devDependencies": {
-    "@napi-rs/cli": "^3.0.0-alpha.80"
+    "@napi-rs/cli": "^3.6.2"
   },
   "scripts": {
     "artifacts": "napi artifacts",
     "build": "napi build --platform --release --strip",
-    "build:debug": "napi build",
-    "prepublishOnly": "napi prepublish -t npm --no-gh-release",
-    "test": "node --test",
+    "build:debug": "napi build --platform",
+    "prepublishOnly": "napi pre-publish -t npm --no-gh-release",
+    "test": "node --test test/*.mjs",
     "version": "napi version"
   },
   "packageManager": "yarn@1.22.22"

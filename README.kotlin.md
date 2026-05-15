@@ -1,21 +1,26 @@
 # Iroh Kotlin
 
+## Build & test
+
+With [`cargo-make`](https://crates.io/crates/cargo-make) installed:
+
+```sh
+cargo make bindgen-kotlin   # generate the Kotlin binding + stage the cdylib
+cargo make test-kotlin      # bindgen + ./gradlew test
+```
+
 ## Requirements
 
-### Gradle
-
-- Install `java`
-- Install `gradle`
+- `java` + a JDK (21+)
+- `gradle`
 - [`kotlinc`](https://kotlinlang.org/docs/command-line.html)
 - [`ktlint`](https://github.com/pinterest/ktlint)
 
+## Android development
 
-### Android Development
+Install the NDK via Android Studio and point Cargo at it, e.g. with
+`NDK=/path/to/ndk/<version>` and an android ABI target of `29`:
 
-- Install the NDK you want to use, using Android Studio.
-- Configure rust to use it, eg.
-
-with an NDK location of `NDK=/Users/dignifiedquire/Library/Android/sdk/ndk/25.2.9519653` and an android ABI target of `29`.
 ```toml
 # .cargo/config.toml
 [target.aarch64-linux-android]
@@ -34,7 +39,6 @@ linker = "<NDK>/toolchains/llvm/prebuilt/darwin-x86_64/bin/i686-linux-android29-
 ar = "<NDK>/toolchains/llvm/prebuilt/darwin-x86_64/bin/llvm-ar"
 linker = "<NDK>/toolchains/llvm/prebuilt/darwin-x86_64/bin/x86_64-linux-android29-clang"
 ```
-
 
 ## References
 

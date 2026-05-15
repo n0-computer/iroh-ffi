@@ -1,28 +1,268 @@
-# Use cargo-make to run tasks here: https://crates.io/crates/cargo-make
+# Single source of truth for build / test / bindgen / publish across every
+# binding language. Run `cargo make <task>` locally; CI calls the exact same
+# tasks so local and CI never drift.
+#
+# Common tasks:
+#   cargo make test-all          # rust + python + js + kotlin + swift
+#   cargo make test-rust
+#   cargo make test-python
+#   cargo make test-js
+#   cargo make test-kotlin
+#   cargo make test-swift        # macOS-arm64 slice (fast, for local/CI test)
+#   cargo make format            # rustfmt (workspace)
+#   cargo make clippy
+#
+# Bindgen / packaging:
+#   cargo make bindgen-kotlin
+#   cargo make swift-xcframework # full 4-target Apple xcframework (release)
+#   cargo make python-wheel
+#
+# Most tasks are workspace = false so cargo-make does not fan out per member.
+
+[config]
+default_to_workspace = false
+skip_core_tasks = true
+
+[env]
+LIB_NAME = "libiroh_ffi"
+UNIFFI_CONFIG = "uniffi.toml"
+
+# ---------------------------------------------------------------------------
+# Formatting / lint / docs (Rust)
+# ---------------------------------------------------------------------------
 
 [tasks.format]
-workspace = false
 command = "cargo"
 args = [
-     "fmt",
-     "--all",
-     "--",
-     "--config",
-     "unstable_features=true",
-     "--config",
-     "imports_granularity=Crate,group_imports=StdExternalCrate,reorder_imports=true,format_code_in_doc_comments=true",
+  "fmt", "--all", "--",
+  "--config", "unstable_features=true",
+  "--config", "imports_granularity=Crate,group_imports=StdExternalCrate,reorder_imports=true,format_code_in_doc_comments=true",
 ]
 
 [tasks.format-check]
-workspace = false
 command = "cargo"
 args = [
-     "fmt",
-     "--all",
-     "--check",
-     "--",
-     "--config",
-     "unstable_features=true",
-     "--config",
-     "imports_granularity=Crate,group_imports=StdExternalCrate,reorder_imports=true,format_code_in_doc_comments=true",
+  "fmt", "--all", "--check", "--",
+  "--config", "unstable_features=true",
+  "--config", "imports_granularity=Crate,group_imports=StdExternalCrate,reorder_imports=true,format_code_in_doc_comments=true",
 ]
+
+[tasks.clippy]
+command = "cargo"
+args = ["clippy", "--all-targets", "--bins", "--tests", "--benches"]
+
+[tasks.docs]
+command = "cargo"
+args = ["doc", "--no-deps", "--document-private-items"]
+
+# ---------------------------------------------------------------------------
+# Rust core
+# ---------------------------------------------------------------------------
+
+[tasks.build]
+description = "Build the iroh-ffi cdylib/staticlib."
+command = "cargo"
+args = ["build", "--lib", "-p", "iroh-ffi"]
+
+[tasks.test-rust]
+description = "Run the Rust unit tests."
+command = "cargo"
+args = ["test", "--lib", "-p", "iroh-ffi", "--", "--test-threads=1"]
+
+# ---------------------------------------------------------------------------
+# uniffi bindgen helpers (target-dir aware: honours CARGO_TARGET_DIR / config)
+# ---------------------------------------------------------------------------
+
+[tasks.bindgen-kotlin]
+description = "Build the lib + generate the Kotlin binding + stage the cdylib."
+dependencies = ["build"]
+script_runner = "@shell"
+script = '''
+set -eu
+case "$(uname -s)" in
+  Darwin) EXT=dylib ;;
+  Linux)  EXT=so ;;
+  *)      EXT=dll ;;
+esac
+TARGET_DIR=$(cargo metadata --format-version 1 --no-deps | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+LIB="$TARGET_DIR/debug/${LIB_NAME}.${EXT}"
+cargo run --bin uniffi-bindgen generate --language kotlin \
+  --out-dir kotlin/lib/src/main/kotlin/ --config "$UNIFFI_CONFIG" --library "$LIB"
+mkdir -p kotlin/lib/src/main/resources/
+cp "$LIB" kotlin/lib/src/main/resources/
+'''
+
+[tasks.bindgen-swift-macos]
+description = "Build aarch64-apple-darwin + generate Swift binding + stage the macOS xcframework slice (fast path for tests)."
+script_runner = "@shell"
+script = '''
+set -eu
+cargo build --lib --target aarch64-apple-darwin
+TARGET_DIR=$(cargo metadata --format-version 1 --no-deps | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+DYLIB="$TARGET_DIR/aarch64-apple-darwin/debug/${LIB_NAME}.dylib"
+STATIC="$TARGET_DIR/aarch64-apple-darwin/debug/${LIB_NAME}.a"
+mkdir -p include/apple
+cargo run --bin uniffi-bindgen generate --language swift \
+  --out-dir ./include/apple --config "$UNIFFI_CONFIG" --library "$DYLIB"
+FW=Iroh.xcframework/macos-arm64/Iroh.framework
+cp "$STATIC" "$FW/Iroh"
+cp include/apple/iroh_ffiFFI.h "$FW/Headers/iroh_ffiFFI.h"
+sed "s/iroh_ffiFFI/Iroh/g" include/apple/iroh_ffi.swift > IrohLib/Sources/IrohLib/IrohLib.swift
+rm -rf IrohLib/artifacts/Iroh.xcframework
+cp -R Iroh.xcframework IrohLib/artifacts/
+'''
+
+# ---------------------------------------------------------------------------
+# Python
+# ---------------------------------------------------------------------------
+
+[tasks.python-develop]
+description = "maturin develop into the active virtualenv."
+command = "maturin"
+args = ["develop"]
+
+[tasks.test-python]
+description = "Build + run the Python test suite."
+dependencies = ["python-develop"]
+command = "python"
+args = ["-m", "pytest", "-q"]
+cwd = "python"
+
+[tasks.python-wheel]
+description = "Build a release wheel into target/wheels."
+command = "maturin"
+args = ["build", "--release"]
+
+[tasks.python-wheel-manylinux]
+description = "Build a manylinux_2_28 release wheel (run inside the manylinux container)."
+command = "maturin"
+args = ["build", "--release", "--manylinux", "2_28"]
+
+# ---------------------------------------------------------------------------
+# JavaScript (napi-rs)
+# ---------------------------------------------------------------------------
+
+[tasks.js-install]
+description = "yarn install for iroh-js."
+command = "yarn"
+args = ["install"]
+cwd = "iroh-js"
+
+[tasks.js-build]
+description = "Build the napi addon (platform-tagged debug)."
+dependencies = ["js-install"]
+script_runner = "@shell"
+script = '''
+set -eu
+cd iroh-js
+node_modules/.bin/napi build --platform
+'''
+
+[tasks.test-js]
+description = "Build + run the JS test suite."
+dependencies = ["js-build"]
+command = "yarn"
+args = ["test"]
+cwd = "iroh-js"
+
+[tasks.js-build-release]
+description = "Build the napi addon (release, stripped)."
+dependencies = ["js-install"]
+command = "yarn"
+args = ["build"]
+cwd = "iroh-js"
+
+# ---------------------------------------------------------------------------
+# Kotlin
+# ---------------------------------------------------------------------------
+
+[tasks.test-kotlin]
+description = "Generate the Kotlin binding + run the Gradle test suite."
+dependencies = ["bindgen-kotlin"]
+script_runner = "@shell"
+script = '''
+set -eu
+cd kotlin
+./gradlew test --no-daemon --console=plain
+'''
+
+# ---------------------------------------------------------------------------
+# Swift
+# ---------------------------------------------------------------------------
+
+[tasks.test-swift]
+description = "Build the macOS slice + run the Swift test suite."
+dependencies = ["bindgen-swift-macos"]
+script_runner = "@shell"
+script = '''
+set -eu
+cd IrohLib
+swift test
+'''
+
+[tasks.swift-xcframework]
+description = "Full release xcframework for all Apple targets (CI / release)."
+script_runner = "@shell"
+script = '''
+set -eu
+./make_swift.sh
+'''
+
+[tasks.swift-package]
+description = "Zip + checksum the xcframework for SwiftPM distribution."
+dependencies = ["swift-xcframework"]
+script_runner = "@shell"
+script = '''
+set -eu
+./package_swift.sh
+'''
+
+# ---------------------------------------------------------------------------
+# Aggregates
+# ---------------------------------------------------------------------------
+
+[tasks.test-all]
+description = "Run every binding's test suite."
+dependencies = [
+  "test-rust",
+  "test-python",
+  "test-js",
+  "test-kotlin",
+  "test-swift",
+]
+
+[tasks.ci-rust]
+description = "What the Rust CI job runs: fmt check, clippy, docs, tests."
+dependencies = ["format-check", "clippy", "docs", "test-rust"]
+
+# ---------------------------------------------------------------------------
+# Publish (wired in Phase 6 — placeholders so the task graph is stable)
+# ---------------------------------------------------------------------------
+
+[tasks.publish-python]
+description = "Publish the Python wheel to PyPI (maturin)."
+command = "maturin"
+args = ["publish", "--skip-existing"]
+
+[tasks.publish-js]
+description = "Publish the npm package (napi prepublish + npm publish)."
+cwd = "iroh-js"
+script_runner = "@shell"
+script = '''
+set -eu
+node_modules/.bin/napi pre-publish -t npm --no-gh-release
+npm publish --access public
+'''
+
+[tasks.publish-swift]
+description = "Package + checksum the xcframework for a Swift release."
+dependencies = ["swift-package"]
+
+[tasks.publish-kotlin]
+description = "Publish the Kotlin artifact (Maven Central — wired in Phase 6)."
+script_runner = "@shell"
+script = '''
+set -eu
+echo "publish-kotlin: wired in Phase 6 (Maven Central / Sonatype)" >&2
+exit 1
+'''

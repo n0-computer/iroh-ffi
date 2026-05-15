@@ -1,55 +1,199 @@
 import XCTest
 @testable import IrohLib
 
-final class IrohLibTests: XCTestCase {
-    func testNodeId() async throws {
-        let node = try await IrohLib.Iroh.memory()
-        let nodeId = try await node.net().nodeId()
-        print(nodeId)
+private let ALPN = Data("iroh-ffi/test/0".utf8)
 
-        XCTAssertEqual(true, true)
+final class KeyTests: XCTestCase {
+    func testEndpointId() throws {
+        let keyStr = "523c7996bad77424e96786cf7a7205115337a5b4565cd25506a0f297b191a5ea"
+        let fmtStr = "523c7996ba"
+        let bytes = Data([
+            0x52, 0x3c, 0x79, 0x96, 0xba, 0xd7, 0x74, 0x24,
+            0xe9, 0x67, 0x86, 0xcf, 0x7a, 0x72, 0x05, 0x11,
+            0x53, 0x37, 0xa5, 0xb4, 0x56, 0x5c, 0xd2, 0x55,
+            0x06, 0xa0, 0xf2, 0x97, 0xb1, 0x91, 0xa5, 0xea,
+        ])
+
+        let id = try EndpointId.fromString(s: keyStr)
+        XCTAssertEqual(id.description, keyStr)
+        XCTAssertEqual(id.toBytes(), bytes)
+        XCTAssertEqual(id.fmtShort(), fmtStr)
+
+        let id2 = try EndpointId.fromBytes(bytes: bytes)
+        XCTAssertTrue(id.equal(other: id2))
     }
 
-    func testProviderEvents() async throws {
-        let blobEvents = BlobEventHandler()
-        let options = NodeOptions.init(gcIntervalMillis: 0, blobEvents: blobEvents)
-        let a = try await Iroh.memoryWithOptions(options: options)
+    func testEndpointIdRejectsBadBytes() {
+        XCTAssertThrowsError(try EndpointId.fromBytes(bytes: Data([1, 2, 3])))
+    }
 
-        let blob = "oh hello".data(using: String.Encoding.utf8)!
-        let result = try await a.blobs().addBytes(bytes: blob)
-        let ticket = try await a.blobs().share(
-                hash: result.hash,
-                blobFormat: BlobFormat.raw,
-                ticketOptions: AddrInfoOptions.addresses
+    func testSecretKeyRoundtrip() throws {
+        let secret = SecretKey.generate()
+        let raw = secret.toBytes()
+        XCTAssertEqual(raw.count, 32)
+        let secret2 = try SecretKey.fromBytes(bytes: raw)
+        XCTAssertEqual(secret.toBytes(), secret2.toBytes())
+        XCTAssertEqual(secret.`public`().toBytes(), secret2.`public`().toBytes())
+    }
+
+    func testSignVerifyRoundtrip() throws {
+        let secret = SecretKey.generate()
+        let pub = secret.`public`()
+        let msg = Data("hello iroh".utf8)
+        let sig = secret.sign(message: msg)
+
+        let raw = sig.toBytes()
+        XCTAssertEqual(raw.count, 64)
+        let sig2 = try Signature.fromBytes(bytes: raw)
+        XCTAssertEqual(sig2.toBytes(), raw)
+
+        try pub.verify(message: msg, signature: sig)
+        try pub.verify(message: msg, signature: sig2)
+    }
+
+    func testVerifyRejectsTampered() {
+        let secret = SecretKey.generate()
+        let pub = secret.`public`()
+        let sig = secret.sign(message: Data("original".utf8))
+        XCTAssertThrowsError(try pub.verify(message: Data("tampered".utf8), signature: sig))
+    }
+}
+
+final class RelayTests: XCTestCase {
+    func testRelayMapCrud() throws {
+        let m = RelayMap.empty()
+        XCTAssertTrue(m.isEmpty())
+
+        let cfg = RelayConfig(
+            url: "https://relay.example.org/",
+            quicPort: 7842,
+            authToken: "hunter2"
+        )
+        try m.insert(config: cfg)
+        XCTAssertEqual(m.len(), 1)
+        XCTAssertTrue(try m.contains(url: "https://relay.example.org/"))
+
+        let got = try m.get(url: "https://relay.example.org/")
+        XCTAssertEqual(got?.url, "https://relay.example.org/")
+        XCTAssertEqual(got?.quicPort, 7842)
+        XCTAssertEqual(got?.authToken, "hunter2")
+
+        XCTAssertTrue(try m.remove(url: "https://relay.example.org/"))
+        XCTAssertTrue(m.isEmpty())
+    }
+
+    func testRelayModeConstructors() throws {
+        _ = RelayMode.disabled()
+        _ = RelayMode.defaultMode()
+        _ = RelayMode.staging()
+        let m = try RelayMap.fromUrls(urls: ["https://r1.example.org/"])
+        let custom = RelayMode.custom(map: m)
+        XCTAssertEqual(custom.relayMap().len(), 1)
+        _ = try RelayMode.customFromUrls(urls: ["https://r2.example.org/"])
+    }
+}
+
+final class EndpointTests: XCTestCase {
+    func testBindLifecycle() async throws {
+        let ep = try await Endpoint.bind(options: EndpointOptions(preset: presetMinimal()))
+        let id = ep.id()
+        XCTAssertFalse(id.description.isEmpty)
+        XCTAssertTrue(ep.addr().id().equal(other: id))
+        XCTAssertFalse(ep.boundSockets().isEmpty)
+        XCTAssertEqual(ep.secretKey().`public`().toBytes(), id.toBytes())
+        try await ep.close()
+        XCTAssertTrue(ep.isClosed())
+    }
+
+    func testEndpointTicketRoundtrip() async throws {
+        let ep = try await Endpoint.bind(options: EndpointOptions(preset: presetMinimal()))
+        let addr = ep.addr()
+        let ticket = try EndpointTicket(addr: addr)
+        let s = ticket.description
+        XCTAssertTrue(s.hasPrefix("endpoint"))
+        let parsed = try EndpointTicket.parse(str: s)
+        XCTAssertTrue(parsed.endpointAddr().id().equal(other: addr.id()))
+        try await ep.close()
+    }
+
+    func testConnectEchoRoundtrip() async throws {
+        let server = try await Endpoint.bind(
+            options: EndpointOptions(
+                preset: presetN0(),
+                alpns: [ALPN],
+                relayMode: RelayMode.disabled()
             )
+        )
+        let serverAddr = server.addr()
+        let serverId = server.id()
 
-        let b = try await Iroh.memory()
-        let progressManager = DownloadProgressManager()
-        try await b.blobs().download(hash: ticket.hash(), opts: ticket.asDownloadOptions(), cb: progressManager)
-
-        let completedProvides = await blobEvents.transfersCompleted
-        XCTAssertEqual(completedProvides, 1)
-        let completedFetches = await progressManager.completedFetches
-        XCTAssertEqual(completedFetches, 1)
-    }
-}
-
-actor BlobEventHandler: BlobProvideEventCallback {
-    private(set) var transfersCompleted: UInt = 0
-
-    func blobEvent(event: IrohLib.BlobProvideEvent) async throws {
-        if event.type() == IrohLib.BlobProvideEventType.transferCompleted {
-            transfersCompleted += 1
+        let serverTask = Task {
+            let incoming = try await server.acceptNext()!
+            let conn = try await incoming.accept().connect()
+            XCTAssertEqual(conn.alpn(), ALPN)
+            let bi = try await conn.acceptBi()
+            let msg = try await bi.recv().readToEnd(sizeLimit: 64)
+            try await bi.send().writeAll(buf: msg)
+            try await bi.send().finish()
+            let dg = try await conn.readDatagram()
+            try conn.sendDatagram(data: dg)
+            _ = await conn.closed()
         }
+
+        let client = try await Endpoint.bind(
+            options: EndpointOptions(preset: presetN0(), relayMode: RelayMode.disabled())
+        )
+        let conn = try await client.connect(addr: serverAddr, alpn: ALPN)
+        XCTAssertTrue(conn.remoteId().equal(other: serverId))
+        XCTAssertFalse(conn.paths().isEmpty)
+
+        let bi = try await conn.openBi()
+        try await bi.send().writeAll(buf: Data("hello iroh".utf8))
+        try await bi.send().finish()
+        let echoed = try await bi.recv().readToEnd(sizeLimit: 64)
+        XCTAssertEqual(String(decoding: echoed, as: UTF8.self), "hello iroh")
+
+        try conn.sendDatagram(data: Data("ping".utf8))
+        let pong = try await conn.readDatagram()
+        XCTAssertEqual(String(decoding: pong, as: UTF8.self), "ping")
+
+        let stats = conn.stats()
+        XCTAssertGreaterThan(stats.udpTxDatagrams, 0)
+
+        try conn.close(errorCode: 0, reason: Data("bye".utf8))
+        _ = try await serverTask.value
+        try await client.close()
+        try await server.close()
     }
-}
 
-actor DownloadProgressManager: DownloadCallback {
-    private(set) var completedFetches: UInt = 0
+    func testUniStream() async throws {
+        let server = try await Endpoint.bind(
+            options: EndpointOptions(
+                preset: presetN0(),
+                alpns: [ALPN],
+                relayMode: RelayMode.disabled()
+            )
+        )
+        let serverAddr = server.addr()
 
-    func progress(progress: DownloadProgress) throws {
-        if progress.type() == .allDone {
-            completedFetches += 1
+        let serverTask = Task {
+            let incoming = try await server.acceptNext()!
+            let conn = try await incoming.accept().connect()
+            let recv = try await conn.acceptUni()
+            let msg = try await recv.readToEnd(sizeLimit: 32)
+            XCTAssertEqual(String(decoding: msg, as: UTF8.self), "unidirectional")
         }
+
+        let client = try await Endpoint.bind(
+            options: EndpointOptions(preset: presetN0(), relayMode: RelayMode.disabled())
+        )
+        let conn = try await client.connect(addr: serverAddr, alpn: ALPN)
+        let send = try await conn.openUni()
+        try await send.writeAll(buf: Data("unidirectional".utf8))
+        try await send.finish()
+
+        _ = try await serverTask.value
+        try await client.close()
+        try await server.close()
     }
 }

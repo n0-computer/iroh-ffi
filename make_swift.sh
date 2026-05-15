@@ -1,6 +1,6 @@
 set -eu
 
-# TODO: convert to rust
+# Builds the full 4-target Apple xcframework. Prefer `cargo make swift-xcframework`.
 
 # Env
 UDL_NAME="iroh_ffi"
@@ -8,7 +8,10 @@ FRAMEWORK_NAME="Iroh"
 SWIFT_INTERFACE="IrohLib"
 INCLUDE_DIR="include/apple"
 
-# Build default lib
+# Resolve the cargo target dir (honours CARGO_TARGET_DIR / .cargo config).
+TARGET_DIR=$(cargo metadata --format-version 1 --no-deps | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+
+# Build default lib (for the bindgen step)
 cargo build --lib
 
 # Compile the rust
@@ -33,27 +36,27 @@ rm -f "$IOS_SIM_FRAMEWORK/Headers/${UDL_NAME}FFI.h"
 rm -f "$MACOS_ARM64_FRAMEWORK/$FRAMEWORK_NAME"
 rm -f "$MACOS_ARM64_FRAMEWORK/Headers/${UDL_NAME}FFI.h"
 
-rm -f ./target/universal.a
+rm -f "$TARGET_DIR/universal.a"
 rm -f $INCLUDE_DIR/*
 
 # Make dirs if it doesn't exist
 mkdir -p $INCLUDE_DIR
 
 # UniFfi bindgen
-cargo run --bin uniffi-bindgen generate --language swift --out-dir ./$INCLUDE_DIR --library target/debug/libiroh_ffi.dylib --config uniffi.toml
+cargo run --bin uniffi-bindgen generate --language swift --out-dir ./$INCLUDE_DIR --library "$TARGET_DIR/debug/lib${UDL_NAME}.dylib" --config uniffi.toml
 
 # Make fat lib for sims
 lipo -create \
-    "./target/aarch64-apple-ios-sim/release/lib${UDL_NAME}.a" \
-    "./target/x86_64-apple-ios/release/lib${UDL_NAME}.a" \
-    -output ./target/universal.a
+    "$TARGET_DIR/aarch64-apple-ios-sim/release/lib${UDL_NAME}.a" \
+    "$TARGET_DIR/x86_64-apple-ios/release/lib${UDL_NAME}.a" \
+    -output "$TARGET_DIR/universal.a"
 
 # Move binaries
-cp "./target/aarch64-apple-ios/release/lib${UDL_NAME}.a" \
+cp "$TARGET_DIR/aarch64-apple-ios/release/lib${UDL_NAME}.a" \
     "$IOS_ARM64_FRAMEWORK/$FRAMEWORK_NAME"
-cp ./target/universal.a \
+cp "$TARGET_DIR/universal.a" \
     "$IOS_SIM_FRAMEWORK/$FRAMEWORK_NAME"
-cp "./target/aarch64-apple-darwin/release/lib${UDL_NAME}.a" \
+cp "$TARGET_DIR/aarch64-apple-darwin/release/lib${UDL_NAME}.a" \
     "$MACOS_ARM64_FRAMEWORK/$FRAMEWORK_NAME"
 
 # Move headers
@@ -71,5 +74,5 @@ rm -f "$SWIFT_INTERFACE/Sources/$SWIFT_INTERFACE/$SWIFT_INTERFACE.swift"
 cp "$INCLUDE_DIR/$SWIFT_INTERFACE.swift" \
     "$SWIFT_INTERFACE/Sources/$SWIFT_INTERFACE/$SWIFT_INTERFACE.swift"
 
-rm -rf "$SWIFT_INTERFACE/artifacts/*"
+rm -rf "$SWIFT_INTERFACE/artifacts/Iroh.xcframework"
 cp -R "$FRAMEWORK_NAME.xcframework" "$SWIFT_INTERFACE/artifacts/"
