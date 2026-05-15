@@ -85,13 +85,9 @@ jobs:
           - host: ubuntu-latest
             target: aarch64-unknown-linux-musl
             setup: |
-              sudo apt-get update
-              sudo apt-get -y install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu musl-tools musl-dev
-            build: |-
-              set -e &&
-              export CC_aarch64_unknown_linux_musl=aarch64-linux-gnu-gcc &&
-              export CXX_aarch64_unknown_linux_musl=aarch64-linux-gnu-g++ &&
-              yarn build --target aarch64-unknown-linux-musl --use-napi-cross
+              pip3 install ziglang
+              cargo install --locked cargo-zigbuild
+            build: yarn build --target aarch64-unknown-linux-musl --zig
           - host: windows-latest
             target: aarch64-pc-windows-msvc
             build: yarn build --target aarch64-pc-windows-msvc
