@@ -194,7 +194,6 @@ dependencies = ["swift-xcframework"]
 script_runner = "@shell"
 script = '''
 set -eu
-export IROH_LOCAL_XCFRAMEWORK=1
 swift test
 '''
 
