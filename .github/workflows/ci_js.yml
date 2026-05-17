@@ -47,9 +47,19 @@ jobs:
           - host: ubuntu-latest
             target: x86_64-unknown-linux-musl
             setup: |
-              sudo apt-get update
-              sudo apt-get -y install musl-tools musl-dev
-            build: yarn build --target x86_64-unknown-linux-musl --use-napi-cross
+              pip3 install ziglang
+            build: |-
+              set -e
+              mkdir -p "$HOME/zigshim"
+              printf '#!/bin/sh\nA=;for x in "$@";do case "$x" in --target=*) ;; *) A="$A $x";; esac;done;exec python3 -m ziglang cc -target x86_64-linux-musl $A\n' > "$HOME/zigshim/zcc"
+              printf '#!/bin/sh\nA=;for x in "$@";do case "$x" in --target=*) ;; *) A="$A $x";; esac;done;exec python3 -m ziglang c++ -target x86_64-linux-musl $A\n' > "$HOME/zigshim/zcxx"
+              chmod +x "$HOME/zigshim/zcc" "$HOME/zigshim/zcxx"
+              export CC_x86_64_unknown_linux_musl="$HOME/zigshim/zcc"
+              export CXX_x86_64_unknown_linux_musl="$HOME/zigshim/zcxx"
+              export CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER="$HOME/zigshim/zcc"
+              export TARGET_CC="$HOME/zigshim/zcc"
+              export TARGET_CXX="$HOME/zigshim/zcxx"
+              yarn build --target x86_64-unknown-linux-musl
           - host: macos-latest
             target: aarch64-apple-darwin
             build: yarn build --target aarch64-apple-darwin
