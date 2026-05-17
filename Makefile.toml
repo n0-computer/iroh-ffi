@@ -189,12 +189,17 @@ cargo run --bin uniffi-bindgen generate --language kotlin \
 # ---------------------------------------------------------------------------
 
 [tasks.test-swift]
-description = "Build the full Apple xcframework + run the Swift test suite."
+description = "Build the full Apple xcframework + run the Swift test suite (xcodebuild)."
 dependencies = ["swift-xcframework"]
 script_runner = "@shell"
 script = '''
 set -eu
-swift test
+# `swift test` (SwiftPM CLI) fails to form the `Iroh` clang module from the
+# framework-bundle xcframework on the CI runner (every uniffi type "not in
+# scope"), while full Xcode consumes it fine. Drive tests through xcodebuild
+# so local and CI both use the working toolchain.
+xcodebuild -list 2>/dev/null || true
+xcodebuild test -scheme IrohLib -destination 'platform=macOS,arch=arm64'
 '''
 
 [tasks.swift-xcframework]
