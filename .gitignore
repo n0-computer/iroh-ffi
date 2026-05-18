@@ -112,3 +112,6 @@ package-lock.json
 
 kotlin/*.jar
 kotlin/**/*.dylib
+
+# Transient xcodebuild derived data for the Swift test task
+/.xcode-ddata

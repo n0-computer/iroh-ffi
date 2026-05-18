@@ -198,8 +198,14 @@ set -eu
 # framework-bundle xcframework on the CI runner (every uniffi type "not in
 # scope"), while full Xcode consumes it fine. Drive tests through xcodebuild
 # so local and CI both use the working toolchain.
+#
+# Use a clean, repo-local derived-data dir: the self-hosted CI runner reuses
+# the shared DerivedData across runs and otherwise relinks a stale extracted
+# Iroh.framework (missing the freshly built uniffi symbols). A fresh path per
+# run forces re-extraction of the just-built xcframework.
+rm -rf .xcode-ddata
 xcodebuild -list 2>/dev/null || true
-xcodebuild test -scheme IrohLib -destination 'platform=macOS'
+xcodebuild test -scheme IrohLib -destination 'platform=macOS' -derivedDataPath .xcode-ddata
 '''
 
 [tasks.swift-xcframework]
