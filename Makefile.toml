@@ -204,15 +204,24 @@ set -eu
 # Iroh.framework (missing the freshly built uniffi symbols). A fresh path per
 # run forces re-extraction of the just-built xcframework.
 #
-# Force the test build to native arm64: the xcframework macOS slice is
-# arm64-only, but the self-hosted runner's agent runs under Rosetta on
-# Apple Silicon, so an unwrapped xcodebuild builds x86_64 and fails to
-# link the arm64 binary. `arch -arm64` re-execs natively (a no-op on a
-# correctly-native runner). `uname -m` is logged to confirm host arch.
-echo "host arch: $(uname -m)"
+# Run the whole test phase under a native arm64 shell. The xcframework macOS
+# slice is arm64-only, but the self-hosted runner's agent runs under Rosetta
+# on Apple Silicon (`uname -m` == x86_64). Wrapping only `xcodebuild` fixed
+# the build but the XCTest runner host is spawned via launchd/XPC inheriting
+# the x86_64-translated session, so the arm64 test bundle can't talk to
+# testmanagerd ("Failed to establish communication with the test runner").
+# Re-exec the entire phase via `arch -arm64 /bin/bash` so the test-runner
+# session is native too. This is a stopgap until the runner is reprovisioned
+# as a native arm64 agent; it's a no-op on a correctly-native runner.
+echo "outer host arch: $(uname -m)"
 rm -rf .xcode-ddata
-arch -arm64 xcodebuild -list 2>/dev/null || true
-arch -arm64 xcodebuild test -scheme IrohLib -destination 'platform=macOS' -derivedDataPath .xcode-ddata
+arch -arm64 /bin/bash -s <<'INNER'
+set -eu
+echo "inner host arch: $(uname -m)"
+echo "translated: $(sysctl -n sysctl.proc_translated 2>/dev/null || echo n/a)"
+xcodebuild -list 2>/dev/null || true
+xcodebuild test -scheme IrohLib -destination 'platform=macOS' -derivedDataPath .xcode-ddata
+INNER
 '''
 
 [tasks.swift-xcframework]
