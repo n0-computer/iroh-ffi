@@ -203,9 +203,16 @@ set -eu
 # the shared DerivedData across runs and otherwise relinks a stale extracted
 # Iroh.framework (missing the freshly built uniffi symbols). A fresh path per
 # run forces re-extraction of the just-built xcframework.
+#
+# Force the test build to native arm64: the xcframework macOS slice is
+# arm64-only, but the self-hosted runner's agent runs under Rosetta on
+# Apple Silicon, so an unwrapped xcodebuild builds x86_64 and fails to
+# link the arm64 binary. `arch -arm64` re-execs natively (a no-op on a
+# correctly-native runner). `uname -m` is logged to confirm host arch.
+echo "host arch: $(uname -m)"
 rm -rf .xcode-ddata
-xcodebuild -list 2>/dev/null || true
-xcodebuild test -scheme IrohLib -destination 'platform=macOS' -derivedDataPath .xcode-ddata
+arch -arm64 xcodebuild -list 2>/dev/null || true
+arch -arm64 xcodebuild test -scheme IrohLib -destination 'platform=macOS' -derivedDataPath .xcode-ddata
 '''
 
 [tasks.swift-xcframework]
