@@ -204,25 +204,16 @@ set -eu
 # Iroh.framework (missing the freshly built uniffi symbols). A fresh path per
 # run forces re-extraction of the just-built xcframework.
 #
-# Run `xcodebuild test` inside the logged-in user's GUI (Aqua) session. The
-# self-hosted runner runs as root; `xcodebuild test` needs an XPC channel to
-# `testmanagerd`, which lives in the auto-login user's per-user GUI bootstrap
-# domain. A root process outside that domain can't reach it ("Failed to
-# establish communication with the test runner"). `launchctl asuser <uid>`
-# (root-only) re-contexts the command into that domain. The process stays
-# root, so the root-owned checked-out workspace / DerivedData need no chown.
-# `arch -arm64` is kept because the runner agent is still x86_64 under Rosetta
-# while the xcframework macOS slice is arm64-only.
-echo "outer host arch: $(uname -m)"
+# Run xcodebuild as the logged-in console user and force arm64, so it uses
+# the right session and the arm64-only xcframework macOS slice.
 CONSOLE_USER=$(stat -f%Su /dev/console)
 CONSOLE_UID=$(id -u "$CONSOLE_USER")
 echo "console user: $CONSOLE_USER ($CONSOLE_UID)"
 if [ "$CONSOLE_USER" = "root" ]; then
-  echo "ERROR: no GUI session (console user is root); xcodebuild test cannot reach testmanagerd" >&2
+  echo "ERROR: no interactive GUI session; cannot run xcodebuild test" >&2
   exit 1
 fi
 rm -rf .xcode-ddata
-launchctl asuser "$CONSOLE_UID" arch -arm64 xcodebuild -list 2>/dev/null || true
 launchctl asuser "$CONSOLE_UID" arch -arm64 xcodebuild test \
   -scheme IrohLib -destination 'platform=macOS' -derivedDataPath .xcode-ddata
 '''
