@@ -199,7 +199,7 @@ set -eu
 # scope"), while full Xcode consumes it fine. Drive tests through xcodebuild
 # so local and CI both use the working toolchain.
 xcodebuild -list 2>/dev/null || true
-xcodebuild test -scheme IrohLib -destination 'platform=macOS,arch=arm64'
+xcodebuild test -scheme IrohLib -destination 'platform=macOS'
 '''
 
 [tasks.swift-xcframework]
