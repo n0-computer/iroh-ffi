@@ -27,7 +27,7 @@ jobs:
             release-os: manylinux_2_28
             release-arch: x86_64
             container: quay.io/pypa/manylinux_2_28_x86_64
-            runner: [ubuntu-latest]
+            runner: [self-hosted, linux, X64]
           - name: ubuntu-arm-latest
             release-os: manylinux_2_28
             release-arch: aarch64
