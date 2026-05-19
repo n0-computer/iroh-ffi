@@ -151,6 +151,16 @@ jobs:
         run: ${{ matrix.settings.setup }}
         if: ${{ matrix.settings.setup }}
         shell: bash
+      - name: Setup Android SDK
+        if: ${{ contains(matrix.settings.target, 'android') }}
+        uses: android-actions/setup-android@v3
+      - name: Setup Android NDK
+        if: ${{ contains(matrix.settings.target, 'android') }}
+        uses: arqu/setup-ndk@main
+        id: setup-ndk
+        with:
+          ndk-version: r23
+          add-to-path: true
       - name: Setup node x86
         if: matrix.settings.target == 'i686-pc-windows-msvc'
         run: yarn config set supportedArchitectures.cpu "ia32"
@@ -174,6 +184,8 @@ jobs:
         run: ${{ matrix.settings.build }}
         if: ${{ !matrix.settings.docker }}
         shell: bash
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
