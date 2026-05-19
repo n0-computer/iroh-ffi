@@ -151,9 +151,6 @@ jobs:
         run: ${{ matrix.settings.setup }}
         if: ${{ matrix.settings.setup }}
         shell: bash
-      - name: Setup Android SDK
-        if: ${{ contains(matrix.settings.target, 'android') }}
-        uses: android-actions/setup-android@v3
       - name: Setup Android NDK
         if: ${{ contains(matrix.settings.target, 'android') }}
         uses: arqu/setup-ndk@main
