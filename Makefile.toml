@@ -204,15 +204,18 @@ set -eu
 # Iroh.framework (missing the freshly built uniffi symbols). A fresh path per
 # run forces re-extraction of the just-built xcframework.
 #
-# Force the test build to native arm64: the xcframework macOS slice is
-# arm64-only, but the self-hosted runner's agent runs under Rosetta on
-# Apple Silicon, so an unwrapped xcodebuild builds x86_64 and fails to
-# link the arm64 binary. `arch -arm64` re-execs natively (a no-op on a
-# correctly-native runner). `uname -m` is logged to confirm host arch.
-echo "host arch: $(uname -m)"
+# Run xcodebuild as the logged-in console user and force arm64, so it uses
+# the right session and the arm64-only xcframework macOS slice.
+CONSOLE_USER=$(stat -f%Su /dev/console)
+CONSOLE_UID=$(id -u "$CONSOLE_USER")
+echo "console user: $CONSOLE_USER ($CONSOLE_UID)"
+if [ "$CONSOLE_USER" = "root" ]; then
+  echo "ERROR: no interactive GUI session; cannot run xcodebuild test" >&2
+  exit 1
+fi
 rm -rf .xcode-ddata
-arch -arm64 xcodebuild -list 2>/dev/null || true
-arch -arm64 xcodebuild test -scheme IrohLib -destination 'platform=macOS' -derivedDataPath .xcode-ddata
+launchctl asuser "$CONSOLE_UID" arch -arm64 xcodebuild test \
+  -scheme IrohLib -destination 'platform=macOS' -derivedDataPath .xcode-ddata
 '''
 
 [tasks.swift-xcframework]
