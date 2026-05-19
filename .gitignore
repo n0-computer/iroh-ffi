@@ -115,3 +115,9 @@ kotlin/**/*.dylib
 
 # Transient xcodebuild derived data for the Swift test task
 /.xcode-ddata
+
+# Transient xcodebuild derived data for the Swift docs build
+/.xcode-ddata-docs
+
+# Generated docs site (built by `cargo make docs-site`, deployed by docs.yml)
+/site
