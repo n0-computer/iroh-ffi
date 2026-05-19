@@ -59,7 +59,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
-        name: [ubuntu-latest, ubuntu-arm-latest, macOS-latest, macOS-arm-latest, windows-latest]
+        name: [ubuntu-latest, ubuntu-arm-latest, macOS-arm-latest, windows-latest]
         rust: [stable]
         include:
           - name: ubuntu-arm-latest
@@ -72,11 +72,6 @@ jobs:
             cargo_target: "x86_64-unknown-linux-musl"
             target: linux-x86_64
             runner: [self-hosted, linux, X64]
-          - name: macOS-latest
-            os: macOS-latest
-            cargo_target: "x86_64-apple-darwin"
-            target: darwin-x86_64
-            runner: [self-hosted, macOS, ARM64]
           - name: macOS-arm-latest
             os: macOS-latest
             cargo_target: "aarch64-apple-darwin"
