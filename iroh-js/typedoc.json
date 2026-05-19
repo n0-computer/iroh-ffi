@@ -1,0 +1,9 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["index.d.ts"],
+  "out": "../site/js",
+  "skipErrorChecking": true,
+  "readme": "none",
+  "name": "@number0/iroh",
+  "excludeExternals": true
+}

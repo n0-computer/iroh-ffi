@@ -236,6 +236,80 @@ set -eu
 '''
 
 # ---------------------------------------------------------------------------
+# Docs (self-hosted on GitHub Pages; Swift is additionally on the SPI)
+# ---------------------------------------------------------------------------
+
+[tasks.docs-swift]
+description = "Build the Swift DocC docs, laid out for Pages static hosting."
+dependencies = ["swift-xcframework"]
+script_runner = "@shell"
+script = '''
+set -eu
+./make_swift_docs.sh
+'''
+
+[tasks.docs-python]
+description = "Build the Python extension + render API docs with pdoc."
+dependencies = ["python-develop"]
+script_runner = "@shell"
+script = '''
+set -eu
+python3 -m pip install --quiet --upgrade pdoc
+rm -rf site/python
+# `iroh/__init__.py` is just `from .iroh_ffi import *`; documenting the
+# `iroh` package makes pdoc choke on the trivial `__init__.pyi` re-export
+# ("attempted relative import"). Target the real module directly — same
+# public symbols, fully populated.
+python3 -m pdoc iroh.iroh_ffi -o site/python
+echo "python docs -> site/python"
+'''
+
+[tasks.docs-js]
+description = "Build the napi addon (for index.d.ts) + render API docs with TypeDoc."
+dependencies = ["js-build-release"]
+script_runner = "@shell"
+script = '''
+set -eu
+cd iroh-js
+yarn docs
+echo "js docs -> site/js"
+'''
+
+[tasks.docs-kotlin]
+description = "Generate the Kotlin binding + render API docs with Dokka."
+dependencies = ["bindgen-kotlin"]
+script_runner = "@shell"
+script = '''
+set -eu
+cd kotlin
+./gradlew :lib:dokkaGeneratePublicationHtml --no-daemon --console=plain
+cd ..
+rm -rf site/kotlin
+mkdir -p site
+cp -R kotlin/lib/build/dokka/html site/kotlin
+echo "kotlin docs -> site/kotlin"
+'''
+
+[tasks.docs-landing]
+description = "Render the docs landing page from support-matrix.yaml."
+script_runner = "@shell"
+script = '''
+set -eu
+python3 -m pip install --quiet --upgrade pyyaml
+python3 scripts/docs/gen_landing.py
+'''
+
+[tasks.docs-site]
+description = "Build the complete Pages site (all languages + landing) into ./site."
+dependencies = [
+  "docs-swift",
+  "docs-python",
+  "docs-js",
+  "docs-kotlin",
+  "docs-landing",
+]
+
+# ---------------------------------------------------------------------------
 # Aggregates
 # ---------------------------------------------------------------------------
 
