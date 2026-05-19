@@ -49,6 +49,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          # The self-hosted macOS Actions agent runs under Rosetta (x86_64),
+          # so setup-python would otherwise grab an x86_64 interpreter while
+          # the arm64 Rust toolchain makes maturin build an arm64 wheel —
+          # pip then rejects it ("not a supported wheel on this platform").
+          # Pin arm64 so the interpreter matches the wheel.
+          architecture: arm64
       - name: Set up virtualenv (Python docs build the extension via maturin)
         run: |
           pip install virtualenv
