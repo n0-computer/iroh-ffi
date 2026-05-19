@@ -239,9 +239,18 @@ set -eu
 # Docs (self-hosted on GitHub Pages; Swift is additionally on the SPI)
 # ---------------------------------------------------------------------------
 
+[tasks.swift-macos-framework]
+description = "Build only the macOS-arm64 framework slice (for DocC; no iOS slices)."
+script_runner = "@shell"
+script = '''
+set -eu
+./make_swift_macos.sh
+'''
+
 [tasks.docs-swift]
 description = "Build the Swift DocC docs, laid out for Pages static hosting."
-dependencies = ["swift-xcframework"]
+# DocC only needs the macOS slice — not the full 4-target xcframework.
+dependencies = ["swift-macos-framework"]
 script_runner = "@shell"
 script = '''
 set -eu
