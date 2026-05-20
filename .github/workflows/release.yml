@@ -142,9 +142,12 @@ jobs:
         targets: aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios,aarch64-apple-darwin
     - uses: davidB/rust-cargo-make@v1
     - name: Make swift
+      # Same deterministic zip recipe as local `cargo make prepare-release`,
+      # so the SHA-256 baked into Package.swift in the release PR matches
+      # the asset uploaded here.
       run: |
         cargo make swift-xcframework
-        zip -r IrohLib.xcframework.zip Iroh.xcframework/*
+        bash scripts/release/zip_xcframework.sh
     - name: Upload release archive
       uses: actions/upload-release-asset@v1.0.2
       env:

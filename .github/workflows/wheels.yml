@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - main
+    tags:
+      - "v*"
   pull_request:
 
 concurrency:
@@ -87,3 +89,25 @@ jobs:
         with:
           name: wheels-windows-x86_64
           path: target/wheels/*.whl
+
+  publish:
+    name: Publish wheels to PyPI
+    needs: [manylinux, osx, windows]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: [self-hosted, linux, X64]
+    # Trusted Publishing (OIDC) — no long-lived PyPI token needed. Requires
+    # the publisher to be registered once at
+    # https://pypi.org/manage/account/publishing/ (project: iroh,
+    # owner: n0-computer, repo: iroh-ffi, workflow: wheels.yml).
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-*
+          path: dist/
+          merge-multiple: true
+      - run: ls -la dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true

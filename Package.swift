@@ -18,8 +18,10 @@ import Foundation
 // release zip. Set IROH_FORCE_REMOTE_XCFRAMEWORK to force the release zip
 // even in a built checkout.
 //
-// The two release literals below are the only things the release workflow
-// rewrites — there is no second manifest to keep in sync.
+// The two release literals below are the only things `cargo make
+// prepare-release` rewrites (per Phase 6 plan, CI never writes to main).
+// Local prepare-release builds a deterministic xcframework zip, shasums it,
+// and bakes both values into this manifest in the release commit.
 let releaseTag = "v0.20.0"
 let releaseChecksum = "8123c2d43690c423e9bc8993c935b2fe009731f3b65b95754358570077037858"
 

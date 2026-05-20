@@ -337,6 +337,56 @@ description = "What the Rust CI job runs: fmt check, clippy, docs, tests."
 dependencies = ["format-check", "clippy", "docs", "test-rust"]
 
 # ---------------------------------------------------------------------------
+# Release prep (local; produces a self-consistent release PR — see RELEASING.md)
+# ---------------------------------------------------------------------------
+
+[tasks.prepare-release]
+description = "Bump versions everywhere + build a deterministic xcframework zip + bake the checksum into Package.swift. Run on macOS (needs Xcode for the xcframework). Usage: cargo make prepare-release <VERSION>"
+script_runner = "@shell"
+script = '''
+set -eu
+VERSION="${1:?usage: cargo make prepare-release <VERSION> (no leading v)}"
+
+if [ "$(uname -s)" != "Darwin" ]; then
+  echo "ERROR: prepare-release must run on macOS (Xcode-required xcframework build)" >&2
+  exit 1
+fi
+
+echo "==> rewrite version literals"
+python3 scripts/release/bump_version.py "$VERSION"
+
+echo "==> refresh Cargo.lock"
+cargo update -p iroh-ffi --precise "$VERSION" >/dev/null
+
+echo "==> refresh iroh-js/yarn.lock"
+( cd iroh-js && yarn install --mode update-lockfile >/dev/null )
+
+echo "==> build full xcframework"
+cargo make swift-xcframework >/dev/null
+
+echo "==> deterministic zip + checksum"
+bash scripts/release/zip_xcframework.sh
+CHECKSUM=$(shasum -a 256 IrohLib.xcframework.zip | awk '{print $1}')
+
+echo "==> bake checksum into Package.swift"
+python3 scripts/release/bump_version.py --checksum "$CHECKSUM"
+
+cat <<EOF
+
+Prepared release v$VERSION.
+  zip: IrohLib.xcframework.zip ($(stat -f%z IrohLib.xcframework.zip) bytes)
+  sha256: $CHECKSUM
+
+Next:
+  git checkout -b release/v$VERSION
+  git commit -am "chore(release): v$VERSION"
+  # PR -> green CI -> merge to main
+  git tag v$VERSION <merge commit>
+  git push origin v$VERSION
+EOF
+'''
+
+# ---------------------------------------------------------------------------
 # Publish (wired in Phase 6 — placeholders so the task graph is stable)
 # ---------------------------------------------------------------------------
 
