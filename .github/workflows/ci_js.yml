@@ -35,16 +35,16 @@ jobs:
       fail-fast: false
       matrix:
         settings:
-          - host: macos-latest
+          - host: '["self-hosted","macOS","ARM64"]'
             target: x86_64-apple-darwin
             build: yarn build --target x86_64-apple-darwin
-          - host: windows-latest
+          - host: '["windows-latest"]'
             build: yarn build
             target: x86_64-pc-windows-msvc
-          - host: ubuntu-latest
+          - host: '["self-hosted","linux","X64"]'
             target: x86_64-unknown-linux-gnu
             build: yarn build --target x86_64-unknown-linux-gnu
-          - host: ubuntu-latest
+          - host: '["self-hosted","linux","X64"]'
             target: x86_64-unknown-linux-musl
             setup: |
               pip3 install ziglang
@@ -60,10 +60,10 @@ jobs:
               export TARGET_CC="$HOME/zigshim/zcc"
               export TARGET_CXX="$HOME/zigshim/zcxx"
               yarn build --target x86_64-unknown-linux-musl
-          - host: macos-latest
+          - host: '["self-hosted","macOS","ARM64"]'
             target: aarch64-apple-darwin
             build: yarn build --target aarch64-apple-darwin
-          - host: ubuntu-latest
+          - host: '["self-hosted","linux","X64"]'
             target: aarch64-unknown-linux-gnu
             setup: |
               sudo apt-get update
@@ -74,25 +74,25 @@ jobs:
               export CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++ &&
               export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc &&
               yarn build --target aarch64-unknown-linux-gnu --use-napi-cross
-          - host: ubuntu-latest
+          - host: '["self-hosted","linux","X64"]'
             target: armv7-unknown-linux-gnueabihf
             setup: |
               sudo apt-get update
               sudo apt-get install gcc-arm-linux-gnueabihf -y
             build: yarn build --target armv7-unknown-linux-gnueabihf --use-napi-cross
-          - host: ubuntu-latest
+          - host: '["self-hosted","linux","X64"]'
             target: armv7-unknown-linux-musleabihf
             setup: |
               sudo apt-get update
               sudo apt-get -y install binutils-arm-linux-gnueabihf gcc-arm-linux-gnueabihf musl-tools musl-dev
             build: yarn build --target armv7-unknown-linux-musleabihf --use-napi-cross
-          - host: ubuntu-latest
+          - host: '["self-hosted","linux","X64"]'
             target: aarch64-linux-android
             build: yarn build --target aarch64-linux-android
-          - host: ubuntu-latest
+          - host: '["self-hosted","linux","X64"]'
             target: armv7-linux-androideabi
             build: yarn build --target armv7-linux-androideabi
-          - host: ubuntu-latest
+          - host: '["self-hosted","linux","X64"]'
             target: aarch64-unknown-linux-musl
             setup: |
               pip3 install ziglang
@@ -108,11 +108,11 @@ jobs:
               export TARGET_CC="$HOME/zigshim/zcc"
               export TARGET_CXX="$HOME/zigshim/zcxx"
               yarn build --target aarch64-unknown-linux-musl
-          - host: windows-latest
+          - host: '["windows-latest"]'
             target: aarch64-pc-windows-msvc
             build: yarn build --target aarch64-pc-windows-msvc
     name: stable - ${{ matrix.settings.target }} - node@22
-    runs-on: ${{ matrix.settings.host }}
+    runs-on: ${{ fromJSON(matrix.settings.host) }}
     defaults:
       run:
         working-directory: ./iroh-js
@@ -123,8 +123,10 @@ jobs:
         if: ${{ !matrix.settings.docker }}
         with:
           node-version: 22
-          cache: yarn
-          cache-dependency-path: './iroh-js/yarn.lock'
+      - name: Enable corepack (yarn)
+        if: ${{ !matrix.settings.docker }}
+        run: corepack enable
+        shell: bash
       - name: Install
         uses: dtolnay/rust-toolchain@stable
         if: ${{ !matrix.settings.docker }}
@@ -132,15 +134,9 @@ jobs:
           toolchain: stable
           targets: ${{ matrix.settings.target }}
       - name: Cache cargo
-        uses: actions/cache@v4
+        uses: Swatinem/rust-cache@v2
         with:
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            .cargo-cache
-            target/
-          key: ${{ matrix.settings.target }}-cargo-${{ matrix.settings.host }}
+          key: ${{ matrix.settings.target }}
       - uses: goto-bus-stop/setup-zig@v2
         if: ${{ matrix.settings.target == 'armv7-unknown-linux-gnueabihf' || matrix.settings.target == 'armv7-unknown-linux-musleabihf' }}
         with:
@@ -149,6 +145,13 @@ jobs:
         run: ${{ matrix.settings.setup }}
         if: ${{ matrix.settings.setup }}
         shell: bash
+      - name: Setup Android NDK
+        if: ${{ contains(matrix.settings.target, 'android') }}
+        uses: arqu/setup-ndk@main
+        id: setup-ndk
+        with:
+          ndk-version: r23
+          add-to-path: true
       - name: Setup node x86
         if: matrix.settings.target == 'i686-pc-windows-msvc'
         run: yarn config set supportedArchitectures.cpu "ia32"
@@ -160,9 +163,7 @@ jobs:
         if: matrix.settings.target == 'i686-pc-windows-msvc'
         with:
           node-version: 22
-          cache: yarn
           architecture: x86
-          cache-dependency-path: './iroh-js/yarn.lock'
       - name: Build in docker
         uses: addnab/docker-run-action@v3
         if: ${{ matrix.settings.docker }}
@@ -174,6 +175,10 @@ jobs:
         run: ${{ matrix.settings.build }}
         if: ${{ !matrix.settings.docker }}
         shell: bash
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          ANDROID_NDK_LATEST_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          ANDROID_NDK_ROOT: ${{ steps.setup-ndk.outputs.ndk-path }}
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -188,14 +193,14 @@ jobs:
       fail-fast: false
       matrix:
         settings:
-          - host: macos-latest
+          - host: '["self-hosted","macOS","ARM64"]'
             target: x86_64-apple-darwin
-          - host: windows-latest
+          - host: '["windows-latest"]'
             target: x86_64-pc-windows-msvc
         node:
           - '22'
           - '20'
-    runs-on: ${{ matrix.settings.host }}
+    runs-on: ${{ fromJSON(matrix.settings.host) }}
     defaults:
       run:
         working-directory: ./iroh-js
@@ -205,9 +210,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-          cache: yarn
-          cache-dependency-path: './iroh-js/yarn.lock'
           architecture: x64
+      - name: Enable corepack (yarn)
+        run: corepack enable
+        shell: bash
       - name: Setup node x86_64
         if: matrix.settings.target == 'x86_64-apple-darwin'
         run: yarn config set supportedArchitectures.cpu "x86_64"
@@ -234,7 +240,7 @@ jobs:
         node:
           - '22'
           - '20'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, X64]
     defaults:
       run:
         working-directory: ./iroh-js
@@ -244,8 +250,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-          cache: yarn
-          cache-dependency-path: './iroh-js/yarn.lock'
+      - name: Enable corepack (yarn)
+        run: corepack enable
+        shell: bash
       - name: Install dependencies
         run: yarn install
       - name: Download artifacts
@@ -268,7 +275,7 @@ jobs:
         node:
           - '22'
           - '20'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, X64]
     defaults:
       run:
         working-directory: ./iroh-js
@@ -278,8 +285,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-          cache: yarn
-          cache-dependency-path: './iroh-js/yarn.lock'
+      - name: Enable corepack (yarn)
+        run: corepack enable
+        shell: bash
       - name: Install dependencies
         run: |
           yarn config set supportedArchitectures.libc "musl"
@@ -304,12 +312,19 @@ jobs:
         node:
           - '22'
           - '20'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, X64]
     defaults:
       run:
         working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Enable corepack (yarn)
+        run: corepack enable
+        shell: bash
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -341,12 +356,19 @@ jobs:
     name: Test bindings on aarch64-unknown-linux-musl - node@${{ matrix.node }}
     needs:
       - build
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, X64]
     defaults:
       run:
         working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Enable corepack (yarn)
+        run: corepack enable
+        shell: bash
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -383,12 +405,19 @@ jobs:
         node:
           - '22'
           - '20'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, X64]
     defaults:
       run:
         working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Enable corepack (yarn)
+        run: corepack enable
+        shell: bash
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -419,7 +448,7 @@ jobs:
     name: Build universal macOS binary
     needs:
       - build
-    runs-on: macos-latest
+    runs-on: [self-hosted, macOS, ARM64]
     defaults:
       run:
         working-directory: ./iroh-js
@@ -429,8 +458,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: yarn
-          cache-dependency-path: './iroh-js/yarn.lock'
+      - name: Enable corepack (yarn)
+        run: corepack enable
+        shell: bash
       - name: Install dependencies
         run: yarn install
       - name: Download macOS x64 artifact
