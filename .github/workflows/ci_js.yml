@@ -29,6 +29,26 @@ on:
   pull_request:
 
 jobs:
+  # Native-arch smoke test: build the host .node via cargo-make (`napi build
+  # --platform`) and run the JS test suite. Sanity-checks that local dev
+  # (`cargo make test-js`) and the bindings stay in sync, independently of
+  # the napi multi-target cross-build matrix below.
+  native-test:
+    name: JS - Native test (macOS-arm64)
+    timeout-minutes: 30
+    runs-on: [self-hosted, macOS, ARM64]
+    steps:
+      - uses: actions/checkout@master
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: davidB/rust-cargo-make@v1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Enable corepack (yarn)
+        run: corepack enable
+      - name: cargo make test-js
+        run: cargo make test-js
+
   build:
     strategy:
       fail-fast: false

@@ -1,0 +1,31 @@
+name: CI Swift
+
+on:
+  workflow_dispatch:
+  pull_request:
+  merge_group:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+env:
+  IROH_FORCE_STAGING_RELAYS: "1"
+
+jobs:
+  swift:
+    name: Swift - Full xcframework build + test (iOS + macOS)
+    timeout-minutes: 60
+    runs-on: [self-hosted, macOS, ARM64]
+    steps:
+      - uses: actions/checkout@master
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios,aarch64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+      - uses: davidB/rust-cargo-make@v1
+      - name: cargo make test-swift
+        run: cargo make test-swift
