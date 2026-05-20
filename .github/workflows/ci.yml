@@ -27,9 +27,9 @@ jobs:
         name: [ubuntu-latest, macOS-arm-latest, windows-latest]
         include:
           - name: ubuntu-latest
-            runner: [linux, X64]
+            runner: [self-hosted, linux, X64]
           - name: macOS-arm-latest
-            runner: [macOS, ARM64]
+            runner: [self-hosted, macOS, ARM64]
           - name: windows-latest
             runner: [windows-latest]
     steps:
@@ -60,7 +60,7 @@ jobs:
   python:
     name: Python - Build and test
     timeout-minutes: 30
-    runs-on: [linux, x64]
+    runs-on: [self-hosted, linux, X64]
     steps:
       - uses: actions/checkout@master
       - uses: dtolnay/rust-toolchain@stable
@@ -82,7 +82,7 @@ jobs:
   js:
     name: JS - Build and test
     timeout-minutes: 30
-    runs-on: [macOS, ARM64]
+    runs-on: [self-hosted, macOS, ARM64]
     steps:
       - uses: actions/checkout@master
       - uses: dtolnay/rust-toolchain@stable
@@ -98,7 +98,7 @@ jobs:
   swift:
     name: Swift - Full xcframework build + test (iOS + macOS)
     timeout-minutes: 60
-    runs-on: [macOS, ARM64]
+    runs-on: [self-hosted, macOS, ARM64]
     steps:
       - uses: actions/checkout@master
       - uses: dtolnay/rust-toolchain@stable
@@ -119,9 +119,9 @@ jobs:
         name: [ubuntu-latest, macOS-arm-latest]
         include:
           - name: ubuntu-latest
-            runner: [linux, X64]
+            runner: [self-hosted, linux, X64]
           - name: macOS-arm-latest
-            runner: [macOS, ARM64]
+            runner: [self-hosted, macOS, ARM64]
     steps:
       - uses: actions/checkout@master
         with:
@@ -140,7 +140,7 @@ jobs:
   kotlin-android:
     name: Kotlin - Android cross-build
     timeout-minutes: 45
-    runs-on: [linux, X64]
+    runs-on: [self-hosted, linux, X64]
     steps:
       - uses: actions/checkout@master
         with:
