@@ -4,6 +4,7 @@ use iroh::{
     endpoint::{self, presets, presets::Preset as _},
     protocol::AcceptError,
 };
+use iroh_mdns_address_lookup::MdnsAddressLookup;
 use tokio::sync::Mutex;
 
 use crate::{
@@ -64,6 +65,18 @@ impl EndpointBuilder {
     /// Replay the n0 preset with relays disabled.
     pub fn apply_n0_disable_relay(&self) {
         self.map(|b| presets::N0DisableRelay.apply(b));
+    }
+
+    /// Add mDNS address lookup to the builder.
+    ///
+    /// Stacks on top of any previously configured address lookups (most
+    /// commonly the n0 DNS lookup installed by [`apply_n0`]); it does not
+    /// replace them. Use [`preset_n0_with_mdns`] for the typical
+    /// "n0 defaults plus same-WiFi discovery" combination.
+    ///
+    /// [`apply_n0`]: EndpointBuilder::apply_n0
+    pub fn apply_mdns(&self) {
+        self.map(|b| b.address_lookup(MdnsAddressLookup::builder()));
     }
 
     /// Set the endpoint secret key (32 bytes).
@@ -132,6 +145,14 @@ impl Preset for N0DisableRelayPreset {
     }
 }
 
+struct N0WithMdnsPreset;
+impl Preset for N0WithMdnsPreset {
+    fn apply(&self, builder: Arc<EndpointBuilder>) {
+        builder.apply_n0();
+        builder.apply_mdns();
+    }
+}
+
 /// The n0 production preset (relays + discovery).
 #[uniffi::export]
 pub fn preset_n0() -> Arc<dyn Preset> {
@@ -148,6 +169,16 @@ pub fn preset_minimal() -> Arc<dyn Preset> {
 #[uniffi::export]
 pub fn preset_n0_disable_relay() -> Arc<dyn Preset> {
     Arc::new(N0DisableRelayPreset)
+}
+
+/// The n0 production preset with mDNS-based local address lookup added.
+///
+/// Same as [`preset_n0`] plus an [`MdnsAddressLookup`] that publishes and
+/// resolves addresses over the local network. Useful when peers share a
+/// WiFi and the public DNS-based lookup is slow or unreachable.
+#[uniffi::export]
+pub fn preset_n0_with_mdns() -> Arc<dyn Preset> {
+    Arc::new(N0WithMdnsPreset)
 }
 
 /// Options passed to [`Endpoint::bind`].
@@ -862,6 +893,19 @@ mod tests {
     async fn test_custom_preset() {
         let ep = Endpoint::bind(EndpointOptions {
             preset: Some(Arc::new(CustomPreset)),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+        assert!(!ep.bound_sockets().is_empty());
+        ep.close().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_bind_with_mdns_preset() {
+        let ep = Endpoint::bind(EndpointOptions {
+            preset: Some(crate::preset_n0_with_mdns()),
+            relay_mode: Some(Arc::new(RelayMode::disabled())),
             ..Default::default()
         })
         .await
