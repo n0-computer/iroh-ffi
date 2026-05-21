@@ -8,8 +8,8 @@ use crate::{EndpointId, IrohError};
 ///
 /// Mirrors `iroh::EndpointAddr` — exposes a flat view over the underlying set of
 /// `TransportAddr`s (one relay URL plus a list of IP/port pairs).
-#[derive(Debug, Clone, PartialEq, Eq, uniffi::Object)]
-#[uniffi::export(Display)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, uniffi::Object)]
+#[uniffi::export(Display, Eq, Hash)]
 pub struct EndpointAddr {
     pub(crate) id: Arc<EndpointId>,
     pub(crate) relay_url: Option<String>,
@@ -54,11 +54,6 @@ impl EndpointAddr {
     /// The home relay URL for this peer, if known.
     pub fn relay_url(&self) -> Option<String> {
         self.relay_url.clone()
-    }
-
-    /// Returns true if both [`EndpointAddr`]s have the same values.
-    pub fn equal(&self, other: &EndpointAddr) -> bool {
-        self == other
     }
 }
 

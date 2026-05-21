@@ -29,7 +29,7 @@ suite('endpoint id', () => {
   })
 
   test('equality', () => {
-    assert.ok(EndpointId.fromString(keyStr).isEqual(EndpointId.fromBytes(bytes)))
+    assert.ok(EndpointId.fromString(keyStr).equals(EndpointId.fromBytes(bytes)))
   })
 
   test('rejects bad bytes', () => {

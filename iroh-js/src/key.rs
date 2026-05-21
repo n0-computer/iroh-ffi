@@ -38,7 +38,7 @@ impl EndpointId {
 impl EndpointId {
     /// Returns true if both [`EndpointId`]s are equal.
     #[napi]
-    pub fn is_equal(&self, other: &EndpointId) -> bool {
+    pub fn equals(&self, other: &EndpointId) -> bool {
         *self == *other
     }
 

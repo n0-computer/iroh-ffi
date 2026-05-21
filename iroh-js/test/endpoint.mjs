@@ -35,7 +35,7 @@ suite('endpoint', () => {
     assert.ok(id.toString().length > 0)
 
     const addr = ep.addr()
-    assert.ok(addr.id().isEqual(id))
+    assert.ok(addr.id().equals(id))
 
     assert.ok(ep.boundSockets().length > 0)
     assert.deepEqual(ep.secretKey().public().toBytes(), id.toBytes())
@@ -66,7 +66,7 @@ suite('endpoint', () => {
     assert.ok(str.startsWith('endpoint'))
 
     const parsed = EndpointTicket.fromString(str)
-    assert.ok(parsed.endpointAddr().id().isEqual(addr.id()))
+    assert.ok(parsed.endpointAddr().id().equals(addr.id()))
 
     await ep.close()
   })
@@ -99,7 +99,7 @@ suite('endpoint', () => {
 
     const client = await bindClient()
     const conn = await client.connect(serverAddr, ALPN)
-    assert.ok(conn.remoteId().isEqual(serverId))
+    assert.ok(conn.remoteId().equals(serverId))
     assert.ok(conn.paths().length > 0)
 
     const bi = await conn.openBi()
