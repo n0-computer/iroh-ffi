@@ -35,10 +35,10 @@ class EndpointTest {
     @Test fun endpointTicketRoundtrip() = runBlocking {
         val ep = Endpoint.bind(EndpointOptions(preset = presetMinimal()))
         val addr = ep.addr()
-        val ticket = EndpointTicket(addr)
+        val ticket = EndpointTicket.fromAddr(addr)
         val s = ticket.toString()
         assert(s.startsWith("endpoint"))
-        val parsed = EndpointTicket.parse(s)
+        val parsed = EndpointTicket.fromString(s)
         assert(parsed.endpointAddr().id().equal(addr.id()))
         ep.shutdown()
     }

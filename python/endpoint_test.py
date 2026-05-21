@@ -35,10 +35,10 @@ async def test_bind_lifecycle():
 async def test_endpoint_ticket_roundtrip():
     ep = await Endpoint.bind(EndpointOptions(preset=preset_minimal()))
     addr = ep.addr()
-    ticket = EndpointTicket(addr)
+    ticket = EndpointTicket.from_addr(addr)
     s = str(ticket)
     assert s.startswith("endpoint")
-    parsed = EndpointTicket.parse(s)
+    parsed = EndpointTicket.from_string(s)
     assert parsed.endpoint_addr().id().equal(addr.id())
     await ep.close()
 

@@ -122,10 +122,10 @@ final class EndpointTests: XCTestCase {
     func testEndpointTicketRoundtrip() async throws {
         let ep = try await Endpoint.bind(options: EndpointOptions(preset: presetMinimal()))
         let addr = ep.addr()
-        let ticket = try EndpointTicket(addr: addr)
+        let ticket = try EndpointTicket.fromAddr(addr: addr)
         let s = ticket.description
         XCTAssertTrue(s.hasPrefix("endpoint"))
-        let parsed = try EndpointTicket.parse(str: s)
+        let parsed = try EndpointTicket.fromString(str: s)
         XCTAssertTrue(parsed.endpointAddr().id().equal(other: addr.id()))
         try await ep.close()
     }

@@ -988,9 +988,9 @@ mod tests {
         .await
         .unwrap();
         let addr = ep.addr();
-        let ticket = crate::EndpointTicket::new(&addr).unwrap();
+        let ticket = crate::EndpointTicket::from_addr(&addr).unwrap();
         let s = ticket.to_string();
-        let parsed = crate::EndpointTicket::parse(s.clone()).unwrap();
+        let parsed = crate::EndpointTicket::from_string(s.clone()).unwrap();
         assert_eq!(parsed.endpoint_addr().id().to_string(), ep.id().to_string());
         ep.close().await.unwrap();
     }

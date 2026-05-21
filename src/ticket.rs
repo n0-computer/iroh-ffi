@@ -30,16 +30,16 @@ impl EndpointTicket {
     /// Wrap the given [`EndpointAddr`] as an [`EndpointTicket`].
     ///
     /// The returned ticket can be serialized via [`Self::to_string`] and parsed back
-    /// using [`Self::parse`].
+    /// using [`Self::from_string`].
     #[uniffi::constructor]
-    pub fn new(addr: &EndpointAddr) -> Result<Self, IrohError> {
+    pub fn from_addr(addr: &EndpointAddr) -> Result<Self, IrohError> {
         let inner: iroh::EndpointAddr = addr.clone().try_into()?;
         Ok(iroh_tickets::endpoint::EndpointTicket::new(inner).into())
     }
 
     /// Parse an [`EndpointTicket`] from its string presentation.
     #[uniffi::constructor]
-    pub fn parse(str: String) -> Result<Self, IrohError> {
+    pub fn from_string(str: String) -> Result<Self, IrohError> {
         let ticket = iroh_tickets::endpoint::EndpointTicket::decode_string(&str)?;
         Ok(EndpointTicket(ticket))
     }
