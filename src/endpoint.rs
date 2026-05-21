@@ -575,8 +575,8 @@ impl Connection {
     ///
     /// Signed for Kotlin/Swift ergonomics; negative values are rejected.
     pub fn close(&self, error_code: i64, reason: &[u8]) -> Result<(), IrohError> {
-        let unsigned = u64::try_from(error_code)
-            .map_err(|_| anyhow::anyhow!("error_code must be >= 0"))?;
+        let unsigned =
+            u64::try_from(error_code).map_err(|_| anyhow::anyhow!("error_code must be >= 0"))?;
         let code = endpoint::VarInt::from_u64(unsigned)?;
         self.0.close(code, reason);
         Ok(())
