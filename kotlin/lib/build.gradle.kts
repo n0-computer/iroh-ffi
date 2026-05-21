@@ -34,6 +34,11 @@ dependencies {
 
     implementation("net.java.dev.jna:jna:5.15.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+
+    // IrohAndroid.kt references android.content.Context for the JNI init
+    // path. Android API stubs jar — compile-time only; Android apps get the
+    // real platform classes at runtime, JVM consumers never load this code.
+    compileOnly("com.google.android:android:4.1.1.4")
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
