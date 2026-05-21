@@ -225,20 +225,22 @@ pub struct CounterStats {
 }
 
 /// Flat snapshot of the headline numbers from `noq::ConnectionStats`.
+///
+/// Counters are `i64` (not `u64`) so Kotlin sees `Long`, not `ULong`.
 #[derive(Debug, uniffi::Record)]
 pub struct ConnectionStats {
     /// Total UDP datagrams transmitted.
-    pub udp_tx_datagrams: u64,
+    pub udp_tx_datagrams: i64,
     /// Total UDP bytes transmitted.
-    pub udp_tx_bytes: u64,
+    pub udp_tx_bytes: i64,
     /// Total UDP datagrams received.
-    pub udp_rx_datagrams: u64,
+    pub udp_rx_datagrams: i64,
     /// Total UDP bytes received.
-    pub udp_rx_bytes: u64,
+    pub udp_rx_bytes: i64,
     /// Total packets considered lost.
-    pub lost_packets: u64,
+    pub lost_packets: i64,
     /// Total bytes considered lost.
-    pub lost_bytes: u64,
+    pub lost_bytes: i64,
 }
 
 /// An iroh endpoint.
@@ -570,8 +572,12 @@ impl Connection {
     }
 
     /// Close the connection immediately with the given application error code.
-    pub fn close(&self, error_code: u64, reason: &[u8]) -> Result<(), IrohError> {
-        let code = endpoint::VarInt::from_u64(error_code)?;
+    ///
+    /// Signed for Kotlin/Swift ergonomics; negative values are rejected.
+    pub fn close(&self, error_code: i64, reason: &[u8]) -> Result<(), IrohError> {
+        let unsigned = u64::try_from(error_code)
+            .map_err(|_| anyhow::anyhow!("error_code must be >= 0"))?;
+        let code = endpoint::VarInt::from_u64(unsigned)?;
         self.0.close(code, reason);
         Ok(())
     }
@@ -616,12 +622,12 @@ impl Connection {
     pub fn stats(&self) -> ConnectionStats {
         let s = self.0.stats();
         ConnectionStats {
-            udp_tx_datagrams: s.udp_tx.datagrams,
-            udp_tx_bytes: s.udp_tx.bytes,
-            udp_rx_datagrams: s.udp_rx.datagrams,
-            udp_rx_bytes: s.udp_rx.bytes,
-            lost_packets: s.lost_packets,
-            lost_bytes: s.lost_bytes,
+            udp_tx_datagrams: s.udp_tx.datagrams as i64,
+            udp_tx_bytes: s.udp_tx.bytes as i64,
+            udp_rx_datagrams: s.udp_rx.datagrams as i64,
+            udp_rx_bytes: s.udp_rx.bytes as i64,
+            lost_packets: s.lost_packets as i64,
+            lost_bytes: s.lost_bytes as i64,
         }
     }
 

@@ -1,6 +1,8 @@
 # Tests that correspond to the `src/endpoint.rs` rust api.
 import asyncio
 
+import pytest
+
 import iroh
 from iroh import Endpoint, EndpointOptions, EndpointTicket, RelayMode, preset_minimal, preset_n0
 
@@ -41,6 +43,11 @@ async def test_endpoint_ticket_roundtrip():
     parsed = EndpointTicket.from_string(s)
     assert parsed.endpoint_addr().id().equal(addr.id())
     await ep.close()
+
+
+def test_endpoint_ticket_rejects_garbage():
+    with pytest.raises(Exception):
+        EndpointTicket.from_string("not-a-ticket")
 
 
 async def test_connect_echo_roundtrip():

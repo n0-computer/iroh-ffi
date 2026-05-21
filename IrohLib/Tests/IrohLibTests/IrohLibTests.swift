@@ -130,6 +130,10 @@ final class EndpointTests: XCTestCase {
         try await ep.close()
     }
 
+    func testEndpointTicketRejectsGarbage() throws {
+        XCTAssertThrowsError(try EndpointTicket.fromString(str: "not-a-ticket"))
+    }
+
     func testConnectEchoRoundtrip() async throws {
         let server = try await Endpoint.bind(
             options: EndpointOptions(

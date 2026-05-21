@@ -3,6 +3,7 @@ package computer.iroh
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
+import kotlin.test.assertFailsWith
 
 private val ALPN = "iroh-ffi/test/0".toByteArray()
 
@@ -41,6 +42,12 @@ class EndpointTest {
         val parsed = EndpointTicket.fromString(s)
         assert(parsed.endpointAddr().id().equal(addr.id()))
         ep.shutdown()
+    }
+
+    @Test fun endpointTicketRejectsGarbage() {
+        assertFailsWith<Exception> {
+            EndpointTicket.fromString("not-a-ticket")
+        }
     }
 
     @Test fun connectEchoRoundtrip() = runBlocking {
@@ -85,9 +92,9 @@ class EndpointTest {
         assert(String(pong) == "ping")
 
         val stats = conn.stats()
-        assert(stats.udpTxDatagrams > 0u)
+        assert(stats.udpTxDatagrams > 0)
 
-        conn.close(0u, "bye".toByteArray())
+        conn.close(0, "bye".toByteArray())
         serverJob.await()
         client.shutdown()
         server.shutdown()

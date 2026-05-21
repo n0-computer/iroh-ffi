@@ -71,6 +71,10 @@ suite('endpoint', () => {
     await ep.close()
   })
 
+  test('endpoint ticket rejects garbage', () => {
+    assert.throws(() => EndpointTicket.fromString('not-a-ticket'))
+  })
+
   test('connect / echo / datagram round trip', async () => {
     const server = await bindServer()
     const serverAddr = server.addr()
