@@ -46,6 +46,21 @@ def bump_npm(version: str) -> None:
     print(f"  iroh-js/package.json version -> {version}")
 
 
+def bump_gradle(version: str) -> None:
+    p = REPO / "kotlin" / "lib" / "build.gradle.kts"
+    s = p.read_text()
+    new, n = re.subn(
+        r'coordinates\("computer\.iroh", "iroh", "[^"]+"\)',
+        f'coordinates("computer.iroh", "iroh", "{version}")',
+        s,
+        count=1,
+    )
+    if n != 1:
+        sys.exit("could not find coordinates(\"computer.iroh\", \"iroh\", \"...\") in build.gradle.kts")
+    p.write_text(new)
+    print(f"  kotlin/lib/build.gradle.kts coordinates -> {version}")
+
+
 def bump_swift_tag(version: str) -> None:
     p = REPO / "Package.swift"
     s = p.read_text()
@@ -100,6 +115,7 @@ def main() -> None:
     print(f"bumping versions to {v}:")
     bump_cargo(v)
     bump_npm(v)
+    bump_gradle(v)
     bump_swift_tag(v)
 
 

@@ -6,6 +6,8 @@
  * For more details on building Java & JVM projects, please refer to https://docs.gradle.org/8.11.1/userguide/building_java_projects.html in the Gradle documentation.
  */
 
+import com.vanniktech.maven.publish.SonatypeHost
+
 plugins {
     // Apply the org.jetbrains.kotlin.jvm Plugin to add support for Kotlin.
     alias(libs.plugins.kotlin.jvm)
@@ -15,6 +17,10 @@ plugins {
 
     // Dokka generates the HTML API reference (self-hosted on GitHub Pages).
     alias(libs.plugins.dokka)
+
+    // Publishes computer.iroh:iroh to Maven Central via Sonatype Central Portal.
+    // Credentials/signing come from env vars in CI (see release.yml).
+    alias(libs.plugins.maven.publish)
 }
 
 repositories {
@@ -63,5 +69,41 @@ tasks.named<Test>("test") {
 
     testLogging {
         events("passed", "skipped", "failed")
+    }
+}
+
+// Single source of truth for the Kotlin artifact version — `cargo make
+// prepare-release <V>` rewrites the coordinates literal alongside Cargo.toml,
+// iroh-js/package.json, and Package.swift.
+mavenPublishing {
+    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL, automaticRelease = true)
+    signAllPublications()
+    coordinates("computer.iroh", "iroh", "1.0.0-rc.0")
+    pom {
+        name = "iroh"
+        description = "Kotlin bindings for iroh: distributed systems made simple."
+        url = "https://github.com/n0-computer/iroh-ffi"
+        licenses {
+            license {
+                name = "MIT"
+                url = "https://opensource.org/license/mit"
+            }
+            license {
+                name = "Apache-2.0"
+                url = "https://www.apache.org/licenses/LICENSE-2.0"
+            }
+        }
+        developers {
+            developer {
+                id = "n0-computer"
+                name = "n0"
+                url = "https://www.iroh.computer"
+            }
+        }
+        scm {
+            url = "https://github.com/n0-computer/iroh-ffi"
+            connection = "scm:git:git://github.com/n0-computer/iroh-ffi.git"
+            developerConnection = "scm:git:ssh://git@github.com/n0-computer/iroh-ffi.git"
+        }
     }
 }
