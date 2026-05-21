@@ -27,6 +27,10 @@ crate-type = ["staticlib", "cdylib"]
 name = "uniffi-bindgen"
 path = "uniffi-bindgen.rs"
 
+[target.'cfg(target_os = "android")'.dependencies]
+ndk-context = "0.1"
+jni = "0.21"
+
 [dependencies]
 anyhow = "1.0.69"
 async-trait = "0.1.80"

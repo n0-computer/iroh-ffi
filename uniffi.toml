@@ -1,7 +1,7 @@
 [bindings.kotlin]
 package_name = "computer.iroh"
 cdylib_name = "iroh_ffi"
-# android = true
+android = true
 
 # `Endpoint::close()` collides with `java.lang.AutoCloseable.close()` which
 # uniffi-kotlin implements (non-suspend) on every object. Our close() is async,

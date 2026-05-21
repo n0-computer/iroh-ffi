@@ -1,4 +1,6 @@
 mod accept;
+#[cfg(target_os = "android")]
+mod android_init;
 mod endpoint;
 mod error;
 mod key;
