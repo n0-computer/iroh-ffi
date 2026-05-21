@@ -158,66 +158,88 @@ jobs:
         asset_name: IrohLib.xcframework.zip 
         asset_content_type: application/octet-stream
         
-  build-and-publish-kotlin:
-    name: Build & publish kotlin libraries
-    timeout-minutes: 30
-    runs-on: [self-hosted, linux, X64]
+  # Cross-build the desktop cdylibs for each JVM host the Maven artifact
+  # should support. JNI libs are loaded by JNA from classpath at
+  # `<jna-platform>/libname.{so,dylib,dll}`; see the staging step below.
+  # Android ABIs are not packaged in this JVM-only artifact yet — that
+  # needs a separate com.android.library AAR publication.
+  build-kotlin-cdylib:
+    name: Build Kotlin cdylib (${{ matrix.name }})
     needs: create-release
+    timeout-minutes: 60
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x86_64
+            runner: [self-hosted, linux, X64]
+            target: x86_64-unknown-linux-gnu
+            lib_file: libiroh_ffi.so
+          - name: linux-aarch64
+            runner: [self-hosted, linux, ARM64]
+            target: aarch64-unknown-linux-gnu
+            lib_file: libiroh_ffi.so
+          - name: macos-aarch64
+            runner: [self-hosted, macOS, ARM64]
+            target: aarch64-apple-darwin
+            lib_file: libiroh_ffi.dylib
+          - name: windows-x86_64
+            runner: [windows-latest]
+            target: x86_64-pc-windows-msvc
+            lib_file: iroh_ffi.dll
     steps:
-    - uses: actions/checkout@master
-    - uses: dtolnay/rust-toolchain@stable
-      with:
-        targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
-    - name: setup java
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin' # See 'Supported distributions' for available options
-        java-version: '21'
+      - uses: actions/checkout@master
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --release --lib -p iroh-ffi --target ${{ matrix.target }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kotlin-cdylib-${{ matrix.name }}
+          path: target/${{ matrix.target }}/release/${{ matrix.lib_file }}
+          if-no-files-found: error
 
-    - name: install kotlin
-      uses: arqu/setup-kotlin@main
-
-    - name: install ktlint
-      uses: arqu/action-ktlint-setup@main
-
-    - name: fetch jna
-      run: curl -L https://repo1.maven.org/maven2/net/java/dev/jna/jna/5.14.0/jna-5.14.0.jar -o jna.jar
-    - name: fetch kotlinx-coroutines
-      run: curl -L https://repo1.maven.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core-jvm/1.6.4/kotlinx-coroutines-core-jvm-1.6.4.jar -o kotlinx-coroutines.jar
-
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
-    - name: Setup Android NDK
-      uses: arqu/setup-ndk@main
-      id: setup-ndk
-      with:
-        ndk-version: r23
-        add-to-path: true
-
-    - name: Build kotlin
-      shell: bash
-      env:
-        ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
-      run: |
-        cargo install --version 3.5.4 cargo-ndk
-        cargo build --lib
-        cargo ndk -o ./kotlin \
-        --manifest-path ./Cargo.toml \
-        -t armeabi-v7a \
-        -t arm64-v8a \
-        -t x86 \
-        -t x86_64 \
-        build --release
-        cargo run --bin uniffi-bindgen generate --language kotlin --library ./target/debug/libiroh_ffi.so --out-dir ./kotlin --config uniffi.toml
-        cp ./target/debug/libiroh_ffi.so ./kotlin
-        kotlinc -Werror -d ./kotlin/iroh.jar ./kotlin/iroh/*.kt -classpath ./jna.jar:./kotlinx-coroutines.jar
-    - name: Upload release archive
-      uses: actions/upload-release-asset@v1.0.2
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./kotlin/iroh.jar
-        asset_name: iroh.jar
-        asset_content_type: application/octet-stream
+  build-and-publish-kotlin:
+    name: Publish Kotlin to Maven Central
+    timeout-minutes: 30
+    needs: [create-release, build-kotlin-cdylib]
+    runs-on: [self-hosted, linux, X64]
+    steps:
+      - uses: actions/checkout@master
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: davidB/rust-cargo-make@v1
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      # Generate `iroh_ffi.kt` from the local debug cdylib. We discard the
+      # flat resources/libiroh_ffi.so it also copies, because we're shipping
+      # the per-platform release builds under jna-platform/ dirs instead.
+      - name: Generate Kotlin bindings
+        run: cargo make bindgen-kotlin
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: kotlin-cdylib-*
+          path: cdylibs/
+      - name: Stage cdylibs under jna-platform dirs
+        shell: bash
+        run: |
+          set -eu
+          RES=kotlin/lib/src/main/resources
+          rm -f "$RES"/libiroh_ffi.so "$RES"/libiroh_ffi.dylib "$RES"/iroh_ffi.dll
+          install -D -m644 cdylibs/kotlin-cdylib-linux-x86_64/libiroh_ffi.so   "$RES/linux-x86-64/libiroh_ffi.so"
+          install -D -m644 cdylibs/kotlin-cdylib-linux-aarch64/libiroh_ffi.so  "$RES/linux-aarch64/libiroh_ffi.so"
+          install -D -m644 cdylibs/kotlin-cdylib-macos-aarch64/libiroh_ffi.dylib "$RES/darwin-aarch64/libiroh_ffi.dylib"
+          install -D -m644 cdylibs/kotlin-cdylib-windows-x86_64/iroh_ffi.dll   "$RES/win32-x86-64/iroh_ffi.dll"
+          find "$RES" -type f
+      - name: Publish to Maven Central
+        working-directory: kotlin
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+        run: ./gradlew :lib:publishAndReleaseToMavenCentral --no-daemon --console=plain
       
