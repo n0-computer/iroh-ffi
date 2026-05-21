@@ -19,8 +19,8 @@ class KeyTest {
         assert(id2.toBytes() contentEquals bytes)
         assert(id2.fmtShort() == fmtStr)
 
-        assert(id.equal(id2))
-        assert(id2.equal(id))
+        assert(id == id2)
+        assert(id2 == id)
     }
 
     @Test fun endpointIdRejectsBadBytes() {

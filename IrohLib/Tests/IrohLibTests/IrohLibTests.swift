@@ -20,7 +20,7 @@ final class KeyTests: XCTestCase {
         XCTAssertEqual(id.fmtShort(), fmtStr)
 
         let id2 = try EndpointId.fromBytes(bytes: bytes)
-        XCTAssertTrue(id.equal(other: id2))
+        XCTAssertEqual(id, id2)
     }
 
     func testEndpointIdRejectsBadBytes() {
@@ -112,7 +112,7 @@ final class EndpointTests: XCTestCase {
         let ep = try await Endpoint.bind(options: EndpointOptions(preset: presetMinimal()))
         let id = ep.id()
         XCTAssertFalse(id.description.isEmpty)
-        XCTAssertTrue(ep.addr().id().equal(other: id))
+        XCTAssertEqual(ep.addr().id(), id)
         XCTAssertFalse(ep.boundSockets().isEmpty)
         XCTAssertEqual(ep.secretKey().`public`().toBytes(), id.toBytes())
         try await ep.close()
@@ -126,7 +126,7 @@ final class EndpointTests: XCTestCase {
         let s = ticket.description
         XCTAssertTrue(s.hasPrefix("endpoint"))
         let parsed = try EndpointTicket.fromString(str: s)
-        XCTAssertTrue(parsed.endpointAddr().id().equal(other: addr.id()))
+        XCTAssertEqual(parsed.endpointAddr().id(), addr.id())
         try await ep.close()
     }
 
@@ -162,7 +162,7 @@ final class EndpointTests: XCTestCase {
             options: EndpointOptions(preset: presetN0(), relayMode: RelayMode.disabled())
         )
         let conn = try await client.connect(addr: serverAddr, alpn: ALPN)
-        XCTAssertTrue(conn.remoteId().equal(other: serverId))
+        XCTAssertEqual(conn.remoteId(), serverId)
         XCTAssertFalse(conn.paths().isEmpty)
 
         let bi = try await conn.openBi()

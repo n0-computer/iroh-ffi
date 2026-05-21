@@ -26,7 +26,7 @@ class EndpointTest {
         val ep = Endpoint.bind(EndpointOptions(preset = presetMinimal()))
         val id = ep.id()
         assert(id.toString().isNotEmpty())
-        assert(ep.addr().id().equal(id))
+        assert(ep.addr().id() == id)
         assert(ep.boundSockets().isNotEmpty())
         assert(ep.secretKey().public().toBytes() contentEquals id.toBytes())
         ep.shutdown()
@@ -40,7 +40,7 @@ class EndpointTest {
         val s = ticket.toString()
         assert(s.startsWith("endpoint"))
         val parsed = EndpointTicket.fromString(s)
-        assert(parsed.endpointAddr().id().equal(addr.id()))
+        assert(parsed.endpointAddr().id() == addr.id())
         ep.shutdown()
     }
 
@@ -78,7 +78,7 @@ class EndpointTest {
             EndpointOptions(preset = presetN0(), relayMode = RelayMode.disabled()),
         )
         val conn = client.connect(serverAddr, ALPN)
-        assert(conn.remoteId().equal(serverId))
+        assert(conn.remoteId() == serverId)
         assert(conn.paths().isNotEmpty())
 
         val bi = conn.openBi()

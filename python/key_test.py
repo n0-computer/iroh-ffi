@@ -20,8 +20,8 @@ def test_endpoint_id():
     assert id_2.to_bytes() == bytes_value
     assert id_2.fmt_short() == fmt_str
 
-    assert id_.equal(id_2)
-    assert id_2.equal(id_)
+    assert id_ == id_2
+    assert id_2 == id_
 
 
 def test_endpoint_id_invalid():

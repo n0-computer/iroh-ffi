@@ -27,7 +27,7 @@ async def test_bind_lifecycle():
     ep = await Endpoint.bind(EndpointOptions(preset=preset_minimal()))
     id_ = ep.id()
     assert len(str(id_)) > 0
-    assert ep.addr().id().equal(id_)
+    assert ep.addr().id() == id_
     assert len(ep.bound_sockets()) > 0
     assert ep.secret_key().public().to_bytes() == id_.to_bytes()
     await ep.close()
@@ -41,7 +41,7 @@ async def test_endpoint_ticket_roundtrip():
     s = str(ticket)
     assert s.startswith("endpoint")
     parsed = EndpointTicket.from_string(s)
-    assert parsed.endpoint_addr().id().equal(addr.id())
+    assert parsed.endpoint_addr().id() == addr.id()
     await ep.close()
 
 
@@ -83,7 +83,7 @@ async def test_connect_echo_roundtrip():
         EndpointOptions(preset=preset_n0(), relay_mode=RelayMode.disabled())
     )
     conn = await client.connect(server_addr, ALPN)
-    assert conn.remote_id().equal(server_id)
+    assert conn.remote_id() == server_id
     assert len(conn.paths()) > 0
 
     bi = await conn.open_bi()

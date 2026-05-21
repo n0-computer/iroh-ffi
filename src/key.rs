@@ -1,4 +1,8 @@
-use std::{str::FromStr, sync::Arc};
+use std::{
+    hash::{Hash, Hasher},
+    str::FromStr,
+    sync::Arc,
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -8,8 +12,8 @@ use crate::IrohError;
 ///
 /// In iroh 1.0 this is an alias for the underlying `PublicKey` cryptographic type
 /// and uniquely identifies an [`Endpoint`](crate::Endpoint).
-#[derive(Debug, Clone, Eq, Serialize, Deserialize, uniffi::Object)]
-#[uniffi::export(Display)]
+#[derive(Debug, Clone, Eq, Hash, Serialize, Deserialize, uniffi::Object)]
+#[uniffi::export(Display, Eq, Hash)]
 pub struct EndpointId {
     pub(crate) key: [u8; 32],
 }
@@ -30,11 +34,6 @@ impl From<&EndpointId> for iroh::EndpointId {
 
 #[uniffi::export]
 impl EndpointId {
-    /// Returns true if both [`EndpointId`]s are equal.
-    pub fn equal(&self, other: &EndpointId) -> bool {
-        *self == *other
-    }
-
     /// Get the underlying 32 bytes.
     pub fn to_bytes(&self) -> Vec<u8> {
         self.key.to_vec()
@@ -119,7 +118,7 @@ impl SecretKey {
 
 /// An ed25519 signature over a message.
 #[derive(Debug, Clone, uniffi::Object)]
-#[uniffi::export(Display)]
+#[uniffi::export(Display, Eq, Hash)]
 pub struct Signature(pub(crate) iroh_base::Signature);
 
 impl std::fmt::Display for Signature {
@@ -152,6 +151,12 @@ impl Eq for Signature {}
 impl PartialEq for Signature {
     fn eq(&self, other: &Self) -> bool {
         self.0.to_bytes() == other.0.to_bytes()
+    }
+}
+
+impl Hash for Signature {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.to_bytes().hash(state)
     }
 }
 
@@ -188,8 +193,8 @@ mod tests {
         assert_eq!(bytes.to_vec(), id_0.to_bytes());
         assert_eq!(fmt_str, id_0.fmt_short());
 
-        assert!(id.equal(&id_0));
-        assert!(id_0.equal(&id));
+        assert_eq!(id, id_0);
+        assert_eq!(id_0, id);
     }
 
     #[test]
