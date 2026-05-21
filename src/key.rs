@@ -12,7 +12,7 @@ use crate::IrohError;
 ///
 /// In iroh 1.0 this is an alias for the underlying `PublicKey` cryptographic type
 /// and uniquely identifies an [`Endpoint`](crate::Endpoint).
-#[derive(Debug, Clone, Eq, Hash, Serialize, Deserialize, uniffi::Object)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, uniffi::Object)]
 #[uniffi::export(Display, Eq, Hash)]
 pub struct EndpointId {
     pub(crate) key: [u8; 32],
@@ -157,12 +157,6 @@ impl PartialEq for Signature {
 impl Hash for Signature {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.0.to_bytes().hash(state)
-    }
-}
-
-impl PartialEq for EndpointId {
-    fn eq(&self, other: &EndpointId) -> bool {
-        self.key == other.key
     }
 }
 
