@@ -21,6 +21,21 @@ never writes to `main`.
 
 ## Steps
 
+0. **Local dry-run** (recommended). Validates every artifact builds without
+   touching any registry:
+
+   ```sh
+   # optional: dry-run signing too
+   export ORG_GRADLE_PROJECT_signingInMemoryKey="$(gpg --export-secret-keys --armor <KEY_ID>)"
+
+   cargo make pre-release-check
+   ```
+
+   Builds the Swift xcframework + deterministic zip, the Python wheel,
+   the napi addon + `npm publish --dry-run`, and `gradle
+   publishToMavenLocal`. Catches config typos, signing failures, manifest
+   errors before the real publish.
+
 1. **Prepare the release branch + commit.**
 
    ```sh

@@ -340,6 +340,48 @@ dependencies = ["format-check", "clippy", "docs", "test-rust"]
 # Release prep (local; produces a self-consistent release PR — see RELEASING.md)
 # ---------------------------------------------------------------------------
 
+[tasks.pre-release-check]
+description = "Local dry-run of every release artifact build (no uploads, no network publishes). Run before tagging."
+script_runner = "@shell"
+script = '''
+set -eu
+
+if [ "$(uname -s)" != "Darwin" ]; then
+  echo "ERROR: pre-release-check must run on macOS (xcframework needs Xcode)" >&2
+  exit 1
+fi
+
+echo "==> swift: build + deterministic zip"
+cargo make swift-xcframework >/dev/null
+bash scripts/release/zip_xcframework.sh
+H1=$(shasum -a 256 IrohLib.xcframework.zip | awk '{print $1}')
+bash scripts/release/zip_xcframework.sh
+H2=$(shasum -a 256 IrohLib.xcframework.zip | awk '{print $1}')
+[ "$H1" = "$H2" ] || { echo "swift zip non-deterministic: $H1 vs $H2" >&2; exit 1; }
+echo "  ok (sha256=$H1)"
+
+echo "==> python: maturin build (host wheel only)"
+rm -rf target/wheels
+maturin build --release --quiet
+ls target/wheels/*.whl
+
+echo "==> js: napi build + npm publish --dry-run"
+( cd iroh-js && yarn install --silent && yarn build >/dev/null && npm publish --dry-run 2>&1 | tail -8 )
+
+echo "==> kotlin: gradle publishToMavenLocal"
+if [ -z "${ORG_GRADLE_PROJECT_signingInMemoryKey:-}" ]; then
+  echo "  skipped — set ORG_GRADLE_PROJECT_signingInMemoryKey to dry-run signing too"
+  echo "  e.g.: export ORG_GRADLE_PROJECT_signingInMemoryKey=\"$(gpg --export-secret-keys --armor <KEY_ID>)\""
+else
+  ( cd kotlin && ./gradlew :lib:publishToMavenLocal --no-daemon --console=plain --quiet )
+  V=$(sed -nE 's/.*coordinates\("computer\.iroh", "iroh", "([^"]+)"\).*/\1/p' kotlin/lib/build.gradle.kts)
+  ls "$HOME/.m2/repository/computer/iroh/iroh/$V/" 2>/dev/null && echo "  ok (staged in ~/.m2)"
+fi
+
+echo ""
+echo "pre-release-check passed — safe to run cargo make prepare-release <VERSION>"
+'''
+
 [tasks.prepare-release]
 description = "Bump versions everywhere + build a deterministic xcframework zip + bake the checksum into Package.swift. Run on macOS (needs Xcode for the xcframework). Usage: cargo make prepare-release <VERSION>"
 script_runner = "@shell"
