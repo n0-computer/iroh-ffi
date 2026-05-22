@@ -6,8 +6,6 @@
  * For more details on building Java & JVM projects, please refer to https://docs.gradle.org/8.11.1/userguide/building_java_projects.html in the Gradle documentation.
  */
 
-import com.vanniktech.maven.publish.SonatypeHost
-
 plugins {
     // Apply the org.jetbrains.kotlin.jvm Plugin to add support for Kotlin.
     alias(libs.plugins.kotlin.jvm)
@@ -76,7 +74,8 @@ tasks.named<Test>("test") {
 // prepare-release <V>` rewrites the coordinates literal alongside Cargo.toml,
 // iroh-js/package.json, and Package.swift.
 mavenPublishing {
-    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL, automaticRelease = true)
+    // Vanniktech 0.34: Central Portal is the default; no SonatypeHost arg.
+    publishToMavenCentral(automaticRelease = true)
     signAllPublications()
     coordinates("computer.iroh", "iroh", "1.0.0-rc.0")
     pom {

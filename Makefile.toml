@@ -361,9 +361,13 @@ H2=$(shasum -a 256 IrohLib.xcframework.zip | awk '{print $1}')
 echo "  ok (sha256=$H1)"
 
 echo "==> python: maturin build (host wheel only)"
-rm -rf target/wheels
-maturin build --release --quiet
-ls target/wheels/*.whl
+if ! command -v maturin >/dev/null 2>&1; then
+  echo "  skipped — maturin not on PATH (pip install maturin, or activate your venv)"
+else
+  rm -rf target/wheels
+  maturin build --release --quiet
+  ls target/wheels/*.whl
+fi
 
 echo "==> js: napi build + npm publish --dry-run"
 ( cd iroh-js && yarn install --silent && yarn build >/dev/null && npm publish --dry-run 2>&1 | tail -8 )
