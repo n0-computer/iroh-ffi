@@ -364,9 +364,9 @@ echo "==> python: maturin build (host wheel only)"
 PYVENV=$(mktemp -d)/venv
 python3 -m venv "$PYVENV"
 "$PYVENV/bin/pip" install --quiet --upgrade maturin uniffi-bindgen
-rm -rf target/wheels
-"$PYVENV/bin/maturin" build --release --quiet
-ls target/wheels/*.whl
+WHEELS=$(mktemp -d)
+"$PYVENV/bin/maturin" build --release --quiet --out "$WHEELS"
+ls "$WHEELS"/*.whl
 
 echo "==> js: napi build + npm publish --dry-run"
 ( cd iroh-js && yarn install --silent && yarn build >/dev/null && npm publish --dry-run 2>&1 | tail -8 )
