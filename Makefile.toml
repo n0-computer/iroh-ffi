@@ -371,13 +371,23 @@ ls "$WHEELS"/*.whl
 echo "==> js: napi build + npm publish --dry-run"
 ( cd iroh-js && yarn install --silent && yarn build >/dev/null && npm publish --dry-run 2>&1 | tail -8 )
 
-echo "==> kotlin: gradle publishToMavenLocal"
-if [ -n "${ORG_GRADLE_PROJECT_signingInMemoryKey:-}" ]; then
-  ( cd kotlin && ./gradlew :lib:publishToMavenLocal --no-daemon --console=plain --quiet )
-else
-  echo "  signing key not exported — validating assembly + POM only (signature is checked in CI)"
-  ( cd kotlin && ./gradlew :lib:publishToMavenLocal -x signMavenPublication --no-daemon --console=plain --quiet )
+echo "==> kotlin: gradle publishToMavenLocal (signed)"
+# Dokka 2.0 (javadoc jar) can't parse JDK 25; CI uses Temurin 17. Pin 17 here.
+JH17=$(/usr/libexec/java_home -v 17 2>/dev/null || true)
+if [ -z "$JH17" ]; then
+  echo "ERROR: JDK 17 required (Dokka 2.0 crashes on JDK 25). Install: brew install --cask temurin@17" >&2
+  exit 1
 fi
+export JAVA_HOME="$JH17"
+# signAllPublications() makes the .asc signatures part of the publication, so
+# publishToMavenLocal needs the key — same armored private key as the
+# SIGNING_KEY CI secret. Export its file contents:
+#   export ORG_GRADLE_PROJECT_signingInMemoryKey="$(cat ~/.keys/maven_key.sec.asc)"
+if [ -z "${ORG_GRADLE_PROJECT_signingInMemoryKey:-}" ]; then
+  echo "ERROR: export ORG_GRADLE_PROJECT_signingInMemoryKey (armored private key) to validate signing" >&2
+  exit 1
+fi
+( cd kotlin && ./gradlew :lib:publishToMavenLocal --no-daemon --console=plain --quiet )
 V=$(sed -nE 's/.*coordinates\("computer\.iroh", "iroh", "([^"]+)"\).*/\1/p' kotlin/lib/build.gradle.kts)
 ls "$HOME/.m2/repository/computer/iroh/iroh/$V/" >/dev/null 2>&1 && echo "  ok (staged in ~/.m2)"
 

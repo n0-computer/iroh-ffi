@@ -25,8 +25,8 @@ never writes to `main`.
    touching any registry:
 
    ```sh
-   # optional: dry-run signing too
-   export ORG_GRADLE_PROJECT_signingInMemoryKey="$(gpg --export-secret-keys --armor <KEY_ID>)"
+   # the armored private key (same contents as the SIGNING_KEY CI secret)
+   export ORG_GRADLE_PROJECT_signingInMemoryKey="$(cat ~/.keys/maven_key.sec.asc)"
 
    cargo make pre-release-check
    ```
