@@ -361,26 +361,25 @@ H2=$(shasum -a 256 IrohLib.xcframework.zip | awk '{print $1}')
 echo "  ok (sha256=$H1)"
 
 echo "==> python: maturin build (host wheel only)"
-if ! command -v maturin >/dev/null 2>&1; then
-  echo "  skipped — maturin not on PATH (pip install maturin, or activate your venv)"
-else
-  rm -rf target/wheels
-  maturin build --release --quiet
-  ls target/wheels/*.whl
-fi
+PYVENV=$(mktemp -d)/venv
+python3 -m venv "$PYVENV"
+"$PYVENV/bin/pip" install --quiet --upgrade maturin uniffi-bindgen
+rm -rf target/wheels
+"$PYVENV/bin/maturin" build --release --quiet
+ls target/wheels/*.whl
 
 echo "==> js: napi build + npm publish --dry-run"
 ( cd iroh-js && yarn install --silent && yarn build >/dev/null && npm publish --dry-run 2>&1 | tail -8 )
 
 echo "==> kotlin: gradle publishToMavenLocal"
-if [ -z "${ORG_GRADLE_PROJECT_signingInMemoryKey:-}" ]; then
-  echo "  skipped — set ORG_GRADLE_PROJECT_signingInMemoryKey to dry-run signing too"
-  echo "  e.g.: export ORG_GRADLE_PROJECT_signingInMemoryKey=\"$(gpg --export-secret-keys --armor <KEY_ID>)\""
-else
+if [ -n "${ORG_GRADLE_PROJECT_signingInMemoryKey:-}" ]; then
   ( cd kotlin && ./gradlew :lib:publishToMavenLocal --no-daemon --console=plain --quiet )
-  V=$(sed -nE 's/.*coordinates\("computer\.iroh", "iroh", "([^"]+)"\).*/\1/p' kotlin/lib/build.gradle.kts)
-  ls "$HOME/.m2/repository/computer/iroh/iroh/$V/" 2>/dev/null && echo "  ok (staged in ~/.m2)"
+else
+  echo "  signing key not exported — validating assembly + POM only (signature is checked in CI)"
+  ( cd kotlin && ./gradlew :lib:publishToMavenLocal -x signMavenPublication --no-daemon --console=plain --quiet )
 fi
+V=$(sed -nE 's/.*coordinates\("computer\.iroh", "iroh", "([^"]+)"\).*/\1/p' kotlin/lib/build.gradle.kts)
+ls "$HOME/.m2/repository/computer/iroh/iroh/$V/" >/dev/null 2>&1 && echo "  ok (staged in ~/.m2)"
 
 echo ""
 echo "pre-release-check passed — safe to run cargo make prepare-release <VERSION>"
