@@ -1,5 +1,8 @@
 # iroh-ffi
 
+[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fn0-computer%2Firoh-ffi%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/n0-computer/iroh-ffi)
+[![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fn0-computer%2Firoh-ffi%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/n0-computer/iroh-ffi)
+
 > Foreign Function Interface (FFI) bindings for Iroh
 
 This repo defines Python, Swift, Kotlin and Node.js bindings for [iroh](https://github.com/n0-computer/iroh), which is written in Rust. The bindings mirror the stabilized iroh 1.0 surface (endpoints, connections, paths, tickets, relays, services); higher-level protocols not yet at 1.0 (`iroh-blobs`, `iroh-docs`, `iroh-gossip`) are out of scope.
