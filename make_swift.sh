@@ -2,6 +2,34 @@ set -eu
 
 # Builds the full 4-target Apple xcframework. Prefer `cargo make swift-xcframework`.
 
+# Reproducible-build path normalization. Without this, every `.a` binary inside
+# the xcframework embeds absolute paths from `file!()` macros (in deps, in
+# iroh, and in std/core/alloc panic sites). Local builds carry
+# `/Users/<you>/.cargo/...` + `/Users/<you>/.rustup/...`; CI carries
+# `/Users/runner/...`. The same source on different hosts produces different
+# byte streams (and hence a different `IrohLib.xcframework.zip` SHA-256). The
+# four remaps below cover every absolute path rustc emits: cargo registry,
+# cargo git deps, the source checkout, and the rustup-managed std sysroot.
+# `scripts/release/zip_xcframework.sh` then packages the resulting (now
+# host-independent) bytes into the deterministic zip whose checksum is baked
+# into `Package.swift` by `cargo make prepare-release` and re-asserted by CI.
+CARGO_PFX="${CARGO_HOME:-$HOME/.cargo}"
+RUSTUP_PFX="${RUSTUP_HOME:-$HOME/.rustup}"
+REPO_PFX="$(pwd)"
+export RUSTFLAGS="${RUSTFLAGS:-} \
+  --remap-path-prefix=${CARGO_PFX}/registry=/cargo/registry \
+  --remap-path-prefix=${CARGO_PFX}/git=/cargo/git \
+  --remap-path-prefix=${RUSTUP_PFX}=/rustup \
+  --remap-path-prefix=${REPO_PFX}=/build"
+# --remap-path-prefix is Rust-only. Several deps (notably `ring`) compile bundled
+# C sources via build.rs + the `cc` crate, and those object files also embed
+# absolute source paths. `-ffile-prefix-map` is clang/gcc's analogue. The `cc`
+# crate forwards CFLAGS to every invocation.
+export CFLAGS="${CFLAGS:-} \
+  -ffile-prefix-map=${CARGO_PFX}/registry=/cargo/registry \
+  -ffile-prefix-map=${CARGO_PFX}/git=/cargo/git \
+  -ffile-prefix-map=${REPO_PFX}=/build"
+
 # Env
 UDL_NAME="iroh_ffi"
 FRAMEWORK_NAME="Iroh"
