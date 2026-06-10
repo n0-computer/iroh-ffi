@@ -489,6 +489,22 @@ fileprivate struct FfiConverterUInt64: FfiConverterPrimitive {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterInt64: FfiConverterPrimitive {
+    typealias FfiType = Int64
+    typealias SwiftType = Int64
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Int64 {
+        return try lift(readInt(&buf))
+    }
+
+    public static func write(_ value: Int64, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(value))
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterBool : FfiConverter {
     typealias FfiType = Int8
     typealias SwiftType = Bool
@@ -1304,8 +1320,10 @@ public protocol ConnectionProtocol: AnyObject, Sendable {
     
     /**
      * Close the connection immediately with the given application error code.
+     *
+     * Signed for Kotlin/Swift ergonomics; negative values are rejected.
      */
-    func close(errorCode: UInt64, reason: Data) throws 
+    func close(errorCode: Int64, reason: Data) throws 
     
     /**
      * If the connection is closed, the reason why. None if still open.
@@ -1521,11 +1539,13 @@ open func alpn() -> Data  {
     
     /**
      * Close the connection immediately with the given application error code.
+     *
+     * Signed for Kotlin/Swift ergonomics; negative values are rejected.
      */
-open func close(errorCode: UInt64, reason: Data)throws   {try rustCallWithError(FfiConverterTypeIrohError__as_error_lift) {
+open func close(errorCode: Int64, reason: Data)throws   {try rustCallWithError(FfiConverterTypeIrohError__as_error_lift) {
     uniffi_iroh_ffi_fn_method_connection_close(
             self.uniffiCloneHandle(),
-        FfiConverterUInt64.lower(errorCode),
+        FfiConverterInt64.lower(errorCode),
         FfiConverterData.lower(reason),$0
     )
 }
@@ -2457,11 +2477,6 @@ public protocol EndpointAddrProtocol: AnyObject, Sendable {
     func directAddresses()  -> [String]
     
     /**
-     * Returns true if both [`EndpointAddr`]s have the same values.
-     */
-    func equal(other: EndpointAddr)  -> Bool
-    
-    /**
      * The endpoint id.
      */
     func id()  -> EndpointId
@@ -2478,7 +2493,7 @@ public protocol EndpointAddrProtocol: AnyObject, Sendable {
  * Mirrors `iroh::EndpointAddr` — exposes a flat view over the underlying set of
  * `TransportAddr`s (one relay URL plus a list of IP/port pairs).
  */
-open class EndpointAddr: EndpointAddrProtocol, @unchecked Sendable, CustomStringConvertible {
+open class EndpointAddr: EndpointAddrProtocol, @unchecked Sendable, Equatable, Hashable, CustomStringConvertible {
     fileprivate let handle: UInt64
 
     /// Used to instantiate a [FFIObject] without an actual handle, for fakes in tests, mostly.
@@ -2556,18 +2571,6 @@ open func directAddresses() -> [String]  {
 }
     
     /**
-     * Returns true if both [`EndpointAddr`]s have the same values.
-     */
-open func equal(other: EndpointAddr) -> Bool  {
-    return try!  FfiConverterBool.lift(try! rustCall() {
-    uniffi_iroh_ffi_fn_method_endpointaddr_equal(
-            self.uniffiCloneHandle(),
-        FfiConverterTypeEndpointAddr_lower(other),$0
-    )
-})
-}
-    
-    /**
      * The endpoint id.
      */
 open func id() -> EndpointId  {
@@ -2600,6 +2603,28 @@ public var description: String {
     )
 }
     )
+}
+// The local Rust `Eq` implementation - only `eq` is used.
+public static func == (self: EndpointAddr, other: EndpointAddr) -> Bool {
+    return try!  FfiConverterBool.lift(
+        try! rustCall() {
+    uniffi_iroh_ffi_fn_method_endpointaddr_uniffi_trait_eq_eq(
+            self.uniffiCloneHandle(),
+        FfiConverterTypeEndpointAddr_lower(other),$0
+    )
+}
+    )
+}
+// The local Rust `Hash` implementation
+public func hash(into hasher: inout Hasher) {
+    let val = try!  FfiConverterUInt64.lift(
+        try! rustCall() {
+    uniffi_iroh_ffi_fn_method_endpointaddr_uniffi_trait_hash(
+            self.uniffiCloneHandle(),$0
+    )
+}
+    )
+    hasher.combine(val)
 }
 }
 
@@ -2891,11 +2916,6 @@ public func FfiConverterTypeEndpointBuilder_lower(_ value: EndpointBuilder) -> U
 public protocol EndpointIdProtocol: AnyObject, Sendable {
     
     /**
-     * Returns true if both [`EndpointId`]s are equal.
-     */
-    func equal(other: EndpointId)  -> Bool
-    
-    /**
      * Short, base32 prefix of the [`EndpointId`].
      */
     func fmtShort()  -> String
@@ -2917,7 +2937,7 @@ public protocol EndpointIdProtocol: AnyObject, Sendable {
  * In iroh 1.0 this is an alias for the underlying `PublicKey` cryptographic type
  * and uniquely identifies an [`Endpoint`](crate::Endpoint).
  */
-open class EndpointId: EndpointIdProtocol, @unchecked Sendable, CustomStringConvertible {
+open class EndpointId: EndpointIdProtocol, @unchecked Sendable, Equatable, Hashable, CustomStringConvertible {
     fileprivate let handle: UInt64
 
     /// Used to instantiate a [FFIObject] without an actual handle, for fakes in tests, mostly.
@@ -2993,18 +3013,6 @@ public static func fromString(s: String)throws  -> EndpointId  {
 
     
     /**
-     * Returns true if both [`EndpointId`]s are equal.
-     */
-open func equal(other: EndpointId) -> Bool  {
-    return try!  FfiConverterBool.lift(try! rustCall() {
-    uniffi_iroh_ffi_fn_method_endpointid_equal(
-            self.uniffiCloneHandle(),
-        FfiConverterTypeEndpointId_lower(other),$0
-    )
-})
-}
-    
-    /**
      * Short, base32 prefix of the [`EndpointId`].
      */
 open func fmtShort() -> String  {
@@ -3049,6 +3057,28 @@ public var description: String {
     )
 }
     )
+}
+// The local Rust `Eq` implementation - only `eq` is used.
+public static func == (self: EndpointId, other: EndpointId) -> Bool {
+    return try!  FfiConverterBool.lift(
+        try! rustCall() {
+    uniffi_iroh_ffi_fn_method_endpointid_uniffi_trait_eq_eq(
+            self.uniffiCloneHandle(),
+        FfiConverterTypeEndpointId_lower(other),$0
+    )
+}
+    )
+}
+// The local Rust `Hash` implementation
+public func hash(into hasher: inout Hasher) {
+    let val = try!  FfiConverterUInt64.lift(
+        try! rustCall() {
+    uniffi_iroh_ffi_fn_method_endpointid_uniffi_trait_hash(
+            self.uniffiCloneHandle(),$0
+    )
+}
+    )
+    hasher.combine(val)
 }
 }
 
@@ -3159,21 +3189,7 @@ open class EndpointTicket: EndpointTicketProtocol, @unchecked Sendable, CustomSt
     public func uniffiCloneHandle() -> UInt64 {
         return try! rustCall { uniffi_iroh_ffi_fn_clone_endpointticket(self.handle, $0) }
     }
-    /**
-     * Wrap the given [`EndpointAddr`] as an [`EndpointTicket`].
-     *
-     * The returned ticket can be serialized via [`Self::to_string`] and parsed back
-     * using [`Self::parse`].
-     */
-public convenience init(addr: EndpointAddr)throws  {
-    let handle =
-        try rustCallWithError(FfiConverterTypeIrohError__as_error_lift) {
-    uniffi_iroh_ffi_fn_constructor_endpointticket_new(
-        FfiConverterTypeEndpointAddr_lower(addr),$0
-    )
-}
-    self.init(unsafeFromHandle: handle)
-}
+    // No primary constructor declared for this class.
 
     deinit {
         if handle == 0 {
@@ -3186,11 +3202,25 @@ public convenience init(addr: EndpointAddr)throws  {
 
     
     /**
+     * Wrap the given [`EndpointAddr`] as an [`EndpointTicket`].
+     *
+     * The returned ticket can be serialized via [`Self::to_string`] and parsed back
+     * using [`Self::from_string`].
+     */
+public static func fromAddr(addr: EndpointAddr)throws  -> EndpointTicket  {
+    return try  FfiConverterTypeEndpointTicket_lift(try rustCallWithError(FfiConverterTypeIrohError__as_error_lift) {
+    uniffi_iroh_ffi_fn_constructor_endpointticket_from_addr(
+        FfiConverterTypeEndpointAddr_lower(addr),$0
+    )
+})
+}
+    
+    /**
      * Parse an [`EndpointTicket`] from its string presentation.
      */
-public static func parse(str: String)throws  -> EndpointTicket  {
+public static func fromString(str: String)throws  -> EndpointTicket  {
     return try  FfiConverterTypeEndpointTicket_lift(try rustCallWithError(FfiConverterTypeIrohError__as_error_lift) {
-    uniffi_iroh_ffi_fn_constructor_endpointticket_parse(
+    uniffi_iroh_ffi_fn_constructor_endpointticket_from_string(
         FfiConverterString.lower(str),$0
     )
 })
@@ -6823,7 +6853,7 @@ public protocol SignatureProtocol: AnyObject, Sendable {
 /**
  * An ed25519 signature over a message.
  */
-open class Signature: SignatureProtocol, @unchecked Sendable, CustomStringConvertible {
+open class Signature: SignatureProtocol, @unchecked Sendable, Equatable, Hashable, CustomStringConvertible {
     fileprivate let handle: UInt64
 
     /// Used to instantiate a [FFIObject] without an actual handle, for fakes in tests, mostly.
@@ -6909,6 +6939,28 @@ public var description: String {
     )
 }
     )
+}
+// The local Rust `Eq` implementation - only `eq` is used.
+public static func == (self: Signature, other: Signature) -> Bool {
+    return try!  FfiConverterBool.lift(
+        try! rustCall() {
+    uniffi_iroh_ffi_fn_method_signature_uniffi_trait_eq_eq(
+            self.uniffiCloneHandle(),
+        FfiConverterTypeSignature_lower(other),$0
+    )
+}
+    )
+}
+// The local Rust `Hash` implementation
+public func hash(into hasher: inout Hasher) {
+    let val = try!  FfiConverterUInt64.lift(
+        try! rustCall() {
+    uniffi_iroh_ffi_fn_method_signature_uniffi_trait_hash(
+            self.uniffiCloneHandle(),$0
+    )
+}
+    )
+    hasher.combine(val)
 }
 }
 
@@ -7098,54 +7150,56 @@ public func FfiConverterTypeWatchHandle_lower(_ value: WatchHandle) -> UInt64 {
 
 /**
  * Flat snapshot of the headline numbers from `noq::ConnectionStats`.
+ *
+ * Counters are `i64` (not `u64`) so Kotlin sees `Long`, not `ULong`.
  */
 public struct ConnectionStats: Equatable, Hashable {
     /**
      * Total UDP datagrams transmitted.
      */
-    public var udpTxDatagrams: UInt64
+    public var udpTxDatagrams: Int64
     /**
      * Total UDP bytes transmitted.
      */
-    public var udpTxBytes: UInt64
+    public var udpTxBytes: Int64
     /**
      * Total UDP datagrams received.
      */
-    public var udpRxDatagrams: UInt64
+    public var udpRxDatagrams: Int64
     /**
      * Total UDP bytes received.
      */
-    public var udpRxBytes: UInt64
+    public var udpRxBytes: Int64
     /**
      * Total packets considered lost.
      */
-    public var lostPackets: UInt64
+    public var lostPackets: Int64
     /**
      * Total bytes considered lost.
      */
-    public var lostBytes: UInt64
+    public var lostBytes: Int64
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
     public init(
         /**
          * Total UDP datagrams transmitted.
-         */udpTxDatagrams: UInt64, 
+         */udpTxDatagrams: Int64, 
         /**
          * Total UDP bytes transmitted.
-         */udpTxBytes: UInt64, 
+         */udpTxBytes: Int64, 
         /**
          * Total UDP datagrams received.
-         */udpRxDatagrams: UInt64, 
+         */udpRxDatagrams: Int64, 
         /**
          * Total UDP bytes received.
-         */udpRxBytes: UInt64, 
+         */udpRxBytes: Int64, 
         /**
          * Total packets considered lost.
-         */lostPackets: UInt64, 
+         */lostPackets: Int64, 
         /**
          * Total bytes considered lost.
-         */lostBytes: UInt64) {
+         */lostBytes: Int64) {
         self.udpTxDatagrams = udpTxDatagrams
         self.udpTxBytes = udpTxBytes
         self.udpRxDatagrams = udpRxDatagrams
@@ -7170,22 +7224,22 @@ public struct FfiConverterTypeConnectionStats: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ConnectionStats {
         return
             try ConnectionStats(
-                udpTxDatagrams: FfiConverterUInt64.read(from: &buf), 
-                udpTxBytes: FfiConverterUInt64.read(from: &buf), 
-                udpRxDatagrams: FfiConverterUInt64.read(from: &buf), 
-                udpRxBytes: FfiConverterUInt64.read(from: &buf), 
-                lostPackets: FfiConverterUInt64.read(from: &buf), 
-                lostBytes: FfiConverterUInt64.read(from: &buf)
+                udpTxDatagrams: FfiConverterInt64.read(from: &buf), 
+                udpTxBytes: FfiConverterInt64.read(from: &buf), 
+                udpRxDatagrams: FfiConverterInt64.read(from: &buf), 
+                udpRxBytes: FfiConverterInt64.read(from: &buf), 
+                lostPackets: FfiConverterInt64.read(from: &buf), 
+                lostBytes: FfiConverterInt64.read(from: &buf)
         )
     }
 
     public static func write(_ value: ConnectionStats, into buf: inout [UInt8]) {
-        FfiConverterUInt64.write(value.udpTxDatagrams, into: &buf)
-        FfiConverterUInt64.write(value.udpTxBytes, into: &buf)
-        FfiConverterUInt64.write(value.udpRxDatagrams, into: &buf)
-        FfiConverterUInt64.write(value.udpRxBytes, into: &buf)
-        FfiConverterUInt64.write(value.lostPackets, into: &buf)
-        FfiConverterUInt64.write(value.lostBytes, into: &buf)
+        FfiConverterInt64.write(value.udpTxDatagrams, into: &buf)
+        FfiConverterInt64.write(value.udpTxBytes, into: &buf)
+        FfiConverterInt64.write(value.udpRxDatagrams, into: &buf)
+        FfiConverterInt64.write(value.udpRxBytes, into: &buf)
+        FfiConverterInt64.write(value.lostPackets, into: &buf)
+        FfiConverterInt64.write(value.lostBytes, into: &buf)
     }
 }
 
@@ -8346,17 +8400,17 @@ public enum PathEvent: Equatable, Hashable {
     /**
      * A new network path was opened.
      */
-    case opened(id: String, remoteAddr: String
+    case opened(id: String, remoteAddr: String, localAddr: String
     )
     /**
      * A network path was closed.
      */
-    case closed(id: String, remoteAddr: String, lastStats: PathStatsRecord
+    case closed(id: String, remoteAddr: String, localAddr: String, lastStats: PathStatsRecord
     )
     /**
      * This path was selected for transmission of application data.
      */
-    case selected(id: String, remoteAddr: String
+    case selected(id: String, remoteAddr: String, localAddr: String
     )
     /**
      * Events were dropped before the subscriber received them.
@@ -8384,13 +8438,13 @@ public struct FfiConverterTypePathEvent: FfiConverterRustBuffer {
         let variant: Int32 = try readInt(&buf)
         switch variant {
         
-        case 1: return .opened(id: try FfiConverterString.read(from: &buf), remoteAddr: try FfiConverterString.read(from: &buf)
+        case 1: return .opened(id: try FfiConverterString.read(from: &buf), remoteAddr: try FfiConverterString.read(from: &buf), localAddr: try FfiConverterString.read(from: &buf)
         )
         
-        case 2: return .closed(id: try FfiConverterString.read(from: &buf), remoteAddr: try FfiConverterString.read(from: &buf), lastStats: try FfiConverterTypePathStatsRecord.read(from: &buf)
+        case 2: return .closed(id: try FfiConverterString.read(from: &buf), remoteAddr: try FfiConverterString.read(from: &buf), localAddr: try FfiConverterString.read(from: &buf), lastStats: try FfiConverterTypePathStatsRecord.read(from: &buf)
         )
         
-        case 3: return .selected(id: try FfiConverterString.read(from: &buf), remoteAddr: try FfiConverterString.read(from: &buf)
+        case 3: return .selected(id: try FfiConverterString.read(from: &buf), remoteAddr: try FfiConverterString.read(from: &buf), localAddr: try FfiConverterString.read(from: &buf)
         )
         
         case 4: return .lagged(missed: try FfiConverterUInt64.read(from: &buf)
@@ -8404,23 +8458,26 @@ public struct FfiConverterTypePathEvent: FfiConverterRustBuffer {
         switch value {
         
         
-        case let .opened(id,remoteAddr):
+        case let .opened(id,remoteAddr,localAddr):
             writeInt(&buf, Int32(1))
             FfiConverterString.write(id, into: &buf)
             FfiConverterString.write(remoteAddr, into: &buf)
+            FfiConverterString.write(localAddr, into: &buf)
             
         
-        case let .closed(id,remoteAddr,lastStats):
+        case let .closed(id,remoteAddr,localAddr,lastStats):
             writeInt(&buf, Int32(2))
             FfiConverterString.write(id, into: &buf)
             FfiConverterString.write(remoteAddr, into: &buf)
+            FfiConverterString.write(localAddr, into: &buf)
             FfiConverterTypePathStatsRecord.write(lastStats, into: &buf)
             
         
-        case let .selected(id,remoteAddr):
+        case let .selected(id,remoteAddr,localAddr):
             writeInt(&buf, Int32(3))
             FfiConverterString.write(id, into: &buf)
             FfiConverterString.write(remoteAddr, into: &buf)
+            FfiConverterString.write(localAddr, into: &buf)
             
         
         case let .lagged(missed):
@@ -9190,7 +9247,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_iroh_ffi_checksum_method_connection_alpn() != 24307) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_iroh_ffi_checksum_method_connection_close() != 13793) {
+    if (uniffi_iroh_ffi_checksum_method_connection_close() != 4437) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_iroh_ffi_checksum_method_connection_close_reason() != 54740) {
@@ -9394,9 +9451,6 @@ private let initializationResult: InitializationResult = {
     if (uniffi_iroh_ffi_checksum_method_iroherror_message() != 64767) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_iroh_ffi_checksum_method_endpointid_equal() != 35035) {
-        return InitializationResult.apiChecksumMismatch
-    }
     if (uniffi_iroh_ffi_checksum_method_endpointid_fmt_short() != 41579) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -9419,9 +9473,6 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_iroh_ffi_checksum_method_endpointaddr_direct_addresses() != 63199) {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if (uniffi_iroh_ffi_checksum_method_endpointaddr_equal() != 58850) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_iroh_ffi_checksum_method_endpointaddr_id() != 32503) {
@@ -9535,10 +9586,10 @@ private let initializationResult: InitializationResult = {
     if (uniffi_iroh_ffi_checksum_constructor_servicesclient_create() != 11042) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_iroh_ffi_checksum_constructor_endpointticket_new() != 39793) {
+    if (uniffi_iroh_ffi_checksum_constructor_endpointticket_from_addr() != 28196) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_iroh_ffi_checksum_constructor_endpointticket_parse() != 35371) {
+    if (uniffi_iroh_ffi_checksum_constructor_endpointticket_from_string() != 3825) {
         return InitializationResult.apiChecksumMismatch
     }
 

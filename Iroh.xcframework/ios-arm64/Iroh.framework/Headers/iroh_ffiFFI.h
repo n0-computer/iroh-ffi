@@ -509,7 +509,7 @@ RustBuffer uniffi_iroh_ffi_fn_method_connection_alpn(uint64_t ptr, RustCallStatu
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_CONNECTION_CLOSE
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_CONNECTION_CLOSE
-void uniffi_iroh_ffi_fn_method_connection_close(uint64_t ptr, uint64_t error_code, RustBuffer reason, RustCallStatus *_Nonnull out_status
+void uniffi_iroh_ffi_fn_method_connection_close(uint64_t ptr, int64_t error_code, RustBuffer reason, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_CONNECTION_CLOSE_REASON
@@ -972,11 +972,6 @@ uint64_t uniffi_iroh_ffi_fn_constructor_endpointid_from_bytes(RustBuffer bytes, 
 uint64_t uniffi_iroh_ffi_fn_constructor_endpointid_from_string(RustBuffer s, RustCallStatus *_Nonnull out_status
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINTID_EQUAL
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINTID_EQUAL
-int8_t uniffi_iroh_ffi_fn_method_endpointid_equal(uint64_t ptr, uint64_t other, RustCallStatus *_Nonnull out_status
-);
-#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINTID_FMT_SHORT
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINTID_FMT_SHORT
 RustBuffer uniffi_iroh_ffi_fn_method_endpointid_fmt_short(uint64_t ptr, RustCallStatus *_Nonnull out_status
@@ -995,6 +990,21 @@ void uniffi_iroh_ffi_fn_method_endpointid_verify(uint64_t ptr, RustBuffer messag
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINTID_UNIFFI_TRAIT_DISPLAY
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINTID_UNIFFI_TRAIT_DISPLAY
 RustBuffer uniffi_iroh_ffi_fn_method_endpointid_uniffi_trait_display(uint64_t ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINTID_UNIFFI_TRAIT_EQ_EQ
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINTID_UNIFFI_TRAIT_EQ_EQ
+int8_t uniffi_iroh_ffi_fn_method_endpointid_uniffi_trait_eq_eq(uint64_t ptr, uint64_t other, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINTID_UNIFFI_TRAIT_EQ_NE
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINTID_UNIFFI_TRAIT_EQ_NE
+int8_t uniffi_iroh_ffi_fn_method_endpointid_uniffi_trait_eq_ne(uint64_t ptr, uint64_t other, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINTID_UNIFFI_TRAIT_HASH
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINTID_UNIFFI_TRAIT_HASH
+uint64_t uniffi_iroh_ffi_fn_method_endpointid_uniffi_trait_hash(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_SECRETKEY
@@ -1058,6 +1068,21 @@ RustBuffer uniffi_iroh_ffi_fn_method_signature_to_bytes(uint64_t ptr, RustCallSt
 RustBuffer uniffi_iroh_ffi_fn_method_signature_uniffi_trait_display(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_SIGNATURE_UNIFFI_TRAIT_EQ_EQ
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_SIGNATURE_UNIFFI_TRAIT_EQ_EQ
+int8_t uniffi_iroh_ffi_fn_method_signature_uniffi_trait_eq_eq(uint64_t ptr, uint64_t other, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_SIGNATURE_UNIFFI_TRAIT_EQ_NE
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_SIGNATURE_UNIFFI_TRAIT_EQ_NE
+int8_t uniffi_iroh_ffi_fn_method_signature_uniffi_trait_eq_ne(uint64_t ptr, uint64_t other, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_SIGNATURE_UNIFFI_TRAIT_HASH
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_SIGNATURE_UNIFFI_TRAIT_HASH
+uint64_t uniffi_iroh_ffi_fn_method_signature_uniffi_trait_hash(uint64_t ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_ENDPOINTADDR
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_ENDPOINTADDR
 uint64_t uniffi_iroh_ffi_fn_clone_endpointaddr(uint64_t handle, RustCallStatus *_Nonnull out_status
@@ -1078,11 +1103,6 @@ uint64_t uniffi_iroh_ffi_fn_constructor_endpointaddr_new(uint64_t id, RustBuffer
 RustBuffer uniffi_iroh_ffi_fn_method_endpointaddr_direct_addresses(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINTADDR_EQUAL
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINTADDR_EQUAL
-int8_t uniffi_iroh_ffi_fn_method_endpointaddr_equal(uint64_t ptr, uint64_t other, RustCallStatus *_Nonnull out_status
-);
-#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINTADDR_ID
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINTADDR_ID
 uint64_t uniffi_iroh_ffi_fn_method_endpointaddr_id(uint64_t ptr, RustCallStatus *_Nonnull out_status
@@ -1096,6 +1116,21 @@ RustBuffer uniffi_iroh_ffi_fn_method_endpointaddr_relay_url(uint64_t ptr, RustCa
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINTADDR_UNIFFI_TRAIT_DISPLAY
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINTADDR_UNIFFI_TRAIT_DISPLAY
 RustBuffer uniffi_iroh_ffi_fn_method_endpointaddr_uniffi_trait_display(uint64_t ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINTADDR_UNIFFI_TRAIT_EQ_EQ
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINTADDR_UNIFFI_TRAIT_EQ_EQ
+int8_t uniffi_iroh_ffi_fn_method_endpointaddr_uniffi_trait_eq_eq(uint64_t ptr, uint64_t other, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINTADDR_UNIFFI_TRAIT_EQ_NE
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINTADDR_UNIFFI_TRAIT_EQ_NE
+int8_t uniffi_iroh_ffi_fn_method_endpointaddr_uniffi_trait_eq_ne(uint64_t ptr, uint64_t other, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINTADDR_UNIFFI_TRAIT_HASH
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINTADDR_UNIFFI_TRAIT_HASH
+uint64_t uniffi_iroh_ffi_fn_method_endpointaddr_uniffi_trait_hash(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CLONE_PATHCHANGECALLBACK
@@ -1297,14 +1332,14 @@ uint64_t uniffi_iroh_ffi_fn_clone_endpointticket(uint64_t handle, RustCallStatus
 void uniffi_iroh_ffi_fn_free_endpointticket(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_ENDPOINTTICKET_NEW
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_ENDPOINTTICKET_NEW
-uint64_t uniffi_iroh_ffi_fn_constructor_endpointticket_new(uint64_t addr, RustCallStatus *_Nonnull out_status
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_ENDPOINTTICKET_FROM_ADDR
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_ENDPOINTTICKET_FROM_ADDR
+uint64_t uniffi_iroh_ffi_fn_constructor_endpointticket_from_addr(uint64_t addr, RustCallStatus *_Nonnull out_status
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_ENDPOINTTICKET_PARSE
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_ENDPOINTTICKET_PARSE
-uint64_t uniffi_iroh_ffi_fn_constructor_endpointticket_parse(RustBuffer str, RustCallStatus *_Nonnull out_status
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_ENDPOINTTICKET_FROM_STRING
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_CONSTRUCTOR_ENDPOINTTICKET_FROM_STRING
+uint64_t uniffi_iroh_ffi_fn_constructor_endpointticket_from_string(RustBuffer str, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINTTICKET_ENDPOINT_ADDR
@@ -2209,12 +2244,6 @@ uint16_t uniffi_iroh_ffi_checksum_method_iroherror_message(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_ENDPOINTID_EQUAL
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_ENDPOINTID_EQUAL
-uint16_t uniffi_iroh_ffi_checksum_method_endpointid_equal(void
-    
-);
-#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_ENDPOINTID_FMT_SHORT
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_ENDPOINTID_FMT_SHORT
 uint16_t uniffi_iroh_ffi_checksum_method_endpointid_fmt_short(void
@@ -2260,12 +2289,6 @@ uint16_t uniffi_iroh_ffi_checksum_method_signature_to_bytes(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_ENDPOINTADDR_DIRECT_ADDRESSES
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_ENDPOINTADDR_DIRECT_ADDRESSES
 uint16_t uniffi_iroh_ffi_checksum_method_endpointaddr_direct_addresses(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_ENDPOINTADDR_EQUAL
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_ENDPOINTADDR_EQUAL
-uint16_t uniffi_iroh_ffi_checksum_method_endpointaddr_equal(void
     
 );
 #endif
@@ -2491,15 +2514,15 @@ uint16_t uniffi_iroh_ffi_checksum_constructor_servicesclient_create(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_ENDPOINTTICKET_NEW
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_ENDPOINTTICKET_NEW
-uint16_t uniffi_iroh_ffi_checksum_constructor_endpointticket_new(void
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_ENDPOINTTICKET_FROM_ADDR
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_ENDPOINTTICKET_FROM_ADDR
+uint16_t uniffi_iroh_ffi_checksum_constructor_endpointticket_from_addr(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_ENDPOINTTICKET_PARSE
-#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_ENDPOINTTICKET_PARSE
-uint16_t uniffi_iroh_ffi_checksum_constructor_endpointticket_parse(void
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_ENDPOINTTICKET_FROM_STRING
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_CONSTRUCTOR_ENDPOINTTICKET_FROM_STRING
+uint16_t uniffi_iroh_ffi_checksum_constructor_endpointticket_from_string(void
     
 );
 #endif
