@@ -1176,8 +1176,6 @@ internal object IntegrityCheckingUniffiLib {
 
     external fun uniffi_iroh_ffi_checksum_method_iroherror_message(): Short
 
-    external fun uniffi_iroh_ffi_checksum_method_endpointid_equal(): Short
-
     external fun uniffi_iroh_ffi_checksum_method_endpointid_fmt_short(): Short
 
     external fun uniffi_iroh_ffi_checksum_method_endpointid_to_bytes(): Short
@@ -1193,8 +1191,6 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_iroh_ffi_checksum_method_signature_to_bytes(): Short
 
     external fun uniffi_iroh_ffi_checksum_method_endpointaddr_direct_addresses(): Short
-
-    external fun uniffi_iroh_ffi_checksum_method_endpointaddr_equal(): Short
 
     external fun uniffi_iroh_ffi_checksum_method_endpointaddr_id(): Short
 
@@ -1270,9 +1266,9 @@ internal object IntegrityCheckingUniffiLib {
 
     external fun uniffi_iroh_ffi_checksum_constructor_servicesclient_create(): Short
 
-    external fun uniffi_iroh_ffi_checksum_constructor_endpointticket_new(): Short
+    external fun uniffi_iroh_ffi_checksum_constructor_endpointticket_from_addr(): Short
 
-    external fun uniffi_iroh_ffi_checksum_constructor_endpointticket_parse(): Short
+    external fun uniffi_iroh_ffi_checksum_constructor_endpointticket_from_string(): Short
 
     external fun ffi_iroh_ffi_uniffi_contract_version(): Int
 }
@@ -1816,12 +1812,6 @@ internal object UniffiLib {
         uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    external fun uniffi_iroh_ffi_fn_method_endpointid_equal(
-        `ptr`: Long,
-        `other`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Byte
-
     external fun uniffi_iroh_ffi_fn_method_endpointid_fmt_short(
         `ptr`: Long,
         uniffi_out_err: UniffiRustCallStatus,
@@ -1843,6 +1833,23 @@ internal object UniffiLib {
         `ptr`: Long,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
+
+    external fun uniffi_iroh_ffi_fn_method_endpointid_uniffi_trait_eq_eq(
+        `ptr`: Long,
+        `other`: Long,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): Byte
+
+    external fun uniffi_iroh_ffi_fn_method_endpointid_uniffi_trait_eq_ne(
+        `ptr`: Long,
+        `other`: Long,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): Byte
+
+    external fun uniffi_iroh_ffi_fn_method_endpointid_uniffi_trait_hash(
+        `ptr`: Long,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): Long
 
     external fun uniffi_iroh_ffi_fn_clone_secretkey(
         `handle`: Long,
@@ -1902,6 +1909,23 @@ internal object UniffiLib {
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
+    external fun uniffi_iroh_ffi_fn_method_signature_uniffi_trait_eq_eq(
+        `ptr`: Long,
+        `other`: Long,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): Byte
+
+    external fun uniffi_iroh_ffi_fn_method_signature_uniffi_trait_eq_ne(
+        `ptr`: Long,
+        `other`: Long,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): Byte
+
+    external fun uniffi_iroh_ffi_fn_method_signature_uniffi_trait_hash(
+        `ptr`: Long,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): Long
+
     external fun uniffi_iroh_ffi_fn_clone_endpointaddr(
         `handle`: Long,
         uniffi_out_err: UniffiRustCallStatus,
@@ -1924,12 +1948,6 @@ internal object UniffiLib {
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
 
-    external fun uniffi_iroh_ffi_fn_method_endpointaddr_equal(
-        `ptr`: Long,
-        `other`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Byte
-
     external fun uniffi_iroh_ffi_fn_method_endpointaddr_id(
         `ptr`: Long,
         uniffi_out_err: UniffiRustCallStatus,
@@ -1944,6 +1962,23 @@ internal object UniffiLib {
         `ptr`: Long,
         uniffi_out_err: UniffiRustCallStatus,
     ): RustBuffer.ByValue
+
+    external fun uniffi_iroh_ffi_fn_method_endpointaddr_uniffi_trait_eq_eq(
+        `ptr`: Long,
+        `other`: Long,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): Byte
+
+    external fun uniffi_iroh_ffi_fn_method_endpointaddr_uniffi_trait_eq_ne(
+        `ptr`: Long,
+        `other`: Long,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): Byte
+
+    external fun uniffi_iroh_ffi_fn_method_endpointaddr_uniffi_trait_hash(
+        `ptr`: Long,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): Long
 
     external fun uniffi_iroh_ffi_fn_clone_pathchangecallback(
         `handle`: Long,
@@ -2117,12 +2152,12 @@ internal object UniffiLib {
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
-    external fun uniffi_iroh_ffi_fn_constructor_endpointticket_new(
+    external fun uniffi_iroh_ffi_fn_constructor_endpointticket_from_addr(
         `addr`: Long,
         uniffi_out_err: UniffiRustCallStatus,
     ): Long
 
-    external fun uniffi_iroh_ffi_fn_constructor_endpointticket_parse(
+    external fun uniffi_iroh_ffi_fn_constructor_endpointticket_from_string(
         `str`: RustBuffer.ByValue,
         uniffi_out_err: UniffiRustCallStatus,
     ): Long
@@ -2487,7 +2522,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_method_connection_alpn() != 24307.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_connection_close() != 13793.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connection_close() != 4437.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_connection_close_reason() != 54740.toShort()) {
@@ -2691,9 +2726,6 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_method_iroherror_message() != 64767.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpointid_equal() != 35035.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
     if (lib.uniffi_iroh_ffi_checksum_method_endpointid_fmt_short() != 41579.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -2716,9 +2748,6 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_endpointaddr_direct_addresses() != 63199.toShort()) {
-        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
-    }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpointaddr_equal() != 58850.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_endpointaddr_id() != 32503.toShort()) {
@@ -2832,10 +2861,10 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_constructor_servicesclient_create() != 11042.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_constructor_endpointticket_new() != 39793.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_endpointticket_from_addr() != 28196.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_constructor_endpointticket_parse() != 35371.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_endpointticket_from_string() != 3825.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
 }
@@ -3260,6 +3289,26 @@ public object FfiConverterULong : FfiConverter<ULong, Long> {
         buf: ByteBuffer,
     ) {
         buf.putLong(value.toLong())
+    }
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterLong : FfiConverter<Long, Long> {
+    override fun lift(value: Long): Long = value
+
+    override fun read(buf: ByteBuffer): Long = buf.getLong()
+
+    override fun lower(value: Long): Long = value
+
+    override fun allocationSize(value: Long) = 8UL
+
+    override fun write(
+        value: Long,
+        buf: ByteBuffer,
+    ) {
+        buf.putLong(value)
     }
 }
 
@@ -4664,9 +4713,11 @@ public interface ConnectionInterface {
 
     /**
      * Close the connection immediately with the given application error code.
+     *
+     * Signed for Kotlin/Swift ergonomics; negative values are rejected.
      */
     fun `close`(
-        `errorCode`: kotlin.ULong,
+        `errorCode`: kotlin.Long,
         `reason`: kotlin.ByteArray,
     )
 
@@ -4938,16 +4989,18 @@ open class Connection :
 
     /**
      * Close the connection immediately with the given application error code.
+     *
+     * Signed for Kotlin/Swift ergonomics; negative values are rejected.
      */
     @Throws(IrohException::class)
     override fun `close`(
-        `errorCode`: kotlin.ULong,
+        `errorCode`: kotlin.Long,
         `reason`: kotlin.ByteArray,
     ) = callWithHandle {
         uniffiRustCallWithError(IrohException) { _status ->
             UniffiLib.uniffi_iroh_ffi_fn_method_connection_close(
                 it,
-                FfiConverterULong.lower(`errorCode`),
+                FfiConverterLong.lower(`errorCode`),
                 FfiConverterByteArray.lower(`reason`),
                 _status,
             )
@@ -6190,11 +6243,6 @@ public interface EndpointAddrInterface {
     fun `directAddresses`(): List<kotlin.String>
 
     /**
-     * Returns true if both [`EndpointAddr`]s have the same values.
-     */
-    fun `equal`(`other`: EndpointAddr): kotlin.Boolean
-
-    /**
      * The endpoint id.
      */
     fun `id`(): EndpointId
@@ -6344,22 +6392,6 @@ open class EndpointAddr :
         )
 
     /**
-     * Returns true if both [`EndpointAddr`]s have the same values.
-     */
-    override fun `equal`(`other`: EndpointAddr): kotlin.Boolean =
-        FfiConverterBoolean.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_endpointaddr_equal(
-                        it,
-                        FfiConverterTypeEndpointAddr.lower(`other`),
-                        _status,
-                    )
-                }
-            },
-        )
-
-    /**
      * The endpoint id.
      */
     override fun `id`(): EndpointId =
@@ -6401,6 +6433,36 @@ open class EndpointAddr :
                 }
             },
         )
+
+    // The local Rust `Eq` implementation - only `eq` is used.
+    override fun equals(other: Any?): Boolean {
+        if (other !is EndpointAddr) return false
+        return FfiConverterBoolean.lift(
+            callWithHandle {
+                uniffiRustCall { _status ->
+                    UniffiLib.uniffi_iroh_ffi_fn_method_endpointaddr_uniffi_trait_eq_eq(
+                        it,
+                        FfiConverterTypeEndpointAddr.lower(`other`),
+                        _status,
+                    )
+                }
+            },
+        )
+    }
+
+    // The local Rust `Hash` implementation
+    override fun hashCode(): Int =
+        FfiConverterULong
+            .lift(
+                callWithHandle {
+                    uniffiRustCall { _status ->
+                        UniffiLib.uniffi_iroh_ffi_fn_method_endpointaddr_uniffi_trait_hash(
+                            it,
+                            _status,
+                        )
+                    }
+                },
+            ).toInt()
 
     /**
      * @suppress
@@ -6903,11 +6965,6 @@ public object FfiConverterTypeEndpointBuilder : FfiConverter<EndpointBuilder, Lo
  */
 public interface EndpointIdInterface {
     /**
-     * Returns true if both [`EndpointId`]s are equal.
-     */
-    fun `equal`(`other`: EndpointId): kotlin.Boolean
-
-    /**
      * Short, base32 prefix of the [`EndpointId`].
      */
     fun `fmtShort`(): kotlin.String
@@ -7034,22 +7091,6 @@ open class EndpointId :
     }
 
     /**
-     * Returns true if both [`EndpointId`]s are equal.
-     */
-    override fun `equal`(`other`: EndpointId): kotlin.Boolean =
-        FfiConverterBoolean.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_endpointid_equal(
-                        it,
-                        FfiConverterTypeEndpointId.lower(`other`),
-                        _status,
-                    )
-                }
-            },
-        )
-
-    /**
      * Short, base32 prefix of the [`EndpointId`].
      */
     override fun `fmtShort`(): kotlin.String =
@@ -7109,6 +7150,36 @@ open class EndpointId :
                 }
             },
         )
+
+    // The local Rust `Eq` implementation - only `eq` is used.
+    override fun equals(other: Any?): Boolean {
+        if (other !is EndpointId) return false
+        return FfiConverterBoolean.lift(
+            callWithHandle {
+                uniffiRustCall { _status ->
+                    UniffiLib.uniffi_iroh_ffi_fn_method_endpointid_uniffi_trait_eq_eq(
+                        it,
+                        FfiConverterTypeEndpointId.lower(`other`),
+                        _status,
+                    )
+                }
+            },
+        )
+    }
+
+    // The local Rust `Hash` implementation
+    override fun hashCode(): Int =
+        FfiConverterULong
+            .lift(
+                callWithHandle {
+                    uniffiRustCall { _status ->
+                        UniffiLib.uniffi_iroh_ffi_fn_method_endpointid_uniffi_trait_hash(
+                            it,
+                            _status,
+                        )
+                    }
+                },
+            ).toInt()
 
     companion object {
         /**
@@ -7298,20 +7369,6 @@ open class EndpointTicket :
         this.cleanable = null
     }
 
-    /**
-     * Wrap the given [`EndpointAddr`] as an [`EndpointTicket`].
-     *
-     * The returned ticket can be serialized via [`Self::to_string`] and parsed back
-     * using [`Self::parse`].
-     */
-    constructor(`addr`: EndpointAddr) :
-        this(
-            UniffiWithHandle,
-            uniffiRustCallWithError(IrohException) { _status ->
-                UniffiLib.uniffi_iroh_ffi_fn_constructor_endpointticket_new(FfiConverterTypeEndpointAddr.lower(`addr`), _status)
-            },
-        )
-
     protected val handle: Long
     protected val cleanable: UniffiCleaner.Cleanable?
 
@@ -7415,13 +7472,27 @@ open class EndpointTicket :
 
     companion object {
         /**
+         * Wrap the given [`EndpointAddr`] as an [`EndpointTicket`].
+         *
+         * The returned ticket can be serialized via [`Self::to_string`] and parsed back
+         * using [`Self::from_string`].
+         */
+        @Throws(IrohException::class)
+        fun `fromAddr`(`addr`: EndpointAddr): EndpointTicket =
+            FfiConverterTypeEndpointTicket.lift(
+                uniffiRustCallWithError(IrohException) { _status ->
+                    UniffiLib.uniffi_iroh_ffi_fn_constructor_endpointticket_from_addr(FfiConverterTypeEndpointAddr.lower(`addr`), _status)
+                },
+            )
+
+        /**
          * Parse an [`EndpointTicket`] from its string presentation.
          */
         @Throws(IrohException::class)
-        fun `parse`(`str`: kotlin.String): EndpointTicket =
+        fun `fromString`(`str`: kotlin.String): EndpointTicket =
             FfiConverterTypeEndpointTicket.lift(
                 uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_constructor_endpointticket_parse(FfiConverterString.lower(`str`), _status)
+                    UniffiLib.uniffi_iroh_ffi_fn_constructor_endpointticket_from_string(FfiConverterString.lower(`str`), _status)
                 },
             )
     }
@@ -12963,6 +13034,36 @@ open class Signature :
             },
         )
 
+    // The local Rust `Eq` implementation - only `eq` is used.
+    override fun equals(other: Any?): Boolean {
+        if (other !is Signature) return false
+        return FfiConverterBoolean.lift(
+            callWithHandle {
+                uniffiRustCall { _status ->
+                    UniffiLib.uniffi_iroh_ffi_fn_method_signature_uniffi_trait_eq_eq(
+                        it,
+                        FfiConverterTypeSignature.lower(`other`),
+                        _status,
+                    )
+                }
+            },
+        )
+    }
+
+    // The local Rust `Hash` implementation
+    override fun hashCode(): Int =
+        FfiConverterULong
+            .lift(
+                callWithHandle {
+                    uniffiRustCall { _status ->
+                        UniffiLib.uniffi_iroh_ffi_fn_method_signature_uniffi_trait_hash(
+                            it,
+                            _status,
+                        )
+                    }
+                },
+            ).toInt()
+
     companion object {
         /**
          * Construct a [`Signature`] from raw bytes (64 bytes).
@@ -13255,32 +13356,34 @@ public object FfiConverterTypeWatchHandle : FfiConverter<WatchHandle, Long> {
 
 /**
  * Flat snapshot of the headline numbers from `noq::ConnectionStats`.
+ *
+ * Counters are `i64` (not `u64`) so Kotlin sees `Long`, not `ULong`.
  */
 data class ConnectionStats(
     /**
      * Total UDP datagrams transmitted.
      */
-    var `udpTxDatagrams`: kotlin.ULong,
+    var `udpTxDatagrams`: kotlin.Long,
     /**
      * Total UDP bytes transmitted.
      */
-    var `udpTxBytes`: kotlin.ULong,
+    var `udpTxBytes`: kotlin.Long,
     /**
      * Total UDP datagrams received.
      */
-    var `udpRxDatagrams`: kotlin.ULong,
+    var `udpRxDatagrams`: kotlin.Long,
     /**
      * Total UDP bytes received.
      */
-    var `udpRxBytes`: kotlin.ULong,
+    var `udpRxBytes`: kotlin.Long,
     /**
      * Total packets considered lost.
      */
-    var `lostPackets`: kotlin.ULong,
+    var `lostPackets`: kotlin.Long,
     /**
      * Total bytes considered lost.
      */
-    var `lostBytes`: kotlin.ULong,
+    var `lostBytes`: kotlin.Long,
 ) {
     companion object
 }
@@ -13291,34 +13394,34 @@ data class ConnectionStats(
 public object FfiConverterTypeConnectionStats : FfiConverterRustBuffer<ConnectionStats> {
     override fun read(buf: ByteBuffer): ConnectionStats =
         ConnectionStats(
-            FfiConverterULong.read(buf),
-            FfiConverterULong.read(buf),
-            FfiConverterULong.read(buf),
-            FfiConverterULong.read(buf),
-            FfiConverterULong.read(buf),
-            FfiConverterULong.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterLong.read(buf),
+            FfiConverterLong.read(buf),
         )
 
     override fun allocationSize(value: ConnectionStats) =
         (
-            FfiConverterULong.allocationSize(value.`udpTxDatagrams`) +
-                FfiConverterULong.allocationSize(value.`udpTxBytes`) +
-                FfiConverterULong.allocationSize(value.`udpRxDatagrams`) +
-                FfiConverterULong.allocationSize(value.`udpRxBytes`) +
-                FfiConverterULong.allocationSize(value.`lostPackets`) +
-                FfiConverterULong.allocationSize(value.`lostBytes`)
+            FfiConverterLong.allocationSize(value.`udpTxDatagrams`) +
+                FfiConverterLong.allocationSize(value.`udpTxBytes`) +
+                FfiConverterLong.allocationSize(value.`udpRxDatagrams`) +
+                FfiConverterLong.allocationSize(value.`udpRxBytes`) +
+                FfiConverterLong.allocationSize(value.`lostPackets`) +
+                FfiConverterLong.allocationSize(value.`lostBytes`)
         )
 
     override fun write(
         value: ConnectionStats,
         buf: ByteBuffer,
     ) {
-        FfiConverterULong.write(value.`udpTxDatagrams`, buf)
-        FfiConverterULong.write(value.`udpTxBytes`, buf)
-        FfiConverterULong.write(value.`udpRxDatagrams`, buf)
-        FfiConverterULong.write(value.`udpRxBytes`, buf)
-        FfiConverterULong.write(value.`lostPackets`, buf)
-        FfiConverterULong.write(value.`lostBytes`, buf)
+        FfiConverterLong.write(value.`udpTxDatagrams`, buf)
+        FfiConverterLong.write(value.`udpTxBytes`, buf)
+        FfiConverterLong.write(value.`udpRxDatagrams`, buf)
+        FfiConverterLong.write(value.`udpRxBytes`, buf)
+        FfiConverterLong.write(value.`lostPackets`, buf)
+        FfiConverterLong.write(value.`lostBytes`, buf)
     }
 }
 
@@ -14175,6 +14278,7 @@ sealed class PathEvent {
     data class Opened(
         val `id`: kotlin.String,
         val `remoteAddr`: kotlin.String,
+        val `localAddr`: kotlin.String,
     ) : PathEvent() {
         companion object
     }
@@ -14185,6 +14289,7 @@ sealed class PathEvent {
     data class Closed(
         val `id`: kotlin.String,
         val `remoteAddr`: kotlin.String,
+        val `localAddr`: kotlin.String,
         val `lastStats`: computer.iroh.PathStatsRecord,
     ) : PathEvent() {
         companion object
@@ -14196,6 +14301,7 @@ sealed class PathEvent {
     data class Selected(
         val `id`: kotlin.String,
         val `remoteAddr`: kotlin.String,
+        val `localAddr`: kotlin.String,
     ) : PathEvent() {
         companion object
     }
@@ -14222,11 +14328,13 @@ public object FfiConverterTypePathEvent : FfiConverterRustBuffer<PathEvent> {
                 PathEvent.Opened(
                     FfiConverterString.read(buf),
                     FfiConverterString.read(buf),
+                    FfiConverterString.read(buf),
                 )
             }
 
             2 -> {
                 PathEvent.Closed(
+                    FfiConverterString.read(buf),
                     FfiConverterString.read(buf),
                     FfiConverterString.read(buf),
                     FfiConverterTypePathStatsRecord.read(buf),
@@ -14235,6 +14343,7 @@ public object FfiConverterTypePathEvent : FfiConverterRustBuffer<PathEvent> {
 
             3 -> {
                 PathEvent.Selected(
+                    FfiConverterString.read(buf),
                     FfiConverterString.read(buf),
                     FfiConverterString.read(buf),
                 )
@@ -14258,7 +14367,8 @@ public object FfiConverterTypePathEvent : FfiConverterRustBuffer<PathEvent> {
                 (
                     4UL +
                         FfiConverterString.allocationSize(value.`id`) +
-                        FfiConverterString.allocationSize(value.`remoteAddr`)
+                        FfiConverterString.allocationSize(value.`remoteAddr`) +
+                        FfiConverterString.allocationSize(value.`localAddr`)
                 )
             }
 
@@ -14268,6 +14378,7 @@ public object FfiConverterTypePathEvent : FfiConverterRustBuffer<PathEvent> {
                     4UL +
                         FfiConverterString.allocationSize(value.`id`) +
                         FfiConverterString.allocationSize(value.`remoteAddr`) +
+                        FfiConverterString.allocationSize(value.`localAddr`) +
                         FfiConverterTypePathStatsRecord.allocationSize(value.`lastStats`)
                 )
             }
@@ -14277,7 +14388,8 @@ public object FfiConverterTypePathEvent : FfiConverterRustBuffer<PathEvent> {
                 (
                     4UL +
                         FfiConverterString.allocationSize(value.`id`) +
-                        FfiConverterString.allocationSize(value.`remoteAddr`)
+                        FfiConverterString.allocationSize(value.`remoteAddr`) +
+                        FfiConverterString.allocationSize(value.`localAddr`)
                 )
             }
 
@@ -14299,6 +14411,7 @@ public object FfiConverterTypePathEvent : FfiConverterRustBuffer<PathEvent> {
                 buf.putInt(1)
                 FfiConverterString.write(value.`id`, buf)
                 FfiConverterString.write(value.`remoteAddr`, buf)
+                FfiConverterString.write(value.`localAddr`, buf)
                 Unit
             }
 
@@ -14306,6 +14419,7 @@ public object FfiConverterTypePathEvent : FfiConverterRustBuffer<PathEvent> {
                 buf.putInt(2)
                 FfiConverterString.write(value.`id`, buf)
                 FfiConverterString.write(value.`remoteAddr`, buf)
+                FfiConverterString.write(value.`localAddr`, buf)
                 FfiConverterTypePathStatsRecord.write(value.`lastStats`, buf)
                 Unit
             }
@@ -14314,6 +14428,7 @@ public object FfiConverterTypePathEvent : FfiConverterRustBuffer<PathEvent> {
                 buf.putInt(3)
                 FfiConverterString.write(value.`id`, buf)
                 FfiConverterString.write(value.`remoteAddr`, buf)
+                FfiConverterString.write(value.`localAddr`, buf)
                 Unit
             }
 

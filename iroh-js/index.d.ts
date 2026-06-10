@@ -154,7 +154,7 @@ export declare class EndpointBuilder {
 /** An endpoint's identifier, a 32-byte ed25519 public key. */
 export declare class EndpointId {
   /** Returns true if both [`EndpointId`]s are equal. */
-  isEqual(other: EndpointId): boolean
+  equals(other: EndpointId): boolean
   /** Get the underlying 32 bytes. */
   toBytes(): Array<number>
   /** Parse an [`EndpointId`] from its base32 representation. */
@@ -378,6 +378,7 @@ export interface PathEvent {
   kind: PathEventKind
   id?: string
   remoteAddr?: string
+  localAddr?: string
   lastStats?: PathStatsRecord
   missed?: number
 }
