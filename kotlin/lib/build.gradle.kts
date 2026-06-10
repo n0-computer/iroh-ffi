@@ -12,6 +12,13 @@ plugins {
 
     // Apply the java-library plugin for API and implementation separation.
     `java-library`
+
+    // Dokka generates the HTML API reference (self-hosted on GitHub Pages).
+    alias(libs.plugins.dokka)
+
+    // Publishes computer.iroh:iroh to Maven Central via Sonatype Central Portal.
+    // Credentials/signing come from env vars in CI (see release.yml).
+    alias(libs.plugins.maven.publish)
 }
 
 repositories {
@@ -31,6 +38,11 @@ dependencies {
 
     implementation("net.java.dev.jna:jna:5.15.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+
+    // IrohAndroid.kt references android.content.Context for the JNI init
+    // path. Android API stubs jar — compile-time only; Android apps get the
+    // real platform classes at runtime, JVM consumers never load this code.
+    compileOnly("com.google.android:android:4.1.1.4")
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
@@ -55,5 +67,42 @@ tasks.named<Test>("test") {
 
     testLogging {
         events("passed", "skipped", "failed")
+    }
+}
+
+// Single source of truth for the Kotlin artifact version — `cargo make
+// prepare-release <V>` rewrites the coordinates literal alongside Cargo.toml,
+// iroh-js/package.json, and Package.swift.
+mavenPublishing {
+    // Vanniktech 0.34: Central Portal is the default; no SonatypeHost arg.
+    publishToMavenCentral(automaticRelease = true)
+    signAllPublications()
+    coordinates("computer.iroh", "iroh", "1.0.0-rc.0")
+    pom {
+        name = "iroh"
+        description = "Kotlin bindings for iroh: distributed systems made simple."
+        url = "https://github.com/n0-computer/iroh-ffi"
+        licenses {
+            license {
+                name = "MIT"
+                url = "https://opensource.org/license/mit"
+            }
+            license {
+                name = "Apache-2.0"
+                url = "https://www.apache.org/licenses/LICENSE-2.0"
+            }
+        }
+        developers {
+            developer {
+                id = "n0-computer"
+                name = "n0"
+                url = "https://www.iroh.computer"
+            }
+        }
+        scm {
+            url = "https://github.com/n0-computer/iroh-ffi"
+            connection = "scm:git:git://github.com/n0-computer/iroh-ffi.git"
+            developerConnection = "scm:git:ssh://git@github.com/n0-computer/iroh-ffi.git"
+        }
     }
 }

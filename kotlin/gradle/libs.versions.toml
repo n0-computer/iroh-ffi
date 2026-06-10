@@ -12,4 +12,6 @@ guava = { module = "com.google.guava:guava", version.ref = "guava" }
 junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit-jupiter-engine" }
 
 [plugins]
-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version = "2.0.20" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version = "2.2.20" }
+dokka = { id = "org.jetbrains.dokka", version = "2.0.0" }
+maven-publish = { id = "com.vanniktech.maven.publish", version = "0.34.0" }

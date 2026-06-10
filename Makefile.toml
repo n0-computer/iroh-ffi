@@ -1,0 +1,474 @@
+# Single source of truth for build / test / bindgen / publish across every
+# binding language. Run `cargo make <task>` locally; CI calls the exact same
+# tasks so local and CI never drift.
+#
+# Common tasks:
+#   cargo make test-all          # rust + python + js + kotlin + swift
+#   cargo make test-rust
+#   cargo make test-python
+#   cargo make test-js
+#   cargo make test-kotlin
+#   cargo make test-swift        # macOS-arm64 slice (fast, for local/CI test)
+#   cargo make format            # rustfmt (workspace)
+#   cargo make clippy
+#
+# Bindgen / packaging:
+#   cargo make bindgen-kotlin
+#   cargo make swift-xcframework # full 4-target Apple xcframework (release)
+#   cargo make python-wheel
+#
+# Most tasks are workspace = false so cargo-make does not fan out per member.
+
+[config]
+default_to_workspace = false
+skip_core_tasks = true
+
+[env]
+LIB_NAME = "libiroh_ffi"
+UNIFFI_CONFIG = "uniffi.toml"
+
+# ---------------------------------------------------------------------------
+# Formatting / lint / docs (Rust)
+# ---------------------------------------------------------------------------
+
+[tasks.format]
+command = "cargo"
+args = [
+  "fmt", "--all", "--",
+  "--config", "unstable_features=true",
+  "--config", "imports_granularity=Crate,group_imports=StdExternalCrate,reorder_imports=true,format_code_in_doc_comments=true",
+]
+
+[tasks.format-check]
+command = "cargo"
+args = [
+  "fmt", "--all", "--check", "--",
+  "--config", "unstable_features=true",
+  "--config", "imports_granularity=Crate,group_imports=StdExternalCrate,reorder_imports=true,format_code_in_doc_comments=true",
+]
+
+[tasks.clippy]
+command = "cargo"
+args = ["clippy", "--all-targets", "--bins", "--tests", "--benches"]
+
+[tasks.docs]
+command = "cargo"
+args = ["doc", "--no-deps", "--document-private-items"]
+
+# ---------------------------------------------------------------------------
+# Rust core
+# ---------------------------------------------------------------------------
+
+[tasks.build]
+description = "Build the iroh-ffi cdylib/staticlib."
+command = "cargo"
+args = ["build", "--lib", "-p", "iroh-ffi"]
+
+[tasks.test-rust]
+description = "Run the Rust unit tests."
+command = "cargo"
+args = ["test", "--lib", "-p", "iroh-ffi", "--", "--test-threads=1"]
+
+# ---------------------------------------------------------------------------
+# uniffi bindgen helpers (target-dir aware: honours CARGO_TARGET_DIR / config)
+# ---------------------------------------------------------------------------
+
+[tasks.bindgen-kotlin]
+description = "Build the lib + generate the Kotlin binding + stage the cdylib."
+dependencies = ["build"]
+script_runner = "@shell"
+script = '''
+set -eu
+case "$(uname -s)" in
+  Darwin) EXT=dylib ;;
+  Linux)  EXT=so ;;
+  *)      EXT=dll ;;
+esac
+TARGET_DIR=$(cargo metadata --format-version 1 --no-deps | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+LIB="$TARGET_DIR/debug/${LIB_NAME}.${EXT}"
+cargo run --bin uniffi-bindgen generate --language kotlin \
+  --out-dir kotlin/lib/src/main/kotlin/ --config "$UNIFFI_CONFIG" --library "$LIB"
+mkdir -p kotlin/lib/src/main/resources/
+cp "$LIB" kotlin/lib/src/main/resources/
+'''
+
+# ---------------------------------------------------------------------------
+# Python
+# ---------------------------------------------------------------------------
+
+[tasks.python-develop]
+description = "maturin develop into the active virtualenv."
+command = "maturin"
+args = ["develop"]
+
+[tasks.test-python]
+description = "Build + run the Python test suite."
+dependencies = ["python-develop"]
+command = "python"
+args = ["-m", "pytest", "-q"]
+cwd = "python"
+
+[tasks.python-wheel]
+description = "Build a release wheel into target/wheels."
+command = "maturin"
+args = ["build", "--release"]
+
+[tasks.python-wheel-manylinux]
+description = "Build a manylinux_2_28 release wheel (run inside the manylinux container)."
+command = "maturin"
+args = ["build", "--release", "--manylinux", "2_28"]
+
+# ---------------------------------------------------------------------------
+# JavaScript (napi-rs)
+# ---------------------------------------------------------------------------
+
+[tasks.js-install]
+description = "yarn install for iroh-js."
+command = "yarn"
+args = ["install"]
+cwd = "iroh-js"
+
+[tasks.js-build]
+description = "Build the napi addon (platform-tagged debug)."
+dependencies = ["js-install"]
+script_runner = "@shell"
+script = '''
+set -eu
+cd iroh-js
+node_modules/.bin/napi build --platform
+'''
+
+[tasks.test-js]
+description = "Build + run the JS test suite."
+dependencies = ["js-build"]
+command = "yarn"
+args = ["test"]
+cwd = "iroh-js"
+
+[tasks.js-build-release]
+description = "Build the napi addon (release, stripped)."
+dependencies = ["js-install"]
+command = "yarn"
+args = ["build"]
+cwd = "iroh-js"
+
+# ---------------------------------------------------------------------------
+# Kotlin
+# ---------------------------------------------------------------------------
+
+[tasks.test-kotlin]
+description = "Generate the Kotlin binding + run the Gradle test suite (JVM)."
+dependencies = ["bindgen-kotlin"]
+script_runner = "@shell"
+script = '''
+set -eu
+cd kotlin
+./gradlew test --no-daemon --console=plain
+'''
+
+[tasks.kotlin-android]
+description = "Cross-compile the Android .so's for all ABIs + generate the binding (build verification). Needs Android NDK + cargo-ndk."
+script_runner = "@shell"
+script = '''
+set -eu
+command -v cargo-ndk >/dev/null 2>&1 || cargo install --version 3.5.4 cargo-ndk --locked
+# Host lib only needed so uniffi-bindgen can read metadata.
+cargo build --lib
+TARGET_DIR=$(cargo metadata --format-version 1 --no-deps | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
+cargo ndk -o ./kotlin/lib/src/main/jniLibs \
+  --manifest-path ./Cargo.toml \
+  -t armeabi-v7a -t arm64-v8a -t x86 -t x86_64 \
+  build --release
+cargo run --bin uniffi-bindgen generate --language kotlin \
+  --out-dir kotlin/lib/src/main/kotlin/ --config "$UNIFFI_CONFIG" \
+  --library "$TARGET_DIR/debug/libiroh_ffi.so"
+'''
+
+# ---------------------------------------------------------------------------
+# Swift
+# ---------------------------------------------------------------------------
+
+[tasks.test-swift]
+description = "Build the full Apple xcframework + run the Swift test suite (xcodebuild)."
+dependencies = ["swift-xcframework"]
+script_runner = "@shell"
+script = '''
+set -eu
+# `swift test` (SwiftPM CLI) fails to form the `Iroh` clang module from the
+# framework-bundle xcframework on the CI runner (every uniffi type "not in
+# scope"), while full Xcode consumes it fine. Drive tests through xcodebuild
+# so local and CI both use the working toolchain.
+#
+# Use a clean, repo-local derived-data dir: the self-hosted CI runner reuses
+# the shared DerivedData across runs and otherwise relinks a stale extracted
+# Iroh.framework (missing the freshly built uniffi symbols). A fresh path per
+# run forces re-extraction of the just-built xcframework.
+#
+# Run xcodebuild as the logged-in console user and force arm64, so it uses
+# the right session and the arm64-only xcframework macOS slice.
+CONSOLE_USER=$(stat -f%Su /dev/console)
+CONSOLE_UID=$(id -u "$CONSOLE_USER")
+echo "console user: $CONSOLE_USER ($CONSOLE_UID)"
+if [ "$CONSOLE_USER" = "root" ]; then
+  echo "ERROR: no interactive GUI session; cannot run xcodebuild test" >&2
+  exit 1
+fi
+rm -rf .xcode-ddata
+launchctl asuser "$CONSOLE_UID" arch -arm64 xcodebuild test \
+  -scheme IrohLib -destination 'platform=macOS' -derivedDataPath .xcode-ddata
+'''
+
+[tasks.swift-xcframework]
+description = "Full release xcframework for all Apple targets (CI / release)."
+script_runner = "@shell"
+script = '''
+set -eu
+./make_swift.sh
+'''
+
+[tasks.swift-package]
+description = "Zip + checksum the xcframework for SwiftPM distribution."
+dependencies = ["swift-xcframework"]
+script_runner = "@shell"
+script = '''
+set -eu
+./package_swift.sh
+'''
+
+# ---------------------------------------------------------------------------
+# Docs (self-hosted on GitHub Pages; Swift is additionally on the SPI)
+# ---------------------------------------------------------------------------
+
+[tasks.swift-macos-framework]
+description = "Build only the macOS-arm64 framework slice (for DocC; no iOS slices)."
+script_runner = "@shell"
+script = '''
+set -eu
+./make_swift_macos.sh
+'''
+
+[tasks.docs-swift]
+description = "Build the Swift DocC docs, laid out for Pages static hosting."
+# DocC only needs the macOS slice — not the full 4-target xcframework.
+dependencies = ["swift-macos-framework"]
+script_runner = "@shell"
+script = '''
+set -eu
+./make_swift_docs.sh
+'''
+
+[tasks.docs-python]
+description = "Build the Python extension + render API docs with pdoc."
+dependencies = ["python-develop"]
+script_runner = "@shell"
+script = '''
+set -eu
+python3 -m pip install --quiet --upgrade pdoc
+rm -rf site/python
+# `iroh/__init__.py` is just `from .iroh_ffi import *`; documenting the
+# `iroh` package makes pdoc choke on the trivial `__init__.pyi` re-export
+# ("attempted relative import"). Target the real module directly — same
+# public symbols, fully populated.
+python3 -m pdoc iroh.iroh_ffi -o site/python
+echo "python docs -> site/python"
+'''
+
+[tasks.docs-js]
+description = "Build the napi addon (for index.d.ts) + render API docs with TypeDoc."
+dependencies = ["js-build-release"]
+script_runner = "@shell"
+script = '''
+set -eu
+cd iroh-js
+yarn docs
+echo "js docs -> site/js"
+'''
+
+[tasks.docs-kotlin]
+description = "Generate the Kotlin binding + render API docs with Dokka."
+dependencies = ["bindgen-kotlin"]
+script_runner = "@shell"
+script = '''
+set -eu
+cd kotlin
+./gradlew :lib:dokkaGeneratePublicationHtml --no-daemon --console=plain
+cd ..
+rm -rf site/kotlin
+mkdir -p site
+cp -R kotlin/lib/build/dokka/html site/kotlin
+echo "kotlin docs -> site/kotlin"
+'''
+
+[tasks.docs-landing]
+description = "Render the docs landing page from support-matrix.yaml."
+script_runner = "@shell"
+script = '''
+set -eu
+python3 -m pip install --quiet --upgrade pyyaml
+python3 scripts/docs/gen_landing.py
+'''
+
+[tasks.docs-site]
+description = "Build the complete Pages site (all languages + landing) into ./site."
+dependencies = [
+  "docs-swift",
+  "docs-python",
+  "docs-js",
+  "docs-kotlin",
+  "docs-landing",
+]
+
+# ---------------------------------------------------------------------------
+# Aggregates
+# ---------------------------------------------------------------------------
+
+[tasks.test-all]
+description = "Run every binding's test suite."
+dependencies = [
+  "test-rust",
+  "test-python",
+  "test-js",
+  "test-kotlin",
+  "test-swift",
+]
+
+[tasks.ci-rust]
+description = "What the Rust CI job runs: fmt check, clippy, docs, tests."
+dependencies = ["format-check", "clippy", "docs", "test-rust"]
+
+# ---------------------------------------------------------------------------
+# Release prep (local; produces a self-consistent release PR — see RELEASING.md)
+# ---------------------------------------------------------------------------
+
+[tasks.pre-release-check]
+description = "Local dry-run of every release artifact build (no uploads, no network publishes). Run before tagging."
+script_runner = "@shell"
+script = '''
+set -eu
+
+if [ "$(uname -s)" != "Darwin" ]; then
+  echo "ERROR: pre-release-check must run on macOS (xcframework needs Xcode)" >&2
+  exit 1
+fi
+
+echo "==> swift: build + deterministic zip"
+cargo make swift-xcframework >/dev/null
+bash scripts/release/zip_xcframework.sh
+H1=$(shasum -a 256 IrohLib.xcframework.zip | awk '{print $1}')
+bash scripts/release/zip_xcframework.sh
+H2=$(shasum -a 256 IrohLib.xcframework.zip | awk '{print $1}')
+[ "$H1" = "$H2" ] || { echo "swift zip non-deterministic: $H1 vs $H2" >&2; exit 1; }
+echo "  ok (sha256=$H1)"
+
+echo "==> python: maturin build (host wheel only)"
+PYVENV=$(mktemp -d)/venv
+python3 -m venv "$PYVENV"
+"$PYVENV/bin/pip" install --quiet --upgrade maturin uniffi-bindgen
+WHEELS=$(mktemp -d)
+"$PYVENV/bin/maturin" build --release --quiet --out "$WHEELS"
+ls "$WHEELS"/*.whl
+
+echo "==> js: napi build + npm publish --dry-run"
+( cd iroh-js && yarn install --silent && yarn build >/dev/null && npm publish --dry-run 2>&1 | tail -8 )
+
+echo "==> kotlin: gradle publishToMavenLocal (signed)"
+# Dokka 2.0 (javadoc jar) can't parse JDK 25; CI uses Temurin 17. Pin 17 here.
+JH17=$(/usr/libexec/java_home -v 17 2>/dev/null || true)
+if [ -z "$JH17" ]; then
+  echo "ERROR: JDK 17 required (Dokka 2.0 crashes on JDK 25). Install: brew install --cask temurin@17" >&2
+  exit 1
+fi
+export JAVA_HOME="$JH17"
+# signAllPublications() makes the .asc signatures part of the publication, so
+# publishToMavenLocal needs the key — same armored private key as the
+# SIGNING_KEY CI secret. Export its file contents:
+#   export ORG_GRADLE_PROJECT_signingInMemoryKey="$(cat ~/.keys/maven_key.sec.asc)"
+if [ -z "${ORG_GRADLE_PROJECT_signingInMemoryKey:-}" ]; then
+  echo "ERROR: export ORG_GRADLE_PROJECT_signingInMemoryKey (armored private key) to validate signing" >&2
+  exit 1
+fi
+( cd kotlin && ./gradlew :lib:publishToMavenLocal --no-daemon --console=plain --quiet )
+V=$(sed -nE 's/.*coordinates\("computer\.iroh", "iroh", "([^"]+)"\).*/\1/p' kotlin/lib/build.gradle.kts)
+ls "$HOME/.m2/repository/computer/iroh/iroh/$V/" >/dev/null 2>&1 && echo "  ok (staged in ~/.m2)"
+
+echo ""
+echo "pre-release-check passed — safe to run cargo make prepare-release <VERSION>"
+'''
+
+[tasks.prepare-release]
+description = "Bump versions everywhere + build a deterministic xcframework zip + bake the checksum into Package.swift. Run on macOS (needs Xcode for the xcframework). Usage: cargo make prepare-release <VERSION>"
+script_runner = "@shell"
+script = '''
+set -eu
+VERSION="${1:?usage: cargo make prepare-release <VERSION> (no leading v)}"
+
+if [ "$(uname -s)" != "Darwin" ]; then
+  echo "ERROR: prepare-release must run on macOS (Xcode-required xcframework build)" >&2
+  exit 1
+fi
+
+echo "==> rewrite version literals"
+python3 scripts/release/bump_version.py "$VERSION"
+
+echo "==> refresh Cargo.lock"
+cargo update -p iroh-ffi --precise "$VERSION" >/dev/null
+
+echo "==> refresh iroh-js/yarn.lock"
+( cd iroh-js && yarn install --mode update-lockfile >/dev/null )
+
+echo "==> build full xcframework"
+cargo make swift-xcframework >/dev/null
+
+echo "==> deterministic zip + checksum"
+bash scripts/release/zip_xcframework.sh
+CHECKSUM=$(shasum -a 256 IrohLib.xcframework.zip | awk '{print $1}')
+
+echo "==> bake checksum into Package.swift"
+python3 scripts/release/bump_version.py --checksum "$CHECKSUM"
+
+cat <<EOF
+
+Prepared release v$VERSION.
+  zip: IrohLib.xcframework.zip ($(stat -f%z IrohLib.xcframework.zip) bytes)
+  sha256: $CHECKSUM
+
+Next:
+  git checkout -b release/v$VERSION
+  git commit -am "chore(release): v$VERSION"
+  # PR -> green CI -> merge to main
+  git tag v$VERSION <merge commit>
+  git push origin v$VERSION
+EOF
+'''
+
+# ---------------------------------------------------------------------------
+# Publish (wired in Phase 6 — placeholders so the task graph is stable)
+# ---------------------------------------------------------------------------
+
+[tasks.publish-python]
+description = "Publish the Python wheel to PyPI (maturin)."
+command = "maturin"
+args = ["publish", "--skip-existing"]
+
+[tasks.publish-js]
+description = "Publish the npm package (napi prepublish + npm publish)."
+cwd = "iroh-js"
+script_runner = "@shell"
+script = '''
+set -eu
+node_modules/.bin/napi pre-publish -t npm --no-gh-release
+npm publish --access public
+'''
+
+[tasks.publish-swift]
+description = "Package + checksum the xcframework for a Swift release."
+dependencies = ["swift-package"]
+
+[tasks.publish-kotlin]
+description = "Publish the Kotlin artifact (Maven Central — wired in Phase 6)."
+script_runner = "@shell"
+script = '''
+set -eu
+echo "publish-kotlin: wired in Phase 6 (Maven Central / Sonatype)" >&2
+exit 1
+'''

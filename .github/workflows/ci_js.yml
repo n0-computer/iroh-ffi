@@ -10,10 +10,11 @@ permissions:
   id-token: write
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -28,63 +29,106 @@ on:
   pull_request:
 
 jobs:
+  # Native-arch smoke test: build the host .node via cargo-make (`napi build
+  # --platform`) and run the JS test suite. Sanity-checks that local dev
+  # (`cargo make test-js`) and the bindings stay in sync, independently of
+  # the napi multi-target cross-build matrix below.
+  native-test:
+    name: JS - Native test (macOS-arm64)
+    timeout-minutes: 30
+    runs-on: [self-hosted, macOS, ARM64]
+    steps:
+      - uses: actions/checkout@master
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: davidB/rust-cargo-make@v1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Enable corepack (yarn)
+        run: corepack enable
+      - name: cargo make test-js
+        run: cargo make test-js
+
   build:
     strategy:
       fail-fast: false
       matrix:
         settings:
-          - host: macos-latest
-            target: x86_64-apple-darwin
-            build: yarn build --target x86_64-apple-darwin
-          - host: windows-latest
+          - host: '["windows-latest"]'
             build: yarn build
             target: x86_64-pc-windows-msvc
-          - host: ubuntu-latest
+          - host: '["self-hosted","linux","X64"]'
             target: x86_64-unknown-linux-gnu
-            docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian
-            build: cd iroh-js && yarn build --target x86_64-unknown-linux-gnu
-          - host: ubuntu-latest
+            build: yarn build --target x86_64-unknown-linux-gnu
+          - host: '["self-hosted","linux","X64"]'
             target: x86_64-unknown-linux-musl
-            docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine
-            build: cd iroh-js && yarn build
-          - host: macos-latest
+            setup: |
+              pip3 install ziglang
+            build: |-
+              set -e
+              mkdir -p "$HOME/zigshim"
+              printf '#!/bin/sh\nA=;for x in "$@";do case "$x" in --target=*) ;; *) A="$A $x";; esac;done;exec python3 -m ziglang cc -target x86_64-linux-musl $A\n' > "$HOME/zigshim/zcc"
+              printf '#!/bin/sh\nA=;for x in "$@";do case "$x" in --target=*) ;; *) A="$A $x";; esac;done;exec python3 -m ziglang c++ -target x86_64-linux-musl $A\n' > "$HOME/zigshim/zcxx"
+              chmod +x "$HOME/zigshim/zcc" "$HOME/zigshim/zcxx"
+              export CC_x86_64_unknown_linux_musl="$HOME/zigshim/zcc"
+              export CXX_x86_64_unknown_linux_musl="$HOME/zigshim/zcxx"
+              export CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER="$HOME/zigshim/zcc"
+              export TARGET_CC="$HOME/zigshim/zcc"
+              export TARGET_CXX="$HOME/zigshim/zcxx"
+              yarn build --target x86_64-unknown-linux-musl
+          - host: '["self-hosted","macOS","ARM64"]'
             target: aarch64-apple-darwin
             build: yarn build --target aarch64-apple-darwin
-          - host: ubuntu-latest
+          - host: '["self-hosted","linux","X64"]'
             target: aarch64-unknown-linux-gnu
-            docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian-aarch64
-            build: cd iroh-js && yarn build --target aarch64-unknown-linux-gnu
-          - host: ubuntu-latest
+            setup: |
+              sudo apt-get update
+              sudo apt-get -y install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+            build: |-
+              set -e &&
+              export CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc &&
+              export CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++ &&
+              export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc &&
+              yarn build --target aarch64-unknown-linux-gnu --use-napi-cross
+          - host: '["self-hosted","linux","X64"]'
             target: armv7-unknown-linux-gnueabihf
             setup: |
               sudo apt-get update
               sudo apt-get install gcc-arm-linux-gnueabihf -y
             build: yarn build --target armv7-unknown-linux-gnueabihf --use-napi-cross
-          - host: ubuntu-latest
+          - host: '["self-hosted","linux","X64"]'
             target: armv7-unknown-linux-musleabihf
             setup: |
               sudo apt-get update
               sudo apt-get -y install binutils-arm-linux-gnueabihf gcc-arm-linux-gnueabihf musl-tools musl-dev
             build: yarn build --target armv7-unknown-linux-musleabihf --use-napi-cross
-          - host: ubuntu-latest
+          - host: '["self-hosted","linux","X64"]'
             target: aarch64-linux-android
             build: yarn build --target aarch64-linux-android
-          - host: ubuntu-latest
+          - host: '["self-hosted","linux","X64"]'
             target: armv7-linux-androideabi
             build: yarn build --target armv7-linux-androideabi
-          - host: ubuntu-latest
+          - host: '["self-hosted","linux","X64"]'
             target: aarch64-unknown-linux-musl
-            docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine
+            setup: |
+              pip3 install ziglang
             build: |-
-              cd iroh-js &&
-              set -e &&
-              rustup target add aarch64-unknown-linux-musl &&
+              set -e
+              mkdir -p "$HOME/zigshim"
+              printf '#!/bin/sh\nA=;for x in "$@";do case "$x" in --target=*) ;; *) A="$A $x";; esac;done;exec python3 -m ziglang cc -target aarch64-linux-musl $A\n' > "$HOME/zigshim/zcc"
+              printf '#!/bin/sh\nA=;for x in "$@";do case "$x" in --target=*) ;; *) A="$A $x";; esac;done;exec python3 -m ziglang c++ -target aarch64-linux-musl $A\n' > "$HOME/zigshim/zcxx"
+              chmod +x "$HOME/zigshim/zcc" "$HOME/zigshim/zcxx"
+              export CC_aarch64_unknown_linux_musl="$HOME/zigshim/zcc"
+              export CXX_aarch64_unknown_linux_musl="$HOME/zigshim/zcxx"
+              export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER="$HOME/zigshim/zcc"
+              export TARGET_CC="$HOME/zigshim/zcc"
+              export TARGET_CXX="$HOME/zigshim/zcxx"
               yarn build --target aarch64-unknown-linux-musl
-          - host: windows-latest
+          - host: '["windows-latest"]'
             target: aarch64-pc-windows-msvc
             build: yarn build --target aarch64-pc-windows-msvc
     name: stable - ${{ matrix.settings.target }} - node@22
-    runs-on: ${{ matrix.settings.host }}
+    runs-on: ${{ fromJSON(matrix.settings.host) }}
     defaults:
       run:
         working-directory: ./iroh-js
@@ -95,8 +139,10 @@ jobs:
         if: ${{ !matrix.settings.docker }}
         with:
           node-version: 22
-          cache: yarn
-          cache-dependency-path: './iroh-js/yarn.lock'
+      - name: Enable corepack (yarn)
+        if: ${{ !matrix.settings.docker }}
+        run: corepack enable
+        shell: bash
       - name: Install
         uses: dtolnay/rust-toolchain@stable
         if: ${{ !matrix.settings.docker }}
@@ -104,15 +150,9 @@ jobs:
           toolchain: stable
           targets: ${{ matrix.settings.target }}
       - name: Cache cargo
-        uses: actions/cache@v4
+        uses: Swatinem/rust-cache@v2
         with:
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            .cargo-cache
-            target/
-          key: ${{ matrix.settings.target }}-cargo-${{ matrix.settings.host }}
+          key: ${{ matrix.settings.target }}
       - uses: goto-bus-stop/setup-zig@v2
         if: ${{ matrix.settings.target == 'armv7-unknown-linux-gnueabihf' || matrix.settings.target == 'armv7-unknown-linux-musleabihf' }}
         with:
@@ -121,6 +161,13 @@ jobs:
         run: ${{ matrix.settings.setup }}
         if: ${{ matrix.settings.setup }}
         shell: bash
+      - name: Setup Android NDK
+        if: ${{ contains(matrix.settings.target, 'android') }}
+        uses: arqu/setup-ndk@main
+        id: setup-ndk
+        with:
+          ndk-version: r23
+          add-to-path: true
       - name: Setup node x86
         if: matrix.settings.target == 'i686-pc-windows-msvc'
         run: yarn config set supportedArchitectures.cpu "ia32"
@@ -132,9 +179,7 @@ jobs:
         if: matrix.settings.target == 'i686-pc-windows-msvc'
         with:
           node-version: 22
-          cache: yarn
           architecture: x86
-          cache-dependency-path: './iroh-js/yarn.lock'
       - name: Build in docker
         uses: addnab/docker-run-action@v3
         if: ${{ matrix.settings.docker }}
@@ -146,6 +191,10 @@ jobs:
         run: ${{ matrix.settings.build }}
         if: ${{ !matrix.settings.docker }}
         shell: bash
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          ANDROID_NDK_LATEST_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          ANDROID_NDK_ROOT: ${{ steps.setup-ndk.outputs.ndk-path }}
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -160,14 +209,12 @@ jobs:
       fail-fast: false
       matrix:
         settings:
-          - host: macos-latest
-            target: x86_64-apple-darwin
-          - host: windows-latest
+          - host: '["windows-latest"]'
             target: x86_64-pc-windows-msvc
         node:
           - '22'
           - '20'
-    runs-on: ${{ matrix.settings.host }}
+    runs-on: ${{ fromJSON(matrix.settings.host) }}
     defaults:
       run:
         working-directory: ./iroh-js
@@ -177,12 +224,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-          cache: yarn
-          cache-dependency-path: './iroh-js/yarn.lock'
           architecture: x64
-      - name: Setup node x86_64
-        if: matrix.settings.target == 'x86_64-apple-darwin'
-        run: yarn config set supportedArchitectures.cpu "x86_64"
+      - name: Enable corepack (yarn)
+        run: corepack enable
         shell: bash
       - name: Install dependencies
         run: yarn install
@@ -206,7 +250,7 @@ jobs:
         node:
           - '22'
           - '20'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, X64]
     defaults:
       run:
         working-directory: ./iroh-js
@@ -216,8 +260,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-          cache: yarn
-          cache-dependency-path: './iroh-js/yarn.lock'
+      - name: Enable corepack (yarn)
+        run: corepack enable
+        shell: bash
       - name: Install dependencies
         run: yarn install
       - name: Download artifacts
@@ -229,7 +274,12 @@ jobs:
         run: ls -R .
         shell: bash
       - name: Test bindings
-        run: docker run --rm -v $(pwd):/build -w /build node:${{ matrix.node }}-slim yarn test
+        # Force amd64: the self-hosted runner also services arm64 binding-test
+        # jobs, so `node:N-slim` in the Docker image cache may be the arm64
+        # variant of the multi-arch manifest. Without --platform, Docker
+        # reuses whichever variant is cached and `process.arch` reports arm64,
+        # so napi loads the wrong native binding.
+        run: docker run --rm --platform linux/amd64 -v $(pwd):/build -w /build node:${{ matrix.node }}-slim yarn test
   test-linux-x64-musl-binding:
     name: Test bindings on x86_64-unknown-linux-musl - node@${{ matrix.node }}
     needs:
@@ -240,7 +290,7 @@ jobs:
         node:
           - '22'
           - '20'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, X64]
     defaults:
       run:
         working-directory: ./iroh-js
@@ -250,8 +300,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-          cache: yarn
-          cache-dependency-path: './iroh-js/yarn.lock'
+      - name: Enable corepack (yarn)
+        run: corepack enable
+        shell: bash
       - name: Install dependencies
         run: |
           yarn config set supportedArchitectures.libc "musl"
@@ -265,7 +316,8 @@ jobs:
         run: ls -R .
         shell: bash
       - name: Test bindings
-        run: docker run --rm -v $(pwd):/build -w /build node:${{ matrix.node }}-alpine yarn test
+        # Force amd64 for the same reason as the gnu variant above.
+        run: docker run --rm --platform linux/amd64 -v $(pwd):/build -w /build node:${{ matrix.node }}-alpine yarn test
   test-linux-aarch64-gnu-binding:
     name: Test bindings on aarch64-unknown-linux-gnu - node@${{ matrix.node }}
     needs:
@@ -276,12 +328,19 @@ jobs:
         node:
           - '22'
           - '20'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, X64]
     defaults:
       run:
         working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Enable corepack (yarn)
+        run: corepack enable
+        shell: bash
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -313,12 +372,19 @@ jobs:
     name: Test bindings on aarch64-unknown-linux-musl - node@${{ matrix.node }}
     needs:
       - build
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, X64]
     defaults:
       run:
         working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Enable corepack (yarn)
+        run: corepack enable
+        shell: bash
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -355,12 +421,19 @@ jobs:
         node:
           - '22'
           - '20'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, X64]
     defaults:
       run:
         working-directory: ./iroh-js
     steps:
       - uses: actions/checkout@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Enable corepack (yarn)
+        run: corepack enable
+        shell: bash
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -387,42 +460,6 @@ jobs:
             set -e
             yarn test
             ls -la
-  universal-macOS:
-    name: Build universal macOS binary
-    needs:
-      - build
-    runs-on: macos-latest
-    defaults:
-      run:
-        working-directory: ./iroh-js
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: yarn
-          cache-dependency-path: './iroh-js/yarn.lock'
-      - name: Install dependencies
-        run: yarn install
-      - name: Download macOS x64 artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: bindings-x86_64-apple-darwin
-          path: ./iroh-js/
-      - name: Download macOS arm64 artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: bindings-aarch64-apple-darwin
-          path: ./iroh-js/
-      - name: Combine binaries
-        run: yarn napi universalize
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: bindings-universal-apple-darwin
-          path: ./iroh-js/${{ env.APP_NAME }}.*.node
-          if-no-files-found: error
   publish:
     name: Publish
     runs-on: ubuntu-latest
@@ -436,7 +473,6 @@ jobs:
       - test-linux-aarch64-gnu-binding
       - test-linux-aarch64-musl-binding
       - test-linux-arm-gnueabihf-binding
-      - universal-macOS
     steps:
       - uses: actions/checkout@v4
       - name: Setup node

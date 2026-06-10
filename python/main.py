@@ -1,69 +1,87 @@
-from signal import pause
-import iroh
+"""
+Minimal iroh-ffi Python demo (peer-to-peer; no client/server framing).
+
+Run the accept side in one terminal:
+
+    python main.py accept
+
+Copy the printed ticket and run the dial side in another:
+
+    python main.py connect <ticket>
+
+The dial side opens a bidirectional QUIC stream, sends `hello`, and prints
+what the accept side echoes back.
+"""
 
 import argparse
 import asyncio
 
+import iroh
+
+ALPN = b"iroh-ffi/example/0"
+
+
+async def accept(ep):
+    print("listening on:", ep.id())
+    ticket = iroh.EndpointTicket.from_addr(ep.addr())
+    print("ticket:", str(ticket))
+
+    incoming = await ep.accept_next()
+    assert incoming is not None, "endpoint closed before any connection arrived"
+    accepting = await incoming.accept()
+    conn = await accepting.connect()
+    print("accepted connection from", str(conn.remote_id()))
+
+    bi = await conn.accept_bi()
+    recv = bi.recv()
+    send = bi.send()
+
+    data = await recv.read_to_end(1024)
+    print("echo side received:", data.decode("utf8"))
+
+    await send.write_all(data)
+    await send.finish()
+    await asyncio.sleep(0.5)
+    await ep.close()
+
+
+async def connect(ep, ticket_str):
+    ticket = iroh.EndpointTicket.from_string(ticket_str)
+    addr = ticket.endpoint_addr()
+    print("dialing", str(addr.id()))
+    conn = await ep.connect(addr, list(ALPN))
+
+    bi = await conn.open_bi()
+    send = bi.send()
+    recv = bi.recv()
+    await send.write_all(list(b"hello"))
+    await send.finish()
+
+    echoed = await recv.read_to_end(1024)
+    print("dial side received:", echoed.decode("utf8"))
+    await ep.close()
+
+
 async def main():
-    # setup event loop, to ensure async callbacks work
     iroh.iroh_ffi.uniffi_set_event_loop(asyncio.get_running_loop())
 
-    # parse arguments
-    parser = argparse.ArgumentParser(description='Python Iroh Node Demo')
-    parser.add_argument('--ticket', type=str, help='ticket to join a document')
-
+    parser = argparse.ArgumentParser(description="iroh-ffi Python demo")
+    sub = parser.add_subparsers(dest="cmd", required=True)
+    sub.add_parser("accept", help="bind an endpoint and accept one connection")
+    p_connect = sub.add_parser("connect", help="dial the ticket")
+    p_connect.add_argument("ticket", help="EndpointTicket string")
     args = parser.parse_args()
 
-    # create iroh node
-    options = iroh.NodeOptions()
-    options.enable_docs = True
-    node = await iroh.Iroh.memory_with_options(options)
-    node_id = await node.net().node_id()
-    print("Started Iroh node: {}".format(node_id))
+    opts = iroh.EndpointOptions(
+        alpns=[list(ALPN)] if args.cmd == "accept" else None,
+    )
+    ep = await iroh.Endpoint.bind(opts)
 
-    if not args.ticket:
-        print("In example mode")
-        print("(To run the sync demo, please provide a ticket to join a document)")
-        print()
-
-        # create doc
-        doc = await node.docs().create()
-        author = await node.authors().create()
-        doc_id = doc.id()
-        # create ticket to share doc
-        ticket = await doc.share(iroh.ShareMode.READ, iroh.AddrInfoOptions.RELAY_AND_ADDRESSES)
-
-        # add data to doc
-        await doc.set_bytes(author, b"hello", b"world")
-        await doc.set_bytes(author, b"foo", b"bar")
-        await doc.set_bytes(author, b"baz", b"qux")
-
-        print("Created doc: {}".format(doc_id))
-        print("Keep this running and in another terminal run:\n\npython main.py --ticket {}".format(ticket))
+    if args.cmd == "accept":
+        await accept(ep)
     else:
-        # join doc
-        doc_ticket = iroh.DocTicket(args.ticket)
-        doc = await node.docs().join(doc_ticket)
-        doc_id = doc.id()
-        print("Joined doc: {}".format(doc_id))
+        await connect(ep, args.ticket)
 
-        # sync & print
-        print("Waiting 5 seconds to let stuff sync...")
-        await asyncio.sleep(5)
-
-        # query all keys
-        query = iroh.Query.all(None)
-        keys = await doc.get_many(query)
-
-        print("Data:")
-        for entry in keys:
-            # get key, hash, and content for each entry
-            key = entry.key()
-            hash = entry.content_hash()
-            content = await node.blobs().read_to_bytes(entry.content_hash())
-            print("{} : {} (hash: {})".format(key.decode("utf8"), content.decode("utf8"), hash))
-
-    input("Press Enter to exit...")
 
 if __name__ == "__main__":
     asyncio.run(main())

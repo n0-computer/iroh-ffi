@@ -1,0 +1,8 @@
+# Swift Package Index documentation manifest.
+# SPI builds + hosts DocC for `IrohLib` automatically on every release once
+# the package is submitted once at https://swiftpackageindex.com/add-a-package
+# (the same DocC archive we also self-host on GitHub Pages — see docs.yml).
+version: 1
+builder:
+  configs:
+    - documentation_targets: [IrohLib]

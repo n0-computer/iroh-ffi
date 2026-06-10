@@ -3,80 +3,171 @@ use std::str::FromStr;
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
 
-/// A public key.
-///
-/// The key itself is just a 32 byte array, but a key has associated crypto
-/// information that is cached for performance reasons.
+/// An endpoint's identifier, a 32-byte ed25519 public key.
 #[derive(Debug, Clone, Eq)]
 #[napi]
-pub struct PublicKey {
-    /// The actual key bytes. Always 32 bytes.
+pub struct EndpointId {
     key: [u8; 32],
 }
 
-impl From<iroh::PublicKey> for PublicKey {
-    fn from(key: iroh::PublicKey) -> Self {
-        PublicKey {
+impl From<iroh::EndpointId> for EndpointId {
+    fn from(key: iroh::EndpointId) -> Self {
+        EndpointId {
             key: *key.as_bytes(),
         }
     }
 }
 
-impl From<&PublicKey> for iroh::PublicKey {
-    fn from(key: &PublicKey) -> Self {
-        let key: &[u8] = &key.key[..];
-        key.try_into().unwrap()
+impl From<&EndpointId> for iroh::EndpointId {
+    fn from(key: &EndpointId) -> Self {
+        iroh::EndpointId::from_bytes(&key.key).expect("EndpointId bytes are always valid")
+    }
+}
+
+impl EndpointId {
+    pub(crate) fn raw_bytes(&self) -> [u8; 32] {
+        self.key
+    }
+
+    pub(crate) fn from_raw_bytes(key: [u8; 32]) -> Self {
+        EndpointId { key }
     }
 }
 
 #[napi]
-impl PublicKey {
-    /// Returns true if the PublicKeys are equal
+impl EndpointId {
+    /// Returns true if both [`EndpointId`]s are equal.
     #[napi]
-    pub fn is_equal(&self, other: &PublicKey) -> bool {
+    pub fn equals(&self, other: &EndpointId) -> bool {
         *self == *other
     }
 
-    /// Express the PublicKey as a byte array
+    /// Get the underlying 32 bytes.
     #[napi]
     pub fn to_bytes(&self) -> Vec<u8> {
         self.key.to_vec()
     }
 
-    /// Make a PublicKey from base32 string
+    /// Parse an [`EndpointId`] from its base32 representation.
     #[napi(factory)]
     pub fn from_string(s: String) -> Result<Self> {
-        let key = iroh::PublicKey::from_str(&s).map_err(anyhow::Error::from)?;
+        let key = iroh::EndpointId::from_str(&s).map_err(anyhow::Error::from)?;
         Ok(key.into())
     }
 
-    /// Make a PublicKey from byte array
+    /// Construct an [`EndpointId`] from raw bytes (32 bytes).
     #[napi(factory)]
     pub fn from_bytes(bytes: Vec<u8>) -> Result<Self> {
-        if bytes.len() != 32 {
-            return Err(anyhow::anyhow!("the PublicKey must be 32 bytes in length").into());
-        }
-        let bytes: [u8; 32] = bytes.try_into().expect("checked above");
-        let key = iroh::PublicKey::from_bytes(&bytes).map_err(anyhow::Error::from)?;
+        let bytes: [u8; 32] = bytes
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("EndpointId requires exactly 32 bytes"))?;
+        let key = iroh::EndpointId::from_bytes(&bytes).map_err(anyhow::Error::from)?;
         Ok(key.into())
     }
 
-    /// Convert to a base32 string limited to the first 10 bytes for a friendly string
-    /// representation of the key.
+    /// Short base32 prefix.
     #[napi]
     pub fn fmt_short(&self) -> String {
-        iroh::PublicKey::from(self).fmt_short()
+        iroh::EndpointId::from(self).fmt_short().to_string()
     }
 
-    /// Converts the public key into base32 string.
+    /// Base32 string form.
     #[napi]
     pub fn to_string(&self) -> String {
-        iroh::PublicKey::from(self).to_string()
+        iroh::EndpointId::from(self).to_string()
+    }
+
+    /// Verify a signature on `message` against this endpoint's key.
+    #[napi]
+    pub fn verify(&self, message: Vec<u8>, signature: &Signature) -> Result<()> {
+        iroh::EndpointId::from(self)
+            .verify(&message, &signature.0)
+            .map_err(|e| anyhow::anyhow!("signature verification failed: {e:?}").into())
     }
 }
 
-impl PartialEq for PublicKey {
-    fn eq(&self, other: &PublicKey) -> bool {
+impl PartialEq for EndpointId {
+    fn eq(&self, other: &EndpointId) -> bool {
         self.key == other.key
+    }
+}
+
+/// The secret key half of an endpoint identity.
+#[derive(Debug, Clone)]
+#[napi]
+pub struct SecretKey(pub(crate) iroh::SecretKey);
+
+impl From<iroh::SecretKey> for SecretKey {
+    fn from(key: iroh::SecretKey) -> Self {
+        SecretKey(key)
+    }
+}
+
+#[napi]
+impl SecretKey {
+    /// Generate a new random secret key.
+    #[napi(factory)]
+    pub fn generate() -> Self {
+        SecretKey(iroh::SecretKey::generate())
+    }
+
+    /// Construct from raw bytes (32 bytes).
+    #[napi(factory)]
+    pub fn from_bytes(bytes: Vec<u8>) -> Result<Self> {
+        let bytes: [u8; 32] = bytes
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("SecretKey requires exactly 32 bytes"))?;
+        Ok(SecretKey(iroh::SecretKey::from_bytes(&bytes)))
+    }
+
+    /// Raw 32-byte form.
+    #[napi]
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.0.to_bytes().to_vec()
+    }
+
+    /// The public [`EndpointId`] derived from this secret key.
+    #[napi]
+    pub fn public(&self) -> EndpointId {
+        self.0.public().into()
+    }
+
+    /// Sign a message, producing an ed25519 signature.
+    #[napi]
+    pub fn sign(&self, message: Vec<u8>) -> Signature {
+        Signature(self.0.sign(&message))
+    }
+}
+
+/// An ed25519 signature over a message.
+#[derive(Debug, Clone)]
+#[napi]
+pub struct Signature(pub(crate) iroh_base::Signature);
+
+#[napi]
+impl Signature {
+    /// Construct from raw bytes (64 bytes).
+    #[napi(factory)]
+    pub fn from_bytes(bytes: Vec<u8>) -> Result<Self> {
+        let bytes: [u8; 64] = bytes
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("Signature requires exactly 64 bytes"))?;
+        Ok(Signature(iroh_base::Signature::from_bytes(&bytes)))
+    }
+
+    /// Raw 64-byte form.
+    #[napi]
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.0.to_bytes().to_vec()
+    }
+
+    /// Lowercase hex representation.
+    #[napi]
+    pub fn to_string(&self) -> String {
+        self.0
+            .to_bytes()
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect()
     }
 }

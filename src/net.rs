@@ -1,73 +1,101 @@
-use futures::TryStreamExt;
+use std::{collections::BTreeSet, net::SocketAddr, str::FromStr, sync::Arc};
 
-use crate::{Iroh, IrohError, NodeAddr, PublicKey, RemoteInfo};
+use iroh_base::{RelayUrl, TransportAddr};
 
-/// Iroh net client.
-#[derive(uniffi::Object)]
-pub struct Net {
-    client: NetClient,
+use crate::{EndpointId, IrohError};
+
+/// An endpoint's id together with the network-level addresses where it can be reached.
+///
+/// Mirrors `iroh::EndpointAddr` — exposes a flat view over the underlying set of
+/// `TransportAddr`s (one relay URL plus a list of IP/port pairs).
+#[derive(Debug, Clone, PartialEq, Eq, Hash, uniffi::Object)]
+#[uniffi::export(Display, Eq, Hash)]
+pub struct EndpointAddr {
+    pub(crate) id: Arc<EndpointId>,
+    pub(crate) relay_url: Option<String>,
+    pub(crate) addresses: Vec<String>,
 }
 
-#[uniffi::export]
-impl Iroh {
-    /// Access to blob specific funtionaliy.
-    pub fn net(&self) -> Net {
-        let client = self.client.clone().boxed();
-        let client = iroh_node_util::rpc::client::net::Client::new(client);
-
-        Net { client }
-    }
-}
-
-type NetClient = iroh_node_util::rpc::client::net::Client;
-
-#[uniffi::export]
-impl Net {
-    /// The string representation of the PublicKey of this node.
-    pub async fn node_id(&self) -> Result<String, IrohError> {
-        let id = self.client.node_id().await?;
-        Ok(id.to_string())
-    }
-
-    /// Return the [`NodeAddr`] for this node.
-    pub async fn node_addr(&self) -> Result<NodeAddr, IrohError> {
-        let addr = self.client.node_addr().await?;
-        Ok(addr.into())
-    }
-
-    /// Add a known node address to the node.
-    pub async fn add_node_addr(&self, addr: &NodeAddr) -> Result<(), IrohError> {
-        self.client.add_node_addr(addr.clone().try_into()?).await?;
+impl std::fmt::Display for EndpointAddr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.id)?;
+        if let Some(relay) = &self.relay_url {
+            write!(f, " relay={relay}")?;
+        }
+        if !self.addresses.is_empty() {
+            write!(f, " addrs=[{}]", self.addresses.join(", "))?;
+        }
         Ok(())
     }
+}
 
-    /// Get the relay server we are connected to.
-    pub async fn home_relay(&self) -> Result<Option<String>, IrohError> {
-        let relay = self.client.home_relay().await?;
-        Ok(relay.map(|u| u.to_string()))
+#[uniffi::export]
+impl EndpointAddr {
+    /// Create a new [`EndpointAddr`].
+    #[uniffi::constructor]
+    pub fn new(id: &EndpointId, relay_url: Option<String>, addresses: Vec<String>) -> Self {
+        Self {
+            id: Arc::new(id.clone()),
+            relay_url,
+            addresses,
+        }
     }
 
-    /// Return `ConnectionInfo`s for each connection we have to another iroh node.
-    #[uniffi::method(async_runtime = "tokio")]
-    pub async fn remote_info_list(&self) -> Result<Vec<RemoteInfo>, IrohError> {
-        let infos = self
-            .client
-            .remote_info_iter()
-            .await?
-            .map_ok(|info| info.into())
-            .try_collect::<Vec<_>>()
-            .await?;
-        Ok(infos)
+    /// The endpoint id.
+    pub fn id(&self) -> Arc<EndpointId> {
+        self.id.clone()
     }
 
-    /// Return connection information on the currently running node.
-    #[uniffi::method(async_runtime = "tokio")]
-    pub async fn remote_info(&self, node_id: &PublicKey) -> Result<Option<RemoteInfo>, IrohError> {
-        let info = self
-            .client
-            .remote_info(node_id.into())
-            .await
-            .map(|i| i.map(|i| i.into()))?;
-        Ok(info)
+    /// The direct (IP/port) addresses of this peer.
+    pub fn direct_addresses(&self) -> Vec<String> {
+        self.addresses.clone()
+    }
+
+    /// The home relay URL for this peer, if known.
+    pub fn relay_url(&self) -> Option<String> {
+        self.relay_url.clone()
+    }
+}
+
+impl TryFrom<EndpointAddr> for iroh::EndpointAddr {
+    type Error = IrohError;
+
+    fn try_from(value: EndpointAddr) -> Result<Self, Self::Error> {
+        let mut addrs: BTreeSet<TransportAddr> = BTreeSet::new();
+        for addr in &value.addresses {
+            let socket = SocketAddr::from_str(addr).map_err(anyhow::Error::from)?;
+            addrs.insert(TransportAddr::Ip(socket));
+        }
+        if let Some(relay_url) = &value.relay_url {
+            let url = RelayUrl::from_str(relay_url).map_err(anyhow::Error::from)?;
+            addrs.insert(TransportAddr::Relay(url));
+        }
+        Ok(iroh::EndpointAddr {
+            id: (&*value.id).into(),
+            addrs,
+        })
+    }
+}
+
+impl From<iroh::EndpointAddr> for EndpointAddr {
+    fn from(value: iroh::EndpointAddr) -> Self {
+        let mut relay_url = None;
+        let mut addresses = Vec::new();
+        for addr in &value.addrs {
+            match addr {
+                TransportAddr::Relay(url) => {
+                    relay_url = Some(url.to_string());
+                }
+                TransportAddr::Ip(socket) => {
+                    addresses.push(socket.to_string());
+                }
+                _ => {}
+            }
+        }
+        EndpointAddr {
+            id: Arc::new(value.id.into()),
+            relay_url,
+            addresses,
+        }
     }
 }

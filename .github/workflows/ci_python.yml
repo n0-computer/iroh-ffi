@@ -1,0 +1,39 @@
+name: CI Python
+
+on:
+  workflow_dispatch:
+  pull_request:
+  merge_group:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+env:
+  IROH_FORCE_STAGING_RELAYS: "1"
+
+jobs:
+  python:
+    name: Python - Build and test
+    timeout-minutes: 30
+    runs-on: [self-hosted, linux, X64]
+    steps:
+      - uses: actions/checkout@master
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: davidB/rust-cargo-make@v1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Set up virtualenv
+        run: |
+          pip install virtualenv
+          virtualenv venv
+          source venv/bin/activate
+          pip install setuptools pytest pytest-asyncio "maturin[patchelf]" uniffi-bindgen
+          echo "VIRTUAL_ENV=$PWD/venv" >> $GITHUB_ENV
+          echo "$PWD/venv/bin" >> $GITHUB_PATH
+      - name: cargo make test-python
+        run: cargo make test-python

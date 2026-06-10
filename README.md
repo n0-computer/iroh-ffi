@@ -1,40 +1,52 @@
-# iroh-ffi (Archived)
+# iroh-ffi
 
-> **This repository is archived and provided as a reference example only.**
+> Foreign Function Interface (FFI) bindings for Iroh
 
-For up-to-date guidance on using iroh in other languages, see the official documentation:
+This repo defines Python, Swift, Kotlin and Node.js bindings for [iroh](https://github.com/n0-computer/iroh), which is written in Rust. The bindings mirror the stabilized iroh 1.0 surface (endpoints, connections, paths, tickets, relays, services); higher-level protocols not yet at 1.0 (`iroh-blobs`, `iroh-docs`, `iroh-gossip`) are out of scope.
 
----
+### Published Packages
 
-## Using Iroh in Other Languages
+- [Python: PyPI](https://pypi.org/project/iroh/) — `iroh`
+- [Swift: SwiftPM](https://swiftpackageindex.com/n0-computer/iroh-ffi)
+- [Swift: Cocoapods](https://cocoapods.org/pods/IrohLib) — `IrohLib`
+- [Kotlin / JVM: Maven Central](https://central.sonatype.com/artifact/computer.iroh/iroh) — `computer.iroh:iroh`
+- [JavaScript: npm](https://www.npmjs.com/package/@number0/iroh) — `@number0/iroh`
 
-While iroh is written in Rust, it can be used in many other languages and environments. There are several practical approaches to using iroh in your language of choice.
+## Documentation
 
-### Write a Wrapper
+Per-language API docs are at <https://n0-computer.github.io/iroh-ffi/>.
 
-If you're comfortable with a little bit of Rust, write your own small wrapper around iroh that covers just what you need and exposes your application specific functionality over a local http server or daemon. This approach:
+If you're blocked on something or need to draw attention to an issue, please reach out to the iroh [discord](https://discord.gg/B4pzE3usDC).
 
-- Gives you full control over the functionality you expose
-- Requires minimal Rust knowledge beyond basic CLI patterns
-- Can be called from any language
 
-Check out [sendme](https://github.com/n0-computer/sendme), [callme](https://github.com/n0-computer/callme), and [dumbpipe](https://github.com/n0-computer/dumbpipe) as examples.
+## Build & test
 
-### Build Your Own FFI Wrapper
+This repo uses [`cargo-make`](https://crates.io/crates/cargo-make) as its single build/test entry point:
 
-Write your own FFI wrapper from Rust to your target language (Python, Go, etc.) that covers just what you need from the iroh API and protocols. This gives you:
+```sh
+cargo make test-all          # rust + python + js + kotlin + swift
+cargo make test-rust         # just the Rust suite
+cargo make bindgen-kotlin    # generate the Kotlin binding
+cargo make swift-xcframework # full Apple xcframework (iOS + macOS)
+```
 
-- Complete control over the API surface
-- The ability to tailor it to your specific use case
-- Type-safe bindings for your language
+See the per-language READMEs below and [DEVELOPERS.md](DEVELOPERS.md) for details. Release flow is documented in [RELEASING.md](RELEASING.md).
 
-Reference this repository (iroh-ffi) for patterns and examples.
+## Language-Specific READMEs
 
-### Community Bindings
+* [**Swift readme**](README.swift.md)
+* [**Python readme**](README.python.md)
+* [**Kotlin readme**](README.kotlin.md)
+* [**Node.js readme**](iroh-js/README.md)
 
-The community has built language bindings that are open source and available for use. For the full list, see the official documentation: **[Using Iroh in Other Languages](https://docs.iroh.computer/deployment/other-languages)**
+## Developers
+Check our [DEVELOPERS.md](DEVELOPERS.md) for guides on how to translate from the iroh rust API to the iroh FFI API, as well as how to set up testing for Golang and Python.
 
-### Professional Bindings Support
+## Community Bindings
+
+The community has built additional language bindings that are open source and available for use. For the full list, see the official documentation: **[Using Iroh in Other Languages](https://docs.iroh.computer/deployment/other-languages)**
+
+## Professional Bindings Support
 
 The number0 engineering team can help you build and maintain production-grade language-specific bindings. [Contact us](https://iroh.computer/services/support) to discuss your requirements.
 

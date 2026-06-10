@@ -1,0 +1,185 @@
+name: docs
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+# Allow one concurrent deployment; never cancel an in-progress Pages deploy.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+env:
+  IROH_FORCE_STAGING_RELAYS: "1"
+
+jobs:
+  # Only Swift needs macOS + Xcode. It builds *only* the macOS-arm64
+  # framework slice (not the 3 iOS slices DocC never consumes).
+  swift:
+    name: Swift docs (DocC)
+    timeout-minutes: 45
+    runs-on: [self-hosted, macOS, ARM64]
+    steps:
+      - uses: actions/checkout@master
+        with:
+          submodules: recursive
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+      - uses: davidB/rust-cargo-make@v1
+      - run: cargo make docs-swift
+      # DocC emits selector filenames with ':' (e.g. onchange(addr:).json),
+      # which actions/upload-artifact@v4 rejects as cross-platform-invalid.
+      # Tar it so the artifact is a single safe-named file.
+      - run: tar -czf docs-swift.tgz -C site swift
+      - uses: actions/upload-artifact@v4
+        with:
+          name: docs-swift
+          path: docs-swift.tgz
+          if-no-files-found: error
+
+  python:
+    name: Python docs (pdoc)
+    timeout-minutes: 30
+    runs-on: [self-hosted, linux, X64]
+    steps:
+      - uses: actions/checkout@master
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: davidB/rust-cargo-make@v1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Set up virtualenv (maturin builds the extension)
+        run: |
+          pip install virtualenv
+          virtualenv venv
+          source venv/bin/activate
+          pip install setuptools "maturin[patchelf]" uniffi-bindgen pdoc
+          echo "VIRTUAL_ENV=$PWD/venv" >> $GITHUB_ENV
+          echo "$PWD/venv/bin" >> $GITHUB_PATH
+      - run: cargo make docs-python
+      - uses: actions/upload-artifact@v4
+        with:
+          name: docs-python
+          path: site/python
+          if-no-files-found: error
+
+  js:
+    name: JavaScript docs (TypeDoc)
+    timeout-minutes: 30
+    runs-on: [self-hosted, linux, X64]
+    steps:
+      - uses: actions/checkout@master
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: davidB/rust-cargo-make@v1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      # Self-hosted runners don't ship yarn; corepack provides it (matches
+      # the pattern in ci_js.yml after PR #235).
+      - name: Enable corepack (yarn)
+        run: corepack enable
+        shell: bash
+      - run: cargo make docs-js
+      - uses: actions/upload-artifact@v4
+        with:
+          name: docs-js
+          path: site/js
+          if-no-files-found: error
+
+  kotlin:
+    name: Kotlin docs (Dokka)
+    timeout-minutes: 30
+    runs-on: [self-hosted, linux, X64]
+    steps:
+      - uses: actions/checkout@master
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: davidB/rust-cargo-make@v1
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - run: cargo make docs-kotlin
+      - uses: actions/upload-artifact@v4
+        with:
+          name: docs-kotlin
+          path: site/kotlin
+          if-no-files-found: error
+
+  landing:
+    name: Landing page
+    timeout-minutes: 10
+    runs-on: [self-hosted, linux, X64]
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pyyaml
+      - run: python3 scripts/docs/gen_landing.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: docs-landing
+          path: site/index.html
+          if-no-files-found: error
+
+  assemble:
+    name: Assemble + upload Pages artifact
+    needs: [swift, python, js, kotlin, landing]
+    runs-on: [self-hosted, linux, X64]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: docs-swift
+          path: .
+      - run: mkdir -p site && tar -xzf docs-swift.tgz -C site
+      - uses: actions/download-artifact@v4
+        with:
+          name: docs-python
+          path: site/python
+      - uses: actions/download-artifact@v4
+        with:
+          name: docs-js
+          path: site/js
+      - uses: actions/download-artifact@v4
+        with:
+          name: docs-kotlin
+          path: site/kotlin
+      - uses: actions/download-artifact@v4
+        with:
+          name: docs-landing
+          path: site
+      - name: Sanity-check the assembled site
+        run: |
+          set -eu
+          for p in site/index.html site/swift/index.html \
+                   site/python/index.html site/js/index.html \
+                   site/kotlin/index.html; do
+            test -f "$p" || { echo "MISSING: $p" >&2; exit 1; }
+          done
+          echo "assembled site OK ($(find site -type f | wc -l) files)"
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: assemble
+    runs-on: [self-hosted, linux, X64]
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

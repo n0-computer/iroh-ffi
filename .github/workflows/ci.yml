@@ -1,6 +1,10 @@
 name: CI
 
+# Rust core only — per-language CI lives in sibling workflows:
+#   ci_python.yml, ci_swift.yml, ci_kotlin.yml, ci_js.yml
+
 on:
+  workflow_dispatch:
   pull_request:
   merge_group:
   push:
@@ -8,170 +12,49 @@ on:
       - main
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 env:
   IROH_FORCE_STAGING_RELAYS: "1"
 
 jobs:
-  build_and_test_rust:
+  rust:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
-    name: Rust - Build and test
+    name: Rust - ${{ matrix.name }}
     strategy:
       fail-fast: false
       matrix:
         name: [ubuntu-latest, macOS-arm-latest, windows-latest]
-        rust: [stable]
         include:
           - name: ubuntu-latest
-            os: ubuntu-latest
-            release-os: linux
-            release-arch: amd64
-            runner: [linux, X64]
+            runner: [self-hosted, linux, X64]
           - name: macOS-arm-latest
-            os: macOS-latest
-            release-os: darwin
-            release-arch: aarch64
-            runner: [macOS, ARM64]
+            runner: [self-hosted, macOS, ARM64]
           - name: windows-latest
-            os: windows
             runner: [windows-latest]
-
     steps:
-    - name: Checkout
-      uses: actions/checkout@master
-      with:
-        submodules: recursive
+      - uses: actions/checkout@master
+        with:
+          submodules: recursive
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: davidB/rust-cargo-make@v1
+      - name: cargo make test-rust
+        run: cargo make test-rust
 
-    - name: Install ${{ matrix.rust }}
-      uses: dtolnay/rust-toolchain@master
-      with:
-        toolchain: ${{ matrix.rust }}
-
-    - name: cargo test
-      run: cargo test
-
-  check_fmt_and_docs:
+  fmt-clippy-docs:
     timeout-minutes: 30
-    name: Checking fmt and docs
+    name: fmt + clippy + docs
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
-    - uses: dtolnay/rust-toolchain@stable
-      with:
-        components: rustfmt
-    - name: fmt
-      run: cargo fmt -- --check
-    - name: Docs
-      run: cargo doc --all-features --no-deps --document-private-items
-
-  clippy_check:
-    timeout-minutes: 30
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@master
-    - uses: dtolnay/rust-toolchain@stable
-      with:
-          components: clippy
-
-    - name: clippy check
-      run: cargo clippy --all-targets --bins --tests --benches
-
-  build_and_test_python:
-    name: Python - Build and test
-    timeout-minutes: 30
-    runs-on: [linux, x64]
-    steps:
-    - uses: actions/checkout@master
-    - uses: dtolnay/rust-toolchain@stable
-    - uses: actions/setup-python@v5
-      with:
-          python-version: 3.12
-    - name: Install virtualenv
-      run: pip install virtualenv
-    - name: Python tests
-      run: |
-        virtualenv venv
-        source venv/bin/activate
-        pip install setuptools pytest pytest-asyncio "maturin[patchelf]" uniffi-bindgen
-        maturin develop
-        pytest -v
-
-  build_and_test_swift:
-    name: Swift - Build and test
-    timeout-minutes: 30
-    runs-on: [macOS, ARM64]
-    steps:
-    - uses: actions/checkout@master
-    - uses: dtolnay/rust-toolchain@stable
-      with:
-        targets: aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios,aarch64-apple-darwin
-    - name: Swift tests
-      run: |
-        ./make_swift.sh
-        cp -R Iroh.xcframework IrohLib/artifacts/
-        cd IrohLib
-        swift test
-
-  build_and_test_kotlin:
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 30
-    name: Kotlin - Build and test
-    strategy:
-      fail-fast: false
-      matrix:
-        name: [ubuntu-latest, macOS-arm-latest]
-        rust: [stable]
-        include:
-          - name: ubuntu-latest
-            os: linux
-            release-os: linux
-            release-arch: amd64
-            runner: [linux, X64]
-          - name: macOS-arm-latest
-            os: mac
-            release-os: darwin
-            release-arch: aarch64
-            runner: [macOS, ARM64]
-          # - name: windows-latest
-          #   os: windows
-          #   runner: [windows-latest]
-
-    steps:
-    - name: Checkout
-      uses: actions/checkout@master
-      with:
-        submodules: recursive
-
-    - name: Install ${{ matrix.rust }}
-      uses: dtolnay/rust-toolchain@master
-      with:
-        toolchain: ${{ matrix.rust }}
-
-    - name: setup java
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin' # See 'Supported distributions' for available options
-        java-version: '21'
-
-    - name: install kotlin
-      uses: arqu/setup-kotlin@main
-
-    - name: install ktlint
-      uses: arqu/action-ktlint-setup@main
-
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v4
-
-    - name: build kotlin
-      env:
-        TEST_OS: ${{ matrix.os }}
-      shell: bash
-      run: ./make_kotlin.sh
-
-    - name: Gradle Test
-      run: |
-        cd kotlin
-        ./gradlew test
+      - uses: actions/checkout@master
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: davidB/rust-cargo-make@v1
+      - run: cargo make format-check
+      - run: cargo make clippy
+      - run: cargo make docs
