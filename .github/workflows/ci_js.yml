@@ -501,7 +501,14 @@ jobs:
       - name: Publish
         # Auth via npm Trusted Publishing (OIDC, no token). Configured per-package
         # at https://www.npmjs.com/package/<pkg>/access → Trusted publishers.
+        # NPM_CONFIG_TAG: pre-1.0 versions (anything semver-prerelease, e.g.
+        # 1.0.0-rc.1) must be published under a non-`latest` dist-tag — npm
+        # 11.5+ refuses the publish otherwise. `next` is the existing dist-tag
+        # this package uses for prereleases. Bare `npm install @number0/iroh`
+        # keeps resolving to the previous stable until a 1.0.0 release without
+        # this env is cut.
         if: github.event_name == 'workflow_dispatch' || startsWith(github.event.ref, 'refs/tags/v')
         run: npm publish --access public --provenance
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_CONFIG_TAG: next
