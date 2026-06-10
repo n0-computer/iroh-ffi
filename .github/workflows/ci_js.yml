@@ -478,14 +478,15 @@ jobs:
       - name: Setup node
         uses: actions/setup-node@v4
         with:
-          # node 22 ships npm 11.x, which is the first version that performs
-          # the npm Trusted Publishing OIDC token exchange when
-          # `id-token: write` is available. node 20 ships npm 10.x which
-          # falls back to `_authToken`/NPM_TOKEN and fails with ENEEDAUTH
-          # because we no longer set either.
           node-version: 22
           cache: yarn
           cache-dependency-path: './iroh-js/yarn.lock'
+      - name: Upgrade npm to >=11 for Trusted Publishing OIDC
+        # Node 22's bundled npm is still 10.x; the OIDC token exchange (which
+        # is what auths the publish under `id-token: write`) was added in
+        # npm 11.5.1. Without this the publish step fails with ENEEDAUTH
+        # because we no longer set `_authToken` / NPM_TOKEN.
+        run: npm install -g npm@latest
       - name: Install dependencies
         run: yarn install
       - name: Download all artifacts
