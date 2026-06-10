@@ -54,5 +54,18 @@
     "test": "node --test test/*.mjs",
     "version": "napi version"
   },
-  "packageManager": "yarn@1.22.22"
+  "packageManager": "yarn@1.22.22",
+  "optionalDependencies": {
+    "@number0/iroh-darwin-arm64": "0.35.0",
+    "@number0/iroh-android-arm64": "0.35.0",
+    "@number0/iroh-linux-arm64-gnu": "0.35.0",
+    "@number0/iroh-linux-arm64-musl": "0.35.0",
+    "@number0/iroh-win32-arm64-msvc": "0.35.0",
+    "@number0/iroh-win32-x64-msvc": "0.35.0",
+    "@number0/iroh-linux-x64-gnu": "0.35.0",
+    "@number0/iroh-linux-x64-musl": "0.35.0",
+    "@number0/iroh-linux-arm-gnueabihf": "0.35.0",
+    "@number0/iroh-linux-arm-musleabihf": "0.35.0",
+    "@number0/iroh-android-arm-eabi": "0.35.0"
+  }
 }
