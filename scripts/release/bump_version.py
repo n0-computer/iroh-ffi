@@ -38,12 +38,27 @@ def bump_cargo(version: str) -> None:
 
 
 def bump_npm(version: str) -> None:
-    p = REPO / "iroh-js" / "package.json"
-    d = json.loads(p.read_text())
-    d["version"] = version
-    # Preserve 2-space indent + trailing newline (match existing style).
-    p.write_text(json.dumps(d, indent=2) + "\n")
+    # Main package.json: bump "version". Do NOT add/maintain optionalDependencies
+    # in source — `napi pre-publish` writes that block at publish time (referencing
+    # versions that don't exist on npm yet would break `yarn install` on PR CI).
+    main_p = REPO / "iroh-js" / "package.json"
+    main_d = json.loads(main_p.read_text())
+    main_d["version"] = version
+    main_p.write_text(json.dumps(main_d, indent=2) + "\n")
     print(f"  iroh-js/package.json version -> {version}")
+
+    # Per-target sub-packages under iroh-js/npm/<target>/package.json — each one is
+    # published as a separate npm package (@number0/iroh-<target>) and must carry
+    # the same version, or the main package's optionalDependencies won't resolve.
+    sub_pkgs = sorted((REPO / "iroh-js" / "npm").glob("*/package.json"))
+    if not sub_pkgs:
+        sys.exit("no iroh-js/npm/*/package.json sub-packages found")
+    for sp in sub_pkgs:
+        sd = json.loads(sp.read_text())
+        sd["version"] = version
+        # Sub-packages are written WITHOUT a trailing newline (matches napi-rs output).
+        sp.write_text(json.dumps(sd, indent=2))
+    print(f"  iroh-js/npm/*/package.json version -> {version} ({len(sub_pkgs)} sub-packages)")
 
 
 def bump_gradle(version: str) -> None:
