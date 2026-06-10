@@ -492,10 +492,9 @@ jobs:
       - name: Move README # Hack to get npm README to work
         run: cp README.md ../README.md
       - name: Publish
-        if: startsWith(github.event.ref, 'refs/tags/v')
-        run: |
-          echo "//registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN" >> ~/.npmrc
-          npm publish --access public --provenance
+        # Auth via npm Trusted Publishing (OIDC, no token). Configured per-package
+        # at https://www.npmjs.com/package/<pkg>/access → Trusted publishers.
+        if: github.event_name == 'workflow_dispatch' || startsWith(github.event.ref, 'refs/tags/v')
+        run: npm publish --access public --provenance
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
