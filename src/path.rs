@@ -6,6 +6,7 @@
 
 use std::sync::Arc;
 
+use iroh::endpoint::LocalTransportAddr;
 use iroh_base::TransportAddr;
 use n0_future::{StreamExt, task::AbortOnDropHandle};
 
@@ -82,19 +83,38 @@ fn transport_addr_to_string(addr: &TransportAddr) -> String {
     }
 }
 
+fn local_transport_addr_to_string(addr: &LocalTransportAddr) -> String {
+    match addr {
+        LocalTransportAddr::Ip(Some(ip)) => ip.to_string(),
+        LocalTransportAddr::Ip(None) => "unknown".to_string(),
+        LocalTransportAddr::Relay(url) => url.to_string(),
+        LocalTransportAddr::Custom(Some(c)) => format!("{c:?}"),
+        _ => "unknown".to_string(),
+    }
+}
+
 /// An event from `Connection::path_events`.
 #[derive(Debug, Clone, uniffi::Enum)]
 pub enum PathEvent {
     /// A new network path was opened.
-    Opened { id: String, remote_addr: String },
+    Opened {
+        id: String,
+        remote_addr: String,
+        local_addr: String,
+    },
     /// A network path was closed.
     Closed {
         id: String,
         remote_addr: String,
+        local_addr: String,
         last_stats: PathStatsRecord,
     },
     /// This path was selected for transmission of application data.
-    Selected { id: String, remote_addr: String },
+    Selected {
+        id: String,
+        remote_addr: String,
+        local_addr: String,
+    },
     /// Events were dropped before the subscriber received them.
     Lagged { missed: u64 },
 }
@@ -102,23 +122,37 @@ pub enum PathEvent {
 impl From<iroh::endpoint::PathEvent> for PathEvent {
     fn from(e: iroh::endpoint::PathEvent) -> Self {
         match e {
-            iroh::endpoint::PathEvent::Opened { id, remote_addr, .. } => Self::Opened {
+            iroh::endpoint::PathEvent::Opened {
+                id,
+                remote_addr,
+                local_addr,
+                ..
+            } => Self::Opened {
                 id: id.to_string(),
                 remote_addr: transport_addr_to_string(&remote_addr),
+                local_addr: local_transport_addr_to_string(&local_addr),
             },
             iroh::endpoint::PathEvent::Closed {
                 id,
                 remote_addr,
+                local_addr,
                 last_stats,
                 ..
             } => Self::Closed {
                 id: id.to_string(),
                 remote_addr: transport_addr_to_string(&remote_addr),
+                local_addr: local_transport_addr_to_string(&local_addr),
                 last_stats: (*last_stats).into(),
             },
-            iroh::endpoint::PathEvent::Selected { id, remote_addr, .. } => Self::Selected {
+            iroh::endpoint::PathEvent::Selected {
+                id,
+                remote_addr,
+                local_addr,
+                ..
+            } => Self::Selected {
                 id: id.to_string(),
                 remote_addr: transport_addr_to_string(&remote_addr),
+                local_addr: local_transport_addr_to_string(&local_addr),
             },
             iroh::endpoint::PathEvent::Lagged { missed, .. } => Self::Lagged { missed },
             _ => Self::Lagged { missed: 0 },

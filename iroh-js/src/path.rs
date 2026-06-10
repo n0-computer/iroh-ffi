@@ -1,3 +1,4 @@
+use iroh::endpoint::LocalTransportAddr;
 use iroh_base::TransportAddr;
 use napi_derive::napi;
 
@@ -55,6 +56,16 @@ pub(crate) fn transport_addr_to_string(addr: &TransportAddr) -> String {
     }
 }
 
+pub(crate) fn local_transport_addr_to_string(addr: &LocalTransportAddr) -> String {
+    match addr {
+        LocalTransportAddr::Ip(Some(ip)) => ip.to_string(),
+        LocalTransportAddr::Ip(None) => "unknown".to_string(),
+        LocalTransportAddr::Relay(url) => url.to_string(),
+        LocalTransportAddr::Custom(Some(c)) => format!("{c:?}"),
+        _ => "unknown".to_string(),
+    }
+}
+
 /// An event from `Connection::watchPathEvents`.
 #[derive(Debug, Clone)]
 #[napi(string_enum)]
@@ -72,6 +83,7 @@ pub struct PathEvent {
     pub kind: PathEventKind,
     pub id: Option<String>,
     pub remote_addr: Option<String>,
+    pub local_addr: Option<String>,
     pub last_stats: Option<PathStatsRecord>,
     pub missed: Option<i64>,
 }
@@ -79,29 +91,43 @@ pub struct PathEvent {
 impl From<iroh::endpoint::PathEvent> for PathEvent {
     fn from(e: iroh::endpoint::PathEvent) -> Self {
         match e {
-            iroh::endpoint::PathEvent::Opened { id, remote_addr, .. } => PathEvent {
+            iroh::endpoint::PathEvent::Opened {
+                id,
+                remote_addr,
+                local_addr,
+                ..
+            } => PathEvent {
                 kind: PathEventKind::Opened,
                 id: Some(id.to_string()),
                 remote_addr: Some(transport_addr_to_string(&remote_addr)),
+                local_addr: Some(local_transport_addr_to_string(&local_addr)),
                 last_stats: None,
                 missed: None,
             },
             iroh::endpoint::PathEvent::Closed {
                 id,
                 remote_addr,
+                local_addr,
                 last_stats,
                 ..
             } => PathEvent {
                 kind: PathEventKind::Closed,
                 id: Some(id.to_string()),
                 remote_addr: Some(transport_addr_to_string(&remote_addr)),
+                local_addr: Some(local_transport_addr_to_string(&local_addr)),
                 last_stats: Some((*last_stats).into()),
                 missed: None,
             },
-            iroh::endpoint::PathEvent::Selected { id, remote_addr, .. } => PathEvent {
+            iroh::endpoint::PathEvent::Selected {
+                id,
+                remote_addr,
+                local_addr,
+                ..
+            } => PathEvent {
                 kind: PathEventKind::Selected,
                 id: Some(id.to_string()),
                 remote_addr: Some(transport_addr_to_string(&remote_addr)),
+                local_addr: Some(local_transport_addr_to_string(&local_addr)),
                 last_stats: None,
                 missed: None,
             },
@@ -109,6 +135,7 @@ impl From<iroh::endpoint::PathEvent> for PathEvent {
                 kind: PathEventKind::Lagged,
                 id: None,
                 remote_addr: None,
+                local_addr: None,
                 last_stats: None,
                 missed: Some(missed as i64),
             },
@@ -116,6 +143,7 @@ impl From<iroh::endpoint::PathEvent> for PathEvent {
                 kind: PathEventKind::Lagged,
                 id: None,
                 remote_addr: None,
+                local_addr: None,
                 last_stats: None,
                 missed: Some(0),
             },
