@@ -2691,6 +2691,18 @@ public protocol EndpointBuilderProtocol: AnyObject, Sendable {
     func alpns(alpns: [Data]) 
     
     /**
+     * Add mDNS address lookup to the builder.
+     *
+     * Stacks on top of any previously configured address lookups (most
+     * commonly the n0 DNS lookup installed by [`apply_n0`]); it does not
+     * replace them. Use [`preset_n0_with_mdns`] for the typical
+     * "n0 defaults plus same-WiFi discovery" combination.
+     *
+     * [`apply_n0`]: EndpointBuilder::apply_n0
+     */
+    func applyMdns() 
+    
+    /**
      * Replay the minimal preset (crypto provider only, no external deps).
      */
     func applyMinimal() 
@@ -2790,6 +2802,23 @@ open func alpns(alpns: [Data])  {try! rustCall() {
     uniffi_iroh_ffi_fn_method_endpointbuilder_alpns(
             self.uniffiCloneHandle(),
         FfiConverterSequenceData.lower(alpns),$0
+    )
+}
+}
+    
+    /**
+     * Add mDNS address lookup to the builder.
+     *
+     * Stacks on top of any previously configured address lookups (most
+     * commonly the n0 DNS lookup installed by [`apply_n0`]); it does not
+     * replace them. Use [`preset_n0_with_mdns`] for the typical
+     * "n0 defaults plus same-WiFi discovery" combination.
+     *
+     * [`apply_n0`]: EndpointBuilder::apply_n0
+     */
+open func applyMdns()  {try! rustCall() {
+    uniffi_iroh_ffi_fn_method_endpointbuilder_apply_mdns(
+            self.uniffiCloneHandle(),$0
     )
 }
 }
@@ -9168,6 +9197,19 @@ public func presetN0DisableRelay() -> Preset  {
     )
 })
 }
+/**
+ * The n0 production preset with mDNS-based local address lookup added.
+ *
+ * Same as [`preset_n0`] plus an [`MdnsAddressLookup`] that publishes and
+ * resolves addresses over the local network. Useful when peers share a
+ * WiFi and the public DNS-based lookup is slow or unreachable.
+ */
+public func presetN0WithMdns() -> Preset  {
+    return try!  FfiConverterTypePreset_lift(try! rustCall() {
+    uniffi_iroh_ffi_fn_func_preset_n0_with_mdns($0
+    )
+})
+}
 
 private enum InitializationResult {
     case ok
@@ -9194,6 +9236,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_iroh_ffi_checksum_func_preset_n0_disable_relay() != 45395) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_iroh_ffi_checksum_func_preset_n0_with_mdns() != 41224) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_iroh_ffi_checksum_method_accepting_alpn() != 1935) {
@@ -9371,6 +9416,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_iroh_ffi_checksum_method_endpointbuilder_alpns() != 55626) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_iroh_ffi_checksum_method_endpointbuilder_apply_mdns() != 60588) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_iroh_ffi_checksum_method_endpointbuilder_apply_minimal() != 3398) {

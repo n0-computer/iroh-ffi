@@ -742,6 +742,11 @@ void uniffi_iroh_ffi_fn_free_endpointbuilder(uint64_t handle, RustCallStatus *_N
 void uniffi_iroh_ffi_fn_method_endpointbuilder_alpns(uint64_t ptr, RustBuffer alpns, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINTBUILDER_APPLY_MDNS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINTBUILDER_APPLY_MDNS
+void uniffi_iroh_ffi_fn_method_endpointbuilder_apply_mdns(uint64_t ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINTBUILDER_APPLY_MINIMAL
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_METHOD_ENDPOINTBUILDER_APPLY_MINIMAL
 void uniffi_iroh_ffi_fn_method_endpointbuilder_apply_minimal(uint64_t ptr, RustCallStatus *_Nonnull out_status
@@ -1450,6 +1455,12 @@ uint64_t uniffi_iroh_ffi_fn_func_preset_n0_disable_relay(RustCallStatus *_Nonnul
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FUNC_PRESET_N0_WITH_MDNS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_FN_FUNC_PRESET_N0_WITH_MDNS
+uint64_t uniffi_iroh_ffi_fn_func_preset_n0_with_mdns(RustCallStatus *_Nonnull out_status
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_FFI_IROH_FFI_RUSTBUFFER_ALLOC
 #define UNIFFI_FFIDEF_FFI_IROH_FFI_RUSTBUFFER_ALLOC
 RustBuffer ffi_iroh_ffi_rustbuffer_alloc(uint64_t size, RustCallStatus *_Nonnull out_status
@@ -1731,6 +1742,12 @@ uint16_t uniffi_iroh_ffi_checksum_func_preset_n0(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_FUNC_PRESET_N0_DISABLE_RELAY
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_FUNC_PRESET_N0_DISABLE_RELAY
 uint16_t uniffi_iroh_ffi_checksum_func_preset_n0_disable_relay(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_FUNC_PRESET_N0_WITH_MDNS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_FUNC_PRESET_N0_WITH_MDNS
+uint16_t uniffi_iroh_ffi_checksum_func_preset_n0_with_mdns(void
     
 );
 #endif
@@ -2085,6 +2102,12 @@ uint16_t uniffi_iroh_ffi_checksum_method_endpoint_watch_network_change(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_ENDPOINTBUILDER_ALPNS
 #define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_ENDPOINTBUILDER_ALPNS
 uint16_t uniffi_iroh_ffi_checksum_method_endpointbuilder_alpns(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_ENDPOINTBUILDER_APPLY_MDNS
+#define UNIFFI_FFIDEF_UNIFFI_IROH_FFI_CHECKSUM_METHOD_ENDPOINTBUILDER_APPLY_MDNS
+uint16_t uniffi_iroh_ffi_checksum_method_endpointbuilder_apply_mdns(void
     
 );
 #endif

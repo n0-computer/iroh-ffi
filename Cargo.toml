@@ -36,6 +36,7 @@ anyhow = "1.0.69"
 async-trait = "0.1.80"
 iroh = { version = "=1.0.0-rc.1" }
 iroh-base = { version = "=1.0.0-rc.1" }
+iroh-mdns-address-lookup = "=0.3.0"
 iroh-metrics = { version = "=1.0.0-rc.0" }
 iroh-relay = { version = "=1.0.0-rc.1", default-features = false }
 iroh-services = { version = "=1.0.0-rc.2", default-features = false }
