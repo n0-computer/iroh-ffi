@@ -37,6 +37,24 @@ def bump_cargo(version: str) -> None:
     print(f"  Cargo.toml [package].version -> {version}")
 
 
+def bump_pyproject(version: str) -> None:
+    # maturin reads [project].version from pyproject.toml when building the
+    # wheel — if this is stale, PyPI gets the wrong version (filename + metadata)
+    # even though every other manifest is up to date.
+    p = REPO / "pyproject.toml"
+    s = p.read_text()
+    new, n = re.subn(
+        r'(?ms)(\[project\][^\[]*?)\nversion = "[^"]+"',
+        lambda m: m.group(1) + f'\nversion = "{version}"',
+        s,
+        count=1,
+    )
+    if n != 1:
+        sys.exit("could not find [project].version in pyproject.toml")
+    p.write_text(new)
+    print(f"  pyproject.toml [project].version -> {version}")
+
+
 def bump_npm(version: str) -> None:
     # Main package.json: bump "version". Do NOT add/maintain optionalDependencies
     # in source — `napi pre-publish` writes that block at publish time (referencing
@@ -129,6 +147,7 @@ def main() -> None:
         sys.exit(f"{v!r} is not a recognized semver string")
     print(f"bumping versions to {v}:")
     bump_cargo(v)
+    bump_pyproject(v)
     bump_npm(v)
     bump_gradle(v)
     bump_swift_tag(v)

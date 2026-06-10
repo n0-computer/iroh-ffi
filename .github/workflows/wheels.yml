@@ -93,7 +93,7 @@ jobs:
   publish:
     name: Publish wheels to PyPI
     needs: [manylinux, osx, windows]
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
     runs-on: [self-hosted, linux, X64]
     # Trusted Publishing (OIDC) — no long-lived PyPI token needed. Requires
     # the publisher to be registered once at
