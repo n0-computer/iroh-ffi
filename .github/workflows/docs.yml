@@ -5,10 +5,6 @@ on:
   push:
     tags:
       - "v*"
-    # TEMPORARY: validate the docs pipeline on the integration branch.
-    # Remove before merging to main (deploy should be tag/dispatch only).
-    branches:
-      - feat-1-0
 
 # Allow one concurrent deployment; never cancel an in-progress Pages deploy.
 concurrency:
