@@ -75,16 +75,16 @@ pub enum IncomingLocalAddr {
     Custom { description: Option<String> },
 }
 
-impl From<iroh::endpoint::IncomingLocalAddr> for IncomingLocalAddr {
-    fn from(value: iroh::endpoint::IncomingLocalAddr) -> Self {
+impl From<iroh::endpoint::LocalTransportAddr> for IncomingLocalAddr {
+    fn from(value: iroh::endpoint::LocalTransportAddr) -> Self {
         match value {
-            iroh::endpoint::IncomingLocalAddr::Ip(ip) => IncomingLocalAddr::Ip {
+            iroh::endpoint::LocalTransportAddr::Ip(ip) => IncomingLocalAddr::Ip {
                 addr: ip.map(|i| i.to_string()),
             },
-            iroh::endpoint::IncomingLocalAddr::Relay { url } => IncomingLocalAddr::Relay {
+            iroh::endpoint::LocalTransportAddr::Relay(url) => IncomingLocalAddr::Relay {
                 url: url.to_string(),
             },
-            iroh::endpoint::IncomingLocalAddr::Custom(custom) => IncomingLocalAddr::Custom {
+            iroh::endpoint::LocalTransportAddr::Custom(custom) => IncomingLocalAddr::Custom {
                 description: custom.map(|c| format!("{c:?}")),
             },
             _ => IncomingLocalAddr::Custom { description: None },

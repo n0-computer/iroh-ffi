@@ -102,7 +102,7 @@ pub enum PathEvent {
 impl From<iroh::endpoint::PathEvent> for PathEvent {
     fn from(e: iroh::endpoint::PathEvent) -> Self {
         match e {
-            iroh::endpoint::PathEvent::Opened { id, remote_addr } => Self::Opened {
+            iroh::endpoint::PathEvent::Opened { id, remote_addr, .. } => Self::Opened {
                 id: id.to_string(),
                 remote_addr: transport_addr_to_string(&remote_addr),
             },
@@ -110,16 +110,17 @@ impl From<iroh::endpoint::PathEvent> for PathEvent {
                 id,
                 remote_addr,
                 last_stats,
+                ..
             } => Self::Closed {
                 id: id.to_string(),
                 remote_addr: transport_addr_to_string(&remote_addr),
                 last_stats: (*last_stats).into(),
             },
-            iroh::endpoint::PathEvent::Selected { id, remote_addr } => Self::Selected {
+            iroh::endpoint::PathEvent::Selected { id, remote_addr, .. } => Self::Selected {
                 id: id.to_string(),
                 remote_addr: transport_addr_to_string(&remote_addr),
             },
-            iroh::endpoint::PathEvent::Lagged { missed } => Self::Lagged { missed },
+            iroh::endpoint::PathEvent::Lagged { missed, .. } => Self::Lagged { missed },
             _ => Self::Lagged { missed: 0 },
         }
     }

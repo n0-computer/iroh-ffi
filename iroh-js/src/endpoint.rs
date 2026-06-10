@@ -199,20 +199,20 @@ pub struct IncomingLocalAddr {
     pub description: Option<String>,
 }
 
-impl From<iroh::endpoint::IncomingLocalAddr> for IncomingLocalAddr {
-    fn from(value: iroh::endpoint::IncomingLocalAddr) -> Self {
+impl From<iroh::endpoint::LocalTransportAddr> for IncomingLocalAddr {
+    fn from(value: iroh::endpoint::LocalTransportAddr) -> Self {
         match value {
-            iroh::endpoint::IncomingLocalAddr::Ip(ip) => IncomingLocalAddr {
+            iroh::endpoint::LocalTransportAddr::Ip(ip) => IncomingLocalAddr {
                 kind: "ip".into(),
                 addr: ip.map(|i| i.to_string()),
                 description: None,
             },
-            iroh::endpoint::IncomingLocalAddr::Relay { url } => IncomingLocalAddr {
+            iroh::endpoint::LocalTransportAddr::Relay(url) => IncomingLocalAddr {
                 kind: "relay".into(),
                 addr: Some(url.to_string()),
                 description: None,
             },
-            iroh::endpoint::IncomingLocalAddr::Custom(c) => IncomingLocalAddr {
+            iroh::endpoint::LocalTransportAddr::Custom(c) => IncomingLocalAddr {
                 kind: "custom".into(),
                 addr: None,
                 description: c.map(|c| format!("{c:?}")),

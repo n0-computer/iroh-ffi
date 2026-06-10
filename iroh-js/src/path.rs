@@ -79,7 +79,7 @@ pub struct PathEvent {
 impl From<iroh::endpoint::PathEvent> for PathEvent {
     fn from(e: iroh::endpoint::PathEvent) -> Self {
         match e {
-            iroh::endpoint::PathEvent::Opened { id, remote_addr } => PathEvent {
+            iroh::endpoint::PathEvent::Opened { id, remote_addr, .. } => PathEvent {
                 kind: PathEventKind::Opened,
                 id: Some(id.to_string()),
                 remote_addr: Some(transport_addr_to_string(&remote_addr)),
@@ -90,6 +90,7 @@ impl From<iroh::endpoint::PathEvent> for PathEvent {
                 id,
                 remote_addr,
                 last_stats,
+                ..
             } => PathEvent {
                 kind: PathEventKind::Closed,
                 id: Some(id.to_string()),
@@ -97,14 +98,14 @@ impl From<iroh::endpoint::PathEvent> for PathEvent {
                 last_stats: Some((*last_stats).into()),
                 missed: None,
             },
-            iroh::endpoint::PathEvent::Selected { id, remote_addr } => PathEvent {
+            iroh::endpoint::PathEvent::Selected { id, remote_addr, .. } => PathEvent {
                 kind: PathEventKind::Selected,
                 id: Some(id.to_string()),
                 remote_addr: Some(transport_addr_to_string(&remote_addr)),
                 last_stats: None,
                 missed: None,
             },
-            iroh::endpoint::PathEvent::Lagged { missed } => PathEvent {
+            iroh::endpoint::PathEvent::Lagged { missed, .. } => PathEvent {
                 kind: PathEventKind::Lagged,
                 id: None,
                 remote_addr: None,
