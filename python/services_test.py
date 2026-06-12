@@ -46,3 +46,25 @@ async def test_services_client_rejects_malformed_secret():
     with pytest.raises(Exception):
         await ServicesClient.create(ep, ServicesOptions(api_secret="not-a-valid-ticket"))
     await ep.close()
+
+
+async def test_remote_diagnostics_boots_with_fake_secret():
+    ep = await _endpoint()
+    client = await ServicesClient.create(
+        ep,
+        ServicesOptions(api_secret=FAKE_API_SECRET, remote_diagnostics=True),
+    )
+    assert client is not None
+    await ep.close()
+
+
+async def test_remote_diagnostics_rejects_ssh_key_credential():
+    ep = await _endpoint()
+    # Match the message: a malformed pem also raises, and this test must
+    # fail if the remote_diagnostics guard (not pem parsing) goes.
+    with pytest.raises(Exception, match="remote_diagnostics"):
+        await ServicesClient.create(
+            ep,
+            ServicesOptions(ssh_key_pem="irrelevant", remote_diagnostics=True),
+        )
+    await ep.close()

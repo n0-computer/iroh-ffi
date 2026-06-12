@@ -53,6 +53,8 @@ n0-future = "0.3"
 
 
 [dev-dependencies]
+irpc = "0.16"
+irpc-iroh = "0.16"
 tempfile = "3.4"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 tokio = { version = "1", features = ["full"] }

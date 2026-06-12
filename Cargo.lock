@@ -1845,6 +1845,8 @@ dependencies = [
  "iroh-relay",
  "iroh-services",
  "iroh-tickets",
+ "irpc",
+ "irpc-iroh",
  "jni 0.21.1",
  "n0-error",
  "n0-future",

@@ -511,6 +511,12 @@ impl From<endpoint::Connection> for Connection {
     }
 }
 
+impl Connection {
+    pub(crate) fn raw(&self) -> &endpoint::Connection {
+        &self.0
+    }
+}
+
 #[uniffi::export]
 impl Connection {
     /// The ALPN protocol negotiated for this connection.

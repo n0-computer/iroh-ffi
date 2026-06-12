@@ -2,6 +2,7 @@ package computer.iroh
 
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertFailsWith
 
 // Well-formed (but fake) API secret — the remote does not exist, but the
@@ -44,6 +45,29 @@ class ServicesTest {
         assertFailsWith<Exception> {
             ServicesClient.create(ep, ServicesOptions(apiSecret = "not-a-valid-ticket"))
         }
+        ep.shutdown()
+    }
+
+    @Test fun remoteDiagnosticsBootsWithFakeSecret() = runBlocking {
+        val ep = endpoint()
+        ServicesClient.create(
+            ep,
+            ServicesOptions(apiSecret = FAKE_API_SECRET, remoteDiagnostics = true),
+        )
+        ep.shutdown()
+    }
+
+    @Test fun remoteDiagnosticsRejectsSshKeyCredential() = runBlocking {
+        val ep = endpoint()
+        // Check the message: a malformed pem also throws, and this test must
+        // fail if the remote_diagnostics guard (not pem parsing) goes.
+        val err = assertFailsWith<Exception> {
+            ServicesClient.create(
+                ep,
+                ServicesOptions(sshKeyPem = "irrelevant", remoteDiagnostics = true),
+            )
+        }
+        assertContains(err.message.orEmpty(), "remote_diagnostics")
         ep.shutdown()
     }
 }
