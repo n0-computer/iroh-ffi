@@ -61,13 +61,15 @@ class ServicesTest {
         val ep = endpoint()
         // Check the message: a malformed pem also throws, and this test must
         // fail if the remote_diagnostics guard (not pem parsing) goes.
-        val err = assertFailsWith<Exception> {
+        val err = assertFailsWith<IrohException> {
             ServicesClient.create(
                 ep,
                 ServicesOptions(sshKeyPem = "irrelevant", remoteDiagnostics = true),
             )
         }
-        assertContains(err.message.orEmpty(), "remote_diagnostics")
+        // IrohException carries the Rust error text in the message() method,
+        // not the (null) Exception.message property.
+        assertContains(err.message(), "remote_diagnostics")
         ep.shutdown()
     }
 }

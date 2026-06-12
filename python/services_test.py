@@ -60,11 +60,13 @@ async def test_remote_diagnostics_boots_with_fake_secret():
 
 async def test_remote_diagnostics_rejects_ssh_key_credential():
     ep = await _endpoint()
-    # Match the message: a malformed pem also raises, and this test must
-    # fail if the remote_diagnostics guard (not pem parsing) goes.
-    with pytest.raises(Exception, match="remote_diagnostics"):
+    # Check the message: a malformed pem also raises, and this test must
+    # fail if the remote_diagnostics guard (not pem parsing) goes. IrohError
+    # carries the Rust error text in its message() method, not in str(e).
+    with pytest.raises(Exception) as excinfo:
         await ServicesClient.create(
             ep,
             ServicesOptions(ssh_key_pem="irrelevant", remote_diagnostics=True),
         )
+    assert "remote_diagnostics" in excinfo.value.message()
     await ep.close()
