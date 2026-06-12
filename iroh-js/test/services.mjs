@@ -2,7 +2,7 @@ import { test, suite } from 'node:test'
 import assert from 'node:assert'
 
 import pkg from '../index.js'
-const { Endpoint, ServicesClient, presetMinimal } = pkg
+const { ClientHost, Endpoint, ServicesClient, clientHostAlpn, presetMinimal } = pkg
 
 // Well-formed (but fake) API secret — the remote does not exist, but the
 // client connects lazily so construction still succeeds. Validates the
@@ -42,6 +42,35 @@ suite('services client', () => {
   test('rejects malformed secret', async () => {
     const ep = await endpoint()
     await assert.rejects(ServicesClient.create(ep, { apiSecret: 'not-a-valid-ticket' }))
+    await ep.close()
+  })
+
+  test('remote diagnostics boots with fake secret', async () => {
+    const ep = await endpoint()
+    const client = await ServicesClient.create(ep, {
+      apiSecret: FAKE_API_SECRET,
+      remoteDiagnostics: true,
+    })
+    assert.ok(client)
+    await ep.close()
+  })
+
+  test('remote diagnostics rejects ssh key credential', async () => {
+    const ep = await endpoint()
+    // Match the message: a malformed pem also rejects, and this test must
+    // fail if the remoteDiagnostics guard (not pem parsing) goes.
+    await assert.rejects(
+      ServicesClient.create(ep, { sshKeyPem: 'irrelevant', remoteDiagnostics: true }),
+      /remoteDiagnostics/,
+    )
+    await ep.close()
+  })
+
+  test('client host constructs and alpn is stable', async () => {
+    const ep = await endpoint()
+    const host = new ClientHost(ep)
+    assert.ok(host)
+    assert.equal(Buffer.from(clientHostAlpn()).toString(), 'n0/n0des-client-host/1')
     await ep.close()
   })
 })
