@@ -12,6 +12,38 @@ export declare class BiStream {
   get recv(): RecvStream
 }
 
+/**
+ * Serves the iroh-services dial-back protocol on an endpoint.
+ *
+ * The platform connects on `clientHostAlpn()` to run network diagnostics on
+ * demand (the dashboard's Run Diagnostics button). Incoming requests must
+ * present a capability token issued by this endpoint; pair with
+ * `ServicesOptions.remoteDiagnostics`, which grants that token to the
+ * platform.
+ *
+ * Construct one `ClientHost` and, in the accept loop, call
+ * `handleConnection` for each connection whose ALPN equals
+ * `clientHostAlpn()`.
+ *
+ * Like any served protocol, the ALPN is an open accept surface: anyone can
+ * connect, but requests without a capability token issued by this endpoint
+ * are rejected before diagnostics run.
+ */
+export declare class ClientHost {
+  /** Create a host serving diagnostics for the given endpoint. */
+  constructor(endpoint: Endpoint)
+  /**
+   * Serve one accepted dial-back connection to completion.
+   *
+   * The returned promise resolves only once the remote closes the
+   * connection, which can take tens of seconds while diagnostics run. Do
+   * not await it inline in an accept loop; let it run concurrently
+   * (`host.handleConnection(conn).catch(...)`) so the loop keeps
+   * accepting.
+   */
+  handleConnection(conn: Connection): Promise<void>
+}
+
 /** A client-side handshake in progress. */
 export declare class Connecting {
   connect(): Promise<Connection>
@@ -303,6 +335,9 @@ export declare class WatchHandle {
   stop(): Promise<void>
 }
 
+/** The ALPN of the iroh-services dial-back protocol served by `ClientHost`. */
+export declare function clientHostAlpn(): Array<number>
+
 /** Flat snapshot of headline connection statistics. */
 export interface ConnectionStats {
   udpTxDatagrams: number
@@ -444,6 +479,21 @@ export interface ServicesOptions {
   name?: string
   /** Metrics push interval (ms). `0` disables interval pushes. */
   metricsIntervalMs?: number
+  /**
+   * When true, let the iroh-services platform run network diagnostics
+   * against this endpoint on demand: `create` grants the net-diagnostics
+   * capability to the platform endpoint named in the API secret. Requires
+   * an api-secret credential. The endpoint must also serve the dial-back
+   * protocol; see `ClientHost`.
+   *
+   * The grant is best-effort: it runs in the background and is retried
+   * until it succeeds or the client is dropped; failures are logged, not
+   * surfaced. Each grant is valid for 30 days and re-issued on every
+   * client creation. A diagnostics run shares the endpoint's network
+   * details (direct addresses, NAT characteristics, relay latencies) with
+   * the platform.
+   */
+  remoteDiagnostics?: boolean
 }
 
 /** Set the logging level. */

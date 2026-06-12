@@ -1,10 +1,13 @@
-use std::time::Duration;
+use std::{str::FromStr, time::Duration};
 
-use iroh_services::{Client, ClientBuilder};
+use iroh::protocol::ProtocolHandler as _;
+use iroh_services::{ApiSecret, Client, ClientBuilder, caps::NetDiagnosticsCap};
+use n0_future::task::AbortOnDropHandle;
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
+use tracing::warn;
 
-use crate::Endpoint;
+use crate::{Connection, Endpoint};
 
 /// Build options for [`ServicesClient`].
 #[derive(Debug, Default)]
@@ -20,6 +23,19 @@ pub struct ServicesOptions {
     pub name: Option<String>,
     /// Metrics push interval (ms). `0` disables interval pushes.
     pub metrics_interval_ms: Option<i64>,
+    /// When true, let the iroh-services platform run network diagnostics
+    /// against this endpoint on demand: `create` grants the net-diagnostics
+    /// capability to the platform endpoint named in the API secret. Requires
+    /// an api-secret credential. The endpoint must also serve the dial-back
+    /// protocol; see `ClientHost`.
+    ///
+    /// The grant is best-effort: it runs in the background and is retried
+    /// until it succeeds or the client is dropped; failures are logged, not
+    /// surfaced. Each grant is valid for 30 days and re-issued on every
+    /// client creation. A diagnostics run shares the endpoint's network
+    /// details (direct addresses, NAT characteristics, relay latencies) with
+    /// the platform.
+    pub remote_diagnostics: Option<bool>,
 }
 
 /// Flattened summary of an `iroh_services` diagnostics report.
@@ -59,6 +75,9 @@ impl From<iroh_services::net_diagnostics::DiagnosticsReport> for DiagnosticsSumm
 #[napi]
 pub struct ServicesClient {
     inner: Client,
+    /// Owns the background capability-grant task spawned by `create` when
+    /// `remote_diagnostics` is set; aborted when the client is dropped.
+    _grant_task: Option<AbortOnDropHandle<()>>,
 }
 
 #[napi]
@@ -83,14 +102,33 @@ impl ServicesClient {
             .into());
         }
 
+        // The grant target is the platform endpoint named in the API secret,
+        // so remote diagnostics cannot work with an ssh key credential.
+        let remote_diagnostics = options.remote_diagnostics.unwrap_or(false);
+        if remote_diagnostics && options.ssh_key_pem.is_some() {
+            return Err(anyhow::anyhow!(
+                "remoteDiagnostics requires an apiSecret (or apiSecretFromEnv) credential"
+            )
+            .into());
+        }
+
+        // The platform endpoint id, extracted from the api secret before it
+        // moves into the builder; this is who the capability grant targets.
+        let mut platform_id: Option<iroh::EndpointId> = None;
         if let Some(secret) = options.api_secret {
-            builder = builder
-                .api_secret_from_str(&secret)
+            let ticket = ApiSecret::from_str(&secret)
                 .map_err(|e| anyhow::anyhow!("invalid api secret: {e:?}"))?;
-        } else if options.api_secret_from_env.unwrap_or(false) {
+            platform_id = Some(ticket.addr().id);
             builder = builder
-                .api_secret_from_env()
+                .api_secret(ticket)
+                .map_err(|e| anyhow::anyhow!("creating api token: {e:?}"))?;
+        } else if options.api_secret_from_env.unwrap_or(false) {
+            let ticket = ApiSecret::from_env_var(iroh_services::API_SECRET_ENV_VAR_NAME)
                 .map_err(|e| anyhow::anyhow!("api secret env var: {e:?}"))?;
+            platform_id = Some(ticket.addr().id);
+            builder = builder
+                .api_secret(ticket)
+                .map_err(|e| anyhow::anyhow!("creating api token: {e:?}"))?;
         } else if let Some(pem) = options.ssh_key_pem {
             builder = builder
                 .ssh_key(&pem)
@@ -114,7 +152,37 @@ impl ServicesClient {
             .build()
             .await
             .map_err(|e| anyhow::anyhow!("services build failed: {e:?}"))?;
-        Ok(ServicesClient { inner })
+
+        // The grant dials the (possibly offline) platform endpoint, so run it
+        // in the background instead of blocking client startup on it. Retry
+        // until it lands: the feature targets endpoints with bad networks,
+        // which are exactly the ones likely to start offline. Grants are
+        // idempotent and the task dies with the client.
+        let grant_task = match (remote_diagnostics, platform_id) {
+            (true, Some(platform_id)) => {
+                let client = inner.clone();
+                Some(AbortOnDropHandle::new(n0_future::task::spawn(async move {
+                    let mut delay = Duration::from_secs(1);
+                    while let Err(err) = client
+                        .grant_capability(platform_id, [NetDiagnosticsCap::GetAny])
+                        .await
+                    {
+                        warn!(
+                            "failed to grant net-diagnostics capability, \
+                             retrying in {delay:?}: {err:?}"
+                        );
+                        tokio::time::sleep(delay).await;
+                        delay = (delay * 2).min(Duration::from_secs(60));
+                    }
+                })))
+            }
+            _ => None,
+        };
+
+        Ok(ServicesClient {
+            inner,
+            _grant_task: grant_task,
+        })
     }
 
     /// Read the current endpoint name from the local client.
@@ -163,5 +231,57 @@ impl ServicesClient {
             .await
             .map_err(|e| anyhow::anyhow!("{e:?}"))?;
         Ok(report.into())
+    }
+}
+
+/// The ALPN of the iroh-services dial-back protocol served by `ClientHost`.
+#[napi]
+pub fn client_host_alpn() -> Vec<u8> {
+    iroh_services::CLIENT_HOST_ALPN.to_vec()
+}
+
+/// Serves the iroh-services dial-back protocol on an endpoint.
+///
+/// The platform connects on `clientHostAlpn()` to run network diagnostics on
+/// demand (the dashboard's Run Diagnostics button). Incoming requests must
+/// present a capability token issued by this endpoint; pair with
+/// `ServicesOptions.remoteDiagnostics`, which grants that token to the
+/// platform.
+///
+/// Construct one `ClientHost` and, in the accept loop, call
+/// `handleConnection` for each connection whose ALPN equals
+/// `clientHostAlpn()`.
+///
+/// Like any served protocol, the ALPN is an open accept surface: anyone can
+/// connect, but requests without a capability token issued by this endpoint
+/// are rejected before diagnostics run.
+#[napi]
+pub struct ClientHost {
+    inner: iroh_services::ClientHost,
+}
+
+#[napi]
+impl ClientHost {
+    /// Create a host serving diagnostics for the given endpoint.
+    #[napi(constructor)]
+    pub fn new(endpoint: &Endpoint) -> Self {
+        Self {
+            inner: iroh_services::ClientHost::new(endpoint.raw()),
+        }
+    }
+
+    /// Serve one accepted dial-back connection to completion.
+    ///
+    /// The returned promise resolves only once the remote closes the
+    /// connection, which can take tens of seconds while diagnostics run. Do
+    /// not await it inline in an accept loop; let it run concurrently
+    /// (`host.handleConnection(conn).catch(...)`) so the loop keeps
+    /// accepting.
+    #[napi]
+    pub async fn handle_connection(&self, conn: &Connection) -> Result<()> {
+        self.inner
+            .accept(conn.raw().clone())
+            .await
+            .map_err(|e| anyhow::anyhow!("{e:?}").into())
     }
 }

@@ -634,6 +634,12 @@ impl Connecting {
 #[napi]
 pub struct Connection(Arc<endpoint::Connection>);
 
+impl Connection {
+    pub(crate) fn raw(&self) -> &endpoint::Connection {
+        &self.0
+    }
+}
+
 #[napi]
 impl Connection {
     #[napi]
