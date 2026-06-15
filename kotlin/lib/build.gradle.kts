@@ -77,7 +77,7 @@ mavenPublishing {
     // Vanniktech 0.34: Central Portal is the default; no SonatypeHost arg.
     publishToMavenCentral(automaticRelease = true)
     signAllPublications()
-    coordinates("computer.iroh", "iroh", "1.0.0-rc.1")
+    coordinates("computer.iroh", "iroh", "1.0.0")
     pom {
         name = "iroh"
         description = "Kotlin bindings for iroh: distributed systems made simple."

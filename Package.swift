@@ -22,8 +22,8 @@ import Foundation
 // prepare-release` rewrites (per Phase 6 plan, CI never writes to main).
 // Local prepare-release builds a deterministic xcframework zip, shasums it,
 // and bakes both values into this manifest in the release commit.
-let releaseTag = "v1.0.0-rc.1"
-let releaseChecksum = "d0757677d9ff9184d1050b54625d5faaf7678ed70a69d33317c98d23426faab1"
+let releaseTag = "v1.0.0"
+let releaseChecksum = "514b147f7965fe17acaece9a1157cf9421463b6c9282224983e871ea868b86ef"
 
 let packageDir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
 let localBuiltBinary = packageDir

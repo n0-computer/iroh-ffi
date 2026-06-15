@@ -1825,7 +1825,7 @@ dependencies = [
 
 [[package]]
 name = "iroh-ffi"
-version = "1.0.0-rc.1"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2649,7 +2649,7 @@ dependencies = [
 
 [[package]]
 name = "number0_iroh"
-version = "1.0.0-rc.1"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "iroh",
