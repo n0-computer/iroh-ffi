@@ -43,7 +43,7 @@ jobs:
       - uses: davidB/rust-cargo-make@v1
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
       - name: Enable corepack (yarn)
         run: corepack enable
       - name: cargo make test-js
@@ -127,7 +127,7 @@ jobs:
           - host: '["windows-latest"]'
             target: aarch64-pc-windows-msvc
             build: yarn build --target aarch64-pc-windows-msvc
-    name: stable - ${{ matrix.settings.target }} - node@22
+    name: stable - ${{ matrix.settings.target }} - node@24
     runs-on: ${{ fromJSON(matrix.settings.host) }}
     defaults:
       run:
@@ -138,7 +138,7 @@ jobs:
         uses: actions/setup-node@v4
         if: ${{ !matrix.settings.docker }}
         with:
-          node-version: 22
+          node-version: 24
       - name: Enable corepack (yarn)
         if: ${{ !matrix.settings.docker }}
         run: corepack enable
@@ -178,7 +178,7 @@ jobs:
         uses: actions/setup-node@v4
         if: matrix.settings.target == 'i686-pc-windows-msvc'
         with:
-          node-version: 22
+          node-version: 24
           architecture: x86
       - name: Build in docker
         uses: addnab/docker-run-action@v3
@@ -212,8 +212,8 @@ jobs:
           - host: '["windows-latest"]'
             target: x86_64-pc-windows-msvc
         node:
-          - '22'
-          - '20'
+          - '24'
+          - '26'
     runs-on: ${{ fromJSON(matrix.settings.host) }}
     defaults:
       run:
@@ -248,8 +248,8 @@ jobs:
       fail-fast: false
       matrix:
         node:
-          - '22'
-          - '20'
+          - '24'
+          - '26'
     runs-on: [self-hosted, linux, X64]
     defaults:
       run:
@@ -288,8 +288,8 @@ jobs:
       fail-fast: false
       matrix:
         node:
-          - '22'
-          - '20'
+          - '24'
+          - '26'
     runs-on: [self-hosted, linux, X64]
     defaults:
       run:
@@ -326,8 +326,8 @@ jobs:
       fail-fast: false
       matrix:
         node:
-          - '22'
-          - '20'
+          - '24'
+          - '26'
     runs-on: [self-hosted, linux, X64]
     defaults:
       run:
@@ -376,8 +376,8 @@ jobs:
       fail-fast: false
       matrix:
         node:
-          - '22'
-          - '20'
+          - '24'
+          - '26'
     runs-on: [self-hosted, linux, X64]
     defaults:
       run:
@@ -425,8 +425,8 @@ jobs:
       fail-fast: false
       matrix:
         node:
-          - '22'
-          - '20'
+          - '24'
+          - '26'
     runs-on: [self-hosted, linux, X64]
     defaults:
       run:

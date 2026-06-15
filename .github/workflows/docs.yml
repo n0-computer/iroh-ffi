@@ -84,7 +84,7 @@ jobs:
       - uses: davidB/rust-cargo-make@v1
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
       # Self-hosted runners don't ship yarn; corepack provides it (matches
       # the pattern in ci_js.yml after PR #235).
       - name: Enable corepack (yarn)
