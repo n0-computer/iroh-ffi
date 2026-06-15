@@ -1,4 +1,4 @@
-// swift-tools-version:5.8
+// swift-tools-version:5.9
 import PackageDescription
 import Foundation
 
@@ -44,8 +44,8 @@ let irohBinary: Target = useLocalXcframework
 let package = Package(
     name: "IrohLib",
     platforms: [
-        .iOS(.v15),
-        .macOS(.v12)
+        .iOS(.v17),
+        .macOS(.v14)
     ],
     products: [
         .library(
