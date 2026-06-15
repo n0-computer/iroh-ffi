@@ -88,7 +88,7 @@ jobs:
       # Self-hosted runners don't ship yarn; corepack provides it (matches
       # the pattern in ci_js.yml after PR #235).
       - name: Enable corepack (yarn)
-        run: corepack enable
+        run: npm install -g corepack && corepack enable
         shell: bash
       - run: cargo make docs-js
       - uses: actions/upload-artifact@v4
