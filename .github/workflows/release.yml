@@ -133,7 +133,7 @@ jobs:
   build-and-publish-swift:
     name: Build & publish swift libraries
     timeout-minutes: 30
-    runs-on: [self-hosted, macOS, ARM64]
+    runs-on: [self-hosted, macOS, ARM64, xcode16]
     needs: create-release
     steps:
     - uses: actions/checkout@master

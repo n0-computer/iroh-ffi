@@ -19,7 +19,7 @@ jobs:
   swift:
     name: Swift - Full xcframework build + test (iOS + macOS)
     timeout-minutes: 60
-    runs-on: [self-hosted, macOS, ARM64]
+    runs-on: [self-hosted, macOS, ARM64, xcode16]
     steps:
       - uses: actions/checkout@master
       - uses: dtolnay/rust-toolchain@stable

@@ -43,9 +43,9 @@ jobs:
       - uses: davidB/rust-cargo-make@v1
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
       - name: Enable corepack (yarn)
-        run: corepack enable
+        run: npm install -g corepack --force && corepack enable
       - name: cargo make test-js
         run: cargo make test-js
 
@@ -127,7 +127,7 @@ jobs:
           - host: '["windows-latest"]'
             target: aarch64-pc-windows-msvc
             build: yarn build --target aarch64-pc-windows-msvc
-    name: stable - ${{ matrix.settings.target }} - node@22
+    name: stable - ${{ matrix.settings.target }} - node@24
     runs-on: ${{ fromJSON(matrix.settings.host) }}
     defaults:
       run:
@@ -138,10 +138,10 @@ jobs:
         uses: actions/setup-node@v4
         if: ${{ !matrix.settings.docker }}
         with:
-          node-version: 22
+          node-version: 24
       - name: Enable corepack (yarn)
         if: ${{ !matrix.settings.docker }}
-        run: corepack enable
+        run: npm install -g corepack --force && corepack enable
         shell: bash
       - name: Install
         uses: dtolnay/rust-toolchain@stable
@@ -178,7 +178,7 @@ jobs:
         uses: actions/setup-node@v4
         if: matrix.settings.target == 'i686-pc-windows-msvc'
         with:
-          node-version: 22
+          node-version: 24
           architecture: x86
       - name: Build in docker
         uses: addnab/docker-run-action@v3
@@ -212,8 +212,8 @@ jobs:
           - host: '["windows-latest"]'
             target: x86_64-pc-windows-msvc
         node:
-          - '22'
-          - '20'
+          - '24'
+          - '26'
     runs-on: ${{ fromJSON(matrix.settings.host) }}
     defaults:
       run:
@@ -226,7 +226,7 @@ jobs:
           node-version: ${{ matrix.node }}
           architecture: x64
       - name: Enable corepack (yarn)
-        run: corepack enable
+        run: npm install -g corepack --force && corepack enable
         shell: bash
       - name: Install dependencies
         run: yarn install
@@ -248,8 +248,8 @@ jobs:
       fail-fast: false
       matrix:
         node:
-          - '22'
-          - '20'
+          - '24'
+          - '26'
     runs-on: [self-hosted, linux, X64]
     defaults:
       run:
@@ -261,7 +261,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - name: Enable corepack (yarn)
-        run: corepack enable
+        run: npm install -g corepack --force && corepack enable
         shell: bash
       - name: Install dependencies
         run: yarn install
@@ -279,7 +279,7 @@ jobs:
         # variant of the multi-arch manifest. Without --platform, Docker
         # reuses whichever variant is cached and `process.arch` reports arm64,
         # so napi loads the wrong native binding.
-        run: docker run --rm --platform linux/amd64 -v $(pwd):/build -w /build node:${{ matrix.node }}-slim yarn test
+        run: docker run --rm --platform linux/amd64 -v $(pwd):/build -w /build node:${{ matrix.node }}-slim sh -c "npm install -g corepack --force && corepack enable && yarn test"
   test-linux-x64-musl-binding:
     name: Test bindings on x86_64-unknown-linux-musl - node@${{ matrix.node }}
     needs:
@@ -288,8 +288,8 @@ jobs:
       fail-fast: false
       matrix:
         node:
-          - '22'
-          - '20'
+          - '24'
+          - '26'
     runs-on: [self-hosted, linux, X64]
     defaults:
       run:
@@ -301,7 +301,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - name: Enable corepack (yarn)
-        run: corepack enable
+        run: npm install -g corepack --force && corepack enable
         shell: bash
       - name: Install dependencies
         run: |
@@ -317,7 +317,7 @@ jobs:
         shell: bash
       - name: Test bindings
         # Force amd64 for the same reason as the gnu variant above.
-        run: docker run --rm --platform linux/amd64 -v $(pwd):/build -w /build node:${{ matrix.node }}-alpine yarn test
+        run: docker run --rm --platform linux/amd64 -v $(pwd):/build -w /build node:${{ matrix.node }}-alpine sh -c "npm install -g corepack --force && corepack enable && yarn test"
   test-linux-aarch64-gnu-binding:
     name: Test bindings on aarch64-unknown-linux-gnu - node@${{ matrix.node }}
     needs:
@@ -326,8 +326,8 @@ jobs:
       fail-fast: false
       matrix:
         node:
-          - '22'
-          - '20'
+          - '24'
+          - '26'
     runs-on: [self-hosted, linux, X64]
     defaults:
       run:
@@ -339,7 +339,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - name: Enable corepack (yarn)
-        run: corepack enable
+        run: npm install -g corepack --force && corepack enable
         shell: bash
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -366,6 +366,8 @@ jobs:
           options: '--platform linux/arm64 -v ${{ github.workspace }}/iroh-js:/build -w /build'
           run: |
             set -e
+            npm install -g corepack --force
+            corepack enable
             yarn test
             ls -la
   test-linux-aarch64-musl-binding:
@@ -376,8 +378,8 @@ jobs:
       fail-fast: false
       matrix:
         node:
-          - '22'
-          - '20'
+          - '24'
+          - '26'
     runs-on: [self-hosted, linux, X64]
     defaults:
       run:
@@ -389,7 +391,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - name: Enable corepack (yarn)
-        run: corepack enable
+        run: npm install -g corepack --force && corepack enable
         shell: bash
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -416,6 +418,8 @@ jobs:
           options: '--platform linux/arm64 -v ${{ github.workspace }}/iroh-js:/build -w /build'
           run: |
             set -e
+            npm install -g corepack --force
+            corepack enable
             yarn test
   test-linux-arm-gnueabihf-binding:
     name: Test bindings on armv7-unknown-linux-gnueabihf - node@${{ matrix.node }}
@@ -424,9 +428,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # Last node with a published linux/arm/v7 docker image is 22; node 24+
+        # only ship amd64/arm64 multi-arch manifests for node:*-bullseye-slim.
         node:
           - '22'
-          - '20'
     runs-on: [self-hosted, linux, X64]
     defaults:
       run:
@@ -438,7 +443,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - name: Enable corepack (yarn)
-        run: corepack enable
+        run: npm install -g corepack --force && corepack enable
         shell: bash
       - name: Download artifacts
         uses: actions/download-artifact@v4

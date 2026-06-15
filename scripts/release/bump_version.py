@@ -37,6 +37,23 @@ def bump_cargo(version: str) -> None:
     print(f"  Cargo.toml [package].version -> {version}")
 
 
+def bump_js_cargo(version: str) -> None:
+    # The napi crate (iroh-js/Cargo.toml, package `number0_iroh`) is a separate
+    # [package] from the root workspace member — `bump_cargo()` doesn't touch it.
+    p = REPO / "iroh-js" / "Cargo.toml"
+    s = p.read_text()
+    new, n = re.subn(
+        r'(?ms)(\[package\][^\[]*?)\nversion = "[^"]+"',
+        lambda m: m.group(1) + f'\nversion = "{version}"',
+        s,
+        count=1,
+    )
+    if n != 1:
+        sys.exit("could not find [package].version in iroh-js/Cargo.toml")
+    p.write_text(new)
+    print(f"  iroh-js/Cargo.toml [package].version -> {version}")
+
+
 def bump_pyproject(version: str) -> None:
     # maturin reads [project].version from pyproject.toml when building the
     # wheel — if this is stale, PyPI gets the wrong version (filename + metadata)
@@ -147,6 +164,7 @@ def main() -> None:
         sys.exit(f"{v!r} is not a recognized semver string")
     print(f"bumping versions to {v}:")
     bump_cargo(v)
+    bump_js_cargo(v)
     bump_pyproject(v)
     bump_npm(v)
     bump_gradle(v)
