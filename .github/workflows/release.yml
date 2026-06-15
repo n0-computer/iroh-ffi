@@ -168,8 +168,8 @@ jobs:
   # Cross-build the desktop cdylibs for each JVM host the Maven artifact
   # should support. JNI libs are loaded by JNA from classpath at
   # `<jna-platform>/libname.{so,dylib,dll}`; see the staging step below.
-  # Android ABIs are not packaged in this JVM-only artifact yet — that
-  # needs a separate com.android.library AAR publication.
+  # Android ABIs are built separately by build-kotlin-android and shipped
+  # in the same jar under `lib/<abi>/`, where AGP merges them into APKs.
   build-kotlin-cdylib:
     name: Build Kotlin cdylib (${{ matrix.name }})
     needs: create-release
@@ -208,33 +208,22 @@ jobs:
           path: target/${{ matrix.target }}/release/${{ matrix.lib_file }}
           if-no-files-found: error
 
-  # Pre-publish Android consumer smoke. Builds a tiny app that depends on
-  # computer.iroh:iroh, then assembles + runs an instrumented test inside an
-  # Android emulator. Catches the bug class where the JVM jar uploads fine but
-  # an Android consumer's APK either won't link or crashes at runtime
-  # (iroh-ffi#246) — layout checks catch *file presence*, this catches *runtime
-  # loadability and JNI symbol presence*. Self-contained: cross-builds the
-  # natives itself rather than depending on the build-kotlin-cdylib matrix
-  # (different artifact shape — Android ABIs, not desktop hosts).
-  verify-kotlin-android-consumer:
-    name: Smoke Kotlin Android consumer (emulator)
+  # Cross-build the native lib for every Android ABI with the NDK. These
+  # ship in the same computer.iroh:iroh jar under `lib/<abi>/`; AGP merges
+  # `lib/<abi>/*.so` from JAR dependencies into the consumer APK, where
+  # IrohAndroid loads it via System.loadLibrary("iroh_ffi"). cargo-ndk
+  # writes one `<abi>/libiroh_ffi.so` per target under the -o directory.
+  build-kotlin-android:
+    name: Build Kotlin Android cdylibs
     needs: create-release
-    timeout-minutes: 45
-    # ubuntu-latest has /dev/kvm via the runner image's nested-virt support —
-    # required by android-emulator-runner. Self-hosted linux runners here
-    # don't have KVM, so use GH-hosted.
-    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    runs-on: [self-hosted, linux, X64]
     steps:
       - uses: actions/checkout@master
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
       - uses: Swatinem/rust-cache@v2
-      - uses: davidB/rust-cargo-make@v1
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
       - uses: android-actions/setup-android@v3
       - name: Setup Android NDK
         uses: arqu/setup-ndk@main
@@ -242,37 +231,69 @@ jobs:
         with:
           ndk-version: r23
           add-to-path: true
-      - name: Install cargo-ndk
-        run: cargo install --version 3.5.4 cargo-ndk --locked
+      - name: Cross-build Android cdylibs
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+        run: |
+          command -v cargo-ndk >/dev/null 2>&1 || cargo install --version 3.5.4 cargo-ndk --locked
+          cargo ndk -o ./android-jniLibs \
+            -t armeabi-v7a -t arm64-v8a -t x86 -t x86_64 \
+            build --release --lib -p iroh-ffi
+          find ./android-jniLibs -type f
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kotlin-android-jniLibs
+          path: android-jniLibs/
+          if-no-files-found: error
+
+  # Pre-publish Android consumer smoke. Pulls the just-built android natives
+  # from build-kotlin-android, stages them under lib/<abi>/, assembles a tiny
+  # consumer app that depends on computer.iroh:iroh, and runs an instrumented
+  # JUnit test inside an Android emulator. Catches the runtime class of bugs
+  # that layout checks can't: native lib loads but JNI symbol missing, AGP
+  # fails to merge from JAR, NDK API level too high for emulator, etc.
+  verify-kotlin-android-consumer:
+    name: Smoke Kotlin Android consumer (emulator)
+    needs: [create-release, build-kotlin-android]
+    timeout-minutes: 45
+    # ubuntu-latest has /dev/kvm via nested-virt — required by the emulator
+    # action. The self-hosted linux runner used by build-kotlin-android above
+    # doesn't have KVM enabled.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: davidB/rust-cargo-make@v1
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: actions/download-artifact@v4
+        with:
+          name: kotlin-android-jniLibs
+          path: android-jniLibs/
+      - name: Stage Android natives + generate Kotlin bindings
+        run: |
+          set -eu
+          RES=kotlin/lib/src/main/resources
+          for abi in armeabi-v7a arm64-v8a x86 x86_64; do
+            install -D -m644 "android-jniLibs/$abi/libiroh_ffi.so" "$RES/lib/$abi/libiroh_ffi.so"
+          done
+          # Composite-build `:lib:jar` from android-smoke needs iroh_ffi.kt.
+          cargo make bindgen-kotlin
       - name: Enable KVM
-        # Required so reactivecircus/android-emulator-runner can use HW
-        # acceleration on the ubuntu-latest runner.
+        # reactivecircus/android-emulator-runner needs HW accel on
+        # ubuntu-latest's nested-virt KVM.
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Cross-build + stage Android natives
-        env:
-          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
-        run: |
-          set -eu
-          # Same stage path the publish job uses — AGP scans JAR deps for
-          # lib/<abi>/*.so and merges into consumer APKs from there.
-          cargo ndk -o ./_android_libs \
-            -t armeabi-v7a -t arm64-v8a -t x86 -t x86_64 \
-            build --release --lib -p iroh-ffi
-          RES=kotlin/lib/src/main/resources
-          for abi in armeabi-v7a arm64-v8a x86 x86_64; do
-            install -D -m644 "./_android_libs/$abi/libiroh_ffi.so" "$RES/lib/$abi/libiroh_ffi.so"
-          done
-          # Bindings (iroh_ffi.kt) — needed for the composite-build `:lib` jar.
-          cargo make bindgen-kotlin
       - name: Run Android consumer smoke on emulator
-        # Action settings mirror n0-computer/iroh's android job: API 35,
-        # x86_64, google_apis. The script block runs inside an emulator
-        # session — installs the app + androidTest APKs and runs the JUnit
-        # tests, exercising IrohAndroid.installAndroidContext +
-        # SecretKey.generate JNI path.
+        # API 35 / x86_64 / google_apis mirrors n0-computer/iroh's android job.
+        # The emulator-options block (no-window, swiftshader, no-metrics)
+        # avoids known boot-stability and networking issues on GH-hosted
+        # runners; -no-metrics also stops the analytics dial-home noise.
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -291,7 +312,7 @@ jobs:
   build-and-publish-kotlin:
     name: Publish Kotlin to Maven Central
     timeout-minutes: 30
-    needs: [create-release, build-kotlin-cdylib, verify-kotlin-android-consumer]
+    needs: [create-release, build-kotlin-cdylib, build-kotlin-android, verify-kotlin-android-consumer]
     runs-on: [self-hosted, linux, X64]
     steps:
       - uses: actions/checkout@master
@@ -311,6 +332,10 @@ jobs:
         with:
           pattern: kotlin-cdylib-*
           path: cdylibs/
+      - uses: actions/download-artifact@v4
+        with:
+          name: kotlin-android-jniLibs
+          path: android-jniLibs/
       - name: Stage cdylibs under jna-platform dirs
         shell: bash
         run: |
@@ -321,6 +346,11 @@ jobs:
           install -D -m644 cdylibs/kotlin-cdylib-linux-aarch64/libiroh_ffi.so  "$RES/linux-aarch64/libiroh_ffi.so"
           install -D -m644 cdylibs/kotlin-cdylib-macos-aarch64/libiroh_ffi.dylib "$RES/darwin-aarch64/libiroh_ffi.dylib"
           install -D -m644 cdylibs/kotlin-cdylib-windows-x86_64/iroh_ffi.dll   "$RES/win32-x86-64/iroh_ffi.dll"
+          # Android ABIs: cargo-ndk emits <abi>/libiroh_ffi.so; ship them at
+          # lib/<abi>/ so AGP packages them into consumer APKs.
+          for abi in armeabi-v7a arm64-v8a x86 x86_64; do
+            install -D -m644 "android-jniLibs/$abi/libiroh_ffi.so" "$RES/lib/$abi/libiroh_ffi.so"
+          done
           find "$RES" -type f
       - name: Verify Kotlin artifact contents
         # Gate publish on every required native lib being present at the
