@@ -27,5 +27,24 @@ jobs:
           targets: aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios,aarch64-apple-darwin
       - uses: Swatinem/rust-cache@v2
       - uses: davidB/rust-cargo-make@v1
+      - name: Inspect SDK (one-off — find minOS of nw_path_is_ultra_constrained)
+        run: |
+          set -x
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+          xcrun --sdk iphoneos --show-sdk-path
+          xcrun --sdk macosx --show-sdk-version
+          xcrun --sdk macosx --show-sdk-path
+          for sdk in iphoneos macosx; do
+            TBD="$(xcrun --sdk "$sdk" --show-sdk-path)/System/Library/Frameworks/Network.framework/Network.tbd"
+            echo "=== $sdk Network.tbd: $TBD ==="
+            ls -la "$TBD" || true
+            if [ -f "$TBD" ]; then
+              echo "--- symbol occurrences ---"
+              grep -c 'nw_path_is_ultra_constrained' "$TBD" || true
+              echo "--- stanzas containing the symbol ---"
+              awk '/^---/{stanza=""} {stanza=stanza"\n"$0} /nw_path_is_ultra_constrained/{print stanza; stanza=""}' "$TBD" | head -80 || true
+            fi
+          done
       - name: cargo make test-swift
         run: cargo make test-swift
