@@ -34,8 +34,8 @@ export CFLAGS="${CFLAGS:-} \
 # `nw_path_is_ultra_constrained` (iOS 17 / macOS 14); rustc's default
 # `*-apple-ios` floor (10) and the unset macOS floor produce undefined-symbol
 # link errors. Keep these in sync with Package.swift `platforms:`.
-export IPHONEOS_DEPLOYMENT_TARGET="17.0"
-export MACOSX_DEPLOYMENT_TARGET="14.0"
+export IPHONEOS_DEPLOYMENT_TARGET="17.5"
+export MACOSX_DEPLOYMENT_TARGET="14.5"
 
 # Env
 UDL_NAME="iroh_ffi"

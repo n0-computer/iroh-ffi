@@ -44,8 +44,8 @@ let irohBinary: Target = useLocalXcframework
 let package = Package(
     name: "IrohLib",
     platforms: [
-        .iOS(.v17),
-        .macOS(.v14)
+        .iOS("17.5"),
+        .macOS("14.5")
     ],
     products: [
         .library(
