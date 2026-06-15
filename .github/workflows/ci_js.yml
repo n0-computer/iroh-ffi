@@ -45,7 +45,7 @@ jobs:
         with:
           node-version: 24
       - name: Enable corepack (yarn)
-        run: npm install -g corepack && corepack enable
+        run: npm install -g corepack --force && corepack enable
       - name: cargo make test-js
         run: cargo make test-js
 
@@ -141,7 +141,7 @@ jobs:
           node-version: 24
       - name: Enable corepack (yarn)
         if: ${{ !matrix.settings.docker }}
-        run: npm install -g corepack && corepack enable
+        run: npm install -g corepack --force && corepack enable
         shell: bash
       - name: Install
         uses: dtolnay/rust-toolchain@stable
@@ -226,7 +226,7 @@ jobs:
           node-version: ${{ matrix.node }}
           architecture: x64
       - name: Enable corepack (yarn)
-        run: npm install -g corepack && corepack enable
+        run: npm install -g corepack --force && corepack enable
         shell: bash
       - name: Install dependencies
         run: yarn install
@@ -261,7 +261,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - name: Enable corepack (yarn)
-        run: npm install -g corepack && corepack enable
+        run: npm install -g corepack --force && corepack enable
         shell: bash
       - name: Install dependencies
         run: yarn install
@@ -301,7 +301,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - name: Enable corepack (yarn)
-        run: npm install -g corepack && corepack enable
+        run: npm install -g corepack --force && corepack enable
         shell: bash
       - name: Install dependencies
         run: |
@@ -339,7 +339,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - name: Enable corepack (yarn)
-        run: npm install -g corepack && corepack enable
+        run: npm install -g corepack --force && corepack enable
         shell: bash
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -389,7 +389,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - name: Enable corepack (yarn)
-        run: npm install -g corepack && corepack enable
+        run: npm install -g corepack --force && corepack enable
         shell: bash
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -439,7 +439,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - name: Enable corepack (yarn)
-        run: npm install -g corepack && corepack enable
+        run: npm install -g corepack --force && corepack enable
         shell: bash
       - name: Download artifacts
         uses: actions/download-artifact@v4
