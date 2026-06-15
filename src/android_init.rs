@@ -25,7 +25,7 @@ pub extern "system" fn Java_computer_iroh_IrohAndroid_installAndroidContext<'loc
             let global_ref = env.new_global_ref(&context)?;
             unsafe {
                 ndk_context::initialize_android_context(
-                    java_vm.get_java_vm_pointer() as *mut std::ffi::c_void,
+                    java_vm.get_raw() as *mut std::ffi::c_void,
                     global_ref.as_obj().as_raw() as *mut std::ffi::c_void,
                 );
             }
