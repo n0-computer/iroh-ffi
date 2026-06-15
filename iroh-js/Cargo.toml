@@ -1,7 +1,7 @@
 [package]
 edition = "2024"
 name = "number0_iroh"
-version = "1.0.0-rc.0"
+version = "1.0.0-rc.1"
 license = "MIT OR Apache-2.0"
 authors = ["n0 team"]
 repository = "https://github.com/n0-computer/iroh-ffi"
@@ -14,12 +14,12 @@ crate-type = ["cdylib"]
 napi = { version = "3", default-features = false, features = ["napi8", "error_anyhow", "async"] }
 napi-derive = "3"
 anyhow = "1.0.69"
-iroh = "=1.0.0-rc.1"
-iroh-base = "=1.0.0-rc.1"
-iroh-metrics = "=1.0.0-rc.0"
-iroh-relay = { version = "=1.0.0-rc.1", default-features = false }
-iroh-services = { version = "=1.0.0-rc.2", default-features = false }
-iroh-tickets = "=1.0.0-rc.1"
+iroh = "1.0.0"
+iroh-base = "1.0.0"
+iroh-metrics = "1.0.0"
+iroh-relay = { version = "1.0.0", default-features = false }
+iroh-services = { version = "1.0.0", default-features = false }
+iroh-tickets = "1.0.0"
 n0-future = "0.3"
 tokio = "1.25.0"
 url = "2.4"
