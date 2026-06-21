@@ -21,7 +21,8 @@ echo "Building aarch64-apple-darwin"
 cargo build --release --target aarch64-apple-darwin
 
 MACOS_ARM64_FRAMEWORK="$FRAMEWORK_NAME.xcframework/macos-arm64/$FRAMEWORK_NAME.framework"
-rm -f "$MACOS_ARM64_FRAMEWORK/$FRAMEWORK_NAME"
+MACOS_ARM64_FRAMEWORK_BIN="$MACOS_ARM64_FRAMEWORK/Versions/A/$FRAMEWORK_NAME"
+rm -f "$MACOS_ARM64_FRAMEWORK_BIN"
 rm -f "$MACOS_ARM64_FRAMEWORK/Headers/${UDL_NAME}FFI.h"
 rm -f $INCLUDE_DIR/*
 mkdir -p $INCLUDE_DIR
@@ -30,14 +31,14 @@ mkdir -p $INCLUDE_DIR
 cargo run --bin uniffi-bindgen generate --language swift --out-dir ./$INCLUDE_DIR --library "$TARGET_DIR/debug/lib${UDL_NAME}.dylib" --config uniffi.toml
 
 cp "$TARGET_DIR/aarch64-apple-darwin/release/lib${UDL_NAME}.a" \
-    "$MACOS_ARM64_FRAMEWORK/$FRAMEWORK_NAME"
+  "$MACOS_ARM64_FRAMEWORK_BIN"
 cp "$INCLUDE_DIR/${UDL_NAME}FFI.h" \
-    "$MACOS_ARM64_FRAMEWORK/Headers/${UDL_NAME}FFI.h"
+  "$MACOS_ARM64_FRAMEWORK/Headers/${UDL_NAME}FFI.h"
 
 # Swift interface consumed by the IrohLib target.
-sed "s/${UDL_NAME}FFI/$FRAMEWORK_NAME/g" "$INCLUDE_DIR/$UDL_NAME.swift" > "$INCLUDE_DIR/$SWIFT_INTERFACE.swift"
+sed "s/${UDL_NAME}FFI/$FRAMEWORK_NAME/g" "$INCLUDE_DIR/$UDL_NAME.swift" >"$INCLUDE_DIR/$SWIFT_INTERFACE.swift"
 rm -f "$SWIFT_INTERFACE/Sources/$SWIFT_INTERFACE/$SWIFT_INTERFACE.swift"
 cp "$INCLUDE_DIR/$SWIFT_INTERFACE.swift" \
-    "$SWIFT_INTERFACE/Sources/$SWIFT_INTERFACE/$SWIFT_INTERFACE.swift"
+  "$SWIFT_INTERFACE/Sources/$SWIFT_INTERFACE/$SWIFT_INTERFACE.swift"
 
 echo "macos-arm64 slice ready -> $MACOS_ARM64_FRAMEWORK/$FRAMEWORK_NAME"
