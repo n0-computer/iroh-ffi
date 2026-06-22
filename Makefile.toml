@@ -76,9 +76,10 @@ args = ["test", "--lib", "-p", "iroh-ffi", "--", "--test-threads=1"]
 [tasks.bindgen-kotlin]
 description = "Build the lib + generate the Kotlin binding + stage the cdylib."
 dependencies = ["build"]
-# Extracted to a script + invoked via `command = "bash"` so cargo-make doesn't
-# try to run the bash body through cmd.exe on Windows.
-command = "bash"
+# `sh` resolves to Git Bash's sh.exe on Windows (Git for Windows ships
+# sh.exe; System32 only has bash.exe = WSL launcher, which has no distro
+# installed). On Linux/macOS, sh runs the script fine (POSIX-compatible).
+command = "sh"
 args = ["scripts/bindgen_kotlin.sh"]
 
 # ---------------------------------------------------------------------------
@@ -472,11 +473,10 @@ echo "verify-kotlin-android-consumer: OK"
 [tasks.verify-kotlin-consumer]
 description = "Run the JVM test suite against a release-built, per-JNA-platform-staged cdylib (not the dev-mode flat .so). Catches 'staging path wrong / JNA-platform name typo / .so doesn't load from the per-platform subdir'. Cross-platform — runs on linux/macOS/windows (uses bash via Git for Windows on win32)."
 dependencies = ["bindgen-kotlin"]
-# `command` + `args` runs bash directly without cargo-make writing a temp
-# script file. On Windows, the `script` form writes to a .cmd file even when
-# script_runner is set, and cmd.exe ends up parsing the bash body. This form
-# avoids that entirely.
-command = "bash"
+# `sh` resolves to Git Bash's sh.exe on Windows (Git for Windows ships
+# sh.exe; System32 only has bash.exe = WSL launcher, which has no distro
+# installed). On Linux/macOS, sh runs the script fine (POSIX-compatible).
+command = "sh"
 args = ["scripts/verify_kotlin_consumer.sh"]
 
 # ---------------------------------------------------------------------------
