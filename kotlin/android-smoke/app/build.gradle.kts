@@ -31,10 +31,14 @@ android {
 }
 
 dependencies {
-    // The artifact under test.
-    implementation("computer.iroh:iroh:$irohVersion")
-    // JNA isn't transitively resolved through some Android-side metadata
-    // quirks; force it so the JNI binding finds it at install time.
+    // The artifact under test. Exclude its JNA transitive — kotlin/lib
+    // declares net.java.dev.jna:jna:5.15.0 (the JAR variant, fine for JVM
+    // consumers), but Android needs the AAR variant which ships
+    // libjnidispatch.so for each ABI. AGP errors on the duplicate-class
+    // collision if both flavors hit the classpath.
+    implementation("computer.iroh:iroh:$irohVersion") {
+        exclude(group = "net.java.dev.jna", module = "jna")
+    }
     implementation("net.java.dev.jna:jna:5.15.0@aar")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
 
