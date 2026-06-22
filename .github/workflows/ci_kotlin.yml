@@ -83,14 +83,18 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: kotlin-consumer-${{ matrix.name }}
-      # davidB/rust-cargo-make@v1 only downloads x86_64 binaries; on the
-      # linux-aarch64 self-hosted runner it silently no-ops and cargo make
-      # fails with "no such command: make". taiki-e/install-action uses
-      # cargo-binstall to fetch precompiled cargo-make for all four host
-      # arches we ship (incl. aarch64-unknown-linux-gnu).
-      - uses: taiki-e/install-action@v2
-        with:
-          tool: cargo-make
+      # cargo install builds cargo-make from source (~3 min cold), works on
+      # every host arch we ship. Self-hosted runners persist the binary
+      # between jobs; the GH-hosted windows-latest pays the compile each run.
+      # taiki-e/install-action@v2 doesn't have an aarch64-linux precompiled
+      # cargo-make in its manifest, and davidB/rust-cargo-make@v1 only ships
+      # x86_64 binaries.
+      - name: Install cargo-make
+        shell: bash
+        run: |
+          if ! command -v cargo-make >/dev/null 2>&1; then
+            cargo install --locked cargo-make
+          fi
       - uses: actions/setup-java@v4
         with:
           distribution: "temurin"
@@ -184,6 +188,9 @@ jobs:
           sudo udevadm trigger --name-match=kvm
       - name: Run Android consumer smoke on emulator
         # API 35 / x86_64 / google_apis mirrors n0-computer/iroh's android job.
+        # `script:` runs each line as a separate `sh -c`, so state across
+        # lines is lost. Delegate to scripts/run_android_smoke.sh so cd +
+        # variable assignment + gradlew live in one shell.
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -192,9 +199,4 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-metrics
           disable-animations: true
-          script: |
-            set -eu
-            V=$(sed -nE 's/.*coordinates\("computer\.iroh", "iroh", "([^"]+)"\).*/\1/p' kotlin/lib/build.gradle.kts)
-            echo "iroh version under test: $V"
-            cd kotlin/android-smoke
-            ./gradlew :app:connectedDebugAndroidTest -PirohVersion="$V" --no-daemon --console=plain
+          script: bash scripts/run_android_smoke.sh

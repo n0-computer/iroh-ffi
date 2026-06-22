@@ -390,6 +390,16 @@ script_runner = "@shell"
 script = '''
 set -eu
 
+# Fail loudly if the iOS platform SDK isn't installed (e.g., fresh CI runner
+# with just the macOS SDK). Listing SDKs is much faster than waiting for
+# xcodebuild to discover destinations and emit the same error.
+if ! xcodebuild -showsdks 2>/dev/null | grep -q "iphoneos"; then
+  echo "ERROR: iOS SDK not installed on this host." >&2
+  echo "  Install via: sudo xcodebuild -downloadPlatform iOS" >&2
+  echo "  (the xcode16 self-hosted runner needs this run once)" >&2
+  exit 1
+fi
+
 # xcodebuild test on a Simulator destination needs an interactive GUI session
 # (Simulator.app spawns under the console user). Mirror test-swift's pattern.
 CONSOLE_USER=$(stat -f%Su /dev/console)
@@ -473,49 +483,9 @@ echo "verify-kotlin-android-consumer: OK"
 [tasks.verify-kotlin-consumer]
 description = "Run the JVM test suite against a release-built, per-JNA-platform-staged cdylib (not the dev-mode flat .so). Catches 'staging path wrong / JNA-platform name typo / .so doesn't load from the per-platform subdir'. Cross-platform — runs on linux/macOS/windows (uses bash via Git for Windows on win32)."
 dependencies = ["bindgen-kotlin"]
-script_runner = "bash"
-# Without this, cargo-make picks the platform default (.cmd on Windows) and
-# runs the bash script through cmd.exe — every shell-ism then fails.
-script_extension = "sh"
+script_runner = "@shell"
 script = '''
-set -eu
-RES=kotlin/lib/src/main/resources
-# JNA platform dir naming + lib filename per host. Windows runs in Git Bash
-# (uname returns MINGW64_NT-*); the lib has no `lib` prefix and uses `.dll`.
-case "$(uname -sm)" in
-  "Darwin arm64")     PLAT=darwin-aarch64 ; LIB=libiroh_ffi.dylib ;;
-  "Darwin x86_64")    PLAT=darwin-x86-64  ; LIB=libiroh_ffi.dylib ;;
-  "Linux x86_64")     PLAT=linux-x86-64   ; LIB=libiroh_ffi.so    ;;
-  "Linux aarch64")    PLAT=linux-aarch64  ; LIB=libiroh_ffi.so    ;;
-  MINGW*\ x86_64|MSYS*\ x86_64)
-                      PLAT=win32-x86-64   ; LIB=iroh_ffi.dll      ;;
-  *) echo "ERROR: unsupported host $(uname -sm) — add a case branch" >&2; exit 1 ;;
-esac
-echo "  host: $(uname -sm) → $PLAT/$LIB"
-
-echo "==> release build host cdylib"
-cargo build --release --lib -p iroh-ffi
-
-# `.replace` normalizes Windows backslashes; cargo metadata serializes paths
-# with platform-native separators and Git Bash needs forward slashes.
-TARGET_DIR=$(cargo metadata --format-version 1 --no-deps | python3 -c 'import json,sys; print(json.load(sys.stdin)["target_directory"].replace("\\", "/"))')
-
-echo "==> stage to $RES/$PLAT/$LIB"
-mkdir -p "$RES/$PLAT"
-cp "$TARGET_DIR/release/$LIB" "$RES/$PLAT/$LIB"
-
-# Move (not delete) the dev-mode flat lib aside, restore on exit. Otherwise
-# `cargo make test-kotlin` afterwards would have to re-run bindgen-kotlin to
-# put it back, and CI's tree-clean check would fire.
-STASH=$(mktemp -d)
-for f in libiroh_ffi.so libiroh_ffi.dylib iroh_ffi.dll; do
-  [ -f "$RES/$f" ] && mv "$RES/$f" "$STASH/$f"
-done
-trap 'for f in libiroh_ffi.so libiroh_ffi.dylib iroh_ffi.dll; do [ -f "$STASH/$f" ] && mv "$STASH/$f" "$RES/$f"; done; rmdir "$STASH" 2>/dev/null || true' EXIT
-
-echo "==> gradle test (must resolve $LIB from $PLAT/, not flat fallback)"
-( cd kotlin && ./gradlew test --no-daemon --console=plain --quiet )
-echo "verify-kotlin-consumer: OK"
+bash scripts/verify_kotlin_consumer.sh
 '''
 
 # ---------------------------------------------------------------------------

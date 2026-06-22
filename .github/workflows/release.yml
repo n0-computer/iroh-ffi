@@ -291,9 +291,9 @@ jobs:
           sudo udevadm trigger --name-match=kvm
       - name: Run Android consumer smoke on emulator
         # API 35 / x86_64 / google_apis mirrors n0-computer/iroh's android job.
-        # The emulator-options block (no-window, swiftshader, no-metrics)
-        # avoids known boot-stability and networking issues on GH-hosted
-        # runners; -no-metrics also stops the analytics dial-home noise.
+        # `script:` runs each line as a separate `sh -c`, so state across
+        # lines is lost. Delegate to scripts/run_android_smoke.sh so cd +
+        # variable assignment + gradlew live in one shell.
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -302,12 +302,7 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-metrics
           disable-animations: true
-          script: |
-            set -eu
-            V=$(sed -nE 's/.*coordinates\("computer\.iroh", "iroh", "([^"]+)"\).*/\1/p' kotlin/lib/build.gradle.kts)
-            echo "iroh version under test: $V"
-            cd kotlin/android-smoke
-            ./gradlew :app:connectedDebugAndroidTest -PirohVersion="$V" --no-daemon --console=plain
+          script: bash scripts/run_android_smoke.sh
 
   build-and-publish-kotlin:
     name: Publish Kotlin to Maven Central
