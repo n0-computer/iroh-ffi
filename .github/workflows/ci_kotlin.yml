@@ -69,7 +69,11 @@ jobs:
             runner: [self-hosted, linux, ARM64]
             cargo_target: aarch64-unknown-linux-gnu
           - name: macOS-aarch64
-            runner: [self-hosted, macOS, ARM64]
+            # `xcode16` selects the native-arm runner pool (the unlabeled
+            # macOS/ARM64 pool runs its agent under Rosetta — uname reports
+            # x86_64 even on M-series hardware, breaking arch-matching for
+            # JNA against the arm64 JVM).
+            runner: [self-hosted, macOS, ARM64, xcode16]
             cargo_target: aarch64-apple-darwin
           - name: windows-x86_64
             runner: [windows-latest]
