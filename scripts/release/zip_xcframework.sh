@@ -13,6 +13,7 @@ set -eu
 #   - normalize all mtimes to 1980-01-01 (the zip-format epoch);
 #   - sort the file list with LC_ALL=C (locale-stable byte order);
 #   - `zip -X` strips extra fields (UID/GID, hi-res mtime, etc).
+#   - `zip -y` retains symlinks instead of duplicating (necessary for macOS versioned bundle structure)
 
 if [ ! -d Iroh.xcframework ]; then
   echo "ERROR: Iroh.xcframework/ not present. Run cargo make swift-xcframework first." >&2
