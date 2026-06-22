@@ -483,10 +483,12 @@ echo "verify-kotlin-android-consumer: OK"
 [tasks.verify-kotlin-consumer]
 description = "Run the JVM test suite against a release-built, per-JNA-platform-staged cdylib (not the dev-mode flat .so). Catches 'staging path wrong / JNA-platform name typo / .so doesn't load from the per-platform subdir'. Cross-platform — runs on linux/macOS/windows (uses bash via Git for Windows on win32)."
 dependencies = ["bindgen-kotlin"]
-script_runner = "@shell"
-script = '''
-bash scripts/verify_kotlin_consumer.sh
-'''
+# `command` + `args` runs bash directly without cargo-make writing a temp
+# script file. On Windows, the `script` form writes to a .cmd file even when
+# script_runner is set, and cmd.exe ends up parsing the bash body. This form
+# avoids that entirely.
+command = "bash"
+args = ["scripts/verify_kotlin_consumer.sh"]
 
 # ---------------------------------------------------------------------------
 # Docs (self-hosted on GitHub Pages; Swift is additionally on the SPI)
