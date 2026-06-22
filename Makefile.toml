@@ -76,21 +76,10 @@ args = ["test", "--lib", "-p", "iroh-ffi", "--", "--test-threads=1"]
 [tasks.bindgen-kotlin]
 description = "Build the lib + generate the Kotlin binding + stage the cdylib."
 dependencies = ["build"]
-script_runner = "@shell"
-script = '''
-set -eu
-case "$(uname -s)" in
-  Darwin) EXT=dylib ;;
-  Linux)  EXT=so ;;
-  *)      EXT=dll ;;
-esac
-TARGET_DIR=$(cargo metadata --format-version 1 --no-deps | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
-LIB="$TARGET_DIR/debug/${LIB_NAME}.${EXT}"
-cargo run --bin uniffi-bindgen generate --language kotlin \
-  --out-dir kotlin/lib/src/main/kotlin/ --config "$UNIFFI_CONFIG" --library "$LIB"
-mkdir -p kotlin/lib/src/main/resources/
-cp "$LIB" kotlin/lib/src/main/resources/
-'''
+# Extracted to a script + invoked via `command = "bash"` so cargo-make doesn't
+# try to run the bash body through cmd.exe on Windows.
+command = "bash"
+args = ["scripts/bindgen_kotlin.sh"]
 
 # ---------------------------------------------------------------------------
 # Python

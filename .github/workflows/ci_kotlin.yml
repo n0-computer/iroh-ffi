@@ -64,22 +64,34 @@ jobs:
         include:
           - name: linux-x86_64
             runner: [self-hosted, linux, X64]
+            cargo_target: x86_64-unknown-linux-gnu
           - name: linux-aarch64
             runner: [self-hosted, linux, ARM64]
+            cargo_target: aarch64-unknown-linux-gnu
           - name: macOS-aarch64
             runner: [self-hosted, macOS, ARM64]
+            cargo_target: aarch64-apple-darwin
           - name: windows-x86_64
             runner: [windows-latest]
+            cargo_target: x86_64-pc-windows-msvc
     defaults:
       run:
         # Git Bash on Windows; matches `bash` on linux/macOS. cargo-make's
-        # verify-kotlin-consumer task uses `script_runner = "bash"`.
+        # verify-kotlin-consumer task invokes scripts/verify_kotlin_consumer.sh
+        # via `command = "bash"`.
         shell: bash
     steps:
       - uses: actions/checkout@master
         with:
           submodules: recursive
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          # Explicit target — the macOS-arm-latest self-hosted runner is
+          # running its agent under Rosetta (uname reports x86_64), so without
+          # this, cargo's host default would produce an x86_64 dylib that the
+          # native-arm64 JVM can't load. The verify script's `--target`
+          # invocation requires this target to be installed.
+          targets: ${{ matrix.cargo_target }}
       - uses: Swatinem/rust-cache@v2
         with:
           key: kotlin-consumer-${{ matrix.name }}
