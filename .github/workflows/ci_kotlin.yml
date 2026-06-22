@@ -44,6 +44,54 @@ jobs:
       - name: cargo make test-kotlin
         run: cargo make test-kotlin
 
+  # Per-host consumer smoke for the JVM Maven artifact. test-kotlin (above)
+  # loads the dev-mode flat libiroh_ffi.so from the resources root; that's not
+  # the shape the published jar ships in. This matrix builds the host's
+  # release cdylib, stages it under its JNA-platform subdir (the path JNA
+  # discovers from classpath at runtime, same as release.yml's stage step),
+  # hides the flat lib, and runs the gradle test suite — catching wrong
+  # JNA-platform names, staging path typos, or "loads via flat fallback but
+  # not from the per-platform subdir."
+  # Matrix mirrors release.yml's build-kotlin-cdylib hosts (linux x86_64 /
+  # linux aarch64 / macOS arm64 / windows x86_64).
+  kotlin-jvm-consumer-smoke:
+    name: Kotlin - JVM consumer smoke (${{ matrix.name }})
+    timeout-minutes: 30
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x86_64
+            runner: [self-hosted, linux, X64]
+          - name: linux-aarch64
+            runner: [self-hosted, linux, ARM64]
+          - name: macOS-aarch64
+            runner: [self-hosted, macOS, ARM64]
+          - name: windows-x86_64
+            runner: [windows-latest]
+    defaults:
+      run:
+        # Git Bash on Windows; matches `bash` on linux/macOS. cargo-make's
+        # verify-kotlin-consumer task uses `script_runner = "bash"`.
+        shell: bash
+    steps:
+      - uses: actions/checkout@master
+        with:
+          submodules: recursive
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: kotlin-consumer-${{ matrix.name }}
+      - uses: davidB/rust-cargo-make@v1
+      - uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: cargo make verify-kotlin-consumer
+        run: cargo make verify-kotlin-consumer
+
   kotlin-android:
     name: Kotlin - Android cross-build
     timeout-minutes: 45
