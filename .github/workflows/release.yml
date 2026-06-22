@@ -145,8 +145,15 @@ jobs:
       # Same deterministic zip recipe as local `cargo make prepare-release`,
       # so the SHA-256 baked into Package.swift in the release PR matches
       # the asset uploaded here.
+      # Two pre-publish gates: verify-swift-xcframework checks per-slice bundle
+      # layout (catches iroh-ffi#247-class bugs); verify-swift-consumer
+      # xcodebuild-builds the iOS device + iOS sim destinations against the
+      # just-built xcframework, catching link/symbol issues that the macOS-only
+      # test would miss.
       run: |
         cargo make swift-xcframework
+        cargo make verify-swift-xcframework
+        cargo make verify-swift-consumer
         bash scripts/release/zip_xcframework.sh
     - name: Upload release archive
       uses: actions/upload-release-asset@v1.0.2
@@ -201,10 +208,90 @@ jobs:
           path: target/${{ matrix.target }}/release/${{ matrix.lib_file }}
           if-no-files-found: error
 
+  # Pre-publish Android consumer smoke. Builds a tiny app that depends on
+  # computer.iroh:iroh, then assembles + runs an instrumented test inside an
+  # Android emulator. Catches the bug class where the JVM jar uploads fine but
+  # an Android consumer's APK either won't link or crashes at runtime
+  # (iroh-ffi#246) — layout checks catch *file presence*, this catches *runtime
+  # loadability and JNI symbol presence*. Self-contained: cross-builds the
+  # natives itself rather than depending on the build-kotlin-cdylib matrix
+  # (different artifact shape — Android ABIs, not desktop hosts).
+  verify-kotlin-android-consumer:
+    name: Smoke Kotlin Android consumer (emulator)
+    needs: create-release
+    timeout-minutes: 45
+    # ubuntu-latest has /dev/kvm via the runner image's nested-virt support —
+    # required by android-emulator-runner. Self-hosted linux runners here
+    # don't have KVM, so use GH-hosted.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+      - uses: Swatinem/rust-cache@v2
+      - uses: davidB/rust-cargo-make@v1
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - name: Setup Android NDK
+        uses: arqu/setup-ndk@main
+        id: setup-ndk
+        with:
+          ndk-version: r23
+          add-to-path: true
+      - name: Install cargo-ndk
+        run: cargo install --version 3.5.4 cargo-ndk --locked
+      - name: Enable KVM
+        # Required so reactivecircus/android-emulator-runner can use HW
+        # acceleration on the ubuntu-latest runner.
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Cross-build + stage Android natives
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+        run: |
+          set -eu
+          # Same stage path the publish job uses — AGP scans JAR deps for
+          # lib/<abi>/*.so and merges into consumer APKs from there.
+          cargo ndk -o ./_android_libs \
+            -t armeabi-v7a -t arm64-v8a -t x86 -t x86_64 \
+            build --release --lib -p iroh-ffi
+          RES=kotlin/lib/src/main/resources
+          for abi in armeabi-v7a arm64-v8a x86 x86_64; do
+            install -D -m644 "./_android_libs/$abi/libiroh_ffi.so" "$RES/lib/$abi/libiroh_ffi.so"
+          done
+          # Bindings (iroh_ffi.kt) — needed for the composite-build `:lib` jar.
+          cargo make bindgen-kotlin
+      - name: Run Android consumer smoke on emulator
+        # Action settings mirror n0-computer/iroh's android job: API 35,
+        # x86_64, google_apis. The script block runs inside an emulator
+        # session — installs the app + androidTest APKs and runs the JUnit
+        # tests, exercising IrohAndroid.installAndroidContext +
+        # SecretKey.generate JNI path.
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          force-avd-creation: false
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-metrics
+          disable-animations: true
+          script: |
+            set -eu
+            V=$(sed -nE 's/.*coordinates\("computer\.iroh", "iroh", "([^"]+)"\).*/\1/p' kotlin/lib/build.gradle.kts)
+            echo "iroh version under test: $V"
+            cd kotlin/android-smoke
+            ./gradlew :app:connectedDebugAndroidTest -PirohVersion="$V" --no-daemon --console=plain
+
   build-and-publish-kotlin:
     name: Publish Kotlin to Maven Central
     timeout-minutes: 30
-    needs: [create-release, build-kotlin-cdylib]
+    needs: [create-release, build-kotlin-cdylib, verify-kotlin-android-consumer]
     runs-on: [self-hosted, linux, X64]
     steps:
       - uses: actions/checkout@master
@@ -235,6 +322,12 @@ jobs:
           install -D -m644 cdylibs/kotlin-cdylib-macos-aarch64/libiroh_ffi.dylib "$RES/darwin-aarch64/libiroh_ffi.dylib"
           install -D -m644 cdylibs/kotlin-cdylib-windows-x86_64/iroh_ffi.dll   "$RES/win32-x86-64/iroh_ffi.dll"
           find "$RES" -type f
+      - name: Verify Kotlin artifact contents
+        # Gate publish on every required native lib being present at the
+        # right path with the right architecture (catches iroh-ffi#246-class
+        # bugs — jar uploaded missing a platform slice, app crashes at
+        # runtime with UnsatisfiedLinkError).
+        run: cargo make verify-kotlin-artifact
       - name: Publish to Maven Central
         working-directory: kotlin
         env:

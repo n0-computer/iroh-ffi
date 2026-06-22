@@ -236,6 +236,263 @@ set -eu
 '''
 
 # ---------------------------------------------------------------------------
+# Pre-release artifact verification — assert each cross-built artifact has the
+# layout consumers expect, BEFORE any publish. CI gates the publish job on
+# these; local pre-release-check runs them too. Catches the class of "build
+# succeeds, artifact is broken, runtime crash on consumer device" bugs.
+# ---------------------------------------------------------------------------
+
+[tasks.verify-swift-xcframework]
+description = "Verify Iroh.xcframework slices have correct Apple bundle layout (shallow on iOS, deep with Versions/A on macOS — Xcode 27+ enforces strict)."
+script_runner = "@shell"
+script = '''
+set -eu
+XCF="${IROH_XCFRAMEWORK:-Iroh.xcframework}"
+FW="Iroh"
+[ -d "$XCF" ] || { echo "ERROR: $XCF not found (build it first: cargo make swift-xcframework)" >&2; exit 1; }
+[ -f "$XCF/Info.plist" ] || { echo "ERROR: missing $XCF/Info.plist" >&2; exit 1; }
+
+fail=0
+err() { printf 'FAIL: %s\n' "$*" >&2; fail=1; }
+
+for slice_dir in "$XCF"/*/; do
+  slice=$(basename "$slice_dir")
+  case "$slice" in
+    macos-*|*-maccatalyst) layout=deep ;;
+    *)                     layout=shallow ;;
+  esac
+  printf '  slice %-40s %s bundle\n' "$slice" "$layout"
+
+  fwdir="$slice_dir$FW.framework"
+  [ -d "$fwdir" ] || { err "$slice: missing $FW.framework"; continue; }
+
+  if [ "$layout" = shallow ]; then
+    [ -f "$fwdir/Info.plist" ] || err "$slice: missing Info.plist at framework root"
+    [ -f "$fwdir/$FW" ]        || err "$slice: missing $FW binary at framework root"
+    [ -d "$fwdir/Headers" ]    || err "$slice: missing Headers/"
+    [ -d "$fwdir/Versions" ]   && err "$slice: has Versions/ — shouldn't exist in a shallow (iOS) bundle"
+  else
+    # macOS deep bundle: Info.plist MUST live under Versions/A/Resources.
+    # Xcode 27+ rejects shallow-style Info.plist with "platform does not use
+    # shallow bundles" (iroh-ffi#247). Top-level entries must be symlinks
+    # into Versions/Current.
+    [ -d "$fwdir/Versions/A" ]                       || { err "$slice: missing Versions/A/ (macOS needs deep bundle layout)"; continue; }
+    [ -L "$fwdir/Versions/Current" ]                 || err "$slice: Versions/Current must be a symlink"
+    [ "$(readlink "$fwdir/Versions/Current")" = A ]  || err "$slice: Versions/Current must point to 'A'"
+    [ -f "$fwdir/Versions/A/Resources/Info.plist" ]  || err "$slice: missing Versions/A/Resources/Info.plist"
+    [ -f "$fwdir/Versions/A/$FW" ]                   || err "$slice: missing Versions/A/$FW binary"
+    [ -d "$fwdir/Versions/A/Headers" ]               || err "$slice: missing Versions/A/Headers/"
+    [ -L "$fwdir/$FW" ]                              || err "$slice: top-level $FW must be a symlink → Versions/Current/$FW"
+    [ -L "$fwdir/Headers" ]                          || err "$slice: top-level Headers must be a symlink → Versions/Current/Headers"
+    [ -L "$fwdir/Resources" ]                        || err "$slice: top-level Resources must be a symlink → Versions/Current/Resources"
+    [ -e "$fwdir/Info.plist" ] && [ ! -L "$fwdir/Info.plist" ] && err "$slice: framework root has a plain Info.plist — macOS bundles must not (Xcode 27+ rejects)"
+  fi
+done
+
+[ $fail -eq 0 ] || { echo "verify-swift-xcframework: FAILED" >&2; exit 1; }
+echo "verify-swift-xcframework: OK"
+'''
+
+[tasks.verify-kotlin-artifact]
+description = "Verify kotlin/lib/src/main/resources/ has every required native lib (4 desktop JNA paths + 4 Android ABIs under lib/) with the correct architecture, before Maven publish."
+script_runner = "@shell"
+script = '''
+set -eu
+RES="${IROH_KOTLIN_RES:-kotlin/lib/src/main/resources}"
+[ -d "$RES" ] || { echo "ERROR: $RES not found" >&2; exit 1; }
+
+fail=0
+err() { printf 'FAIL: %s\n' "$*" >&2; fail=1; }
+
+# JNA-platform paths (loaded by JNA from classpath at runtime) + lib/<abi>/
+# paths (merged into APKs by AGP from JAR dependencies). Patterns are file(1)
+# substring regexes; distinguish 32/64-bit, ARM-vs-x86, and Mach-O/PE/ELF.
+SPECS="
+linux-x86-64/libiroh_ffi.so|ELF 64-bit.*x86-64
+linux-aarch64/libiroh_ffi.so|ELF 64-bit.*aarch64
+darwin-aarch64/libiroh_ffi.dylib|Mach-O 64-bit.*arm64
+win32-x86-64/iroh_ffi.dll|PE32\\+.*x86-64
+lib/armeabi-v7a/libiroh_ffi.so|ELF 32-bit.*ARM, EABI
+lib/arm64-v8a/libiroh_ffi.so|ELF 64-bit.*aarch64
+lib/x86/libiroh_ffi.so|ELF 32-bit.*Intel 80386
+lib/x86_64/libiroh_ffi.so|ELF 64-bit.*x86-64
+"
+
+while IFS='|' read -r path pat; do
+  [ -n "$path" ] || continue
+  full="$RES/$path"
+  if [ ! -f "$full" ]; then
+    err "missing $path"
+    continue
+  fi
+  desc=$(file -b "$full")
+  if ! printf '%s' "$desc" | grep -Eq "$pat"; then
+    err "$path: arch mismatch (want /$pat/, got: $desc)"
+  else
+    printf '  ok %-40s %s\n' "$path" "$desc"
+  fi
+done <<EOF
+$SPECS
+EOF
+
+[ $fail -eq 0 ] || { echo "verify-kotlin-artifact: FAILED" >&2; exit 1; }
+echo "verify-kotlin-artifact: OK"
+'''
+
+[tasks.verify-python-wheel]
+description = "Install the just-built Python wheel into a clean venv and exercise a native API. Catches 'wheel built but doesn't import / SecretKey.generate crashes'."
+script_runner = "@shell"
+script = '''
+set -eu
+WHEEL_DIR="${IROH_WHEEL_DIR:-target/wheels}"
+WHEEL=$(ls "$WHEEL_DIR"/iroh-*.whl 2>/dev/null | head -1)
+[ -n "$WHEEL" ] || { echo "ERROR: no wheel in $WHEEL_DIR/ (build it first: maturin build --release --out $WHEEL_DIR)" >&2; exit 1; }
+echo "  wheel: $WHEEL"
+
+VENV=$(mktemp -d)/v
+python3 -m venv "$VENV"
+"$VENV/bin/pip" install --quiet --upgrade pip
+"$VENV/bin/pip" install --quiet "$WHEEL"
+# Force-resolve the loaded module so `import` errors surface, then exercise a
+# native call that round-trips through the FFI boundary (SecretKey.generate
+# allocates a Rust object; .public() and .to_bytes() cross the boundary back).
+"$VENV/bin/python3" - <<'PY'
+import iroh, sys
+print(f"  loaded iroh from {iroh.__file__}")
+secret = iroh.SecretKey.generate()
+pub = secret.public()
+assert len(pub.to_bytes()) == 32, f"unexpected pubkey size: {len(pub.to_bytes())}"
+print(f"  SecretKey roundtrip: pub={pub.fmt_short()}")
+PY
+echo "verify-python-wheel: OK"
+'''
+
+[tasks.verify-js-package]
+description = "Build the napi binding and exercise a native API from a fresh consumer process. Equivalent to test-js for the host platform — the released shape (per-target sub-packages + optionalDependencies) is rewritten by `napi pre-publish` at publish time, so it can't be reproduced locally without publishing."
+dependencies = ["test-js"]
+script_runner = "@shell"
+script = '''
+set -eu
+# test-js (this task's dependency) already builds index.node + runs the test
+# suite, which loads the binding the same way `require('@number0/iroh')` does
+# in a consumer project. The per-target sub-package layout that napi-rs ships
+# is only built up at publish time inside CI (`napi pre-publish` rewrites
+# optionalDependencies to per-target packages that don't exist on npm until
+# the publish itself succeeds), so a from-tarball local smoke would install
+# broken optionalDependencies.
+echo "verify-js-package: OK (covered by test-js)"
+'''
+
+[tasks.verify-swift-consumer]
+description = "Build the IrohLib SwiftPM package against the local xcframework for iOS device + iOS Simulator destinations. test-swift only exercises macOS; this catches link/symbol/bundle-layout issues on the iOS slices (which 99% of Swift consumers actually ship on)."
+dependencies = ["swift-xcframework"]
+script_runner = "@shell"
+script = '''
+set -eu
+
+# Plain `xcodebuild build` from the repo root (Package.swift here) resolves
+# IrohLib via SwiftPM and links against the just-built Iroh.xcframework. No
+# console-user / launchctl dance — that's only needed for `xcodebuild test`,
+# which spawns a test runner under the user's GUI session.
+rm -rf .xcode-verify-ddata
+
+for dest in "generic/platform=iOS" "generic/platform=iOS Simulator"; do
+  echo "==> xcodebuild build -destination '$dest'"
+  arch -arm64 xcodebuild build \
+    -scheme IrohLib \
+    -destination "$dest" \
+    -derivedDataPath .xcode-verify-ddata \
+    CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+    -quiet
+done
+echo "verify-swift-consumer: OK"
+'''
+
+[tasks.verify-kotlin-android-consumer]
+description = "Build a tiny Android app that depends on computer.iroh:iroh and run an instrumented test on a connected device/emulator. Catches 'AGP merge from JAR to APK is broken (issue #246)' and 'native lib in APK but won't load / no JNI exports'. Locally: needs an emulator running (Android Studio / `emulator -avd <name>`); CI runs inside reactivecircus/android-emulator-runner."
+dependencies = ["bindgen-kotlin"]
+script_runner = "@shell"
+script = '''
+set -eu
+
+# 1. Cross-compile the 4 Android ABIs. Hard prerequisites: cargo-ndk + an NDK.
+#    Verification tasks must not mutate global state — install upfront via
+#    `cargo install cargo-ndk` (or CI's setup-android job) and the appropriate
+#    `sdkmanager --install ndk;<version>`.
+command -v cargo-ndk >/dev/null 2>&1 || { echo "ERROR: cargo-ndk not installed (cargo install --version 3.5.4 cargo-ndk --locked)" >&2; exit 1; }
+[ -n "${ANDROID_NDK_HOME:-}" ] || { echo "ERROR: ANDROID_NDK_HOME must point at an installed NDK (r23+)" >&2; exit 1; }
+NDK_STAGE=$(mktemp -d)
+echo "==> cross-build android ABIs → $NDK_STAGE"
+cargo ndk -o "$NDK_STAGE" \
+  -t armeabi-v7a -t arm64-v8a -t x86 -t x86_64 \
+  build --release --lib -p iroh-ffi
+
+# 2. Stage to lib/<abi>/ where AGP's mergeNativeLibsTask scans JAR deps.
+#    Same path the release.yml `Stage cdylibs` step writes to.
+RES=kotlin/lib/src/main/resources
+echo "==> stage to $RES/lib/<abi>/"
+for abi in armeabi-v7a arm64-v8a x86 x86_64; do
+  install -D -m644 "$NDK_STAGE/$abi/libiroh_ffi.so" "$RES/lib/$abi/libiroh_ffi.so"
+done
+
+# 3. Run the consumer smoke. assembleDebugAndroidTest builds both APKs (app +
+#    androidTest) and is the bare minimum to catch jar-merge issues. The full
+#    connectedDebugAndroidTest also installs+runs on a device — the only way
+#    to catch "lib loads but JNI symbol missing on Android."
+V=$(sed -nE 's/.*coordinates\("computer\.iroh", "iroh", "([^"]+)"\).*/\1/p' kotlin/lib/build.gradle.kts)
+echo "==> iroh version under test: $V"
+
+cd kotlin/android-smoke
+if adb devices 2>/dev/null | awk 'NR>1 && $2=="device"{found=1} END{exit !found}'; then
+  echo "==> connected device found — connectedDebugAndroidTest (installs + runs)"
+  ./gradlew :app:connectedDebugAndroidTest -PirohVersion="$V" --no-daemon --console=plain
+else
+  echo "==> no connected device — assembleDebugAndroidTest only (builds APKs, doesn't run)"
+  echo "    start an emulator + re-run for the full smoke"
+  ./gradlew :app:assembleDebugAndroidTest -PirohVersion="$V" --no-daemon --console=plain
+fi
+echo "verify-kotlin-android-consumer: OK"
+'''
+
+[tasks.verify-kotlin-consumer]
+description = "Run the JVM test suite against a release-built, per-JNA-platform-staged cdylib (not the dev-mode flat .so). Catches 'staging path wrong / JNA-platform name typo / .so doesn't load from the per-platform subdir'."
+dependencies = ["bindgen-kotlin"]
+script_runner = "@shell"
+script = '''
+set -eu
+RES=kotlin/lib/src/main/resources
+case "$(uname -sm)" in
+  "Darwin arm64")  PLAT=darwin-aarch64 ; LIB=libiroh_ffi.dylib ;;
+  "Darwin x86_64") PLAT=darwin-x86-64  ; LIB=libiroh_ffi.dylib ;;
+  "Linux x86_64")  PLAT=linux-x86-64   ; LIB=libiroh_ffi.so    ;;
+  "Linux aarch64") PLAT=linux-aarch64  ; LIB=libiroh_ffi.so    ;;
+  *) echo "ERROR: unsupported host $(uname -sm) — add a case branch" >&2; exit 1 ;;
+esac
+echo "  host: $(uname -sm) → $PLAT/$LIB"
+
+echo "==> release build host cdylib"
+cargo build --release --lib -p iroh-ffi
+
+TARGET_DIR=$(cargo metadata --format-version 1 --no-deps | python3 -c 'import json,sys; print(json.load(sys.stdin)["target_directory"])')
+
+echo "==> stage to $RES/$PLAT/$LIB"
+install -D -m644 "$TARGET_DIR/release/$LIB" "$RES/$PLAT/$LIB"
+
+# Move (not delete) the dev-mode flat lib aside, restore on exit. Otherwise
+# `cargo make test-kotlin` afterwards would have to re-run bindgen-kotlin to
+# put it back, and CI's tree-clean check would fire.
+STASH=$(mktemp -d)
+for f in libiroh_ffi.so libiroh_ffi.dylib iroh_ffi.dll; do
+  [ -f "$RES/$f" ] && mv "$RES/$f" "$STASH/$f"
+done
+trap 'for f in libiroh_ffi.so libiroh_ffi.dylib iroh_ffi.dll; do [ -f "$STASH/$f" ] && mv "$STASH/$f" "$RES/$f"; done; rmdir "$STASH" 2>/dev/null || true' EXIT
+
+echo "==> gradle test (must resolve $LIB from $PLAT/, not flat fallback)"
+( cd kotlin && ./gradlew test --no-daemon --console=plain --quiet )
+echo "verify-kotlin-consumer: OK"
+'''
+
+# ---------------------------------------------------------------------------
 # Docs (self-hosted on GitHub Pages; Swift is additionally on the SPI)
 # ---------------------------------------------------------------------------
 
@@ -351,8 +608,10 @@ if [ "$(uname -s)" != "Darwin" ]; then
   exit 1
 fi
 
-echo "==> swift: build + deterministic zip"
+echo "==> swift: build + verify layout + iOS consumer build + deterministic zip"
 cargo make swift-xcframework >/dev/null
+cargo make verify-swift-xcframework >/dev/null
+cargo make verify-swift-consumer >/dev/null
 bash scripts/release/zip_xcframework.sh
 H1=$(shasum -a 256 IrohLib.xcframework.zip | awk '{print $1}')
 bash scripts/release/zip_xcframework.sh
@@ -360,16 +619,18 @@ H2=$(shasum -a 256 IrohLib.xcframework.zip | awk '{print $1}')
 [ "$H1" = "$H2" ] || { echo "swift zip non-deterministic: $H1 vs $H2" >&2; exit 1; }
 echo "  ok (sha256=$H1)"
 
-echo "==> python: maturin build (host wheel only)"
+echo "==> python: maturin build + wheel consumer smoke"
 PYVENV=$(mktemp -d)/venv
 python3 -m venv "$PYVENV"
 "$PYVENV/bin/pip" install --quiet --upgrade maturin uniffi-bindgen
 WHEELS=$(mktemp -d)
 "$PYVENV/bin/maturin" build --release --quiet --out "$WHEELS"
 ls "$WHEELS"/*.whl
+IROH_WHEEL_DIR="$WHEELS" cargo make verify-python-wheel >/dev/null
 
-echo "==> js: napi build + npm publish --dry-run"
+echo "==> js: napi build + consumer smoke (loads .node, exercises SecretKey)"
 ( cd iroh-js && yarn install --silent && yarn build >/dev/null && npm publish --dry-run 2>&1 | tail -8 )
+cargo make verify-js-package >/dev/null
 
 echo "==> kotlin: gradle publishToMavenLocal (signed)"
 # Dokka 2.0 (javadoc jar) can't parse JDK 25; CI uses Temurin 17. Pin 17 here.
@@ -390,6 +651,13 @@ fi
 ( cd kotlin && ./gradlew :lib:publishToMavenLocal --no-daemon --console=plain --quiet )
 V=$(sed -nE 's/.*coordinates\("computer\.iroh", "iroh", "([^"]+)"\).*/\1/p' kotlin/lib/build.gradle.kts)
 ls "$HOME/.m2/repository/computer/iroh/iroh/$V/" >/dev/null 2>&1 && echo "  ok (staged in ~/.m2)"
+cargo make verify-kotlin-consumer >/dev/null
+echo "  consumer smoke: JNA loaded from per-platform staged path"
+
+# Android consumer smoke is intentionally NOT run here: it needs an Android
+# NDK + cargo-ndk + an active emulator. CI gates it via the
+# verify-kotlin-android-consumer job (release.yml). Locally, run:
+#   ANDROID_NDK_HOME=... cargo make verify-kotlin-android-consumer
 
 echo ""
 echo "pre-release-check passed — safe to run cargo make prepare-release <VERSION>"
