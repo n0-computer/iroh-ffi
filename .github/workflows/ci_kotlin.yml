@@ -83,7 +83,14 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: kotlin-consumer-${{ matrix.name }}
-      - uses: davidB/rust-cargo-make@v1
+      # davidB/rust-cargo-make@v1 only downloads x86_64 binaries; on the
+      # linux-aarch64 self-hosted runner it silently no-ops and cargo make
+      # fails with "no such command: make". taiki-e/install-action uses
+      # cargo-binstall to fetch precompiled cargo-make for all four host
+      # arches we ship (incl. aarch64-unknown-linux-gnu).
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-make
       - uses: actions/setup-java@v4
         with:
           distribution: "temurin"
