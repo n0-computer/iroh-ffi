@@ -474,6 +474,9 @@ echo "verify-kotlin-android-consumer: OK"
 description = "Run the JVM test suite against a release-built, per-JNA-platform-staged cdylib (not the dev-mode flat .so). Catches 'staging path wrong / JNA-platform name typo / .so doesn't load from the per-platform subdir'. Cross-platform — runs on linux/macOS/windows (uses bash via Git for Windows on win32)."
 dependencies = ["bindgen-kotlin"]
 script_runner = "bash"
+# Without this, cargo-make picks the platform default (.cmd on Windows) and
+# runs the bash script through cmd.exe — every shell-ism then fails.
+script_extension = "sh"
 script = '''
 set -eu
 RES=kotlin/lib/src/main/resources
