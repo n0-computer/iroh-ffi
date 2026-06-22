@@ -384,27 +384,43 @@ echo "verify-js-package: OK (covered by test-js)"
 '''
 
 [tasks.verify-swift-consumer]
-description = "Build the IrohLib SwiftPM package against the local xcframework for iOS device + iOS Simulator destinations. test-swift only exercises macOS; this catches link/symbol/bundle-layout issues on the iOS slices (which 99% of Swift consumers actually ship on)."
+description = "Build IrohLib for iOS device + boot an iOS Simulator and run the IrohLib test suite on it. test-swift covers macOS; this catches link/symbol issues + runtime-on-iOS regressions (loader errors, missing exports, dyld surprises) that a pure macOS test misses."
 dependencies = ["swift-xcframework"]
 script_runner = "@shell"
 script = '''
 set -eu
 
-# Plain `xcodebuild build` from the repo root (Package.swift here) resolves
-# IrohLib via SwiftPM and links against the just-built Iroh.xcframework. No
-# console-user / launchctl dance — that's only needed for `xcodebuild test`,
-# which spawns a test runner under the user's GUI session.
+# xcodebuild test on a Simulator destination needs an interactive GUI session
+# (Simulator.app spawns under the console user). Mirror test-swift's pattern.
+CONSOLE_USER=$(stat -f%Su /dev/console)
+CONSOLE_UID=$(id -u "$CONSOLE_USER")
+if [ "$CONSOLE_USER" = "root" ]; then
+  echo "ERROR: no interactive GUI session; cannot run xcodebuild test on iOS sim" >&2
+  exit 1
+fi
+
 rm -rf .xcode-verify-ddata
 
-for dest in "generic/platform=iOS" "generic/platform=iOS Simulator"; do
-  echo "==> xcodebuild build -destination '$dest'"
-  arch -arm64 xcodebuild build \
-    -scheme IrohLib \
-    -destination "$dest" \
-    -derivedDataPath .xcode-verify-ddata \
-    CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
-    -quiet
-done
+# 1. iOS device — build only. Real-device deploy needs signing; build is
+#    enough to catch link/symbol errors specific to the device slice.
+echo "==> xcodebuild build for iOS device (build-only, no run)"
+arch -arm64 xcodebuild build \
+  -scheme IrohLib \
+  -destination "generic/platform=iOS" \
+  -derivedDataPath .xcode-verify-ddata \
+  CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+  -quiet
+
+# 2. iOS Simulator — full xcodebuild test boots a sim, installs the test
+#    bundle, and runs IrohLibTests on the iOS runtime. Catches "links but
+#    crashes on iOS startup" + verifies the simulator slice actually loads.
+SIM_NAME="${IROH_IOS_SIM:-iPhone 16}"
+echo "==> xcodebuild test on iOS Simulator ($SIM_NAME)"
+launchctl asuser "$CONSOLE_UID" arch -arm64 xcodebuild test \
+  -scheme IrohLib \
+  -destination "platform=iOS Simulator,name=$SIM_NAME" \
+  -derivedDataPath .xcode-verify-ddata
+
 echo "verify-swift-consumer: OK"
 '''
 
