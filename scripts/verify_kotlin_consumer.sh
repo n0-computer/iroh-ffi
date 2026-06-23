@@ -13,16 +13,18 @@ set -eu
 
 RES=kotlin/lib/src/main/resources
 
-# Hardware arch — immune to Rosetta on macOS (where uname can lie and report
-# x86_64 even on an arm64 host whose JVM is the arm64 native build, leaving
-# JNA looking at darwin-aarch64/ while we'd've staged to darwin-x86-64/).
+# Hardware arch — must be immune to Rosetta on macOS so that an arm64 JVM
+# pointed at the staged dylib finds an arm64-built one, even when the shell
+# process is running under Rosetta (uname -m and sysctl -n hw.machine BOTH
+# report the process arch, not the hardware). hw.optional.arm64 returns "1"
+# on Apple Silicon regardless of process arch.
 case "$(uname -s)" in
   Darwin)
-    case "$(sysctl -n hw.machine 2>/dev/null)" in
-      arm64)  PLAT=darwin-aarch64 ; CARGO_TARGET=aarch64-apple-darwin ;;
-      x86_64) PLAT=darwin-x86-64  ; CARGO_TARGET=x86_64-apple-darwin  ;;
-      *) echo "ERROR: unsupported Darwin hw.machine=$(sysctl -n hw.machine)" >&2; exit 1 ;;
-    esac
+    if [ "$(sysctl -n hw.optional.arm64 2>/dev/null)" = "1" ]; then
+      PLAT=darwin-aarch64 ; CARGO_TARGET=aarch64-apple-darwin
+    else
+      PLAT=darwin-x86-64  ; CARGO_TARGET=x86_64-apple-darwin
+    fi
     LIB=libiroh_ffi.dylib
     ;;
   Linux)
