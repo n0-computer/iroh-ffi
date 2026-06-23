@@ -100,18 +100,22 @@ def bump_npm(version: str) -> None:
 
 
 def bump_gradle(version: str) -> None:
-    p = REPO / "kotlin" / "lib" / "build.gradle.kts"
-    s = p.read_text()
-    new, n = re.subn(
-        r'coordinates\("computer\.iroh", "iroh", "[^"]+"\)',
-        f'coordinates("computer.iroh", "iroh", "{version}")',
-        s,
-        count=1,
-    )
-    if n != 1:
-        sys.exit("could not find coordinates(\"computer.iroh\", \"iroh\", \"...\") in build.gradle.kts")
-    p.write_text(new)
-    print(f"  kotlin/lib/build.gradle.kts coordinates -> {version}")
+    # Two coordinate literals to bump: :lib publishes computer.iroh:iroh (the
+    # JVM JAR), :android publishes computer.iroh:iroh-android (the AAR). They
+    # must move together — :android depends on the matching :lib version.
+    for sub, artifact in (("lib", "iroh"), ("android", "iroh-android")):
+        p = REPO / "kotlin" / sub / "build.gradle.kts"
+        s = p.read_text()
+        new, n = re.subn(
+            rf'coordinates\("computer\.iroh", "{re.escape(artifact)}", "[^"]+"\)',
+            f'coordinates("computer.iroh", "{artifact}", "{version}")',
+            s,
+            count=1,
+        )
+        if n != 1:
+            sys.exit(f'could not find coordinates("computer.iroh", "{artifact}", "...") in kotlin/{sub}/build.gradle.kts')
+        p.write_text(new)
+        print(f"  kotlin/{sub}/build.gradle.kts coordinates -> {version}")
 
 
 def bump_swift_tag(version: str) -> None:
