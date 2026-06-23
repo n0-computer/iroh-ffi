@@ -233,12 +233,12 @@ set -eu
 # ---------------------------------------------------------------------------
 
 [tasks.verify-swift-xcframework]
-description = "Verify Iroh.xcframework slices have correct Apple bundle layout (shallow on iOS, deep with Versions/A on macOS — Xcode 27+ enforces strict)."
+description = "Verify Iroh.xcframework slices have the flat -library layout xcodebuild produces (libiroh_ffi.a + Headers/, no .framework directory). Catches stale-skeleton remnants from before the build pivoted off the hand-laid Iroh.framework approach."
 script_runner = "@shell"
 script = '''
 set -eu
 XCF="${IROH_XCFRAMEWORK:-Iroh.xcframework}"
-FW="Iroh"
+LIB="libiroh_ffi.a"
 [ -d "$XCF" ] || { echo "ERROR: $XCF not found (build it first: cargo make swift-xcframework)" >&2; exit 1; }
 [ -f "$XCF/Info.plist" ] || { echo "ERROR: missing $XCF/Info.plist" >&2; exit 1; }
 
@@ -247,36 +247,17 @@ err() { printf 'FAIL: %s\n' "$*" >&2; fail=1; }
 
 for slice_dir in "$XCF"/*/; do
   slice=$(basename "$slice_dir")
-  case "$slice" in
-    macos-*|*-maccatalyst) layout=deep ;;
-    *)                     layout=shallow ;;
-  esac
-  printf '  slice %-40s %s bundle\n' "$slice" "$layout"
+  printf '  slice %s\n' "$slice"
 
-  fwdir="$slice_dir$FW.framework"
-  [ -d "$fwdir" ] || { err "$slice: missing $FW.framework"; continue; }
-
-  if [ "$layout" = shallow ]; then
-    [ -f "$fwdir/Info.plist" ] || err "$slice: missing Info.plist at framework root"
-    [ -f "$fwdir/$FW" ]        || err "$slice: missing $FW binary at framework root"
-    [ -d "$fwdir/Headers" ]    || err "$slice: missing Headers/"
-    [ -d "$fwdir/Versions" ]   && err "$slice: has Versions/ — shouldn't exist in a shallow (iOS) bundle"
-  else
-    # macOS deep bundle: Info.plist MUST live under Versions/A/Resources.
-    # Xcode 27+ rejects shallow-style Info.plist with "platform does not use
-    # shallow bundles" (iroh-ffi#247). Top-level entries must be symlinks
-    # into Versions/Current.
-    [ -d "$fwdir/Versions/A" ]                       || { err "$slice: missing Versions/A/ (macOS needs deep bundle layout)"; continue; }
-    [ -L "$fwdir/Versions/Current" ]                 || err "$slice: Versions/Current must be a symlink"
-    [ "$(readlink "$fwdir/Versions/Current")" = A ]  || err "$slice: Versions/Current must point to 'A'"
-    [ -f "$fwdir/Versions/A/Resources/Info.plist" ]  || err "$slice: missing Versions/A/Resources/Info.plist"
-    [ -f "$fwdir/Versions/A/$FW" ]                   || err "$slice: missing Versions/A/$FW binary"
-    [ -d "$fwdir/Versions/A/Headers" ]               || err "$slice: missing Versions/A/Headers/"
-    [ -L "$fwdir/$FW" ]                              || err "$slice: top-level $FW must be a symlink → Versions/Current/$FW"
-    [ -L "$fwdir/Headers" ]                          || err "$slice: top-level Headers must be a symlink → Versions/Current/Headers"
-    [ -L "$fwdir/Resources" ]                        || err "$slice: top-level Resources must be a symlink → Versions/Current/Resources"
-    [ -e "$fwdir/Info.plist" ] && [ ! -L "$fwdir/Info.plist" ] && err "$slice: framework root has a plain Info.plist — macOS bundles must not (Xcode 27+ rejects)"
-  fi
+  # Flat library layout: each slice has lib.a + Headers/ at the slice root.
+  # No .framework directory anywhere — that was the deprecated hand-laid
+  # pattern that needed per-Xcode-major maintenance.
+  [ -f "$slice_dir/$LIB" ]                       || err "$slice: missing $LIB"
+  [ -d "$slice_dir/Headers" ]                    || err "$slice: missing Headers/"
+  [ -f "$slice_dir/Headers/iroh_ffiFFI.h" ]      || err "$slice: missing Headers/iroh_ffiFFI.h"
+  [ -f "$slice_dir/Headers/Export.h" ]           || err "$slice: missing Headers/Export.h (umbrella)"
+  [ -f "$slice_dir/Headers/module.modulemap" ]   || err "$slice: missing Headers/module.modulemap"
+  [ -d "$slice_dir/Iroh.framework" ]             && err "$slice: stale Iroh.framework/ present — xcodebuild -create-xcframework -library produces a flat layout with no .framework dir"
 done
 
 [ $fail -eq 0 ] || { echo "verify-swift-xcframework: FAILED" >&2; exit 1; }
@@ -483,18 +464,14 @@ args = ["scripts/verify_kotlin_consumer.sh"]
 # Docs (self-hosted on GitHub Pages; Swift is additionally on the SPI)
 # ---------------------------------------------------------------------------
 
-[tasks.swift-macos-framework]
-description = "Build only the macOS-arm64 framework slice (for DocC; no iOS slices)."
-script_runner = "@shell"
-script = '''
-set -eu
-./make_swift_macos.sh
-'''
-
 [tasks.docs-swift]
 description = "Build the Swift DocC docs, laid out for Pages static hosting."
-# DocC only needs the macOS slice — not the full 4-target xcframework.
-dependencies = ["swift-macos-framework"]
+# Always builds the full 4-target xcframework. The previous `swift-macos-
+# framework` macOS-only path used a hand-laid framework skeleton; with the
+# `xcodebuild -create-xcframework -library` build pipeline, all four slices
+# come from the same one-shot xcodebuild invocation and there's no slim
+# macOS-only fast-path worth maintaining separately.
+dependencies = ["swift-xcframework"]
 script_runner = "@shell"
 script = '''
 set -eu

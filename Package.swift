@@ -12,11 +12,12 @@ import Foundation
 //   * otherwise (git-URL / Swift Package Index consumers): the pinned,
 //     prebuilt xcframework zip attached to a GitHub release.
 //
-// Presence is keyed on the macOS slice *binary*, which is gitignored — the
-// committed tree only carries an xcframework skeleton (Info.plist/Headers/
-// Modules), so a fresh consumer checkout correctly falls through to the
-// release zip. Set IROH_FORCE_REMOTE_XCFRAMEWORK to force the release zip
-// even in a built checkout.
+// Presence is keyed on the macOS slice's static lib. The whole xcframework
+// directory is gitignored (build artifact only — Apple regenerates it from
+// the cargo-built .a files via `xcodebuild -create-xcframework -library`),
+// so a fresh consumer checkout has nothing local to find and falls through
+// to the release zip. Set IROH_FORCE_REMOTE_XCFRAMEWORK to force the release
+// zip even in a built checkout.
 //
 // The two release literals below are the only things `cargo make
 // prepare-release` rewrites (per Phase 6 plan, CI never writes to main).
@@ -27,7 +28,7 @@ let releaseChecksum = "514b147f7965fe17acaece9a1157cf9421463b6c9282224983e871ea8
 
 let packageDir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
 let localBuiltBinary = packageDir
-    .appendingPathComponent("Iroh.xcframework/macos-arm64/Iroh.framework/Iroh")
+    .appendingPathComponent("Iroh.xcframework/macos-arm64/libiroh_ffi.a")
 let forceRemote = ProcessInfo.processInfo.environment["IROH_FORCE_REMOTE_XCFRAMEWORK"] != nil
 let useLocalXcframework = !forceRemote
     && FileManager.default.fileExists(atPath: localBuiltBinary.path)
