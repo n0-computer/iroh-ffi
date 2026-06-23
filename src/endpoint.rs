@@ -178,7 +178,7 @@ pub struct EndpointOptions {
     /// an internal router is spawned to dispatch incoming connections to the
     /// supplied handlers.
     #[uniffi(default = None)]
-    pub protocols: Option<HashMap<Vec<u8>, Arc<dyn ProtocolCreator>>>,
+    pub protocols: Option<HashMap<String, Arc<dyn ProtocolCreator>>>,
 }
 
 #[uniffi::export(with_foreign)]
