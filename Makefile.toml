@@ -395,11 +395,28 @@ arch -arm64 xcodebuild build \
 # 2. iOS Simulator — full xcodebuild test boots a sim, installs the test
 #    bundle, and runs IrohLibTests on the iOS runtime. Catches "links but
 #    crashes on iOS startup" + verifies the simulator slice actually loads.
-SIM_NAME="${IROH_IOS_SIM:-iPhone 16}"
-echo "==> xcodebuild test on iOS Simulator ($SIM_NAME)"
+#    Pick any available iOS Simulator via simctl: local dev (iPhone 17 Pro,
+#    iPhone Air, …) and CI (iPhone 16 default) both work, no hardcoded name
+#    to keep up with Apple's annual lineup.
+SIM_ID=$(xcrun simctl list devices available -j | python3 -c '
+import json, sys
+data = json.load(sys.stdin)
+for runtime, devices in data["devices"].items():
+    if "SimRuntime.iOS" in runtime:
+        for d in devices:
+            if d.get("isAvailable"):
+                print(d["udid"]); sys.exit(0)
+sys.exit(1)
+' || true)
+if [ -z "$SIM_ID" ]; then
+  echo "ERROR: no available iOS Simulator. Install one via Xcode > Settings > Components." >&2
+  exit 1
+fi
+DEST="${IROH_IOS_SIM_DEST:-platform=iOS Simulator,id=$SIM_ID}"
+echo "==> xcodebuild test on iOS Simulator ($DEST)"
 launchctl asuser "$CONSOLE_UID" arch -arm64 xcodebuild test \
   -scheme IrohLib \
-  -destination "platform=iOS Simulator,name=$SIM_NAME" \
+  -destination "$DEST" \
   -derivedDataPath .xcode-verify-ddata
 
 echo "verify-swift-consumer: OK"
