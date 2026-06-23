@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-"""Rewrite the three version literals across the repo as a single source of truth.
+"""Rewrite the version literals across the repo as a single source of truth.
 
-Called by `cargo make prepare-release <VERSION>` in two passes:
-  1. Pass 1 (just VERSION):  bumps Cargo.toml [package].version,
-     iroh-js/package.json version, and Package.swift releaseTag.
-  2. Pass 2 (--checksum HEX): writes Package.swift releaseChecksum once the
-     deterministic xcframework zip has been built and shasum'd.
+Two entry points:
+  1. `cargo make prepare-release <V>` calls this with just VERSION to bump
+     Cargo.toml [package].version, iroh-js/{Cargo.toml,package.json}, all the
+     iroh-js/npm/*/package.json sub-packages, pyproject.toml,
+     kotlin/lib/build.gradle.kts coordinates, and Package.swift releaseTag.
+  2. release_swift.yml (PR CI) calls this with --checksum HEX once it has
+     built the xcframework and shasum'd the deterministic zip, to write
+     Package.swift releaseChecksum.
 
 Pure deterministic text/JSON transforms — no model, no network (org Rule 5).
 """

@@ -579,7 +579,7 @@ dependencies = ["format-check", "clippy", "docs", "test-rust"]
 # ---------------------------------------------------------------------------
 
 [tasks.pre-release-check]
-description = "Local dry-run of every release artifact build (no uploads, no network publishes). Run before tagging."
+description = "Local dry-run of every release artifact build (no uploads, no network publishes). Run before opening the release PR. Swift xcframework + zip is exercised here as a sanity check but the published release uses the zip that release_swift.yml builds on PR CI — local SHAs do NOT need to match CI."
 script_runner = "@shell"
 script = '''
 set -eu
@@ -589,7 +589,7 @@ if [ "$(uname -s)" != "Darwin" ]; then
   exit 1
 fi
 
-echo "==> swift: build + verify layout + iOS consumer build + deterministic zip"
+echo "==> swift: build + verify layout + iOS sim test + same-host zip determinism"
 cargo make swift-xcframework >/dev/null
 cargo make verify-swift-xcframework >/dev/null
 cargo make verify-swift-consumer >/dev/null
@@ -597,8 +597,12 @@ bash scripts/release/zip_xcframework.sh
 H1=$(shasum -a 256 IrohLib.xcframework.zip | awk '{print $1}')
 bash scripts/release/zip_xcframework.sh
 H2=$(shasum -a 256 IrohLib.xcframework.zip | awk '{print $1}')
-[ "$H1" = "$H2" ] || { echo "swift zip non-deterministic: $H1 vs $H2" >&2; exit 1; }
-echo "  ok (sha256=$H1)"
+# Same-host determinism: the build must produce identical bytes when run twice
+# on the same machine. Catches stale caches / non-deterministic flags. Doesn't
+# attempt cross-host match — release_swift.yml is the only build whose zip
+# actually ships.
+[ "$H1" = "$H2" ] || { echo "swift zip non-deterministic on this host: $H1 vs $H2" >&2; exit 1; }
+echo "  ok (sha256=$H1, ships from CI not from here)"
 
 echo "==> python: maturin build + wheel consumer smoke"
 PYVENV=$(mktemp -d)/venv
