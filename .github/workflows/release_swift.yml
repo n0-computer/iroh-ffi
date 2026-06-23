@@ -1,0 +1,83 @@
+name: Release Swift artifact
+
+# Triggers on push to release/v* branches (the convention prepare-release sets
+# up). Builds the Apple xcframework on CI, verifies its layout + that the iOS
+# slices link + that the macOS slice's tests pass, then:
+#   1. Bakes the resulting SHA-256 into Package.swift on this branch via a
+#      bot commit ([skip swift-release] in the message prevents this workflow
+#      from re-firing on its own commit).
+#   2. Uploads IrohLib.xcframework.zip to a draft GitHub release v<version>.
+#
+# Once the release PR merges + the v<version> tag is pushed, release.yml's
+# build-and-publish-swift job promotes that draft to published — no rebuild,
+# so the SHA in Package.swift always matches the zip on the release. Cleanly
+# sidesteps the cross-host determinism problem the prior local-build flow
+# kept hitting.
+
+on:
+  push:
+    branches:
+      - 'release/v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-bake:
+    name: Build xcframework + bake SHA + upload draft
+    # Don't re-fire on the bot's own SHA-bake commit.
+    if: "!contains(github.event.head_commit.message, '[skip swift-release]')"
+    runs-on: [self-hosted, macOS, ARM64, xcode16]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history so the bot can commit + push back to this branch.
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios,aarch64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+      - uses: davidB/rust-cargo-make@v1
+      - name: Build xcframework + verify layout + iOS consumer + zip
+        run: |
+          cargo make swift-xcframework
+          cargo make verify-swift-xcframework
+          cargo make verify-swift-consumer
+          bash scripts/release/zip_xcframework.sh
+      - name: Parse version from Package.swift
+        id: version
+        run: |
+          v=$(grep -oE 'let releaseTag = "v[^"]+"' Package.swift | sed -E 's/.*"v([^"]+)"/\1/')
+          [ -n "$v" ] || { echo "ERROR: couldn't parse releaseTag in Package.swift" >&2; exit 1; }
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+      - name: Bake SHA into Package.swift (if changed)
+        run: |
+          CURRENT=$(grep -oE 'let releaseChecksum = "[a-f0-9]+"' Package.swift | sed -E 's/.*"([a-f0-9]+)"/\1/')
+          NEW=$(shasum -a 256 IrohLib.xcframework.zip | awk '{print $1}')
+          if [ "$CURRENT" = "$NEW" ]; then
+            echo "Checksum unchanged ($NEW) — skipping commit"
+            exit 0
+          fi
+          python3 scripts/release/bump_version.py --checksum "$NEW"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Package.swift
+          git commit -m "chore(release): bake Swift xcframework SHA $NEW [skip swift-release]"
+          git push
+      - name: Upload zip to draft GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          V=${{ steps.version.outputs.version }}
+          # Create the draft release if it doesn't exist; replace its zip if it
+          # does (re-pushes to the release branch overwrite the previous draft
+          # asset, so the asset always matches the latest Package.swift SHA).
+          if ! gh release view "v$V" >/dev/null 2>&1; then
+            gh release create "v$V" \
+              --draft \
+              --title "v$V" \
+              --notes "Draft release — promoted to published by release.yml on tag push."
+          fi
+          gh release upload "v$V" IrohLib.xcframework.zip --clobber

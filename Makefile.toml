@@ -645,16 +645,11 @@ echo "pre-release-check passed — safe to run cargo make prepare-release <VERSI
 '''
 
 [tasks.prepare-release]
-description = "Bump versions everywhere + build a deterministic xcframework zip + bake the checksum into Package.swift. Run on macOS (needs Xcode for the xcframework). Usage: cargo make prepare-release <VERSION>"
+description = "Bump version literals across every binding manifest. The Swift xcframework checksum is filled in by PR CI (release_swift.yml) once the release PR is open, so this no longer needs Xcode locally. Usage: cargo make prepare-release <VERSION>"
 script_runner = "@shell"
 script = '''
 set -eu
 VERSION="${1:?usage: cargo make prepare-release <VERSION> (no leading v)}"
-
-if [ "$(uname -s)" != "Darwin" ]; then
-  echo "ERROR: prepare-release must run on macOS (Xcode-required xcframework build)" >&2
-  exit 1
-fi
 
 echo "==> rewrite version literals"
 python3 scripts/release/bump_version.py "$VERSION"
@@ -665,28 +660,21 @@ cargo update -p iroh-ffi --precise "$VERSION" >/dev/null
 echo "==> refresh iroh-js/yarn.lock"
 ( cd iroh-js && yarn install --mode update-lockfile >/dev/null )
 
-echo "==> build full xcframework"
-cargo make swift-xcframework >/dev/null
-
-echo "==> deterministic zip + checksum"
-bash scripts/release/zip_xcframework.sh
-CHECKSUM=$(shasum -a 256 IrohLib.xcframework.zip | awk '{print $1}')
-
-echo "==> bake checksum into Package.swift"
-python3 scripts/release/bump_version.py --checksum "$CHECKSUM"
-
 cat <<EOF
 
-Prepared release v$VERSION.
-  zip: IrohLib.xcframework.zip ($(stat -f%z IrohLib.xcframework.zip) bytes)
-  sha256: $CHECKSUM
+Prepared release v$VERSION (versions only; Swift xcframework SHA is CI's job).
 
 Next:
   git checkout -b release/v$VERSION
   git commit -am "chore(release): v$VERSION"
-  # PR -> green CI -> merge to main
-  git tag v$VERSION <merge commit>
+  git push -u origin release/v$VERSION
+  # Open PR. release_swift.yml builds the xcframework on a CI runner, bakes
+  # the resulting SHA into Package.swift on this branch, and uploads the zip
+  # to a draft GitHub release at v$VERSION. Review the SHA-bake commit + the
+  # draft release asset, then merge and tag:
+  git tag v$VERSION <merge-commit-sha>
   git push origin v$VERSION
+  # release.yml promotes the draft release to published.
 EOF
 '''
 
