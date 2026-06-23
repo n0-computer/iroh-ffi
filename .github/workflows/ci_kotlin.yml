@@ -41,6 +41,10 @@ jobs:
           distribution: "temurin"
           java-version: "21"
       - uses: gradle/actions/setup-gradle@v4
+      # AGP requires the Android SDK at configuration time. Even though
+      # test-kotlin only runs :lib:test, Gradle still has to configure the
+      # :android subproject in the same kotlin/ root build.
+      - uses: android-actions/setup-android@v3
       - name: cargo make test-kotlin
         run: cargo make test-kotlin
 
@@ -116,6 +120,10 @@ jobs:
           distribution: "temurin"
           java-version: "21"
       - uses: gradle/actions/setup-gradle@v4
+      # AGP requires the Android SDK at configuration time; even though this
+      # job only runs :lib:test, Gradle still configures the :android
+      # subproject in the same root build.
+      - uses: android-actions/setup-android@v3
       - name: cargo make verify-kotlin-consumer
         run: cargo make verify-kotlin-consumer
 

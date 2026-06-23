@@ -294,6 +294,10 @@ permissions:
         with:
           distribution: temurin
           java-version: "17"
+      # AGP requires the Android SDK at gradle-configure time; the :android
+      # subproject in kotlin/ root configures even when only :lib is being
+      # built. Same reason setup-android shows up in ci_kotlin.yml jobs.
+      - uses: android-actions/setup-android@v3
       # Generate `iroh_ffi.kt` from the local debug cdylib. We discard the
       # flat resources/libiroh_ffi.so it also copies, because we're shipping
       # the per-platform release builds under jna-platform/ dirs instead.
