@@ -44,6 +44,14 @@ suite('endpoint', () => {
     assert.ok(ep.isClosed())
   })
 
+  test('builder.bind() consumes — second call errors', async () => {
+    const b = Endpoint.builder()
+    presetMinimal(b)
+    const ep = await b.bind()
+    await ep.close()
+    await assert.rejects(() => b.bind(), /already consumed/)
+  })
+
   test('custom preset function', async () => {
     // A user-defined preset is just a function over the builder.
     const myPreset = (b) => {

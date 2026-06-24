@@ -4,7 +4,7 @@ import asyncio
 import pytest
 
 import iroh
-from iroh import Endpoint, EndpointOptions, EndpointTicket, RelayMode, preset_minimal, preset_n0
+from iroh import Endpoint, EndpointBuilder, EndpointOptions, EndpointTicket, RelayMode, preset_minimal, preset_n0
 
 ALPN = b"iroh-ffi/test/0"
 
@@ -21,6 +21,23 @@ async def test_custom_preset():
     ep = await Endpoint.bind(EndpointOptions(preset=CustomPreset()))
     assert len(ep.bound_sockets()) > 0
     await ep.close()
+
+
+async def test_builder_bind():
+    builder = EndpointBuilder()
+    builder.apply_minimal()
+    ep = await builder.bind()
+    assert len(ep.bound_sockets()) > 0
+    await ep.close()
+
+
+async def test_builder_bind_consumes():
+    builder = EndpointBuilder()
+    builder.apply_minimal()
+    ep = await builder.bind()
+    await ep.close()
+    with pytest.raises(Exception, match="already consumed"):
+        await builder.bind()
 
 
 async def test_bind_lifecycle():
