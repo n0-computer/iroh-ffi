@@ -89,7 +89,7 @@ CI never writes to `main`.
    | `release.yml` | promotes the draft GH release v<version> to published; uploads per-OS C lib archives |
    | `ci_js.yml` `publish` | `@number0/iroh` to npm (`--provenance`, OIDC) |
    | `wheels.yml` `publish` | `iroh` wheels to PyPI (OIDC) |
-   | `release.yml` `build-and-publish-kotlin` | `computer.iroh:iroh` to Maven Central |
+   | `release.yml` `build-and-publish-kotlin` | `computer.iroh:iroh` (JVM JAR) + `computer.iroh:iroh-android` (AAR) to Maven Central — one `./gradlew publishAndReleaseToMavenCentral` invocation, both subprojects published in the same Sonatype staging |
    | `docs.yml` | GitHub Pages site refresh |
 
    The Swift xcframework zip is **not** rebuilt at tag time — `release.yml`
@@ -97,6 +97,33 @@ CI never writes to `main`.
 
    If any publish fails, fix and re-tag with the next patch version (do
    not re-use a tag).
+
+## Kotlin: two artifacts, one publish
+
+The release publishes both `computer.iroh:iroh` (JVM JAR, for desktop
+Java/Kotlin consumers — JNA-loaded desktop natives only) and
+`computer.iroh:iroh-android` (AAR, for Android consumers — bundles
+`libiroh_ffi.so` per ABI at `jni/<abi>/` plus the `IrohAndroid` initializer
+class). The AAR `api`-depends on the JAR, so an Android consumer that pulls
+in `iroh-android` transitively gets the full Kotlin API surface.
+
+**Migrating an Android consumer from `iroh` → `iroh-android`:** one-line
+dependency swap. `IrohAndroid` moved from `computer.iroh` (in the JAR) to
+`computer.iroh.android` … actually still `computer.iroh` (the package
+didn't change, only which artifact ships the class). Imports stay
+unchanged; only the Gradle coordinate moves:
+
+```kotlin
+// before
+implementation("computer.iroh:iroh:<VERSION>")
+
+// after (Android consumers — apps + library modules with
+// com.android.application / com.android.library)
+implementation("computer.iroh:iroh-android:<VERSION>")
+```
+
+JVM consumers stay on `computer.iroh:iroh` and see a smaller JAR (no
+Android natives bundled in).
 
 ## Why PR-CI builds the Swift xcframework (not local, not tag-CI)
 
