@@ -41,10 +41,12 @@ jobs:
           distribution: "temurin"
           java-version: "21"
       - uses: gradle/actions/setup-gradle@v4
-      # AGP requires the Android SDK at configuration time. Even though
-      # test-kotlin only runs :lib:test, Gradle still has to configure the
-      # :android subproject in the same kotlin/ root build.
+      # AGP requires the Android SDK at configuration time. Skip on
+      # linux-aarch64 (setup-android@v3 fails on that runner) — the :android
+      # subproject is conditionally excluded by settings.gradle.kts when no
+      # SDK is detected, so :lib still builds + tests fine without it.
       - uses: android-actions/setup-android@v3
+        if: matrix.name != 'linux-aarch64'
       - name: cargo make test-kotlin
         run: cargo make test-kotlin
 
@@ -120,10 +122,12 @@ jobs:
           distribution: "temurin"
           java-version: "21"
       - uses: gradle/actions/setup-gradle@v4
-      # AGP requires the Android SDK at configuration time; even though this
-      # job only runs :lib:test, Gradle still configures the :android
-      # subproject in the same root build.
+      # AGP requires the Android SDK at configuration time. Skip on
+      # linux-aarch64 (setup-android@v3 fails on that runner) — the :android
+      # subproject is conditionally excluded by settings.gradle.kts when no
+      # SDK is detected, so :lib still builds + tests fine without it.
       - uses: android-actions/setup-android@v3
+        if: matrix.name != 'linux-aarch64'
       - name: cargo make verify-kotlin-consumer
         run: cargo make verify-kotlin-consumer
 
@@ -194,16 +198,16 @@ jobs:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
         run: |
           set -eu
-          # Stage at lib/<abi>/ — where AGP's mergeNativeLibsTask scans JAR
-          # deps to pull natives into a consumer APK.
+          # Stage at kotlin/android/src/main/jniLibs/<abi>/ — AAR source-set
+          # path, AGP packages these into the AAR's jni/<abi>/.
           cargo ndk -o ./_android_libs \
             -t armeabi-v7a -t arm64-v8a -t x86 -t x86_64 \
             build --release --lib -p iroh-ffi
-          RES=kotlin/lib/src/main/resources
+          JNI=kotlin/android/src/main/jniLibs
           for abi in armeabi-v7a arm64-v8a x86 x86_64; do
-            install -D -m644 "./_android_libs/$abi/libiroh_ffi.so" "$RES/lib/$abi/libiroh_ffi.so"
+            install -D -m644 "./_android_libs/$abi/libiroh_ffi.so" "$JNI/$abi/libiroh_ffi.so"
           done
-          # Composite-build :lib:jar needs the bindings file.
+          # Composite-build :android:assemble needs iroh_ffi.kt for :lib.
           cargo make bindgen-kotlin
       - name: Enable KVM
         run: |

@@ -31,15 +31,12 @@ android {
 }
 
 dependencies {
-    // The artifact under test. Exclude its JNA transitive — kotlin/lib
-    // declares net.java.dev.jna:jna:5.15.0 (the JAR variant, fine for JVM
-    // consumers), but Android needs the AAR variant which ships
-    // libjnidispatch.so for each ABI. AGP errors on the duplicate-class
-    // collision if both flavors hit the classpath.
-    implementation("computer.iroh:iroh:$irohVersion") {
-        exclude(group = "net.java.dev.jna", module = "jna")
-    }
-    implementation("net.java.dev.jna:jna:5.15.0@aar")
+    // The artifact under test. Android consumers depend on iroh-android (the
+    // AAR), which already handles the JNA AAR-vs-JAR exclusion internally —
+    // the transitive computer.iroh:iroh (the JVM JAR) is what carries the
+    // Kotlin API surface, and iroh-android adds IrohAndroid + the per-ABI
+    // libiroh_ffi.so files at jni/<abi>/.
+    implementation("computer.iroh:iroh-android:$irohVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
 
     androidTestImplementation("androidx.test.ext:junit:1.2.1")

@@ -108,6 +108,10 @@ package-lock.json
 
 kotlin/*.jar
 kotlin/**/*.dylib
+# Android native libs are CI-staged (release.yml / kotlin-android job); the
+# AAR build pulls them into the publication but the .so files themselves are
+# generated artifacts, not source.
+kotlin/android/src/main/jniLibs/
 
 # Transient xcodebuild derived data for the Swift test task
 /.xcode-ddata

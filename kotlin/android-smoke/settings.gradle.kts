@@ -27,7 +27,10 @@ dependencyResolutionManagement {
 
 includeBuild("..") {
     dependencySubstitution {
-        substitute(module("computer.iroh:iroh")).using(project(":lib"))
+        // Android consumers depend on computer.iroh:iroh-android (the AAR);
+        // computer.iroh:iroh is the JVM-only JAR sibling, not what gets
+        // pulled into APKs.
+        substitute(module("computer.iroh:iroh-android")).using(project(":android"))
     }
 }
 

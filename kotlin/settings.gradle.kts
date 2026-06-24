@@ -24,4 +24,19 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "iroh-kotlin"
-include("lib", "android")
+include("lib")
+
+// `:android` requires an Android SDK at Gradle configuration time. On hosts
+// without one (e.g. the self-hosted linux-aarch64 runner where
+// android-actions/setup-android fails), skip the subproject so the rest of
+// the build still works. Jobs that need :android (publish, Android consumer
+// smoke) run setup-android before invoking Gradle.
+val androidSdkAvailable = listOf(
+    System.getenv("ANDROID_HOME"),
+    System.getenv("ANDROID_SDK_ROOT"),
+).any { !it.isNullOrEmpty() } || file("local.properties").exists()
+if (androidSdkAvailable) {
+    include("android")
+} else {
+    logger.lifecycle("[settings] No Android SDK detected (ANDROID_HOME / ANDROID_SDK_ROOT unset, no local.properties) — skipping :android subproject")
+}
