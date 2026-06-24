@@ -11,6 +11,15 @@
 
 set -eu
 
+# Gradle 8.13 + AGP 8.13 + Kotlin 2.2.20 + Dokka 2 require Java 17-21. If
+# the user's default JAVA_HOME is e.g. Homebrew's openjdk@26, shim to an
+# installed JDK 17 (macOS only — `java_home -v 17`); CI explicitly sets
+# Java 21 via actions/setup-java.
+if [ "$(uname -s)" = "Darwin" ] && [ -x /usr/libexec/java_home ]; then
+  JDK17=$(/usr/libexec/java_home -v 17 2>/dev/null || true)
+  [ -n "$JDK17" ] && [ -d "$JDK17" ] && export JAVA_HOME="$JDK17"
+fi
+
 RES=kotlin/lib/src/main/resources
 
 # Hardware arch — must be immune to Rosetta on macOS so that an arm64 JVM
