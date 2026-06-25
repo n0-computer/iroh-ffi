@@ -22,6 +22,7 @@ env:
 permissions:
   contents: write
 
+jobs:
   # Tag-push publish: PR-CI (release_swift.yml) created a draft release with
   # the Swift xcframework zip already attached and the SHA already baked into
   # Package.swift on main. Tag time, this job just promotes the draft to
