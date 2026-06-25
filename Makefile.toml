@@ -86,6 +86,7 @@ case "$(uname -s)" in
 esac
 TARGET_DIR=$(cargo metadata --format-version 1 --no-deps | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
 LIB="$TARGET_DIR/debug/${LIB_NAME}.${EXT}"
+export RUSTFLAGS="--crate-type=staticlib,cdylib"
 cargo run --bin uniffi-bindgen generate --language kotlin \
   --out-dir kotlin/lib/src/main/kotlin/ --config "$UNIFFI_CONFIG" --library "$LIB"
 mkdir -p kotlin/lib/src/main/resources/
@@ -173,6 +174,7 @@ script = '''
 set -eu
 command -v cargo-ndk >/dev/null 2>&1 || cargo install --version 3.5.4 cargo-ndk --locked
 # Host lib only needed so uniffi-bindgen can read metadata.
+export RUSTFLAGS="--crate-type=staticlib,cdylib"
 cargo build --lib
 TARGET_DIR=$(cargo metadata --format-version 1 --no-deps | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
 cargo ndk -o ./kotlin/lib/src/main/jniLibs \

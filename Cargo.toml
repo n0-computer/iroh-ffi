@@ -21,7 +21,6 @@ name = "iroh"
 
 [lib]
 name = "iroh_ffi"
-crate-type = ["staticlib", "cdylib"]
 
 [[bin]]
 name = "uniffi-bindgen"

@@ -20,7 +20,8 @@ export RUSTFLAGS="${RUSTFLAGS:-} \
   --remap-path-prefix=${CARGO_PFX}/registry=/cargo/registry \
   --remap-path-prefix=${CARGO_PFX}/git=/cargo/git \
   --remap-path-prefix=${RUSTUP_PFX}=/rustup \
-  --remap-path-prefix=${REPO_PFX}=/build"
+  --remap-path-prefix=${REPO_PFX}=/build \
+  --crate-type=staticlib,cdylib"
 # --remap-path-prefix is Rust-only. Several deps (notably `ring`) compile bundled
 # C sources via build.rs + the `cc` crate, and those object files also embed
 # absolute source paths. `-ffile-prefix-map` is clang/gcc's analogue. The `cc`

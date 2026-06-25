@@ -16,6 +16,7 @@ export MACOSX_DEPLOYMENT_TARGET="14.5"
 TARGET_DIR=$(cargo metadata --format-version 1 --no-deps | python3 -c 'import json,sys;print(json.load(sys.stdin)["target_directory"])')
 
 # Default lib (for the bindgen metadata step) + the macOS release slice.
+export RUSTFLAGS="--crate-type=staticlib,cdylib"
 cargo build --lib
 echo "Building aarch64-apple-darwin"
 cargo build --release --target aarch64-apple-darwin
