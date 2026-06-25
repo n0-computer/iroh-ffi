@@ -18,5 +18,6 @@ kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version = "2.2.20" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version = "2.2.20" }
 # AGP 8.13 supports Kotlin 2.2.x + Gradle 8.13 (root wrapper version above).
 android-library = { id = "com.android.library", version = "8.13.0" }
+android-application = { id = "com.android.application", version = "8.13.0" }
 dokka = { id = "org.jetbrains.dokka", version = "2.0.0" }
 maven-publish = { id = "com.vanniktech.maven.publish", version = "0.34.0" }

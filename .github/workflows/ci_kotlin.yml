@@ -41,25 +41,10 @@ jobs:
           distribution: "temurin"
           java-version: "21"
       - uses: gradle/actions/setup-gradle@v4
-      # AGP requires the Android SDK at configuration time. Skip on
-      # linux-aarch64 (setup-android@v3 fails on that runner) — the :android
-      # subproject is conditionally excluded by settings.gradle.kts when no
-      # SDK is detected, so :lib still builds + tests fine without it.
       - uses: android-actions/setup-android@v3
         if: matrix.name != 'linux-aarch64'
-      - name: cargo make test-kotlin
-        run: cargo make test-kotlin
+      - run: cargo make test-kotlin
 
-  # Per-host consumer smoke for the JVM Maven artifact. test-kotlin (above)
-  # loads the dev-mode flat libiroh_ffi.so from the resources root; that's not
-  # the shape the published jar ships in. This matrix builds the host's
-  # release cdylib, stages it under its JNA-platform subdir (the path JNA
-  # discovers from classpath at runtime, same as release.yml's stage step),
-  # hides the flat lib, and runs the gradle test suite — catching wrong
-  # JNA-platform names, staging path typos, or "loads via flat fallback but
-  # not from the per-platform subdir."
-  # Matrix mirrors release.yml's build-kotlin-cdylib hosts (linux x86_64 /
-  # linux aarch64 / macOS arm64 / windows x86_64).
   kotlin-jvm-consumer-smoke:
     name: Kotlin - JVM consumer smoke (${{ matrix.name }})
     timeout-minutes: 30
@@ -75,10 +60,8 @@ jobs:
             runner: [self-hosted, linux, ARM64]
             cargo_target: aarch64-unknown-linux-gnu
           - name: macOS-aarch64
-            # `xcode16` selects the native-arm runner pool (the unlabeled
-            # macOS/ARM64 pool runs its agent under Rosetta — uname reports
-            # x86_64 even on M-series hardware, breaking arch-matching for
-            # JNA against the arm64 JVM).
+            # xcode16 → native-arm runner pool; the unlabeled macOS/ARM64 pool
+            # is Rosetta'd and uname misreports x86_64.
             runner: [self-hosted, macOS, ARM64, xcode16]
             cargo_target: aarch64-apple-darwin
           - name: windows-x86_64
@@ -86,9 +69,6 @@ jobs:
             cargo_target: x86_64-pc-windows-msvc
     defaults:
       run:
-        # Git Bash on Windows; matches `bash` on linux/macOS. cargo-make's
-        # verify-kotlin-consumer task invokes scripts/verify_kotlin_consumer.sh
-        # via `command = "bash"`.
         shell: bash
     steps:
       - uses: actions/checkout@master
@@ -96,21 +76,12 @@ jobs:
           submodules: recursive
       - uses: dtolnay/rust-toolchain@stable
         with:
-          # Explicit target — the macOS-arm-latest self-hosted runner is
-          # running its agent under Rosetta (uname reports x86_64), so without
-          # this, cargo's host default would produce an x86_64 dylib that the
-          # native-arm64 JVM can't load. The verify script's `--target`
-          # invocation requires this target to be installed.
           targets: ${{ matrix.cargo_target }}
       - uses: Swatinem/rust-cache@v2
         with:
           key: kotlin-consumer-${{ matrix.name }}
-      # cargo install builds cargo-make from source (~3 min cold), works on
-      # every host arch we ship. Self-hosted runners persist the binary
-      # between jobs; the GH-hosted windows-latest pays the compile each run.
-      # taiki-e/install-action@v2 doesn't have an aarch64-linux precompiled
-      # cargo-make in its manifest, and davidB/rust-cargo-make@v1 only ships
-      # x86_64 binaries.
+      # taiki-e/install-action has no aarch64-linux cargo-make and davidB
+      # ships x86_64-only; cargo install works on every host.
       - name: Install cargo-make
         shell: bash
         run: |
@@ -122,14 +93,9 @@ jobs:
           distribution: "temurin"
           java-version: "21"
       - uses: gradle/actions/setup-gradle@v4
-      # AGP requires the Android SDK at configuration time. Skip on
-      # linux-aarch64 (setup-android@v3 fails on that runner) — the :android
-      # subproject is conditionally excluded by settings.gradle.kts when no
-      # SDK is detected, so :lib still builds + tests fine without it.
       - uses: android-actions/setup-android@v3
         if: matrix.name != 'linux-aarch64'
-      - name: cargo make verify-kotlin-consumer
-        run: cargo make verify-kotlin-consumer
+      - run: cargo make verify-kotlin-consumer
 
   kotlin-android:
     name: Kotlin - Android cross-build
@@ -149,27 +115,20 @@ jobs:
           distribution: "temurin"
           java-version: "21"
       - uses: android-actions/setup-android@v3
-      - name: Setup Android NDK
-        uses: arqu/setup-ndk@main
+      - uses: arqu/setup-ndk@main
         id: setup-ndk
         with:
           ndk-version: r23
           add-to-path: true
-      - name: cargo make kotlin-android
-        env:
+      - env:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
         run: cargo make kotlin-android
 
-  # PR-time Android consumer smoke. Cross-builds the natives, stages them
-  # under lib/<abi>/, then runs the IrohSmokeTest on an emulator. Mirrors the
-  # release.yml verify-kotlin-android-consumer job — same gate, fires on every
-  # PR instead of waiting for a release tag.
   kotlin-android-consumer-smoke:
     name: Kotlin - Android consumer smoke (emulator)
     timeout-minutes: 45
-    # ubuntu-latest has /dev/kvm via nested-virt — required by
-    # android-emulator-runner. The self-hosted linux runner used by
-    # kotlin-android above doesn't have KVM enabled.
+    # ubuntu-latest has /dev/kvm via nested-virt; kotlin-android's
+    # self-hosted runner doesn't.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
@@ -185,41 +144,26 @@ jobs:
           distribution: "temurin"
           java-version: "17"
       - uses: android-actions/setup-android@v3
-      - name: Setup Android NDK
-        uses: arqu/setup-ndk@main
+      - uses: arqu/setup-ndk@main
         id: setup-ndk
         with:
           ndk-version: r23
           add-to-path: true
-      - name: Install cargo-ndk
-        run: cargo install --version 3.5.4 cargo-ndk --locked
-      - name: Cross-build + stage Android natives
+      - run: cargo install --version 3.5.4 cargo-ndk --locked
+      - name: Cross-build Android natives
         env:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
         run: |
-          set -eu
-          # Stage at kotlin/android/src/main/jniLibs/<abi>/ — AAR source-set
-          # path, AGP packages these into the AAR's jni/<abi>/.
-          cargo ndk -o ./_android_libs \
+          cargo ndk -o ./android-jniLibs \
             -t armeabi-v7a -t arm64-v8a -t x86 -t x86_64 \
             build --release --lib -p iroh-ffi
-          JNI=kotlin/android/src/main/jniLibs
-          for abi in armeabi-v7a arm64-v8a x86 x86_64; do
-            install -D -m644 "./_android_libs/$abi/libiroh_ffi.so" "$JNI/$abi/libiroh_ffi.so"
-          done
-          # Composite-build :android:assemble needs iroh_ffi.kt for :lib.
-          cargo make bindgen-kotlin
+      - run: bash scripts/stage_android_natives.sh
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Run Android consumer smoke on emulator
-        # API 35 / x86_64 / google_apis mirrors n0-computer/iroh's android job.
-        # `script:` runs each line as a separate `sh -c`, so state across
-        # lines is lost. Delegate to scripts/run_android_smoke.sh so cd +
-        # variable assignment + gradlew live in one shell.
-        uses: reactivecircus/android-emulator-runner@v2
+      - uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
           arch: x86_64

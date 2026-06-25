@@ -249,17 +249,7 @@ permissions:
         with:
           name: kotlin-android-jniLibs
           path: android-jniLibs/
-      - name: Stage Android natives + generate Kotlin bindings
-        run: |
-          set -eu
-          # AAR source-set path — AGP packages files here into the AAR's
-          # jni/<abi>/, which consumers' APKs then merge.
-          JNI=kotlin/android/src/main/jniLibs
-          for abi in armeabi-v7a arm64-v8a x86 x86_64; do
-            install -D -m644 "android-jniLibs/$abi/libiroh_ffi.so" "$JNI/$abi/libiroh_ffi.so"
-          done
-          # Composite-build :android:assemble needs iroh_ffi.kt for :lib.
-          cargo make bindgen-kotlin
+      - run: bash scripts/stage_android_natives.sh
       - name: Enable KVM
         # reactivecircus/android-emulator-runner needs HW accel on
         # ubuntu-latest's nested-virt KVM.
@@ -313,39 +303,14 @@ permissions:
         with:
           name: kotlin-android-jniLibs
           path: android-jniLibs/
-      - name: Stage natives into both module trees
-        shell: bash
-        run: |
-          set -eu
-          # :lib (JVM JAR) — desktop cdylibs at JNA-platform paths.
-          RES=kotlin/lib/src/main/resources
-          rm -f "$RES"/libiroh_ffi.so "$RES"/libiroh_ffi.dylib "$RES"/iroh_ffi.dll
-          install -D -m644 cdylibs/kotlin-cdylib-linux-x86_64/libiroh_ffi.so   "$RES/linux-x86-64/libiroh_ffi.so"
-          install -D -m644 cdylibs/kotlin-cdylib-linux-aarch64/libiroh_ffi.so  "$RES/linux-aarch64/libiroh_ffi.so"
-          install -D -m644 cdylibs/kotlin-cdylib-macos-aarch64/libiroh_ffi.dylib "$RES/darwin-aarch64/libiroh_ffi.dylib"
-          install -D -m644 cdylibs/kotlin-cdylib-windows-x86_64/iroh_ffi.dll   "$RES/win32-x86-64/iroh_ffi.dll"
-          # :android (AAR) — per-ABI .so under jniLibs/, AGP packages these
-          # into the AAR's jni/<abi>/ which consumer APKs then merge.
-          JNI=kotlin/android/src/main/jniLibs
-          for abi in armeabi-v7a arm64-v8a x86 x86_64; do
-            install -D -m644 "android-jniLibs/$abi/libiroh_ffi.so" "$JNI/$abi/libiroh_ffi.so"
-          done
-          find "$RES" "$JNI" -type f
-      - name: Verify Kotlin artifact contents
-        # Gate publish on every required native lib being present at the
-        # right path with the right architecture (catches iroh-ffi#246-class
-        # bugs — artifact uploaded missing a platform slice, app crashes at
-        # runtime with UnsatisfiedLinkError).
-        run: cargo make verify-kotlin-artifact
+      - run: bash scripts/release/stage_kotlin_publish_natives.sh
+      - run: cargo make verify-kotlin-artifact
       - name: Publish to Maven Central
         working-directory: kotlin
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_PASSWORD }}
           ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
-        # Both modules in one Vanniktech invocation — :lib publishes
-        # computer.iroh:iroh (JAR), :android publishes computer.iroh:iroh-
-        # android (AAR). Each subproject's mavenPublishing block configures
-        # its own coordinates + publication shape.
+        # Both modules in one Vanniktech invocation.
         run: ./gradlew publishAndReleaseToMavenCentral --no-daemon --console=plain
       

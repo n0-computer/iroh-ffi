@@ -1,9 +1,34 @@
-// Root build is intentionally empty — the AGP + Kotlin plugins are applied
-// in :app. Kotlin version must match kotlin/lib (2.2.20 per
-// kotlin/gradle/libs.versions.toml); the lib's compiled metadata is 2.2.0
-// and a Kotlin 2.0 consumer rejects it. AGP 8.13 supports Kotlin 2.2.x and
-// requires Gradle 8.13+ (matching gradle-wrapper.properties below).
 plugins {
-    id("com.android.application") version "8.13.0" apply false
-    id("org.jetbrains.kotlin.android") version "2.2.20" apply false
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+}
+
+android {
+    namespace = "computer.iroh.smoke"
+    compileSdk = 34
+    defaultConfig {
+        applicationId = "computer.iroh.smoke"
+        minSdk = 24
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    kotlinOptions { jvmTarget = "17" }
+}
+
+dependencies {
+    // `:android` is the sibling subproject that publishes
+    // computer.iroh:iroh-android. Direct project dep — no need for
+    // mavenLocal + version-coordinate plumbing.
+    implementation(project(":android"))
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test:rules:1.6.1")
 }

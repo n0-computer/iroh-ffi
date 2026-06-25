@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 """Rewrite the version literals across the repo as a single source of truth.
 
-Two entry points:
-  1. `cargo make prepare-release <V>` calls this with just VERSION to bump
-     Cargo.toml [package].version, iroh-js/{Cargo.toml,package.json}, all the
-     iroh-js/npm/*/package.json sub-packages, pyproject.toml,
-     kotlin/lib/build.gradle.kts coordinates, and Package.swift releaseTag.
-  2. release_swift.yml (PR CI) calls this with --checksum HEX once it has
-     built the xcframework and shasum'd the deterministic zip, to write
-     Package.swift releaseChecksum.
+Two mutually-exclusive entry points (enforced by main()):
+
+  1. VERSION positional arg — `cargo make prepare-release <V>` route. Bumps
+     Cargo.toml [package].version, iroh-js/{Cargo.toml,package.json}, all
+     iroh-js/npm/*/package.json sub-packages, pyproject.toml, both
+     kotlin/{lib,android}/build.gradle.kts coordinates, and Package.swift
+     releaseTag. Does NOT touch releaseChecksum.
+
+  2. --checksum HEX — release_swift.yml (PR CI) route. Writes ONLY
+     Package.swift releaseChecksum and returns. Does NOT bump any version
+     literals; that's the local prepare-release author's job and must
+     already be in the release commit by the time CI runs.
 
 Pure deterministic text/JSON transforms — no model, no network (org Rule 5).
 """

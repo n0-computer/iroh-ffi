@@ -455,29 +455,23 @@ cargo ndk -o "$NDK_STAGE" \
   -t armeabi-v7a -t arm64-v8a -t x86 -t x86_64 \
   build --release --lib -p iroh-ffi
 
-# 2. Stage to lib/<abi>/ where AGP's mergeNativeLibsTask scans JAR deps.
-#    Same path the release.yml `Stage cdylibs` step writes to.
-RES=kotlin/lib/src/main/resources
-echo "==> stage to $RES/lib/<abi>/"
+# 2. Stage at the AAR source-set path — AGP packages files here into the AAR's
+#    jni/<abi>/, which consumers' APKs then merge.
+JNI=kotlin/android/src/main/jniLibs
 for abi in armeabi-v7a arm64-v8a x86 x86_64; do
-  install -D -m644 "$NDK_STAGE/$abi/libiroh_ffi.so" "$RES/lib/$abi/libiroh_ffi.so"
+  install -D -m644 "$NDK_STAGE/$abi/libiroh_ffi.so" "$JNI/$abi/libiroh_ffi.so"
 done
 
-# 3. Run the consumer smoke. assembleDebugAndroidTest builds both APKs (app +
-#    androidTest) and is the bare minimum to catch jar-merge issues. The full
-#    connectedDebugAndroidTest also installs+runs on a device — the only way
-#    to catch "lib loads but JNI symbol missing on Android."
-V=$(sed -nE 's/.*coordinates\("computer\.iroh", "iroh", "([^"]+)"\).*/\1/p' kotlin/lib/build.gradle.kts)
-echo "==> iroh version under test: $V"
-
-cd kotlin/android-smoke
+# 3. Run the consumer smoke from the kotlin/ root. With a device connected,
+#    connectedDebugAndroidTest installs both APKs and runs the test. Without
+#    one, assembleDebugAndroidTest just builds them — enough to catch
+#    "AAR-merge broken" but not "lib loads but JNI symbol missing".
+cd kotlin
 if adb devices 2>/dev/null | awk 'NR>1 && $2=="device"{found=1} END{exit !found}'; then
-  echo "==> connected device found — connectedDebugAndroidTest (installs + runs)"
-  ./gradlew :app:connectedDebugAndroidTest -PirohVersion="$V" --no-daemon --console=plain
+  ./gradlew :android-smoke:connectedDebugAndroidTest --no-daemon --console=plain
 else
-  echo "==> no connected device — assembleDebugAndroidTest only (builds APKs, doesn't run)"
-  echo "    start an emulator + re-run for the full smoke"
-  ./gradlew :app:assembleDebugAndroidTest -PirohVersion="$V" --no-daemon --console=plain
+  echo "no connected device — building APKs only; start an emulator + re-run for the full smoke"
+  ./gradlew :android-smoke:assembleDebugAndroidTest --no-daemon --console=plain
 fi
 echo "verify-kotlin-android-consumer: OK"
 '''
