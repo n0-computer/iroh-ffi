@@ -2706,6 +2706,20 @@ public protocol EndpointBuilderProtocol: AnyObject, Sendable {
     func applyN0DisableRelay() 
     
     /**
+     * Consume the builder and bind a new [`Endpoint`].
+     *
+     * Returns an `Endpoint` without protocol handlers attached. To attach
+     * protocol handlers, use [`Endpoint::bind`] with
+     * [`EndpointOptions::protocols`] instead — the builder form here is
+     * for callers who don't need custom protocols.
+     *
+     * The builder is single-use: a second call to `bind` (or to any other
+     * `take_inner`-using method like `bind_addr`) on the same instance
+     * returns `EndpointBuilder already consumed`.
+     */
+    func bind() async throws  -> Endpoint
+    
+    /**
      * Set the address the endpoint binds to (`host:port`).
      */
     func bindAddr(addr: String) throws 
@@ -2769,7 +2783,25 @@ open class EndpointBuilder: EndpointBuilderProtocol, @unchecked Sendable {
     public func uniffiCloneHandle() -> UInt64 {
         return try! rustCall { uniffi_iroh_ffi_fn_clone_endpointbuilder(self.handle, $0) }
     }
-    // No primary constructor declared for this class.
+    /**
+     * Create a fresh empty endpoint builder.
+     *
+     * Apply a preset (`apply_n0`, `apply_minimal`, `apply_n0_disable_relay`)
+     * before [`bind`](Self::bind) — the preset installs the crypto provider
+     * and other required configuration; without one, `bind` will error.
+     *
+     * For the simple `Endpoint::bind(options)` path use that constructor
+     * instead; this builder API is for callers who want to apply
+     * configuration incrementally.
+     */
+public convenience init() {
+    let handle =
+        try! rustCall() {
+    uniffi_iroh_ffi_fn_constructor_endpointbuilder_new($0
+    )
+}
+    self.init(unsafeFromHandle: handle)
+}
 
     deinit {
         if handle == 0 {
@@ -2822,6 +2854,35 @@ open func applyN0DisableRelay()  {try! rustCall() {
             self.uniffiCloneHandle(),$0
     )
 }
+}
+    
+    /**
+     * Consume the builder and bind a new [`Endpoint`].
+     *
+     * Returns an `Endpoint` without protocol handlers attached. To attach
+     * protocol handlers, use [`Endpoint::bind`] with
+     * [`EndpointOptions::protocols`] instead — the builder form here is
+     * for callers who don't need custom protocols.
+     *
+     * The builder is single-use: a second call to `bind` (or to any other
+     * `take_inner`-using method like `bind_addr`) on the same instance
+     * returns `EndpointBuilder already consumed`.
+     */
+open func bind()async throws  -> Endpoint  {
+    return
+        try  await uniffiRustCallAsync(
+            rustFutureFunc: {
+                uniffi_iroh_ffi_fn_method_endpointbuilder_bind(
+                    self.uniffiCloneHandle()
+                    
+                )
+            },
+            pollFunc: ffi_iroh_ffi_rust_future_poll_u64,
+            completeFunc: ffi_iroh_ffi_rust_future_complete_u64,
+            freeFunc: ffi_iroh_ffi_rust_future_free_u64,
+            liftFunc: FfiConverterTypeEndpoint_lift,
+            errorHandler: FfiConverterTypeIrohError__as_error_lift
+        )
 }
     
     /**
@@ -9382,6 +9443,9 @@ private let initializationResult: InitializationResult = {
     if (uniffi_iroh_ffi_checksum_method_endpointbuilder_apply_n0_disable_relay() != 20494) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_iroh_ffi_checksum_method_endpointbuilder_bind() != 18280) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_iroh_ffi_checksum_method_endpointbuilder_bind_addr() != 50528) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -9542,6 +9606,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_iroh_ffi_checksum_constructor_endpoint_bind() != 33964) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_iroh_ffi_checksum_constructor_endpointbuilder_new() != 38003) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_iroh_ffi_checksum_constructor_endpointid_from_bytes() != 63462) {

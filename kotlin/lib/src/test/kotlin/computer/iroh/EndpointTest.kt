@@ -22,6 +22,25 @@ class EndpointTest {
         ep.shutdown()
     }
 
+    @Test fun builderBind() = runBlocking {
+        val builder = EndpointBuilder()
+        builder.applyMinimal()
+        val ep = builder.bind()
+        assert(ep.boundSockets().isNotEmpty())
+        ep.shutdown()
+    }
+
+    @Test fun builderBindConsumes() = runBlocking {
+        val builder = EndpointBuilder()
+        builder.applyMinimal()
+        val ep = builder.bind()
+        ep.shutdown()
+        val err = assertFailsWith<Exception> {
+            runBlocking { builder.bind() }
+        }
+        assert(err.toString().contains("already consumed")) { "got: $err" }
+    }
+
     @Test fun bindLifecycle() = runBlocking {
         val ep = Endpoint.bind(EndpointOptions(preset = presetMinimal()))
         val id = ep.id()

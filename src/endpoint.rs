@@ -25,7 +25,7 @@ pub struct EndpointBuilder {
 }
 
 impl EndpointBuilder {
-    pub(crate) fn new(builder: iroh::endpoint::Builder) -> Self {
+    pub(crate) fn from_inner(builder: iroh::endpoint::Builder) -> Self {
         Self {
             inner: std::sync::Mutex::new(Some(builder)),
         }
@@ -51,6 +51,14 @@ impl EndpointBuilder {
 
 #[uniffi::export]
 impl EndpointBuilder {
+    /// Create a fresh empty endpoint builder. Apply a preset (`apply_n0`,
+    /// `apply_minimal`, `apply_n0_disable_relay`) before [`bind`](Self::bind);
+    /// the preset installs the crypto provider, without one `bind` will error.
+    #[uniffi::constructor]
+    pub fn new() -> Arc<Self> {
+        Arc::new(Self::from_inner(iroh::endpoint::Builder::empty()))
+    }
+
     /// Replay the n0 production preset (relays + discovery + crypto provider).
     pub fn apply_n0(&self) {
         self.map(|b| presets::N0.apply(b));
@@ -94,6 +102,19 @@ impl EndpointBuilder {
         let builder = builder.bind_addr(socket).map_err(anyhow::Error::from)?;
         *self.inner.lock().unwrap() = Some(builder);
         Ok(())
+    }
+
+    /// Consume the builder and bind a new [`Endpoint`].
+    ///
+    /// The returned `Endpoint` has no protocol handlers — use
+    /// [`Endpoint::bind`] with [`EndpointOptions::protocols`] to attach them.
+    /// The builder is single-use; a second `bind` returns
+    /// `EndpointBuilder already consumed`.
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn bind(&self) -> Result<Arc<Endpoint>, IrohError> {
+        let builder = self.take_inner()?;
+        let endpoint = builder.bind().await.map_err(anyhow::Error::from)?;
+        Ok(Arc::new(Endpoint::new(endpoint)))
     }
 }
 
@@ -274,7 +295,7 @@ impl Endpoint {
         // Start from an empty builder; the preset installs the baseline
         // (crucially, the crypto provider). Explicit option fields are then
         // layered on top so they always win.
-        let wrapper = Arc::new(EndpointBuilder::new(iroh::endpoint::Builder::empty()));
+        let wrapper = Arc::new(EndpointBuilder::from_inner(iroh::endpoint::Builder::empty()));
         let preset = options.preset.unwrap_or_else(preset_n0);
         preset.apply(wrapper.clone());
 
@@ -885,6 +906,28 @@ mod tests {
         assert_eq!(secret.public().to_bytes(), id.to_bytes());
         ep.close().await.unwrap();
         assert!(ep.is_closed());
+    }
+
+    #[tokio::test]
+    async fn test_builder_bind() {
+        let builder = EndpointBuilder::new();
+        builder.apply_minimal();
+        let ep = builder.bind().await.unwrap();
+        assert!(!ep.bound_sockets().is_empty());
+        ep.close().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_builder_bind_consumes() {
+        let builder = EndpointBuilder::new();
+        builder.apply_minimal();
+        let ep = builder.bind().await.unwrap();
+        ep.close().await.unwrap();
+
+        match builder.bind().await {
+            Err(e) => assert!(format!("{e}").contains("already consumed")),
+            Ok(_) => panic!("expected error on second bind()"),
+        }
     }
 
     #[tokio::test]

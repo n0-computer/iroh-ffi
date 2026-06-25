@@ -108,6 +108,27 @@ final class EndpointTests: XCTestCase {
         try await ep.close()
     }
 
+    func testBuilderBind() async throws {
+        let builder = EndpointBuilder()
+        builder.applyMinimal()
+        let ep = try await builder.bind()
+        XCTAssertFalse(ep.boundSockets().isEmpty)
+        try await ep.close()
+    }
+
+    func testBuilderBindConsumes() async throws {
+        let builder = EndpointBuilder()
+        builder.applyMinimal()
+        let ep = try await builder.bind()
+        try await ep.close()
+        do {
+            _ = try await builder.bind()
+            XCTFail("expected error on second bind()")
+        } catch {
+            XCTAssertTrue("\(error)".contains("already consumed"), "got: \(error)")
+        }
+    }
+
     func testBindLifecycle() async throws {
         let ep = try await Endpoint.bind(options: EndpointOptions(preset: presetMinimal()))
         let id = ep.id()

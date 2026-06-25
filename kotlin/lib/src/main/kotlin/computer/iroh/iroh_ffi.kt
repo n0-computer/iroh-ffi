@@ -1130,6 +1130,8 @@ internal object IntegrityCheckingUniffiLib {
 
     external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_apply_n0_disable_relay(): Short
 
+    external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_bind(): Short
+
     external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_bind_addr(): Short
 
     external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_relay_mode(): Short
@@ -1237,6 +1239,8 @@ internal object IntegrityCheckingUniffiLib {
     external fun uniffi_iroh_ffi_checksum_method_watchhandle_stop(): Short
 
     external fun uniffi_iroh_ffi_checksum_constructor_endpoint_bind(): Short
+
+    external fun uniffi_iroh_ffi_checksum_constructor_endpointbuilder_new(): Short
 
     external fun uniffi_iroh_ffi_checksum_constructor_endpointid_from_bytes(): Short
 
@@ -1604,6 +1608,8 @@ internal object UniffiLib {
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
 
+    external fun uniffi_iroh_ffi_fn_constructor_endpointbuilder_new(uniffi_out_err: UniffiRustCallStatus): Long
+
     external fun uniffi_iroh_ffi_fn_method_endpointbuilder_alpns(
         `ptr`: Long,
         `alpns`: RustBuffer.ByValue,
@@ -1624,6 +1630,8 @@ internal object UniffiLib {
         `ptr`: Long,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
+
+    external fun uniffi_iroh_ffi_fn_method_endpointbuilder_bind(`ptr`: Long): Long
 
     external fun uniffi_iroh_ffi_fn_method_endpointbuilder_bind_addr(
         `ptr`: Long,
@@ -2657,6 +2665,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_method_endpointbuilder_apply_n0_disable_relay() != 20494.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
+    if (lib.uniffi_iroh_ffi_checksum_method_endpointbuilder_bind() != 18280.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
     if (lib.uniffi_iroh_ffi_checksum_method_endpointbuilder_bind_addr() != 50528.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
@@ -2817,6 +2828,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_constructor_endpoint_bind() != 33964.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_ffi_checksum_constructor_endpointbuilder_new() != 38003.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_constructor_endpointid_from_bytes() != 63462.toShort()) {
@@ -6615,6 +6629,20 @@ public interface EndpointBuilderInterface {
     fun `applyN0DisableRelay`()
 
     /**
+     * Consume the builder and bind a new [`Endpoint`].
+     *
+     * Returns an `Endpoint` without protocol handlers attached. To attach
+     * protocol handlers, use [`Endpoint::bind`] with
+     * [`EndpointOptions::protocols`] instead — the builder form here is
+     * for callers who don't need custom protocols.
+     *
+     * The builder is single-use: a second call to `bind` (or to any other
+     * `take_inner`-using method like `bind_addr`) on the same instance
+     * returns `EndpointBuilder already consumed`.
+     */
+    suspend fun `bind`(): Endpoint
+
+    /**
      * Set the address the endpoint binds to (`host:port`).
      */
     fun `bindAddr`(`addr`: kotlin.String)
@@ -6666,6 +6694,25 @@ open class EndpointBuilder :
         this.handle = 0
         this.cleanable = null
     }
+
+    /**
+     * Create a fresh empty endpoint builder.
+     *
+     * Apply a preset (`apply_n0`, `apply_minimal`, `apply_n0_disable_relay`)
+     * before [`bind`](Self::bind) — the preset installs the crypto provider
+     * and other required configuration; without one, `bind` will error.
+     *
+     * For the simple `Endpoint::bind(options)` path use that constructor
+     * instead; this builder API is for callers who want to apply
+     * configuration incrementally.
+     */
+    constructor() :
+        this(
+            UniffiWithHandle,
+            uniffiRustCall { _status ->
+                UniffiLib.uniffi_iroh_ffi_fn_constructor_endpointbuilder_new(_status)
+            },
+        )
 
     protected val handle: Long
     protected val cleanable: UniffiCleaner.Cleanable?
@@ -6792,6 +6839,36 @@ open class EndpointBuilder :
                 )
             }
         }
+
+    /**
+     * Consume the builder and bind a new [`Endpoint`].
+     *
+     * Returns an `Endpoint` without protocol handlers attached. To attach
+     * protocol handlers, use [`Endpoint::bind`] with
+     * [`EndpointOptions::protocols`] instead — the builder form here is
+     * for callers who don't need custom protocols.
+     *
+     * The builder is single-use: a second call to `bind` (or to any other
+     * `take_inner`-using method like `bind_addr`) on the same instance
+     * returns `EndpointBuilder already consumed`.
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `bind`(): Endpoint =
+        uniffiRustCallAsync(
+            callWithHandle { uniffiHandle ->
+                UniffiLib.uniffi_iroh_ffi_fn_method_endpointbuilder_bind(
+                    uniffiHandle,
+                )
+            },
+            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
+            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
+            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
+            // lift function
+            { FfiConverterTypeEndpoint.lift(it) },
+            // Error FFI converter
+            IrohException.ErrorHandler,
+        )
 
     /**
      * Set the address the endpoint binds to (`host:port`).
