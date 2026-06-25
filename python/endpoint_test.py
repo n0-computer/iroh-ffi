@@ -36,8 +36,9 @@ async def test_builder_bind_consumes():
     builder.apply_minimal()
     ep = await builder.bind()
     await ep.close()
-    with pytest.raises(Exception, match="already consumed"):
+    with pytest.raises(Exception) as exc_info:
         await builder.bind()
+    assert "already consumed" in repr(exc_info.value)
 
 
 async def test_bind_lifecycle():
