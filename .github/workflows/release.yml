@@ -161,8 +161,8 @@ jobs:
   # Cross-build the desktop cdylibs for each JVM host the Maven artifact
   # should support. JNI libs are loaded by JNA from classpath at
   # `<jna-platform>/libname.{so,dylib,dll}`; see the staging step below.
-  # Android ABIs are not packaged in this JVM-only artifact yet — that
-  # needs a separate com.android.library AAR publication.
+  # Android ABIs are built separately by build-kotlin-android and shipped
+  # in the same jar under `lib/<abi>/`, where AGP merges them into APKs.
   build-kotlin-cdylib:
     name: Build Kotlin cdylib (${{ matrix.name }})
     needs: create-release
@@ -201,10 +201,48 @@ jobs:
           path: target/${{ matrix.target }}/release/${{ matrix.lib_file }}
           if-no-files-found: error
 
+  # Cross-build the native lib for every Android ABI with the NDK. These
+  # ship in the same computer.iroh:iroh jar under `lib/<abi>/`; AGP merges
+  # `lib/<abi>/*.so` from JAR dependencies into the consumer APK, where
+  # IrohAndroid loads it via System.loadLibrary("iroh_ffi"). cargo-ndk
+  # writes one `<abi>/libiroh_ffi.so` per target under the -o directory.
+  build-kotlin-android:
+    name: Build Kotlin Android cdylibs
+    needs: create-release
+    timeout-minutes: 60
+    runs-on: [self-hosted, linux, X64]
+    steps:
+      - uses: actions/checkout@master
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+      - uses: Swatinem/rust-cache@v2
+      - uses: android-actions/setup-android@v3
+      - name: Setup Android NDK
+        uses: arqu/setup-ndk@main
+        id: setup-ndk
+        with:
+          ndk-version: r23
+          add-to-path: true
+      - name: Cross-build Android cdylibs
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+        run: |
+          command -v cargo-ndk >/dev/null 2>&1 || cargo install --version 3.5.4 cargo-ndk --locked
+          cargo ndk -o ./android-jniLibs \
+            -t armeabi-v7a -t arm64-v8a -t x86 -t x86_64 \
+            build --release --lib -p iroh-ffi
+          find ./android-jniLibs -type f
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kotlin-android-jniLibs
+          path: android-jniLibs/
+          if-no-files-found: error
+
   build-and-publish-kotlin:
     name: Publish Kotlin to Maven Central
     timeout-minutes: 30
-    needs: [create-release, build-kotlin-cdylib]
+    needs: [create-release, build-kotlin-cdylib, build-kotlin-android]
     runs-on: [self-hosted, linux, X64]
     steps:
       - uses: actions/checkout@master
@@ -224,6 +262,10 @@ jobs:
         with:
           pattern: kotlin-cdylib-*
           path: cdylibs/
+      - uses: actions/download-artifact@v4
+        with:
+          name: kotlin-android-jniLibs
+          path: android-jniLibs/
       - name: Stage cdylibs under jna-platform dirs
         shell: bash
         run: |
@@ -234,6 +276,11 @@ jobs:
           install -D -m644 cdylibs/kotlin-cdylib-linux-aarch64/libiroh_ffi.so  "$RES/linux-aarch64/libiroh_ffi.so"
           install -D -m644 cdylibs/kotlin-cdylib-macos-aarch64/libiroh_ffi.dylib "$RES/darwin-aarch64/libiroh_ffi.dylib"
           install -D -m644 cdylibs/kotlin-cdylib-windows-x86_64/iroh_ffi.dll   "$RES/win32-x86-64/iroh_ffi.dll"
+          # Android ABIs: cargo-ndk emits <abi>/libiroh_ffi.so; ship them at
+          # lib/<abi>/ so AGP packages them into consumer APKs.
+          for abi in armeabi-v7a arm64-v8a x86 x86_64; do
+            install -D -m644 "android-jniLibs/$abi/libiroh_ffi.so" "$RES/lib/$abi/libiroh_ffi.so"
+          done
           find "$RES" -type f
       - name: Publish to Maven Central
         working-directory: kotlin
