@@ -63,12 +63,16 @@ cargo build --release --target aarch64-apple-darwin
 IOS_ARM64_FRAMEWORK="$FRAMEWORK_NAME.xcframework/ios-arm64/$FRAMEWORK_NAME.framework"
 IOS_SIM_FRAMEWORK="$FRAMEWORK_NAME.xcframework/ios-arm64_x86_64-simulator/$FRAMEWORK_NAME.framework"
 MACOS_ARM64_FRAMEWORK="$FRAMEWORK_NAME.xcframework/macos-arm64/$FRAMEWORK_NAME.framework"
+# macOS uses the versioned bundle layout; write the binary through the real
+# path, not the top-level symlink, or rm+cp replaces the symlink with a
+# plain file and silently breaks Xcode 26's non-shallow-bundle check.
+MACOS_ARM64_FRAMEWORK_BIN="$MACOS_ARM64_FRAMEWORK/Versions/A/$FRAMEWORK_NAME"
 
 rm -f "$IOS_ARM64_FRAMEWORK/$FRAMEWORK_NAME"
 rm -f "$IOS_ARM64_FRAMEWORK/Headers/${UDL_NAME}FFI.h"
 rm -f "$IOS_SIM_FRAMEWORK/$FRAMEWORK_NAME"
 rm -f "$IOS_SIM_FRAMEWORK/Headers/${UDL_NAME}FFI.h"
-rm -f "$MACOS_ARM64_FRAMEWORK/$FRAMEWORK_NAME"
+rm -f "$MACOS_ARM64_FRAMEWORK_BIN"
 rm -f "$MACOS_ARM64_FRAMEWORK/Headers/${UDL_NAME}FFI.h"
 
 rm -f "$TARGET_DIR/universal.a"
@@ -82,32 +86,32 @@ cargo run --bin uniffi-bindgen generate --language swift --out-dir ./$INCLUDE_DI
 
 # Make fat lib for sims
 lipo -create \
-    "$TARGET_DIR/aarch64-apple-ios-sim/release/lib${UDL_NAME}.a" \
-    "$TARGET_DIR/x86_64-apple-ios/release/lib${UDL_NAME}.a" \
-    -output "$TARGET_DIR/universal.a"
+  "$TARGET_DIR/aarch64-apple-ios-sim/release/lib${UDL_NAME}.a" \
+  "$TARGET_DIR/x86_64-apple-ios/release/lib${UDL_NAME}.a" \
+  -output "$TARGET_DIR/universal.a"
 
 # Move binaries
 cp "$TARGET_DIR/aarch64-apple-ios/release/lib${UDL_NAME}.a" \
-    "$IOS_ARM64_FRAMEWORK/$FRAMEWORK_NAME"
+  "$IOS_ARM64_FRAMEWORK/$FRAMEWORK_NAME"
 cp "$TARGET_DIR/universal.a" \
-    "$IOS_SIM_FRAMEWORK/$FRAMEWORK_NAME"
+  "$IOS_SIM_FRAMEWORK/$FRAMEWORK_NAME"
 cp "$TARGET_DIR/aarch64-apple-darwin/release/lib${UDL_NAME}.a" \
-    "$MACOS_ARM64_FRAMEWORK/$FRAMEWORK_NAME"
+  "$MACOS_ARM64_FRAMEWORK_BIN"
 
 # Move headers
 cp "$INCLUDE_DIR/${UDL_NAME}FFI.h" \
-    "$IOS_ARM64_FRAMEWORK/Headers/${UDL_NAME}FFI.h"
+  "$IOS_ARM64_FRAMEWORK/Headers/${UDL_NAME}FFI.h"
 cp "$INCLUDE_DIR/${UDL_NAME}FFI.h" \
-    "$IOS_SIM_FRAMEWORK/Headers/${UDL_NAME}FFI.h"
+  "$IOS_SIM_FRAMEWORK/Headers/${UDL_NAME}FFI.h"
 cp "$INCLUDE_DIR/${UDL_NAME}FFI.h" \
-    "$MACOS_ARM64_FRAMEWORK/Headers/${UDL_NAME}FFI.h"
+  "$MACOS_ARM64_FRAMEWORK/Headers/${UDL_NAME}FFI.h"
 
 # Move swift interface
-sed "s/${UDL_NAME}FFI/$FRAMEWORK_NAME/g" "$INCLUDE_DIR/$UDL_NAME.swift" > "$INCLUDE_DIR/$SWIFT_INTERFACE.swift"
+sed "s/${UDL_NAME}FFI/$FRAMEWORK_NAME/g" "$INCLUDE_DIR/$UDL_NAME.swift" >"$INCLUDE_DIR/$SWIFT_INTERFACE.swift"
 
 rm -f "$SWIFT_INTERFACE/Sources/$SWIFT_INTERFACE/$SWIFT_INTERFACE.swift"
 cp "$INCLUDE_DIR/$SWIFT_INTERFACE.swift" \
-    "$SWIFT_INTERFACE/Sources/$SWIFT_INTERFACE/$SWIFT_INTERFACE.swift"
+  "$SWIFT_INTERFACE/Sources/$SWIFT_INTERFACE/$SWIFT_INTERFACE.swift"
 
 # The single root Package.swift consumes `Iroh.xcframework` at the repo root
 # directly (IROH_LOCAL_XCFRAMEWORK mode), so no artifacts copy is needed.

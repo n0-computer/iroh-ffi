@@ -16,13 +16,19 @@ DerivedData/
 
 /IrohLib.xcframework.zip
 
-/Iroh.xcframework/*/Iroh.framework/*
-/Iroh.xcframework/*/Iroh.framework/Headers/*
-!/Iroh.xcframework/*/Iroh.framework/Info.plist
-!/Iroh.xcframework/*/Iroh.framework/Modules
-!/Iroh.xcframework/*/Iroh.framework/Headers
-!/Iroh.xcframework/*/Iroh.framework/Headers/iroh_ffiFFI.h
-!/Iroh.xcframework/*/Iroh.framework/Headers/Export.h
+# iOS / simulator slices: shallow bundle (Xcode requirement on iOS)
+/Iroh.xcframework/ios-*/Iroh.framework/*
+/Iroh.xcframework/ios-*/Iroh.framework/Headers/*
+!/Iroh.xcframework/ios-*/Iroh.framework/Info.plist
+!/Iroh.xcframework/ios-*/Iroh.framework/Modules/
+!/Iroh.xcframework/ios-*/Iroh.framework/Headers/
+!/Iroh.xcframework/ios-*/Iroh.framework/Headers/iroh_ffiFFI.h
+!/Iroh.xcframework/ios-*/Iroh.framework/Headers/Export.h
+
+# macOS slice: versioned bundle (Xcode requirement on native macOS).
+# Only the Rust binary is a build artifact — symlinks, Info.plist, headers,
+# and the modulemap are checked in.
+/Iroh.xcframework/macos-*/Iroh.framework/Versions/A/Iroh
 
 
 /IrohLib/artifacts/
