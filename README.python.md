@@ -14,6 +14,5 @@ We currently ship binary wheels on pypi for:
 - x86_64 manylinux 2_28
 - aarch64 manylinux 2_28
 - arm64 macosx
-- x86_64 macosx
 
 Notes on how the wheels are built and tested are in our [FFI development docs](https://github.com/n0-computer/iroh-ffi/blob/main/DEVELOPERS.md#python).
