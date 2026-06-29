@@ -14,6 +14,7 @@ This repo defines Python, Swift, Kotlin and Node.js bindings for [iroh](https://
 - [Swift: Cocoapods](https://cocoapods.org/pods/IrohLib) — `IrohLib`
 - [Kotlin / JVM: Maven Central](https://central.sonatype.com/artifact/computer.iroh/iroh) — `computer.iroh:iroh`
 - [JavaScript: npm](https://www.npmjs.com/package/@number0/iroh) — `@number0/iroh`
+- [Go](https://git.coopcloud.tech/decentral1se/iroh-go) (*Community maintained*)
 
 ## Documentation
 
@@ -41,6 +42,7 @@ See the per-language READMEs below and [DEVELOPERS.md](DEVELOPERS.md) for detail
 * [**Python readme**](README.python.md)
 * [**Kotlin readme**](README.kotlin.md)
 * [**Node.js readme**](iroh-js/README.md)
+* [**Go readme**](https://git.coopcloud.tech/decentral1se/iroh-go#iroh-go)
 
 ## Developers
 Check our [DEVELOPERS.md](DEVELOPERS.md) for guides on how to translate from the iroh rust API to the iroh FFI API, as well as how to set up testing for Golang and Python.
