@@ -28,4 +28,15 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - uses: davidB/rust-cargo-make@v1
       - name: cargo make test-swift
+        # Builds the full Apple xcframework + runs the IrohLib test suite for
+        # macOS via xcodebuild test.
         run: cargo make test-swift
+      - name: cargo make verify-swift-xcframework
+        # Asserts per-slice bundle layout (shallow iOS, deep macOS — Xcode 27+
+        # rejects shallow Info.plist on macOS, iroh-ffi#247).
+        run: cargo make verify-swift-xcframework
+      - name: cargo make verify-swift-consumer
+        # iOS device build + iOS Simulator full test run (boots a sim, runs
+        # IrohLibTests on iOS runtime). Catches link errors + iOS-side runtime
+        # regressions that macOS-only test-swift can't see.
+        run: cargo make verify-swift-consumer

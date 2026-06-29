@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
-"""Rewrite the three version literals across the repo as a single source of truth.
+"""Rewrite the version literals across the repo as a single source of truth.
 
-Called by `cargo make prepare-release <VERSION>` in two passes:
-  1. Pass 1 (just VERSION):  bumps Cargo.toml [package].version,
-     iroh-js/package.json version, and Package.swift releaseTag.
-  2. Pass 2 (--checksum HEX): writes Package.swift releaseChecksum once the
-     deterministic xcframework zip has been built and shasum'd.
+Two mutually-exclusive entry points (enforced by main()):
+
+  1. VERSION positional arg — `cargo make prepare-release <V>` route. Bumps
+     Cargo.toml [package].version, iroh-js/{Cargo.toml,package.json}, all
+     iroh-js/npm/*/package.json sub-packages, pyproject.toml, both
+     kotlin/{lib,android}/build.gradle.kts coordinates, and Package.swift
+     releaseTag. Does NOT touch releaseChecksum.
+
+  2. --checksum HEX — release_swift.yml (PR CI) route. Writes ONLY
+     Package.swift releaseChecksum and returns. Does NOT bump any version
+     literals; that's the local prepare-release author's job and must
+     already be in the release commit by the time CI runs.
 
 Pure deterministic text/JSON transforms — no model, no network (org Rule 5).
 """
@@ -97,18 +104,22 @@ def bump_npm(version: str) -> None:
 
 
 def bump_gradle(version: str) -> None:
-    p = REPO / "kotlin" / "lib" / "build.gradle.kts"
-    s = p.read_text()
-    new, n = re.subn(
-        r'coordinates\("computer\.iroh", "iroh", "[^"]+"\)',
-        f'coordinates("computer.iroh", "iroh", "{version}")',
-        s,
-        count=1,
-    )
-    if n != 1:
-        sys.exit("could not find coordinates(\"computer.iroh\", \"iroh\", \"...\") in build.gradle.kts")
-    p.write_text(new)
-    print(f"  kotlin/lib/build.gradle.kts coordinates -> {version}")
+    # Two coordinate literals to bump: :lib publishes computer.iroh:iroh (the
+    # JVM JAR), :android publishes computer.iroh:iroh-android (the AAR). They
+    # must move together — :android depends on the matching :lib version.
+    for sub, artifact in (("lib", "iroh"), ("android", "iroh-android")):
+        p = REPO / "kotlin" / sub / "build.gradle.kts"
+        s = p.read_text()
+        new, n = re.subn(
+            rf'coordinates\("computer\.iroh", "{re.escape(artifact)}", "[^"]+"\)',
+            f'coordinates("computer.iroh", "{artifact}", "{version}")',
+            s,
+            count=1,
+        )
+        if n != 1:
+            sys.exit(f'could not find coordinates("computer.iroh", "{artifact}", "...") in kotlin/{sub}/build.gradle.kts')
+        p.write_text(new)
+        print(f"  kotlin/{sub}/build.gradle.kts coordinates -> {version}")
 
 
 def bump_swift_tag(version: str) -> None:

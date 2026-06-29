@@ -1,13 +1,14 @@
 #!/bin/bash
 set -eu
 
-# Deterministic zip of Iroh.xcframework — produces byte-identical output
-# regardless of host or wall clock. Used by:
-#   - `cargo make prepare-release` (local) so it can compute a checksum that
-#     will match what CI uploads, and bake it into Package.swift in the same
-#     PR (CI never rewrites main, per the Phase 6 plan).
-#   - `.github/workflows/release.yml` `build-and-publish-swift` so the
-#     uploaded asset matches the just-committed Package.swift checksum.
+# Same-host deterministic zip of Iroh.xcframework — produces byte-identical
+# output across multiple runs on the same machine (catches stale caches and
+# non-deterministic flags). Used by:
+#   - release_swift.yml (PR CI) — builds the zip whose SHA-256 gets baked
+#     into Package.swift on the release branch and uploaded to a draft GH
+#     release. That single CI build is the only build whose bytes ship.
+#   - cargo make pre-release-check (local) — sanity check that the build is
+#     reproducible-on-this-host; local SHAs don't need to match CI's.
 #
 # Determinism recipe:
 #   - normalize all mtimes to 1980-01-01 (the zip-format epoch);
@@ -25,7 +26,7 @@ rm -f IrohLib.xcframework.zip
 # Touch every entry (dirs too, on platforms that honour it) to that epoch.
 find Iroh.xcframework -exec touch -t 198001010000 {} +
 
-find Iroh.xcframework -print | LC_ALL=C sort | zip -X -q -@ IrohLib.xcframework.zip
+find Iroh.xcframework -print | LC_ALL=C sort | zip -X -q -y -@ IrohLib.xcframework.zip
 
 CHECKSUM=$(shasum -a 256 IrohLib.xcframework.zip | awk '{print $1}')
 SIZE=$(stat -f%z IrohLib.xcframework.zip 2>/dev/null || stat -c%s IrohLib.xcframework.zip)
