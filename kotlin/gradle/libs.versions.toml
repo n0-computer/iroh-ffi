@@ -13,5 +13,11 @@ junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", vers
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version = "2.2.20" }
+# Same Kotlin version as kotlin-jvm — the AAR's compiled metadata must be
+# readable by the JVM jar's consumers and vice versa.
+kotlin-android = { id = "org.jetbrains.kotlin.android", version = "2.2.20" }
+# AGP 8.13 supports Kotlin 2.2.x + Gradle 8.13 (root wrapper version above).
+android-library = { id = "com.android.library", version = "8.13.0" }
+android-application = { id = "com.android.application", version = "8.13.0" }
 dokka = { id = "org.jetbrains.dokka", version = "2.0.0" }
 maven-publish = { id = "com.vanniktech.maven.publish", version = "0.34.0" }
