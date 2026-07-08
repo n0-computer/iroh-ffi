@@ -35,7 +35,7 @@ jobs:
           - name: windows-latest
             runner: [windows-latest]
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
       - uses: dtolnay/rust-toolchain@stable
@@ -50,7 +50,7 @@ jobs:
     name: fmt + clippy + docs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy

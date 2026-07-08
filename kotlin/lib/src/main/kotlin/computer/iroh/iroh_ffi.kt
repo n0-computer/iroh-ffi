@@ -998,287 +998,287 @@ internal object IntegrityCheckingUniffiLib {
         uniffiCheckApiChecksums(this)
     }
 
-    external fun uniffi_iroh_ffi_checksum_func_set_log_level(): Short
+    external fun uniffi_iroh_ffi_checksum_func_set_log_level(): Int
 
-    external fun uniffi_iroh_ffi_checksum_func_preset_minimal(): Short
+    external fun uniffi_iroh_ffi_checksum_func_preset_minimal(): Int
 
-    external fun uniffi_iroh_ffi_checksum_func_preset_n0(): Short
+    external fun uniffi_iroh_ffi_checksum_func_preset_n0(): Int
 
-    external fun uniffi_iroh_ffi_checksum_func_preset_n0_disable_relay(): Short
+    external fun uniffi_iroh_ffi_checksum_func_preset_n0_disable_relay(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_accepting_alpn(): Short
+    external fun uniffi_iroh_ffi_checksum_method_accepting_alpn(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_accepting_connect(): Short
+    external fun uniffi_iroh_ffi_checksum_method_accepting_connect(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_connecting_alpn(): Short
+    external fun uniffi_iroh_ffi_checksum_method_connecting_alpn(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_connecting_connect(): Short
+    external fun uniffi_iroh_ffi_checksum_method_connecting_connect(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_connecting_remote_id(): Short
+    external fun uniffi_iroh_ffi_checksum_method_connecting_remote_id(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_incoming_accept(): Short
+    external fun uniffi_iroh_ffi_checksum_method_incoming_accept(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_incoming_ignore(): Short
+    external fun uniffi_iroh_ffi_checksum_method_incoming_ignore(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_incoming_local_addr(): Short
+    external fun uniffi_iroh_ffi_checksum_method_incoming_local_addr(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_incoming_refuse(): Short
+    external fun uniffi_iroh_ffi_checksum_method_incoming_refuse(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_incoming_remote_addr(): Short
+    external fun uniffi_iroh_ffi_checksum_method_incoming_remote_addr(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_incoming_remote_addr_validated(): Short
+    external fun uniffi_iroh_ffi_checksum_method_incoming_remote_addr_validated(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_incoming_retry(): Short
+    external fun uniffi_iroh_ffi_checksum_method_incoming_retry(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_bistream_recv(): Short
+    external fun uniffi_iroh_ffi_checksum_method_bistream_recv(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_bistream_send(): Short
+    external fun uniffi_iroh_ffi_checksum_method_bistream_send(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_connection_accept_bi(): Short
+    external fun uniffi_iroh_ffi_checksum_method_connection_accept_bi(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_connection_accept_uni(): Short
+    external fun uniffi_iroh_ffi_checksum_method_connection_accept_uni(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_connection_alpn(): Short
+    external fun uniffi_iroh_ffi_checksum_method_connection_alpn(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_connection_close(): Short
+    external fun uniffi_iroh_ffi_checksum_method_connection_close(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_connection_close_reason(): Short
+    external fun uniffi_iroh_ffi_checksum_method_connection_close_reason(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_connection_closed(): Short
+    external fun uniffi_iroh_ffi_checksum_method_connection_closed(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_connection_datagram_send_buffer_space(): Short
+    external fun uniffi_iroh_ffi_checksum_method_connection_datagram_send_buffer_space(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_connection_max_datagram_size(): Short
+    external fun uniffi_iroh_ffi_checksum_method_connection_max_datagram_size(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_connection_open_bi(): Short
+    external fun uniffi_iroh_ffi_checksum_method_connection_open_bi(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_connection_open_uni(): Short
+    external fun uniffi_iroh_ffi_checksum_method_connection_open_uni(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_connection_paths(): Short
+    external fun uniffi_iroh_ffi_checksum_method_connection_paths(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_connection_read_datagram(): Short
+    external fun uniffi_iroh_ffi_checksum_method_connection_read_datagram(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_connection_remote_id(): Short
+    external fun uniffi_iroh_ffi_checksum_method_connection_remote_id(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_connection_rtt(): Short
+    external fun uniffi_iroh_ffi_checksum_method_connection_rtt(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_connection_send_datagram(): Short
+    external fun uniffi_iroh_ffi_checksum_method_connection_send_datagram(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_connection_send_datagram_wait(): Short
+    external fun uniffi_iroh_ffi_checksum_method_connection_send_datagram_wait(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_connection_set_max_concurrent_bi_streams(): Short
+    external fun uniffi_iroh_ffi_checksum_method_connection_set_max_concurrent_bi_streams(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_connection_set_max_concurrent_uni_streams(): Short
+    external fun uniffi_iroh_ffi_checksum_method_connection_set_max_concurrent_uni_streams(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_connection_set_receive_window(): Short
+    external fun uniffi_iroh_ffi_checksum_method_connection_set_receive_window(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_connection_side(): Short
+    external fun uniffi_iroh_ffi_checksum_method_connection_side(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_connection_stable_id(): Short
+    external fun uniffi_iroh_ffi_checksum_method_connection_stable_id(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_connection_stats(): Short
+    external fun uniffi_iroh_ffi_checksum_method_connection_stats(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_connection_watch_path_events(): Short
+    external fun uniffi_iroh_ffi_checksum_method_connection_watch_path_events(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_connection_watch_paths(): Short
+    external fun uniffi_iroh_ffi_checksum_method_connection_watch_paths(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_accept_next(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpoint_accept_next(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_add_external_addr(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpoint_add_external_addr(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_addr(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpoint_addr(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_bound_sockets(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpoint_bound_sockets(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_close(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpoint_close(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_connect(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpoint_connect(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_connect_pending(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpoint_connect_pending(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_id(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpoint_id(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_insert_relay(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpoint_insert_relay(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_is_closed(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpoint_is_closed(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_online(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpoint_online(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_remote_addr(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpoint_remote_addr(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_remove_external_addr(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpoint_remove_external_addr(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_remove_relay(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpoint_remove_relay(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_secret_key(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpoint_secret_key(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_set_alpns(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpoint_set_alpns(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_stats(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpoint_stats(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_watch_addr(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpoint_watch_addr(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_watch_home_relay(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpoint_watch_home_relay(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_watch_network_change(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpoint_watch_network_change(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_alpns(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_alpns(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_apply_minimal(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_apply_minimal(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_apply_n0(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_apply_n0(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_apply_n0_disable_relay(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_apply_n0_disable_relay(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_bind(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_bind(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_bind_addr(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_bind_addr(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_relay_mode(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_relay_mode(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_secret_key(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_secret_key(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_preset_apply(): Short
+    external fun uniffi_iroh_ffi_checksum_method_preset_apply(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_protocolcreator_create(): Short
+    external fun uniffi_iroh_ffi_checksum_method_protocolcreator_create(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_protocolhandler_accept(): Short
+    external fun uniffi_iroh_ffi_checksum_method_protocolhandler_accept(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_protocolhandler_shutdown(): Short
+    external fun uniffi_iroh_ffi_checksum_method_protocolhandler_shutdown(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_recvstream_bytes_read(): Short
+    external fun uniffi_iroh_ffi_checksum_method_recvstream_bytes_read(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_recvstream_id(): Short
+    external fun uniffi_iroh_ffi_checksum_method_recvstream_id(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_recvstream_read(): Short
+    external fun uniffi_iroh_ffi_checksum_method_recvstream_read(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_recvstream_read_exact(): Short
+    external fun uniffi_iroh_ffi_checksum_method_recvstream_read_exact(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_recvstream_read_to_end(): Short
+    external fun uniffi_iroh_ffi_checksum_method_recvstream_read_to_end(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_recvstream_received_reset(): Short
+    external fun uniffi_iroh_ffi_checksum_method_recvstream_received_reset(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_recvstream_stop(): Short
+    external fun uniffi_iroh_ffi_checksum_method_recvstream_stop(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_sendstream_finish(): Short
+    external fun uniffi_iroh_ffi_checksum_method_sendstream_finish(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_sendstream_id(): Short
+    external fun uniffi_iroh_ffi_checksum_method_sendstream_id(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_sendstream_priority(): Short
+    external fun uniffi_iroh_ffi_checksum_method_sendstream_priority(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_sendstream_reset(): Short
+    external fun uniffi_iroh_ffi_checksum_method_sendstream_reset(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_sendstream_set_priority(): Short
+    external fun uniffi_iroh_ffi_checksum_method_sendstream_set_priority(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_sendstream_stopped(): Short
+    external fun uniffi_iroh_ffi_checksum_method_sendstream_stopped(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_sendstream_write(): Short
+    external fun uniffi_iroh_ffi_checksum_method_sendstream_write(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_sendstream_write_all(): Short
+    external fun uniffi_iroh_ffi_checksum_method_sendstream_write_all(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_iroherror_debug_message(): Short
+    external fun uniffi_iroh_ffi_checksum_method_iroherror_debug_message(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_iroherror_is_kind(): Short
+    external fun uniffi_iroh_ffi_checksum_method_iroherror_is_kind(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_iroherror_kind(): Short
+    external fun uniffi_iroh_ffi_checksum_method_iroherror_kind(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_iroherror_message(): Short
+    external fun uniffi_iroh_ffi_checksum_method_iroherror_message(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpointid_fmt_short(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpointid_fmt_short(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpointid_to_bytes(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpointid_to_bytes(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpointid_verify(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpointid_verify(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_secretkey_public(): Short
+    external fun uniffi_iroh_ffi_checksum_method_secretkey_public(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_secretkey_sign(): Short
+    external fun uniffi_iroh_ffi_checksum_method_secretkey_sign(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_secretkey_to_bytes(): Short
+    external fun uniffi_iroh_ffi_checksum_method_secretkey_to_bytes(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_signature_to_bytes(): Short
+    external fun uniffi_iroh_ffi_checksum_method_signature_to_bytes(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpointaddr_direct_addresses(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpointaddr_direct_addresses(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpointaddr_id(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpointaddr_id(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpointaddr_relay_url(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpointaddr_relay_url(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_pathchangecallback_on_change(): Short
+    external fun uniffi_iroh_ffi_checksum_method_pathchangecallback_on_change(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_patheventcallback_on_event(): Short
+    external fun uniffi_iroh_ffi_checksum_method_patheventcallback_on_event(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_relaymap_contains(): Short
+    external fun uniffi_iroh_ffi_checksum_method_relaymap_contains(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_relaymap_get(): Short
+    external fun uniffi_iroh_ffi_checksum_method_relaymap_get(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_relaymap_insert(): Short
+    external fun uniffi_iroh_ffi_checksum_method_relaymap_insert(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_relaymap_is_empty(): Short
+    external fun uniffi_iroh_ffi_checksum_method_relaymap_is_empty(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_relaymap_len(): Short
+    external fun uniffi_iroh_ffi_checksum_method_relaymap_len(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_relaymap_remove(): Short
+    external fun uniffi_iroh_ffi_checksum_method_relaymap_remove(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_relaymap_urls(): Short
+    external fun uniffi_iroh_ffi_checksum_method_relaymap_urls(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_relaymode_relay_map(): Short
+    external fun uniffi_iroh_ffi_checksum_method_relaymode_relay_map(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_servicesclient_name(): Short
+    external fun uniffi_iroh_ffi_checksum_method_servicesclient_name(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_servicesclient_ping(): Short
+    external fun uniffi_iroh_ffi_checksum_method_servicesclient_ping(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_servicesclient_push_metrics(): Short
+    external fun uniffi_iroh_ffi_checksum_method_servicesclient_push_metrics(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_servicesclient_set_name(): Short
+    external fun uniffi_iroh_ffi_checksum_method_servicesclient_set_name(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_servicesclient_submit_network_diagnostics(): Short
+    external fun uniffi_iroh_ffi_checksum_method_servicesclient_submit_network_diagnostics(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_endpointticket_endpoint_addr(): Short
+    external fun uniffi_iroh_ffi_checksum_method_endpointticket_endpoint_addr(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_addrchangecallback_on_change(): Short
+    external fun uniffi_iroh_ffi_checksum_method_addrchangecallback_on_change(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_homerelaycallback_on_change(): Short
+    external fun uniffi_iroh_ffi_checksum_method_homerelaycallback_on_change(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_networkchangecallback_on_change(): Short
+    external fun uniffi_iroh_ffi_checksum_method_networkchangecallback_on_change(): Int
 
-    external fun uniffi_iroh_ffi_checksum_method_watchhandle_stop(): Short
+    external fun uniffi_iroh_ffi_checksum_method_watchhandle_stop(): Int
 
-    external fun uniffi_iroh_ffi_checksum_constructor_endpoint_bind(): Short
+    external fun uniffi_iroh_ffi_checksum_constructor_endpoint_bind(): Int
 
-    external fun uniffi_iroh_ffi_checksum_constructor_endpointbuilder_new(): Short
+    external fun uniffi_iroh_ffi_checksum_constructor_endpointbuilder_new(): Int
 
-    external fun uniffi_iroh_ffi_checksum_constructor_endpointid_from_bytes(): Short
+    external fun uniffi_iroh_ffi_checksum_constructor_endpointid_from_bytes(): Int
 
-    external fun uniffi_iroh_ffi_checksum_constructor_endpointid_from_string(): Short
+    external fun uniffi_iroh_ffi_checksum_constructor_endpointid_from_string(): Int
 
-    external fun uniffi_iroh_ffi_checksum_constructor_secretkey_from_bytes(): Short
+    external fun uniffi_iroh_ffi_checksum_constructor_secretkey_from_bytes(): Int
 
-    external fun uniffi_iroh_ffi_checksum_constructor_secretkey_generate(): Short
+    external fun uniffi_iroh_ffi_checksum_constructor_secretkey_generate(): Int
 
-    external fun uniffi_iroh_ffi_checksum_constructor_signature_from_bytes(): Short
+    external fun uniffi_iroh_ffi_checksum_constructor_signature_from_bytes(): Int
 
-    external fun uniffi_iroh_ffi_checksum_constructor_endpointaddr_new(): Short
+    external fun uniffi_iroh_ffi_checksum_constructor_endpointaddr_new(): Int
 
-    external fun uniffi_iroh_ffi_checksum_constructor_relaymap_empty(): Short
+    external fun uniffi_iroh_ffi_checksum_constructor_relaymap_empty(): Int
 
-    external fun uniffi_iroh_ffi_checksum_constructor_relaymap_from_urls(): Short
+    external fun uniffi_iroh_ffi_checksum_constructor_relaymap_from_urls(): Int
 
-    external fun uniffi_iroh_ffi_checksum_constructor_relaymode_custom(): Short
+    external fun uniffi_iroh_ffi_checksum_constructor_relaymode_custom(): Int
 
-    external fun uniffi_iroh_ffi_checksum_constructor_relaymode_custom_from_urls(): Short
+    external fun uniffi_iroh_ffi_checksum_constructor_relaymode_custom_from_urls(): Int
 
-    external fun uniffi_iroh_ffi_checksum_constructor_relaymode_default_mode(): Short
+    external fun uniffi_iroh_ffi_checksum_constructor_relaymode_default_mode(): Int
 
-    external fun uniffi_iroh_ffi_checksum_constructor_relaymode_disabled(): Short
+    external fun uniffi_iroh_ffi_checksum_constructor_relaymode_disabled(): Int
 
-    external fun uniffi_iroh_ffi_checksum_constructor_relaymode_staging(): Short
+    external fun uniffi_iroh_ffi_checksum_constructor_relaymode_staging(): Int
 
-    external fun uniffi_iroh_ffi_checksum_constructor_servicesclient_create(): Short
+    external fun uniffi_iroh_ffi_checksum_constructor_servicesclient_create(): Int
 
-    external fun uniffi_iroh_ffi_checksum_constructor_endpointticket_from_addr(): Short
+    external fun uniffi_iroh_ffi_checksum_constructor_endpointticket_from_addr(): Int
 
-    external fun uniffi_iroh_ffi_checksum_constructor_endpointticket_from_string(): Short
+    external fun uniffi_iroh_ffi_checksum_constructor_endpointticket_from_string(): Int
 
     external fun ffi_iroh_ffi_uniffi_contract_version(): Int
 }
@@ -2309,7 +2309,7 @@ internal object UniffiLib {
     external fun ffi_iroh_ffi_rust_future_complete_u8(
         `handle`: Long,
         uniffi_out_err: UniffiRustCallStatus,
-    ): Byte
+    ): Int
 
     external fun ffi_iroh_ffi_rust_future_poll_i8(
         `handle`: Long,
@@ -2339,7 +2339,7 @@ internal object UniffiLib {
     external fun ffi_iroh_ffi_rust_future_complete_u16(
         `handle`: Long,
         uniffi_out_err: UniffiRustCallStatus,
-    ): Short
+    ): Int
 
     external fun ffi_iroh_ffi_rust_future_poll_i16(
         `handle`: Long,
@@ -2489,427 +2489,427 @@ private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
 
 @Suppress("UNUSED_PARAMETER")
 private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
-    if (lib.uniffi_iroh_ffi_checksum_func_set_log_level() != 52619.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_func_set_log_level() != 52619) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_func_preset_minimal() != 1543.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_func_preset_minimal() != 1543) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_func_preset_n0() != 14809.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_func_preset_n0() != 14809) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_func_preset_n0_disable_relay() != 45395.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_func_preset_n0_disable_relay() != 45395) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_accepting_alpn() != 1935.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_accepting_alpn() != 1935) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_accepting_connect() != 4822.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_accepting_connect() != 4822) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_connecting_alpn() != 43012.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connecting_alpn() != 43012) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_connecting_connect() != 18409.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connecting_connect() != 18409) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_connecting_remote_id() != 20505.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connecting_remote_id() != 20505) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_incoming_accept() != 17830.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_incoming_accept() != 17830) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_incoming_ignore() != 3710.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_incoming_ignore() != 3710) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_incoming_local_addr() != 49615.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_incoming_local_addr() != 49615) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_incoming_refuse() != 32144.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_incoming_refuse() != 32144) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_incoming_remote_addr() != 41074.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_incoming_remote_addr() != 41074) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_incoming_remote_addr_validated() != 11914.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_incoming_remote_addr_validated() != 11914) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_incoming_retry() != 5830.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_incoming_retry() != 5830) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_bistream_recv() != 64172.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_bistream_recv() != 64172) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_bistream_send() != 17421.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_bistream_send() != 17421) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_connection_accept_bi() != 24717.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connection_accept_bi() != 24717) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_connection_accept_uni() != 14498.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connection_accept_uni() != 14498) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_connection_alpn() != 24307.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connection_alpn() != 24307) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_connection_close() != 4437.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connection_close() != 4437) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_connection_close_reason() != 54740.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connection_close_reason() != 54740) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_connection_closed() != 47559.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connection_closed() != 47559) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_connection_datagram_send_buffer_space() != 43524.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connection_datagram_send_buffer_space() != 43524) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_connection_max_datagram_size() != 57931.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connection_max_datagram_size() != 57931) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_connection_open_bi() != 7884.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connection_open_bi() != 7884) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_connection_open_uni() != 45141.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connection_open_uni() != 45141) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_connection_paths() != 29415.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connection_paths() != 29415) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_connection_read_datagram() != 7530.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connection_read_datagram() != 7530) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_connection_remote_id() != 30142.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connection_remote_id() != 30142) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_connection_rtt() != 43391.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connection_rtt() != 43391) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_connection_send_datagram() != 28522.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connection_send_datagram() != 28522) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_connection_send_datagram_wait() != 48924.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connection_send_datagram_wait() != 48924) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_connection_set_max_concurrent_bi_streams() != 50250.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connection_set_max_concurrent_bi_streams() != 50250) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_connection_set_max_concurrent_uni_streams() != 26941.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connection_set_max_concurrent_uni_streams() != 26941) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_connection_set_receive_window() != 49973.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connection_set_receive_window() != 49973) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_connection_side() != 41532.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connection_side() != 41532) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_connection_stable_id() != 47103.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connection_stable_id() != 47103) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_connection_stats() != 46010.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connection_stats() != 46010) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_connection_watch_path_events() != 61648.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connection_watch_path_events() != 61648) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_connection_watch_paths() != 12199.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_connection_watch_paths() != 12199) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_accept_next() != 38336.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_accept_next() != 38336) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_add_external_addr() != 65222.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_add_external_addr() != 65222) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_addr() != 25271.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_addr() != 25271) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_bound_sockets() != 64249.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_bound_sockets() != 64249) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_close() != 8483.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_close() != 8483) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_connect() != 28652.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_connect() != 28652) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_connect_pending() != 15705.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_connect_pending() != 15705) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_id() != 21819.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_id() != 21819) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_insert_relay() != 12359.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_insert_relay() != 12359) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_is_closed() != 32495.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_is_closed() != 32495) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_online() != 27176.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_online() != 27176) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_remote_addr() != 28984.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_remote_addr() != 28984) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_remove_external_addr() != 28593.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_remove_external_addr() != 28593) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_remove_relay() != 27801.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_remove_relay() != 27801) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_secret_key() != 53232.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_secret_key() != 53232) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_set_alpns() != 19499.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_set_alpns() != 19499) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_stats() != 39646.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_stats() != 39646) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_watch_addr() != 33560.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_watch_addr() != 33560) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_watch_home_relay() != 61148.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_watch_home_relay() != 61148) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_watch_network_change() != 28710.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpoint_watch_network_change() != 28710) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpointbuilder_alpns() != 55626.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpointbuilder_alpns() != 55626) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpointbuilder_apply_minimal() != 3398.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpointbuilder_apply_minimal() != 3398) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpointbuilder_apply_n0() != 29986.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpointbuilder_apply_n0() != 29986) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpointbuilder_apply_n0_disable_relay() != 20494.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpointbuilder_apply_n0_disable_relay() != 20494) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpointbuilder_bind() != 5850.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpointbuilder_bind() != 5850) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpointbuilder_bind_addr() != 50528.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpointbuilder_bind_addr() != 50528) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpointbuilder_relay_mode() != 17405.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpointbuilder_relay_mode() != 17405) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpointbuilder_secret_key() != 35604.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpointbuilder_secret_key() != 35604) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_preset_apply() != 64281.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_preset_apply() != 64281) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_protocolcreator_create() != 61404.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_protocolcreator_create() != 61404) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_protocolhandler_accept() != 47317.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_protocolhandler_accept() != 47317) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_protocolhandler_shutdown() != 18593.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_protocolhandler_shutdown() != 18593) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_recvstream_bytes_read() != 16585.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_recvstream_bytes_read() != 16585) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_recvstream_id() != 36775.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_recvstream_id() != 36775) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_recvstream_read() != 19153.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_recvstream_read() != 19153) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_recvstream_read_exact() != 6617.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_recvstream_read_exact() != 6617) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_recvstream_read_to_end() != 10448.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_recvstream_read_to_end() != 10448) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_recvstream_received_reset() != 7090.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_recvstream_received_reset() != 7090) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_recvstream_stop() != 6249.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_recvstream_stop() != 6249) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_sendstream_finish() != 43289.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_sendstream_finish() != 43289) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_sendstream_id() != 21729.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_sendstream_id() != 21729) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_sendstream_priority() != 120.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_sendstream_priority() != 120) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_sendstream_reset() != 6025.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_sendstream_reset() != 6025) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_sendstream_set_priority() != 18123.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_sendstream_set_priority() != 18123) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_sendstream_stopped() != 18559.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_sendstream_stopped() != 18559) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_sendstream_write() != 30292.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_sendstream_write() != 30292) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_sendstream_write_all() != 64390.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_sendstream_write_all() != 64390) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_iroherror_debug_message() != 33751.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_iroherror_debug_message() != 33751) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_iroherror_is_kind() != 10479.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_iroherror_is_kind() != 10479) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_iroherror_kind() != 11512.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_iroherror_kind() != 11512) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_iroherror_message() != 60838.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_iroherror_message() != 60838) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpointid_fmt_short() != 41579.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpointid_fmt_short() != 41579) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpointid_to_bytes() != 28032.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpointid_to_bytes() != 28032) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpointid_verify() != 26422.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpointid_verify() != 26422) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_secretkey_public() != 4129.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_secretkey_public() != 4129) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_secretkey_sign() != 46972.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_secretkey_sign() != 46972) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_secretkey_to_bytes() != 48409.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_secretkey_to_bytes() != 48409) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_signature_to_bytes() != 39387.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_signature_to_bytes() != 39387) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpointaddr_direct_addresses() != 63199.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpointaddr_direct_addresses() != 63199) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpointaddr_id() != 32503.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpointaddr_id() != 32503) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpointaddr_relay_url() != 24207.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpointaddr_relay_url() != 24207) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_pathchangecallback_on_change() != 24759.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_pathchangecallback_on_change() != 24759) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_patheventcallback_on_event() != 26147.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_patheventcallback_on_event() != 26147) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_relaymap_contains() != 54079.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_relaymap_contains() != 54079) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_relaymap_get() != 6837.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_relaymap_get() != 6837) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_relaymap_insert() != 45587.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_relaymap_insert() != 45587) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_relaymap_is_empty() != 18319.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_relaymap_is_empty() != 18319) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_relaymap_len() != 54399.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_relaymap_len() != 54399) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_relaymap_remove() != 22144.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_relaymap_remove() != 22144) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_relaymap_urls() != 732.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_relaymap_urls() != 732) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_relaymode_relay_map() != 38538.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_relaymode_relay_map() != 38538) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_servicesclient_name() != 37977.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_servicesclient_name() != 37977) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_servicesclient_ping() != 52471.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_servicesclient_ping() != 52471) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_servicesclient_push_metrics() != 19984.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_servicesclient_push_metrics() != 19984) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_servicesclient_set_name() != 56201.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_servicesclient_set_name() != 56201) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_servicesclient_submit_network_diagnostics() != 36167.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_servicesclient_submit_network_diagnostics() != 36167) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpointticket_endpoint_addr() != 64212.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpointticket_endpoint_addr() != 64212) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_addrchangecallback_on_change() != 35709.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_addrchangecallback_on_change() != 35709) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_homerelaycallback_on_change() != 24411.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_homerelaycallback_on_change() != 24411) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_networkchangecallback_on_change() != 8251.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_networkchangecallback_on_change() != 8251) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_watchhandle_stop() != 5389.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_watchhandle_stop() != 5389) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_constructor_endpoint_bind() != 33964.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_endpoint_bind() != 33964) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_constructor_endpointbuilder_new() != 16347.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_endpointbuilder_new() != 16347) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_constructor_endpointid_from_bytes() != 63462.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_endpointid_from_bytes() != 63462) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_constructor_endpointid_from_string() != 47236.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_endpointid_from_string() != 47236) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_constructor_secretkey_from_bytes() != 61009.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_secretkey_from_bytes() != 61009) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_constructor_secretkey_generate() != 56581.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_secretkey_generate() != 56581) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_constructor_signature_from_bytes() != 62207.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_signature_from_bytes() != 62207) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_constructor_endpointaddr_new() != 40386.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_endpointaddr_new() != 40386) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_constructor_relaymap_empty() != 49514.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_relaymap_empty() != 49514) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_constructor_relaymap_from_urls() != 678.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_relaymap_from_urls() != 678) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_constructor_relaymode_custom() != 51396.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_relaymode_custom() != 51396) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_constructor_relaymode_custom_from_urls() != 49579.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_relaymode_custom_from_urls() != 49579) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_constructor_relaymode_default_mode() != 17157.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_relaymode_default_mode() != 17157) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_constructor_relaymode_disabled() != 42542.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_relaymode_disabled() != 42542) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_constructor_relaymode_staging() != 32490.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_relaymode_staging() != 32490) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_constructor_servicesclient_create() != 11042.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_servicesclient_create() != 11042) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_constructor_endpointticket_from_addr() != 28196.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_endpointticket_from_addr() != 28196) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_constructor_endpointticket_from_string() != 3825.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_endpointticket_from_string() != 3825) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
 }
@@ -3262,6 +3262,8 @@ private class JavaLangRefCleanable(
  */
 public object FfiConverterUShort : FfiConverter<UShort, Short> {
     override fun lift(value: Short): UShort = value.toUShort()
+
+    fun lift(value: Int): UShort = value.toUShort()
 
     override fun read(buf: ByteBuffer): UShort = lift(buf.getShort())
 

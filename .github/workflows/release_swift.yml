@@ -21,7 +21,7 @@ jobs:
     runs-on: [self-hosted, macOS, ARM64, xcode16]
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}

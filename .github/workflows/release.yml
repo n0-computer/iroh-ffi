@@ -43,7 +43,7 @@ jobs:
         echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
         echo "version is: ${GITHUB_REF#refs/tags/}"
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         fetch-depth: 1
     - name: Promote draft release (or create fresh)
@@ -95,7 +95,7 @@ jobs:
             runner: [windows-latest]
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         fetch-depth: 1
     - name: Install Rust
@@ -173,7 +173,7 @@ jobs:
             target: x86_64-pc-windows-msvc
             lib_file: iroh_ffi.dll
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
@@ -199,7 +199,7 @@ jobs:
     timeout-minutes: 60
     runs-on: [self-hosted, linux, X64]
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
@@ -242,11 +242,11 @@ jobs:
     # doesn't have KVM enabled.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - uses: davidB/rust-cargo-make@v1
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
@@ -283,11 +283,11 @@ jobs:
     needs: [create-release, build-kotlin-cdylib, build-kotlin-android, verify-kotlin-android-consumer]
     runs-on: [self-hosted, linux, X64]
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - uses: davidB/rust-cargo-make@v1
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"

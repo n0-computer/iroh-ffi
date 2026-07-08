@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 60
     runs-on: [self-hosted, macOS, ARM64, xcode16]
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios,aarch64-apple-darwin
