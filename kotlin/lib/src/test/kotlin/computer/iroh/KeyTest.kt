@@ -24,9 +24,23 @@ class KeyTest {
     }
 
     @Test fun endpointIdRejectsBadBytes() {
-        assertFailsWith<Exception> {
+        val err = assertFailsWith<IrohException> {
             EndpointId.fromBytes(byteArrayOf(1, 2, 3))
         }
+        assert(err.kind() == IrohErrorKind.INVALID_INPUT)
+        assert(err.isKind(IrohErrorKind.INVALID_INPUT))
+        assert(err.message().contains("32 bytes"))
+        assert(err.debugMessage() == err.message())
+    }
+
+    @Test fun endpointIdParseErrorKind() {
+        val err = assertFailsWith<IrohException> {
+            EndpointId.fromString("not-an-endpoint-id")
+        }
+        assert(err.kind() == IrohErrorKind.KEY_PARSING)
+        assert(err.isKind(IrohErrorKind.KEY_PARSING))
+        assert(err.message().isNotEmpty())
+        assert(err.debugMessage().isNotEmpty())
     }
 
     @Test fun secretKeyRoundtrip() {

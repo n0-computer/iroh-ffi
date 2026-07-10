@@ -1176,6 +1176,12 @@ internal object IntegrityCheckingUniffiLib {
 
     external fun uniffi_iroh_ffi_checksum_method_sendstream_write_all(): Short
 
+    external fun uniffi_iroh_ffi_checksum_method_iroherror_debug_message(): Short
+
+    external fun uniffi_iroh_ffi_checksum_method_iroherror_is_kind(): Short
+
+    external fun uniffi_iroh_ffi_checksum_method_iroherror_kind(): Short
+
     external fun uniffi_iroh_ffi_checksum_method_iroherror_message(): Short
 
     external fun uniffi_iroh_ffi_checksum_method_endpointid_fmt_short(): Short
@@ -1789,6 +1795,22 @@ internal object UniffiLib {
         `handle`: Long,
         uniffi_out_err: UniffiRustCallStatus,
     ): Unit
+
+    external fun uniffi_iroh_ffi_fn_method_iroherror_debug_message(
+        `ptr`: Long,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
+
+    external fun uniffi_iroh_ffi_fn_method_iroherror_is_kind(
+        `ptr`: Long,
+        `kind`: RustBuffer.ByValue,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): Byte
+
+    external fun uniffi_iroh_ffi_fn_method_iroherror_kind(
+        `ptr`: Long,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): RustBuffer.ByValue
 
     external fun uniffi_iroh_ffi_fn_method_iroherror_message(
         `ptr`: Long,
@@ -2665,7 +2687,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_method_endpointbuilder_apply_n0_disable_relay() != 20494.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpointbuilder_bind() != 18280.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpointbuilder_bind() != 5850.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_endpointbuilder_bind_addr() != 50528.toShort()) {
@@ -2734,7 +2756,16 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_method_sendstream_write_all() != 64390.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_iroherror_message() != 64767.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_method_iroherror_debug_message() != 33751.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_ffi_checksum_method_iroherror_is_kind() != 10479.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_ffi_checksum_method_iroherror_kind() != 11512.toShort()) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_ffi_checksum_method_iroherror_message() != 60838.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_endpointid_fmt_short() != 41579.toShort()) {
@@ -2830,7 +2861,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_constructor_endpoint_bind() != 33964.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_constructor_endpointbuilder_new() != 38003.toShort()) {
+    if (lib.uniffi_iroh_ffi_checksum_constructor_endpointbuilder_new() != 16347.toShort()) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_constructor_endpointid_from_bytes() != 63462.toShort()) {
@@ -6631,14 +6662,10 @@ public interface EndpointBuilderInterface {
     /**
      * Consume the builder and bind a new [`Endpoint`].
      *
-     * Returns an `Endpoint` without protocol handlers attached. To attach
-     * protocol handlers, use [`Endpoint::bind`] with
-     * [`EndpointOptions::protocols`] instead — the builder form here is
-     * for callers who don't need custom protocols.
-     *
-     * The builder is single-use: a second call to `bind` (or to any other
-     * `take_inner`-using method like `bind_addr`) on the same instance
-     * returns `EndpointBuilder already consumed`.
+     * The returned `Endpoint` has no protocol handlers — use
+     * [`Endpoint::bind`] with [`EndpointOptions::protocols`] to attach them.
+     * The builder is single-use; a second `bind` returns
+     * `EndpointBuilder already consumed`.
      */
     suspend fun `bind`(): Endpoint
 
@@ -6696,15 +6723,9 @@ open class EndpointBuilder :
     }
 
     /**
-     * Create a fresh empty endpoint builder.
-     *
-     * Apply a preset (`apply_n0`, `apply_minimal`, `apply_n0_disable_relay`)
-     * before [`bind`](Self::bind) — the preset installs the crypto provider
-     * and other required configuration; without one, `bind` will error.
-     *
-     * For the simple `Endpoint::bind(options)` path use that constructor
-     * instead; this builder API is for callers who want to apply
-     * configuration incrementally.
+     * Create a fresh empty endpoint builder. Apply a preset (`apply_n0`,
+     * `apply_minimal`, `apply_n0_disable_relay`) before [`bind`](Self::bind);
+     * the preset installs the crypto provider, without one `bind` will error.
      */
     constructor() :
         this(
@@ -6843,14 +6864,10 @@ open class EndpointBuilder :
     /**
      * Consume the builder and bind a new [`Endpoint`].
      *
-     * Returns an `Endpoint` without protocol handlers attached. To attach
-     * protocol handlers, use [`Endpoint::bind`] with
-     * [`EndpointOptions::protocols`] instead — the builder form here is
-     * for callers who don't need custom protocols.
-     *
-     * The builder is single-use: a second call to `bind` (or to any other
-     * `take_inner`-using method like `bind_addr`) on the same instance
-     * returns `EndpointBuilder already consumed`.
+     * The returned `Endpoint` has no protocol handlers — use
+     * [`Endpoint::bind`] with [`EndpointOptions::protocols`] to attach them.
+     * The builder is single-use; a second `bind` returns
+     * `EndpointBuilder already consumed`.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
@@ -8447,6 +8464,25 @@ public object FfiConverterTypeIncoming : FfiConverter<Incoming, Long> {
  * An Error.
  */
 public interface IrohExceptionInterface {
+    /**
+     * Detailed debug representation of the original Rust error.
+     */
+    fun `debugMessage`(): kotlin.String
+
+    /**
+     * Convenience helper for bindings that do not expose enum comparison
+     * ergonomically.
+     */
+    fun `isKind`(`kind`: IrohErrorKind): kotlin.Boolean
+
+    /**
+     * Stable high-level error category.
+     */
+    fun `kind`(): IrohErrorKind
+
+    /**
+     * Human-readable error message.
+     */
     fun `message`(): kotlin.String
 
     companion object
@@ -8556,6 +8592,56 @@ open class IrohException :
         }
     }
 
+    /**
+     * Detailed debug representation of the original Rust error.
+     */
+    override fun `debugMessage`(): kotlin.String =
+        FfiConverterString.lift(
+            callWithHandle {
+                uniffiRustCall { _status ->
+                    UniffiLib.uniffi_iroh_ffi_fn_method_iroherror_debug_message(
+                        it,
+                        _status,
+                    )
+                }
+            },
+        )
+
+    /**
+     * Convenience helper for bindings that do not expose enum comparison
+     * ergonomically.
+     */
+    override fun `isKind`(`kind`: IrohErrorKind): kotlin.Boolean =
+        FfiConverterBoolean.lift(
+            callWithHandle {
+                uniffiRustCall { _status ->
+                    UniffiLib.uniffi_iroh_ffi_fn_method_iroherror_is_kind(
+                        it,
+                        FfiConverterTypeIrohErrorKind.lower(`kind`),
+                        _status,
+                    )
+                }
+            },
+        )
+
+    /**
+     * Stable high-level error category.
+     */
+    override fun `kind`(): IrohErrorKind =
+        FfiConverterTypeIrohErrorKind.lift(
+            callWithHandle {
+                uniffiRustCall { _status ->
+                    UniffiLib.uniffi_iroh_ffi_fn_method_iroherror_kind(
+                        it,
+                        _status,
+                    )
+                }
+            },
+        )
+
+    /**
+     * Human-readable error message.
+     */
     override fun `message`(): kotlin.String =
         FfiConverterString.lift(
             callWithHandle {
@@ -14305,6 +14391,111 @@ public object FfiConverterTypeIncomingLocalAddr : FfiConverterRustBuffer<Incomin
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+/**
+ * Stable high-level error categories exposed across the FFI boundary.
+ *
+ * These are intentionally coarser than the upstream Rust error types. They
+ * give foreign bindings a stable taxonomy for `errors.Is`-style handling
+ * without leaking the internal `iroh` / `n0-error` error hierarchy.
+ */
+
+enum class IrohErrorKind {
+    /**
+     * Invalid input supplied by the caller.
+     */
+    INVALID_INPUT,
+
+    /**
+     * Failure while binding an endpoint.
+     */
+    BIND,
+
+    /**
+     * Failure while initiating or completing an outgoing connection.
+     */
+    CONNECT,
+
+    /**
+     * An established connection failed or closed unexpectedly.
+     */
+    CONNECTION,
+
+    /**
+     * ALPN negotiation or lookup failed.
+     */
+    ALPN,
+
+    /**
+     * Endpoint id / public key parsing failed.
+     */
+    KEY_PARSING,
+
+    /**
+     * Ticket parsing failed.
+     */
+    TICKET_PARSING,
+
+    /**
+     * Relay configuration or relay operation failed.
+     */
+    RELAY,
+
+    /**
+     * Stream read/write/control operation failed.
+     */
+    STREAM,
+
+    /**
+     * Datagram send/receive operation failed.
+     */
+    DATAGRAM,
+
+    /**
+     * Foreign callback failed.
+     */
+    CALLBACK,
+
+    /**
+     * Operation was attempted on a closed stream/connection/resource.
+     */
+    CLOSED,
+
+    /**
+     * Operation timed out.
+     */
+    TIMEOUT,
+
+    /**
+     * Unclassified internal error.
+     */
+    INTERNAL,
+
+    ;
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeIrohErrorKind : FfiConverterRustBuffer<IrohErrorKind> {
+    override fun read(buf: ByteBuffer) =
+        try {
+            IrohErrorKind.values()[buf.getInt() - 1]
+        } catch (e: IndexOutOfBoundsException) {
+            throw RuntimeException("invalid enum value, something is very wrong!!", e)
+        }
+
+    override fun allocationSize(value: IrohErrorKind) = 4UL
+
+    override fun write(
+        value: IrohErrorKind,
+        buf: ByteBuffer,
+    ) {
+        buf.putInt(value.ordinal + 1)
     }
 }
 
