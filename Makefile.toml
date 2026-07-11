@@ -672,6 +672,14 @@ cargo update -p iroh-ffi --precise "$VERSION" >/dev/null
 echo "==> refresh iroh-js/yarn.lock"
 ( cd iroh-js && yarn install --mode update-lockfile >/dev/null )
 
+# `napi build` regenerates iroh-js/index.js with the new version baked into
+# every `bindingPackageVersion !== '<V>'` check + error message. Without this
+# step, publish CI regenerates index.js on the runner and ships a fresh copy
+# to npm — but the committed file on main stays stuck on the old literal,
+# drifting further each release.
+echo "==> regenerate iroh-js/index.js via napi build"
+cargo make js-build >/dev/null
+
 cat <<EOF
 
 Prepared release v$VERSION (versions only; Swift xcframework SHA is CI's job).
