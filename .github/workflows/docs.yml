@@ -27,7 +27,7 @@ jobs:
     timeout-minutes: 45
     runs-on: [self-hosted, macOS, ARM64]
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
       - uses: dtolnay/rust-toolchain@stable
@@ -52,11 +52,11 @@ jobs:
     timeout-minutes: 30
     runs-on: [self-hosted, linux, X64]
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - uses: davidB/rust-cargo-make@v1
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: Set up virtualenv (maturin builds the extension)
@@ -80,11 +80,11 @@ jobs:
     timeout-minutes: 30
     runs-on: [self-hosted, linux, X64]
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - uses: davidB/rust-cargo-make@v1
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "24"
       # Self-hosted runners don't ship yarn; corepack provides it (matches
@@ -105,11 +105,11 @@ jobs:
     timeout-minutes: 30
     runs-on: [self-hosted, linux, X64]
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - uses: davidB/rust-cargo-make@v1
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
@@ -126,8 +126,8 @@ jobs:
     timeout-minutes: 10
     runs-on: [self-hosted, linux, X64]
     steps:
-      - uses: actions/checkout@master
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - run: pip install pyyaml

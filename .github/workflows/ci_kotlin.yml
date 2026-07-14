@@ -30,13 +30,13 @@ jobs:
           - name: macOS-arm-latest
             runner: [self-hosted, macOS, ARM64]
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - uses: davidB/rust-cargo-make@v1
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: "temurin"
           java-version: "21"
@@ -71,7 +71,7 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
       - uses: dtolnay/rust-toolchain@stable
@@ -88,7 +88,7 @@ jobs:
           if ! command -v cargo-make >/dev/null 2>&1; then
             cargo install --locked cargo-make
           fi
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: "temurin"
           java-version: "21"
@@ -102,7 +102,7 @@ jobs:
     timeout-minutes: 45
     runs-on: [self-hosted, linux, X64]
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
       - uses: dtolnay/rust-toolchain@stable
@@ -110,7 +110,7 @@ jobs:
           targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
       - uses: Swatinem/rust-cache@v2
       - uses: davidB/rust-cargo-make@v1
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: "temurin"
           java-version: "21"
@@ -131,7 +131,7 @@ jobs:
     # self-hosted runner doesn't.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
       - uses: dtolnay/rust-toolchain@stable
@@ -139,7 +139,7 @@ jobs:
           targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
       - uses: Swatinem/rust-cache@v2
       - uses: davidB/rust-cargo-make@v1
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: "temurin"
           java-version: "17"

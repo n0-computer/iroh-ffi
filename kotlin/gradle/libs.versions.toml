@@ -12,12 +12,12 @@ guava = { module = "com.google.guava:guava", version.ref = "guava" }
 junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit-jupiter-engine" }
 
 [plugins]
-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version = "2.2.20" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version = "2.2.21" }
 # Same Kotlin version as kotlin-jvm — the AAR's compiled metadata must be
 # readable by the JVM jar's consumers and vice versa.
-kotlin-android = { id = "org.jetbrains.kotlin.android", version = "2.2.20" }
-# AGP 8.13 supports Kotlin 2.2.x + Gradle 8.13 (root wrapper version above).
-android-library = { id = "com.android.library", version = "8.13.0" }
-android-application = { id = "com.android.application", version = "8.13.0" }
-dokka = { id = "org.jetbrains.dokka", version = "2.0.0" }
-maven-publish = { id = "com.vanniktech.maven.publish", version = "0.34.0" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version = "2.2.21" }
+# AGP 8.13 supports Kotlin 2.2.x + Gradle 8.14+ (root wrapper version above).
+android-library = { id = "com.android.library", version = "8.13.2" }
+android-application = { id = "com.android.application", version = "8.13.2" }
+dokka = { id = "org.jetbrains.dokka", version = "2.2.0" }
+maven-publish = { id = "com.vanniktech.maven.publish", version = "0.37.0" }
