@@ -52,6 +52,9 @@ jobs:
         with:
           name: wheels-${{ matrix.release-os }}-${{ matrix.release-arch }}
           path: target/wheels/*.whl
+          # Consumed by the `publish` job in the same run. 3 days leaves margin
+          # to re-run a failed publish without holding ~3GB for 90 days.
+          retention-days: 3
 
   osx:
     # arm64-only: the org has no GitHub-hosted macOS and x86_64 mac wheels
@@ -72,6 +75,7 @@ jobs:
         with:
           name: wheels-darwin-aarch64
           path: target/wheels/*.whl
+          retention-days: 3
 
   windows:
     runs-on: windows-latest
@@ -89,6 +93,7 @@ jobs:
         with:
           name: wheels-windows-x86_64
           path: target/wheels/*.whl
+          retention-days: 3
 
   publish:
     name: Publish wheels to PyPI
