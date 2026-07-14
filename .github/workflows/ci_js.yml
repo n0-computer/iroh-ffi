@@ -201,6 +201,10 @@ jobs:
           name: bindings-${{ matrix.settings.target }}
           path: iroh-js/${{ env.APP_NAME }}.*.node
           if-no-files-found: error
+          # Intra-run handoff only: the test-* jobs below download this in the
+          # same run. Defaulting to 90d retention accumulated ~9GB of dead
+          # per-PR binaries against the account's 2GB Actions storage quota.
+          retention-days: 1
   test-macOS-windows-binding:
     name: Test bindings on ${{ matrix.settings.target }} - node@${{ matrix.node }}
     needs:

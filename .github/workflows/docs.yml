@@ -45,6 +45,7 @@ jobs:
           name: docs-swift
           path: docs-swift.tgz
           if-no-files-found: error
+          retention-days: 1
 
   python:
     name: Python docs (pdoc)
@@ -72,6 +73,7 @@ jobs:
           name: docs-python
           path: site/python
           if-no-files-found: error
+          retention-days: 1
 
   js:
     name: JavaScript docs (TypeDoc)
@@ -96,6 +98,7 @@ jobs:
           name: docs-js
           path: site/js
           if-no-files-found: error
+          retention-days: 1
 
   kotlin:
     name: Kotlin docs (Dokka)
@@ -116,6 +119,7 @@ jobs:
           name: docs-kotlin
           path: site/kotlin
           if-no-files-found: error
+          retention-days: 1
 
   landing:
     name: Landing page
@@ -133,6 +137,7 @@ jobs:
           name: docs-landing
           path: site/index.html
           if-no-files-found: error
+          retention-days: 1
 
   assemble:
     name: Assemble + upload Pages artifact

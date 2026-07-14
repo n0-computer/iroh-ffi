@@ -184,6 +184,9 @@ jobs:
           name: kotlin-cdylib-${{ matrix.name }}
           path: target/${{ matrix.target }}/release/${{ matrix.lib_file }}
           if-no-files-found: error
+          # Staged for publish-kotlin in the same run; the real deliverable is
+          # the Maven Central artifact. A week is plenty to re-run a publish.
+          retention-days: 7
 
   # Cross-build the native lib for every Android ABI with the NDK. These
   # ship in the same computer.iroh:iroh jar under `lib/<abi>/`; AGP merges
@@ -222,6 +225,7 @@ jobs:
           name: kotlin-android-jniLibs
           path: android-jniLibs/
           if-no-files-found: error
+          retention-days: 7
 
   # Pre-publish Android consumer smoke. Pulls the just-built android natives
   # from build-kotlin-android, stages them under lib/<abi>/, assembles a tiny
