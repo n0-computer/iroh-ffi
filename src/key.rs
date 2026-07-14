@@ -50,7 +50,9 @@ impl EndpointId {
     #[uniffi::constructor]
     pub fn from_bytes(bytes: Vec<u8>) -> Result<Self, IrohError> {
         if bytes.len() != 32 {
-            return Err(anyhow::anyhow!("the EndpointId must be 32 bytes in length").into());
+            return Err(IrohError::invalid_input(
+                "the EndpointId must be 32 bytes in length",
+            ));
         }
         let bytes: [u8; 32] = bytes.try_into().expect("checked above");
         let key = iroh::EndpointId::from_bytes(&bytes)?;
@@ -96,7 +98,7 @@ impl SecretKey {
     pub fn from_bytes(bytes: Vec<u8>) -> Result<Self, IrohError> {
         let bytes: [u8; 32] = bytes
             .try_into()
-            .map_err(|_| anyhow::anyhow!("SecretKey requires exactly 32 bytes"))?;
+            .map_err(|_| IrohError::invalid_input("SecretKey requires exactly 32 bytes"))?;
         Ok(SecretKey(iroh::SecretKey::from_bytes(&bytes)))
     }
 
@@ -137,7 +139,7 @@ impl Signature {
     pub fn from_bytes(bytes: Vec<u8>) -> Result<Self, IrohError> {
         let bytes: [u8; 64] = bytes
             .try_into()
-            .map_err(|_| anyhow::anyhow!("Signature requires exactly 64 bytes"))?;
+            .map_err(|_| IrohError::invalid_input("Signature requires exactly 64 bytes"))?;
         Ok(Signature(iroh_base::Signature::from_bytes(&bytes)))
     }
 
@@ -207,5 +209,20 @@ mod tests {
         let secret2 = SecretKey::from_bytes(bytes.clone()).unwrap();
         assert_eq!(secret.to_bytes(), secret2.to_bytes());
         assert_eq!(secret.public().to_bytes(), secret2.public().to_bytes());
+    }
+
+    #[test]
+    fn test_error_kind_for_invalid_endpoint_id() {
+        let err = EndpointId::from_bytes(vec![0; 31]).unwrap_err();
+        assert_eq!(err.kind(), crate::IrohErrorKind::InvalidInput);
+        assert!(err.is_kind(crate::IrohErrorKind::InvalidInput));
+        assert!(err.message().contains("32 bytes"));
+        assert_eq!(err.debug_message(), err.message());
+
+        let err = EndpointId::from_string("not-an-endpoint-id".to_string()).unwrap_err();
+        assert_eq!(err.kind(), crate::IrohErrorKind::KeyParsing);
+        assert!(err.is_kind(crate::IrohErrorKind::KeyParsing));
+        assert!(!err.message().is_empty());
+        assert!(!err.debug_message().is_empty());
     }
 }

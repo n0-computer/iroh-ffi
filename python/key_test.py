@@ -1,5 +1,7 @@
 # Tests that correspond to the `src/key.rs` rust api.
-from iroh import EndpointId, SecretKey, Signature
+import pytest
+
+from iroh import EndpointId, IrohError, IrohErrorKind, SecretKey, Signature
 
 
 def test_endpoint_id():
@@ -25,11 +27,23 @@ def test_endpoint_id():
 
 
 def test_endpoint_id_invalid():
-    try:
+    with pytest.raises(IrohError) as exc_info:
         EndpointId.from_bytes(b"too short")
-        assert False, "expected error"
-    except Exception:
-        pass
+    err = exc_info.value
+    assert err.kind() == IrohErrorKind.INVALID_INPUT
+    assert err.is_kind(IrohErrorKind.INVALID_INPUT)
+    assert "32 bytes" in err.message()
+    assert err.debug_message() == err.message()
+
+
+def test_endpoint_id_parse_error_kind():
+    with pytest.raises(IrohError) as exc_info:
+        EndpointId.from_string("not-an-endpoint-id")
+    err = exc_info.value
+    assert err.kind() == IrohErrorKind.KEY_PARSING
+    assert err.is_kind(IrohErrorKind.KEY_PARSING)
+    assert err.message()
+    assert err.debug_message()
 
 
 def test_secret_key_roundtrip():

@@ -2708,14 +2708,10 @@ public protocol EndpointBuilderProtocol: AnyObject, Sendable {
     /**
      * Consume the builder and bind a new [`Endpoint`].
      *
-     * Returns an `Endpoint` without protocol handlers attached. To attach
-     * protocol handlers, use [`Endpoint::bind`] with
-     * [`EndpointOptions::protocols`] instead — the builder form here is
-     * for callers who don't need custom protocols.
-     *
-     * The builder is single-use: a second call to `bind` (or to any other
-     * `take_inner`-using method like `bind_addr`) on the same instance
-     * returns `EndpointBuilder already consumed`.
+     * The returned `Endpoint` has no protocol handlers — use
+     * [`Endpoint::bind`] with [`EndpointOptions::protocols`] to attach them.
+     * The builder is single-use; a second `bind` returns
+     * `EndpointBuilder already consumed`.
      */
     func bind() async throws  -> Endpoint
     
@@ -2784,15 +2780,9 @@ open class EndpointBuilder: EndpointBuilderProtocol, @unchecked Sendable {
         return try! rustCall { uniffi_iroh_ffi_fn_clone_endpointbuilder(self.handle, $0) }
     }
     /**
-     * Create a fresh empty endpoint builder.
-     *
-     * Apply a preset (`apply_n0`, `apply_minimal`, `apply_n0_disable_relay`)
-     * before [`bind`](Self::bind) — the preset installs the crypto provider
-     * and other required configuration; without one, `bind` will error.
-     *
-     * For the simple `Endpoint::bind(options)` path use that constructor
-     * instead; this builder API is for callers who want to apply
-     * configuration incrementally.
+     * Create a fresh empty endpoint builder. Apply a preset (`apply_n0`,
+     * `apply_minimal`, `apply_n0_disable_relay`) before [`bind`](Self::bind);
+     * the preset installs the crypto provider, without one `bind` will error.
      */
 public convenience init() {
     let handle =
@@ -2859,14 +2849,10 @@ open func applyN0DisableRelay()  {try! rustCall() {
     /**
      * Consume the builder and bind a new [`Endpoint`].
      *
-     * Returns an `Endpoint` without protocol handlers attached. To attach
-     * protocol handlers, use [`Endpoint::bind`] with
-     * [`EndpointOptions::protocols`] instead — the builder form here is
-     * for callers who don't need custom protocols.
-     *
-     * The builder is single-use: a second call to `bind` (or to any other
-     * `take_inner`-using method like `bind_addr`) on the same instance
-     * returns `EndpointBuilder already consumed`.
+     * The returned `Endpoint` has no protocol handlers — use
+     * [`Endpoint::bind`] with [`EndpointOptions::protocols`] to attach them.
+     * The builder is single-use; a second `bind` returns
+     * `EndpointBuilder already consumed`.
      */
 open func bind()async throws  -> Endpoint  {
     return
@@ -3885,6 +3871,25 @@ public func FfiConverterTypeIncoming_lower(_ value: Incoming) -> UInt64 {
  */
 public protocol IrohErrorProtocol: AnyObject, Sendable {
     
+    /**
+     * Detailed debug representation of the original Rust error.
+     */
+    func debugMessage()  -> String
+    
+    /**
+     * Convenience helper for bindings that do not expose enum comparison
+     * ergonomically.
+     */
+    func isKind(kind: IrohErrorKind)  -> Bool
+    
+    /**
+     * Stable high-level error category.
+     */
+    func kind()  -> IrohErrorKind
+    
+    /**
+     * Human-readable error message.
+     */
     func message()  -> String
     
 }
@@ -3944,6 +3949,44 @@ open class IrohError: IrohErrorProtocol, @unchecked Sendable, Swift.Error, Found
     
 
     
+    /**
+     * Detailed debug representation of the original Rust error.
+     */
+open func debugMessage() -> String  {
+    return try!  FfiConverterString.lift(try! rustCall() {
+    uniffi_iroh_ffi_fn_method_iroherror_debug_message(
+            self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
+    /**
+     * Convenience helper for bindings that do not expose enum comparison
+     * ergonomically.
+     */
+open func isKind(kind: IrohErrorKind) -> Bool  {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_iroh_ffi_fn_method_iroherror_is_kind(
+            self.uniffiCloneHandle(),
+        FfiConverterTypeIrohErrorKind_lower(kind),$0
+    )
+})
+}
+    
+    /**
+     * Stable high-level error category.
+     */
+open func kind() -> IrohErrorKind  {
+    return try!  FfiConverterTypeIrohErrorKind_lift(try! rustCall() {
+    uniffi_iroh_ffi_fn_method_iroherror_kind(
+            self.uniffiCloneHandle(),$0
+    )
+})
+}
+    
+    /**
+     * Human-readable error message.
+     */
 open func message() -> String  {
     return try!  FfiConverterString.lift(try! rustCall() {
     uniffi_iroh_ffi_fn_method_iroherror_message(
@@ -8355,6 +8398,206 @@ public func FfiConverterTypeIncomingLocalAddr_lower(_ value: IncomingLocalAddr) 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 /**
+ * Stable high-level error categories exposed across the FFI boundary.
+ *
+ * These are intentionally coarser than the upstream Rust error types. They
+ * give foreign bindings a stable taxonomy for `errors.Is`-style handling
+ * without leaking the internal `iroh` / `n0-error` error hierarchy.
+ */
+
+public enum IrohErrorKind: Equatable, Hashable {
+    
+    /**
+     * Invalid input supplied by the caller.
+     */
+    case invalidInput
+    /**
+     * Failure while binding an endpoint.
+     */
+    case bind
+    /**
+     * Failure while initiating or completing an outgoing connection.
+     */
+    case connect
+    /**
+     * An established connection failed or closed unexpectedly.
+     */
+    case connection
+    /**
+     * ALPN negotiation or lookup failed.
+     */
+    case alpn
+    /**
+     * Endpoint id / public key parsing failed.
+     */
+    case keyParsing
+    /**
+     * Ticket parsing failed.
+     */
+    case ticketParsing
+    /**
+     * Relay configuration or relay operation failed.
+     */
+    case relay
+    /**
+     * Stream read/write/control operation failed.
+     */
+    case stream
+    /**
+     * Datagram send/receive operation failed.
+     */
+    case datagram
+    /**
+     * Foreign callback failed.
+     */
+    case callback
+    /**
+     * Operation was attempted on a closed stream/connection/resource.
+     */
+    case closed
+    /**
+     * Operation timed out.
+     */
+    case timeout
+    /**
+     * Unclassified internal error.
+     */
+    case `internal`
+
+
+
+
+
+}
+
+#if compiler(>=6)
+extension IrohErrorKind: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeIrohErrorKind: FfiConverterRustBuffer {
+    typealias SwiftType = IrohErrorKind
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> IrohErrorKind {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .invalidInput
+        
+        case 2: return .bind
+        
+        case 3: return .connect
+        
+        case 4: return .connection
+        
+        case 5: return .alpn
+        
+        case 6: return .keyParsing
+        
+        case 7: return .ticketParsing
+        
+        case 8: return .relay
+        
+        case 9: return .stream
+        
+        case 10: return .datagram
+        
+        case 11: return .callback
+        
+        case 12: return .closed
+        
+        case 13: return .timeout
+        
+        case 14: return .`internal`
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: IrohErrorKind, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case .invalidInput:
+            writeInt(&buf, Int32(1))
+        
+        
+        case .bind:
+            writeInt(&buf, Int32(2))
+        
+        
+        case .connect:
+            writeInt(&buf, Int32(3))
+        
+        
+        case .connection:
+            writeInt(&buf, Int32(4))
+        
+        
+        case .alpn:
+            writeInt(&buf, Int32(5))
+        
+        
+        case .keyParsing:
+            writeInt(&buf, Int32(6))
+        
+        
+        case .ticketParsing:
+            writeInt(&buf, Int32(7))
+        
+        
+        case .relay:
+            writeInt(&buf, Int32(8))
+        
+        
+        case .stream:
+            writeInt(&buf, Int32(9))
+        
+        
+        case .datagram:
+            writeInt(&buf, Int32(10))
+        
+        
+        case .callback:
+            writeInt(&buf, Int32(11))
+        
+        
+        case .closed:
+            writeInt(&buf, Int32(12))
+        
+        
+        case .timeout:
+            writeInt(&buf, Int32(13))
+        
+        
+        case .`internal`:
+            writeInt(&buf, Int32(14))
+        
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeIrohErrorKind_lift(_ buf: RustBuffer) throws -> IrohErrorKind {
+    return try FfiConverterTypeIrohErrorKind.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeIrohErrorKind_lower(_ value: IrohErrorKind) -> RustBuffer {
+    return FfiConverterTypeIrohErrorKind.lower(value)
+}
+
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+/**
  * The logging level. See the rust (log crate)[https://docs.rs/log] for more information.
  */
 
@@ -9443,7 +9686,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_iroh_ffi_checksum_method_endpointbuilder_apply_n0_disable_relay() != 20494) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_iroh_ffi_checksum_method_endpointbuilder_bind() != 18280) {
+    if (uniffi_iroh_ffi_checksum_method_endpointbuilder_bind() != 5850) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_iroh_ffi_checksum_method_endpointbuilder_bind_addr() != 50528) {
@@ -9512,7 +9755,16 @@ private let initializationResult: InitializationResult = {
     if (uniffi_iroh_ffi_checksum_method_sendstream_write_all() != 64390) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_iroh_ffi_checksum_method_iroherror_message() != 64767) {
+    if (uniffi_iroh_ffi_checksum_method_iroherror_debug_message() != 33751) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_iroh_ffi_checksum_method_iroherror_is_kind() != 10479) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_iroh_ffi_checksum_method_iroherror_kind() != 11512) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_iroh_ffi_checksum_method_iroherror_message() != 60838) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_iroh_ffi_checksum_method_endpointid_fmt_short() != 41579) {
@@ -9608,7 +9860,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_iroh_ffi_checksum_constructor_endpoint_bind() != 33964) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_iroh_ffi_checksum_constructor_endpointbuilder_new() != 38003) {
+    if (uniffi_iroh_ffi_checksum_constructor_endpointbuilder_new() != 16347) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_iroh_ffi_checksum_constructor_endpointid_from_bytes() != 63462) {

@@ -78,7 +78,7 @@ impl EndpointBuilder {
     pub fn secret_key(&self, bytes: Vec<u8>) -> Result<(), IrohError> {
         let key: [u8; 32] = AsRef::<[u8]>::as_ref(&bytes)
             .try_into()
-            .map_err(|e| anyhow::anyhow!("invalid secret key length: {e:?}"))?;
+            .map_err(|e| IrohError::invalid_input(format!("invalid secret key length: {e:?}")))?;
         let key = iroh::SecretKey::from_bytes(&key);
         self.map(|b| b.secret_key(key));
         Ok(())
@@ -596,8 +596,8 @@ impl Connection {
     ///
     /// Signed for Kotlin/Swift ergonomics; negative values are rejected.
     pub fn close(&self, error_code: i64, reason: &[u8]) -> Result<(), IrohError> {
-        let unsigned =
-            u64::try_from(error_code).map_err(|_| anyhow::anyhow!("error_code must be >= 0"))?;
+        let unsigned = u64::try_from(error_code)
+            .map_err(|_| IrohError::invalid_input("error_code must be >= 0"))?;
         let code = endpoint::VarInt::from_u64(unsigned)?;
         self.0.close(code, reason);
         Ok(())

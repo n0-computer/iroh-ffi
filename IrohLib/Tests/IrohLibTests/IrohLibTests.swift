@@ -24,7 +24,27 @@ final class KeyTests: XCTestCase {
     }
 
     func testEndpointIdRejectsBadBytes() {
-        XCTAssertThrowsError(try EndpointId.fromBytes(bytes: Data([1, 2, 3])))
+        XCTAssertThrowsError(try EndpointId.fromBytes(bytes: Data([1, 2, 3]))) { error in
+            guard let err = error as? IrohError else {
+                return XCTFail("expected IrohError, got \(error)")
+            }
+            XCTAssertEqual(err.kind(), .invalidInput)
+            XCTAssertTrue(err.isKind(kind: .invalidInput))
+            XCTAssertTrue(err.message().contains("32 bytes"))
+            XCTAssertEqual(err.debugMessage(), err.message())
+        }
+    }
+
+    func testEndpointIdParseErrorKind() {
+        XCTAssertThrowsError(try EndpointId.fromString(s: "not-an-endpoint-id")) { error in
+            guard let err = error as? IrohError else {
+                return XCTFail("expected IrohError, got \(error)")
+            }
+            XCTAssertEqual(err.kind(), .keyParsing)
+            XCTAssertTrue(err.isKind(kind: .keyParsing))
+            XCTAssertFalse(err.message().isEmpty)
+            XCTAssertFalse(err.debugMessage().isEmpty)
+        }
     }
 
     func testSecretKeyRoundtrip() throws {
