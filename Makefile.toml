@@ -14,7 +14,7 @@
 #
 # Bindgen / packaging:
 #   cargo make bindgen-kotlin
-#   cargo make swift-xcframework # full 4-target Apple xcframework (release)
+#   cargo make swift-xcframework # full 5-target Apple xcframework (release)
 #   cargo make python-wheel
 #
 # Most tasks are workspace = false so cargo-make does not fan out per member.
@@ -406,6 +406,16 @@ arch -arm64 xcodebuild build \
   CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
   -quiet
 
+# 1b. Mac Catalyst — build only. Catches link errors on the maccatalyst slice
+#     (arm64-only; consumers pin EXCLUDED_ARCHS[sdk=macosx*]=x86_64 like they
+#     do for the arm64-only macOS slice).
+echo "==> xcodebuild build for Mac Catalyst (build-only, no run)"
+arch -arm64 xcodebuild build \
+  -scheme IrohLib \
+  -destination "platform=macOS,variant=Mac Catalyst" \
+  -derivedDataPath .xcode-verify-ddata \
+  -quiet
+
 # 2. iOS Simulator — full xcodebuild test boots a sim, installs the test
 #    bundle, and runs IrohLibTests on the iOS runtime. Catches "links but
 #    crashes on iOS startup" + verifies the simulator slice actually loads.
@@ -491,7 +501,7 @@ args = ["scripts/verify_kotlin_consumer.sh"]
 
 [tasks.docs-swift]
 description = "Build the Swift DocC docs, laid out for Pages static hosting."
-# Always builds the full 4-target xcframework. The previous `swift-macos-
+# Always builds the full 5-target xcframework. The previous `swift-macos-
 # framework` macOS-only path used a hand-laid framework skeleton; with the
 # `xcodebuild -create-xcframework -library` build pipeline, all four slices
 # come from the same one-shot xcodebuild invocation and there's no slim

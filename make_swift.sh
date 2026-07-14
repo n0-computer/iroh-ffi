@@ -66,6 +66,8 @@ echo "Building x86_64-apple-ios"
 cargo build --release --target x86_64-apple-ios
 echo "Building aarch64-apple-darwin"
 cargo build --release --target aarch64-apple-darwin
+echo "Building aarch64-apple-ios-macabi"
+cargo build --release --target aarch64-apple-ios-macabi
 
 # Wipe outputs so we don't blend stale slices into the new xcframework.
 rm -rf "$FRAMEWORK_NAME.xcframework"
@@ -78,11 +80,11 @@ mkdir -p "$INCLUDE_DIR"
 # that names the module `Iroh` to match what the Swift consumer imports).
 cargo run --bin uniffi-bindgen generate --language swift --out-dir ./$INCLUDE_DIR --library "$TARGET_DIR/debug/lib${UDL_NAME}.dylib" --config uniffi.toml
 
-# Stage a single headers directory shared across all three slices — same
-# .h + module.modulemap, so xcodebuild copies the same Headers/ into each
-# slice. Export.h is a one-line umbrella so the modulemap can `umbrella
-# header "Export.h"` without uniffi-generated names leaking into the
-# module surface.
+# Stage a single headers directory shared across every slice — same .h +
+# module.modulemap, so xcodebuild copies the same Headers/ into each slice.
+# Export.h is a one-line umbrella so the modulemap can `umbrella header
+# "Export.h"` without uniffi-generated names leaking into the module
+# surface.
 HEADERS_STAGE="$TARGET_DIR/apple-xcf-headers"
 rm -rf "$HEADERS_STAGE"
 mkdir -p "$HEADERS_STAGE"
@@ -122,6 +124,8 @@ xcodebuild -create-xcframework \
     -library "$SIM_FAT" \
     -headers "$HEADERS_STAGE" \
     -library "$TARGET_DIR/aarch64-apple-darwin/release/lib${UDL_NAME}.a" \
+    -headers "$HEADERS_STAGE" \
+    -library "$TARGET_DIR/aarch64-apple-ios-macabi/release/lib${UDL_NAME}.a" \
     -headers "$HEADERS_STAGE" \
     -output "$FRAMEWORK_NAME.xcframework"
 
