@@ -47,7 +47,8 @@ let package = Package(
     name: "IrohLib",
     platforms: [
         .iOS("17.5"),
-        .macOS("14.5")
+        .macOS("14.5"),
+        .macCatalyst("17.5")
     ],
     products: [
         .library(
