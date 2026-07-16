@@ -38,7 +38,17 @@ jobs:
           bash scripts/release/zip_xcframework.sh
       - name: Bake SHA into Package.swift
         run: bash scripts/release/swift_bake_sha.sh
+      - name: Read release tag from Package.swift
+        id: release_tag
+        run: |
+          V=$(grep -oE 'let releaseTag = "v[^"]+"' Package.swift | sed -E 's/.*"(v[^"]+)"/\1/')
+          echo "tag=$V" >> "$GITHUB_OUTPUT"
       - name: Upload zip to draft GitHub release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: bash scripts/release/swift_upload_draft.sh
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          tag_name: ${{ steps.release_tag.outputs.tag }}
+          name: ${{ steps.release_tag.outputs.tag }}
+          body: "Draft release — promoted to published by release.yml on tag push."
+          files: IrohLib.xcframework.zip
+          fail_on_unmatched_files: true

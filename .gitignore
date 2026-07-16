@@ -121,3 +121,5 @@ kotlin/android/src/main/jniLibs/
 
 # Generated docs site (built by `cargo make docs-site`, deployed by docs.yml)
 /site
+
+/.xcode-verify-ddata

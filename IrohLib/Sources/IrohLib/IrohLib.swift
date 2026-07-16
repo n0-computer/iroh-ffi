@@ -541,7 +541,11 @@ fileprivate struct FfiConverterString: FfiConverter {
             return String()
         }
         let bytes = UnsafeBufferPointer<UInt8>(start: value.data!, count: Int(value.len))
-        return String(bytes: bytes, encoding: String.Encoding.utf8)!
+        // Use Swift's native UTF-8 decoder; `String(bytes:encoding:.utf8)` goes
+        // through Foundation's NSString and silently strips a leading U+FEFF BOM.
+        // Invalid UTF-8 substitutes U+FFFD instead of trapping (unreachable
+        // given Rust's `String` invariant).
+        return String(decoding: bytes, as: UTF8.self)
     }
 
     public static func lower(_ value: String) -> RustBuffer {
@@ -557,7 +561,8 @@ fileprivate struct FfiConverterString: FfiConverter {
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> String {
         let len: Int32 = try readInt(&buf)
-        return String(bytes: try readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
+        // See `lift` above for why we avoid Foundation's NSString-backed decoder here.
+        return String(decoding: try readBytes(&buf, count: Int(len)), as: UTF8.self)
     }
 
     public static func write(_ value: String, into buf: inout [UInt8]) {
@@ -906,7 +911,11 @@ fileprivate struct UniffiCallbackInterfaceAddrChangeCallback {
 
     // Rust stores this pointer for future callback invocations, so it must live
     // for the process lifetime (not just for the init function call).
-    static let vtablePtr: UnsafePointer<UniffiVTableCallbackInterfaceAddrChangeCallback> = {
+    //
+    // `nonisolated(unsafe)` is needed under Swift 6 strict concurrency.
+    // This is safe because the pointee is initialized once during static init
+    // and never mutated by either side of the FFI.  Its fields are C function pointers.
+    nonisolated(unsafe) static let vtablePtr: UnsafePointer<UniffiVTableCallbackInterfaceAddrChangeCallback> = {
         let ptr = UnsafeMutablePointer<UniffiVTableCallbackInterfaceAddrChangeCallback>.allocate(capacity: 1)
         ptr.initialize(to: vtable)
         return UnsafePointer(ptr)
@@ -3500,7 +3509,11 @@ fileprivate struct UniffiCallbackInterfaceHomeRelayCallback {
 
     // Rust stores this pointer for future callback invocations, so it must live
     // for the process lifetime (not just for the init function call).
-    static let vtablePtr: UnsafePointer<UniffiVTableCallbackInterfaceHomeRelayCallback> = {
+    //
+    // `nonisolated(unsafe)` is needed under Swift 6 strict concurrency.
+    // This is safe because the pointee is initialized once during static init
+    // and never mutated by either side of the FFI.  Its fields are C function pointers.
+    nonisolated(unsafe) static let vtablePtr: UnsafePointer<UniffiVTableCallbackInterfaceHomeRelayCallback> = {
         let ptr = UnsafeMutablePointer<UniffiVTableCallbackInterfaceHomeRelayCallback>.allocate(capacity: 1)
         ptr.initialize(to: vtable)
         return UnsafePointer(ptr)
@@ -4253,7 +4266,11 @@ fileprivate struct UniffiCallbackInterfaceNetworkChangeCallback {
 
     // Rust stores this pointer for future callback invocations, so it must live
     // for the process lifetime (not just for the init function call).
-    static let vtablePtr: UnsafePointer<UniffiVTableCallbackInterfaceNetworkChangeCallback> = {
+    //
+    // `nonisolated(unsafe)` is needed under Swift 6 strict concurrency.
+    // This is safe because the pointee is initialized once during static init
+    // and never mutated by either side of the FFI.  Its fields are C function pointers.
+    nonisolated(unsafe) static let vtablePtr: UnsafePointer<UniffiVTableCallbackInterfaceNetworkChangeCallback> = {
         let ptr = UnsafeMutablePointer<UniffiVTableCallbackInterfaceNetworkChangeCallback>.allocate(capacity: 1)
         ptr.initialize(to: vtable)
         return UnsafePointer(ptr)
@@ -4480,7 +4497,11 @@ fileprivate struct UniffiCallbackInterfacePathChangeCallback {
 
     // Rust stores this pointer for future callback invocations, so it must live
     // for the process lifetime (not just for the init function call).
-    static let vtablePtr: UnsafePointer<UniffiVTableCallbackInterfacePathChangeCallback> = {
+    //
+    // `nonisolated(unsafe)` is needed under Swift 6 strict concurrency.
+    // This is safe because the pointee is initialized once during static init
+    // and never mutated by either side of the FFI.  Its fields are C function pointers.
+    nonisolated(unsafe) static let vtablePtr: UnsafePointer<UniffiVTableCallbackInterfacePathChangeCallback> = {
         let ptr = UnsafeMutablePointer<UniffiVTableCallbackInterfacePathChangeCallback>.allocate(capacity: 1)
         ptr.initialize(to: vtable)
         return UnsafePointer(ptr)
@@ -4707,7 +4728,11 @@ fileprivate struct UniffiCallbackInterfacePathEventCallback {
 
     // Rust stores this pointer for future callback invocations, so it must live
     // for the process lifetime (not just for the init function call).
-    static let vtablePtr: UnsafePointer<UniffiVTableCallbackInterfacePathEventCallback> = {
+    //
+    // `nonisolated(unsafe)` is needed under Swift 6 strict concurrency.
+    // This is safe because the pointee is initialized once during static init
+    // and never mutated by either side of the FFI.  Its fields are C function pointers.
+    nonisolated(unsafe) static let vtablePtr: UnsafePointer<UniffiVTableCallbackInterfacePathEventCallback> = {
         let ptr = UnsafeMutablePointer<UniffiVTableCallbackInterfacePathEventCallback>.allocate(capacity: 1)
         ptr.initialize(to: vtable)
         return UnsafePointer(ptr)
@@ -4922,7 +4947,11 @@ fileprivate struct UniffiCallbackInterfacePreset {
 
     // Rust stores this pointer for future callback invocations, so it must live
     // for the process lifetime (not just for the init function call).
-    static let vtablePtr: UnsafePointer<UniffiVTableCallbackInterfacePreset> = {
+    //
+    // `nonisolated(unsafe)` is needed under Swift 6 strict concurrency.
+    // This is safe because the pointee is initialized once during static init
+    // and never mutated by either side of the FFI.  Its fields are C function pointers.
+    nonisolated(unsafe) static let vtablePtr: UnsafePointer<UniffiVTableCallbackInterfacePreset> = {
         let ptr = UnsafeMutablePointer<UniffiVTableCallbackInterfacePreset>.allocate(capacity: 1)
         ptr.initialize(to: vtable)
         return UnsafePointer(ptr)
@@ -5116,7 +5145,11 @@ fileprivate struct UniffiCallbackInterfaceProtocolCreator {
 
     // Rust stores this pointer for future callback invocations, so it must live
     // for the process lifetime (not just for the init function call).
-    static let vtablePtr: UnsafePointer<UniffiVTableCallbackInterfaceProtocolCreator> = {
+    //
+    // `nonisolated(unsafe)` is needed under Swift 6 strict concurrency.
+    // This is safe because the pointee is initialized once during static init
+    // and never mutated by either side of the FFI.  Its fields are C function pointers.
+    nonisolated(unsafe) static let vtablePtr: UnsafePointer<UniffiVTableCallbackInterfaceProtocolCreator> = {
         let ptr = UnsafeMutablePointer<UniffiVTableCallbackInterfaceProtocolCreator>.allocate(capacity: 1)
         ptr.initialize(to: vtable)
         return UnsafePointer(ptr)
@@ -5393,7 +5426,11 @@ fileprivate struct UniffiCallbackInterfaceProtocolHandler {
 
     // Rust stores this pointer for future callback invocations, so it must live
     // for the process lifetime (not just for the init function call).
-    static let vtablePtr: UnsafePointer<UniffiVTableCallbackInterfaceProtocolHandler> = {
+    //
+    // `nonisolated(unsafe)` is needed under Swift 6 strict concurrency.
+    // This is safe because the pointee is initialized once during static init
+    // and never mutated by either side of the FFI.  Its fields are C function pointers.
+    nonisolated(unsafe) static let vtablePtr: UnsafePointer<UniffiVTableCallbackInterfaceProtocolHandler> = {
         let ptr = UnsafeMutablePointer<UniffiVTableCallbackInterfaceProtocolHandler>.allocate(capacity: 1)
         ptr.initialize(to: vtable)
         return UnsafePointer(ptr)
