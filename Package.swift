@@ -24,7 +24,7 @@ import Foundation
 // commit on the release branch, marked `[skip swift-release]`), so the value
 // here always matches the IrohLib.xcframework.zip attached to the GitHub
 // release — never a cross-host determinism game.
-let releaseTag = "v1.0.0"
+let releaseTag = "v1.1.0"
 let releaseChecksum = "514b147f7965fe17acaece9a1157cf9421463b6c9282224983e871ea868b86ef"
 
 let packageDir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()

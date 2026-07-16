@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "iroh"
-version = "1.0.0"
+version = "1.1.0"
 requires-python = ">=3.7"
 classifiers = [
     "Development Status :: 3 - Alpha",
