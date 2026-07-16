@@ -44,7 +44,7 @@ jobs:
           V=$(grep -oE 'let releaseTag = "v[^"]+"' Package.swift | sed -E 's/.*"(v[^"]+)"/\1/')
           echo "tag=$V" >> "$GITHUB_OUTPUT"
       - name: Upload zip to draft GitHub release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           draft: true
           tag_name: ${{ steps.release_tag.outputs.tag }}
