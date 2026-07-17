@@ -9,6 +9,7 @@
 
 name: release
 on:
+  workflow_dispatch:
   push:
     tags:
     - "v*"
@@ -44,6 +45,7 @@ jobs:
         echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
         echo "version is: ${GITHUB_REF#refs/tags/}"
     - name: Promote draft release (or create fresh)
+      if: startsWith(github.ref, 'refs/tags/v')
       uses: softprops/action-gh-release@v3
       with:
         tag_name: ${{ env.RELEASE_VERSION }}
@@ -118,6 +120,7 @@ jobs:
           echo "ASSET=$staging.tar.gz" >> $GITHUB_ENV
         fi
     - name: Upload release archive
+      if: startsWith(github.ref, 'refs/tags/v')
       uses: softprops/action-gh-release@v3
       with:
         tag_name: ${{ needs.create-release.outputs.release_version }}
@@ -300,8 +303,11 @@ jobs:
           name: kotlin-android-jniLibs
           path: android-jniLibs/
       - run: bash scripts/release/stage_kotlin_publish_natives.sh
+      # verify-kotlin-artifact uses `file` for arch detection.
+      - run: sudo apt-get install -y file
       - run: cargo make verify-kotlin-artifact
       - name: Publish to Maven Central
+        if: startsWith(github.ref, 'refs/tags/v')
         working-directory: kotlin
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_USERNAME }}
