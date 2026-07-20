@@ -119,6 +119,58 @@ class EndpointTest {
         server.shutdown()
     }
 
+    // Regression: watch_* must not panic ("no reactor running") on the caller's thread.
+    @Test fun endpointWatchApisNoPanic() = runBlocking {
+        val ep = Endpoint.bind(EndpointOptions(preset = presetMinimal()))
+        val h1 = ep.watchAddr(object : AddrChangeCallback {
+            override suspend fun onChange(addr: EndpointAddr) {}
+        })
+        val h2 = ep.watchHomeRelay(object : HomeRelayCallback {
+            override suspend fun onChange(relayUrls: List<String>) {}
+        })
+        val h3 = ep.watchNetworkChange(object : NetworkChangeCallback {
+            override suspend fun onChange() {}
+        })
+        h1.stop()
+        h2.stop()
+        h3.stop()
+        ep.shutdown()
+    }
+
+    @Test fun connectionWatchApisNoPanic() = runBlocking {
+        val server = Endpoint.bind(
+            EndpointOptions(
+                preset = presetN0(),
+                alpns = listOf(ALPN),
+                relayMode = RelayMode.disabled(),
+            ),
+        )
+        val serverAddr = server.addr()
+        val serverJob = async {
+            val incoming = server.acceptNext()!!
+            val conn = incoming.accept().connect()
+            conn.closed()
+        }
+
+        val client = Endpoint.bind(
+            EndpointOptions(preset = presetN0(), relayMode = RelayMode.disabled()),
+        )
+        val conn = client.connect(serverAddr, ALPN)
+        val h1 = conn.watchPaths(object : PathChangeCallback {
+            override suspend fun onChange(paths: List<PathSnapshot>) {}
+        })
+        val h2 = conn.watchPathEvents(object : PathEventCallback {
+            override suspend fun onEvent(event: PathEvent) {}
+        })
+        h1.stop()
+        h2.stop()
+
+        conn.close(0, "bye".toByteArray())
+        serverJob.await()
+        client.shutdown()
+        server.shutdown()
+    }
+
     @Test fun uniStream() = runBlocking {
         val server = Endpoint.bind(
             EndpointOptions(

@@ -225,6 +225,65 @@ final class EndpointTests: XCTestCase {
         try await server.close()
     }
 
+    // Regression: watch_* must not panic ("no reactor running") on the caller's thread.
+    func testEndpointWatchApisNoPanic() async throws {
+        final class AddrCb: AddrChangeCallback {
+            func onChange(addr: EndpointAddr) async throws {}
+        }
+        final class RelayCb: HomeRelayCallback {
+            func onChange(relayUrls: [String]) async throws {}
+        }
+        final class NetCb: NetworkChangeCallback {
+            func onChange() async throws {}
+        }
+
+        let ep = try await Endpoint.bind(options: EndpointOptions(preset: presetMinimal()))
+        let h1 = ep.watchAddr(callback: AddrCb())
+        let h2 = ep.watchHomeRelay(callback: RelayCb())
+        let h3 = ep.watchNetworkChange(callback: NetCb())
+        await h1.stop()
+        await h2.stop()
+        await h3.stop()
+        try await ep.close()
+    }
+
+    func testConnectionWatchApisNoPanic() async throws {
+        final class PathCb: PathChangeCallback {
+            func onChange(paths: [PathSnapshot]) async throws {}
+        }
+        final class PathEvCb: PathEventCallback {
+            func onEvent(event: PathEvent) async throws {}
+        }
+
+        let server = try await Endpoint.bind(
+            options: EndpointOptions(
+                preset: presetN0(),
+                alpns: [ALPN],
+                relayMode: RelayMode.disabled()
+            )
+        )
+        let serverAddr = server.addr()
+        let serverTask = Task {
+            let incoming = try await server.acceptNext()!
+            let conn = try await incoming.accept().connect()
+            _ = await conn.closed()
+        }
+
+        let client = try await Endpoint.bind(
+            options: EndpointOptions(preset: presetN0(), relayMode: RelayMode.disabled())
+        )
+        let conn = try await client.connect(addr: serverAddr, alpn: ALPN)
+        let h1 = conn.watchPaths(callback: PathCb())
+        let h2 = conn.watchPathEvents(callback: PathEvCb())
+        await h1.stop()
+        await h2.stop()
+
+        try conn.close(errorCode: 0, reason: Data("bye".utf8))
+        _ = try await serverTask.value
+        try await client.close()
+        try await server.close()
+    }
+
     func testUniStream() async throws {
         let server = try await Endpoint.bind(
             options: EndpointOptions(

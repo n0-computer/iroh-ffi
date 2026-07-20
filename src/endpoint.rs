@@ -1110,4 +1110,51 @@ mod tests {
         client.close().await.unwrap();
         server.close().await.unwrap();
     }
+
+    // Regression: watch_* must not require a tokio handle in the caller's TLS.
+    #[tokio::test]
+    async fn test_watch_apis_from_non_runtime_thread() {
+        struct NoopAddr;
+        #[async_trait::async_trait]
+        impl AddrChangeCallback for NoopAddr {
+            async fn on_change(&self, _: Arc<EndpointAddr>) -> Result<(), CallbackError> {
+                Ok(())
+            }
+        }
+        struct NoopRelay;
+        #[async_trait::async_trait]
+        impl HomeRelayCallback for NoopRelay {
+            async fn on_change(&self, _: Vec<String>) -> Result<(), CallbackError> {
+                Ok(())
+            }
+        }
+        struct NoopNet;
+        #[async_trait::async_trait]
+        impl NetworkChangeCallback for NoopNet {
+            async fn on_change(&self) -> Result<(), CallbackError> {
+                Ok(())
+            }
+        }
+
+        let ep = Endpoint::bind(EndpointOptions {
+            preset: Some(crate::preset_minimal()),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+
+        let ep_bg = ep.clone();
+        std::thread::spawn(move || {
+            let h1 = ep_bg.watch_addr(Arc::new(NoopAddr));
+            let h2 = ep_bg.watch_home_relay(Arc::new(NoopRelay));
+            let h3 = ep_bg.watch_network_change(Arc::new(NoopNet));
+            drop(h1);
+            drop(h2);
+            drop(h3);
+        })
+        .join()
+        .unwrap();
+
+        ep.close().await.unwrap();
+    }
 }

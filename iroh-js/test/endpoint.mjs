@@ -129,6 +129,40 @@ suite('endpoint', () => {
     await server.close()
   })
 
+  // Regression: watch* must not panic ("no reactor running") on the napi thread.
+  test('endpoint watch* registers and stops without panic', async () => {
+    const ep = await bindMinimal()
+    const h1 = ep.watchAddr(() => {})
+    const h2 = ep.watchHomeRelay(() => {})
+    const h3 = ep.watchNetworkChange(() => {})
+    await h1.stop()
+    await h2.stop()
+    await h3.stop()
+    await ep.close()
+  })
+
+  test('connection watch* registers and stops without panic', async () => {
+    const server = await bindServer()
+    const serverAddr = server.addr()
+    const serverTask = (async () => {
+      const incoming = await server.acceptNext()
+      const conn = await (await incoming.accept()).connect()
+      await conn.closed()
+    })()
+
+    const client = await bindClient()
+    const conn = await client.connect(serverAddr, ALPN)
+    const h1 = conn.watchPaths(() => {})
+    const h2 = conn.watchPathEvents(() => {})
+    await h1.stop()
+    await h2.stop()
+
+    conn.close(0n, Array.from(Buffer.from('bye')))
+    await serverTask
+    await client.close()
+    await server.close()
+  })
+
   test('unidirectional stream', async () => {
     const server = await bindServer()
     const serverAddr = server.addr()
