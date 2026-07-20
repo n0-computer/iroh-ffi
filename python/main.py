@@ -18,7 +18,7 @@ import asyncio
 
 import iroh
 
-ALPN = b"iroh-ffi/example/0"
+ALPN = bytes("iroh-ffi/example/0", "utf-8")
 
 
 async def accept(ep):
@@ -49,12 +49,12 @@ async def connect(ep, ticket_str):
     ticket = iroh.EndpointTicket.from_string(ticket_str)
     addr = ticket.endpoint_addr()
     print("dialing", str(addr.id()))
-    conn = await ep.connect(addr, list(ALPN))
+    conn = await ep.connect(addr, ALPN)
 
     bi = await conn.open_bi()
     send = bi.send()
     recv = bi.recv()
-    await send.write_all(list(b"hello"))
+    await send.write_all(b"hello")
     await send.finish()
 
     echoed = await recv.read_to_end(1024)
@@ -72,9 +72,8 @@ async def main():
     p_connect.add_argument("ticket", help="EndpointTicket string")
     args = parser.parse_args()
 
-    opts = iroh.EndpointOptions(
-        alpns=[list(ALPN)] if args.cmd == "accept" else None,
-    )
+    bytes_alpn = [ALPN] if args.cmd == "accept" else None
+    opts = iroh.EndpointOptions(alpns=bytes_alpn)
     ep = await iroh.Endpoint.bind(opts)
 
     if args.cmd == "accept":
