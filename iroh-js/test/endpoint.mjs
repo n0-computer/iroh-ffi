@@ -129,6 +129,38 @@ suite('endpoint', () => {
     await server.close()
   })
 
+  // Regression: stopped() must not hold the stream lock across its await.
+  test('SendStream.stopped() does not block concurrent writeAll', async () => {
+    const server = await bindServer()
+    const serverAddr = server.addr()
+    const serverTask = (async () => {
+      const incoming = await server.acceptNext()
+      const conn = await (await incoming.accept()).connect()
+      const bi = await conn.acceptBi()
+      await bi.recv.readToEnd(64)
+      await bi.send.finish()
+      await conn.closed()
+    })()
+
+    const client = await bindClient()
+    const conn = await client.connect(serverAddr, ALPN)
+    const bi = await conn.openBi()
+
+    const stoppedTask = bi.send.stopped()
+    const t0 = Date.now()
+    await bi.send.writeAll(Array.from(Buffer.from('race')))
+    const elapsed = Date.now() - t0
+    assert.ok(elapsed < 1000, `writeAll took ${elapsed}ms — likely blocked behind stopped()`)
+    await bi.send.finish()
+
+    // Let both sides drain.
+    await stoppedTask
+    conn.close(0n, Array.from(Buffer.from('bye')))
+    await serverTask
+    await client.close()
+    await server.close()
+  })
+
   test('unidirectional stream', async () => {
     const server = await bindServer()
     const serverAddr = server.addr()
