@@ -783,8 +783,12 @@ impl SendStream {
 
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn stopped(&self) -> Result<Option<u64>, IrohError> {
-        let s = self.0.lock().await;
-        let res = s.stopped().await?;
+        // quinn's stopped() is 'static; release the lock before awaiting it.
+        let fut = {
+            let s = self.0.lock().await;
+            s.stopped()
+        };
+        let res = fut.await?;
         Ok(res.map(|r| r.into_inner()))
     }
 

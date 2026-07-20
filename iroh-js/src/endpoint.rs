@@ -899,8 +899,12 @@ impl SendStream {
 
     #[napi]
     pub async fn stopped(&self) -> Result<Option<i64>> {
-        let s = self.0.lock().await;
-        let res = s.stopped().await.map_err(|e| anyhow::anyhow!("{e:?}"))?;
+        // quinn's stopped() is 'static; release the lock before awaiting it.
+        let fut = {
+            let s = self.0.lock().await;
+            s.stopped()
+        };
+        let res = fut.await.map_err(|e| anyhow::anyhow!("{e:?}"))?;
         Ok(res.map(|r| r.into_inner() as i64))
     }
 
