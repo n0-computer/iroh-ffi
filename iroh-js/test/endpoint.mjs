@@ -4,7 +4,7 @@ import assert from 'node:assert'
 import pkg from '../index.js'
 const { Endpoint, EndpointTicket, RelayMode, presetMinimal } = pkg
 
-const ALPN = Array.from(Buffer.from('iroh-ffi/test/0', 'utf8'))
+const ALPN = Buffer.from('iroh-ffi/test/0', 'utf8')
 
 // A "preset" in JS is any function that configures an EndpointBuilder.
 async function bindMinimal() {
@@ -93,7 +93,8 @@ suite('endpoint', () => {
       assert.ok(incoming)
       const accepting = await incoming.accept()
       const conn = await accepting.connect()
-      assert.deepEqual(conn.alpn(), ALPN)
+      assert.ok(conn.alpn() instanceof Uint8Array)
+      assert.deepEqual(conn.alpn(), new Uint8Array(ALPN))
       const bi = await conn.acceptBi()
       const recv = bi.recv
       const send = bi.send
@@ -111,19 +112,21 @@ suite('endpoint', () => {
     assert.ok(conn.paths().length > 0)
 
     const bi = await conn.openBi()
-    await bi.send.writeAll(Array.from(Buffer.from('hello iroh')))
+    await bi.send.writeAll(Buffer.from('hello iroh'))
     await bi.send.finish()
     const echoed = await bi.recv.readToEnd(64)
+    assert.ok(echoed instanceof Uint8Array)
     assert.equal(Buffer.from(echoed).toString('utf8'), 'hello iroh')
 
-    conn.sendDatagram(Array.from(Buffer.from('ping')))
+    conn.sendDatagram(Buffer.from('ping'))
     const pong = await conn.readDatagram()
+    assert.ok(pong instanceof Uint8Array)
     assert.equal(Buffer.from(pong).toString('utf8'), 'ping')
 
     const stats = conn.stats()
     assert.ok(stats.udpTxDatagrams > 0)
 
-    conn.close(0n, Array.from(Buffer.from('bye')))
+    conn.close(0n, Buffer.from('bye'))
     await serverTask
     await client.close()
     await server.close()
@@ -144,7 +147,7 @@ suite('endpoint', () => {
     const client = await bindClient()
     const conn = await client.connect(serverAddr, ALPN)
     const send = await conn.openUni()
-    await send.writeAll(Array.from(Buffer.from('unidirectional')))
+    await send.writeAll(Buffer.from('unidirectional'))
     await send.finish()
 
     await serverTask
