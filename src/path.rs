@@ -195,10 +195,11 @@ pub(crate) fn snapshot_paths(conn: &iroh::endpoint::Connection) -> Vec<PathSnaps
 }
 
 pub(crate) fn spawn_paths_watch(
+    handle: &tokio::runtime::Handle,
     conn: iroh::endpoint::Connection,
     cb: Arc<dyn PathChangeCallback>,
 ) -> WatchHandle {
-    let task = n0_future::task::spawn(async move {
+    let task = handle.spawn(async move {
         let mut stream = conn.paths_stream();
         while let Some(snapshot) = stream.next().await {
             let mapped: Vec<PathSnapshot> = snapshot
@@ -226,10 +227,11 @@ pub(crate) fn spawn_paths_watch(
 }
 
 pub(crate) fn spawn_path_events_watch(
+    handle: &tokio::runtime::Handle,
     conn: iroh::endpoint::Connection,
     cb: Arc<dyn PathEventCallback>,
 ) -> WatchHandle {
-    let task = n0_future::task::spawn(async move {
+    let task = handle.spawn(async move {
         let mut stream = conn.path_events();
         while let Some(event) = stream.next().await {
             let mapped: PathEvent = event.into();

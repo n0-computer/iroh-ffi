@@ -214,7 +214,7 @@ impl Accepting {
             .take()
             .ok_or_else(|| anyhow::anyhow!("Accepting has already been consumed"))?;
         let conn = inner.await.map_err(|e| anyhow::anyhow!("{e:?}"))?;
-        Ok(conn.into())
+        Ok(Connection::wrap(conn))
     }
 
     /// Read the ALPN protocol from the peer's handshake data (resolves once
@@ -251,7 +251,7 @@ impl Connecting {
             .take()
             .ok_or_else(|| anyhow::anyhow!("Connecting has already been consumed"))?;
         let conn = inner.await.map_err(|e| anyhow::anyhow!("{e:?}"))?;
-        Ok(conn.into())
+        Ok(Connection::wrap(conn))
     }
 
     /// Read the ALPN protocol from the peer's handshake data (resolves once
