@@ -125,6 +125,45 @@ async def test_connect_echo_roundtrip():
     await server.close()
 
 
+# Regression: stopped() must not hold the stream lock across its await.
+async def test_send_stream_stopped_does_not_block_write_all():
+    server = await Endpoint.bind(
+        EndpointOptions(
+            preset=preset_n0(),
+            alpns=[ALPN],
+            relay_mode=RelayMode.disabled(),
+        )
+    )
+    server_addr = server.addr()
+
+    async def serve():
+        incoming = await server.accept_next()
+        conn = await (await incoming.accept()).connect()
+        bi = await conn.accept_bi()
+        await bi.recv().read_to_end(64)
+        await bi.send().finish()
+        await conn.closed()
+
+    server_task = asyncio.create_task(serve())
+
+    client = await Endpoint.bind(
+        EndpointOptions(preset=preset_n0(), relay_mode=RelayMode.disabled())
+    )
+    conn = await client.connect(server_addr, ALPN)
+    bi = await conn.open_bi()
+    send = bi.send()
+
+    stopped_task = asyncio.create_task(send.stopped())
+    await asyncio.wait_for(send.write_all(b"race"), timeout=1.0)
+    await send.finish()
+
+    await stopped_task
+    conn.close(0, b"bye")
+    await server_task
+    await client.close()
+    await server.close()
+
+
 async def test_uni_stream():
     server = await Endpoint.bind(
         EndpointOptions(

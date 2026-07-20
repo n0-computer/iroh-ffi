@@ -783,8 +783,12 @@ impl SendStream {
 
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn stopped(&self) -> Result<Option<u64>, IrohError> {
-        let s = self.0.lock().await;
-        let res = s.stopped().await?;
+        // quinn's stopped() is 'static; release the lock before awaiting it.
+        let fut = {
+            let s = self.0.lock().await;
+            s.stopped()
+        };
+        let res = fut.await?;
         Ok(res.map(|r| r.into_inner()))
     }
 
@@ -1079,6 +1083,59 @@ mod tests {
         send.write_all(b"unidirectional").await.unwrap();
         send.finish().await.unwrap();
 
+        server_task.await.unwrap();
+        client.close().await.unwrap();
+        server.close().await.unwrap();
+    }
+
+    // Regression: stopped() must not hold the stream lock across its await.
+    #[tokio::test]
+    async fn test_send_stream_stopped_does_not_block_write_all() {
+        let server = Endpoint::bind(EndpointOptions {
+            preset: Some(crate::preset_n0()),
+            alpns: Some(vec![TEST_ALPN.to_vec()]),
+            relay_mode: Some(Arc::new(RelayMode::disabled())),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+        let server_addr = server.addr();
+
+        let server_task = {
+            let server = server.clone();
+            tokio::spawn(async move {
+                let incoming = server.accept_next().await.unwrap();
+                let conn = incoming.accept().await.unwrap().connect().await.unwrap();
+                let bi = conn.accept_bi().await.unwrap();
+                let _ = bi.recv().read_to_end(64).await.unwrap();
+                bi.send().finish().await.unwrap();
+                conn.closed().await;
+            })
+        };
+
+        let client = Endpoint::bind(EndpointOptions {
+            preset: Some(crate::preset_n0()),
+            relay_mode: Some(Arc::new(RelayMode::disabled())),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+        let conn = client.connect(&server_addr, TEST_ALPN).await.unwrap();
+        let bi = conn.open_bi().await.unwrap();
+        let send = bi.send();
+
+        let stopped_task = tokio::spawn({
+            let send = send.clone();
+            async move { send.stopped().await }
+        });
+        tokio::time::timeout(std::time::Duration::from_secs(2), send.write_all(b"race"))
+            .await
+            .expect("write_all blocked behind pending stopped()")
+            .unwrap();
+        send.finish().await.unwrap();
+
+        stopped_task.await.unwrap().unwrap();
+        conn.close(0, b"bye").unwrap();
         server_task.await.unwrap();
         client.close().await.unwrap();
         server.close().await.unwrap();

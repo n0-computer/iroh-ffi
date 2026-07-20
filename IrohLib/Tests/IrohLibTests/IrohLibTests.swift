@@ -225,6 +225,49 @@ final class EndpointTests: XCTestCase {
         try await server.close()
     }
 
+    // Regression: stopped() must not hold the stream lock across its await.
+    func testSendStreamStoppedDoesNotBlockWriteAll() async throws {
+        let server = try await Endpoint.bind(
+            options: EndpointOptions(
+                preset: presetN0(),
+                alpns: [ALPN],
+                relayMode: RelayMode.disabled()
+            )
+        )
+        let serverAddr = server.addr()
+        let serverTask = Task {
+            let incoming = try await server.acceptNext()!
+            let conn = try await incoming.accept().connect()
+            let bi = try await conn.acceptBi()
+            _ = try await bi.recv().readToEnd(sizeLimit: 64)
+            try await bi.send().finish()
+            _ = await conn.closed()
+        }
+
+        let client = try await Endpoint.bind(
+            options: EndpointOptions(preset: presetN0(), relayMode: RelayMode.disabled())
+        )
+        let conn = try await client.connect(addr: serverAddr, alpn: ALPN)
+        let bi = try await conn.openBi()
+        let send = bi.send()
+
+        let stoppedTask = Task { try await send.stopped() }
+        let writeTask = Task { try await send.writeAll(buf: Data("race".utf8)) }
+        let timeoutTask: Task<Void, Never> = Task {
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            writeTask.cancel()
+        }
+        try await writeTask.value
+        timeoutTask.cancel()
+        try await send.finish()
+
+        _ = try await stoppedTask.value
+        try conn.close(errorCode: 0, reason: Data("bye".utf8))
+        _ = try await serverTask.value
+        try await client.close()
+        try await server.close()
+    }
+
     func testUniStream() async throws {
         let server = try await Endpoint.bind(
             options: EndpointOptions(

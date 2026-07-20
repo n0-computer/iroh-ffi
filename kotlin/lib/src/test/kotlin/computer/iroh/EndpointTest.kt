@@ -2,6 +2,7 @@ package computer.iroh
 
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 
@@ -113,6 +114,43 @@ class EndpointTest {
         val stats = conn.stats()
         assert(stats.udpTxDatagrams > 0)
 
+        conn.close(0, "bye".toByteArray())
+        serverJob.await()
+        client.shutdown()
+        server.shutdown()
+    }
+
+    // Regression: stopped() must not hold the stream lock across its await.
+    @Test fun sendStreamStoppedDoesNotBlockWriteAll() = runBlocking {
+        val server = Endpoint.bind(
+            EndpointOptions(
+                preset = presetN0(),
+                alpns = listOf(ALPN),
+                relayMode = RelayMode.disabled(),
+            ),
+        )
+        val serverAddr = server.addr()
+        val serverJob = async {
+            val incoming = server.acceptNext()!!
+            val conn = incoming.accept().connect()
+            val bi = conn.acceptBi()
+            bi.recv().readToEnd(64u)
+            bi.send().finish()
+            conn.closed()
+        }
+
+        val client = Endpoint.bind(
+            EndpointOptions(preset = presetN0(), relayMode = RelayMode.disabled()),
+        )
+        val conn = client.connect(serverAddr, ALPN)
+        val bi = conn.openBi()
+        val send = bi.send()
+
+        val stoppedJob = async { send.stopped() }
+        withTimeout(1_000L) { send.writeAll("race".toByteArray()) }
+        send.finish()
+
+        stoppedJob.await()
         conn.close(0, "bye".toByteArray())
         serverJob.await()
         client.shutdown()
