@@ -177,6 +177,7 @@ cargo ndk -o ./kotlin/android/src/main/jniLibs \
   --manifest-path ./Cargo.toml \
   -t armeabi-v7a -t arm64-v8a -t x86 -t x86_64 \
   build --release
+bash scripts/verify_android_page_size.sh ./kotlin/android/src/main/jniLibs
 cargo run --bin uniffi-bindgen generate --language kotlin \
   --out-dir kotlin/lib/src/main/kotlin/ --config "$UNIFFI_CONFIG" \
   --library "$TARGET_DIR/debug/libiroh_ffi.so"
@@ -464,6 +465,7 @@ echo "==> cross-build android ABIs → $NDK_STAGE"
 cargo ndk -o "$NDK_STAGE" \
   -t armeabi-v7a -t arm64-v8a -t x86 -t x86_64 \
   build --release --lib -p iroh-ffi
+bash scripts/verify_android_page_size.sh "$NDK_STAGE"
 
 # 2. Stage at the AAR source-set path — AGP packages files here into the AAR's
 #    jni/<abi>/, which consumers' APKs then merge.
