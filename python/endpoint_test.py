@@ -125,6 +125,75 @@ async def test_connect_echo_roundtrip():
     await server.close()
 
 
+# Regression: watch_* must not panic ("no reactor running") on the caller's thread.
+class _NoopAddrCb(iroh.AddrChangeCallback):
+    async def on_change(self, addr):
+        pass
+
+
+class _NoopHomeRelayCb(iroh.HomeRelayCallback):
+    async def on_change(self, relay_urls):
+        pass
+
+
+class _NoopNetworkChangeCb(iroh.NetworkChangeCallback):
+    async def on_change(self):
+        pass
+
+
+class _NoopPathChangeCb(iroh.PathChangeCallback):
+    async def on_change(self, paths):
+        pass
+
+
+class _NoopPathEventCb(iroh.PathEventCallback):
+    async def on_event(self, event):
+        pass
+
+
+async def test_endpoint_watch_apis_no_panic():
+    ep = await Endpoint.bind(EndpointOptions(preset=preset_minimal()))
+    h1 = ep.watch_addr(_NoopAddrCb())
+    h2 = ep.watch_home_relay(_NoopHomeRelayCb())
+    h3 = ep.watch_network_change(_NoopNetworkChangeCb())
+    await h1.stop()
+    await h2.stop()
+    await h3.stop()
+    await ep.close()
+
+
+async def test_connection_watch_apis_no_panic():
+    server = await Endpoint.bind(
+        EndpointOptions(
+            preset=preset_n0(),
+            alpns=[ALPN],
+            relay_mode=RelayMode.disabled(),
+        )
+    )
+    server_addr = server.addr()
+
+    async def serve():
+        incoming = await server.accept_next()
+        conn = await (await incoming.accept()).connect()
+        await conn.closed()
+
+    server_task = asyncio.create_task(serve())
+
+    client = await Endpoint.bind(
+        EndpointOptions(preset=preset_n0(), relay_mode=RelayMode.disabled())
+    )
+    conn = await client.connect(server_addr, ALPN)
+    h1 = conn.watch_paths(_NoopPathChangeCb())
+    h2 = conn.watch_path_events(_NoopPathEventCb())
+    await h1.stop()
+    await h2.stop()
+
+    conn.close(0, b"bye")
+    await server_task
+    await client.close()
+    await server.close()
+
+
 async def test_uni_stream():
     server = await Endpoint.bind(
         EndpointOptions(
