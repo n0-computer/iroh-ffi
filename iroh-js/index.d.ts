@@ -3,7 +3,7 @@
 /** A server-side handshake in progress. */
 export declare class Accepting {
   connect(): Promise<Connection>
-  alpn(): Promise<Array<number>>
+  alpn(): Promise<Uint8Array>
 }
 
 /** A bidirectional QUIC stream pair. */
@@ -15,25 +15,25 @@ export declare class BiStream {
 /** A client-side handshake in progress. */
 export declare class Connecting {
   connect(): Promise<Connection>
-  alpn(): Promise<Array<number>>
+  alpn(): Promise<Uint8Array>
   remoteId(): Promise<EndpointId>
 }
 
 /** An active QUIC connection. */
 export declare class Connection {
-  alpn(): Array<number>
+  alpn(): Uint8Array
   remoteId(): EndpointId
   side(): Side
   openUni(): Promise<SendStream>
   acceptUni(): Promise<RecvStream>
   openBi(): Promise<BiStream>
   acceptBi(): Promise<BiStream>
-  readDatagram(): Promise<Array<number>>
+  readDatagram(): Promise<Uint8Array>
   closed(): Promise<string>
   closeReason(): string | null
-  close(errorCode: bigint, reason: Array<number>): void
-  sendDatagram(data: Array<number>): void
-  sendDatagramWait(data: Array<number>): Promise<void>
+  close(errorCode: bigint, reason: Uint8Array): void
+  sendDatagram(data: Uint8Array): void
+  sendDatagramWait(data: Uint8Array): Promise<void>
   maxDatagramSize(): number | null
   datagramSendBufferSpace(): number
   stableId(): number
@@ -67,7 +67,7 @@ export declare class Endpoint {
   /** The secret key backing this endpoint's identity. */
   secretKey(): SecretKey
   /** Replace the set of advertised ALPNs. */
-  setAlpns(alpns: Array<Array<number>>): void
+  setAlpns(alpns: Array<Uint8Array>): void
   /** Add an external (manually-known) socket address. */
   addExternalAddr(addr: string): Promise<void>
   /** Remove a previously-added external address. */
@@ -81,9 +81,9 @@ export declare class Endpoint {
   /** Remove a relay configuration at runtime. */
   removeRelay(url: string): Promise<boolean>
   /** Connect to a remote endpoint via the given ALPN. */
-  connect(addr: EndpointAddr, alpn: Array<number>): Promise<Connection>
+  connect(addr: EndpointAddr, alpn: Uint8Array): Promise<Connection>
   /** Begin a connection attempt, returning the in-progress handle. */
-  connectPending(addr: EndpointAddr, alpn: Array<number>): Promise<Connecting>
+  connectPending(addr: EndpointAddr, alpn: Uint8Array): Promise<Connecting>
   /** Pull the next incoming connection attempt. */
   acceptNext(): Promise<Incoming | null>
   /** Watch for changes to this endpoint's address. */
@@ -140,9 +140,9 @@ export declare class EndpointBuilder {
   /** Replay the n0 preset with relays disabled. */
   applyN0DisableRelay(): void
   /** Set the endpoint secret key (32 bytes). */
-  secretKey(bytes: Array<number>): void
+  secretKey(bytes: Uint8Array): void
   /** Set the advertised ALPNs. */
-  alpns(alpns: Array<Array<number>>): void
+  alpns(alpns: Array<Uint8Array>): void
   /** Set the relay mode. */
   relayMode(mode: RelayMode): void
   /** Set the address the endpoint binds to (`host:port`). */
@@ -156,17 +156,17 @@ export declare class EndpointId {
   /** Returns true if both [`EndpointId`]s are equal. */
   equals(other: EndpointId): boolean
   /** Get the underlying 32 bytes. */
-  toBytes(): Array<number>
+  toBytes(): Uint8Array
   /** Parse an [`EndpointId`] from its base32 representation. */
   static fromString(s: string): EndpointId
   /** Construct an [`EndpointId`] from raw bytes (32 bytes). */
-  static fromBytes(bytes: Array<number>): EndpointId
+  static fromBytes(bytes: Uint8Array): EndpointId
   /** Short base32 prefix. */
   fmtShort(): string
   /** Base32 string form. */
   toString(): string
   /** Verify a signature on `message` against this endpoint's key. */
-  verify(message: Array<number>, signature: Signature): void
+  verify(message: Uint8Array, signature: Signature): void
 }
 
 /** A token containing information for establishing a connection to an endpoint. */
@@ -194,9 +194,9 @@ export declare class Incoming {
 
 /** The incoming half of a QUIC stream. */
 export declare class RecvStream {
-  read(sizeLimit: number): Promise<Array<number>>
-  readExact(size: number): Promise<Array<number>>
-  readToEnd(sizeLimit: number): Promise<Array<number>>
+  read(sizeLimit: number): Promise<Uint8Array>
+  readExact(size: number): Promise<Uint8Array>
+  readToEnd(sizeLimit: number): Promise<Uint8Array>
   id(): Promise<string>
   bytesRead(): Promise<number>
   stop(errorCode: bigint): Promise<void>
@@ -250,19 +250,19 @@ export declare class SecretKey {
   /** Generate a new random secret key. */
   static generate(): SecretKey
   /** Construct from raw bytes (32 bytes). */
-  static fromBytes(bytes: Array<number>): SecretKey
+  static fromBytes(bytes: Uint8Array): SecretKey
   /** Raw 32-byte form. */
-  toBytes(): Array<number>
+  toBytes(): Uint8Array
   /** The public [`EndpointId`] derived from this secret key. */
   public(): EndpointId
   /** Sign a message, producing an ed25519 signature. */
-  sign(message: Array<number>): Signature
+  sign(message: Uint8Array): Signature
 }
 
 /** The outgoing half of a QUIC stream. */
 export declare class SendStream {
-  write(buf: Array<number>): Promise<number>
-  writeAll(buf: Array<number>): Promise<void>
+  write(buf: Uint8Array): Promise<number>
+  writeAll(buf: Uint8Array): Promise<void>
   finish(): Promise<void>
   reset(errorCode: bigint): Promise<void>
   setPriority(p: number): Promise<void>
@@ -290,9 +290,9 @@ export declare class ServicesClient {
 /** An ed25519 signature over a message. */
 export declare class Signature {
   /** Construct from raw bytes (64 bytes). */
-  static fromBytes(bytes: Array<number>): Signature
+  static fromBytes(bytes: Uint8Array): Signature
   /** Raw 64-byte form. */
-  toBytes(): Array<number>
+  toBytes(): Uint8Array
   /** Lowercase hex representation. */
   toString(): string
 }
@@ -339,8 +339,8 @@ export interface DiagnosticsSummary {
  */
 export interface EndpointOptions {
   bindAddr?: string
-  secretKey?: Array<number>
-  alpns?: Array<Array<number>>
+  secretKey?: Uint8Array
+  alpns?: Array<Uint8Array>
 }
 
 /** Where an incoming connection came from. */

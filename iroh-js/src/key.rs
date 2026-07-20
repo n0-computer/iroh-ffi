@@ -44,8 +44,8 @@ impl EndpointId {
 
     /// Get the underlying 32 bytes.
     #[napi]
-    pub fn to_bytes(&self) -> Vec<u8> {
-        self.key.to_vec()
+    pub fn to_bytes(&self) -> Uint8Array {
+        self.key.to_vec().into()
     }
 
     /// Parse an [`EndpointId`] from its base32 representation.
@@ -57,8 +57,9 @@ impl EndpointId {
 
     /// Construct an [`EndpointId`] from raw bytes (32 bytes).
     #[napi(factory)]
-    pub fn from_bytes(bytes: Vec<u8>) -> Result<Self> {
+    pub fn from_bytes(bytes: Uint8Array) -> Result<Self> {
         let bytes: [u8; 32] = bytes
+            .as_ref()
             .try_into()
             .map_err(|_| anyhow::anyhow!("EndpointId requires exactly 32 bytes"))?;
         let key = iroh::EndpointId::from_bytes(&bytes).map_err(anyhow::Error::from)?;
@@ -79,7 +80,7 @@ impl EndpointId {
 
     /// Verify a signature on `message` against this endpoint's key.
     #[napi]
-    pub fn verify(&self, message: Vec<u8>, signature: &Signature) -> Result<()> {
+    pub fn verify(&self, message: Uint8Array, signature: &Signature) -> Result<()> {
         iroh::EndpointId::from(self)
             .verify(&message, &signature.0)
             .map_err(|e| anyhow::anyhow!("signature verification failed: {e:?}").into())
@@ -113,8 +114,9 @@ impl SecretKey {
 
     /// Construct from raw bytes (32 bytes).
     #[napi(factory)]
-    pub fn from_bytes(bytes: Vec<u8>) -> Result<Self> {
+    pub fn from_bytes(bytes: Uint8Array) -> Result<Self> {
         let bytes: [u8; 32] = bytes
+            .as_ref()
             .try_into()
             .map_err(|_| anyhow::anyhow!("SecretKey requires exactly 32 bytes"))?;
         Ok(SecretKey(iroh::SecretKey::from_bytes(&bytes)))
@@ -122,8 +124,8 @@ impl SecretKey {
 
     /// Raw 32-byte form.
     #[napi]
-    pub fn to_bytes(&self) -> Vec<u8> {
-        self.0.to_bytes().to_vec()
+    pub fn to_bytes(&self) -> Uint8Array {
+        self.0.to_bytes().to_vec().into()
     }
 
     /// The public [`EndpointId`] derived from this secret key.
@@ -134,7 +136,7 @@ impl SecretKey {
 
     /// Sign a message, producing an ed25519 signature.
     #[napi]
-    pub fn sign(&self, message: Vec<u8>) -> Signature {
+    pub fn sign(&self, message: Uint8Array) -> Signature {
         Signature(self.0.sign(&message))
     }
 }
@@ -148,8 +150,9 @@ pub struct Signature(pub(crate) iroh_base::Signature);
 impl Signature {
     /// Construct from raw bytes (64 bytes).
     #[napi(factory)]
-    pub fn from_bytes(bytes: Vec<u8>) -> Result<Self> {
+    pub fn from_bytes(bytes: Uint8Array) -> Result<Self> {
         let bytes: [u8; 64] = bytes
+            .as_ref()
             .try_into()
             .map_err(|_| anyhow::anyhow!("Signature requires exactly 64 bytes"))?;
         Ok(Signature(iroh_base::Signature::from_bytes(&bytes)))
@@ -157,8 +160,8 @@ impl Signature {
 
     /// Raw 64-byte form.
     #[napi]
-    pub fn to_bytes(&self) -> Vec<u8> {
-        self.0.to_bytes().to_vec()
+    pub fn to_bytes(&self) -> Uint8Array {
+        self.0.to_bytes().to_vec().into()
     }
 
     /// Lowercase hex representation.

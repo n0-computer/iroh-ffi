@@ -64,8 +64,9 @@ impl EndpointBuilder {
 
     /// Set the endpoint secret key (32 bytes).
     #[napi]
-    pub fn secret_key(&self, bytes: Vec<u8>) -> Result<()> {
+    pub fn secret_key(&self, bytes: Uint8Array) -> Result<()> {
         let key: [u8; 32] = bytes
+            .as_ref()
             .try_into()
             .map_err(|_| anyhow::anyhow!("secret_key must be 32 bytes"))?;
         self.map(|b| b.secret_key(iroh::SecretKey::from_bytes(&key)));
@@ -74,7 +75,8 @@ impl EndpointBuilder {
 
     /// Set the advertised ALPNs.
     #[napi]
-    pub fn alpns(&self, alpns: Vec<Vec<u8>>) {
+    pub fn alpns(&self, alpns: Vec<Uint8Array>) {
+        let alpns: Vec<Vec<u8>> = alpns.into_iter().map(|a| a.to_vec()).collect();
         self.map(|b| b.alpns(alpns));
     }
 
@@ -250,12 +252,12 @@ pub struct ConnectionStats {
 ///
 /// `bind` applies the n0 preset by default. For a custom preset use
 /// [`Endpoint::builder`] + the `EndpointBuilder` surface.
-#[derive(Debug, Default)]
+#[derive(Default)]
 #[napi(object)]
 pub struct EndpointOptions {
     pub bind_addr: Option<String>,
-    pub secret_key: Option<Vec<u8>>,
-    pub alpns: Option<Vec<Vec<u8>>>,
+    pub secret_key: Option<Uint8Array>,
+    pub alpns: Option<Vec<Uint8Array>>,
 }
 
 /// An iroh endpoint.
@@ -363,7 +365,8 @@ impl Endpoint {
 
     /// Replace the set of advertised ALPNs.
     #[napi]
-    pub fn set_alpns(&self, alpns: Vec<Vec<u8>>) {
+    pub fn set_alpns(&self, alpns: Vec<Uint8Array>) {
+        let alpns: Vec<Vec<u8>> = alpns.into_iter().map(|a| a.to_vec()).collect();
         self.inner.set_alpns(alpns);
     }
 
@@ -416,7 +419,7 @@ impl Endpoint {
 
     /// Connect to a remote endpoint via the given ALPN.
     #[napi]
-    pub async fn connect(&self, addr: &EndpointAddr, alpn: Vec<u8>) -> Result<Connection> {
+    pub async fn connect(&self, addr: &EndpointAddr, alpn: Uint8Array) -> Result<Connection> {
         let addr: iroh::EndpointAddr = addr.try_into()?;
         let conn = self
             .inner
@@ -428,7 +431,11 @@ impl Endpoint {
 
     /// Begin a connection attempt, returning the in-progress handle.
     #[napi]
-    pub async fn connect_pending(&self, addr: &EndpointAddr, alpn: Vec<u8>) -> Result<Connecting> {
+    pub async fn connect_pending(
+        &self,
+        addr: &EndpointAddr,
+        alpn: Uint8Array,
+    ) -> Result<Connecting> {
         let addr: iroh::EndpointAddr = addr.try_into()?;
         let connecting = self
             .inner
@@ -578,15 +585,13 @@ impl Accepting {
     }
 
     #[napi]
-    pub async fn alpn(&self) -> Result<Vec<u8>> {
+    pub async fn alpn(&self) -> Result<Uint8Array> {
         let mut guard = self.0.lock().await;
         let inner = guard
             .as_mut()
             .ok_or_else(|| anyhow::anyhow!("Accepting already consumed"))?;
-        inner
-            .alpn()
-            .await
-            .map_err(|e| anyhow::anyhow!("{e:?}").into())
+        let bytes = inner.alpn().await.map_err(|e| anyhow::anyhow!("{e:?}"))?;
+        Ok(bytes.into())
     }
 }
 
@@ -609,15 +614,13 @@ impl Connecting {
     }
 
     #[napi]
-    pub async fn alpn(&self) -> Result<Vec<u8>> {
+    pub async fn alpn(&self) -> Result<Uint8Array> {
         let mut guard = self.0.lock().await;
         let inner = guard
             .as_mut()
             .ok_or_else(|| anyhow::anyhow!("Connecting already consumed"))?;
-        inner
-            .alpn()
-            .await
-            .map_err(|e| anyhow::anyhow!("{e:?}").into())
+        let bytes = inner.alpn().await.map_err(|e| anyhow::anyhow!("{e:?}"))?;
+        Ok(bytes.into())
     }
 
     #[napi]
@@ -637,8 +640,8 @@ pub struct Connection(Arc<endpoint::Connection>);
 #[napi]
 impl Connection {
     #[napi]
-    pub fn alpn(&self) -> Vec<u8> {
-        self.0.alpn().to_vec()
+    pub fn alpn(&self) -> Uint8Array {
+        self.0.alpn().to_vec().into()
     }
 
     #[napi]
@@ -698,13 +701,13 @@ impl Connection {
     }
 
     #[napi]
-    pub async fn read_datagram(&self) -> Result<Vec<u8>> {
+    pub async fn read_datagram(&self) -> Result<Uint8Array> {
         let res = self
             .0
             .read_datagram()
             .await
             .map_err(|e| anyhow::anyhow!("{e:?}"))?;
-        Ok(res.to_vec())
+        Ok(res.to_vec().into())
     }
 
     #[napi]
@@ -718,7 +721,7 @@ impl Connection {
     }
 
     #[napi]
-    pub fn close(&self, error_code: BigInt, reason: Vec<u8>) -> Result<()> {
+    pub fn close(&self, error_code: BigInt, reason: Uint8Array) -> Result<()> {
         let code =
             endpoint::VarInt::from_u64(error_code.get_u64().1).map_err(anyhow::Error::from)?;
         self.0.close(code, &reason);
@@ -726,17 +729,17 @@ impl Connection {
     }
 
     #[napi]
-    pub fn send_datagram(&self, data: Vec<u8>) -> Result<()> {
+    pub fn send_datagram(&self, data: Uint8Array) -> Result<()> {
         self.0
-            .send_datagram(data.into())
+            .send_datagram(data.to_vec().into())
             .map_err(|e| anyhow::anyhow!("{e:?}"))?;
         Ok(())
     }
 
     #[napi]
-    pub async fn send_datagram_wait(&self, data: Vec<u8>) -> Result<()> {
+    pub async fn send_datagram_wait(&self, data: Uint8Array) -> Result<()> {
         self.0
-            .send_datagram_wait(data.into())
+            .send_datagram_wait(data.to_vec().into())
             .await
             .map_err(|e| anyhow::anyhow!("{e:?}"))?;
         Ok(())
@@ -853,14 +856,14 @@ impl SendStream {
 #[napi]
 impl SendStream {
     #[napi]
-    pub async fn write(&self, buf: Vec<u8>) -> Result<i64> {
+    pub async fn write(&self, buf: Uint8Array) -> Result<i64> {
         let mut s = self.0.lock().await;
         let n = s.write(&buf).await.map_err(|e| anyhow::anyhow!("{e:?}"))?;
         Ok(n as i64)
     }
 
     #[napi]
-    pub async fn write_all(&self, buf: Vec<u8>) -> Result<()> {
+    pub async fn write_all(&self, buf: Uint8Array) -> Result<()> {
         let mut s = self.0.lock().await;
         s.write_all(&buf)
             .await
@@ -924,7 +927,7 @@ impl RecvStream {
 #[napi]
 impl RecvStream {
     #[napi]
-    pub async fn read(&self, size_limit: u32) -> Result<Vec<u8>> {
+    pub async fn read(&self, size_limit: u32) -> Result<Uint8Array> {
         let mut buf = vec![0u8; size_limit as usize];
         let mut r = self.0.lock().await;
         let res = r
@@ -933,27 +936,27 @@ impl RecvStream {
             .map_err(|e| anyhow::anyhow!("{e:?}"))?;
         let len = res.unwrap_or(0);
         buf.truncate(len);
-        Ok(buf)
+        Ok(buf.into())
     }
 
     #[napi]
-    pub async fn read_exact(&self, size: u32) -> Result<Vec<u8>> {
+    pub async fn read_exact(&self, size: u32) -> Result<Uint8Array> {
         let mut buf = vec![0u8; size as usize];
         let mut r = self.0.lock().await;
         r.read_exact(&mut buf)
             .await
             .map_err(|e| anyhow::anyhow!("{e:?}"))?;
-        Ok(buf)
+        Ok(buf.into())
     }
 
     #[napi]
-    pub async fn read_to_end(&self, size_limit: u32) -> Result<Vec<u8>> {
+    pub async fn read_to_end(&self, size_limit: u32) -> Result<Uint8Array> {
         let mut r = self.0.lock().await;
         let res = r
             .read_to_end(size_limit as usize)
             .await
             .map_err(|e| anyhow::anyhow!("{e:?}"))?;
-        Ok(res)
+        Ok(res.into())
     }
 
     #[napi]
