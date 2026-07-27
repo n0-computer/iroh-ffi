@@ -40,6 +40,13 @@ impl EndpointBuilder {
         let b = guard.take().expect("EndpointBuilder consumed");
         *guard = Some(f(b));
     }
+
+    /// Replay an upstream `iroh::endpoint::presets::Preset` on the wrapped
+    /// builder, so a preset helper can delegate to a real iroh preset instead
+    /// of re-implementing it against [`EndpointBuilder`].
+    pub(crate) fn apply_iroh_preset(&self, preset: impl presets::Preset) {
+        self.map(|b| preset.apply(b));
+    }
 }
 
 #[napi]

@@ -57,16 +57,15 @@ pub struct ServicesPresetOptions {
     /// If true, read the API secret from `IROH_SERVICES_API_SECRET`.
     #[uniffi(default = None)]
     pub api_secret_from_env: Option<bool>,
-    /// Endpoint secret key (32 bytes) — the endpoint's own identity key, not
-    /// your API secret. The access token is scoped to it, so pass the same key
-    /// you persist for your endpoint's identity. A fresh key is generated when
-    /// omitted.
+    /// The endpoint's own identity key (32 bytes) — not your API secret. The
+    /// access token is scoped to it, so pass the same key you persist for your
+    /// endpoint's identity. A fresh key is generated when omitted.
     ///
     /// Set the key *here*, not on `EndpointOptions::secret_key`: option fields
     /// are layered on top of the preset, so an `EndpointOptions` key replaces
     /// the one the token is scoped to and the relays reject the endpoint.
     #[uniffi(default = None)]
-    pub secret_key: Option<Vec<u8>>,
+    pub endpoint_secret_key: Option<Vec<u8>>,
 }
 
 /// Wraps `iroh_services::IrohServicesPreset` as a foreign-visible [`Preset`].
@@ -128,10 +127,10 @@ pub fn preset_iroh_services(options: ServicesPresetOptions) -> Result<Arc<dyn Pr
         .relays(options.relays)
         .map_err(|e| anyhow::anyhow!("invalid relay url: {e:?}"))?;
 
-    if let Some(bytes) = options.secret_key {
-        let key: [u8; 32] = AsRef::<[u8]>::as_ref(&bytes)
-            .try_into()
-            .map_err(|e| IrohError::invalid_input(format!("invalid secret key length: {e:?}")))?;
+    if let Some(bytes) = options.endpoint_secret_key {
+        let key: [u8; 32] = AsRef::<[u8]>::as_ref(&bytes).try_into().map_err(|e| {
+            IrohError::invalid_input(format!("invalid endpoint secret key length: {e:?}"))
+        })?;
         builder = builder.secret_key(iroh::SecretKey::from_bytes(&key));
     }
 
@@ -421,6 +420,18 @@ mod tests {
             })
             .is_err(),
             "must reject a malformed api key"
+        );
+    }
+
+    #[test]
+    fn test_services_preset_rejects_short_endpoint_key() {
+        assert!(
+            preset_iroh_services(ServicesPresetOptions {
+                endpoint_secret_key: Some(vec![0u8; 16]),
+                ..preset_options()
+            })
+            .is_err(),
+            "must reject an endpoint key that is not 32 bytes"
         );
     }
 

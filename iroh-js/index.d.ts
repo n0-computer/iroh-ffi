@@ -416,6 +416,26 @@ export interface PathStatsRecord {
   currentMtu: number
 }
 
+/**
+ * Point an endpoint at your project's dedicated relays.
+ *
+ * Mirrors `iroh_services::preset()`: mints a short-lived access token scoped to
+ * the endpoint's key and to relay use only, then configures the builder to use
+ * your relays with that token. Installs the crypto provider, like the other
+ * preset helpers, so it needs no baseline preset before it.
+ *
+ * Unlike the Rust builder, `relays` is required — there is no implicit fallback
+ * to the n0 public relays. Use [`crate::preset_n0`] if that is what you want.
+ *
+ * ```js
+ * const b = Endpoint.builder()
+ * presetIrohServices(b, { relays: [relayUrl], apiSecret: apiKey })
+ * const ep = await b.bind()
+ * await ep.online()
+ * ```
+ */
+export declare function presetIrohServices(builder: EndpointBuilder, options: ServicesPresetOptions): void
+
 /** The minimal preset (no external dependencies; good for tests / offline). */
 export declare function presetMinimal(builder: EndpointBuilder): void
 
@@ -444,6 +464,37 @@ export interface ServicesOptions {
   name?: string
   /** Metrics push interval (ms). `0` disables interval pushes. */
   metricsIntervalMs?: number
+}
+
+/**
+ * Options for [`preset_iroh_services`].
+ *
+ * Supply *exactly one* of `api_secret` or `api_secret_from_env`.
+ */
+export interface ServicesPresetOptions {
+  /**
+   * Your project's relay URLs. Required, and must be non-empty: this preset
+   * exists to point an endpoint at dedicated relays. To use the n0 public
+   * relays instead, apply [`crate::preset_n0`].
+   */
+  relays: Array<string>
+  /**
+   * Encoded API secret string (`services1...`). The relay access token is
+   * minted from this.
+   */
+  apiSecret?: string
+  /** If true, read the API secret from `IROH_SERVICES_API_SECRET`. */
+  apiSecretFromEnv?: boolean
+  /**
+   * The endpoint's own identity key (32 bytes) — not your API secret. The
+   * access token is scoped to it, so pass the same key you persist for your
+   * endpoint's identity. A fresh key is generated when omitted.
+   *
+   * Set the key *here*, not via `EndpointBuilder.secretKey`: a key applied
+   * after this preset replaces the one the token is scoped to, and the relays
+   * reject the endpoint.
+   */
+  endpointSecretKey?: Array<number>
 }
 
 /** Set the logging level. */

@@ -14126,16 +14126,15 @@ data class ServicesPresetOptions(
      */
     var `apiSecretFromEnv`: kotlin.Boolean? = null,
     /**
-     * Endpoint secret key (32 bytes) — the endpoint's own identity key, not
-     * your API secret. The access token is scoped to it, so pass the same key
-     * you persist for your endpoint's identity. A fresh key is generated when
-     * omitted.
+     * The endpoint's own identity key (32 bytes) — not your API secret. The
+     * access token is scoped to it, so pass the same key you persist for your
+     * endpoint's identity. A fresh key is generated when omitted.
      *
      * Set the key *here*, not on `EndpointOptions::secret_key`: option fields
      * are layered on top of the preset, so an `EndpointOptions` key replaces
      * the one the token is scoped to and the relays reject the endpoint.
      */
-    var `secretKey`: kotlin.ByteArray? = null,
+    var `endpointSecretKey`: kotlin.ByteArray? = null,
 ) {
     companion object
 }
@@ -14157,7 +14156,7 @@ public object FfiConverterTypeServicesPresetOptions : FfiConverterRustBuffer<Ser
             FfiConverterSequenceString.allocationSize(value.`relays`) +
                 FfiConverterOptionalString.allocationSize(value.`apiSecret`) +
                 FfiConverterOptionalBoolean.allocationSize(value.`apiSecretFromEnv`) +
-                FfiConverterOptionalByteArray.allocationSize(value.`secretKey`)
+                FfiConverterOptionalByteArray.allocationSize(value.`endpointSecretKey`)
         )
 
     override fun write(
@@ -14167,7 +14166,7 @@ public object FfiConverterTypeServicesPresetOptions : FfiConverterRustBuffer<Ser
         FfiConverterSequenceString.write(value.`relays`, buf)
         FfiConverterOptionalString.write(value.`apiSecret`, buf)
         FfiConverterOptionalBoolean.write(value.`apiSecretFromEnv`, buf)
-        FfiConverterOptionalByteArray.write(value.`secretKey`, buf)
+        FfiConverterOptionalByteArray.write(value.`endpointSecretKey`, buf)
     }
 }
 
