@@ -40,6 +40,13 @@ impl EndpointBuilder {
         *guard = Some(f(builder));
     }
 
+    /// Replay an upstream `iroh::endpoint::presets::Preset` on the wrapped
+    /// builder. Lets a Rust-side [`Preset`] impl delegate to a real iroh preset
+    /// instead of re-implementing it against [`EndpointBuilder`].
+    pub(crate) fn apply_iroh_preset(&self, preset: impl presets::Preset) {
+        self.map(|b| preset.apply(b));
+    }
+
     pub(crate) fn take_inner(&self) -> Result<iroh::endpoint::Builder, IrohError> {
         self.inner
             .lock()

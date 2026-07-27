@@ -2,12 +2,16 @@
 //!
 //! Mirrors `iroh_services::Client`. Construct via [`ServicesClient::create`] with
 //! a built [`Endpoint`] plus credentials supplied through [`ServicesOptions`].
+//!
+//! [`preset_iroh_services`] mirrors `iroh_services::preset()`: an endpoint
+//! preset that points at your project's dedicated relays and authenticates to
+//! them with a token minted from your API key.
 
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 use iroh_services::{Client, ClientBuilder};
 
-use crate::{Endpoint, IrohError};
+use crate::{Endpoint, EndpointBuilder, IrohError, Preset};
 
 /// Build options for [`ServicesClient`].
 ///
@@ -35,6 +39,106 @@ pub struct ServicesOptions {
     /// automatic interval pushes; if omitted the upstream default applies.
     #[uniffi(default = None)]
     pub metrics_interval_ms: Option<u64>,
+}
+
+/// Options for [`preset_iroh_services`].
+///
+/// Supply *exactly one* of `api_secret` or `api_secret_from_env`.
+#[derive(derive_more::Debug, Default, uniffi::Record)]
+pub struct ServicesPresetOptions {
+    /// Your project's relay URLs. Required, and must be non-empty: this preset
+    /// exists to point an endpoint at dedicated relays. To use the n0 public
+    /// relays instead, pass [`crate::preset_n0`] as the endpoint's preset.
+    pub relays: Vec<String>,
+    /// Encoded API secret string (`services1...`). The relay access token is
+    /// minted from this.
+    #[uniffi(default = None)]
+    pub api_secret: Option<String>,
+    /// If true, read the API secret from `IROH_SERVICES_API_SECRET`.
+    #[uniffi(default = None)]
+    pub api_secret_from_env: Option<bool>,
+    /// Endpoint secret key (32 bytes) — the endpoint's own identity key, not
+    /// your API secret. The access token is scoped to it, so pass the same key
+    /// you persist for your endpoint's identity. A fresh key is generated when
+    /// omitted.
+    ///
+    /// Set the key *here*, not on `EndpointOptions::secret_key`: option fields
+    /// are layered on top of the preset, so an `EndpointOptions` key replaces
+    /// the one the token is scoped to and the relays reject the endpoint.
+    #[uniffi(default = None)]
+    pub secret_key: Option<Vec<u8>>,
+}
+
+/// Wraps `iroh_services::IrohServicesPreset` as a foreign-visible [`Preset`].
+struct ServicesPreset(iroh_services::IrohServicesPreset);
+
+impl Preset for ServicesPreset {
+    fn apply(&self, builder: Arc<EndpointBuilder>) {
+        builder.apply_iroh_preset(self.0.clone());
+    }
+}
+
+/// Build an endpoint preset for your project's dedicated relays.
+///
+/// Mirrors `iroh_services::preset()`: mints a short-lived access token scoped to
+/// the endpoint's key and to relay use only, then configures the endpoint to use
+/// your relays with that token. Pass the result as `EndpointOptions::preset`.
+///
+/// Unlike the Rust builder, `relays` is required — there is no implicit fallback
+/// to the n0 public relays. Use [`crate::preset_n0`] if that is what you want.
+///
+/// The token is minted here, at preset-build time, so build the preset shortly
+/// before binding the endpoint.
+#[uniffi::export]
+pub fn preset_iroh_services(options: ServicesPresetOptions) -> Result<Arc<dyn Preset>, IrohError> {
+    if options.relays.is_empty() {
+        return Err(anyhow::anyhow!(
+            "ServicesPresetOptions requires at least one relay url; use preset_n0() for the n0 public relays"
+        )
+        .into());
+    }
+
+    let mut builder = iroh_services::preset();
+
+    builder = match (
+        options.api_secret,
+        options.api_secret_from_env.unwrap_or(false),
+    ) {
+        (Some(_), true) => {
+            return Err(anyhow::anyhow!(
+                "ServicesPresetOptions: supply only one of api_secret / api_secret_from_env"
+            )
+            .into());
+        }
+        (None, false) => {
+            return Err(anyhow::anyhow!(
+                "ServicesPresetOptions requires one of api_secret or api_secret_from_env=true"
+            )
+            .into());
+        }
+        (Some(secret), false) => builder
+            .api_secret_from_str(&secret)
+            .map_err(|e| anyhow::anyhow!("invalid api secret: {e:?}"))?,
+        (None, true) => builder
+            .api_secret_from_env()
+            .map_err(|e| anyhow::anyhow!("api secret env var: {e:?}"))?,
+    };
+
+    builder = builder
+        .relays(options.relays)
+        .map_err(|e| anyhow::anyhow!("invalid relay url: {e:?}"))?;
+
+    if let Some(bytes) = options.secret_key {
+        let key: [u8; 32] = AsRef::<[u8]>::as_ref(&bytes)
+            .try_into()
+            .map_err(|e| IrohError::invalid_input(format!("invalid secret key length: {e:?}")))?;
+        builder = builder.secret_key(iroh::SecretKey::from_bytes(&key));
+    }
+
+    let preset = builder
+        .build()
+        .map_err(|e| anyhow::anyhow!("services preset build failed: {e:?}"))?;
+    Ok(Arc::new(ServicesPreset(preset)))
 }
 
 /// Flattened summary of an `iroh_services::net_diagnostics::DiagnosticsReport`.
@@ -265,6 +369,79 @@ mod tests {
         .await;
         assert!(res.is_err(), "must reject when >1 credentials supplied");
         ep.close().await.unwrap();
+    }
+
+    /// Options with a valid credential + relay, for tests that vary one field.
+    fn preset_options() -> ServicesPresetOptions {
+        ServicesPresetOptions {
+            relays: vec!["https://relay.example.org/".to_string()],
+            api_secret: Some(FAKE_API_SECRET.to_string()),
+            ..Default::default()
+        }
+    }
+
+    #[tokio::test]
+    async fn test_services_preset_binds_with_custom_relays() {
+        let preset = preset_iroh_services(preset_options()).expect("preset should build");
+
+        // No connection is attempted at bind time, so the unreachable relay is
+        // fine — this checks the mint -> relay map -> builder plumbing.
+        let ep = Endpoint::bind(EndpointOptions {
+            preset: Some(preset),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+        assert!(!ep.bound_sockets().is_empty());
+        ep.close().await.unwrap();
+    }
+
+    #[test]
+    fn test_services_preset_rejects_bad_credentials() {
+        assert!(
+            preset_iroh_services(ServicesPresetOptions {
+                api_secret: None,
+                ..preset_options()
+            })
+            .is_err(),
+            "must reject when no credential is supplied"
+        );
+        assert!(
+            preset_iroh_services(ServicesPresetOptions {
+                api_secret_from_env: Some(true),
+                ..preset_options()
+            })
+            .is_err(),
+            "must reject when >1 credentials supplied"
+        );
+        assert!(
+            preset_iroh_services(ServicesPresetOptions {
+                api_secret: Some("not-a-valid-ticket".to_string()),
+                ..preset_options()
+            })
+            .is_err(),
+            "must reject a malformed api key"
+        );
+    }
+
+    #[test]
+    fn test_services_preset_requires_relays() {
+        assert!(
+            preset_iroh_services(ServicesPresetOptions {
+                relays: vec![],
+                ..preset_options()
+            })
+            .is_err(),
+            "must reject an empty relay list rather than falling back to n0"
+        );
+        assert!(
+            preset_iroh_services(ServicesPresetOptions {
+                relays: vec!["not a url".to_string()],
+                ..preset_options()
+            })
+            .is_err(),
+            "must reject a malformed relay url"
+        );
     }
 
     #[tokio::test]

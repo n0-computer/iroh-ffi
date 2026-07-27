@@ -1006,6 +1006,8 @@ internal object IntegrityCheckingUniffiLib {
 
     external fun uniffi_iroh_ffi_checksum_func_preset_n0_disable_relay(): Int
 
+    external fun uniffi_iroh_ffi_checksum_func_preset_iroh_services(): Int
+
     external fun uniffi_iroh_ffi_checksum_method_accepting_alpn(): Int
 
     external fun uniffi_iroh_ffi_checksum_method_accepting_connect(): Int
@@ -2275,6 +2277,11 @@ internal object UniffiLib {
 
     external fun uniffi_iroh_ffi_fn_func_preset_n0_disable_relay(uniffi_out_err: UniffiRustCallStatus): Long
 
+    external fun uniffi_iroh_ffi_fn_func_preset_iroh_services(
+        `options`: RustBuffer.ByValue,
+        uniffi_out_err: UniffiRustCallStatus,
+    ): Long
+
     external fun ffi_iroh_ffi_rustbuffer_alloc(
         `size`: Long,
         uniffi_out_err: UniffiRustCallStatus,
@@ -2499,6 +2506,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_func_preset_n0_disable_relay() != 45395) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_ffi_checksum_func_preset_iroh_services() != 23155) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_accepting_alpn() != 1935) {
@@ -14094,6 +14104,73 @@ public object FfiConverterTypeServicesOptions : FfiConverterRustBuffer<ServicesO
     }
 }
 
+/**
+ * Options for [`preset_iroh_services`].
+ *
+ * Supply *exactly one* of `api_secret` or `api_secret_from_env`.
+ */
+data class ServicesPresetOptions(
+    /**
+     * Your project's relay URLs. Required, and must be non-empty: this preset
+     * exists to point an endpoint at dedicated relays. To use the n0 public
+     * relays instead, pass [`crate::preset_n0`] as the endpoint's preset.
+     */
+    var `relays`: List<kotlin.String>,
+    /**
+     * Encoded API secret string (`services1...`). The relay access token is
+     * minted from this.
+     */
+    var `apiSecret`: kotlin.String? = null,
+    /**
+     * If true, read the API secret from `IROH_SERVICES_API_SECRET`.
+     */
+    var `apiSecretFromEnv`: kotlin.Boolean? = null,
+    /**
+     * Endpoint secret key (32 bytes) — the endpoint's own identity key, not
+     * your API secret. The access token is scoped to it, so pass the same key
+     * you persist for your endpoint's identity. A fresh key is generated when
+     * omitted.
+     *
+     * Set the key *here*, not on `EndpointOptions::secret_key`: option fields
+     * are layered on top of the preset, so an `EndpointOptions` key replaces
+     * the one the token is scoped to and the relays reject the endpoint.
+     */
+    var `secretKey`: kotlin.ByteArray? = null,
+) {
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeServicesPresetOptions : FfiConverterRustBuffer<ServicesPresetOptions> {
+    override fun read(buf: ByteBuffer): ServicesPresetOptions =
+        ServicesPresetOptions(
+            FfiConverterSequenceString.read(buf),
+            FfiConverterOptionalString.read(buf),
+            FfiConverterOptionalBoolean.read(buf),
+            FfiConverterOptionalByteArray.read(buf),
+        )
+
+    override fun allocationSize(value: ServicesPresetOptions) =
+        (
+            FfiConverterSequenceString.allocationSize(value.`relays`) +
+                FfiConverterOptionalString.allocationSize(value.`apiSecret`) +
+                FfiConverterOptionalBoolean.allocationSize(value.`apiSecretFromEnv`) +
+                FfiConverterOptionalByteArray.allocationSize(value.`secretKey`)
+        )
+
+    override fun write(
+        value: ServicesPresetOptions,
+        buf: ByteBuffer,
+    ) {
+        FfiConverterSequenceString.write(value.`relays`, buf)
+        FfiConverterOptionalString.write(value.`apiSecret`, buf)
+        FfiConverterOptionalBoolean.write(value.`apiSecretFromEnv`, buf)
+        FfiConverterOptionalByteArray.write(value.`secretKey`, buf)
+    }
+}
+
 sealed class CallbackException : kotlin.Exception() {
     class Exception : CallbackException() {
         override val message
@@ -15337,5 +15414,26 @@ fun `presetN0DisableRelay`(): Preset =
     FfiConverterTypePreset.lift(
         uniffiRustCall { _status ->
             UniffiLib.uniffi_iroh_ffi_fn_func_preset_n0_disable_relay(_status)
+        },
+    )
+
+/**
+ * Build an endpoint preset for your project's dedicated relays.
+ *
+ * Mirrors `iroh_services::preset()`: mints a short-lived access token scoped to
+ * the endpoint's key and to relay use only, then configures the endpoint to use
+ * your relays with that token. Pass the result as `EndpointOptions::preset`.
+ *
+ * Unlike the Rust builder, `relays` is required — there is no implicit fallback
+ * to the n0 public relays. Use [`crate::preset_n0`] if that is what you want.
+ *
+ * The token is minted here, at preset-build time, so build the preset shortly
+ * before binding the endpoint.
+ */
+@Throws(IrohException::class)
+fun `presetIrohServices`(`options`: ServicesPresetOptions): Preset =
+    FfiConverterTypePreset.lift(
+        uniffiRustCallWithError(IrohException) { _status ->
+            UniffiLib.uniffi_iroh_ffi_fn_func_preset_iroh_services(FfiConverterTypeServicesPresetOptions.lower(`options`), _status)
         },
     )
