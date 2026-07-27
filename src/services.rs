@@ -46,10 +46,12 @@ pub struct ServicesOptions {
 /// Supply *exactly one* of `api_secret` or `api_secret_from_env`.
 #[derive(derive_more::Debug, Default, uniffi::Record)]
 pub struct ServicesPresetOptions {
-    /// Your project's relay URLs. Required, and must be non-empty: this preset
-    /// exists to point an endpoint at dedicated relays. To use the n0 public
-    /// relays instead, pass [`crate::preset_n0`] as the endpoint's preset.
-    pub relays: Vec<String>,
+    /// Your project's relay URLs. Defaults to the n0 public relays when
+    /// omitted, matching `iroh_services::preset()`. Passing an empty list is an
+    /// error rather than a silent fallback — that is nearly always a filtered
+    /// list that came back empty.
+    #[uniffi(default = None)]
+    pub relays: Option<Vec<String>>,
     /// Encoded API secret string (`services1...`). The relay access token is
     /// minted from this.
     #[uniffi(default = None)]
@@ -83,20 +85,10 @@ impl Preset for ServicesPreset {
 /// the endpoint's key and to relay use only, then configures the endpoint to use
 /// your relays with that token. Pass the result as `EndpointOptions::preset`.
 ///
-/// Unlike the Rust builder, `relays` is required — there is no implicit fallback
-/// to the n0 public relays. Use [`crate::preset_n0`] if that is what you want.
-///
 /// The token is minted here, at preset-build time, so build the preset shortly
 /// before binding the endpoint.
 #[uniffi::export]
 pub fn preset_iroh_services(options: ServicesPresetOptions) -> Result<Arc<dyn Preset>, IrohError> {
-    if options.relays.is_empty() {
-        return Err(anyhow::anyhow!(
-            "ServicesPresetOptions requires at least one relay url; use preset_n0() for the n0 public relays"
-        )
-        .into());
-    }
-
     let mut builder = iroh_services::preset();
 
     builder = match (
@@ -123,9 +115,18 @@ pub fn preset_iroh_services(options: ServicesPresetOptions) -> Result<Arc<dyn Pr
             .map_err(|e| anyhow::anyhow!("api secret env var: {e:?}"))?,
     };
 
-    builder = builder
-        .relays(options.relays)
-        .map_err(|e| anyhow::anyhow!("invalid relay url: {e:?}"))?;
+    // Omitted relays keep the builder's n0 default; an empty list does not.
+    if let Some(relays) = options.relays {
+        if relays.is_empty() {
+            return Err(anyhow::anyhow!(
+                "ServicesPresetOptions: relays is empty; omit it to use the n0 relays"
+            )
+            .into());
+        }
+        builder = builder
+            .relays(relays)
+            .map_err(|e| anyhow::anyhow!("invalid relay url: {e:?}"))?;
+    }
 
     if let Some(bytes) = options.endpoint_secret_key {
         let key: [u8; 32] = AsRef::<[u8]>::as_ref(&bytes).try_into().map_err(|e| {
@@ -373,7 +374,7 @@ mod tests {
     /// Options with a valid credential + relay, for tests that vary one field.
     fn preset_options() -> ServicesPresetOptions {
         ServicesPresetOptions {
-            relays: vec!["https://relay.example.org/".to_string()],
+            relays: Some(vec!["https://relay.example.org/".to_string()]),
             api_secret: Some(FAKE_API_SECRET.to_string()),
             ..Default::default()
         }
@@ -436,18 +437,26 @@ mod tests {
     }
 
     #[test]
-    fn test_services_preset_requires_relays() {
+    fn test_services_preset_relays() {
         assert!(
             preset_iroh_services(ServicesPresetOptions {
-                relays: vec![],
+                relays: None,
                 ..preset_options()
             })
-            .is_err(),
-            "must reject an empty relay list rather than falling back to n0"
+            .is_ok(),
+            "omitted relays must fall back to the n0 relays, as in Rust"
         );
         assert!(
             preset_iroh_services(ServicesPresetOptions {
-                relays: vec!["not a url".to_string()],
+                relays: Some(vec![]),
+                ..preset_options()
+            })
+            .is_err(),
+            "an explicitly empty list must error, not silently fall back"
+        );
+        assert!(
+            preset_iroh_services(ServicesPresetOptions {
+                relays: Some(vec!["not a url".to_string()]),
                 ..preset_options()
             })
             .is_err(),

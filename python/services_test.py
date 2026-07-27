@@ -84,10 +84,14 @@ def test_services_preset_rejects_bad_options():
         preset_iroh_services(
             ServicesPresetOptions(relays=relays, api_secret="not-a-valid-ticket")
         )
-    # No implicit fallback to the n0 relays.
+    # An explicitly empty list errors; omitting it falls back to the n0 relays.
     with pytest.raises(Exception):
         preset_iroh_services(ServicesPresetOptions(relays=[], api_secret=FAKE_API_SECRET))
     with pytest.raises(Exception):
         preset_iroh_services(
             ServicesPresetOptions(relays=["not a url"], api_secret=FAKE_API_SECRET)
         )
+
+
+def test_services_preset_defaults_to_n0_relays():
+    assert preset_iroh_services(ServicesPresetOptions(api_secret=FAKE_API_SECRET))

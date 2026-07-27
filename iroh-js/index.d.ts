@@ -424,9 +424,6 @@ export interface PathStatsRecord {
  * your relays with that token. Installs the crypto provider, like the other
  * preset helpers, so it needs no baseline preset before it.
  *
- * Unlike the Rust builder, `relays` is required — there is no implicit fallback
- * to the n0 public relays. Use [`crate::preset_n0`] if that is what you want.
- *
  * ```js
  * const b = Endpoint.builder()
  * presetIrohServices(b, { relays: [relayUrl], apiSecret: apiKey })
@@ -473,11 +470,12 @@ export interface ServicesOptions {
  */
 export interface ServicesPresetOptions {
   /**
-   * Your project's relay URLs. Required, and must be non-empty: this preset
-   * exists to point an endpoint at dedicated relays. To use the n0 public
-   * relays instead, apply [`crate::preset_n0`].
+   * Your project's relay URLs. Defaults to the n0 public relays when
+   * omitted, matching `iroh_services::preset()`. Passing an empty list is an
+   * error rather than a silent fallback — that is nearly always a filtered
+   * list that came back empty.
    */
-  relays: Array<string>
+  relays?: Array<string>
   /**
    * Encoded API secret string (`services1...`). The relay access token is
    * minted from this.

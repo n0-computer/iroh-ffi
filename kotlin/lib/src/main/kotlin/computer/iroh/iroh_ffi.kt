@@ -2508,7 +2508,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_func_preset_n0_disable_relay() != 45395) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_func_preset_iroh_services() != 23155) {
+    if (lib.uniffi_iroh_ffi_checksum_func_preset_iroh_services() != 59955) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_accepting_alpn() != 1935) {
@@ -14111,11 +14111,12 @@ public object FfiConverterTypeServicesOptions : FfiConverterRustBuffer<ServicesO
  */
 data class ServicesPresetOptions(
     /**
-     * Your project's relay URLs. Required, and must be non-empty: this preset
-     * exists to point an endpoint at dedicated relays. To use the n0 public
-     * relays instead, pass [`crate::preset_n0`] as the endpoint's preset.
+     * Your project's relay URLs. Defaults to the n0 public relays when
+     * omitted, matching `iroh_services::preset()`. Passing an empty list is an
+     * error rather than a silent fallback — that is nearly always a filtered
+     * list that came back empty.
      */
-    var `relays`: List<kotlin.String>,
+    var `relays`: List<kotlin.String>? = null,
     /**
      * Encoded API secret string (`services1...`). The relay access token is
      * minted from this.
@@ -14145,7 +14146,7 @@ data class ServicesPresetOptions(
 public object FfiConverterTypeServicesPresetOptions : FfiConverterRustBuffer<ServicesPresetOptions> {
     override fun read(buf: ByteBuffer): ServicesPresetOptions =
         ServicesPresetOptions(
-            FfiConverterSequenceString.read(buf),
+            FfiConverterOptionalSequenceString.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalBoolean.read(buf),
             FfiConverterOptionalByteArray.read(buf),
@@ -14153,7 +14154,7 @@ public object FfiConverterTypeServicesPresetOptions : FfiConverterRustBuffer<Ser
 
     override fun allocationSize(value: ServicesPresetOptions) =
         (
-            FfiConverterSequenceString.allocationSize(value.`relays`) +
+            FfiConverterOptionalSequenceString.allocationSize(value.`relays`) +
                 FfiConverterOptionalString.allocationSize(value.`apiSecret`) +
                 FfiConverterOptionalBoolean.allocationSize(value.`apiSecretFromEnv`) +
                 FfiConverterOptionalByteArray.allocationSize(value.`endpointSecretKey`)
@@ -14163,7 +14164,7 @@ public object FfiConverterTypeServicesPresetOptions : FfiConverterRustBuffer<Ser
         value: ServicesPresetOptions,
         buf: ByteBuffer,
     ) {
-        FfiConverterSequenceString.write(value.`relays`, buf)
+        FfiConverterOptionalSequenceString.write(value.`relays`, buf)
         FfiConverterOptionalString.write(value.`apiSecret`, buf)
         FfiConverterOptionalBoolean.write(value.`apiSecretFromEnv`, buf)
         FfiConverterOptionalByteArray.write(value.`endpointSecretKey`, buf)
@@ -15151,6 +15152,38 @@ public object FfiConverterOptionalTypeRelayConfig : FfiConverterRustBuffer<Relay
 /**
  * @suppress
  */
+public object FfiConverterOptionalSequenceString : FfiConverterRustBuffer<List<kotlin.String>?> {
+    override fun read(buf: ByteBuffer): List<kotlin.String>? {
+        if (buf.get().toInt() == 0) {
+            return null
+        }
+        return FfiConverterSequenceString.read(buf)
+    }
+
+    override fun allocationSize(value: List<kotlin.String>?): ULong {
+        if (value == null) {
+            return 1UL
+        } else {
+            return 1UL + FfiConverterSequenceString.allocationSize(value)
+        }
+    }
+
+    override fun write(
+        value: List<kotlin.String>?,
+        buf: ByteBuffer,
+    ) {
+        if (value == null) {
+            buf.put(0)
+        } else {
+            buf.put(1)
+            FfiConverterSequenceString.write(value, buf)
+        }
+    }
+}
+
+/**
+ * @suppress
+ */
 public object FfiConverterOptionalSequenceByteArray : FfiConverterRustBuffer<List<kotlin.ByteArray>?> {
     override fun read(buf: ByteBuffer): List<kotlin.ByteArray>? {
         if (buf.get().toInt() == 0) {
@@ -15422,9 +15455,6 @@ fun `presetN0DisableRelay`(): Preset =
  * Mirrors `iroh_services::preset()`: mints a short-lived access token scoped to
  * the endpoint's key and to relay use only, then configures the endpoint to use
  * your relays with that token. Pass the result as `EndpointOptions::preset`.
- *
- * Unlike the Rust builder, `relays` is required — there is no implicit fallback
- * to the n0 public relays. Use [`crate::preset_n0`] if that is what you want.
  *
  * The token is minted here, at preset-build time, so build the preset shortly
  * before binding the endpoint.

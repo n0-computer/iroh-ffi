@@ -75,7 +75,10 @@ suite('services preset', () => {
     )
   })
 
-  test('requires relays — no implicit fallback to n0', () => {
+  test('relays', () => {
+    // Omitted falls back to the n0 relays, as in Rust.
+    presetIrohServices(Endpoint.builder(), { apiSecret: FAKE_API_SECRET })
+    // An explicitly empty list does not.
     assert.throws(() =>
       presetIrohServices(Endpoint.builder(), { relays: [], apiSecret: FAKE_API_SECRET }),
     )

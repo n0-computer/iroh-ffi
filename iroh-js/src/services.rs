@@ -12,10 +12,11 @@ use crate::{Endpoint, EndpointBuilder};
 #[derive(Debug, Default)]
 #[napi(object)]
 pub struct ServicesPresetOptions {
-    /// Your project's relay URLs. Required, and must be non-empty: this preset
-    /// exists to point an endpoint at dedicated relays. To use the n0 public
-    /// relays instead, apply [`crate::preset_n0`].
-    pub relays: Vec<String>,
+    /// Your project's relay URLs. Defaults to the n0 public relays when
+    /// omitted, matching `iroh_services::preset()`. Passing an empty list is an
+    /// error rather than a silent fallback — that is nearly always a filtered
+    /// list that came back empty.
+    pub relays: Option<Vec<String>>,
     /// Encoded API secret string (`services1...`). The relay access token is
     /// minted from this.
     pub api_secret: Option<String>,
@@ -38,9 +39,6 @@ pub struct ServicesPresetOptions {
 /// your relays with that token. Installs the crypto provider, like the other
 /// preset helpers, so it needs no baseline preset before it.
 ///
-/// Unlike the Rust builder, `relays` is required — there is no implicit fallback
-/// to the n0 public relays. Use [`crate::preset_n0`] if that is what you want.
-///
 /// ```js
 /// const b = Endpoint.builder()
 /// presetIrohServices(b, { relays: [relayUrl], apiSecret: apiKey })
@@ -52,13 +50,6 @@ pub fn preset_iroh_services(
     builder: &EndpointBuilder,
     options: ServicesPresetOptions,
 ) -> Result<()> {
-    if options.relays.is_empty() {
-        return Err(anyhow::anyhow!(
-            "ServicesPresetOptions requires at least one relay url; use presetN0() for the n0 public relays"
-        )
-        .into());
-    }
-
     let mut preset = iroh_services::preset();
 
     preset = match (
@@ -85,9 +76,18 @@ pub fn preset_iroh_services(
             .map_err(|e| anyhow::anyhow!("api secret env var: {e:?}"))?,
     };
 
-    preset = preset
-        .relays(options.relays)
-        .map_err(|e| anyhow::anyhow!("invalid relay url: {e:?}"))?;
+    // Omitted relays keep the builder's n0 default; an empty list does not.
+    if let Some(relays) = options.relays {
+        if relays.is_empty() {
+            return Err(anyhow::anyhow!(
+                "ServicesPresetOptions: relays is empty; omit it to use the n0 relays"
+            )
+            .into());
+        }
+        preset = preset
+            .relays(relays)
+            .map_err(|e| anyhow::anyhow!("invalid relay url: {e:?}"))?;
+    }
 
     if let Some(bytes) = options.endpoint_secret_key {
         let key: [u8; 32] = bytes
