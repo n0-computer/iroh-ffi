@@ -444,6 +444,26 @@ mod tests {
         assert!(res.is_err(), "must reject a key set outside the preset");
     }
 
+    #[tokio::test]
+    async fn test_services_preset_pins_even_identical_key() {
+        // The pin is unconditional: even bit-identical bytes are rejected. The
+        // policy is "set it in exactly one place," not "set it to the same
+        // value" — the latter invites a future reader to relax the guard.
+        let key_bytes = vec![7u8; 32];
+        let preset = preset_iroh_services(ServicesPresetOptions {
+            endpoint_secret_key: Some(key_bytes.clone()),
+            ..preset_options()
+        })
+        .unwrap();
+        let res = Endpoint::bind(EndpointOptions {
+            preset: Some(preset),
+            secret_key: Some(key_bytes),
+            ..Default::default()
+        })
+        .await;
+        assert!(res.is_err(), "identical key must still be rejected");
+    }
+
     #[test]
     fn test_services_preset_rejects_short_endpoint_key() {
         assert!(
