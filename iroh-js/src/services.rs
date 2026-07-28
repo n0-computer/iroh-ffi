@@ -28,7 +28,8 @@ pub struct ServicesPresetOptions {
     ///
     /// Set the key *here*, not via `EndpointBuilder.secretKey`: a key applied
     /// after this preset would replace the one the token is scoped to. Doing
-    /// that throws, rather than silently failing auth — this preset pins the key.
+    /// that throws — even for bit-identical bytes — rather than silently
+    /// failing auth: this preset pins the key.
     pub endpoint_secret_key: Option<Vec<u8>>,
 }
 

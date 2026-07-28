@@ -63,10 +63,10 @@ pub struct ServicesPresetOptions {
     /// access token is scoped to it, so pass the same key you persist for your
     /// endpoint's identity. A fresh key is generated when omitted.
     ///
-    /// Set the key *here*, not on `EndpointOptions::secret_key`: option fields
-    /// are layered on top of the preset, so an `EndpointOptions` key would
-    /// replace the one the token is scoped to. Doing that is an error, not a
-    /// silent auth failure — this preset pins the key.
+    /// Set the key *here*, not via `EndpointOptions::secret_key` or
+    /// `EndpointBuilder::secret_key`: both are layered on top of the preset and
+    /// would replace the one the token is scoped to. Doing that is an error,
+    /// not a silent auth failure — this preset pins the key.
     #[uniffi(default = None)]
     pub endpoint_secret_key: Option<Vec<u8>>,
 }
