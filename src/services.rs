@@ -64,8 +64,9 @@ pub struct ServicesPresetOptions {
     /// endpoint's identity. A fresh key is generated when omitted.
     ///
     /// Set the key *here*, not on `EndpointOptions::secret_key`: option fields
-    /// are layered on top of the preset, so an `EndpointOptions` key replaces
-    /// the one the token is scoped to and the relays reject the endpoint.
+    /// are layered on top of the preset, so an `EndpointOptions` key would
+    /// replace the one the token is scoped to. Doing that is an error, not a
+    /// silent auth failure — this preset pins the key.
     #[uniffi(default = None)]
     pub endpoint_secret_key: Option<Vec<u8>>,
 }
@@ -76,6 +77,9 @@ struct ServicesPreset(iroh_services::IrohServicesPreset);
 impl Preset for ServicesPreset {
     fn apply(&self, builder: Arc<EndpointBuilder>) {
         builder.apply_iroh_preset(self.0.clone());
+        // The access token is scoped to the key the preset just set, so a later
+        // `secret_key` call must fail rather than silently break relay auth.
+        builder.pin_secret_key();
     }
 }
 
@@ -422,6 +426,22 @@ mod tests {
             .is_err(),
             "must reject a malformed api key"
         );
+    }
+
+    #[tokio::test]
+    async fn test_services_preset_pins_the_endpoint_key() {
+        let preset = preset_iroh_services(preset_options()).unwrap();
+
+        // The token is scoped to the preset's key, so an EndpointOptions key —
+        // layered on top of the preset — must fail loudly, not break relay auth
+        // at connect time.
+        let res = Endpoint::bind(EndpointOptions {
+            preset: Some(preset),
+            secret_key: Some(vec![7u8; 32]),
+            ..Default::default()
+        })
+        .await;
+        assert!(res.is_err(), "must reject a key set outside the preset");
     }
 
     #[test]

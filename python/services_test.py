@@ -95,3 +95,16 @@ def test_services_preset_rejects_bad_options():
 
 def test_services_preset_defaults_to_n0_relays():
     assert preset_iroh_services(ServicesPresetOptions(api_secret=FAKE_API_SECRET))
+
+
+async def test_services_preset_pins_the_endpoint_key():
+    # The token is scoped to the preset's key, so an EndpointOptions key must
+    # fail loudly rather than break relay auth at connect time.
+    preset = preset_iroh_services(
+        ServicesPresetOptions(
+            relays=["https://relay.example.org/"],
+            api_secret=FAKE_API_SECRET,
+        )
+    )
+    with pytest.raises(Exception):
+        await Endpoint.bind(EndpointOptions(preset=preset, secret_key=bytes(32)))

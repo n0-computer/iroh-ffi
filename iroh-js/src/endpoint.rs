@@ -23,13 +23,23 @@ use crate::{EndpointAddr, RelayMode, SecretKey, WatchHandle, path, watch};
 #[napi]
 pub struct EndpointBuilder {
     inner: std::sync::Mutex<Option<iroh::endpoint::Builder>>,
+    key_pinned: std::sync::atomic::AtomicBool,
 }
 
 impl EndpointBuilder {
     fn new(builder: iroh::endpoint::Builder) -> Self {
         Self {
             inner: std::sync::Mutex::new(Some(builder)),
+            key_pinned: std::sync::atomic::AtomicBool::new(false),
         }
+    }
+
+    /// Record that a preset minted a credential scoped to the key it just set,
+    /// so a later [`Self::secret_key`] would invalidate that credential rather
+    /// than simply changing the endpoint's identity.
+    pub(crate) fn pin_secret_key(&self) {
+        self.key_pinned
+            .store(true, std::sync::atomic::Ordering::Relaxed);
     }
 
     fn map<F>(&self, f: F)
@@ -70,8 +80,19 @@ impl EndpointBuilder {
     }
 
     /// Set the endpoint secret key (32 bytes).
+    ///
+    /// Throws if a preset already pinned the key because it minted a credential
+    /// scoped to it — see [`crate::preset_iroh_services`].
     #[napi]
     pub fn secret_key(&self, bytes: Vec<u8>) -> Result<()> {
+        if self.key_pinned.load(std::sync::atomic::Ordering::Relaxed) {
+            return Err(anyhow::anyhow!(
+                "endpoint secret key is pinned by presetIrohServices: its relay access token is \
+                 scoped to that key, so replacing it would make the relays reject this endpoint. \
+                 Set the key via ServicesPresetOptions.endpointSecretKey instead."
+            )
+            .into());
+        }
         let key: [u8; 32] = bytes
             .try_into()
             .map_err(|_| anyhow::anyhow!("secret_key must be 32 bytes"))?;

@@ -139,7 +139,12 @@ export declare class EndpointBuilder {
   applyMinimal(): void
   /** Replay the n0 preset with relays disabled. */
   applyN0DisableRelay(): void
-  /** Set the endpoint secret key (32 bytes). */
+  /**
+   * Set the endpoint secret key (32 bytes).
+   *
+   * Throws if a preset already pinned the key because it minted a credential
+   * scoped to it — see [`crate::preset_iroh_services`].
+   */
   secretKey(bytes: Array<number>): void
   /** Set the advertised ALPNs. */
   alpns(alpns: Array<Array<number>>): void
@@ -489,8 +494,8 @@ export interface ServicesPresetOptions {
    * endpoint's identity. A fresh key is generated when omitted.
    *
    * Set the key *here*, not via `EndpointBuilder.secretKey`: a key applied
-   * after this preset replaces the one the token is scoped to, and the relays
-   * reject the endpoint.
+   * after this preset would replace the one the token is scoped to. Doing
+   * that throws, rather than silently failing auth — this preset pins the key.
    */
   endpointSecretKey?: Array<number>
 }

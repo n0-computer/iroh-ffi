@@ -2706,7 +2706,7 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_method_endpointbuilder_relay_mode() != 17405) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
-    if (lib.uniffi_iroh_ffi_checksum_method_endpointbuilder_secret_key() != 35604) {
+    if (lib.uniffi_iroh_ffi_checksum_method_endpointbuilder_secret_key() != 1964) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_checksum_method_preset_apply() != 64281) {
@@ -6693,6 +6693,9 @@ public interface EndpointBuilderInterface {
 
     /**
      * Set the endpoint secret key (32 bytes).
+     *
+     * Errors if a preset already pinned the key because it minted a credential
+     * scoped to it — see `preset_iroh_services`.
      */
     fun `secretKey`(`bytes`: kotlin.ByteArray)
 
@@ -6930,6 +6933,9 @@ open class EndpointBuilder :
 
     /**
      * Set the endpoint secret key (32 bytes).
+     *
+     * Errors if a preset already pinned the key because it minted a credential
+     * scoped to it — see `preset_iroh_services`.
      */
     @Throws(IrohException::class)
     override fun `secretKey`(`bytes`: kotlin.ByteArray) =
@@ -14132,8 +14138,9 @@ data class ServicesPresetOptions(
      * endpoint's identity. A fresh key is generated when omitted.
      *
      * Set the key *here*, not on `EndpointOptions::secret_key`: option fields
-     * are layered on top of the preset, so an `EndpointOptions` key replaces
-     * the one the token is scoped to and the relays reject the endpoint.
+     * are layered on top of the preset, so an `EndpointOptions` key would
+     * replace the one the token is scoped to. Doing that is an error, not a
+     * silent auth failure — this preset pins the key.
      */
     var `endpointSecretKey`: kotlin.ByteArray? = null,
 ) {

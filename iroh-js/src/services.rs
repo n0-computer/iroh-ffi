@@ -27,8 +27,8 @@ pub struct ServicesPresetOptions {
     /// endpoint's identity. A fresh key is generated when omitted.
     ///
     /// Set the key *here*, not via `EndpointBuilder.secretKey`: a key applied
-    /// after this preset replaces the one the token is scoped to, and the relays
-    /// reject the endpoint.
+    /// after this preset would replace the one the token is scoped to. Doing
+    /// that throws, rather than silently failing auth — this preset pins the key.
     pub endpoint_secret_key: Option<Vec<u8>>,
 }
 
@@ -101,6 +101,9 @@ pub fn preset_iroh_services(
         .build()
         .map_err(|e| anyhow::anyhow!("services preset build failed: {e:?}"))?;
     builder.apply_iroh_preset(preset);
+    // The access token is scoped to the key the preset just set, so a later
+    // `secretKey` call must throw rather than silently break relay auth.
+    builder.pin_secret_key();
     Ok(())
 }
 

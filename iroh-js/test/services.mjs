@@ -75,6 +75,14 @@ suite('services preset', () => {
     )
   })
 
+  test('pins the endpoint key', () => {
+    // The token is scoped to the preset's key, so setting one afterwards must
+    // throw rather than break relay auth at connect time.
+    const b = Endpoint.builder()
+    presetIrohServices(b, { relays, apiSecret: FAKE_API_SECRET })
+    assert.throws(() => b.secretKey(Buffer.alloc(32, 7)))
+  })
+
   test('relays', () => {
     // Omitted falls back to the n0 relays, as in Rust.
     presetIrohServices(Endpoint.builder(), { apiSecret: FAKE_API_SECRET })
