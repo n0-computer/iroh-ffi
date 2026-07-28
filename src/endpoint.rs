@@ -36,7 +36,11 @@ impl EndpointBuilder {
     /// Record that a preset minted a credential scoped to the key it just set,
     /// so a later [`Self::secret_key`] would invalidate that credential rather
     /// than simply changing the endpoint's identity.
+    ///
+    /// Takes the builder mutex so the flag becomes visible atomically with any
+    /// subsequent [`Self::secret_key`] check, closing the check-then-act window.
     pub(crate) fn pin_secret_key(&self) {
+        let _guard = self.inner.lock().unwrap();
         self.key_pinned
             .store(true, std::sync::atomic::Ordering::Relaxed);
     }
@@ -96,6 +100,11 @@ impl EndpointBuilder {
     /// Errors if a preset already pinned the key because it minted a credential
     /// scoped to it — see `preset_iroh_services`.
     pub fn secret_key(&self, bytes: Vec<u8>) -> Result<(), IrohError> {
+        let key: [u8; 32] = AsRef::<[u8]>::as_ref(&bytes)
+            .try_into()
+            .map_err(|e| IrohError::invalid_input(format!("invalid secret key length: {e:?}")))?;
+        let key = iroh::SecretKey::from_bytes(&key);
+        let mut guard = self.inner.lock().unwrap();
         if self.key_pinned.load(std::sync::atomic::Ordering::Relaxed) {
             return Err(IrohError::invalid_input(
                 "endpoint secret key is pinned by preset_iroh_services: its relay access token is \
@@ -103,11 +112,8 @@ impl EndpointBuilder {
                  Set the key via ServicesPresetOptions.endpoint_secret_key instead.",
             ));
         }
-        let key: [u8; 32] = AsRef::<[u8]>::as_ref(&bytes)
-            .try_into()
-            .map_err(|e| IrohError::invalid_input(format!("invalid secret key length: {e:?}")))?;
-        let key = iroh::SecretKey::from_bytes(&key);
-        self.map(|b| b.secret_key(key));
+        let builder = guard.take().expect("EndpointBuilder consumed");
+        *guard = Some(builder.secret_key(key));
         Ok(())
     }
 

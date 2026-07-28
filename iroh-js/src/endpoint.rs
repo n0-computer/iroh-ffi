@@ -37,7 +37,11 @@ impl EndpointBuilder {
     /// Record that a preset minted a credential scoped to the key it just set,
     /// so a later [`Self::secret_key`] would invalidate that credential rather
     /// than simply changing the endpoint's identity.
+    ///
+    /// Takes the builder mutex so the flag becomes visible atomically with any
+    /// subsequent [`Self::secret_key`] check, closing the check-then-act window.
     pub(crate) fn pin_secret_key(&self) {
+        let _guard = self.inner.lock().unwrap();
         self.key_pinned
             .store(true, std::sync::atomic::Ordering::Relaxed);
     }
@@ -85,6 +89,10 @@ impl EndpointBuilder {
     /// scoped to it — see [`crate::preset_iroh_services`].
     #[napi]
     pub fn secret_key(&self, bytes: Vec<u8>) -> Result<()> {
+        let key: [u8; 32] = bytes
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("secret_key must be 32 bytes"))?;
+        let mut guard = self.inner.lock().unwrap();
         if self.key_pinned.load(std::sync::atomic::Ordering::Relaxed) {
             return Err(anyhow::anyhow!(
                 "endpoint secret key is pinned by presetIrohServices: its relay access token is \
@@ -93,10 +101,8 @@ impl EndpointBuilder {
             )
             .into());
         }
-        let key: [u8; 32] = bytes
-            .try_into()
-            .map_err(|_| anyhow::anyhow!("secret_key must be 32 bytes"))?;
-        self.map(|b| b.secret_key(iroh::SecretKey::from_bytes(&key)));
+        let b = guard.take().expect("EndpointBuilder consumed");
+        *guard = Some(b.secret_key(iroh::SecretKey::from_bytes(&key)));
         Ok(())
     }
 
