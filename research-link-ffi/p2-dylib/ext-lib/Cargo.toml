@@ -1,0 +1,14 @@
+[package]
+name = "p2-ext-lib"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+name = "p2_ext_lib"
+path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+uniffi = { workspace = true }
+p2-core-lib = { path = "../core-lib" }

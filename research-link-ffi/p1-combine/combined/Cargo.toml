@@ -1,0 +1,18 @@
+[package]
+name = "combined"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+name = "combined"
+crate-type = ["cdylib"]
+
+[dependencies]
+core-lib = { path = "../core-lib" }
+ext-lib = { path = "../ext-lib" }
+uniffi = { workspace = true, features = ["cli"] }
+
+[[bin]]
+name = "uniffi-bindgen"
+path = "src/bin/uniffi-bindgen.rs"

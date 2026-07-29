@@ -1,0 +1,4 @@
+# Every prototype config gets its own target dir so they don't invalidate each
+# other (prefer-dynamic, LTO on/off, rpath variants all differ in RUSTFLAGS).
+target*/
+out/

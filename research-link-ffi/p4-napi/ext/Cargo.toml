@@ -1,0 +1,17 @@
+[package]
+name = "p4-napi-ext"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+name = "p4_napi_ext"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+napi = { version = "3", default-features = false, features = ["napi8"] }
+napi-derive = "3"
+p4-napi-core = { path = "../core" }
+
+[build-dependencies]
+napi-build = "2.2"

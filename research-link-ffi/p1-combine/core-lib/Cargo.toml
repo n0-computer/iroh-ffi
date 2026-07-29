@@ -1,0 +1,12 @@
+[package]
+name = "core-lib"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+name = "core_lib"
+crate-type = ["rlib"]
+
+[dependencies]
+uniffi = { workspace = true }

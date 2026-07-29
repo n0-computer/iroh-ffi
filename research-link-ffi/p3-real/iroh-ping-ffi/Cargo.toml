@@ -1,0 +1,19 @@
+[package]
+name = "p3-iroh-ping-ffi"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# The downstream protocol FFI crate. Depends on the real `iroh-ping` and on the
+# core FFI crate, but must NOT statically re-include iroh.
+[lib]
+name = "p3_iroh_ping_ffi"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+uniffi = { workspace = true, features = ["tokio"] }
+p3-iroh-core = { path = "../iroh-core" }
+iroh-ping = { path = "../../../../iroh-ping" }
+iroh = "1.0.0"
+async-trait = "0.1"
+tokio = { version = "1", features = ["rt-multi-thread"] }

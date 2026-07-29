@@ -1,0 +1,24 @@
+[workspace]
+resolver = "3"
+members = [
+    "p1-combine/core-lib",
+    "p1-combine/ext-lib",
+    "p1-combine/combined",
+    "p2-dylib/core-lib",
+    "p2-dylib/ext-lib",
+    "p2-dylib/bindgen-lib",
+    "p3-real/iroh-core",
+    "p3-real/iroh-ping-ffi",
+    "p3-real/bindgen-lib",
+    "p4-napi/core",
+    "p4-napi/ext",
+]
+
+[workspace.dependencies]
+uniffi = { version = "0.31.1" }
+thiserror = "2.0"
+
+# Left off deliberately: `lto = true` breaks the Design B builds
+# ("cannot prefer dynamic linking when performing LTO") and is *silently*
+# dropped for `dylib` lib targets. Opt in per-build instead:
+#   CARGO_PROFILE_RELEASE_LTO=true cargo build --release -p p3-bindgen-lib

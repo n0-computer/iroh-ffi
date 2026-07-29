@@ -1,0 +1,19 @@
+[package]
+name = "p4-napi-core"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# Stand-in for `iroh-js`. Built as a Rust `dylib` so the downstream addon can
+# link it dynamically; a `dylib` still exports `napi_register_module_v1`, so the
+# same file also works as a `.node` addon.
+[lib]
+name = "p4_napi_core"
+crate-type = ["dylib", "rlib"]
+
+[dependencies]
+napi = { version = "3", default-features = false, features = ["napi8"] }
+napi-derive = "3"
+
+[build-dependencies]
+napi-build = "2.2"

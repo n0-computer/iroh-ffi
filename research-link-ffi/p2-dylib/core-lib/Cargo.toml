@@ -1,0 +1,20 @@
+[package]
+name = "p2-core-lib"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+name = "p2_core_lib"
+path = "src/lib.rs"
+# `dylib` (not `cdylib`): a Rust dynamic library. It exports the `#[no_mangle]`
+# uniffi scaffolding *and* the mangled Rust symbols, so downstream Rust crates
+# can link against it dynamically instead of statically re-including it.
+crate-type = ["dylib", "rlib"]
+
+[dependencies]
+uniffi = { workspace = true, features = ["cli"] }
+
+[[bin]]
+name = "p2-uniffi-bindgen"
+path = "src/bin/uniffi-bindgen.rs"

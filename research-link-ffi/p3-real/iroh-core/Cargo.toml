@@ -1,0 +1,25 @@
+[package]
+name = "p3-iroh-core"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# Stand-in for the real `iroh-ffi`. Built as a Rust `dylib` so that downstream
+# protocol FFI crates can link it dynamically rather than statically re-linking
+# all of iroh.
+[lib]
+name = "p3_iroh_core"
+crate-type = ["dylib", "rlib"]
+
+[dependencies]
+uniffi = { workspace = true, features = ["cli", "tokio"] }
+thiserror = { workspace = true }
+async-trait = "0.1"
+derive_more = { version = "2.0", features = ["debug"] }
+iroh = "1.0.0"
+tokio = { version = "1", features = ["rt-multi-thread"] }
+anyhow = "1"
+
+[[bin]]
+name = "p3-uniffi-bindgen"
+path = "src/bin/uniffi-bindgen.rs"

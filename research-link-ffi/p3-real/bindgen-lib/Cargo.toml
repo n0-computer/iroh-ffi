@@ -1,0 +1,16 @@
+[package]
+name = "p3-bindgen-lib"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# Build-time-only: statically links both components so a single library carries
+# all uniffi metadata for `uniffi-bindgen`. Never shipped.
+
+[lib]
+name = "p3_bindgen_lib"
+crate-type = ["cdylib"]
+
+[dependencies]
+p3-iroh-core = { path = "../iroh-core" }
+p3-iroh-ping-ffi = { path = "../iroh-ping-ffi" }

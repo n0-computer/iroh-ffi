@@ -1,0 +1,17 @@
+[package]
+name = "p2-bindgen-lib"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# Build-time-only artifact. Statically links both components so that a single
+# library file carries *all* uniffi metadata — which is what `uniffi-bindgen`
+# requires. Never shipped; the shipped artifacts are the split .so files.
+
+[lib]
+name = "p2_bindgen_lib"
+crate-type = ["cdylib"]
+
+[dependencies]
+p2-core-lib = { path = "../core-lib" }
+p2-ext-lib = { path = "../ext-lib" }

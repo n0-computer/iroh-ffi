@@ -1,0 +1,5 @@
+# Android cross-compilation, used only for the platform-support probe in
+# README.md ("Finding 5"). Adjust the NDK path for your machine, or delete this
+# file — nothing else in the workspace needs it.
+[target.aarch64-linux-android]
+linker = "/home/bit/Android/Sdk/ndk/28.0.12674087/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang"
