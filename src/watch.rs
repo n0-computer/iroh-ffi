@@ -61,11 +61,14 @@ impl WatchHandle {
     }
 }
 
+// Spawn via a captured `Handle`; sync FFI callers have no tokio handle in TLS.
+
 pub(crate) fn spawn_watch_addr(
+    handle: &tokio::runtime::Handle,
     endpoint: iroh::Endpoint,
     cb: Arc<dyn AddrChangeCallback>,
 ) -> WatchHandle {
-    let task = n0_future::task::spawn(async move {
+    let task = handle.spawn(async move {
         let mut stream = endpoint.watch_addr().stream();
         while let Some(addr) = stream.next().await {
             let mapped: EndpointAddr = addr.into();
@@ -79,10 +82,11 @@ pub(crate) fn spawn_watch_addr(
 }
 
 pub(crate) fn spawn_home_relay_watch(
+    handle: &tokio::runtime::Handle,
     endpoint: iroh::Endpoint,
     cb: Arc<dyn HomeRelayCallback>,
 ) -> WatchHandle {
-    let task = n0_future::task::spawn(async move {
+    let task = handle.spawn(async move {
         let mut stream = endpoint.home_relay_status().stream();
         while let Some(statuses) = stream.next().await {
             let urls: Vec<String> = statuses.into_iter().map(|s| s.url().to_string()).collect();
@@ -96,10 +100,11 @@ pub(crate) fn spawn_home_relay_watch(
 }
 
 pub(crate) fn spawn_network_change_watch(
+    handle: &tokio::runtime::Handle,
     endpoint: iroh::Endpoint,
     cb: Arc<dyn NetworkChangeCallback>,
 ) -> WatchHandle {
-    let task = n0_future::task::spawn(async move {
+    let task = handle.spawn(async move {
         loop {
             endpoint.network_change().await;
             if let Err(err) = cb.on_change().await {

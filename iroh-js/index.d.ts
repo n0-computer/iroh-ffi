@@ -139,7 +139,12 @@ export declare class EndpointBuilder {
   applyMinimal(): void
   /** Replay the n0 preset with relays disabled. */
   applyN0DisableRelay(): void
-  /** Set the endpoint secret key (32 bytes). */
+  /**
+   * Set the endpoint secret key (32 bytes).
+   *
+   * Throws if a preset already pinned the key because it minted a credential
+   * scoped to it — see [`crate::preset_iroh_services`].
+   */
   secretKey(bytes: Array<number>): void
   /** Set the advertised ALPNs. */
   alpns(alpns: Array<Array<number>>): void
@@ -416,6 +421,23 @@ export interface PathStatsRecord {
   currentMtu: number
 }
 
+/**
+ * Point an endpoint at your project's dedicated relays.
+ *
+ * Mirrors `iroh_services::preset()`: mints a short-lived access token scoped to
+ * the endpoint's key and to relay use only, then configures the builder to use
+ * your relays with that token. Installs the crypto provider, like the other
+ * preset helpers, so it needs no baseline preset before it.
+ *
+ * ```js
+ * const b = Endpoint.builder()
+ * presetIrohServices(b, { relays: [relayUrl], apiSecret: apiKey })
+ * const ep = await b.bind()
+ * await ep.online()
+ * ```
+ */
+export declare function presetIrohServices(builder: EndpointBuilder, options: ServicesPresetOptions): void
+
 /** The minimal preset (no external dependencies; good for tests / offline). */
 export declare function presetMinimal(builder: EndpointBuilder): void
 
@@ -444,6 +466,39 @@ export interface ServicesOptions {
   name?: string
   /** Metrics push interval (ms). `0` disables interval pushes. */
   metricsIntervalMs?: number
+}
+
+/**
+ * Options for [`preset_iroh_services`].
+ *
+ * Supply *exactly one* of `api_secret` or `api_secret_from_env`.
+ */
+export interface ServicesPresetOptions {
+  /**
+   * Your project's relay URLs. Defaults to the n0 public relays when
+   * omitted, matching `iroh_services::preset()`. Passing an empty list is an
+   * error rather than a silent fallback — that is nearly always a filtered
+   * list that came back empty.
+   */
+  relays?: Array<string>
+  /**
+   * Encoded API secret string (`services1...`). The relay access token is
+   * minted from this.
+   */
+  apiSecret?: string
+  /** If true, read the API secret from `IROH_SERVICES_API_SECRET`. */
+  apiSecretFromEnv?: boolean
+  /**
+   * The endpoint's own identity key (32 bytes) — not your API secret. The
+   * access token is scoped to it, so pass the same key you persist for your
+   * endpoint's identity. A fresh key is generated when omitted.
+   *
+   * Set the key *here*, not via `EndpointBuilder.secretKey`: a key applied
+   * after this preset would replace the one the token is scoped to. Doing
+   * that throws — even for bit-identical bytes — rather than silently
+   * failing auth: this preset pins the key.
+   */
+  endpointSecretKey?: Array<number>
 }
 
 /** Set the logging level. */

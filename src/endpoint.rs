@@ -22,13 +22,27 @@ use crate::{
 #[derive(uniffi::Object)]
 pub struct EndpointBuilder {
     inner: std::sync::Mutex<Option<iroh::endpoint::Builder>>,
+    key_pinned: std::sync::atomic::AtomicBool,
 }
 
 impl EndpointBuilder {
     pub(crate) fn from_inner(builder: iroh::endpoint::Builder) -> Self {
         Self {
             inner: std::sync::Mutex::new(Some(builder)),
+            key_pinned: std::sync::atomic::AtomicBool::new(false),
         }
+    }
+
+    /// Record that a preset minted a credential scoped to the key it just set,
+    /// so a later [`Self::secret_key`] would invalidate that credential rather
+    /// than simply changing the endpoint's identity.
+    ///
+    /// Takes the builder mutex so the flag becomes visible atomically with any
+    /// subsequent [`Self::secret_key`] check, closing the check-then-act window.
+    pub(crate) fn pin_secret_key(&self) {
+        let _guard = self.inner.lock().unwrap();
+        self.key_pinned
+            .store(true, std::sync::atomic::Ordering::Relaxed);
     }
 
     fn map<F>(&self, f: F)
@@ -38,6 +52,13 @@ impl EndpointBuilder {
         let mut guard = self.inner.lock().unwrap();
         let builder = guard.take().expect("EndpointBuilder consumed");
         *guard = Some(f(builder));
+    }
+
+    /// Replay an upstream `iroh::endpoint::presets::Preset` on the wrapped
+    /// builder. Lets a Rust-side [`Preset`] impl delegate to a real iroh preset
+    /// instead of re-implementing it against [`EndpointBuilder`].
+    pub(crate) fn apply_iroh_preset(&self, preset: impl presets::Preset) {
+        self.map(|b| preset.apply(b));
     }
 
     pub(crate) fn take_inner(&self) -> Result<iroh::endpoint::Builder, IrohError> {
@@ -75,12 +96,24 @@ impl EndpointBuilder {
     }
 
     /// Set the endpoint secret key (32 bytes).
+    ///
+    /// Errors if a preset already pinned the key because it minted a credential
+    /// scoped to it — see `preset_iroh_services`.
     pub fn secret_key(&self, bytes: Vec<u8>) -> Result<(), IrohError> {
         let key: [u8; 32] = AsRef::<[u8]>::as_ref(&bytes)
             .try_into()
             .map_err(|e| IrohError::invalid_input(format!("invalid secret key length: {e:?}")))?;
         let key = iroh::SecretKey::from_bytes(&key);
-        self.map(|b| b.secret_key(key));
+        let mut guard = self.inner.lock().unwrap();
+        if self.key_pinned.load(std::sync::atomic::Ordering::Relaxed) {
+            return Err(IrohError::invalid_input(
+                "endpoint secret key is pinned by preset_iroh_services: its relay access token is \
+                 scoped to that key, so replacing it would make the relays reject this endpoint. \
+                 Set the key via ServicesPresetOptions.endpoint_secret_key instead.",
+            ));
+        }
+        let builder = guard.take().expect("EndpointBuilder consumed");
+        *guard = Some(builder.secret_key(key));
         Ok(())
     }
 
@@ -114,7 +147,7 @@ impl EndpointBuilder {
     pub async fn bind(&self) -> Result<Arc<Endpoint>, IrohError> {
         let builder = self.take_inner()?;
         let endpoint = builder.bind().await.map_err(anyhow::Error::from)?;
-        Ok(Arc::new(Endpoint::new(endpoint)))
+        Ok(Arc::new(Endpoint::wrap(endpoint, None)))
     }
 }
 
@@ -224,7 +257,7 @@ impl iroh::protocol::ProtocolHandler for ProtocolWrapper {
     async fn accept(&self, conn: iroh::endpoint::Connection) -> Result<(), AcceptError> {
         let this = self.clone();
         this.handler
-            .accept(Arc::new(conn.into()))
+            .accept(Arc::new(Connection::wrap(conn)))
             .await
             .map_err(AcceptError::from_err)?;
         Ok(())
@@ -272,13 +305,18 @@ pub struct ConnectionStats {
 pub struct Endpoint {
     inner: endpoint::Endpoint,
     router: Option<iroh::protocol::Router>,
+    /// Handle used by sync `watch_*` FFI methods to spawn background tasks;
+    /// they run on the foreign caller's thread with no tokio handle in TLS.
+    tokio_handle: tokio::runtime::Handle,
 }
 
 impl Endpoint {
-    pub fn new(ep: endpoint::Endpoint) -> Self {
+    /// Must be called from within a tokio runtime — captures `Handle::current()`.
+    pub(crate) fn wrap(ep: endpoint::Endpoint, router: Option<iroh::protocol::Router>) -> Self {
         Endpoint {
             inner: ep,
-            router: None,
+            router,
+            tokio_handle: tokio::runtime::Handle::current(),
         }
     }
 
@@ -318,7 +356,7 @@ impl Endpoint {
         let router = match options.protocols {
             Some(protocols) if !protocols.is_empty() => {
                 let mut router_builder = iroh::protocol::Router::builder(endpoint.clone());
-                let endpoint_wrapper = Arc::new(Endpoint::new(endpoint.clone()));
+                let endpoint_wrapper = Arc::new(Endpoint::wrap(endpoint.clone(), None));
                 for (alpn, creator) in protocols {
                     let handler = creator.create(endpoint_wrapper.clone());
                     router_builder = router_builder.accept(alpn, ProtocolWrapper { handler });
@@ -328,10 +366,7 @@ impl Endpoint {
             _ => None,
         };
 
-        Ok(Endpoint {
-            inner: endpoint,
-            router,
-        })
+        Ok(Endpoint::wrap(endpoint, router))
     }
 
     /// The [`EndpointId`] of this endpoint.
@@ -385,7 +420,7 @@ impl Endpoint {
     pub async fn connect(&self, addr: &EndpointAddr, alpn: &[u8]) -> Result<Connection, IrohError> {
         let addr: iroh::EndpointAddr = addr.clone().try_into()?;
         let conn = self.inner.connect(addr, alpn).await?;
-        Ok(Connection(conn))
+        Ok(Connection::wrap(conn))
     }
 
     /// Shut down the endpoint (and, if present, the protocol router).
@@ -500,13 +535,21 @@ impl Endpoint {
     /// [`WatchHandle`] cancels the watcher when dropped or when its `stop()`
     /// method is called.
     pub fn watch_addr(&self, callback: Arc<dyn AddrChangeCallback>) -> Arc<WatchHandle> {
-        Arc::new(watch::spawn_watch_addr(self.inner.clone(), callback))
+        Arc::new(watch::spawn_watch_addr(
+            &self.tokio_handle,
+            self.inner.clone(),
+            callback,
+        ))
     }
 
     /// Register a callback that fires whenever the list of relays this endpoint
     /// is currently connected to changes.
     pub fn watch_home_relay(&self, callback: Arc<dyn HomeRelayCallback>) -> Arc<WatchHandle> {
-        Arc::new(watch::spawn_home_relay_watch(self.inner.clone(), callback))
+        Arc::new(watch::spawn_home_relay_watch(
+            &self.tokio_handle,
+            self.inner.clone(),
+            callback,
+        ))
     }
 
     /// Register a callback that fires every time the underlying network stack
@@ -516,6 +559,7 @@ impl Endpoint {
         callback: Arc<dyn NetworkChangeCallback>,
     ) -> Arc<WatchHandle> {
         Arc::new(watch::spawn_network_change_watch(
+            &self.tokio_handle,
             self.inner.clone(),
             callback,
         ))
@@ -524,11 +568,19 @@ impl Endpoint {
 
 /// An active QUIC connection to a remote endpoint.
 #[derive(uniffi::Object)]
-pub struct Connection(endpoint::Connection);
+pub struct Connection {
+    inner: endpoint::Connection,
+    /// See [`Endpoint::tokio_handle`].
+    tokio_handle: tokio::runtime::Handle,
+}
 
-impl From<endpoint::Connection> for Connection {
-    fn from(value: endpoint::Connection) -> Self {
-        Self(value)
+impl Connection {
+    /// Must be called from within a tokio runtime — captures `Handle::current()`.
+    pub(crate) fn wrap(inner: endpoint::Connection) -> Self {
+        Self {
+            inner,
+            tokio_handle: tokio::runtime::Handle::current(),
+        }
     }
 }
 
@@ -536,27 +588,27 @@ impl From<endpoint::Connection> for Connection {
 impl Connection {
     /// The ALPN protocol negotiated for this connection.
     pub fn alpn(&self) -> Vec<u8> {
-        self.0.alpn().to_vec()
+        self.inner.alpn().to_vec()
     }
 
     /// Open a new unidirectional outgoing stream.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn open_uni(&self) -> Result<SendStream, IrohError> {
-        let s = self.0.open_uni().await?;
+        let s = self.inner.open_uni().await?;
         Ok(SendStream::new(s))
     }
 
     /// Accept the next incoming unidirectional stream.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn accept_uni(&self) -> Result<RecvStream, IrohError> {
-        let r = self.0.accept_uni().await?;
+        let r = self.inner.accept_uni().await?;
         Ok(RecvStream::new(r))
     }
 
     /// Open a new bidirectional outgoing stream.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn open_bi(&self) -> Result<BiStream, IrohError> {
-        let (s, r) = self.0.open_bi().await?;
+        let (s, r) = self.inner.open_bi().await?;
         Ok(BiStream {
             send: SendStream::new(s),
             recv: RecvStream::new(r),
@@ -566,7 +618,7 @@ impl Connection {
     /// Accept the next incoming bidirectional stream.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn accept_bi(&self) -> Result<BiStream, IrohError> {
-        let (s, r) = self.0.accept_bi().await?;
+        let (s, r) = self.inner.accept_bi().await?;
         Ok(BiStream {
             send: SendStream::new(s),
             recv: RecvStream::new(r),
@@ -576,20 +628,20 @@ impl Connection {
     /// Read the next datagram from the connection.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn read_datagram(&self) -> Result<Vec<u8>, IrohError> {
-        let res = self.0.read_datagram().await?;
+        let res = self.inner.read_datagram().await?;
         Ok(res.to_vec())
     }
 
     /// Wait for the connection to be closed, returning the cause.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn closed(&self) -> String {
-        let err = self.0.closed().await;
+        let err = self.inner.closed().await;
         err.to_string()
     }
 
     /// If the connection is closed, the reason why. None if still open.
     pub fn close_reason(&self) -> Option<String> {
-        self.0.close_reason().map(|s| s.to_string())
+        self.inner.close_reason().map(|s| s.to_string())
     }
 
     /// Close the connection immediately with the given application error code.
@@ -599,40 +651,40 @@ impl Connection {
         let unsigned = u64::try_from(error_code)
             .map_err(|_| IrohError::invalid_input("error_code must be >= 0"))?;
         let code = endpoint::VarInt::from_u64(unsigned)?;
-        self.0.close(code, reason);
+        self.inner.close(code, reason);
         Ok(())
     }
 
     /// Send a datagram on this connection.
     pub fn send_datagram(&self, data: Vec<u8>) -> Result<(), IrohError> {
-        self.0.send_datagram(data.into())?;
+        self.inner.send_datagram(data.into())?;
         Ok(())
     }
 
     /// Maximum size of a datagram that can currently be sent.
     pub fn max_datagram_size(&self) -> Option<u64> {
-        self.0.max_datagram_size().map(|s| s as _)
+        self.inner.max_datagram_size().map(|s| s as _)
     }
 
     /// Bytes available in the datagram send buffer.
     pub fn datagram_send_buffer_space(&self) -> u64 {
-        self.0.datagram_send_buffer_space() as _
+        self.inner.datagram_send_buffer_space() as _
     }
 
     /// The [`EndpointId`] of the remote peer.
     pub fn remote_id(&self) -> Arc<EndpointId> {
-        Arc::new(self.0.remote_id().into())
+        Arc::new(self.inner.remote_id().into())
     }
 
     /// A stable identifier for this connection.
     pub fn stable_id(&self) -> u64 {
-        self.0.stable_id() as _
+        self.inner.stable_id() as _
     }
 
     /// Current best estimate of this connection's RTT on the selected path,
     /// in milliseconds. `None` if no path is currently selected.
     pub fn rtt(&self) -> Option<u64> {
-        self.0
+        self.inner
             .paths()
             .iter()
             .find(|p| p.is_selected())
@@ -641,7 +693,7 @@ impl Connection {
 
     /// A flat snapshot of the most useful headline statistics for this connection.
     pub fn stats(&self) -> ConnectionStats {
-        let s = self.0.stats();
+        let s = self.inner.stats();
         ConnectionStats {
             udp_tx_datagrams: s.udp_tx.datagrams as i64,
             udp_tx_bytes: s.udp_tx.bytes as i64,
@@ -656,50 +708,58 @@ impl Connection {
     /// buffer is full.
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn send_datagram_wait(&self, data: Vec<u8>) -> Result<(), IrohError> {
-        self.0.send_datagram_wait(data.into()).await?;
+        self.inner.send_datagram_wait(data.into()).await?;
         Ok(())
     }
 
     /// Which side of the connection we are (client or server).
     pub fn side(&self) -> Side {
-        self.0.side().into()
+        self.inner.side().into()
     }
 
     /// A snapshot of all currently open network paths for this connection.
     pub fn paths(&self) -> Vec<PathSnapshot> {
-        path::snapshot_paths(&self.0)
+        path::snapshot_paths(&self.inner)
     }
 
     /// Register a callback that fires with the current set of open paths
     /// whenever the path list (or selected path) changes.
     pub fn watch_paths(&self, callback: Arc<dyn PathChangeCallback>) -> Arc<WatchHandle> {
-        Arc::new(path::spawn_paths_watch(self.0.clone(), callback))
+        Arc::new(path::spawn_paths_watch(
+            &self.tokio_handle,
+            self.inner.clone(),
+            callback,
+        ))
     }
 
     /// Register a callback that fires for each individual path event (path
     /// opened, closed, selected, or lagged).
     pub fn watch_path_events(&self, callback: Arc<dyn PathEventCallback>) -> Arc<WatchHandle> {
-        Arc::new(path::spawn_path_events_watch(self.0.clone(), callback))
+        Arc::new(path::spawn_path_events_watch(
+            &self.tokio_handle,
+            self.inner.clone(),
+            callback,
+        ))
     }
 
     /// Set the maximum number of concurrent incoming unidirectional streams.
     pub fn set_max_concurrent_uni_streams(&self, count: u64) -> Result<(), IrohError> {
         let n = endpoint::VarInt::from_u64(count)?;
-        self.0.set_max_concurrent_uni_streams(n);
+        self.inner.set_max_concurrent_uni_streams(n);
         Ok(())
     }
 
     /// Set the receive window for this connection.
     pub fn set_receive_window(&self, count: u64) -> Result<(), IrohError> {
         let n = endpoint::VarInt::from_u64(count)?;
-        self.0.set_receive_window(n);
+        self.inner.set_receive_window(n);
         Ok(())
     }
 
     /// Set the maximum number of concurrent incoming bidirectional streams.
     pub fn set_max_concurrent_bi_streams(&self, count: u64) -> Result<(), IrohError> {
         let n = endpoint::VarInt::from_u64(count)?;
-        self.0.set_max_concurrent_bi_streams(n);
+        self.inner.set_max_concurrent_bi_streams(n);
         Ok(())
     }
 }
@@ -783,8 +843,12 @@ impl SendStream {
 
     #[uniffi::method(async_runtime = "tokio")]
     pub async fn stopped(&self) -> Result<Option<u64>, IrohError> {
-        let s = self.0.lock().await;
-        let res = s.stopped().await?;
+        // quinn's stopped() is 'static; release the lock before awaiting it.
+        let fut = {
+            let s = self.0.lock().await;
+            s.stopped()
+        };
+        let res = fut.await?;
         Ok(res.map(|r| r.into_inner()))
     }
 
@@ -1082,5 +1146,105 @@ mod tests {
         server_task.await.unwrap();
         client.close().await.unwrap();
         server.close().await.unwrap();
+    }
+
+    // Regression: stopped() must not hold the stream lock across its await.
+    #[tokio::test]
+    async fn test_send_stream_stopped_does_not_block_write_all() {
+        let server = Endpoint::bind(EndpointOptions {
+            preset: Some(crate::preset_n0()),
+            alpns: Some(vec![TEST_ALPN.to_vec()]),
+            relay_mode: Some(Arc::new(RelayMode::disabled())),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+        let server_addr = server.addr();
+
+        let server_task = {
+            let server = server.clone();
+            tokio::spawn(async move {
+                let incoming = server.accept_next().await.unwrap();
+                let conn = incoming.accept().await.unwrap().connect().await.unwrap();
+                let bi = conn.accept_bi().await.unwrap();
+                let _ = bi.recv().read_to_end(64).await.unwrap();
+                bi.send().finish().await.unwrap();
+                conn.closed().await;
+            })
+        };
+
+        let client = Endpoint::bind(EndpointOptions {
+            preset: Some(crate::preset_n0()),
+            relay_mode: Some(Arc::new(RelayMode::disabled())),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+        let conn = client.connect(&server_addr, TEST_ALPN).await.unwrap();
+        let bi = conn.open_bi().await.unwrap();
+        let send = bi.send();
+
+        let stopped_task = tokio::spawn({
+            let send = send.clone();
+            async move { send.stopped().await }
+        });
+        tokio::time::timeout(std::time::Duration::from_secs(2), send.write_all(b"race"))
+            .await
+            .expect("write_all blocked behind pending stopped()")
+            .unwrap();
+        send.finish().await.unwrap();
+
+        stopped_task.await.unwrap().unwrap();
+        conn.close(0, b"bye").unwrap();
+        server_task.await.unwrap();
+        client.close().await.unwrap();
+        server.close().await.unwrap();
+    }
+
+    // Regression: watch_* must not require a tokio handle in the caller's TLS.
+    #[tokio::test]
+    async fn test_watch_apis_from_non_runtime_thread() {
+        struct NoopAddr;
+        #[async_trait::async_trait]
+        impl AddrChangeCallback for NoopAddr {
+            async fn on_change(&self, _: Arc<EndpointAddr>) -> Result<(), CallbackError> {
+                Ok(())
+            }
+        }
+        struct NoopRelay;
+        #[async_trait::async_trait]
+        impl HomeRelayCallback for NoopRelay {
+            async fn on_change(&self, _: Vec<String>) -> Result<(), CallbackError> {
+                Ok(())
+            }
+        }
+        struct NoopNet;
+        #[async_trait::async_trait]
+        impl NetworkChangeCallback for NoopNet {
+            async fn on_change(&self) -> Result<(), CallbackError> {
+                Ok(())
+            }
+        }
+
+        let ep = Endpoint::bind(EndpointOptions {
+            preset: Some(crate::preset_minimal()),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
+
+        let ep_bg = ep.clone();
+        std::thread::spawn(move || {
+            let h1 = ep_bg.watch_addr(Arc::new(NoopAddr));
+            let h2 = ep_bg.watch_home_relay(Arc::new(NoopRelay));
+            let h3 = ep_bg.watch_network_change(Arc::new(NoopNet));
+            drop(h1);
+            drop(h2);
+            drop(h3);
+        })
+        .join()
+        .unwrap();
+
+        ep.close().await.unwrap();
     }
 }
