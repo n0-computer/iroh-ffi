@@ -1,10 +1,10 @@
+
 use std::sync::Arc;
-use std::str::FromStr;
+
 use tokio::sync::Mutex;
 
 
-use iroh::protocol::Router;
-use iroh_gossip::{Gossip, TopicId, ALPN};
+use iroh_gossip::{Gossip, TopicId};
 use iroh_gossip::api::{GossipSender, GossipReceiver, Event};
 use n0_future::StreamExt;
 
@@ -19,12 +19,6 @@ use crate::IrohError;
 
 
 
-#[derive(uniffi::Record)]
-pub struct GossipMessage {
-    pub sender: String,
-    pub content: Vec<u8>,
-}
-
 #[derive(uniffi::Object)]
 pub struct GossipTopic {
     sender: GossipSender,
@@ -33,8 +27,6 @@ pub struct GossipTopic {
 
 #[uniffi::export]
 impl GossipTopic {
-    
-    #[uniffi::method(async_runtime = "tokio")]
     pub async fn broadcast(&self, message: Vec<u8>) -> Result<(), IrohError> {
         self.sender.broadcast(message.into())
             .await
@@ -42,18 +34,11 @@ impl GossipTopic {
         Ok(())
     }
 
-    
-    #[uniffi::method(async_runtime = "tokio")]
-    pub async fn next_message(&self) -> Result<Option<GossipMessage>, IrohError> {
+    pub async fn next_message(&self) -> Result<Option<Vec<u8>>, IrohError> {
         let mut rx = self.receiver.lock().await;
         while let Some(event_res) = rx.next().await {
             match event_res {
-                Ok(Event::Received(msg)) => {
-                    return Ok(Some(GossipMessage {
-                        sender: msg.delivered_from.to_string(),
-                        content: msg.content.to_vec(),
-                    }))
-                },
+                Ok(Event::Received(msg)) => return Ok(Some(msg.content.to_vec())),
                 Ok(_) => continue, 
                 Err(e) => return Err(anyhow::anyhow!(e).into()),
             }
@@ -61,8 +46,7 @@ impl GossipTopic {
         Ok(None)
     }
 
-    
-    #[uniffi::method(async_runtime = "tokio")]
+    // Add this missing method!
     pub async fn wait_to_join(&self) -> Result<(), IrohError> {
         let mut rx = self.receiver.lock().await;
         rx.joined().await.map_err(|e| anyhow::anyhow!(e))?;
@@ -70,12 +54,11 @@ impl GossipTopic {
     }
 }
 
-
 #[derive(uniffi::Object)]
 pub struct GossipNode {
-    inner: Gossip,
+    pub inner: Gossip,
     endpoint: iroh::endpoint::Endpoint, 
-    router: Router,
+    // router: Router,
 }
 
 #[uniffi::export]
@@ -86,16 +69,15 @@ impl GossipNode {
         
         let gossip = Gossip::builder().spawn(raw_endpoint.clone());
 
-        
-        let router = Router::builder(raw_endpoint.clone())
-            .accept(ALPN, gossip.clone())
-            .spawn();
+        // let router = Router::builder(raw_endpoint.clone())
+        //     .accept(ALPN, gossip.clone())
+        //     .spawn();
 
 
-        Ok(Self { inner: gossip, endpoint: raw_endpoint, router })
+        Ok(Self { inner: gossip, endpoint: raw_endpoint })
     }
 
-    #[uniffi::method(async_runtime = "tokio")]
+    
     pub async fn subscribe(&self, topic_bytes: Vec<u8>, bootstrap_peers: Vec<Arc<EndpointAddr>>) -> Result<Arc<GossipTopic>, IrohError> {
         if topic_bytes.len() != 32 {
             return Err(anyhow::anyhow!("Topic must be exactly 32 bytes").into());
