@@ -95,7 +95,7 @@ impl CustomAlpnReceiver {
         let mut rx = self.rx.lock().await;
         if let Some(conn) = rx.recv().await {
             // Wrap the raw iroh connection directly into the FFI struct
-            Ok(Some(Arc::new(Connection::from(conn))))
+            Ok(Some(Arc::new(Connection::wrap(conn))))
         } else {
             Ok(None)
         }
