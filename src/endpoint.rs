@@ -683,12 +683,33 @@ impl Connection {
 
     /// Current best estimate of this connection's RTT on the selected path,
     /// in milliseconds. `None` if no path is currently selected.
+    ///
+    /// A freshly established connection has no selected path until validation
+    /// settles, so this returns `None` for a short window after `connect` —
+    /// poll rather than sampling once.
+    ///
+    /// Truncated to whole milliseconds: sub-millisecond links report `0`, and
+    /// on a LAN the quantization is large relative to the value. Use
+    /// [`Connection::rtt_us`] to compare fast paths.
     pub fn rtt(&self) -> Option<u64> {
         self.inner
             .paths()
             .iter()
             .find(|p| p.is_selected())
             .map(|p| p.rtt().as_millis() as u64)
+    }
+
+    /// Current best estimate of this connection's RTT on the selected path,
+    /// in microseconds. `None` if no path is currently selected.
+    ///
+    /// Same selection semantics as [`Connection::rtt`], but without the
+    /// millisecond truncation.
+    pub fn rtt_us(&self) -> Option<u64> {
+        self.inner
+            .paths()
+            .iter()
+            .find(|p| p.is_selected())
+            .map(|p| p.rtt().as_micros() as u64)
     }
 
     /// A flat snapshot of the most useful headline statistics for this connection.

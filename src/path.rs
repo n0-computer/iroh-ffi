@@ -28,7 +28,13 @@ pub struct PathSnapshot {
     /// True if this is a relay path.
     pub is_relay: bool,
     /// RTT estimate in milliseconds (sampled from the live QUIC state).
+    ///
+    /// Truncated to whole milliseconds, so sub-millisecond paths report `0` and
+    /// fast local links quantize hard. Prefer [`PathSnapshot::rtt_us`] when
+    /// comparing paths on a LAN.
     pub rtt_ms: u64,
+    /// RTT estimate in microseconds (sampled from the live QUIC state).
+    pub rtt_us: u64,
     /// Flat headline statistics for this path.
     pub stats: PathStatsRecord,
 }
@@ -36,8 +42,10 @@ pub struct PathSnapshot {
 /// Flattened headline numbers from `noq::PathStats`.
 #[derive(Debug, Clone, uniffi::Record)]
 pub struct PathStatsRecord {
-    /// RTT estimate (ms).
+    /// RTT estimate (ms). Truncated; see [`PathStatsRecord::rtt_us`].
     pub rtt_ms: u64,
+    /// RTT estimate (µs).
+    pub rtt_us: u64,
     /// UDP datagrams sent on this path.
     pub udp_tx_datagrams: u64,
     /// UDP bytes sent on this path.
@@ -62,6 +70,7 @@ impl From<iroh::endpoint::PathStats> for PathStatsRecord {
     fn from(s: iroh::endpoint::PathStats) -> Self {
         Self {
             rtt_ms: s.rtt.as_millis() as u64,
+            rtt_us: s.rtt.as_micros() as u64,
             udp_tx_datagrams: s.udp_tx.datagrams,
             udp_tx_bytes: s.udp_tx.bytes,
             udp_rx_datagrams: s.udp_rx.datagrams,
@@ -188,6 +197,7 @@ pub(crate) fn snapshot_paths(conn: &iroh::endpoint::Connection) -> Vec<PathSnaps
                 is_ip: p.is_ip(),
                 is_relay: p.is_relay(),
                 rtt_ms: p.rtt().as_millis() as u64,
+                rtt_us: p.rtt().as_micros() as u64,
                 stats: stats.into(),
             }
         })
@@ -213,6 +223,7 @@ pub(crate) fn spawn_paths_watch(
                         is_ip: p.is_ip(),
                         is_relay: p.is_relay(),
                         rtt_ms: p.rtt().as_millis() as u64,
+                        rtt_us: p.rtt().as_micros() as u64,
                         stats: stats.into(),
                     }
                 })
