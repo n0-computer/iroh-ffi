@@ -39,6 +39,9 @@ pub fn alpn() -> Vec<u8> {
 #[derive(Debug, uniffi::Object)]
 pub struct Ping {
     inner: iroh_ping::Ping,
+    /// The spawned router must be KEPT ALIVE — dropping it shuts the accept side down, and
+    /// the only symptom is the client timing out.
+    router: std::sync::Mutex<Option<iroh::protocol::Router>>,
 }
 
 #[uniffi::export]
@@ -47,6 +50,7 @@ impl Ping {
     pub fn new() -> Arc<Self> {
         Arc::new(Self {
             inner: iroh_ping::Ping::new(),
+            router: std::sync::Mutex::new(None),
         })
     }
 
@@ -76,6 +80,18 @@ impl Ping {
             })?;
 
         Ok(rtt.as_millis() as u64)
+    }
+
+    /// Accept ping on `endpoint`, spawning the plugin's own router.
+    ///
+    /// `async` because `Router::spawn()` needs a tokio context (finding 21/27).
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn serve(&self, endpoint: Arc<Endpoint>) -> Result<(), PingError> {
+        let router = iroh::protocol::Router::builder(endpoint.raw().clone())
+            .accept(iroh_ping::ALPN, self.inner.clone())
+            .spawn();
+        *self.router.lock().unwrap() = Some(router);
+        Ok(())
     }
 
     /// A handler that can be registered on the core's router for [`alpn`].

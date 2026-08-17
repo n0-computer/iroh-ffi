@@ -1,0 +1,16 @@
+[package]
+name = "ios-probe"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# SPIKE: an executable for the iOS Simulator that links BOTH dylibs, to prove dyld resolves
+# the plugin -> core -> libstd chain at runtime on iOS, and that iroh actually works there.
+[[bin]]
+name = "ios-probe"
+path = "src/main.rs"
+
+[dependencies]
+iroh-ffi = { path = "../.." }
+iroh-ffi-ping = { path = "../ping-plugin" }
+tokio = { version = "1.25.0", features = ["rt-multi-thread", "macros"] }

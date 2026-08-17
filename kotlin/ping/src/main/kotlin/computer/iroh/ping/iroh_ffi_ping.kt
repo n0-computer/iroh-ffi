@@ -658,6 +658,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_iroh_ffi_ping_checksum_method_ping_ping(
     ): Int
+    external fun uniffi_iroh_ffi_ping_checksum_method_ping_serve(
+    ): Int
     external fun uniffi_iroh_ffi_ping_checksum_constructor_ping_new(
     ): Int
     external fun ffi_iroh_ffi_ping_uniffi_contract_version(
@@ -688,6 +690,8 @@ internal object UniffiLib {
     external fun uniffi_iroh_ffi_ping_fn_method_ping_handler(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Long
     external fun uniffi_iroh_ffi_ping_fn_method_ping_ping(`ptr`: Long,`endpoint`: Long,`addr`: Long,
+    ): Long
+    external fun uniffi_iroh_ffi_ping_fn_method_ping_serve(`ptr`: Long,`endpoint`: Long,
     ): Long
     external fun uniffi_iroh_ffi_ping_fn_func_alpn(uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -817,6 +821,9 @@ private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_ping_checksum_method_ping_ping() != 16112) {
+        throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
+    if (lib.uniffi_iroh_ffi_ping_checksum_method_ping_serve() != 27628) {
         throw RuntimeException("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
     }
     if (lib.uniffi_iroh_ffi_ping_checksum_constructor_ping_new() != 59875) {
@@ -1232,6 +1239,13 @@ public interface PingInterface {
      */
     suspend fun `ping`(`endpoint`: Endpoint, `addr`: EndpointAddr): kotlin.ULong
     
+    /**
+     * Accept ping on `endpoint`, spawning the plugin's own router.
+     *
+     * `async` because `Router::spawn()` needs a tokio context (finding 21/27).
+     */
+    suspend fun `serve`(`endpoint`: Endpoint)
+    
     companion object
 }
 
@@ -1380,6 +1394,33 @@ open class Ping: Disposable, AutoCloseable, PingInterface
         { future -> UniffiLib.ffi_iroh_ffi_ping_rust_future_free_u64(future) },
         // lift function
         { FfiConverterULong.lift(it) },
+        // Error FFI converter
+        PingException.ErrorHandler,
+    )
+    }
+
+    
+    /**
+     * Accept ping on `endpoint`, spawning the plugin's own router.
+     *
+     * `async` because `Router::spawn()` needs a tokio context (finding 21/27).
+     */
+    @Throws(PingException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+    override suspend fun `serve`(`endpoint`: Endpoint) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_ping_fn_method_ping_serve(
+                uniffiHandle,
+                FfiConverterTypeEndpoint.lower(`endpoint`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_ping_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_ping_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_ping_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
         // Error FFI converter
         PingException.ErrorHandler,
     )

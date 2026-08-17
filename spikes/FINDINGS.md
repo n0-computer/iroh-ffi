@@ -1,12 +1,13 @@
 # Spike findings: `dylib` plugin linkage for iroh protocol FFI
 
-**All six spikes PASS.** A separately-built, separately-published plugin library can share one
-copy of `iroh` with the core library — in **Python, Kotlin/JVM, Swift, and JS** — and plugins can
-**depend on each other** (`docs` → `blobs` + `gossip`) without duplicating anything.
+**All seven spikes PASS.** A separately-built, separately-published plugin library can share one
+copy of `iroh` with the core library — in **Python, Kotlin/JVM, Swift, and JS**, on **macOS and
+iOS** — and plugins can **depend on each other** (`docs` → `blobs` + `gossip`) without
+duplicating anything.
 
-Three caveats: **Swift is proven on macOS only** (iOS needs the static→dynamic framework
-migration, finding 15), **JS requires restructuring `iroh-js`** first (finding 16), and the
-whole thing is **unsupported upstream** by uniffi (finding 5).
+Two caveats remain: **JS requires restructuring `iroh-js`** first (finding 16), and the whole
+approach is **unsupported upstream** by uniffi (finding 5) — the main residual risk, since
+everything technical now works.
 
 Environment: macOS arm64 (Darwin 25.6.0), `rustc 1.97.1 (8bab26f4f 2026-07-14)`, JDK 17 launcher,
 uniffi 0.31.2, iroh 1.0.x, iroh-ping 1.0.0.
@@ -34,14 +35,20 @@ IROH_FORCE_STAGING_RELAYS=1 node target/js-spike/js_round_trip.mjs
 # Composition: docs -> blobs + gossip -> core
 bash spikes/stage_docs.sh
 cd target/docs-spike && IROH_FORCE_STAGING_RELAYS=1 python3 docs_round_trip.py
+
+# iOS Simulator (dynamic frameworks)
+xcrun simctl boot <device-udid>   # if none booted
+bash spikes/stage_ios.sh
+IROH_FORCE_STAGING_RELAYS=1 xcrun simctl spawn booted target/ios-spike/ios-probe
 ```
 
 ---
 
 ## Spike A — dylib linkage, one copy of `iroh`: **PASS**
 
-`iroh-ffi` with `crate-type = ["staticlib", "dylib"]`, plugin `iroh-ffi-ping` with
-`crate-type = ["cdylib"]` depending on it by path.
+`iroh-ffi` with `crate-type = ["staticlib", "dylib", "rlib"]`, plugin `iroh-ffi-ping` with
+`crate-type = ["dylib", "rlib"]` depending on it by path. (Both started narrower — `"rlib"`
+was added for finding 9's bindgen build, and the plugin moved off `cdylib` for finding 22.)
 
 | artifact | debug | release |
 |---|---:|---:|
@@ -606,6 +613,88 @@ exactly the set used here.
 
 ---
 
+## Spike G — iOS, dynamic frameworks on the Simulator: **PASS**
+
+Finding 15 established that the current *static* xcframework cannot host plugins. This is the
+dynamic-framework replacement, running inside the iOS Simulator:
+
+```
+server bound: 56359b02... addrs=[192.168.0.171:54471, ...]
+accepted connection from 87acf028...
+PING -> PONG round trip: 1 ms
+OK: plugin -> core dylib chain works on iOS
+```
+
+Reproduce: `bash spikes/stage_ios.sh` then the printed `simctl spawn` command.
+
+| framework | contents | size |
+|---|---|---:|
+| `Iroh.framework/Iroh` | core — the only copy of iroh | 144 MB |
+| `IrohPing.framework/IrohPing` | plugin — **no iroh inside** | 642 KB |
+| `RustStd.framework/RustStd` | libstd (finding 3) | 1.4 MB |
+
+The probe resolves them framework-relative, via `LC_RPATH = @executable_path/Frameworks`:
+
+```
+@rpath/IrohPing.framework/IrohPing
+@rpath/Iroh.framework/Iroh
+@rpath/RustStd.framework/RustStd
+```
+
+`xcodebuild -create-xcframework -framework Iroh.framework` produces a valid
+`ios-arm64-simulator/Iroh.framework` slice.
+
+### Findings that change the plan
+
+28. **iOS supports the whole design — no new mechanism needed.** `rustc` builds `dylib`s for
+    `aarch64-apple-ios-sim` and `aarch64-apple-ios` (`vtool` confirms `platform IOSSIMULATOR` /
+    `platform IOS`, `minos 17.5`), the plugin stays **345–642 KB** against core's 144 MB, and
+    **libstd dylibs already ship in the toolchain for every Apple target**
+    (`aarch64-apple-ios`, `-ios-sim`, `-ios-macabi`) — which finding 3 left open for non-macOS.
+
+29. **`libstd` has to become a framework of its own.** Everything is built
+    `-C prefer-dynamic`, so every artifact declares `@rpath/libstd-<hash>.dylib`. A loose
+    dylib in `App.app/Frameworks/` does work (verified), but xcframework and SwiftPM
+    `binaryTarget` distribution wants frameworks, so it is cleaner to ship
+    `RustStd.framework` and rewrite the references. Either way the **rustc-version-specific
+    hash is baked into a shipped artifact name**, which makes finding 3's compatibility
+    contract very visible.
+
+30. **`verify-swift-xcframework` must be inverted, not merely relaxed.** Confirmed at
+    `Makefile.toml:269`:
+    ```sh
+    [ -d "$slice_dir/Iroh.framework" ] && err "$slice: stale Iroh.framework/ present — ..."
+    ```
+    plus a per-slice `libiroh_ffi.a` requirement. The gate exists to catch regressions to a
+    *previously deprecated* hand-laid framework layout (iroh-ffi#247), so the rewrite has to
+    keep that history in mind: the new gate should assert a `.framework` **is** present with a
+    correct `Info.plist` and a Mach-O dylib (not an archive), which is close to the inverse of
+    what it asserts today. `make_swift.sh`'s `lipo`/`-library` flow and
+    `release_swift.yml`'s checksum step change with it.
+
+31. **A dropped `Router` is invisible until a client times out** — and this cost real time, so
+    it belongs in the plugin guide. My `serve()` initially did:
+    ```rust
+    let _router = Router::builder(ep).accept(ALPN, handler).spawn();  // dropped immediately
+    ```
+    Both endpoints bind, the accept side silently never runs, and the only symptom is
+    `timed out: timed out: timed out` on the client. It reproduced identically on macOS, which
+    is what proved it was not an iOS problem — worth remembering as the debugging move: **run
+    the same probe on the host before blaming the platform.**
+
+### Not covered
+
+- **A real device.** Device binaries build correctly (`platform IOS`, plugin 623 KB, links
+  core) but nothing was executed on hardware.
+- **App Store review.** Embedded, signed dynamic frameworks are legal, but this used ad-hoc
+  signing (`codesign -s -`), not a real identity, and no submission was attempted.
+- **SwiftPM `binaryTarget` consumption** of the dynamic xcframework, and the
+  embed-and-sign step a consuming app needs.
+- **Multi-slice xcframeworks** (device + simulator + Catalyst in one), and whether the
+  `RustStd.framework` hash survives `lipo`-ing slices built by one toolchain.
+
+---
+
 ## Upstream tracking
 
 ### maturin — the `external_packages` wheel problem is **already fixed**
@@ -673,8 +762,10 @@ The architecture works. Proceed, with these adjustments to the plan:
   (finding 11).
 - The compatibility gate stays in the plan, downgraded from "non-optional safety mechanism"
   to "clear diagnostics on top of an already-safe default failure".
-- **Apple must move from the static xcframework to dynamic frameworks** (finding 15) — the
-  static model is measurably impossible, not merely awkward. Swift also needs an `import`
+- **Apple moves from the static xcframework to dynamic frameworks** (findings 15, 28–30) —
+  the static model is measurably impossible, not merely awkward, and the dynamic replacement
+  is verified running on the iOS Simulator. `libstd` ships as its own framework, and
+  `verify-swift-xcframework` is inverted rather than relaxed. Swift also needs an `import`
   injected into the plugin's generated bindings (finding 13).
 - **Residual strategic risk:** multi-library remains explicitly unsupported upstream
   (finding 5). Finding 9 removes our dependency on incidentally-public bindgen API, but not

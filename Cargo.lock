@@ -1824,6 +1824,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ios-probe"
+version = "0.1.0"
+dependencies = [
+ "iroh-ffi",
+ "iroh-ffi-ping",
+ "tokio",
+]
+
+[[package]]
 name = "ipconfig"
 version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -11,7 +11,7 @@ rust-version = "1.91"
 
 [lib]
 name = "iroh_ffi_ping"
-crate-type = ["cdylib"]
+crate-type = ["dylib", "rlib"]
 
 [dependencies]
 # `iroh-ffi` is only buildable as staticlib/cdylib/dylib (no rlib), so this dependency
