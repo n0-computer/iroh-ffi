@@ -6,8 +6,9 @@ iOS** — and plugins can **depend on each other** (`docs` → `blobs` + `gossip
 duplicating anything.
 
 Two caveats remain: **JS requires restructuring `iroh-js`** first (finding 16), and the whole
-approach is **unsupported upstream** by uniffi (finding 5) — the main residual risk, since
-everything technical now works.
+approach is **explicitly unsupported upstream** by uniffi — the main residual risk, since
+everything technical now works. See *Upstream tracking* for the precise status, including the
+adjacent cases that are known-broken and therefore **outside** what these spikes prove.
 
 Environment: macOS arm64 (Darwin 25.6.0), `rustc 1.97.1 (8bab26f4f 2026-07-14)`, JDK 17 launcher,
 uniffi 0.31.2, iroh 1.0.x, iroh-ping 1.0.0.
@@ -719,7 +720,79 @@ The only maintainer comment on #2459 before the fix is worth keeping in mind:
 **Nothing needs filing on maturin.** The artifact-collision hazard in finding 1 is ours to
 manage (separate target dirs), not a maturin bug.
 
-### uniffi — the cross-library metadata problem is **open and out of scope upstream**
+### uniffi — precise status of the "unsupported" claim (checked against latest)
+
+**Latest release: uniffi 0.32.0, 2026-06-30.** Verified against the released
+`uniffi_bindgen 0.32.0` source, not inferred:
+
+- Swift `Config` (`src/bindings/swift/gen_swift/mod.rs:167`) carries only `module_name`,
+  `ffi_module_name`, `exclude`, `rename`. **Zero occurrences of `external_packages` anywhere
+  under `src/bindings/swift/`** — so finding 14 holds for the current release.
+- Metadata is still loaded from a single library (finding 5 unchanged).
+
+**The maintainer statement, and how stale it is.**
+[#2647](https://github.com/mozilla/uniffi-rs/issues/2647) is still **open** and has had **no
+activity since 2025-09-12** — ~11 months. @mhammond, stated three times: *"uniffi supports
+multiple crates fine, but does not support multiple libs."*
+
+**It is a tracked, known-broken area — not merely undiscussed:**
+
+| issue | state | what |
+|---|---|---|
+| [#2153](https://github.com/mozilla/uniffi-rs/issues/2153) | open since 2024-06-14, 17 comments | "Workspace broken \| UniFFI generates invalid Swift & Python bindings" — multi-crate Swift breaks because generated files reference `fileprivate` cross-file symbols |
+| [#2933](https://github.com/mozilla/uniffi-rs/issues/2933) | open, 2026-06-26 | a `custom_type!` registered in ≥2 components emits duplicate Swift declarations → `invalid redeclaration of 'FfiConverterTypeBytes'`; called "a concrete instance of the multi-crate Swift breakage tracked in #2153" |
+| [#2802](https://github.com/mozilla/uniffi-rs/issues/2802) | open, 2026-01-21, 16 comments | iOS duplicate C types across multiple uniffi libraries |
+| [#2155](https://github.com/mozilla/uniffi-rs/issues/2155) | open, updated 2026-07-17, 20 comments | "Design and agree on a 1.0 FFI" meta issue (`FFI-1.0` label); active, but about performance/simplification rather than multi-library |
+
+⚠ **This narrows Spike D's Swift result.** My spike crossed **objects only**. #2933 and #2153
+describe breakage for `custom_type!` and for `fileprivate` converters — i.e. the region
+immediately adjacent to what I tested. A plugin exposing a `custom_type!` or crossing records
+where `RustBuffer` itself must travel is **not** covered by Spike D and should be assumed
+broken until tested.
+
+**A Swift fix was prototyped four years ago and abandoned.**
+[#1404 "Swift external type module config"](https://github.com/mozilla/uniffi-rs/pull/1404) by
+@bendk, opened 2022-11-15, **closed without being merged** (`merged=false`). Its description is
+precisely the mechanism I hand-rolled in finding 13:
+
+> "Added support for build processes where each generated .swift file is compiled into its own
+> module rather than compiling all files together. This means that we need imports to make
+> external types work."
+> - Added config code to allow the user to choose their mode
+> - Updated the docs to describe the config options
+
+So the capability existed as a PR, with config and docs, and did not land.
+
+**On `main` but UNRELEASED — and it points our way.**
+[#2841](https://github.com/mozilla/uniffi-rs/pull/2841) merged **2026-07-08** (after 0.32.0):
+a new `uniffi_parse_rs` crate that derives metadata by parsing Rust **source** with `syn`
+instead of reading a compiled library. From the PR:
+
+> "I believe this removes the need to special case external/remote types with macros like
+> `use_remote_type!`. Maybe we could parse dependency crates and avoid the need to duplicate
+> type definitions."
+
+and its README confirms *"External types in the parsed crates, i.e. following `use` statements
+to find the source type"* works. **If this lands and bindings adopt it, findings 5, 9 and 24 —
+the whole static-build-for-bindgen dance — become unnecessary.** But today its own README says:
+
+> "This crate is experimental and not supported by any existing bindings."
+
+with `use` statements through unparsed crates unsupported and checksum checks disabled
+([#2932](https://github.com/mozilla/uniffi-rs/issues/2932)).
+
+Also merged 2026-07-08 and unreleased:
+[#2911 `uniffi-bindgen-kotlin-jni`](https://github.com/mozilla/uniffi-rs/pull/2911) — a JNI
+rather than JNA Kotlin backend, now a workspace member. That would change finding 11's
+load-order shim, since JNA's extract-to-temp behaviour is the reason it is needed.
+
+**Net:** the claim is accurate for 0.32.0, and the honest framing is *"explicitly unsupported,
+known-broken in adjacent cases, once prototyped and abandoned, but currently moving in a
+direction that would help."* The upstream conversation to have is concrete: whether
+`uniffi_parse_rs` is intended to make multi-library viable, and whether #1404's Swift
+module-config approach can be revived.
+
+### The cross-library metadata problem — original notes
 
 See finding 5 for the maintainer position on [uniffi#2647](https://github.com/mozilla/uniffi-rs/issues/2647).
 Two more open issues bear on the deferred work:
