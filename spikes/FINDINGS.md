@@ -1,11 +1,12 @@
 # Spike findings: `dylib` plugin linkage for iroh protocol FFI
 
-**All five spikes PASS.** A separately-built, separately-published plugin library can share one
-copy of `iroh` with the core library — in **Python, Kotlin/JVM, Swift, and JS** — and the shared
-types cross the boundary soundly in each.
+**All six spikes PASS.** A separately-built, separately-published plugin library can share one
+copy of `iroh` with the core library — in **Python, Kotlin/JVM, Swift, and JS** — and plugins can
+**depend on each other** (`docs` → `blobs` + `gossip`) without duplicating anything.
 
-Two caveats: **Swift is proven on macOS only** (iOS needs the static→dynamic framework
-migration, finding 15), and **JS requires restructuring `iroh-js`** first (finding 16).
+Three caveats: **Swift is proven on macOS only** (iOS needs the static→dynamic framework
+migration, finding 15), **JS requires restructuring `iroh-js`** first (finding 16), and the
+whole thing is **unsupported upstream** by uniffi (finding 5).
 
 Environment: macOS arm64 (Darwin 25.6.0), `rustc 1.97.1 (8bab26f4f 2026-07-14)`, JDK 17 launcher,
 uniffi 0.31.2, iroh 1.0.x, iroh-ping 1.0.0.
@@ -29,6 +30,10 @@ IROH_FORCE_STAGING_RELAYS=1 target/swift-spike/.build/debug/SpikeMain
 # JS
 bash spikes/stage_js.sh
 IROH_FORCE_STAGING_RELAYS=1 node target/js-spike/js_round_trip.mjs
+
+# Composition: docs -> blobs + gossip -> core
+bash spikes/stage_docs.sh
+cd target/docs-spike && IROH_FORCE_STAGING_RELAYS=1 python3 docs_round_trip.py
 ```
 
 ---
@@ -501,6 +506,106 @@ isolated repro of the mechanics below.
 
 ---
 
+## Spike F — composition: `docs` → `blobs` + `gossip` → core: **PASS**
+
+The structural question nothing else exercised. A four-library diamond:
+
+```
+        iroh-ffi (core)
+        /      |      \
+   blobs    gossip     |
+        \      /       |
+         docs ---------+
+```
+
+Four independently built native libraries, four Python packages, one copy of everything:
+
+```
+endpoint bound: 62f9f6b7... addrs=[192.168.0.171:58905, ...]
+blobs: add_bytes -> cb5179c8a9c97585... | get_bytes -> b'composition works'
+gossip: spawned, max_message_size = 4096
+docs: author = 42462010c68f74d1...
+docs: doc    = a3b1e97ae26b68a8...
+OK: docs composed Endpoint + Store + Gossip across four native libraries
+```
+
+`iroh_docs::Docs::memory().spawn(endpoint, blobs, gossip)` — a real docs engine over an
+`Endpoint`, a `Store` and a `Gossip` each minted by a *different* native library. Reproduce:
+`bash spikes/stage_docs.sh` then run the printed command.
+
+Symbol distribution in the shipped (dynamic) artifacts — each crate's code lives in exactly
+one library; the small counts elsewhere are generic monomorphizations, which are distinct
+symbols and expected:
+
+| package | size | `iroh` syms | `iroh_blobs` syms | `iroh_gossip` syms |
+|---|---:|---:|---:|---:|
+| `iroh/` | 163 MB | **17326** | 0 | 0 |
+| `iroh_blobs/` | 23.6 MB | 432 | **21813** | 0 |
+| `iroh_gossip/` | 6.8 MB | 455 | 0 | **6922** |
+| `iroh_docs/` | 21.6 MB | 202 | 764 | 378 |
+
+Versions: `iroh-docs 0.101` → `iroh-blobs ^0.103` + `iroh-gossip ^0.101` + `iroh ^1`, which is
+exactly the set used here.
+
+### Findings that change the plan
+
+22. **Plugins must be `dylib`, not `cdylib`.** A `cdylib` cannot be linked by another Rust
+    crate, so a downstream plugin could never depend on it. This supersedes the ping plugin's
+    `crate-type = ["cdylib"]` — every plugin that might be depended upon needs `dylib`.
+    (Python/JNA load a Rust `dylib` fine, as Spikes B and C show.)
+
+23. **A plugin that fails to *reference* core silently poisons every downstream plugin.** This
+    is finding 18's trap with a far worse failure mode. My blobs plugin initially used only
+    `iroh_blobs`, never naming `iroh_ffi` — so the linker dropped the core dylib and blobs
+    statically embedded its own iroh: **167 MB, 16927 iroh symbols, zero dependency on core.**
+    Blobs itself built and worked fine. The failure surfaced only when *docs* tried to link
+    both siblings:
+    ```
+    error: cannot satisfy dependencies so `tower` only shows up once
+    error: cannot satisfy dependencies so `hex` only shows up once
+    error: cannot satisfy dependencies so `hyper_rustls` only shows up once
+    ... (270 errors)
+    ```
+    Note what makes this so hard to diagnose: 270 errors, naming **unrelated transitive
+    crates** (`tower`, `hex`, `hyper_rustls`, `iroh_tickets`), in the *downstream* crate, with
+    no mention of the actual problem. Adding one real reference to `iroh_ffi` took blobs from
+    167 MB → 23.7 MB and the diamond linked immediately.
+
+    **A plugin template must therefore assert on artifact size or on
+    `otool -L | grep libiroh_ffi`, in CI.** "It compiles and the tests pass" does not catch this.
+
+24. **Sibling plugins also need `rlib` for the bindgen build.** Finding 9's static-build trick
+    requires *every* crate in the graph to have an rlib, not just core. With blobs/gossip as
+    `["dylib"]` only, the static docs build stayed 21.7 MB with **6** `UNIFFI_META` symbols and
+    bindgen failed with `module lookup failed: "iroh_ffi::endpoint"`. With
+    `["dylib", "rlib"]` it became 212 MB with **217** `UNIFFI_META` symbols and worked. The
+    symbol count is the diagnostic.
+
+25. **External types resolve transitively across three namespaces, with the stock CLI.** All
+    four namespaces are generated from the one static library, and docs' bindings emit:
+    ```python
+    import iroh.iroh_ffi
+    import iroh_blobs.iroh_ffi_blobs
+    import iroh_gossip.iroh_ffi_gossip
+    ```
+    `external_packages` keyed by namespace handles plugin-to-plugin references the same way it
+    handles plugin-to-core. No new mechanism needed.
+
+26. **Python needs no load-order shim — unlike Kotlin.** The generated module does its
+    `import iroh.iroh_ffi` at the top, *before* its own `_uniffi_load_indirect()`, so
+    dependencies are always in the process first and dyld satisfies `@rpath` from loaded
+    images. This is why finding 11's shim was Kotlin-specific: JNA has no equivalent ordering
+    guarantee. Worth stating explicitly in a plugin-authoring guide, because the two languages
+    need genuinely different handling.
+
+27. **The tokio-context trap (finding 21) is systemic, not incidental.** It bit twice more
+    here — `MemStore::new()` and `Gossip::builder().spawn()` both spawn tasks and both panic
+    from a sync uniffi constructor with `there is no reactor running`. Three occurrences
+    across three unrelated upstream crates means the plugin template should default
+    constructors to `async_runtime = "tokio"` rather than leaving authors to discover it.
+
+---
+
 ## Upstream tracking
 
 ### maturin — the `external_packages` wheel problem is **already fixed**
@@ -557,8 +662,13 @@ The architecture works. Proceed, with these adjustments to the plan:
 - Every artifact bundles a per-target, rustc-pinned `libstd-<hash>.dylib`. The rustc version
   becomes part of the published compatibility contract.
 - Bindings are generated from a **static** build and shipped against the **dynamic** one
-  (finding 9), using the stock CLI — no custom bindgen, and `crate-type` gains `"rlib"`.
-  Never pass `--config` (finding 10).
+  (finding 9), using the stock CLI — no custom bindgen. **Every** crate in the graph needs
+  `"rlib"` alongside its `dylib`, not just core (finding 24). Never pass `--config`
+  (finding 10).
+- **Plugins are `dylib`, not `cdylib`** (finding 22), so other plugins can depend on them.
+- **CI must assert each plugin actually links core** — artifact size or
+  `otool -L | grep libiroh_ffi`. A plugin that silently embeds its own iroh builds and tests
+  green, then breaks every downstream plugin with 270 unrelated errors (finding 23).
 - Each plugin package ships a native-load-order shim with a generated libstd hash
   (finding 11).
 - The compatibility gate stays in the plan, downgraded from "non-optional safety mechanism"
@@ -578,7 +688,4 @@ The architecture works. Proceed, with these adjustments to the plan:
 - **Swift**: still blocked on the static→dynamic framework migration plus uniffi's
   "all generated .swift in one module" constraint for external types.
 - **JS/napi**: untouched; per-dylib class registry and `TypeId`-based `External` remain.
-- **Protocol-to-protocol composition** (`iroh-docs` → `iroh-blobs` + `iroh-gossip`): plausible
-  as ordinary Cargo deps between plugin crates, but the three-library case is unproven, and
-  a plugin depending on another plugin must link *that* one as a dylib too.
 - **A published-package test**: this used a staged directory, not real wheels via maturin.

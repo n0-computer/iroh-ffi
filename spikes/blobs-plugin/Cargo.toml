@@ -1,0 +1,20 @@
+[package]
+name = "iroh-ffi-blobs"
+version = "0.1.0"
+edition = "2024"
+publish = false
+rust-version = "1.91"
+
+# SPIKE: a leaf plugin. `dylib` (not cdylib) so ANOTHER plugin (docs) can link it and share
+# this crate's types — the composition case.
+[lib]
+name = "iroh_ffi_blobs"
+crate-type = ["dylib", "rlib"]
+
+[dependencies]
+iroh-ffi = { path = "../.." }
+iroh-blobs = "0.103"
+iroh = "1.0.0"
+uniffi = { version = "0.31.1", features = ["tokio"] }
+thiserror = "2.0"
+tokio = "1.25.0"

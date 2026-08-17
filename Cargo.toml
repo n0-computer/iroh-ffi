@@ -14,7 +14,7 @@ documentation = "https://docs.iroh.computer"
 rust-version = "1.91"
 
 [workspace]
-members = ["iroh-js", "spikes/ping-plugin", "spikes/bindgen", "spikes/js-shared", "spikes/js-a", "spikes/js-b", "spikes/js-iroh", "spikes/js-iroh-ping", "spikes/js-iroh-core"]
+members = ["iroh-js", "spikes/ping-plugin", "spikes/bindgen", "spikes/js-shared", "spikes/js-a", "spikes/js-b", "spikes/js-iroh", "spikes/js-iroh-ping", "spikes/js-iroh-core", "spikes/blobs-plugin", "spikes/gossip-plugin", "spikes/docs-plugin"]
 
 [package.metadata.maturin]
 name = "iroh"

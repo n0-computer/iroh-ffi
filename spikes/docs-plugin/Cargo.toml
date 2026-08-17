@@ -1,0 +1,30 @@
+[package]
+name = "iroh-ffi-docs"
+version = "0.1.0"
+edition = "2024"
+publish = false
+rust-version = "1.91"
+
+# SPIKE: THE COMPOSITION CASE. This plugin depends on TWO other plugins plus core, all as
+# dylibs, forming a diamond:
+#
+#        iroh-ffi (core)
+#        /      |      \
+#   blobs    gossip     |
+#        \      /       |
+#         docs ---------+
+#
+# Everything must resolve to one copy of iroh, one of blobs, one of gossip.
+[lib]
+name = "iroh_ffi_docs"
+crate-type = ["dylib"]
+
+[dependencies]
+iroh-ffi = { path = "../.." }
+iroh-ffi-blobs = { path = "../blobs-plugin" }
+iroh-ffi-gossip = { path = "../gossip-plugin" }
+iroh-docs = "0.101"
+iroh = "1.0.0"
+uniffi = { version = "0.31.1", features = ["tokio"] }
+thiserror = "2.0"
+tokio = "1.25.0"

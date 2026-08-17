@@ -1,0 +1,9 @@
+# SPIKE: the composition case — external types from THREE namespaces, two of which are
+# themselves plugins.
+[bindings.python]
+cdylib_name = "iroh_ffi_docs"
+
+[bindings.python.external_packages]
+iroh_ffi = "iroh.iroh_ffi"
+iroh_ffi_blobs = "iroh_blobs.iroh_ffi_blobs"
+iroh_ffi_gossip = "iroh_gossip.iroh_ffi_gossip"

@@ -1,0 +1,5 @@
+[bindings.python]
+cdylib_name = "iroh_ffi_gossip"
+
+[bindings.python.external_packages]
+iroh_ffi = "iroh.iroh_ffi"
