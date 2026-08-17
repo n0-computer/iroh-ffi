@@ -1,0 +1,25 @@
+[package]
+name = "iroh-ffi-ping"
+version = "0.1.0"
+edition = "2024"
+publish = false
+rust-version = "1.91"
+
+# SPIKE: this crate stands in for an independently maintained, independently published
+# `iroh-ping-ffi`. It must end up with ZERO copies of `iroh` — it links the single copy
+# inside libiroh_ffi.dylib. See spikes/FINDINGS.md.
+
+[lib]
+name = "iroh_ffi_ping"
+crate-type = ["cdylib"]
+
+[dependencies]
+# `iroh-ffi` is only buildable as staticlib/cdylib/dylib (no rlib), so this dependency
+# has to resolve to the dylib.
+iroh-ffi = { path = "../.." }
+iroh-ping = "1.0.0"
+iroh = "1.0.0"
+uniffi = { version = "0.31.1", features = ["tokio"] }
+async-trait = "0.1.80"
+tokio = "1.25.0"
+thiserror = "2.0"

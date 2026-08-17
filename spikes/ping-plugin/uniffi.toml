@@ -1,0 +1,18 @@
+# SPIKE: config an independently published plugin would ship.
+#
+# `external_packages` maps the CORE namespace (`iroh_ffi`) to the Python module path of
+# the separately installed `iroh` package, so the generated bindings emit
+# `from iroh.iroh_ffi import Endpoint, _UniffiConverterTypeEndpoint`.
+
+[bindings.python]
+cdylib_name = "iroh_ffi_ping"
+
+[bindings.python.external_packages]
+iroh_ffi = "iroh.iroh_ffi"
+
+[bindings.kotlin]
+package_name = "computer.iroh.ping"
+cdylib_name = "iroh_ffi_ping"
+
+[bindings.kotlin.external_packages]
+iroh-ffi = "computer.iroh"

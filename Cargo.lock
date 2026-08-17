@@ -1828,6 +1828,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "iroh-ffi-ping"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "iroh",
+ "iroh-ffi",
+ "iroh-ping",
+ "thiserror 2.0.18",
+ "tokio",
+ "uniffi",
+]
+
+[[package]]
 name = "iroh-metrics"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1852,6 +1865,18 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "iroh-ping"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3bf244919aee860f6f2455909a5eaabcaf71ed7840892a1414758ab09f817ccc"
+dependencies = [
+ "anyhow",
+ "iroh",
+ "iroh-metrics",
+ "n0-error",
 ]
 
 [[package]]
@@ -3588,6 +3613,15 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "spike-bindgen"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "camino",
+ "uniffi_bindgen",
 ]
 
 [[package]]

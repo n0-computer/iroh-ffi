@@ -1,0 +1,22 @@
+[package]
+name = "spike-bindgen"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# SPIKE: a plugin repo cannot use the stock `uniffi-bindgen generate` CLI, because
+# `BindgenLoader::load_metadata` reads UNIFFI_META symbols from exactly ONE library, and
+# the plugin dylib contains only its own metadata (7 symbols vs core's 199). Without
+# core's `Metadata::Namespace` item, `module_path_map` has no entry for `iroh_ffi` and
+# resolution fails with `module lookup failed: "iroh_ffi::endpoint"`.
+#
+# The public API does support merging, so this is ~40 lines rather than a fork.
+
+[[bin]]
+name = "spike-bindgen"
+path = "main.rs"
+
+[dependencies]
+uniffi_bindgen = { version = "0.31.2", features = ["cargo-metadata"] }
+camino = "1"
+anyhow = "1"

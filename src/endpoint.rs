@@ -312,7 +312,8 @@ pub struct Endpoint {
 
 impl Endpoint {
     /// Must be called from within a tokio runtime — captures `Handle::current()`.
-    pub(crate) fn wrap(ep: endpoint::Endpoint, router: Option<iroh::protocol::Router>) -> Self {
+    // SPIKE: `pub` so a plugin crate can build an `Endpoint` wrapper.
+    pub fn wrap(ep: endpoint::Endpoint, router: Option<iroh::protocol::Router>) -> Self {
         Endpoint {
             inner: ep,
             router,
@@ -320,7 +321,9 @@ impl Endpoint {
         }
     }
 
-    pub(crate) fn raw(&self) -> &endpoint::Endpoint {
+    // SPIKE: `pub` so a plugin crate can reach the real `iroh::Endpoint` it needs to
+    // hand to an upstream protocol crate.
+    pub fn raw(&self) -> &endpoint::Endpoint {
         &self.inner
     }
 }
@@ -576,11 +579,17 @@ pub struct Connection {
 
 impl Connection {
     /// Must be called from within a tokio runtime — captures `Handle::current()`.
-    pub(crate) fn wrap(inner: endpoint::Connection) -> Self {
+    // SPIKE: `pub` so a plugin's `ProtocolHandler` impl can unwrap the connection.
+    pub fn wrap(inner: endpoint::Connection) -> Self {
         Self {
             inner,
             tokio_handle: tokio::runtime::Handle::current(),
         }
+    }
+
+    // SPIKE: `pub` so a plugin can reach the real `iroh::endpoint::Connection`.
+    pub fn raw(&self) -> &endpoint::Connection {
+        &self.inner
     }
 }
 
