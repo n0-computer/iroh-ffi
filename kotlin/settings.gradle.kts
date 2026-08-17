@@ -24,6 +24,14 @@ dependencyResolutionManagement {
 rootProject.name = "iroh-kotlin"
 include("lib")
 
+// SPIKE: `:ping` stands in for an independently published computer.iroh:iroh-ping plugin.
+// Included only when its generated bindings exist (see spikes/stage_kotlin.sh).
+if (file("ping/src/main/kotlin").exists()) {
+    include("ping")
+} else {
+    logger.lifecycle("[settings] kotlin/ping not staged — skipping :ping")
+}
+
 // `:android` + `:android-smoke` require the Android SDK at configuration time.
 // On hosts without one (the self-hosted linux-aarch64 runner where setup-android
 // fails), skip both so `:lib` still builds + tests.

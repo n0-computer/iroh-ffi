@@ -14,5 +14,8 @@ iroh_ffi = "iroh.iroh_ffi"
 package_name = "computer.iroh.ping"
 cdylib_name = "iroh_ffi_ping"
 
+# Keyed by CRATE name (`[lib] name`), not package name. Kotlin auto-fills this in library
+# mode, but only correctly when each crate's own uniffi.toml is discovered — do NOT pass
+# `--config`, which overrides the config for every crate at once.
 [bindings.kotlin.external_packages]
-iroh-ffi = "computer.iroh"
+iroh_ffi = "computer.iroh"

@@ -24,7 +24,7 @@ name = "iroh_ffi"
 # SPIKE: "dylib" added so plugin crates can link this crate (and the single copy of
 # `iroh` inside it) dynamically. Deliberately no "rlib" — a crate available only as a
 # dylib is the thing we are testing, see spikes/FINDINGS.md.
-crate-type = ["staticlib", "dylib"]
+crate-type = ["staticlib", "dylib", "rlib"]
 
 [[bin]]
 name = "uniffi-bindgen"

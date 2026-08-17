@@ -1,17 +1,22 @@
 # Spike findings: `dylib` plugin linkage for iroh protocol FFI
 
-**Both spikes PASS.** A separately-built, separately-published plugin library can share one
+**All three spikes PASS.** A separately-built, separately-published plugin library can share one
 copy of `iroh` with the core library, and uniffi external types work across that boundary.
 
-Environment: macOS arm64 (Darwin 25.6.0), `rustc 1.97.1 (8bab26f4f 2026-07-14)`,
+Environment: macOS arm64 (Darwin 25.6.0), `rustc 1.97.1 (8bab26f4f 2026-07-14)`, JDK 17 launcher,
 uniffi 0.31.2, iroh 1.0.x, iroh-ping 1.0.0.
 
 Reproduce:
 
 ```sh
+# Python
 cargo build -p iroh-ffi-ping
 bash spikes/stage_python.sh debug
 cd target/spike-stage && python3 round_trip.py
+
+# Kotlin (JDK 17 launcher — see the environment note at the end)
+bash spikes/stage_kotlin.sh
+cd kotlin && ./gradlew :lib:test :ping:test :ping:testExtracted
 ```
 
 ---
@@ -153,7 +158,11 @@ class Ping(PingProtocol):
    **Fix, and it's cheap:** the public API supports merging. `spikes/bindgen/` is ~40 lines —
    `load_metadata` each library, `extend` the `MetadataGroupMap`, then
    `load_pipeline_initial_root` + `bindings::python::run_pipeline` with a crate filter.
-   *Every plugin repo needs this custom bindgen binary.*
+
+   > **Superseded by finding 9.** Kotlin cannot be generated this way at all (its generator
+   > internals are private), and the static-build-for-bindgen technique found while fixing
+   > that works for both languages with the **stock CLI**. `spikes/bindgen/` is retained only
+   > as the record of how this was diagnosed.
 
    **Upstream status: not fixed, and unsupported by design.** Checked uniffi 0.32.0
    (2026-06-30, the current release — this repo pins 0.31.1). No `--metadata-from` flag, no
@@ -212,6 +221,110 @@ class Ping(PingProtocol):
 
 ---
 
+---
+
+## Spike C — Kotlin/JVM, two Maven artifacts, one shared native library: **PASS**
+
+Two separate Gradle modules → two separate JARs, each with its own native library:
+
+| JAR | contains | size |
+|---|---:|---:|
+| `lib.jar` (`computer.iroh`) | `libiroh_ffi.dylib` 162 MB + `libstd-<hash>.dylib` 1.4 MB | 36 MB |
+| `ping.jar` (`computer.iroh.ping`) | `libiroh_ffi_ping.dylib` **378 KB** | **174 KB** |
+
+```
+alpn = iroh/ping/0
+server bound: 80b378ec... addrs=[192.168.0.171:64011, ...]
+PING -> PONG round trip: 2 ms
+```
+
+28 tests green: 24 existing `:lib` (no regression), plus `:ping:test` (on-disk natives) and
+`:ping:testExtracted` (the **published-consumer path**, where JNA unpacks each native out of
+its JAR). Reproduce:
+
+```sh
+bash spikes/stage_kotlin.sh
+cd kotlin && ./gradlew :lib:test :ping:test :ping:testExtracted
+```
+
+Kotlin shares types across packages properly, including core's `RustBuffer`:
+
+```kotlin
+package computer.iroh.ping
+import computer.iroh.Endpoint
+import computer.iroh.ProtocolHandler
+import computer.iroh.RustBuffer as RustBufferEndpoint
+```
+
+### Findings that change the plan
+
+9. **This kills the custom bindgen from finding 5 — use the stock CLI.** Kotlin's generator
+   internals (`gen_kotlin::generate_bindings`, `Config`) are private, so the metadata-merging
+   trick cannot be replicated for Kotlin at all. The way out is better than the workaround:
+   **generate bindings from a *static* build and ship the *dynamic* one.**
+
+   With `crate-type = ["staticlib", "dylib", "rlib"]` (allowed — only `dylib`+`cdylib` is
+   rejected), a build *without* `-C prefer-dynamic` links core statically into the plugin, so
+   the plugin library carries **both** crates' `UNIFFI_META` and the stock
+   `uniffi-bindgen generate --library ... --crate iroh_ffi_ping` resolves external types with
+   no custom tooling. Then rebuild with `-C prefer-dynamic` for the artifact you ship. The
+   Python output is **byte-identical** to what `spikes/bindgen/` produced, so the metadata —
+   and therefore the checksums — match the dynamic library. `spikes/stage_kotlin.sh` does both
+   builds in order.
+
+   **This removes the strategic risk in finding 5.** We no longer depend on
+   incidentally-public bindgen API, only on documented CLI behaviour. `spikes/bindgen/` is
+   kept for the record but is not needed.
+
+10. **Never pass `--config` to bindgen in a multi-crate build.** `--config` is a global
+    override applied to *every* crate, so core inherits the plugin's `package_name` and the
+    plugin then imports its own package instead of core's — silently:
+    ```kotlin
+    import computer.iroh.ping.Endpoint   // wrong: core's Endpoint is computer.iroh.Endpoint
+    ```
+    Rely on per-crate `uniffi.toml` discovery via cargo metadata instead. Related: Kotlin's
+    `external_packages` is keyed by **crate name** (`[lib] name`), not package name —
+    `iroh_ffi`, not `iroh-ffi`.
+
+11. **Load order is a hard requirement, and libstd is part of it.** The plugin declares
+    `@rpath/libiroh_ffi.dylib` and `@rpath/libstd-<hash>.dylib`. JNA extracts each native out
+    of its JAR to `~/Library/Caches/JNA/temp/jnaNNNN.tmp` — a mangled name in a directory
+    where nothing else sits — so **no rpath can work**:
+    ```
+    UnsatisfiedLinkError: dlopen(.../jna17017633420966846699.tmp): Library not loaded:
+      @rpath/libstd-4f24f0876fd27385.dylib
+    ```
+    dyld *will* satisfy an `@rpath/...` dependency from an already-loaded image with that
+    install name, so the fix is purely ordering. Verified: with **zero rpaths** on the plugin,
+    a 5-line shim makes the published path work —
+    `kotlin/ping/src/main/kotlin/computer/iroh/ping/CoreNative.kt`:
+    ```kotlin
+    NativeLibrary.getInstance("std-4f24f0876fd27385")  // libstd first
+    NativeLibrary.getInstance("iroh_ffi")              // then core
+    ```
+    **Every plugin package must ship this shim**, and it hard-codes the rustc-specific libstd
+    hash — so the hash has to be generated, not written by hand. This makes finding 3's
+    "toolchain version is part of the compatibility contract" concrete and visible in source.
+
+12. **A uniffi error variant field named `message` generates Kotlin that will not compile.**
+    ```kotlin
+    class Failed(val `message`: kotlin.String) : PingException() {
+        override val message get() = "message=${ `message` }"   // collides with itself
+    }
+    ```
+    → `Conflicting declarations: val message` / `'message' hides member of supertype
+    'Throwable'`. Worked around by naming the field `reason`. Worth reporting upstream; a
+    plugin-authoring guide should call it out.
+
+### Environment note, not a finding
+
+`./gradlew` fails on this machine with a bare `26.0.2` error: Gradle 8.14.5 does not support
+JDK 26 (Homebrew default here). Pre-existing and unrelated — `:lib:test` fails the same way on
+a clean checkout. Run with `JAVA_HOME` pointed at JDK 17; the foojay resolver then provisions
+JDK 21 for compilation.
+
+---
+
 ## Upstream tracking
 
 ### maturin — the `external_packages` wheel problem is **already fixed**
@@ -267,11 +380,17 @@ The architecture works. Proceed, with these adjustments to the plan:
   consumers: JNA/Kotlin, Android `jniLibs`, and the `libiroh-<target>.tar.gz` C-lib artifacts.
 - Every artifact bundles a per-target, rustc-pinned `libstd-<hash>.dylib`. The rustc version
   becomes part of the published compatibility contract.
-- Each plugin repo ships a ~40-line merging bindgen — **and this is the strategic risk**:
-  multi-library is explicitly unsupported upstream (finding 5). Drive a `--metadata-from`
-  flag, or at least an upstream decision, before committing to the architecture.
+- Bindings are generated from a **static** build and shipped against the **dynamic** one
+  (finding 9), using the stock CLI — no custom bindgen, and `crate-type` gains `"rlib"`.
+  Never pass `--config` (finding 10).
+- Each plugin package ships a native-load-order shim with a generated libstd hash
+  (finding 11).
 - The compatibility gate stays in the plan, downgraded from "non-optional safety mechanism"
   to "clear diagnostics on top of an already-safe default failure".
+- **Residual strategic risk:** multi-library remains explicitly unsupported upstream
+  (finding 5). Finding 9 removes our dependency on incidentally-public bindgen API, but not
+  the risk that uniffi changes something that breaks the split. Worth an upstream
+  conversation before betting on it.
 
 ## Not covered by these spikes
 

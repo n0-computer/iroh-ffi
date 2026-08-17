@@ -20,10 +20,13 @@ use iroh_ffi::{CallbackError, Connection, Endpoint, EndpointAddr, ProtocolHandle
 uniffi::setup_scaffolding!("iroh_ffi_ping");
 
 /// Errors from the ping protocol.
+///
+/// The field is `reason`, not `message`: a uniffi error variant with a `message` field
+/// generates Kotlin that collides with `Throwable.message` and will not compile.
 #[derive(Debug, thiserror::Error, uniffi::Error)]
 pub enum PingError {
-    #[error("ping failed: {message}")]
-    Failed { message: String },
+    #[error("ping failed: {reason}")]
+    Failed { reason: String },
 }
 
 /// The ALPN this protocol accepts on.
@@ -60,7 +63,7 @@ impl Ping {
         let iroh_addr: iroh::EndpointAddr =
             (*addr).clone().try_into().map_err(|e: iroh_ffi::IrohError| {
                 PingError::Failed {
-                    message: e.message(),
+                    reason: e.message(),
                 }
             })?;
 
@@ -69,7 +72,7 @@ impl Ping {
             .ping(endpoint.raw(), iroh_addr)
             .await
             .map_err(|e| PingError::Failed {
-                message: format!("{e:#}"),
+                reason: format!("{e:#}"),
             })?;
 
         Ok(rtt.as_millis() as u64)

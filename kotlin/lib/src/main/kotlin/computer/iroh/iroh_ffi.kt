@@ -17,27 +17,27 @@ package computer.iroh
 // compile the Rust component. The easiest way to ensure this is to bundle the Kotlin
 // helpers directly inline like we're doing here.
 
-import com.sun.jna.Callback
-import com.sun.jna.IntegerType
 import com.sun.jna.Library
+import com.sun.jna.IntegerType
 import com.sun.jna.Native
 import com.sun.jna.Pointer
 import com.sun.jna.Structure
+import com.sun.jna.Callback
 import com.sun.jna.ptr.*
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.nio.CharBuffer
+import java.nio.charset.CodingErrorAction
+import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.coroutines.resume
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
-import java.nio.CharBuffer
-import java.nio.charset.CodingErrorAction
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicLong
-import kotlin.coroutines.resume
 
 // This is a helper for safely working with byte buffers returned from the Rust code.
 // A rust-owned buffer is represented by its capacity, its current length, and a
@@ -51,41 +51,29 @@ open class RustBuffer : Structure() {
     // Note: `capacity` and `len` are actually `ULong` values, but JVM only supports signed values.
     // When dealing with these fields, make sure to call `toULong()`.
     @JvmField var capacity: Long = 0
-
     @JvmField var len: Long = 0
-
     @JvmField var data: Pointer? = null
 
-    class ByValue :
-        RustBuffer(),
-        Structure.ByValue
+    class ByValue: RustBuffer(), Structure.ByValue
+    class ByReference: RustBuffer(), Structure.ByReference
 
-    class ByReference :
-        RustBuffer(),
-        Structure.ByReference
-
-    internal fun setValue(other: RustBuffer) {
+   internal fun setValue(other: RustBuffer) {
         capacity = other.capacity
         len = other.len
         data = other.data
     }
 
     companion object {
-        internal fun alloc(size: ULong = 0UL) =
-            uniffiRustCall { status ->
-                // Note: need to convert the size to a `Long` value to make this work with JVM.
-                UniffiLib.ffi_iroh_ffi_rustbuffer_alloc(size.toLong(), status)
-            }.also {
-                if (it.data == null) {
-                    throw RuntimeException("RustBuffer.alloc() returned null data pointer (size=$size)")
-                }
-            }
+        internal fun alloc(size: ULong = 0UL) = uniffiRustCall() { status ->
+            // Note: need to convert the size to a `Long` value to make this work with JVM.
+            UniffiLib.ffi_iroh_ffi_rustbuffer_alloc(size.toLong(), status)
+        }.also {
+            if(it.data == null) {
+               throw RuntimeException("RustBuffer.alloc() returned null data pointer (size=${size})")
+           }
+        }
 
-        internal fun create(
-            capacity: ULong,
-            len: ULong,
-            data: Pointer?,
-        ): RustBuffer.ByValue {
+        internal fun create(capacity: ULong, len: ULong, data: Pointer?): RustBuffer.ByValue {
             var buf = RustBuffer.ByValue()
             buf.capacity = capacity.toLong()
             buf.len = len.toLong()
@@ -93,10 +81,9 @@ open class RustBuffer : Structure() {
             return buf
         }
 
-        internal fun free(buf: RustBuffer.ByValue) =
-            uniffiRustCall { status ->
-                UniffiLib.ffi_iroh_ffi_rustbuffer_free(buf, status)
-            }
+        internal fun free(buf: RustBuffer.ByValue) = uniffiRustCall() { status ->
+            UniffiLib.ffi_iroh_ffi_rustbuffer_free(buf, status)
+        }
     }
 
     @Suppress("TooGenericExceptionThrown")
@@ -115,14 +102,10 @@ open class RustBuffer : Structure() {
 @Structure.FieldOrder("len", "data")
 internal open class ForeignBytes : Structure() {
     @JvmField var len: Int = 0
-
     @JvmField var data: Pointer? = null
 
-    class ByValue :
-        ForeignBytes(),
-        Structure.ByValue
+    class ByValue : ForeignBytes(), Structure.ByValue
 }
-
 /**
  * The FfiConverter interface handles converter types to and from the FFI
  *
@@ -152,10 +135,7 @@ public interface FfiConverter<KotlinType, FfiType> {
     fun allocationSize(value: KotlinType): ULong
 
     // Write a Kotlin type to a `ByteBuffer`
-    fun write(
-        value: KotlinType,
-        buf: ByteBuffer,
-    )
+    fun write(value: KotlinType, buf: ByteBuffer)
 
     // Lower a value into a `RustBuffer`
     //
@@ -166,10 +146,9 @@ public interface FfiConverter<KotlinType, FfiType> {
     fun lowerIntoRustBuffer(value: KotlinType): RustBuffer.ByValue {
         val rbuf = RustBuffer.alloc(allocationSize(value))
         try {
-            val bbuf =
-                rbuf.data!!.getByteBuffer(0, rbuf.capacity).also {
-                    it.order(ByteOrder.BIG_ENDIAN)
-                }
+            val bbuf = rbuf.data!!.getByteBuffer(0, rbuf.capacity).also {
+                it.order(ByteOrder.BIG_ENDIAN)
+            }
             write(value, bbuf)
             rbuf.writeField("len", bbuf.position().toLong())
             return rbuf
@@ -186,11 +165,11 @@ public interface FfiConverter<KotlinType, FfiType> {
     fun liftFromRustBuffer(rbuf: RustBuffer.ByValue): KotlinType {
         val byteBuf = rbuf.asByteBuffer()!!
         try {
-            val item = read(byteBuf)
-            if (byteBuf.hasRemaining()) {
-                throw RuntimeException("junk remaining in buffer after lifting, something is very wrong!!")
-            }
-            return item
+           val item = read(byteBuf)
+           if (byteBuf.hasRemaining()) {
+               throw RuntimeException("junk remaining in buffer after lifting, something is very wrong!!")
+           }
+           return item
         } finally {
             RustBuffer.free(rbuf)
         }
@@ -202,9 +181,8 @@ public interface FfiConverter<KotlinType, FfiType> {
  *
  * @suppress
  */
-public interface FfiConverterRustBuffer<KotlinType> : FfiConverter<KotlinType, RustBuffer.ByValue> {
+public interface FfiConverterRustBuffer<KotlinType>: FfiConverter<KotlinType, RustBuffer.ByValue> {
     override fun lift(value: RustBuffer.ByValue) = liftFromRustBuffer(value)
-
     override fun lower(value: KotlinType) = lowerIntoRustBuffer(value)
 }
 // A handful of classes and functions to support the generated data structures.
@@ -217,24 +195,24 @@ internal const val UNIFFI_CALL_UNEXPECTED_ERROR = 2.toByte()
 @Structure.FieldOrder("code", "error_buf")
 internal open class UniffiRustCallStatus : Structure() {
     @JvmField var code: Byte = 0
-
     @JvmField var error_buf: RustBuffer.ByValue = RustBuffer.ByValue()
 
-    class ByValue :
-        UniffiRustCallStatus(),
-        Structure.ByValue
+    class ByValue: UniffiRustCallStatus(), Structure.ByValue
 
-    fun isSuccess(): Boolean = code == UNIFFI_CALL_SUCCESS
+    fun isSuccess(): Boolean {
+        return code == UNIFFI_CALL_SUCCESS
+    }
 
-    fun isError(): Boolean = code == UNIFFI_CALL_ERROR
+    fun isError(): Boolean {
+        return code == UNIFFI_CALL_ERROR
+    }
 
-    fun isPanic(): Boolean = code == UNIFFI_CALL_UNEXPECTED_ERROR
+    fun isPanic(): Boolean {
+        return code == UNIFFI_CALL_UNEXPECTED_ERROR
+    }
 
     companion object {
-        fun create(
-            code: Byte,
-            errorBuf: RustBuffer.ByValue,
-        ): UniffiRustCallStatus.ByValue {
+        fun create(code: Byte, errorBuf: RustBuffer.ByValue): UniffiRustCallStatus.ByValue {
             val callStatus = UniffiRustCallStatus.ByValue()
             callStatus.code = code
             callStatus.error_buf = errorBuf
@@ -243,9 +221,7 @@ internal open class UniffiRustCallStatus : Structure() {
     }
 }
 
-class InternalException(
-    message: String,
-) : kotlin.Exception(message)
+class InternalException(message: String) : kotlin.Exception(message)
 
 /**
  * Each top-level error class has a companion object that can lift the error from the call status's rust buffer
@@ -253,7 +229,7 @@ class InternalException(
  * @suppress
  */
 interface UniffiRustCallStatusErrorHandler<E> {
-    fun lift(error_buf: RustBuffer.ByValue): E
+    fun lift(error_buf: RustBuffer.ByValue): E;
 }
 
 // Helpers for calling Rust
@@ -261,10 +237,7 @@ interface UniffiRustCallStatusErrorHandler<E> {
 // synchronize itself
 
 // Call a rust function that returns a Result<>.  Pass in the Error class companion that corresponds to the Err
-private inline fun <U, E : kotlin.Exception> uniffiRustCallWithError(
-    errorHandler: UniffiRustCallStatusErrorHandler<E>,
-    callback: (UniffiRustCallStatus) -> U,
-): U {
+private inline fun <U, E: kotlin.Exception> uniffiRustCallWithError(errorHandler: UniffiRustCallStatusErrorHandler<E>, callback: (UniffiRustCallStatus) -> U): U {
     var status = UniffiRustCallStatus()
     val return_value = callback(status)
     uniffiCheckCallStatus(errorHandler, status)
@@ -272,10 +245,7 @@ private inline fun <U, E : kotlin.Exception> uniffiRustCallWithError(
 }
 
 // Check UniffiRustCallStatus and throw an error if the call wasn't successful
-private fun <E : kotlin.Exception> uniffiCheckCallStatus(
-    errorHandler: UniffiRustCallStatusErrorHandler<E>,
-    status: UniffiRustCallStatus,
-) {
+private fun<E: kotlin.Exception> uniffiCheckCallStatus(errorHandler: UniffiRustCallStatusErrorHandler<E>, status: UniffiRustCallStatus) {
     if (status.isSuccess()) {
         return
     } else if (status.isError()) {
@@ -299,7 +269,7 @@ private fun <E : kotlin.Exception> uniffiCheckCallStatus(
  *
  * @suppress
  */
-object UniffiNullRustCallStatusErrorHandler : UniffiRustCallStatusErrorHandler<InternalException> {
+object UniffiNullRustCallStatusErrorHandler: UniffiRustCallStatusErrorHandler<InternalException> {
     override fun lift(error_buf: RustBuffer.ByValue): InternalException {
         RustBuffer.free(error_buf)
         return InternalException("Unexpected CALL_ERROR")
@@ -307,54 +277,44 @@ object UniffiNullRustCallStatusErrorHandler : UniffiRustCallStatusErrorHandler<I
 }
 
 // Call a rust function that returns a plain value
-private inline fun <U> uniffiRustCall(callback: (UniffiRustCallStatus) -> U): U =
-    uniffiRustCallWithError(UniffiNullRustCallStatusErrorHandler, callback)
+private inline fun <U> uniffiRustCall(callback: (UniffiRustCallStatus) -> U): U {
+    return uniffiRustCallWithError(UniffiNullRustCallStatusErrorHandler, callback)
+}
 
-internal inline fun <T> uniffiTraitInterfaceCall(
+internal inline fun<T> uniffiTraitInterfaceCall(
     callStatus: UniffiRustCallStatus,
     makeCall: () -> T,
     writeReturn: (T) -> Unit,
 ) {
     try {
         writeReturn(makeCall())
-    } catch (e: kotlin.Exception) {
-        val err =
-            try {
-                e.stackTraceToString()
-            } catch (_: Throwable) {
-                ""
-            }
+    } catch(e: kotlin.Exception) {
+        val err = try { e.stackTraceToString() } catch(_: Throwable) { "" }
         callStatus.code = UNIFFI_CALL_UNEXPECTED_ERROR
         callStatus.error_buf = FfiConverterString.lower(err)
     }
 }
 
-internal inline fun <T, reified E : Throwable> uniffiTraitInterfaceCallWithError(
+internal inline fun<T, reified E: Throwable> uniffiTraitInterfaceCallWithError(
     callStatus: UniffiRustCallStatus,
     makeCall: () -> T,
     writeReturn: (T) -> Unit,
-    lowerError: (E) -> RustBuffer.ByValue,
+    lowerError: (E) -> RustBuffer.ByValue
 ) {
     try {
         writeReturn(makeCall())
-    } catch (e: kotlin.Exception) {
+    } catch(e: kotlin.Exception) {
         if (e is E) {
             callStatus.code = UNIFFI_CALL_ERROR
             callStatus.error_buf = lowerError(e)
         } else {
-            val err =
-                try {
-                    e.stackTraceToString()
-                } catch (_: Throwable) {
-                    ""
-                }
+            val err = try { e.stackTraceToString() } catch(_: Throwable) { "" }
             callStatus.code = UNIFFI_CALL_UNEXPECTED_ERROR
             callStatus.error_buf = FfiConverterString.lower(err)
         }
     }
 }
-
-// Initial value and increment amount for handles.
+// Initial value and increment amount for handles. 
 // These ensure that Kotlin-generated handles always have the lowest bit set
 private const val UNIFFI_HANDLEMAP_INITIAL = 1.toLong()
 private const val UNIFFI_HANDLEMAP_DELTA = 2.toLong()
@@ -362,13 +322,10 @@ private const val UNIFFI_HANDLEMAP_DELTA = 2.toLong()
 // Map handles to objects
 //
 // This is used pass an opaque 64-bit handle representing a foreign object to the Rust code.
-internal class UniffiHandleMap<T : Any> {
+internal class UniffiHandleMap<T: Any> {
     private val map = ConcurrentHashMap<Long, T>()
-
-    // Start
-    private val counter =
-        java.util.concurrent.atomic
-            .AtomicLong(UNIFFI_HANDLEMAP_INITIAL)
+    // Start 
+    private val counter = java.util.concurrent.atomic.AtomicLong(UNIFFI_HANDLEMAP_INITIAL)
 
     val size: Int
         get() = map.size
@@ -387,10 +344,14 @@ internal class UniffiHandleMap<T : Any> {
     }
 
     // Get an object from the handle map
-    fun get(handle: Long): T = map.get(handle) ?: throw InternalException("UniffiHandleMap.get: Invalid handle")
+    fun get(handle: Long): T {
+        return map.get(handle) ?: throw InternalException("UniffiHandleMap.get: Invalid handle")
+    }
 
     // Remove an entry from the handlemap and get the Kotlin object back
-    fun remove(handle: Long): T = map.remove(handle) ?: throw InternalException("UniffiHandleMap: Invalid handle")
+    fun remove(handle: Long): T {
+        return map.remove(handle) ?: throw InternalException("UniffiHandleMap: Invalid handle")
+    }
 }
 
 // Contains loading, initialization code,
@@ -406,24 +367,18 @@ private fun findLibraryName(componentName: String): String {
 
 // Define FFI callback types
 internal interface UniffiRustFutureContinuationCallback : com.sun.jna.Callback {
-    fun callback(
-        `data`: Long,
-        `pollResult`: Byte,
-    )
+    fun callback(`data`: Long,`pollResult`: Byte,)
 }
-
 internal interface UniffiForeignFutureDroppedCallback : com.sun.jna.Callback {
-    fun callback(`handle`: Long)
+    fun callback(`handle`: Long,)
 }
-
 internal interface UniffiCallbackInterfaceFree : com.sun.jna.Callback {
-    fun callback(`handle`: Long)
+    fun callback(`handle`: Long,)
 }
-
 internal interface UniffiCallbackInterfaceClone : com.sun.jna.Callback {
-    fun callback(`handle`: Long): Long
+    fun callback(`handle`: Long,)
+    : Long
 }
-
 @Structure.FieldOrder("handle", "free")
 internal open class UniffiForeignFutureDroppedCallbackStruct(
     @JvmField internal var `handle`: Long = 0.toLong(),
@@ -432,15 +387,14 @@ internal open class UniffiForeignFutureDroppedCallbackStruct(
     class UniffiByValue(
         `handle`: Long = 0.toLong(),
         `free`: UniffiForeignFutureDroppedCallback? = null,
-    ) : UniffiForeignFutureDroppedCallbackStruct(`handle`, `free`),
-        Structure.ByValue
+    ): UniffiForeignFutureDroppedCallbackStruct(`handle`,`free`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiForeignFutureDroppedCallbackStruct) {
+   internal fun uniffiSetValue(other: UniffiForeignFutureDroppedCallbackStruct) {
         `handle` = other.`handle`
         `free` = other.`free`
     }
-}
 
+}
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureResultU8(
     @JvmField internal var `returnValue`: Byte = 0.toByte(),
@@ -449,22 +403,17 @@ internal open class UniffiForeignFutureResultU8(
     class UniffiByValue(
         `returnValue`: Byte = 0.toByte(),
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ) : UniffiForeignFutureResultU8(`returnValue`, `callStatus`),
-        Structure.ByValue
+    ): UniffiForeignFutureResultU8(`returnValue`,`callStatus`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiForeignFutureResultU8) {
+   internal fun uniffiSetValue(other: UniffiForeignFutureResultU8) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
-}
 
+}
 internal interface UniffiForeignFutureCompleteU8 : com.sun.jna.Callback {
-    fun callback(
-        `callbackData`: Long,
-        `result`: UniffiForeignFutureResultU8.UniffiByValue,
-    )
+    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureResultU8.UniffiByValue,)
 }
-
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureResultI8(
     @JvmField internal var `returnValue`: Byte = 0.toByte(),
@@ -473,22 +422,17 @@ internal open class UniffiForeignFutureResultI8(
     class UniffiByValue(
         `returnValue`: Byte = 0.toByte(),
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ) : UniffiForeignFutureResultI8(`returnValue`, `callStatus`),
-        Structure.ByValue
+    ): UniffiForeignFutureResultI8(`returnValue`,`callStatus`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiForeignFutureResultI8) {
+   internal fun uniffiSetValue(other: UniffiForeignFutureResultI8) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
-}
 
+}
 internal interface UniffiForeignFutureCompleteI8 : com.sun.jna.Callback {
-    fun callback(
-        `callbackData`: Long,
-        `result`: UniffiForeignFutureResultI8.UniffiByValue,
-    )
+    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureResultI8.UniffiByValue,)
 }
-
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureResultU16(
     @JvmField internal var `returnValue`: Short = 0.toShort(),
@@ -497,22 +441,17 @@ internal open class UniffiForeignFutureResultU16(
     class UniffiByValue(
         `returnValue`: Short = 0.toShort(),
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ) : UniffiForeignFutureResultU16(`returnValue`, `callStatus`),
-        Structure.ByValue
+    ): UniffiForeignFutureResultU16(`returnValue`,`callStatus`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiForeignFutureResultU16) {
+   internal fun uniffiSetValue(other: UniffiForeignFutureResultU16) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
-}
 
+}
 internal interface UniffiForeignFutureCompleteU16 : com.sun.jna.Callback {
-    fun callback(
-        `callbackData`: Long,
-        `result`: UniffiForeignFutureResultU16.UniffiByValue,
-    )
+    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureResultU16.UniffiByValue,)
 }
-
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureResultI16(
     @JvmField internal var `returnValue`: Short = 0.toShort(),
@@ -521,22 +460,17 @@ internal open class UniffiForeignFutureResultI16(
     class UniffiByValue(
         `returnValue`: Short = 0.toShort(),
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ) : UniffiForeignFutureResultI16(`returnValue`, `callStatus`),
-        Structure.ByValue
+    ): UniffiForeignFutureResultI16(`returnValue`,`callStatus`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiForeignFutureResultI16) {
+   internal fun uniffiSetValue(other: UniffiForeignFutureResultI16) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
-}
 
+}
 internal interface UniffiForeignFutureCompleteI16 : com.sun.jna.Callback {
-    fun callback(
-        `callbackData`: Long,
-        `result`: UniffiForeignFutureResultI16.UniffiByValue,
-    )
+    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureResultI16.UniffiByValue,)
 }
-
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureResultU32(
     @JvmField internal var `returnValue`: Int = 0,
@@ -545,22 +479,17 @@ internal open class UniffiForeignFutureResultU32(
     class UniffiByValue(
         `returnValue`: Int = 0,
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ) : UniffiForeignFutureResultU32(`returnValue`, `callStatus`),
-        Structure.ByValue
+    ): UniffiForeignFutureResultU32(`returnValue`,`callStatus`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiForeignFutureResultU32) {
+   internal fun uniffiSetValue(other: UniffiForeignFutureResultU32) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
-}
 
+}
 internal interface UniffiForeignFutureCompleteU32 : com.sun.jna.Callback {
-    fun callback(
-        `callbackData`: Long,
-        `result`: UniffiForeignFutureResultU32.UniffiByValue,
-    )
+    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureResultU32.UniffiByValue,)
 }
-
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureResultI32(
     @JvmField internal var `returnValue`: Int = 0,
@@ -569,22 +498,17 @@ internal open class UniffiForeignFutureResultI32(
     class UniffiByValue(
         `returnValue`: Int = 0,
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ) : UniffiForeignFutureResultI32(`returnValue`, `callStatus`),
-        Structure.ByValue
+    ): UniffiForeignFutureResultI32(`returnValue`,`callStatus`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiForeignFutureResultI32) {
+   internal fun uniffiSetValue(other: UniffiForeignFutureResultI32) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
-}
 
+}
 internal interface UniffiForeignFutureCompleteI32 : com.sun.jna.Callback {
-    fun callback(
-        `callbackData`: Long,
-        `result`: UniffiForeignFutureResultI32.UniffiByValue,
-    )
+    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureResultI32.UniffiByValue,)
 }
-
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureResultU64(
     @JvmField internal var `returnValue`: Long = 0.toLong(),
@@ -593,22 +517,17 @@ internal open class UniffiForeignFutureResultU64(
     class UniffiByValue(
         `returnValue`: Long = 0.toLong(),
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ) : UniffiForeignFutureResultU64(`returnValue`, `callStatus`),
-        Structure.ByValue
+    ): UniffiForeignFutureResultU64(`returnValue`,`callStatus`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiForeignFutureResultU64) {
+   internal fun uniffiSetValue(other: UniffiForeignFutureResultU64) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
-}
 
+}
 internal interface UniffiForeignFutureCompleteU64 : com.sun.jna.Callback {
-    fun callback(
-        `callbackData`: Long,
-        `result`: UniffiForeignFutureResultU64.UniffiByValue,
-    )
+    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureResultU64.UniffiByValue,)
 }
-
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureResultI64(
     @JvmField internal var `returnValue`: Long = 0.toLong(),
@@ -617,22 +536,17 @@ internal open class UniffiForeignFutureResultI64(
     class UniffiByValue(
         `returnValue`: Long = 0.toLong(),
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ) : UniffiForeignFutureResultI64(`returnValue`, `callStatus`),
-        Structure.ByValue
+    ): UniffiForeignFutureResultI64(`returnValue`,`callStatus`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiForeignFutureResultI64) {
+   internal fun uniffiSetValue(other: UniffiForeignFutureResultI64) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
-}
 
+}
 internal interface UniffiForeignFutureCompleteI64 : com.sun.jna.Callback {
-    fun callback(
-        `callbackData`: Long,
-        `result`: UniffiForeignFutureResultI64.UniffiByValue,
-    )
+    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureResultI64.UniffiByValue,)
 }
-
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureResultF32(
     @JvmField internal var `returnValue`: Float = 0.0f,
@@ -641,22 +555,17 @@ internal open class UniffiForeignFutureResultF32(
     class UniffiByValue(
         `returnValue`: Float = 0.0f,
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ) : UniffiForeignFutureResultF32(`returnValue`, `callStatus`),
-        Structure.ByValue
+    ): UniffiForeignFutureResultF32(`returnValue`,`callStatus`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiForeignFutureResultF32) {
+   internal fun uniffiSetValue(other: UniffiForeignFutureResultF32) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
-}
 
+}
 internal interface UniffiForeignFutureCompleteF32 : com.sun.jna.Callback {
-    fun callback(
-        `callbackData`: Long,
-        `result`: UniffiForeignFutureResultF32.UniffiByValue,
-    )
+    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureResultF32.UniffiByValue,)
 }
-
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureResultF64(
     @JvmField internal var `returnValue`: Double = 0.0,
@@ -665,22 +574,17 @@ internal open class UniffiForeignFutureResultF64(
     class UniffiByValue(
         `returnValue`: Double = 0.0,
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ) : UniffiForeignFutureResultF64(`returnValue`, `callStatus`),
-        Structure.ByValue
+    ): UniffiForeignFutureResultF64(`returnValue`,`callStatus`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiForeignFutureResultF64) {
+   internal fun uniffiSetValue(other: UniffiForeignFutureResultF64) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
-}
 
+}
 internal interface UniffiForeignFutureCompleteF64 : com.sun.jna.Callback {
-    fun callback(
-        `callbackData`: Long,
-        `result`: UniffiForeignFutureResultF64.UniffiByValue,
-    )
+    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureResultF64.UniffiByValue,)
 }
-
 @Structure.FieldOrder("returnValue", "callStatus")
 internal open class UniffiForeignFutureResultRustBuffer(
     @JvmField internal var `returnValue`: RustBuffer.ByValue = RustBuffer.ByValue(),
@@ -689,129 +593,60 @@ internal open class UniffiForeignFutureResultRustBuffer(
     class UniffiByValue(
         `returnValue`: RustBuffer.ByValue = RustBuffer.ByValue(),
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ) : UniffiForeignFutureResultRustBuffer(`returnValue`, `callStatus`),
-        Structure.ByValue
+    ): UniffiForeignFutureResultRustBuffer(`returnValue`,`callStatus`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiForeignFutureResultRustBuffer) {
+   internal fun uniffiSetValue(other: UniffiForeignFutureResultRustBuffer) {
         `returnValue` = other.`returnValue`
         `callStatus` = other.`callStatus`
     }
-}
 
+}
 internal interface UniffiForeignFutureCompleteRustBuffer : com.sun.jna.Callback {
-    fun callback(
-        `callbackData`: Long,
-        `result`: UniffiForeignFutureResultRustBuffer.UniffiByValue,
-    )
+    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureResultRustBuffer.UniffiByValue,)
 }
-
 @Structure.FieldOrder("callStatus")
 internal open class UniffiForeignFutureResultVoid(
     @JvmField internal var `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
 ) : Structure() {
     class UniffiByValue(
         `callStatus`: UniffiRustCallStatus.ByValue = UniffiRustCallStatus.ByValue(),
-    ) : UniffiForeignFutureResultVoid(`callStatus`),
-        Structure.ByValue
+    ): UniffiForeignFutureResultVoid(`callStatus`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiForeignFutureResultVoid) {
+   internal fun uniffiSetValue(other: UniffiForeignFutureResultVoid) {
         `callStatus` = other.`callStatus`
     }
-}
 
+}
 internal interface UniffiForeignFutureCompleteVoid : com.sun.jna.Callback {
-    fun callback(
-        `callbackData`: Long,
-        `result`: UniffiForeignFutureResultVoid.UniffiByValue,
-    )
+    fun callback(`callbackData`: Long,`result`: UniffiForeignFutureResultVoid.UniffiByValue,)
 }
-
 internal interface UniffiCallbackInterfacePresetMethod0 : com.sun.jna.Callback {
-    fun callback(
-        `uniffiHandle`: Long,
-        `builder`: Long,
-        `uniffiOutReturn`: Pointer,
-        uniffiCallStatus: UniffiRustCallStatus,
-    )
+    fun callback(`uniffiHandle`: Long,`builder`: Long,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,)
 }
-
 internal interface UniffiCallbackInterfaceProtocolCreatorMethod0 : com.sun.jna.Callback {
-    fun callback(
-        `uniffiHandle`: Long,
-        `endpoint`: Long,
-        `uniffiOutReturn`: LongByReference,
-        uniffiCallStatus: UniffiRustCallStatus,
-    )
+    fun callback(`uniffiHandle`: Long,`endpoint`: Long,`uniffiOutReturn`: LongByReference,uniffiCallStatus: UniffiRustCallStatus,)
 }
-
 internal interface UniffiCallbackInterfaceProtocolHandlerMethod0 : com.sun.jna.Callback {
-    fun callback(
-        `uniffiHandle`: Long,
-        `conn`: Long,
-        `uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,
-        `uniffiCallbackData`: Long,
-        `uniffiOutDroppedCallback`: UniffiForeignFutureDroppedCallbackStruct,
-    )
+    fun callback(`uniffiHandle`: Long,`conn`: Long,`uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,`uniffiCallbackData`: Long,`uniffiOutDroppedCallback`: UniffiForeignFutureDroppedCallbackStruct,)
 }
-
 internal interface UniffiCallbackInterfaceProtocolHandlerMethod1 : com.sun.jna.Callback {
-    fun callback(
-        `uniffiHandle`: Long,
-        `uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,
-        `uniffiCallbackData`: Long,
-        `uniffiOutDroppedCallback`: UniffiForeignFutureDroppedCallbackStruct,
-    )
+    fun callback(`uniffiHandle`: Long,`uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,`uniffiCallbackData`: Long,`uniffiOutDroppedCallback`: UniffiForeignFutureDroppedCallbackStruct,)
 }
-
 internal interface UniffiCallbackInterfacePathChangeCallbackMethod0 : com.sun.jna.Callback {
-    fun callback(
-        `uniffiHandle`: Long,
-        `paths`: RustBuffer.ByValue,
-        `uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,
-        `uniffiCallbackData`: Long,
-        `uniffiOutDroppedCallback`: UniffiForeignFutureDroppedCallbackStruct,
-    )
+    fun callback(`uniffiHandle`: Long,`paths`: RustBuffer.ByValue,`uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,`uniffiCallbackData`: Long,`uniffiOutDroppedCallback`: UniffiForeignFutureDroppedCallbackStruct,)
 }
-
 internal interface UniffiCallbackInterfacePathEventCallbackMethod0 : com.sun.jna.Callback {
-    fun callback(
-        `uniffiHandle`: Long,
-        `event`: RustBuffer.ByValue,
-        `uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,
-        `uniffiCallbackData`: Long,
-        `uniffiOutDroppedCallback`: UniffiForeignFutureDroppedCallbackStruct,
-    )
+    fun callback(`uniffiHandle`: Long,`event`: RustBuffer.ByValue,`uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,`uniffiCallbackData`: Long,`uniffiOutDroppedCallback`: UniffiForeignFutureDroppedCallbackStruct,)
 }
-
 internal interface UniffiCallbackInterfaceAddrChangeCallbackMethod0 : com.sun.jna.Callback {
-    fun callback(
-        `uniffiHandle`: Long,
-        `addr`: Long,
-        `uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,
-        `uniffiCallbackData`: Long,
-        `uniffiOutDroppedCallback`: UniffiForeignFutureDroppedCallbackStruct,
-    )
+    fun callback(`uniffiHandle`: Long,`addr`: Long,`uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,`uniffiCallbackData`: Long,`uniffiOutDroppedCallback`: UniffiForeignFutureDroppedCallbackStruct,)
 }
-
 internal interface UniffiCallbackInterfaceHomeRelayCallbackMethod0 : com.sun.jna.Callback {
-    fun callback(
-        `uniffiHandle`: Long,
-        `relayUrls`: RustBuffer.ByValue,
-        `uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,
-        `uniffiCallbackData`: Long,
-        `uniffiOutDroppedCallback`: UniffiForeignFutureDroppedCallbackStruct,
-    )
+    fun callback(`uniffiHandle`: Long,`relayUrls`: RustBuffer.ByValue,`uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,`uniffiCallbackData`: Long,`uniffiOutDroppedCallback`: UniffiForeignFutureDroppedCallbackStruct,)
 }
-
 internal interface UniffiCallbackInterfaceNetworkChangeCallbackMethod0 : com.sun.jna.Callback {
-    fun callback(
-        `uniffiHandle`: Long,
-        `uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,
-        `uniffiCallbackData`: Long,
-        `uniffiOutDroppedCallback`: UniffiForeignFutureDroppedCallbackStruct,
-    )
+    fun callback(`uniffiHandle`: Long,`uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,`uniffiCallbackData`: Long,`uniffiOutDroppedCallback`: UniffiForeignFutureDroppedCallbackStruct,)
 }
-
 @Structure.FieldOrder("uniffiFree", "uniffiClone", "apply")
 internal open class UniffiVTableCallbackInterfacePreset(
     @JvmField internal var `uniffiFree`: UniffiCallbackInterfaceFree? = null,
@@ -822,16 +657,15 @@ internal open class UniffiVTableCallbackInterfacePreset(
         `uniffiFree`: UniffiCallbackInterfaceFree? = null,
         `uniffiClone`: UniffiCallbackInterfaceClone? = null,
         `apply`: UniffiCallbackInterfacePresetMethod0? = null,
-    ) : UniffiVTableCallbackInterfacePreset(`uniffiFree`, `uniffiClone`, `apply`),
-        Structure.ByValue
+    ): UniffiVTableCallbackInterfacePreset(`uniffiFree`,`uniffiClone`,`apply`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiVTableCallbackInterfacePreset) {
+   internal fun uniffiSetValue(other: UniffiVTableCallbackInterfacePreset) {
         `uniffiFree` = other.`uniffiFree`
         `uniffiClone` = other.`uniffiClone`
         `apply` = other.`apply`
     }
-}
 
+}
 @Structure.FieldOrder("uniffiFree", "uniffiClone", "create")
 internal open class UniffiVTableCallbackInterfaceProtocolCreator(
     @JvmField internal var `uniffiFree`: UniffiCallbackInterfaceFree? = null,
@@ -842,16 +676,15 @@ internal open class UniffiVTableCallbackInterfaceProtocolCreator(
         `uniffiFree`: UniffiCallbackInterfaceFree? = null,
         `uniffiClone`: UniffiCallbackInterfaceClone? = null,
         `create`: UniffiCallbackInterfaceProtocolCreatorMethod0? = null,
-    ) : UniffiVTableCallbackInterfaceProtocolCreator(`uniffiFree`, `uniffiClone`, `create`),
-        Structure.ByValue
+    ): UniffiVTableCallbackInterfaceProtocolCreator(`uniffiFree`,`uniffiClone`,`create`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiVTableCallbackInterfaceProtocolCreator) {
+   internal fun uniffiSetValue(other: UniffiVTableCallbackInterfaceProtocolCreator) {
         `uniffiFree` = other.`uniffiFree`
         `uniffiClone` = other.`uniffiClone`
         `create` = other.`create`
     }
-}
 
+}
 @Structure.FieldOrder("uniffiFree", "uniffiClone", "accept", "shutdown")
 internal open class UniffiVTableCallbackInterfaceProtocolHandler(
     @JvmField internal var `uniffiFree`: UniffiCallbackInterfaceFree? = null,
@@ -864,17 +697,16 @@ internal open class UniffiVTableCallbackInterfaceProtocolHandler(
         `uniffiClone`: UniffiCallbackInterfaceClone? = null,
         `accept`: UniffiCallbackInterfaceProtocolHandlerMethod0? = null,
         `shutdown`: UniffiCallbackInterfaceProtocolHandlerMethod1? = null,
-    ) : UniffiVTableCallbackInterfaceProtocolHandler(`uniffiFree`, `uniffiClone`, `accept`, `shutdown`),
-        Structure.ByValue
+    ): UniffiVTableCallbackInterfaceProtocolHandler(`uniffiFree`,`uniffiClone`,`accept`,`shutdown`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiVTableCallbackInterfaceProtocolHandler) {
+   internal fun uniffiSetValue(other: UniffiVTableCallbackInterfaceProtocolHandler) {
         `uniffiFree` = other.`uniffiFree`
         `uniffiClone` = other.`uniffiClone`
         `accept` = other.`accept`
         `shutdown` = other.`shutdown`
     }
-}
 
+}
 @Structure.FieldOrder("uniffiFree", "uniffiClone", "onChange")
 internal open class UniffiVTableCallbackInterfacePathChangeCallback(
     @JvmField internal var `uniffiFree`: UniffiCallbackInterfaceFree? = null,
@@ -885,16 +717,15 @@ internal open class UniffiVTableCallbackInterfacePathChangeCallback(
         `uniffiFree`: UniffiCallbackInterfaceFree? = null,
         `uniffiClone`: UniffiCallbackInterfaceClone? = null,
         `onChange`: UniffiCallbackInterfacePathChangeCallbackMethod0? = null,
-    ) : UniffiVTableCallbackInterfacePathChangeCallback(`uniffiFree`, `uniffiClone`, `onChange`),
-        Structure.ByValue
+    ): UniffiVTableCallbackInterfacePathChangeCallback(`uniffiFree`,`uniffiClone`,`onChange`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiVTableCallbackInterfacePathChangeCallback) {
+   internal fun uniffiSetValue(other: UniffiVTableCallbackInterfacePathChangeCallback) {
         `uniffiFree` = other.`uniffiFree`
         `uniffiClone` = other.`uniffiClone`
         `onChange` = other.`onChange`
     }
-}
 
+}
 @Structure.FieldOrder("uniffiFree", "uniffiClone", "onEvent")
 internal open class UniffiVTableCallbackInterfacePathEventCallback(
     @JvmField internal var `uniffiFree`: UniffiCallbackInterfaceFree? = null,
@@ -905,16 +736,15 @@ internal open class UniffiVTableCallbackInterfacePathEventCallback(
         `uniffiFree`: UniffiCallbackInterfaceFree? = null,
         `uniffiClone`: UniffiCallbackInterfaceClone? = null,
         `onEvent`: UniffiCallbackInterfacePathEventCallbackMethod0? = null,
-    ) : UniffiVTableCallbackInterfacePathEventCallback(`uniffiFree`, `uniffiClone`, `onEvent`),
-        Structure.ByValue
+    ): UniffiVTableCallbackInterfacePathEventCallback(`uniffiFree`,`uniffiClone`,`onEvent`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiVTableCallbackInterfacePathEventCallback) {
+   internal fun uniffiSetValue(other: UniffiVTableCallbackInterfacePathEventCallback) {
         `uniffiFree` = other.`uniffiFree`
         `uniffiClone` = other.`uniffiClone`
         `onEvent` = other.`onEvent`
     }
-}
 
+}
 @Structure.FieldOrder("uniffiFree", "uniffiClone", "onChange")
 internal open class UniffiVTableCallbackInterfaceAddrChangeCallback(
     @JvmField internal var `uniffiFree`: UniffiCallbackInterfaceFree? = null,
@@ -925,16 +755,15 @@ internal open class UniffiVTableCallbackInterfaceAddrChangeCallback(
         `uniffiFree`: UniffiCallbackInterfaceFree? = null,
         `uniffiClone`: UniffiCallbackInterfaceClone? = null,
         `onChange`: UniffiCallbackInterfaceAddrChangeCallbackMethod0? = null,
-    ) : UniffiVTableCallbackInterfaceAddrChangeCallback(`uniffiFree`, `uniffiClone`, `onChange`),
-        Structure.ByValue
+    ): UniffiVTableCallbackInterfaceAddrChangeCallback(`uniffiFree`,`uniffiClone`,`onChange`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiVTableCallbackInterfaceAddrChangeCallback) {
+   internal fun uniffiSetValue(other: UniffiVTableCallbackInterfaceAddrChangeCallback) {
         `uniffiFree` = other.`uniffiFree`
         `uniffiClone` = other.`uniffiClone`
         `onChange` = other.`onChange`
     }
-}
 
+}
 @Structure.FieldOrder("uniffiFree", "uniffiClone", "onChange")
 internal open class UniffiVTableCallbackInterfaceHomeRelayCallback(
     @JvmField internal var `uniffiFree`: UniffiCallbackInterfaceFree? = null,
@@ -945,16 +774,15 @@ internal open class UniffiVTableCallbackInterfaceHomeRelayCallback(
         `uniffiFree`: UniffiCallbackInterfaceFree? = null,
         `uniffiClone`: UniffiCallbackInterfaceClone? = null,
         `onChange`: UniffiCallbackInterfaceHomeRelayCallbackMethod0? = null,
-    ) : UniffiVTableCallbackInterfaceHomeRelayCallback(`uniffiFree`, `uniffiClone`, `onChange`),
-        Structure.ByValue
+    ): UniffiVTableCallbackInterfaceHomeRelayCallback(`uniffiFree`,`uniffiClone`,`onChange`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiVTableCallbackInterfaceHomeRelayCallback) {
+   internal fun uniffiSetValue(other: UniffiVTableCallbackInterfaceHomeRelayCallback) {
         `uniffiFree` = other.`uniffiFree`
         `uniffiClone` = other.`uniffiClone`
         `onChange` = other.`onChange`
     }
-}
 
+}
 @Structure.FieldOrder("uniffiFree", "uniffiClone", "onChange")
 internal open class UniffiVTableCallbackInterfaceNetworkChangeCallback(
     @JvmField internal var `uniffiFree`: UniffiCallbackInterfaceFree? = null,
@@ -965,14 +793,14 @@ internal open class UniffiVTableCallbackInterfaceNetworkChangeCallback(
         `uniffiFree`: UniffiCallbackInterfaceFree? = null,
         `uniffiClone`: UniffiCallbackInterfaceClone? = null,
         `onChange`: UniffiCallbackInterfaceNetworkChangeCallbackMethod0? = null,
-    ) : UniffiVTableCallbackInterfaceNetworkChangeCallback(`uniffiFree`, `uniffiClone`, `onChange`),
-        Structure.ByValue
+    ): UniffiVTableCallbackInterfaceNetworkChangeCallback(`uniffiFree`,`uniffiClone`,`onChange`,), Structure.ByValue
 
-    internal fun uniffiSetValue(other: UniffiVTableCallbackInterfaceNetworkChangeCallback) {
+   internal fun uniffiSetValue(other: UniffiVTableCallbackInterfaceNetworkChangeCallback) {
         `uniffiFree` = other.`uniffiFree`
         `uniffiClone` = other.`uniffiClone`
         `onChange` = other.`onChange`
     }
+
 }
 
 // A JNA Library to expose the extern-C FFI definitions.
@@ -997,299 +825,303 @@ internal object IntegrityCheckingUniffiLib {
         uniffiCheckContractApiVersion(this)
         uniffiCheckApiChecksums(this)
     }
-
-    external fun uniffi_iroh_ffi_checksum_func_set_log_level(): Int
-
-    external fun uniffi_iroh_ffi_checksum_func_preset_minimal(): Int
-
-    external fun uniffi_iroh_ffi_checksum_func_preset_n0(): Int
-
-    external fun uniffi_iroh_ffi_checksum_func_preset_n0_disable_relay(): Int
-
-    external fun uniffi_iroh_ffi_checksum_func_preset_iroh_services(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_accepting_alpn(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_accepting_connect(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_connecting_alpn(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_connecting_connect(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_connecting_remote_id(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_incoming_accept(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_incoming_ignore(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_incoming_local_addr(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_incoming_refuse(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_incoming_remote_addr(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_incoming_remote_addr_validated(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_incoming_retry(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_bistream_recv(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_bistream_send(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_connection_accept_bi(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_connection_accept_uni(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_connection_alpn(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_connection_close(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_connection_close_reason(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_connection_closed(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_connection_datagram_send_buffer_space(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_connection_max_datagram_size(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_connection_open_bi(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_connection_open_uni(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_connection_paths(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_connection_read_datagram(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_connection_remote_id(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_connection_rtt(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_connection_send_datagram(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_connection_send_datagram_wait(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_connection_set_max_concurrent_bi_streams(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_connection_set_max_concurrent_uni_streams(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_connection_set_receive_window(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_connection_side(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_connection_stable_id(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_connection_stats(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_connection_watch_path_events(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_connection_watch_paths(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_accept_next(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_add_external_addr(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_addr(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_bound_sockets(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_close(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_connect(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_connect_pending(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_id(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_insert_relay(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_is_closed(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_online(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_remote_addr(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_remove_external_addr(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_remove_relay(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_secret_key(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_set_alpns(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_stats(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_watch_addr(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_watch_home_relay(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpoint_watch_network_change(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_alpns(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_apply_minimal(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_apply_n0(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_apply_n0_disable_relay(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_bind(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_bind_addr(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_relay_mode(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_secret_key(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_preset_apply(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_protocolcreator_create(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_protocolhandler_accept(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_protocolhandler_shutdown(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_recvstream_bytes_read(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_recvstream_id(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_recvstream_read(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_recvstream_read_exact(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_recvstream_read_to_end(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_recvstream_received_reset(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_recvstream_stop(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_sendstream_finish(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_sendstream_id(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_sendstream_priority(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_sendstream_reset(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_sendstream_set_priority(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_sendstream_stopped(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_sendstream_write(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_sendstream_write_all(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_iroherror_debug_message(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_iroherror_is_kind(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_iroherror_kind(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_iroherror_message(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpointid_fmt_short(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpointid_to_bytes(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpointid_verify(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_secretkey_public(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_secretkey_sign(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_secretkey_to_bytes(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_signature_to_bytes(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpointaddr_direct_addresses(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpointaddr_id(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpointaddr_relay_url(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_pathchangecallback_on_change(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_patheventcallback_on_event(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_relaymap_contains(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_relaymap_get(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_relaymap_insert(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_relaymap_is_empty(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_relaymap_len(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_relaymap_remove(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_relaymap_urls(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_relaymode_relay_map(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_servicesclient_name(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_servicesclient_ping(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_servicesclient_push_metrics(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_servicesclient_set_name(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_servicesclient_submit_network_diagnostics(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_endpointticket_endpoint_addr(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_addrchangecallback_on_change(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_homerelaycallback_on_change(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_networkchangecallback_on_change(): Int
-
-    external fun uniffi_iroh_ffi_checksum_method_watchhandle_stop(): Int
-
-    external fun uniffi_iroh_ffi_checksum_constructor_endpoint_bind(): Int
-
-    external fun uniffi_iroh_ffi_checksum_constructor_endpointbuilder_new(): Int
-
-    external fun uniffi_iroh_ffi_checksum_constructor_endpointid_from_bytes(): Int
-
-    external fun uniffi_iroh_ffi_checksum_constructor_endpointid_from_string(): Int
-
-    external fun uniffi_iroh_ffi_checksum_constructor_secretkey_from_bytes(): Int
-
-    external fun uniffi_iroh_ffi_checksum_constructor_secretkey_generate(): Int
-
-    external fun uniffi_iroh_ffi_checksum_constructor_signature_from_bytes(): Int
-
-    external fun uniffi_iroh_ffi_checksum_constructor_endpointaddr_new(): Int
-
-    external fun uniffi_iroh_ffi_checksum_constructor_relaymap_empty(): Int
-
-    external fun uniffi_iroh_ffi_checksum_constructor_relaymap_from_urls(): Int
-
-    external fun uniffi_iroh_ffi_checksum_constructor_relaymode_custom(): Int
-
-    external fun uniffi_iroh_ffi_checksum_constructor_relaymode_custom_from_urls(): Int
-
-    external fun uniffi_iroh_ffi_checksum_constructor_relaymode_default_mode(): Int
-
-    external fun uniffi_iroh_ffi_checksum_constructor_relaymode_disabled(): Int
-
-    external fun uniffi_iroh_ffi_checksum_constructor_relaymode_staging(): Int
-
-    external fun uniffi_iroh_ffi_checksum_constructor_servicesclient_create(): Int
-
-    external fun uniffi_iroh_ffi_checksum_constructor_endpointticket_from_addr(): Int
-
-    external fun uniffi_iroh_ffi_checksum_constructor_endpointticket_from_string(): Int
-
-    external fun ffi_iroh_ffi_uniffi_contract_version(): Int
+    external fun uniffi_iroh_ffi_checksum_func_set_log_level(
+): Int
+external fun uniffi_iroh_ffi_checksum_func_preset_minimal(
+): Int
+external fun uniffi_iroh_ffi_checksum_func_preset_n0(
+): Int
+external fun uniffi_iroh_ffi_checksum_func_preset_n0_disable_relay(
+): Int
+external fun uniffi_iroh_ffi_checksum_func_preset_iroh_services(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_accepting_alpn(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_accepting_connect(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_connecting_alpn(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_connecting_connect(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_connecting_remote_id(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_incoming_accept(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_incoming_ignore(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_incoming_local_addr(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_incoming_refuse(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_incoming_remote_addr(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_incoming_remote_addr_validated(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_incoming_retry(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_bistream_recv(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_bistream_send(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_connection_accept_bi(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_connection_accept_uni(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_connection_alpn(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_connection_close(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_connection_close_reason(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_connection_closed(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_connection_datagram_send_buffer_space(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_connection_max_datagram_size(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_connection_open_bi(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_connection_open_uni(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_connection_paths(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_connection_read_datagram(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_connection_remote_id(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_connection_rtt(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_connection_send_datagram(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_connection_send_datagram_wait(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_connection_set_max_concurrent_bi_streams(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_connection_set_max_concurrent_uni_streams(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_connection_set_receive_window(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_connection_side(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_connection_stable_id(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_connection_stats(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_connection_watch_path_events(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_connection_watch_paths(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpoint_accept_next(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpoint_add_external_addr(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpoint_addr(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpoint_bound_sockets(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpoint_close(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpoint_connect(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpoint_connect_pending(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpoint_id(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpoint_insert_relay(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpoint_is_closed(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpoint_online(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpoint_remote_addr(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpoint_remove_external_addr(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpoint_remove_relay(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpoint_secret_key(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpoint_set_alpns(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpoint_stats(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpoint_watch_addr(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpoint_watch_home_relay(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpoint_watch_network_change(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_alpns(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_apply_minimal(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_apply_n0(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_apply_n0_disable_relay(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_bind(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_bind_addr(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_relay_mode(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpointbuilder_secret_key(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_preset_apply(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_protocolcreator_create(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_protocolhandler_accept(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_protocolhandler_shutdown(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_recvstream_bytes_read(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_recvstream_id(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_recvstream_read(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_recvstream_read_exact(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_recvstream_read_to_end(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_recvstream_received_reset(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_recvstream_stop(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_sendstream_finish(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_sendstream_id(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_sendstream_priority(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_sendstream_reset(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_sendstream_set_priority(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_sendstream_stopped(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_sendstream_write(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_sendstream_write_all(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_iroherror_debug_message(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_iroherror_is_kind(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_iroherror_kind(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_iroherror_message(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpointid_fmt_short(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpointid_to_bytes(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpointid_verify(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_secretkey_public(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_secretkey_sign(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_secretkey_to_bytes(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_signature_to_bytes(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpointaddr_direct_addresses(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpointaddr_id(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpointaddr_relay_url(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_pathchangecallback_on_change(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_patheventcallback_on_event(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_relaymap_contains(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_relaymap_get(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_relaymap_insert(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_relaymap_is_empty(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_relaymap_len(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_relaymap_remove(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_relaymap_urls(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_relaymode_relay_map(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_servicesclient_name(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_servicesclient_ping(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_servicesclient_push_metrics(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_servicesclient_set_name(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_servicesclient_submit_network_diagnostics(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_endpointticket_endpoint_addr(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_addrchangecallback_on_change(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_homerelaycallback_on_change(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_networkchangecallback_on_change(
+): Int
+external fun uniffi_iroh_ffi_checksum_method_watchhandle_stop(
+): Int
+external fun uniffi_iroh_ffi_checksum_constructor_endpoint_bind(
+): Int
+external fun uniffi_iroh_ffi_checksum_constructor_endpointbuilder_new(
+): Int
+external fun uniffi_iroh_ffi_checksum_constructor_endpointid_from_bytes(
+): Int
+external fun uniffi_iroh_ffi_checksum_constructor_endpointid_from_string(
+): Int
+external fun uniffi_iroh_ffi_checksum_constructor_secretkey_from_bytes(
+): Int
+external fun uniffi_iroh_ffi_checksum_constructor_secretkey_generate(
+): Int
+external fun uniffi_iroh_ffi_checksum_constructor_signature_from_bytes(
+): Int
+external fun uniffi_iroh_ffi_checksum_constructor_endpointaddr_new(
+): Int
+external fun uniffi_iroh_ffi_checksum_constructor_relaymap_empty(
+): Int
+external fun uniffi_iroh_ffi_checksum_constructor_relaymap_from_urls(
+): Int
+external fun uniffi_iroh_ffi_checksum_constructor_relaymode_custom(
+): Int
+external fun uniffi_iroh_ffi_checksum_constructor_relaymode_custom_from_urls(
+): Int
+external fun uniffi_iroh_ffi_checksum_constructor_relaymode_default_mode(
+): Int
+external fun uniffi_iroh_ffi_checksum_constructor_relaymode_disabled(
+): Int
+external fun uniffi_iroh_ffi_checksum_constructor_relaymode_staging(
+): Int
+external fun uniffi_iroh_ffi_checksum_constructor_servicesclient_create(
+): Int
+external fun uniffi_iroh_ffi_checksum_constructor_endpointticket_from_addr(
+): Int
+external fun uniffi_iroh_ffi_checksum_constructor_endpointticket_from_string(
+): Int
+external fun ffi_iroh_ffi_uniffi_contract_version(
+): Int
+
+    
 }
 
 internal object UniffiLib {
+    
     // The Cleaner for the whole library
     internal val CLEANER: UniffiCleaner by lazy {
         UniffiCleaner.create()
     }
+    
 
     init {
         Native.register(UniffiLib::class.java, findLibraryName(componentName = "iroh_ffi"))
@@ -1301,1187 +1133,554 @@ internal object UniffiLib {
         uniffiCallbackInterfacePreset.register(this)
         uniffiCallbackInterfaceProtocolCreator.register(this)
         uniffiCallbackInterfaceProtocolHandler.register(this)
+        
     }
-
-    external fun uniffi_iroh_ffi_fn_clone_accepting(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_free_accepting(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_method_accepting_alpn(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_method_accepting_connect(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_clone_connecting(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_free_connecting(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_method_connecting_alpn(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_method_connecting_connect(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_method_connecting_remote_id(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_clone_incoming(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_free_incoming(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_method_incoming_accept(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_method_incoming_ignore(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_method_incoming_local_addr(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_method_incoming_refuse(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_method_incoming_remote_addr(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_method_incoming_remote_addr_validated(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_method_incoming_retry(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_clone_bistream(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_free_bistream(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_method_bistream_recv(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_bistream_send(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_clone_connection(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_free_connection(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_method_connection_accept_bi(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_method_connection_accept_uni(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_method_connection_alpn(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    external fun uniffi_iroh_ffi_fn_method_connection_close(
-        `ptr`: Long,
-        `errorCode`: Long,
-        `reason`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_method_connection_close_reason(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    external fun uniffi_iroh_ffi_fn_method_connection_closed(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_method_connection_datagram_send_buffer_space(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_connection_max_datagram_size(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    external fun uniffi_iroh_ffi_fn_method_connection_open_bi(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_method_connection_open_uni(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_method_connection_paths(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    external fun uniffi_iroh_ffi_fn_method_connection_read_datagram(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_method_connection_remote_id(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_connection_rtt(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    external fun uniffi_iroh_ffi_fn_method_connection_send_datagram(
-        `ptr`: Long,
-        `data`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_method_connection_send_datagram_wait(
-        `ptr`: Long,
-        `data`: RustBuffer.ByValue,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_connection_set_max_concurrent_bi_streams(
-        `ptr`: Long,
-        `count`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_method_connection_set_max_concurrent_uni_streams(
-        `ptr`: Long,
-        `count`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_method_connection_set_receive_window(
-        `ptr`: Long,
-        `count`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_method_connection_side(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    external fun uniffi_iroh_ffi_fn_method_connection_stable_id(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_connection_stats(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    external fun uniffi_iroh_ffi_fn_method_connection_watch_path_events(
-        `ptr`: Long,
-        `callback`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_connection_watch_paths(
-        `ptr`: Long,
-        `callback`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_clone_endpoint(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_free_endpoint(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_constructor_endpoint_bind(`options`: RustBuffer.ByValue): Long
-
-    external fun uniffi_iroh_ffi_fn_method_endpoint_accept_next(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_method_endpoint_add_external_addr(
-        `ptr`: Long,
-        `addr`: RustBuffer.ByValue,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_endpoint_addr(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_endpoint_bound_sockets(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    external fun uniffi_iroh_ffi_fn_method_endpoint_close(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_method_endpoint_connect(
-        `ptr`: Long,
-        `addr`: Long,
-        `alpn`: RustBuffer.ByValue,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_endpoint_connect_pending(
-        `ptr`: Long,
-        `addr`: Long,
-        `alpn`: RustBuffer.ByValue,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_endpoint_id(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_endpoint_insert_relay(
-        `ptr`: Long,
-        `config`: RustBuffer.ByValue,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_endpoint_is_closed(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Byte
-
-    external fun uniffi_iroh_ffi_fn_method_endpoint_online(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_method_endpoint_remote_addr(
-        `ptr`: Long,
-        `id`: Long,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_endpoint_remove_external_addr(
-        `ptr`: Long,
-        `addr`: RustBuffer.ByValue,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_endpoint_remove_relay(
-        `ptr`: Long,
-        `url`: RustBuffer.ByValue,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_endpoint_secret_key(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_endpoint_set_alpns(
-        `ptr`: Long,
-        `alpns`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_method_endpoint_stats(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    external fun uniffi_iroh_ffi_fn_method_endpoint_watch_addr(
-        `ptr`: Long,
-        `callback`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_endpoint_watch_home_relay(
-        `ptr`: Long,
-        `callback`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_endpoint_watch_network_change(
-        `ptr`: Long,
-        `callback`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_clone_endpointbuilder(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_free_endpointbuilder(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_constructor_endpointbuilder_new(uniffi_out_err: UniffiRustCallStatus): Long
-
-    external fun uniffi_iroh_ffi_fn_method_endpointbuilder_alpns(
-        `ptr`: Long,
-        `alpns`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_method_endpointbuilder_apply_minimal(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_method_endpointbuilder_apply_n0(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_method_endpointbuilder_apply_n0_disable_relay(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_method_endpointbuilder_bind(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_method_endpointbuilder_bind_addr(
-        `ptr`: Long,
-        `addr`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_method_endpointbuilder_relay_mode(
-        `ptr`: Long,
-        `mode`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_method_endpointbuilder_secret_key(
-        `ptr`: Long,
-        `bytes`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_clone_preset(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_free_preset(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_init_callback_vtable_preset(`vtable`: UniffiVTableCallbackInterfacePreset): Unit
-
-    external fun uniffi_iroh_ffi_fn_method_preset_apply(
-        `ptr`: Long,
-        `builder`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_clone_protocolcreator(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_free_protocolcreator(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_init_callback_vtable_protocolcreator(`vtable`: UniffiVTableCallbackInterfaceProtocolCreator): Unit
-
-    external fun uniffi_iroh_ffi_fn_method_protocolcreator_create(
-        `ptr`: Long,
-        `endpoint`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_clone_protocolhandler(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_free_protocolhandler(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_init_callback_vtable_protocolhandler(`vtable`: UniffiVTableCallbackInterfaceProtocolHandler): Unit
-
-    external fun uniffi_iroh_ffi_fn_method_protocolhandler_accept(
-        `ptr`: Long,
-        `conn`: Long,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_protocolhandler_shutdown(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_clone_recvstream(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_free_recvstream(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_method_recvstream_bytes_read(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_method_recvstream_id(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_method_recvstream_read(
-        `ptr`: Long,
-        `sizeLimit`: Int,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_recvstream_read_exact(
-        `ptr`: Long,
-        `size`: Int,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_recvstream_read_to_end(
-        `ptr`: Long,
-        `sizeLimit`: Int,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_recvstream_received_reset(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_method_recvstream_stop(
-        `ptr`: Long,
-        `errorCode`: Long,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_clone_sendstream(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_free_sendstream(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_method_sendstream_finish(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_method_sendstream_id(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_method_sendstream_priority(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_method_sendstream_reset(
-        `ptr`: Long,
-        `errorCode`: Long,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_sendstream_set_priority(
-        `ptr`: Long,
-        `p`: Int,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_sendstream_stopped(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_method_sendstream_write(
-        `ptr`: Long,
-        `buf`: RustBuffer.ByValue,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_sendstream_write_all(
-        `ptr`: Long,
-        `buf`: RustBuffer.ByValue,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_clone_iroherror(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_free_iroherror(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_method_iroherror_debug_message(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    external fun uniffi_iroh_ffi_fn_method_iroherror_is_kind(
-        `ptr`: Long,
-        `kind`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Byte
-
-    external fun uniffi_iroh_ffi_fn_method_iroherror_kind(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    external fun uniffi_iroh_ffi_fn_method_iroherror_message(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    external fun uniffi_iroh_ffi_fn_method_iroherror_uniffi_trait_debug(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    external fun uniffi_iroh_ffi_fn_clone_endpointid(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_free_endpointid(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_constructor_endpointid_from_bytes(
-        `bytes`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_constructor_endpointid_from_string(
-        `s`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_endpointid_fmt_short(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    external fun uniffi_iroh_ffi_fn_method_endpointid_to_bytes(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    external fun uniffi_iroh_ffi_fn_method_endpointid_verify(
-        `ptr`: Long,
-        `message`: RustBuffer.ByValue,
-        `signature`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_method_endpointid_uniffi_trait_display(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    external fun uniffi_iroh_ffi_fn_method_endpointid_uniffi_trait_eq_eq(
-        `ptr`: Long,
-        `other`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Byte
-
-    external fun uniffi_iroh_ffi_fn_method_endpointid_uniffi_trait_eq_ne(
-        `ptr`: Long,
-        `other`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Byte
-
-    external fun uniffi_iroh_ffi_fn_method_endpointid_uniffi_trait_hash(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_clone_secretkey(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_free_secretkey(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_constructor_secretkey_from_bytes(
-        `bytes`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_constructor_secretkey_generate(uniffi_out_err: UniffiRustCallStatus): Long
-
-    external fun uniffi_iroh_ffi_fn_method_secretkey_public(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_secretkey_sign(
-        `ptr`: Long,
-        `message`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_secretkey_to_bytes(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    external fun uniffi_iroh_ffi_fn_clone_signature(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_free_signature(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_constructor_signature_from_bytes(
-        `bytes`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_signature_to_bytes(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    external fun uniffi_iroh_ffi_fn_method_signature_uniffi_trait_display(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    external fun uniffi_iroh_ffi_fn_method_signature_uniffi_trait_eq_eq(
-        `ptr`: Long,
-        `other`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Byte
-
-    external fun uniffi_iroh_ffi_fn_method_signature_uniffi_trait_eq_ne(
-        `ptr`: Long,
-        `other`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Byte
-
-    external fun uniffi_iroh_ffi_fn_method_signature_uniffi_trait_hash(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_clone_endpointaddr(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_free_endpointaddr(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_constructor_endpointaddr_new(
-        `id`: Long,
-        `relayUrl`: RustBuffer.ByValue,
-        `addresses`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_endpointaddr_direct_addresses(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    external fun uniffi_iroh_ffi_fn_method_endpointaddr_id(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_endpointaddr_relay_url(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    external fun uniffi_iroh_ffi_fn_method_endpointaddr_uniffi_trait_display(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    external fun uniffi_iroh_ffi_fn_method_endpointaddr_uniffi_trait_eq_eq(
-        `ptr`: Long,
-        `other`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Byte
-
-    external fun uniffi_iroh_ffi_fn_method_endpointaddr_uniffi_trait_eq_ne(
-        `ptr`: Long,
-        `other`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Byte
-
-    external fun uniffi_iroh_ffi_fn_method_endpointaddr_uniffi_trait_hash(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_clone_pathchangecallback(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_free_pathchangecallback(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_init_callback_vtable_pathchangecallback(`vtable`: UniffiVTableCallbackInterfacePathChangeCallback): Unit
-
-    external fun uniffi_iroh_ffi_fn_method_pathchangecallback_on_change(
-        `ptr`: Long,
-        `paths`: RustBuffer.ByValue,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_clone_patheventcallback(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_free_patheventcallback(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_init_callback_vtable_patheventcallback(`vtable`: UniffiVTableCallbackInterfacePathEventCallback): Unit
-
-    external fun uniffi_iroh_ffi_fn_method_patheventcallback_on_event(
-        `ptr`: Long,
-        `event`: RustBuffer.ByValue,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_clone_relaymap(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_free_relaymap(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_constructor_relaymap_empty(uniffi_out_err: UniffiRustCallStatus): Long
-
-    external fun uniffi_iroh_ffi_fn_constructor_relaymap_from_urls(
-        `urls`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_relaymap_contains(
-        `ptr`: Long,
-        `url`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Byte
-
-    external fun uniffi_iroh_ffi_fn_method_relaymap_get(
-        `ptr`: Long,
-        `url`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    external fun uniffi_iroh_ffi_fn_method_relaymap_insert(
-        `ptr`: Long,
-        `config`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_method_relaymap_is_empty(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Byte
-
-    external fun uniffi_iroh_ffi_fn_method_relaymap_len(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Int
-
-    external fun uniffi_iroh_ffi_fn_method_relaymap_remove(
-        `ptr`: Long,
-        `url`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Byte
-
-    external fun uniffi_iroh_ffi_fn_method_relaymap_urls(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    external fun uniffi_iroh_ffi_fn_method_relaymap_uniffi_trait_display(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    external fun uniffi_iroh_ffi_fn_clone_relaymode(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_free_relaymode(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_constructor_relaymode_custom(
-        `map`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_constructor_relaymode_custom_from_urls(
-        `urls`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_constructor_relaymode_default_mode(uniffi_out_err: UniffiRustCallStatus): Long
-
-    external fun uniffi_iroh_ffi_fn_constructor_relaymode_disabled(uniffi_out_err: UniffiRustCallStatus): Long
-
-    external fun uniffi_iroh_ffi_fn_constructor_relaymode_staging(uniffi_out_err: UniffiRustCallStatus): Long
-
-    external fun uniffi_iroh_ffi_fn_method_relaymode_relay_map(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_relaymode_uniffi_trait_display(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    external fun uniffi_iroh_ffi_fn_clone_servicesclient(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_free_servicesclient(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_constructor_servicesclient_create(
-        `endpoint`: Long,
-        `options`: RustBuffer.ByValue,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_servicesclient_name(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_method_servicesclient_ping(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_method_servicesclient_push_metrics(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_method_servicesclient_set_name(
-        `ptr`: Long,
-        `name`: RustBuffer.ByValue,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_servicesclient_submit_network_diagnostics(
-        `ptr`: Long,
-        `send`: Byte,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_clone_endpointticket(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_free_endpointticket(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_constructor_endpointticket_from_addr(
-        `addr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_constructor_endpointticket_from_string(
-        `str`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_endpointticket_endpoint_addr(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_method_endpointticket_uniffi_trait_display(
-        `ptr`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    external fun uniffi_iroh_ffi_fn_clone_addrchangecallback(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_free_addrchangecallback(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_init_callback_vtable_addrchangecallback(`vtable`: UniffiVTableCallbackInterfaceAddrChangeCallback): Unit
-
-    external fun uniffi_iroh_ffi_fn_method_addrchangecallback_on_change(
-        `ptr`: Long,
-        `addr`: Long,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_clone_homerelaycallback(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_free_homerelaycallback(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_init_callback_vtable_homerelaycallback(`vtable`: UniffiVTableCallbackInterfaceHomeRelayCallback): Unit
-
-    external fun uniffi_iroh_ffi_fn_method_homerelaycallback_on_change(
-        `ptr`: Long,
-        `relayUrls`: RustBuffer.ByValue,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_clone_networkchangecallback(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_free_networkchangecallback(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_init_callback_vtable_networkchangecallback(
-        `vtable`: UniffiVTableCallbackInterfaceNetworkChangeCallback,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_method_networkchangecallback_on_change(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_clone_watchhandle(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun uniffi_iroh_ffi_fn_free_watchhandle(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_method_watchhandle_stop(`ptr`: Long): Long
-
-    external fun uniffi_iroh_ffi_fn_func_set_log_level(
-        `level`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun uniffi_iroh_ffi_fn_func_preset_minimal(uniffi_out_err: UniffiRustCallStatus): Long
-
-    external fun uniffi_iroh_ffi_fn_func_preset_n0(uniffi_out_err: UniffiRustCallStatus): Long
-
-    external fun uniffi_iroh_ffi_fn_func_preset_n0_disable_relay(uniffi_out_err: UniffiRustCallStatus): Long
-
-    external fun uniffi_iroh_ffi_fn_func_preset_iroh_services(
-        `options`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun ffi_iroh_ffi_rustbuffer_alloc(
-        `size`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    external fun ffi_iroh_ffi_rustbuffer_from_bytes(
-        `bytes`: ForeignBytes.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    external fun ffi_iroh_ffi_rustbuffer_free(
-        `buf`: RustBuffer.ByValue,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
-
-    external fun ffi_iroh_ffi_rustbuffer_reserve(
-        `buf`: RustBuffer.ByValue,
-        `additional`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    external fun ffi_iroh_ffi_rust_future_poll_u8(
-        `handle`: Long,
-        `callback`: UniffiRustFutureContinuationCallback,
-        `callbackData`: Long,
-    ): Unit
-
-    external fun ffi_iroh_ffi_rust_future_cancel_u8(`handle`: Long): Unit
-
-    external fun ffi_iroh_ffi_rust_future_free_u8(`handle`: Long): Unit
-
-    external fun ffi_iroh_ffi_rust_future_complete_u8(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Int
-
-    external fun ffi_iroh_ffi_rust_future_poll_i8(
-        `handle`: Long,
-        `callback`: UniffiRustFutureContinuationCallback,
-        `callbackData`: Long,
-    ): Unit
-
-    external fun ffi_iroh_ffi_rust_future_cancel_i8(`handle`: Long): Unit
-
-    external fun ffi_iroh_ffi_rust_future_free_i8(`handle`: Long): Unit
-
-    external fun ffi_iroh_ffi_rust_future_complete_i8(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Byte
-
-    external fun ffi_iroh_ffi_rust_future_poll_u16(
-        `handle`: Long,
-        `callback`: UniffiRustFutureContinuationCallback,
-        `callbackData`: Long,
-    ): Unit
-
-    external fun ffi_iroh_ffi_rust_future_cancel_u16(`handle`: Long): Unit
-
-    external fun ffi_iroh_ffi_rust_future_free_u16(`handle`: Long): Unit
-
-    external fun ffi_iroh_ffi_rust_future_complete_u16(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Int
-
-    external fun ffi_iroh_ffi_rust_future_poll_i16(
-        `handle`: Long,
-        `callback`: UniffiRustFutureContinuationCallback,
-        `callbackData`: Long,
-    ): Unit
-
-    external fun ffi_iroh_ffi_rust_future_cancel_i16(`handle`: Long): Unit
-
-    external fun ffi_iroh_ffi_rust_future_free_i16(`handle`: Long): Unit
-
-    external fun ffi_iroh_ffi_rust_future_complete_i16(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Short
-
-    external fun ffi_iroh_ffi_rust_future_poll_u32(
-        `handle`: Long,
-        `callback`: UniffiRustFutureContinuationCallback,
-        `callbackData`: Long,
-    ): Unit
-
-    external fun ffi_iroh_ffi_rust_future_cancel_u32(`handle`: Long): Unit
-
-    external fun ffi_iroh_ffi_rust_future_free_u32(`handle`: Long): Unit
-
-    external fun ffi_iroh_ffi_rust_future_complete_u32(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Int
-
-    external fun ffi_iroh_ffi_rust_future_poll_i32(
-        `handle`: Long,
-        `callback`: UniffiRustFutureContinuationCallback,
-        `callbackData`: Long,
-    ): Unit
-
-    external fun ffi_iroh_ffi_rust_future_cancel_i32(`handle`: Long): Unit
-
-    external fun ffi_iroh_ffi_rust_future_free_i32(`handle`: Long): Unit
-
-    external fun ffi_iroh_ffi_rust_future_complete_i32(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Int
-
-    external fun ffi_iroh_ffi_rust_future_poll_u64(
-        `handle`: Long,
-        `callback`: UniffiRustFutureContinuationCallback,
-        `callbackData`: Long,
-    ): Unit
-
-    external fun ffi_iroh_ffi_rust_future_cancel_u64(`handle`: Long): Unit
-
-    external fun ffi_iroh_ffi_rust_future_free_u64(`handle`: Long): Unit
-
-    external fun ffi_iroh_ffi_rust_future_complete_u64(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun ffi_iroh_ffi_rust_future_poll_i64(
-        `handle`: Long,
-        `callback`: UniffiRustFutureContinuationCallback,
-        `callbackData`: Long,
-    ): Unit
-
-    external fun ffi_iroh_ffi_rust_future_cancel_i64(`handle`: Long): Unit
-
-    external fun ffi_iroh_ffi_rust_future_free_i64(`handle`: Long): Unit
-
-    external fun ffi_iroh_ffi_rust_future_complete_i64(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Long
-
-    external fun ffi_iroh_ffi_rust_future_poll_f32(
-        `handle`: Long,
-        `callback`: UniffiRustFutureContinuationCallback,
-        `callbackData`: Long,
-    ): Unit
-
-    external fun ffi_iroh_ffi_rust_future_cancel_f32(`handle`: Long): Unit
-
-    external fun ffi_iroh_ffi_rust_future_free_f32(`handle`: Long): Unit
-
-    external fun ffi_iroh_ffi_rust_future_complete_f32(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Float
-
-    external fun ffi_iroh_ffi_rust_future_poll_f64(
-        `handle`: Long,
-        `callback`: UniffiRustFutureContinuationCallback,
-        `callbackData`: Long,
-    ): Unit
-
-    external fun ffi_iroh_ffi_rust_future_cancel_f64(`handle`: Long): Unit
-
-    external fun ffi_iroh_ffi_rust_future_free_f64(`handle`: Long): Unit
-
-    external fun ffi_iroh_ffi_rust_future_complete_f64(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Double
-
-    external fun ffi_iroh_ffi_rust_future_poll_rust_buffer(
-        `handle`: Long,
-        `callback`: UniffiRustFutureContinuationCallback,
-        `callbackData`: Long,
-    ): Unit
-
-    external fun ffi_iroh_ffi_rust_future_cancel_rust_buffer(`handle`: Long): Unit
-
-    external fun ffi_iroh_ffi_rust_future_free_rust_buffer(`handle`: Long): Unit
-
-    external fun ffi_iroh_ffi_rust_future_complete_rust_buffer(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): RustBuffer.ByValue
-
-    external fun ffi_iroh_ffi_rust_future_poll_void(
-        `handle`: Long,
-        `callback`: UniffiRustFutureContinuationCallback,
-        `callbackData`: Long,
-    ): Unit
-
-    external fun ffi_iroh_ffi_rust_future_cancel_void(`handle`: Long): Unit
-
-    external fun ffi_iroh_ffi_rust_future_free_void(`handle`: Long): Unit
-
-    external fun ffi_iroh_ffi_rust_future_complete_void(
-        `handle`: Long,
-        uniffi_out_err: UniffiRustCallStatus,
-    ): Unit
+    external fun uniffi_iroh_ffi_fn_clone_accepting(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_free_accepting(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_method_accepting_alpn(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_accepting_connect(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_clone_connecting(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_free_connecting(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_method_connecting_alpn(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_connecting_connect(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_connecting_remote_id(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_clone_incoming(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_free_incoming(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_method_incoming_accept(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_incoming_ignore(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_incoming_local_addr(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_incoming_refuse(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_incoming_remote_addr(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_incoming_remote_addr_validated(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_incoming_retry(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_clone_bistream(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_free_bistream(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_method_bistream_recv(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_method_bistream_send(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_clone_connection(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_free_connection(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_method_connection_accept_bi(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_connection_accept_uni(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_connection_alpn(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_iroh_ffi_fn_method_connection_close(`ptr`: Long,`errorCode`: Long,`reason`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_method_connection_close_reason(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_iroh_ffi_fn_method_connection_closed(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_connection_datagram_send_buffer_space(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_method_connection_max_datagram_size(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_iroh_ffi_fn_method_connection_open_bi(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_connection_open_uni(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_connection_paths(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_iroh_ffi_fn_method_connection_read_datagram(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_connection_remote_id(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_method_connection_rtt(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_iroh_ffi_fn_method_connection_send_datagram(`ptr`: Long,`data`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_method_connection_send_datagram_wait(`ptr`: Long,`data`: RustBuffer.ByValue,
+): Long
+external fun uniffi_iroh_ffi_fn_method_connection_set_max_concurrent_bi_streams(`ptr`: Long,`count`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_method_connection_set_max_concurrent_uni_streams(`ptr`: Long,`count`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_method_connection_set_receive_window(`ptr`: Long,`count`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_method_connection_side(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_iroh_ffi_fn_method_connection_stable_id(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_method_connection_stats(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_iroh_ffi_fn_method_connection_watch_path_events(`ptr`: Long,`callback`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_method_connection_watch_paths(`ptr`: Long,`callback`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_clone_endpoint(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_free_endpoint(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_constructor_endpoint_bind(`options`: RustBuffer.ByValue,
+): Long
+external fun uniffi_iroh_ffi_fn_method_endpoint_accept_next(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_endpoint_add_external_addr(`ptr`: Long,`addr`: RustBuffer.ByValue,
+): Long
+external fun uniffi_iroh_ffi_fn_method_endpoint_addr(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_method_endpoint_bound_sockets(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_iroh_ffi_fn_method_endpoint_close(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_endpoint_connect(`ptr`: Long,`addr`: Long,`alpn`: RustBuffer.ByValue,
+): Long
+external fun uniffi_iroh_ffi_fn_method_endpoint_connect_pending(`ptr`: Long,`addr`: Long,`alpn`: RustBuffer.ByValue,
+): Long
+external fun uniffi_iroh_ffi_fn_method_endpoint_id(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_method_endpoint_insert_relay(`ptr`: Long,`config`: RustBuffer.ByValue,
+): Long
+external fun uniffi_iroh_ffi_fn_method_endpoint_is_closed(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_iroh_ffi_fn_method_endpoint_online(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_endpoint_remote_addr(`ptr`: Long,`id`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_endpoint_remove_external_addr(`ptr`: Long,`addr`: RustBuffer.ByValue,
+): Long
+external fun uniffi_iroh_ffi_fn_method_endpoint_remove_relay(`ptr`: Long,`url`: RustBuffer.ByValue,
+): Long
+external fun uniffi_iroh_ffi_fn_method_endpoint_secret_key(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_method_endpoint_set_alpns(`ptr`: Long,`alpns`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_method_endpoint_stats(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_iroh_ffi_fn_method_endpoint_watch_addr(`ptr`: Long,`callback`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_method_endpoint_watch_home_relay(`ptr`: Long,`callback`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_method_endpoint_watch_network_change(`ptr`: Long,`callback`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_clone_endpointbuilder(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_free_endpointbuilder(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_constructor_endpointbuilder_new(uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_method_endpointbuilder_alpns(`ptr`: Long,`alpns`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_method_endpointbuilder_apply_minimal(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_method_endpointbuilder_apply_n0(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_method_endpointbuilder_apply_n0_disable_relay(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_method_endpointbuilder_bind(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_endpointbuilder_bind_addr(`ptr`: Long,`addr`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_method_endpointbuilder_relay_mode(`ptr`: Long,`mode`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_method_endpointbuilder_secret_key(`ptr`: Long,`bytes`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_clone_preset(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_free_preset(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_init_callback_vtable_preset(`vtable`: UniffiVTableCallbackInterfacePreset,
+): Unit
+external fun uniffi_iroh_ffi_fn_method_preset_apply(`ptr`: Long,`builder`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_clone_protocolcreator(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_free_protocolcreator(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_init_callback_vtable_protocolcreator(`vtable`: UniffiVTableCallbackInterfaceProtocolCreator,
+): Unit
+external fun uniffi_iroh_ffi_fn_method_protocolcreator_create(`ptr`: Long,`endpoint`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_clone_protocolhandler(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_free_protocolhandler(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_init_callback_vtable_protocolhandler(`vtable`: UniffiVTableCallbackInterfaceProtocolHandler,
+): Unit
+external fun uniffi_iroh_ffi_fn_method_protocolhandler_accept(`ptr`: Long,`conn`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_protocolhandler_shutdown(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_clone_recvstream(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_free_recvstream(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_method_recvstream_bytes_read(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_recvstream_id(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_recvstream_read(`ptr`: Long,`sizeLimit`: Int,
+): Long
+external fun uniffi_iroh_ffi_fn_method_recvstream_read_exact(`ptr`: Long,`size`: Int,
+): Long
+external fun uniffi_iroh_ffi_fn_method_recvstream_read_to_end(`ptr`: Long,`sizeLimit`: Int,
+): Long
+external fun uniffi_iroh_ffi_fn_method_recvstream_received_reset(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_recvstream_stop(`ptr`: Long,`errorCode`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_clone_sendstream(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_free_sendstream(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_method_sendstream_finish(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_sendstream_id(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_sendstream_priority(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_sendstream_reset(`ptr`: Long,`errorCode`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_sendstream_set_priority(`ptr`: Long,`p`: Int,
+): Long
+external fun uniffi_iroh_ffi_fn_method_sendstream_stopped(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_sendstream_write(`ptr`: Long,`buf`: RustBuffer.ByValue,
+): Long
+external fun uniffi_iroh_ffi_fn_method_sendstream_write_all(`ptr`: Long,`buf`: RustBuffer.ByValue,
+): Long
+external fun uniffi_iroh_ffi_fn_clone_iroherror(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_free_iroherror(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_method_iroherror_debug_message(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_iroh_ffi_fn_method_iroherror_is_kind(`ptr`: Long,`kind`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_iroh_ffi_fn_method_iroherror_kind(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_iroh_ffi_fn_method_iroherror_message(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_iroh_ffi_fn_method_iroherror_uniffi_trait_debug(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_iroh_ffi_fn_clone_endpointid(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_free_endpointid(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_constructor_endpointid_from_bytes(`bytes`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_constructor_endpointid_from_string(`s`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_method_endpointid_fmt_short(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_iroh_ffi_fn_method_endpointid_to_bytes(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_iroh_ffi_fn_method_endpointid_verify(`ptr`: Long,`message`: RustBuffer.ByValue,`signature`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_method_endpointid_uniffi_trait_display(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_iroh_ffi_fn_method_endpointid_uniffi_trait_eq_eq(`ptr`: Long,`other`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_iroh_ffi_fn_method_endpointid_uniffi_trait_eq_ne(`ptr`: Long,`other`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_iroh_ffi_fn_method_endpointid_uniffi_trait_hash(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_clone_secretkey(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_free_secretkey(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_constructor_secretkey_from_bytes(`bytes`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_constructor_secretkey_generate(uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_method_secretkey_public(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_method_secretkey_sign(`ptr`: Long,`message`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_method_secretkey_to_bytes(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_iroh_ffi_fn_clone_signature(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_free_signature(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_constructor_signature_from_bytes(`bytes`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_method_signature_to_bytes(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_iroh_ffi_fn_method_signature_uniffi_trait_display(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_iroh_ffi_fn_method_signature_uniffi_trait_eq_eq(`ptr`: Long,`other`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_iroh_ffi_fn_method_signature_uniffi_trait_eq_ne(`ptr`: Long,`other`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_iroh_ffi_fn_method_signature_uniffi_trait_hash(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_clone_endpointaddr(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_free_endpointaddr(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_constructor_endpointaddr_new(`id`: Long,`relayUrl`: RustBuffer.ByValue,`addresses`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_method_endpointaddr_direct_addresses(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_iroh_ffi_fn_method_endpointaddr_id(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_method_endpointaddr_relay_url(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_iroh_ffi_fn_method_endpointaddr_uniffi_trait_display(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_iroh_ffi_fn_method_endpointaddr_uniffi_trait_eq_eq(`ptr`: Long,`other`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_iroh_ffi_fn_method_endpointaddr_uniffi_trait_eq_ne(`ptr`: Long,`other`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_iroh_ffi_fn_method_endpointaddr_uniffi_trait_hash(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_clone_pathchangecallback(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_free_pathchangecallback(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_init_callback_vtable_pathchangecallback(`vtable`: UniffiVTableCallbackInterfacePathChangeCallback,
+): Unit
+external fun uniffi_iroh_ffi_fn_method_pathchangecallback_on_change(`ptr`: Long,`paths`: RustBuffer.ByValue,
+): Long
+external fun uniffi_iroh_ffi_fn_clone_patheventcallback(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_free_patheventcallback(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_init_callback_vtable_patheventcallback(`vtable`: UniffiVTableCallbackInterfacePathEventCallback,
+): Unit
+external fun uniffi_iroh_ffi_fn_method_patheventcallback_on_event(`ptr`: Long,`event`: RustBuffer.ByValue,
+): Long
+external fun uniffi_iroh_ffi_fn_clone_relaymap(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_free_relaymap(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_constructor_relaymap_empty(uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_constructor_relaymap_from_urls(`urls`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_method_relaymap_contains(`ptr`: Long,`url`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_iroh_ffi_fn_method_relaymap_get(`ptr`: Long,`url`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_iroh_ffi_fn_method_relaymap_insert(`ptr`: Long,`config`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_method_relaymap_is_empty(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_iroh_ffi_fn_method_relaymap_len(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Int
+external fun uniffi_iroh_ffi_fn_method_relaymap_remove(`ptr`: Long,`url`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun uniffi_iroh_ffi_fn_method_relaymap_urls(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_iroh_ffi_fn_method_relaymap_uniffi_trait_display(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_iroh_ffi_fn_clone_relaymode(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_free_relaymode(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_constructor_relaymode_custom(`map`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_constructor_relaymode_custom_from_urls(`urls`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_constructor_relaymode_default_mode(uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_constructor_relaymode_disabled(uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_constructor_relaymode_staging(uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_method_relaymode_relay_map(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_method_relaymode_uniffi_trait_display(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_iroh_ffi_fn_clone_servicesclient(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_free_servicesclient(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_constructor_servicesclient_create(`endpoint`: Long,`options`: RustBuffer.ByValue,
+): Long
+external fun uniffi_iroh_ffi_fn_method_servicesclient_name(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_servicesclient_ping(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_servicesclient_push_metrics(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_method_servicesclient_set_name(`ptr`: Long,`name`: RustBuffer.ByValue,
+): Long
+external fun uniffi_iroh_ffi_fn_method_servicesclient_submit_network_diagnostics(`ptr`: Long,`send`: Byte,
+): Long
+external fun uniffi_iroh_ffi_fn_clone_endpointticket(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_free_endpointticket(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_constructor_endpointticket_from_addr(`addr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_constructor_endpointticket_from_string(`str`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_method_endpointticket_endpoint_addr(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_method_endpointticket_uniffi_trait_display(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun uniffi_iroh_ffi_fn_clone_addrchangecallback(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_free_addrchangecallback(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_init_callback_vtable_addrchangecallback(`vtable`: UniffiVTableCallbackInterfaceAddrChangeCallback,
+): Unit
+external fun uniffi_iroh_ffi_fn_method_addrchangecallback_on_change(`ptr`: Long,`addr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_clone_homerelaycallback(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_free_homerelaycallback(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_init_callback_vtable_homerelaycallback(`vtable`: UniffiVTableCallbackInterfaceHomeRelayCallback,
+): Unit
+external fun uniffi_iroh_ffi_fn_method_homerelaycallback_on_change(`ptr`: Long,`relayUrls`: RustBuffer.ByValue,
+): Long
+external fun uniffi_iroh_ffi_fn_clone_networkchangecallback(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_free_networkchangecallback(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_init_callback_vtable_networkchangecallback(`vtable`: UniffiVTableCallbackInterfaceNetworkChangeCallback,
+): Unit
+external fun uniffi_iroh_ffi_fn_method_networkchangecallback_on_change(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_clone_watchhandle(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_free_watchhandle(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_method_watchhandle_stop(`ptr`: Long,
+): Long
+external fun uniffi_iroh_ffi_fn_func_set_log_level(`level`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun uniffi_iroh_ffi_fn_func_preset_minimal(uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_func_preset_n0(uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_func_preset_n0_disable_relay(uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun uniffi_iroh_ffi_fn_func_preset_iroh_services(`options`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun ffi_iroh_ffi_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun ffi_iroh_ffi_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun ffi_iroh_ffi_rustbuffer_free(`buf`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+external fun ffi_iroh_ffi_rustbuffer_reserve(`buf`: RustBuffer.ByValue,`additional`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun ffi_iroh_ffi_rust_future_poll_u8(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_cancel_u8(`handle`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_free_u8(`handle`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_complete_u8(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Int
+external fun ffi_iroh_ffi_rust_future_poll_i8(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_cancel_i8(`handle`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_free_i8(`handle`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_complete_i8(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Byte
+external fun ffi_iroh_ffi_rust_future_poll_u16(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_cancel_u16(`handle`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_free_u16(`handle`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_complete_u16(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Int
+external fun ffi_iroh_ffi_rust_future_poll_i16(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_cancel_i16(`handle`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_free_i16(`handle`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_complete_i16(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Short
+external fun ffi_iroh_ffi_rust_future_poll_u32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_cancel_u32(`handle`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_free_u32(`handle`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_complete_u32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Int
+external fun ffi_iroh_ffi_rust_future_poll_i32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_cancel_i32(`handle`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_free_i32(`handle`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_complete_i32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Int
+external fun ffi_iroh_ffi_rust_future_poll_u64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_cancel_u64(`handle`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_free_u64(`handle`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_complete_u64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun ffi_iroh_ffi_rust_future_poll_i64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_cancel_i64(`handle`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_free_i64(`handle`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_complete_i64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Long
+external fun ffi_iroh_ffi_rust_future_poll_f32(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_cancel_f32(`handle`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_free_f32(`handle`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_complete_f32(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Float
+external fun ffi_iroh_ffi_rust_future_poll_f64(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_cancel_f64(`handle`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_free_f64(`handle`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_complete_f64(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Double
+external fun ffi_iroh_ffi_rust_future_poll_rust_buffer(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_cancel_rust_buffer(`handle`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_free_rust_buffer(`handle`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_complete_rust_buffer(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): RustBuffer.ByValue
+external fun ffi_iroh_ffi_rust_future_poll_void(`handle`: Long,`callback`: UniffiRustFutureContinuationCallback,`callbackData`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_cancel_void(`handle`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_free_void(`handle`: Long,
+): Unit
+external fun ffi_iroh_ffi_rust_future_complete_void(`handle`: Long,uniffi_out_err: UniffiRustCallStatus, 
+): Unit
+
+    
 }
 
 private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
@@ -2493,7 +1692,6 @@ private fun uniffiCheckContractApiVersion(lib: IntegrityCheckingUniffiLib) {
         throw RuntimeException("UniFFI contract version mismatch: try cleaning and rebuilding your project")
     }
 }
-
 @Suppress("UNUSED_PARAMETER")
 private fun uniffiCheckApiChecksums(lib: IntegrityCheckingUniffiLib) {
     if (lib.uniffi_iroh_ffi_checksum_func_set_log_level() != 52619) {
@@ -2943,44 +2141,39 @@ internal const val UNIFFI_RUST_FUTURE_POLL_WAKE = 1.toByte()
 internal val uniffiContinuationHandleMap = UniffiHandleMap<CancellableContinuation<Byte>>()
 
 // FFI type for Rust future continuations
-internal object uniffiRustFutureContinuationCallbackImpl : UniffiRustFutureContinuationCallback {
-    override fun callback(
-        data: Long,
-        pollResult: Byte,
-    ) {
+internal object uniffiRustFutureContinuationCallbackImpl: UniffiRustFutureContinuationCallback {
+    override fun callback(data: Long, pollResult: Byte) {
         uniffiContinuationHandleMap.remove(data).resume(pollResult)
     }
 }
 
-internal suspend fun <T, F, E : kotlin.Exception> uniffiRustCallAsync(
+internal suspend fun<T, F, E: kotlin.Exception> uniffiRustCallAsync(
     rustFuture: Long,
     pollFunc: (Long, UniffiRustFutureContinuationCallback, Long) -> Unit,
     completeFunc: (Long, UniffiRustCallStatus) -> F,
     freeFunc: (Long) -> Unit,
     liftFunc: (F) -> T,
-    errorHandler: UniffiRustCallStatusErrorHandler<E>,
+    errorHandler: UniffiRustCallStatusErrorHandler<E>
 ): T {
     try {
         do {
-            val pollResult =
-                suspendCancellableCoroutine<Byte> { continuation ->
-                    pollFunc(
-                        rustFuture,
-                        uniffiRustFutureContinuationCallbackImpl,
-                        uniffiContinuationHandleMap.insert(continuation),
-                    )
-                }
-        } while (pollResult != UNIFFI_RUST_FUTURE_POLL_READY)
+            val pollResult = suspendCancellableCoroutine<Byte> { continuation ->
+                pollFunc(
+                    rustFuture,
+                    uniffiRustFutureContinuationCallbackImpl,
+                    uniffiContinuationHandleMap.insert(continuation)
+                )
+            }
+        } while (pollResult != UNIFFI_RUST_FUTURE_POLL_READY);
 
         return liftFunc(
-            uniffiRustCallWithError(errorHandler, { status -> completeFunc(rustFuture, status) }),
+            uniffiRustCallWithError(errorHandler, { status -> completeFunc(rustFuture, status) })
         )
     } finally {
         freeFunc(rustFuture)
     }
 }
-
-internal inline fun <T> uniffiTraitInterfaceCallAsync(
+internal inline fun<T> uniffiTraitInterfaceCallAsync(
     crossinline makeCall: suspend () -> T,
     crossinline handleSuccess: (T) -> Unit,
     crossinline handleError: (UniffiRustCallStatus.ByValue) -> Unit,
@@ -2992,35 +2185,33 @@ internal inline fun <T> uniffiTraitInterfaceCallAsync(
     // Uniffi does its best to support structured concurrency across the FFI.
     // If the Rust future is dropped, `uniffiForeignFutureDroppedCallbackImpl` is called, which will cancel the Kotlin coroutine if it's still running.
     @OptIn(DelicateCoroutinesApi::class)
-    val job =
-        GlobalScope.launch coroutineBlock@{
-            // Note: it's important we call either `handleSuccess` or `handleError` exactly once.  Each
-            // call consumes an Arc reference, which means there should be no possibility of a double
-            // call.  The following code is structured so that will will never call both `handleSuccess`
-            // and `handleError`, even in the face of weird exceptions.
-            //
-            // In extreme circumstances we may not call either, for example if we fail to make the JNA
-            // call to `handleSuccess`.  This means we will leak the Arc reference, which is better than
-            // double-freeing it.
-            val callResult =
-                try {
-                    makeCall()
-                } catch (e: kotlin.Exception) {
-                    handleError(
-                        UniffiRustCallStatus.create(
-                            UNIFFI_CALL_UNEXPECTED_ERROR,
-                            FfiConverterString.lower(e.toString()),
-                        ),
-                    )
-                    return@coroutineBlock
-                }
-            handleSuccess(callResult)
+    val job = GlobalScope.launch coroutineBlock@ {
+        // Note: it's important we call either `handleSuccess` or `handleError` exactly once.  Each
+        // call consumes an Arc reference, which means there should be no possibility of a double
+        // call.  The following code is structured so that will will never call both `handleSuccess`
+        // and `handleError`, even in the face of weird exceptions.
+        //
+        // In extreme circumstances we may not call either, for example if we fail to make the JNA
+        // call to `handleSuccess`.  This means we will leak the Arc reference, which is better than
+        // double-freeing it.
+        val callResult = try {
+            makeCall()
+        } catch(e: kotlin.Exception) {
+            handleError(
+                UniffiRustCallStatus.create(
+                    UNIFFI_CALL_UNEXPECTED_ERROR,
+                    FfiConverterString.lower(e.toString()),
+                )
+            )
+            return@coroutineBlock
         }
+        handleSuccess(callResult)
+    }
     val handle = uniffiForeignFutureHandleMap.insert(job)
     uniffiOutDroppedCallback.uniffiSetValue(UniffiForeignFutureDroppedCallbackStruct(handle, uniffiForeignFutureDroppedCallbackImpl))
 }
 
-internal inline fun <T, reified E : Throwable> uniffiTraitInterfaceCallAsyncWithError(
+internal inline fun<T, reified E: Throwable> uniffiTraitInterfaceCallAsyncWithError(
     crossinline makeCall: suspend () -> T,
     crossinline handleSuccess: (T) -> Unit,
     crossinline handleError: (UniffiRustCallStatus.ByValue) -> Unit,
@@ -3029,40 +2220,38 @@ internal inline fun <T, reified E : Throwable> uniffiTraitInterfaceCallAsyncWith
 ) {
     // See uniffiTraitInterfaceCallAsync for details on `DelicateCoroutinesApi`
     @OptIn(DelicateCoroutinesApi::class)
-    val job =
-        GlobalScope.launch coroutineBlock@{
-            // See the note in uniffiTraitInterfaceCallAsync for details on `handleSuccess` and
-            // `handleError`.
-            val callResult =
-                try {
-                    makeCall()
-                } catch (e: kotlin.Exception) {
-                    if (e is E) {
-                        handleError(
-                            UniffiRustCallStatus.create(
-                                UNIFFI_CALL_ERROR,
-                                lowerError(e),
-                            ),
-                        )
-                    } else {
-                        handleError(
-                            UniffiRustCallStatus.create(
-                                UNIFFI_CALL_UNEXPECTED_ERROR,
-                                FfiConverterString.lower(e.toString()),
-                            ),
-                        )
-                    }
-                    return@coroutineBlock
-                }
-            handleSuccess(callResult)
+    val job = GlobalScope.launch coroutineBlock@ {
+        // See the note in uniffiTraitInterfaceCallAsync for details on `handleSuccess` and
+        // `handleError`.
+        val callResult = try {
+            makeCall()
+        } catch(e: kotlin.Exception) {
+            if (e is E) {
+                handleError(
+                    UniffiRustCallStatus.create(
+                        UNIFFI_CALL_ERROR,
+                        lowerError(e),
+                    )
+                )
+            } else {
+                handleError(
+                    UniffiRustCallStatus.create(
+                        UNIFFI_CALL_UNEXPECTED_ERROR,
+                        FfiConverterString.lower(e.toString()),
+                    )
+                )
+            }
+            return@coroutineBlock
         }
+        handleSuccess(callResult)
+    }
     val handle = uniffiForeignFutureHandleMap.insert(job)
     uniffiOutDroppedCallback.uniffiSetValue(UniffiForeignFutureDroppedCallbackStruct(handle, uniffiForeignFutureDroppedCallbackImpl))
 }
 
 internal val uniffiForeignFutureHandleMap = UniffiHandleMap<Job>()
 
-internal object uniffiForeignFutureDroppedCallbackImpl : UniffiForeignFutureDroppedCallback {
+internal object uniffiForeignFutureDroppedCallbackImpl: UniffiForeignFutureDroppedCallback {
     override fun callback(handle: Long) {
         val job = uniffiForeignFutureHandleMap.remove(handle)
         if (!job.isCompleted) {
@@ -3076,6 +2265,7 @@ public fun uniffiForeignFutureHandleCount() = uniffiForeignFutureHandleMap.size
 
 // Public interface members begin here.
 
+
 // Interface implemented by anything that can contain an object reference.
 //
 // Such types expose a `destroy()` method that must be called to cleanly
@@ -3086,15 +2276,11 @@ public fun uniffiForeignFutureHandleCount() = uniffiForeignFutureHandleMap.size
 // helper method to execute a block and destroy the object at the end.
 interface Disposable {
     fun destroy()
-
     companion object {
         fun destroy(vararg args: Any?) {
             for (arg in args) {
                 when (arg) {
-                    is Disposable -> {
-                        arg.destroy()
-                    }
-
+                    is Disposable -> arg.destroy()
                     is ArrayList<*> -> {
                         for (idx in arg.indices) {
                             val element = arg[idx]
@@ -3103,7 +2289,6 @@ interface Disposable {
                             }
                         }
                     }
-
                     is Map<*, *> -> {
                         for (element in arg.values) {
                             if (element is Disposable) {
@@ -3111,7 +2296,6 @@ interface Disposable {
                             }
                         }
                     }
-
                     is Iterable<*> -> {
                         for (element in arg) {
                             if (element is Disposable) {
@@ -3140,7 +2324,7 @@ inline fun <T : Disposable?, R> T.use(block: (T) -> R) =
         }
     }
 
-/**
+/** 
  * Placeholder object used to signal that we're constructing an interface with a FFI handle.
  *
  * This is the first argument for interface constructors that input a raw handle. It exists is that
@@ -3151,16 +2335,14 @@ inline fun <T : Disposable?, R> T.use(block: (T) -> R) =
  * */
 object UniffiWithHandle
 
-/**
+/** 
  * Used to instantiate an interface without an actual pointer, for fakes in tests, mostly.
  *
  * @suppress
  * */
-object NoHandle // Magic number for the Rust proxy to call using the same mechanism as every other method,
-
+object NoHandle// Magic number for the Rust proxy to call using the same mechanism as every other method,
 // to free the callback once it's dropped by Rust.
 internal const val IDX_CALLBACK_FREE = 0
-
 // Callback return codes
 internal const val UNIFFI_CALLBACK_SUCCESS = 0
 internal const val UNIFFI_CALLBACK_ERROR = 1
@@ -3169,14 +2351,16 @@ internal const val UNIFFI_CALLBACK_UNEXPECTED_ERROR = 2
 /**
  * @suppress
  */
-public abstract class FfiConverterCallbackInterface<CallbackInterface : Any> : FfiConverter<CallbackInterface, Long> {
+public abstract class FfiConverterCallbackInterface<CallbackInterface: Any>: FfiConverter<CallbackInterface, Long> {
     internal val handleMap = UniffiHandleMap<CallbackInterface>()
 
     internal fun drop(handle: Long) {
         handleMap.remove(handle)
     }
 
-    override fun lift(value: Long): CallbackInterface = handleMap.get(value)
+    override fun lift(value: Long): CallbackInterface {
+        return handleMap.get(value)
+    }
 
     override fun read(buf: ByteBuffer) = lift(buf.getLong())
 
@@ -3184,14 +2368,10 @@ public abstract class FfiConverterCallbackInterface<CallbackInterface : Any> : F
 
     override fun allocationSize(value: CallbackInterface) = 8UL
 
-    override fun write(
-        value: CallbackInterface,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: CallbackInterface, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
-
 /**
  * The cleaner interface for Object finalization code to run.
  * This is the entry point to any implementation that we're using.
@@ -3207,24 +2387,17 @@ interface UniffiCleaner {
         fun clean()
     }
 
-    fun register(
-        value: Any,
-        cleanUpTask: Runnable,
-    ): UniffiCleaner.Cleanable
+    fun register(value: Any, cleanUpTask: Runnable): UniffiCleaner.Cleanable
 
     companion object
 }
 
 // The fallback Jna cleaner, which is available for both Android, and the JVM.
 private class UniffiJnaCleaner : UniffiCleaner {
-    private val cleaner =
-        com.sun.jna.internal.Cleaner
-            .getCleaner()
+    private val cleaner = com.sun.jna.internal.Cleaner.getCleaner()
 
-    override fun register(
-        value: Any,
-        cleanUpTask: Runnable,
-    ): UniffiCleaner.Cleanable = UniffiJnaCleanable(cleaner.register(value, cleanUpTask))
+    override fun register(value: Any, cleanUpTask: Runnable): UniffiCleaner.Cleanable =
+        UniffiJnaCleanable(cleaner.register(value, cleanUpTask))
 }
 
 private class UniffiJnaCleanable(
@@ -3232,6 +2405,7 @@ private class UniffiJnaCleanable(
 ) : UniffiCleaner.Cleanable {
     override fun clean() = cleanable.clean()
 }
+
 
 // We decide at uniffi binding generation time whether we were
 // using Android or not.
@@ -3251,18 +2425,14 @@ private fun UniffiCleaner.Companion.create(): UniffiCleaner =
     }
 
 private class JavaLangRefCleaner : UniffiCleaner {
-    val cleaner =
-        java.lang.ref.Cleaner
-            .create()
+    val cleaner = java.lang.ref.Cleaner.create()
 
-    override fun register(
-        value: Any,
-        cleanUpTask: Runnable,
-    ): UniffiCleaner.Cleanable = JavaLangRefCleanable(cleaner.register(value, cleanUpTask))
+    override fun register(value: Any, cleanUpTask: Runnable): UniffiCleaner.Cleanable =
+        JavaLangRefCleanable(cleaner.register(value, cleanUpTask))
 }
 
 private class JavaLangRefCleanable(
-    val cleanable: java.lang.ref.Cleaner.Cleanable,
+    val cleanable: java.lang.ref.Cleaner.Cleanable
 ) : UniffiCleaner.Cleanable {
     override fun clean() = cleanable.clean()
 }
@@ -3270,21 +2440,26 @@ private class JavaLangRefCleanable(
 /**
  * @suppress
  */
-public object FfiConverterUShort : FfiConverter<UShort, Short> {
-    override fun lift(value: Short): UShort = value.toUShort()
+public object FfiConverterUShort: FfiConverter<UShort, Short> {
+    override fun lift(value: Short): UShort {
+        return value.toUShort()
+    }
 
-    fun lift(value: Int): UShort = value.toUShort()
+    fun lift(value: Int): UShort {
+        return value.toUShort()
+    }
 
-    override fun read(buf: ByteBuffer): UShort = lift(buf.getShort())
+    override fun read(buf: ByteBuffer): UShort {
+        return lift(buf.getShort())
+    }
 
-    override fun lower(value: UShort): Short = value.toShort()
+    override fun lower(value: UShort): Short {
+        return value.toShort()
+    }
 
     override fun allocationSize(value: UShort) = 2UL
 
-    override fun write(
-        value: UShort,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: UShort, buf: ByteBuffer) {
         buf.putShort(value.toShort())
     }
 }
@@ -3292,19 +2467,22 @@ public object FfiConverterUShort : FfiConverter<UShort, Short> {
 /**
  * @suppress
  */
-public object FfiConverterUInt : FfiConverter<UInt, Int> {
-    override fun lift(value: Int): UInt = value.toUInt()
+public object FfiConverterUInt: FfiConverter<UInt, Int> {
+    override fun lift(value: Int): UInt {
+        return value.toUInt()
+    }
 
-    override fun read(buf: ByteBuffer): UInt = lift(buf.getInt())
+    override fun read(buf: ByteBuffer): UInt {
+        return lift(buf.getInt())
+    }
 
-    override fun lower(value: UInt): Int = value.toInt()
+    override fun lower(value: UInt): Int {
+        return value.toInt()
+    }
 
     override fun allocationSize(value: UInt) = 4UL
 
-    override fun write(
-        value: UInt,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: UInt, buf: ByteBuffer) {
         buf.putInt(value.toInt())
     }
 }
@@ -3312,19 +2490,22 @@ public object FfiConverterUInt : FfiConverter<UInt, Int> {
 /**
  * @suppress
  */
-public object FfiConverterInt : FfiConverter<Int, Int> {
-    override fun lift(value: Int): Int = value
+public object FfiConverterInt: FfiConverter<Int, Int> {
+    override fun lift(value: Int): Int {
+        return value
+    }
 
-    override fun read(buf: ByteBuffer): Int = buf.getInt()
+    override fun read(buf: ByteBuffer): Int {
+        return buf.getInt()
+    }
 
-    override fun lower(value: Int): Int = value
+    override fun lower(value: Int): Int {
+        return value
+    }
 
     override fun allocationSize(value: Int) = 4UL
 
-    override fun write(
-        value: Int,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: Int, buf: ByteBuffer) {
         buf.putInt(value)
     }
 }
@@ -3332,19 +2513,22 @@ public object FfiConverterInt : FfiConverter<Int, Int> {
 /**
  * @suppress
  */
-public object FfiConverterULong : FfiConverter<ULong, Long> {
-    override fun lift(value: Long): ULong = value.toULong()
+public object FfiConverterULong: FfiConverter<ULong, Long> {
+    override fun lift(value: Long): ULong {
+        return value.toULong()
+    }
 
-    override fun read(buf: ByteBuffer): ULong = lift(buf.getLong())
+    override fun read(buf: ByteBuffer): ULong {
+        return lift(buf.getLong())
+    }
 
-    override fun lower(value: ULong): Long = value.toLong()
+    override fun lower(value: ULong): Long {
+        return value.toLong()
+    }
 
     override fun allocationSize(value: ULong) = 8UL
 
-    override fun write(
-        value: ULong,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: ULong, buf: ByteBuffer) {
         buf.putLong(value.toLong())
     }
 }
@@ -3352,19 +2536,22 @@ public object FfiConverterULong : FfiConverter<ULong, Long> {
 /**
  * @suppress
  */
-public object FfiConverterLong : FfiConverter<Long, Long> {
-    override fun lift(value: Long): Long = value
+public object FfiConverterLong: FfiConverter<Long, Long> {
+    override fun lift(value: Long): Long {
+        return value
+    }
 
-    override fun read(buf: ByteBuffer): Long = buf.getLong()
+    override fun read(buf: ByteBuffer): Long {
+        return buf.getLong()
+    }
 
-    override fun lower(value: Long): Long = value
+    override fun lower(value: Long): Long {
+        return value
+    }
 
     override fun allocationSize(value: Long) = 8UL
 
-    override fun write(
-        value: Long,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: Long, buf: ByteBuffer) {
         buf.putLong(value)
     }
 }
@@ -3372,19 +2559,22 @@ public object FfiConverterLong : FfiConverter<Long, Long> {
 /**
  * @suppress
  */
-public object FfiConverterBoolean : FfiConverter<Boolean, Byte> {
-    override fun lift(value: Byte): Boolean = value.toInt() != 0
+public object FfiConverterBoolean: FfiConverter<Boolean, Byte> {
+    override fun lift(value: Byte): Boolean {
+        return value.toInt() != 0
+    }
 
-    override fun read(buf: ByteBuffer): Boolean = lift(buf.get())
+    override fun read(buf: ByteBuffer): Boolean {
+        return lift(buf.get())
+    }
 
-    override fun lower(value: Boolean): Byte = if (value) 1.toByte() else 0.toByte()
+    override fun lower(value: Boolean): Byte {
+        return if (value) 1.toByte() else 0.toByte()
+    }
 
     override fun allocationSize(value: Boolean) = 1UL
 
-    override fun write(
-        value: Boolean,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: Boolean, buf: ByteBuffer) {
         buf.put(lower(value))
     }
 }
@@ -3392,7 +2582,7 @@ public object FfiConverterBoolean : FfiConverter<Boolean, Byte> {
 /**
  * @suppress
  */
-public object FfiConverterString : FfiConverter<String, RustBuffer.ByValue> {
+public object FfiConverterString: FfiConverter<String, RustBuffer.ByValue> {
     // Note: we don't inherit from FfiConverterRustBuffer, because we use a
     // special encoding when lowering/lifting.  We can use `RustBuffer.len` to
     // store our length and avoid writing it out to the buffer.
@@ -3439,10 +2629,7 @@ public object FfiConverterString : FfiConverter<String, RustBuffer.ByValue> {
         return sizeForLength + sizeForString
     }
 
-    override fun write(
-        value: String,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: String, buf: ByteBuffer) {
         val byteBuf = toUtf8(value)
         buf.putInt(byteBuf.limit())
         buf.put(byteBuf)
@@ -3452,24 +2639,22 @@ public object FfiConverterString : FfiConverter<String, RustBuffer.ByValue> {
 /**
  * @suppress
  */
-public object FfiConverterByteArray : FfiConverterRustBuffer<ByteArray> {
+public object FfiConverterByteArray: FfiConverterRustBuffer<ByteArray> {
     override fun read(buf: ByteBuffer): ByteArray {
         val len = buf.getInt()
         val byteArr = ByteArray(len)
         buf.get(byteArr)
         return byteArr
     }
-
-    override fun allocationSize(value: ByteArray): ULong = 4UL + value.size.toULong()
-
-    override fun write(
-        value: ByteArray,
-        buf: ByteBuffer,
-    ) {
+    override fun allocationSize(value: ByteArray): ULong {
+        return 4UL + value.size.toULong()
+    }
+    override fun write(value: ByteArray, buf: ByteBuffer) {
         buf.putInt(value.size)
         buf.put(value)
     }
 }
+
 
 // This template implements a class for working with a Rust struct via a handle
 // to the live Rust struct on the other side of the FFI.
@@ -3565,35 +2750,36 @@ public object FfiConverterByteArray : FfiConverterRustBuffer<ByteArray> {
 // [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
 //
 
+
 /**
  * A server-side handshake in progress. Await with [`Self::connect`].
  */
 public interface AcceptingInterface {
+    
     /**
      * Read the ALPN protocol from the peer's handshake data (resolves once
      * the ClientHello has been received).
      */
     suspend fun `alpn`(): kotlin.ByteArray
-
+    
     /**
      * Wait for the handshake to complete, producing a [`Connection`].
      */
     suspend fun `connect`(): Connection
-
+    
     companion object
 }
 
 /**
  * A server-side handshake in progress. Await with [`Self::connect`].
  */
-open class Accepting :
-    Disposable,
-    AutoCloseable,
-    AcceptingInterface {
+open class Accepting: Disposable, AutoCloseable, AcceptingInterface
+{
+
+    @Suppress("UNUSED_PARAMETER")
     /**
      * @suppress
      */
-    @Suppress("UNUSED_PARAMETER")
     constructor(withHandle: UniffiWithHandle, handle: Long) {
         this.handle = handle
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
@@ -3645,7 +2831,7 @@ open class Accepting :
             if (c == Long.MAX_VALUE) {
                 throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
             }
-        } while (!this.callCounter.compareAndSet(c, c + 1L))
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
         // Now we can safely do the method call without the handle being freed concurrently.
         try {
             return block(this.uniffiCloneHandle())
@@ -3659,13 +2845,11 @@ open class Accepting :
 
     // Use a static inner class instead of a closure so as not to accidentally
     // capture `this` as part of the cleanable's action.
-    private class UniffiCleanAction(
-        private val handle: Long,
-    ) : Runnable {
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
         override fun run() {
             if (handle == 0.toLong()) {
                 // Fake object created with `NoHandle`, don't try to free.
-                return
+                return;
             }
             uniffiRustCall { status ->
                 UniffiLib.uniffi_iroh_ffi_fn_free_accepting(handle, status)
@@ -3678,81 +2862,100 @@ open class Accepting :
      */
     fun uniffiCloneHandle(): Long {
         if (handle == 0.toLong()) {
-            throw InternalException("uniffiCloneHandle() called on NoHandle object")
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
-        return uniffiRustCall { status ->
+        return uniffiRustCall() { status ->
             UniffiLib.uniffi_iroh_ffi_fn_clone_accepting(handle, status)
         }
     }
 
+    
     /**
      * Read the ALPN protocol from the peer's handshake data (resolves once
      * the ClientHello has been received).
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `alpn`(): kotlin.ByteArray =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_accepting_alpn(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
-            // lift function
-            { FfiConverterByteArray.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `alpn`() : kotlin.ByteArray {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_accepting_alpn(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterByteArray.lift(it) },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * Wait for the handshake to complete, producing a [`Connection`].
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `connect`(): Connection =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_accepting_connect(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
-            // lift function
-            { FfiConverterTypeConnection.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `connect`() : Connection {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_accepting_connect(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
+        // lift function
+        { FfiConverterTypeConnection.lift(it) },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
+
+    
+
+
+    
+    
     /**
      * @suppress
      */
     companion object
+    
 }
+
 
 /**
  * @suppress
  */
-public object FfiConverterTypeAccepting : FfiConverter<Accepting, Long> {
-    override fun lower(value: Accepting): Long = value.uniffiCloneHandle()
+public object FfiConverterTypeAccepting: FfiConverter<Accepting, Long> {
+    override fun lower(value: Accepting): Long {
+        return value.uniffiCloneHandle()
+    }
 
-    override fun lift(value: Long): Accepting = Accepting(UniffiWithHandle, value)
+    override fun lift(value: Long): Accepting {
+        return Accepting(UniffiWithHandle, value)
+    }
 
-    override fun read(buf: ByteBuffer): Accepting = lift(buf.getLong())
+    override fun read(buf: ByteBuffer): Accepting {
+        return lift(buf.getLong())
+    }
 
     override fun allocationSize(value: Accepting) = 8UL
 
-    override fun write(
-        value: Accepting,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: Accepting, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
+
 
 // This template implements a class for working with a Rust struct via a handle
 // to the live Rust struct on the other side of the FFI.
@@ -3848,26 +3051,27 @@ public object FfiConverterTypeAccepting : FfiConverter<Accepting, Long> {
 // [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
 //
 
+
 /**
  * Callback invoked whenever the endpoint's [`EndpointAddr`] changes.
  */
 public interface AddrChangeCallback {
+    
     suspend fun `onChange`(`addr`: EndpointAddr)
-
+    
     companion object
 }
 
 /**
  * Callback invoked whenever the endpoint's [`EndpointAddr`] changes.
  */
-open class AddrChangeCallbackImpl :
-    Disposable,
-    AutoCloseable,
-    AddrChangeCallback {
+open class AddrChangeCallbackImpl: Disposable, AutoCloseable, AddrChangeCallback
+{
+
+    @Suppress("UNUSED_PARAMETER")
     /**
      * @suppress
      */
-    @Suppress("UNUSED_PARAMETER")
     constructor(withHandle: UniffiWithHandle, handle: Long) {
         this.handle = handle
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
@@ -3919,7 +3123,7 @@ open class AddrChangeCallbackImpl :
             if (c == Long.MAX_VALUE) {
                 throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
             }
-        } while (!this.callCounter.compareAndSet(c, c + 1L))
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
         // Now we can safely do the method call without the handle being freed concurrently.
         try {
             return block(this.uniffiCloneHandle())
@@ -3933,13 +3137,11 @@ open class AddrChangeCallbackImpl :
 
     // Use a static inner class instead of a closure so as not to accidentally
     // capture `this` as part of the cleanable's action.
-    private class UniffiCleanAction(
-        private val handle: Long,
-    ) : Runnable {
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
         override fun run() {
             if (handle == 0.toLong()) {
                 // Fake object created with `NoHandle`, don't try to free.
-                return
+                return;
             }
             uniffiRustCall { status ->
                 UniffiLib.uniffi_iroh_ffi_fn_free_addrchangecallback(handle, status)
@@ -3952,59 +3154,65 @@ open class AddrChangeCallbackImpl :
      */
     fun uniffiCloneHandle(): Long {
         if (handle == 0.toLong()) {
-            throw InternalException("uniffiCloneHandle() called on NoHandle object")
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
-        return uniffiRustCall { status ->
+        return uniffiRustCall() { status ->
             UniffiLib.uniffi_iroh_ffi_fn_clone_addrchangecallback(handle, status)
         }
     }
 
+    
     @Throws(CallbackException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `onChange`(`addr`: EndpointAddr) =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_addrchangecallback_on_change(
-                    uniffiHandle,
-                    FfiConverterTypeEndpointAddr.lower(`addr`),
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
-            // lift function
-            { Unit },
-            // Error FFI converter
-            CallbackException.ErrorHandler,
-        )
+    override suspend fun `onChange`(`addr`: EndpointAddr) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_addrchangecallback_on_change(
+                uniffiHandle,
+                FfiConverterTypeEndpointAddr.lower(`addr`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CallbackException.ErrorHandler,
+    )
+    }
 
+    
+
+    
+
+
+    
+    
     /**
      * @suppress
      */
     companion object
+    
 }
+
+
 
 // Put the implementation in an object so we don't pollute the top-level namespace
 internal object uniffiCallbackInterfaceAddrChangeCallback {
-    internal object `onChange` : UniffiCallbackInterfaceAddrChangeCallbackMethod0 {
-        override fun callback(
-            `uniffiHandle`: Long,
-            `addr`: Long,
-            `uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,
-            `uniffiCallbackData`: Long,
-            `uniffiOutDroppedCallback`: UniffiForeignFutureDroppedCallbackStruct,
-        ) {
+    internal object `onChange`: UniffiCallbackInterfaceAddrChangeCallbackMethod0 {
+        override fun callback(`uniffiHandle`: Long,`addr`: Long,`uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,`uniffiCallbackData`: Long,`uniffiOutDroppedCallback`: UniffiForeignFutureDroppedCallbackStruct,) {
             val uniffiObj = FfiConverterTypeAddrChangeCallback.handleMap.get(uniffiHandle)
-            val makeCall =
-                suspend {  uniffiObj.`onChange`(
+            val makeCall = suspend { ->
+                uniffiObj.`onChange`(
                     FfiConverterTypeEndpointAddr.lift(`addr`),
                 )
-                }
+            }
             val uniffiHandleSuccess = { _: Unit ->
-                val uniffiResult =
-                    UniffiForeignFutureResultVoid.UniffiByValue(
-                        UniffiRustCallStatus.ByValue(),
-                    )
+                val uniffiResult = UniffiForeignFutureResultVoid.UniffiByValue(
+                    UniffiRustCallStatus.ByValue()
+                )
                 uniffiResult.write()
                 uniffiFutureCallback.callback(uniffiCallbackData, uniffiResult)
             }
@@ -4021,27 +3229,28 @@ internal object uniffiCallbackInterfaceAddrChangeCallback {
                 uniffiHandleSuccess,
                 uniffiHandleError,
                 { e: CallbackException -> FfiConverterTypeCallbackError.lower(e) },
-                uniffiOutDroppedCallback,
+                uniffiOutDroppedCallback
             )
         }
     }
 
-    internal object uniffiFree : UniffiCallbackInterfaceFree {
+    internal object uniffiFree: UniffiCallbackInterfaceFree {
         override fun callback(handle: Long) {
             FfiConverterTypeAddrChangeCallback.handleMap.remove(handle)
         }
     }
 
-    internal object uniffiClone : UniffiCallbackInterfaceClone {
-        override fun callback(handle: Long): Long = FfiConverterTypeAddrChangeCallback.handleMap.clone(handle)
+    internal object uniffiClone: UniffiCallbackInterfaceClone {
+        override fun callback(handle: Long): Long {
+            return FfiConverterTypeAddrChangeCallback.handleMap.clone(handle)
+        }
     }
 
-    internal var vtable =
-        UniffiVTableCallbackInterfaceAddrChangeCallback.UniffiByValue(
-            uniffiFree,
-            uniffiClone,
-            `onChange`,
-        )
+    internal var vtable = UniffiVTableCallbackInterfaceAddrChangeCallback.UniffiByValue(
+        uniffiFree,
+        uniffiClone,
+        `onChange`,
+    )
 
     // Registers the foreign callback with the Rust side.
     // This method is generated for each callback interface.
@@ -4053,17 +3262,17 @@ internal object uniffiCallbackInterfaceAddrChangeCallback {
 /**
  * @suppress
  */
-public object FfiConverterTypeAddrChangeCallback : FfiConverter<AddrChangeCallback, Long> {
+public object FfiConverterTypeAddrChangeCallback: FfiConverter<AddrChangeCallback, Long> {
     internal val handleMap = UniffiHandleMap<AddrChangeCallback>()
 
     override fun lower(value: AddrChangeCallback): Long {
         if (value is AddrChangeCallbackImpl) {
-            // Rust-implemented object.  Clone the handle and return it
+             // Rust-implemented object.  Clone the handle and return it
             return value.uniffiCloneHandle()
-        } else {
+         } else {
             // Kotlin object, generate a new vtable handle and return that.
             return handleMap.insert(value)
-        }
+         }
     }
 
     override fun lift(value: Long): AddrChangeCallback {
@@ -4077,17 +3286,17 @@ public object FfiConverterTypeAddrChangeCallback : FfiConverter<AddrChangeCallba
         }
     }
 
-    override fun read(buf: ByteBuffer): AddrChangeCallback = lift(buf.getLong())
+    override fun read(buf: ByteBuffer): AddrChangeCallback {
+        return lift(buf.getLong())
+    }
 
     override fun allocationSize(value: AddrChangeCallback) = 8UL
 
-    override fun write(
-        value: AddrChangeCallback,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: AddrChangeCallback, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
+
 
 // This template implements a class for working with a Rust struct via a handle
 // to the live Rust struct on the other side of the FFI.
@@ -4183,28 +3392,29 @@ public object FfiConverterTypeAddrChangeCallback : FfiConverter<AddrChangeCallba
 // [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
 //
 
+
 /**
  * A bidirectional QUIC stream pair.
  */
 public interface BiStreamInterface {
+    
     fun `recv`(): RecvStream
-
+    
     fun `send`(): SendStream
-
+    
     companion object
 }
 
 /**
  * A bidirectional QUIC stream pair.
  */
-open class BiStream :
-    Disposable,
-    AutoCloseable,
-    BiStreamInterface {
+open class BiStream: Disposable, AutoCloseable, BiStreamInterface
+{
+
+    @Suppress("UNUSED_PARAMETER")
     /**
      * @suppress
      */
-    @Suppress("UNUSED_PARAMETER")
     constructor(withHandle: UniffiWithHandle, handle: Long) {
         this.handle = handle
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
@@ -4256,7 +3466,7 @@ open class BiStream :
             if (c == Long.MAX_VALUE) {
                 throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
             }
-        } while (!this.callCounter.compareAndSet(c, c + 1L))
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
         // Now we can safely do the method call without the handle being freed concurrently.
         try {
             return block(this.uniffiCloneHandle())
@@ -4270,13 +3480,11 @@ open class BiStream :
 
     // Use a static inner class instead of a closure so as not to accidentally
     // capture `this` as part of the cleanable's action.
-    private class UniffiCleanAction(
-        private val handle: Long,
-    ) : Runnable {
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
         override fun run() {
             if (handle == 0.toLong()) {
                 // Fake object created with `NoHandle`, don't try to free.
-                return
+                return;
             }
             uniffiRustCall { status ->
                 UniffiLib.uniffi_iroh_ffi_fn_free_bistream(handle, status)
@@ -4289,62 +3497,77 @@ open class BiStream :
      */
     fun uniffiCloneHandle(): Long {
         if (handle == 0.toLong()) {
-            throw InternalException("uniffiCloneHandle() called on NoHandle object")
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
-        return uniffiRustCall { status ->
+        return uniffiRustCall() { status ->
             UniffiLib.uniffi_iroh_ffi_fn_clone_bistream(handle, status)
         }
     }
 
-    override fun `recv`(): RecvStream =
-        FfiConverterTypeRecvStream.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_bistream_recv(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+    override fun `recv`(): RecvStream {
+            return FfiConverterTypeRecvStream.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_bistream_recv(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
 
-    override fun `send`(): SendStream =
-        FfiConverterTypeSendStream.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_bistream_send(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+    override fun `send`(): SendStream {
+            return FfiConverterTypeSendStream.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_bistream_send(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
 
+    
+
+    
+
+
+    
+    
     /**
      * @suppress
      */
     companion object
+    
 }
+
 
 /**
  * @suppress
  */
-public object FfiConverterTypeBiStream : FfiConverter<BiStream, Long> {
-    override fun lower(value: BiStream): Long = value.uniffiCloneHandle()
+public object FfiConverterTypeBiStream: FfiConverter<BiStream, Long> {
+    override fun lower(value: BiStream): Long {
+        return value.uniffiCloneHandle()
+    }
 
-    override fun lift(value: Long): BiStream = BiStream(UniffiWithHandle, value)
+    override fun lift(value: Long): BiStream {
+        return BiStream(UniffiWithHandle, value)
+    }
 
-    override fun read(buf: ByteBuffer): BiStream = lift(buf.getLong())
+    override fun read(buf: ByteBuffer): BiStream {
+        return lift(buf.getLong())
+    }
 
     override fun allocationSize(value: BiStream) = 8UL
 
-    override fun write(
-        value: BiStream,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: BiStream, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
+
 
 // This template implements a class for working with a Rust struct via a handle
 // to the live Rust struct on the other side of the FFI.
@@ -4440,40 +3663,41 @@ public object FfiConverterTypeBiStream : FfiConverter<BiStream, Long> {
 // [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
 //
 
+
 /**
  * A client-side handshake in progress. Await with [`Self::connect`].
  */
 public interface ConnectingInterface {
+    
     /**
      * Read the ALPN protocol from the peer's handshake data (resolves once
      * the server has responded with its ServerHello).
      */
     suspend fun `alpn`(): kotlin.ByteArray
-
+    
     /**
      * Wait for the handshake to complete, producing a [`Connection`].
      */
     suspend fun `connect`(): Connection
-
+    
     /**
      * The [`EndpointId`] this connection attempt targets.
      */
     suspend fun `remoteId`(): EndpointId
-
+    
     companion object
 }
 
 /**
  * A client-side handshake in progress. Await with [`Self::connect`].
  */
-open class Connecting :
-    Disposable,
-    AutoCloseable,
-    ConnectingInterface {
+open class Connecting: Disposable, AutoCloseable, ConnectingInterface
+{
+
+    @Suppress("UNUSED_PARAMETER")
     /**
      * @suppress
      */
-    @Suppress("UNUSED_PARAMETER")
     constructor(withHandle: UniffiWithHandle, handle: Long) {
         this.handle = handle
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
@@ -4525,7 +3749,7 @@ open class Connecting :
             if (c == Long.MAX_VALUE) {
                 throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
             }
-        } while (!this.callCounter.compareAndSet(c, c + 1L))
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
         // Now we can safely do the method call without the handle being freed concurrently.
         try {
             return block(this.uniffiCloneHandle())
@@ -4539,13 +3763,11 @@ open class Connecting :
 
     // Use a static inner class instead of a closure so as not to accidentally
     // capture `this` as part of the cleanable's action.
-    private class UniffiCleanAction(
-        private val handle: Long,
-    ) : Runnable {
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
         override fun run() {
             if (handle == 0.toLong()) {
                 // Fake object created with `NoHandle`, don't try to free.
-                return
+                return;
             }
             uniffiRustCall { status ->
                 UniffiLib.uniffi_iroh_ffi_fn_free_connecting(handle, status)
@@ -4558,102 +3780,124 @@ open class Connecting :
      */
     fun uniffiCloneHandle(): Long {
         if (handle == 0.toLong()) {
-            throw InternalException("uniffiCloneHandle() called on NoHandle object")
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
-        return uniffiRustCall { status ->
+        return uniffiRustCall() { status ->
             UniffiLib.uniffi_iroh_ffi_fn_clone_connecting(handle, status)
         }
     }
 
+    
     /**
      * Read the ALPN protocol from the peer's handshake data (resolves once
      * the server has responded with its ServerHello).
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `alpn`(): kotlin.ByteArray =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_connecting_alpn(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
-            // lift function
-            { FfiConverterByteArray.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `alpn`() : kotlin.ByteArray {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_connecting_alpn(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterByteArray.lift(it) },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * Wait for the handshake to complete, producing a [`Connection`].
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `connect`(): Connection =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_connecting_connect(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
-            // lift function
-            { FfiConverterTypeConnection.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `connect`() : Connection {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_connecting_connect(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
+        // lift function
+        { FfiConverterTypeConnection.lift(it) },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * The [`EndpointId`] this connection attempt targets.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `remoteId`(): EndpointId =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_connecting_remote_id(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
-            // lift function
-            { FfiConverterTypeEndpointId.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `remoteId`() : EndpointId {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_connecting_remote_id(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
+        // lift function
+        { FfiConverterTypeEndpointId.lift(it) },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
+
+    
+
+
+    
+    
     /**
      * @suppress
      */
     companion object
+    
 }
+
 
 /**
  * @suppress
  */
-public object FfiConverterTypeConnecting : FfiConverter<Connecting, Long> {
-    override fun lower(value: Connecting): Long = value.uniffiCloneHandle()
+public object FfiConverterTypeConnecting: FfiConverter<Connecting, Long> {
+    override fun lower(value: Connecting): Long {
+        return value.uniffiCloneHandle()
+    }
 
-    override fun lift(value: Long): Connecting = Connecting(UniffiWithHandle, value)
+    override fun lift(value: Long): Connecting {
+        return Connecting(UniffiWithHandle, value)
+    }
 
-    override fun read(buf: ByteBuffer): Connecting = lift(buf.getLong())
+    override fun read(buf: ByteBuffer): Connecting {
+        return lift(buf.getLong())
+    }
 
     override fun allocationSize(value: Connecting) = 8UL
 
-    override fun write(
-        value: Connecting,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: Connecting, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
+
 
 // This template implements a class for working with a Rust struct via a handle
 // to the live Rust struct on the other side of the FFI.
@@ -4749,153 +3993,151 @@ public object FfiConverterTypeConnecting : FfiConverter<Connecting, Long> {
 // [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
 //
 
+
 /**
  * An active QUIC connection to a remote endpoint.
  */
 public interface ConnectionInterface {
+    
     /**
      * Accept the next incoming bidirectional stream.
      */
     suspend fun `acceptBi`(): BiStream
-
+    
     /**
      * Accept the next incoming unidirectional stream.
      */
     suspend fun `acceptUni`(): RecvStream
-
+    
     /**
      * The ALPN protocol negotiated for this connection.
      */
     fun `alpn`(): kotlin.ByteArray
-
+    
     /**
      * Close the connection immediately with the given application error code.
      *
      * Signed for Kotlin/Swift ergonomics; negative values are rejected.
      */
-    fun `close`(
-        `errorCode`: kotlin.Long,
-        `reason`: kotlin.ByteArray,
-    )
-
+    fun `close`(`errorCode`: kotlin.Long, `reason`: kotlin.ByteArray)
+    
     /**
      * If the connection is closed, the reason why. None if still open.
      */
     fun `closeReason`(): kotlin.String?
-
+    
     /**
      * Wait for the connection to be closed, returning the cause.
      */
     suspend fun `closed`(): kotlin.String
-
+    
     /**
      * Bytes available in the datagram send buffer.
      */
     fun `datagramSendBufferSpace`(): kotlin.ULong
-
+    
     /**
      * Maximum size of a datagram that can currently be sent.
      */
     fun `maxDatagramSize`(): kotlin.ULong?
-
+    
     /**
      * Open a new bidirectional outgoing stream.
      */
     suspend fun `openBi`(): BiStream
-
+    
     /**
      * Open a new unidirectional outgoing stream.
      */
     suspend fun `openUni`(): SendStream
-
+    
     /**
      * A snapshot of all currently open network paths for this connection.
      */
     fun `paths`(): List<PathSnapshot>
-
+    
     /**
      * Read the next datagram from the connection.
      */
     suspend fun `readDatagram`(): kotlin.ByteArray
-
+    
     /**
      * The [`EndpointId`] of the remote peer.
      */
     fun `remoteId`(): EndpointId
-
+    
     /**
      * Current best estimate of this connection's RTT on the selected path,
      * in milliseconds. `None` if no path is currently selected.
      */
     fun `rtt`(): kotlin.ULong?
-
+    
     /**
      * Send a datagram on this connection.
      */
     fun `sendDatagram`(`data`: kotlin.ByteArray)
-
+    
     /**
      * Like [`Connection::send_datagram`] but waits for capacity if the send
      * buffer is full.
      */
     suspend fun `sendDatagramWait`(`data`: kotlin.ByteArray)
-
+    
     /**
      * Set the maximum number of concurrent incoming bidirectional streams.
      */
     fun `setMaxConcurrentBiStreams`(`count`: kotlin.ULong)
-
+    
     /**
      * Set the maximum number of concurrent incoming unidirectional streams.
      */
     fun `setMaxConcurrentUniStreams`(`count`: kotlin.ULong)
-
+    
     /**
      * Set the receive window for this connection.
      */
     fun `setReceiveWindow`(`count`: kotlin.ULong)
-
+    
     /**
      * Which side of the connection we are (client or server).
      */
     fun `side`(): Side
-
+    
     /**
      * A stable identifier for this connection.
      */
     fun `stableId`(): kotlin.ULong
-
+    
     /**
      * A flat snapshot of the most useful headline statistics for this connection.
      */
     fun `stats`(): ConnectionStats
-
+    
     /**
      * Register a callback that fires for each individual path event (path
      * opened, closed, selected, or lagged).
      */
     fun `watchPathEvents`(`callback`: PathEventCallback): WatchHandle
-
+    
     /**
      * Register a callback that fires with the current set of open paths
      * whenever the path list (or selected path) changes.
      */
     fun `watchPaths`(`callback`: PathChangeCallback): WatchHandle
-
+    
     companion object
 }
 
 /**
  * An active QUIC connection to a remote endpoint.
  */
-open class Connection :
-    Disposable,
-    AutoCloseable,
-    ConnectionInterface {
+open class Connection: Disposable, AutoCloseable, ConnectionInterface
+{
+
+    @Suppress("UNUSED_PARAMETER")
     /**
      * @suppress
      */
-    @Suppress("UNUSED_PARAMETER")
     constructor(withHandle: UniffiWithHandle, handle: Long) {
         this.handle = handle
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
@@ -4947,7 +4189,7 @@ open class Connection :
             if (c == Long.MAX_VALUE) {
                 throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
             }
-        } while (!this.callCounter.compareAndSet(c, c + 1L))
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
         // Now we can safely do the method call without the handle being freed concurrently.
         try {
             return block(this.uniffiCloneHandle())
@@ -4961,13 +4203,11 @@ open class Connection :
 
     // Use a static inner class instead of a closure so as not to accidentally
     // capture `this` as part of the cleanable's action.
-    private class UniffiCleanAction(
-        private val handle: Long,
-    ) : Runnable {
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
         override fun run() {
             if (handle == 0.toLong()) {
                 // Fake object created with `NoHandle`, don't try to free.
-                return
+                return;
             }
             uniffiRustCall { status ->
                 UniffiLib.uniffi_iroh_ffi_fn_free_connection(handle, status)
@@ -4980,451 +4220,497 @@ open class Connection :
      */
     fun uniffiCloneHandle(): Long {
         if (handle == 0.toLong()) {
-            throw InternalException("uniffiCloneHandle() called on NoHandle object")
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
-        return uniffiRustCall { status ->
+        return uniffiRustCall() { status ->
             UniffiLib.uniffi_iroh_ffi_fn_clone_connection(handle, status)
         }
     }
 
+    
     /**
      * Accept the next incoming bidirectional stream.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `acceptBi`(): BiStream =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_connection_accept_bi(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
-            // lift function
-            { FfiConverterTypeBiStream.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `acceptBi`() : BiStream {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_connection_accept_bi(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
+        // lift function
+        { FfiConverterTypeBiStream.lift(it) },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * Accept the next incoming unidirectional stream.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `acceptUni`(): RecvStream =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_connection_accept_uni(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
-            // lift function
-            { FfiConverterTypeRecvStream.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `acceptUni`() : RecvStream {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_connection_accept_uni(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
+        // lift function
+        { FfiConverterTypeRecvStream.lift(it) },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * The ALPN protocol negotiated for this connection.
-     */
-    override fun `alpn`(): kotlin.ByteArray =
-        FfiConverterByteArray.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_connection_alpn(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `alpn`(): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_connection_alpn(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * Close the connection immediately with the given application error code.
      *
      * Signed for Kotlin/Swift ergonomics; negative values are rejected.
      */
-    @Throws(IrohException::class)
-    override fun `close`(
-        `errorCode`: kotlin.Long,
-        `reason`: kotlin.ByteArray,
-    ) = callWithHandle {
-        uniffiRustCallWithError(IrohException) { _status ->
-            UniffiLib.uniffi_iroh_ffi_fn_method_connection_close(
-                it,
-                FfiConverterLong.lower(`errorCode`),
-                FfiConverterByteArray.lower(`reason`),
-                _status,
-            )
-        }
+    @Throws(IrohException::class)override fun `close`(`errorCode`: kotlin.Long, `reason`: kotlin.ByteArray)
+        = 
+    callWithHandle {
+    uniffiRustCallWithError(IrohException) { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_connection_close(
+        it,
+        FfiConverterLong.lower(`errorCode`),FfiConverterByteArray.lower(`reason`),_status)
+}
     }
+    
+    
 
+    
     /**
      * If the connection is closed, the reason why. None if still open.
-     */
-    override fun `closeReason`(): kotlin.String? =
-        FfiConverterOptionalString.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_connection_close_reason(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `closeReason`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_connection_close_reason(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * Wait for the connection to be closed, returning the cause.
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `closed`(): kotlin.String =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_connection_closed(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
-            // lift function
-            { FfiConverterString.lift(it) },
-            // Error FFI converter
-            UniffiNullRustCallStatusErrorHandler,
-        )
+    override suspend fun `closed`() : kotlin.String {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_connection_closed(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterString.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
 
+    
     /**
      * Bytes available in the datagram send buffer.
-     */
-    override fun `datagramSendBufferSpace`(): kotlin.ULong =
-        FfiConverterULong.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_connection_datagram_send_buffer_space(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `datagramSendBufferSpace`(): kotlin.ULong {
+            return FfiConverterULong.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_connection_datagram_send_buffer_space(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * Maximum size of a datagram that can currently be sent.
-     */
-    override fun `maxDatagramSize`(): kotlin.ULong? =
-        FfiConverterOptionalULong.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_connection_max_datagram_size(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `maxDatagramSize`(): kotlin.ULong? {
+            return FfiConverterOptionalULong.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_connection_max_datagram_size(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * Open a new bidirectional outgoing stream.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `openBi`(): BiStream =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_connection_open_bi(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
-            // lift function
-            { FfiConverterTypeBiStream.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `openBi`() : BiStream {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_connection_open_bi(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
+        // lift function
+        { FfiConverterTypeBiStream.lift(it) },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * Open a new unidirectional outgoing stream.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `openUni`(): SendStream =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_connection_open_uni(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
-            // lift function
-            { FfiConverterTypeSendStream.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `openUni`() : SendStream {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_connection_open_uni(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
+        // lift function
+        { FfiConverterTypeSendStream.lift(it) },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * A snapshot of all currently open network paths for this connection.
-     */
-    override fun `paths`(): List<PathSnapshot> =
-        FfiConverterSequenceTypePathSnapshot.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_connection_paths(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `paths`(): List<PathSnapshot> {
+            return FfiConverterSequenceTypePathSnapshot.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_connection_paths(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * Read the next datagram from the connection.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `readDatagram`(): kotlin.ByteArray =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_connection_read_datagram(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
-            // lift function
-            { FfiConverterByteArray.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `readDatagram`() : kotlin.ByteArray {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_connection_read_datagram(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterByteArray.lift(it) },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * The [`EndpointId`] of the remote peer.
-     */
-    override fun `remoteId`(): EndpointId =
-        FfiConverterTypeEndpointId.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_connection_remote_id(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `remoteId`(): EndpointId {
+            return FfiConverterTypeEndpointId.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_connection_remote_id(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * Current best estimate of this connection's RTT on the selected path,
      * in milliseconds. `None` if no path is currently selected.
-     */
-    override fun `rtt`(): kotlin.ULong? =
-        FfiConverterOptionalULong.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_connection_rtt(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `rtt`(): kotlin.ULong? {
+            return FfiConverterOptionalULong.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_connection_rtt(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * Send a datagram on this connection.
      */
-    @Throws(IrohException::class)
-    override fun `sendDatagram`(`data`: kotlin.ByteArray) =
-        callWithHandle {
-            uniffiRustCallWithError(IrohException) { _status ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_connection_send_datagram(
-                    it,
-                    FfiConverterByteArray.lower(`data`),
-                    _status,
-                )
-            }
-        }
+    @Throws(IrohException::class)override fun `sendDatagram`(`data`: kotlin.ByteArray)
+        = 
+    callWithHandle {
+    uniffiRustCallWithError(IrohException) { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_connection_send_datagram(
+        it,
+        FfiConverterByteArray.lower(`data`),_status)
+}
+    }
+    
+    
 
+    
     /**
      * Like [`Connection::send_datagram`] but waits for capacity if the send
      * buffer is full.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `sendDatagramWait`(`data`: kotlin.ByteArray) =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_connection_send_datagram_wait(
-                    uniffiHandle,
-                    FfiConverterByteArray.lower(`data`),
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
-            // lift function
-            { Unit },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `sendDatagramWait`(`data`: kotlin.ByteArray) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_connection_send_datagram_wait(
+                uniffiHandle,
+                FfiConverterByteArray.lower(`data`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * Set the maximum number of concurrent incoming bidirectional streams.
      */
-    @Throws(IrohException::class)
-    override fun `setMaxConcurrentBiStreams`(`count`: kotlin.ULong) =
-        callWithHandle {
-            uniffiRustCallWithError(IrohException) { _status ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_connection_set_max_concurrent_bi_streams(
-                    it,
-                    FfiConverterULong.lower(`count`),
-                    _status,
-                )
-            }
-        }
+    @Throws(IrohException::class)override fun `setMaxConcurrentBiStreams`(`count`: kotlin.ULong)
+        = 
+    callWithHandle {
+    uniffiRustCallWithError(IrohException) { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_connection_set_max_concurrent_bi_streams(
+        it,
+        FfiConverterULong.lower(`count`),_status)
+}
+    }
+    
+    
 
+    
     /**
      * Set the maximum number of concurrent incoming unidirectional streams.
      */
-    @Throws(IrohException::class)
-    override fun `setMaxConcurrentUniStreams`(`count`: kotlin.ULong) =
-        callWithHandle {
-            uniffiRustCallWithError(IrohException) { _status ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_connection_set_max_concurrent_uni_streams(
-                    it,
-                    FfiConverterULong.lower(`count`),
-                    _status,
-                )
-            }
-        }
+    @Throws(IrohException::class)override fun `setMaxConcurrentUniStreams`(`count`: kotlin.ULong)
+        = 
+    callWithHandle {
+    uniffiRustCallWithError(IrohException) { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_connection_set_max_concurrent_uni_streams(
+        it,
+        FfiConverterULong.lower(`count`),_status)
+}
+    }
+    
+    
 
+    
     /**
      * Set the receive window for this connection.
      */
-    @Throws(IrohException::class)
-    override fun `setReceiveWindow`(`count`: kotlin.ULong) =
-        callWithHandle {
-            uniffiRustCallWithError(IrohException) { _status ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_connection_set_receive_window(
-                    it,
-                    FfiConverterULong.lower(`count`),
-                    _status,
-                )
-            }
-        }
+    @Throws(IrohException::class)override fun `setReceiveWindow`(`count`: kotlin.ULong)
+        = 
+    callWithHandle {
+    uniffiRustCallWithError(IrohException) { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_connection_set_receive_window(
+        it,
+        FfiConverterULong.lower(`count`),_status)
+}
+    }
+    
+    
 
+    
     /**
      * Which side of the connection we are (client or server).
-     */
-    override fun `side`(): Side =
-        FfiConverterTypeSide.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_connection_side(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `side`(): Side {
+            return FfiConverterTypeSide.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_connection_side(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * A stable identifier for this connection.
-     */
-    override fun `stableId`(): kotlin.ULong =
-        FfiConverterULong.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_connection_stable_id(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `stableId`(): kotlin.ULong {
+            return FfiConverterULong.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_connection_stable_id(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * A flat snapshot of the most useful headline statistics for this connection.
-     */
-    override fun `stats`(): ConnectionStats =
-        FfiConverterTypeConnectionStats.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_connection_stats(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `stats`(): ConnectionStats {
+            return FfiConverterTypeConnectionStats.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_connection_stats(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * Register a callback that fires for each individual path event (path
      * opened, closed, selected, or lagged).
-     */
-    override fun `watchPathEvents`(`callback`: PathEventCallback): WatchHandle =
-        FfiConverterTypeWatchHandle.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_connection_watch_path_events(
-                        it,
-                        FfiConverterTypePathEventCallback.lower(`callback`),
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `watchPathEvents`(`callback`: PathEventCallback): WatchHandle {
+            return FfiConverterTypeWatchHandle.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_connection_watch_path_events(
+        it,
+        FfiConverterTypePathEventCallback.lower(`callback`),_status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * Register a callback that fires with the current set of open paths
      * whenever the path list (or selected path) changes.
-     */
-    override fun `watchPaths`(`callback`: PathChangeCallback): WatchHandle =
-        FfiConverterTypeWatchHandle.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_connection_watch_paths(
-                        it,
-                        FfiConverterTypePathChangeCallback.lower(`callback`),
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `watchPaths`(`callback`: PathChangeCallback): WatchHandle {
+            return FfiConverterTypeWatchHandle.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_connection_watch_paths(
+        it,
+        FfiConverterTypePathChangeCallback.lower(`callback`),_status)
+}
+    }
+    )
+    }
+    
 
+    
+
+    
+
+
+    
+    
     /**
      * @suppress
      */
     companion object
+    
 }
+
 
 /**
  * @suppress
  */
-public object FfiConverterTypeConnection : FfiConverter<Connection, Long> {
-    override fun lower(value: Connection): Long = value.uniffiCloneHandle()
+public object FfiConverterTypeConnection: FfiConverter<Connection, Long> {
+    override fun lower(value: Connection): Long {
+        return value.uniffiCloneHandle()
+    }
 
-    override fun lift(value: Long): Connection = Connection(UniffiWithHandle, value)
+    override fun lift(value: Long): Connection {
+        return Connection(UniffiWithHandle, value)
+    }
 
-    override fun read(buf: ByteBuffer): Connection = lift(buf.getLong())
+    override fun read(buf: ByteBuffer): Connection {
+        return lift(buf.getLong())
+    }
 
     override fun allocationSize(value: Connection) = 8UL
 
-    override fun write(
-        value: Connection,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: Connection, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
+
 
 // This template implements a class for working with a Rust struct via a handle
 // to the live Rust struct on the other side of the FFI.
@@ -5520,6 +4806,7 @@ public object FfiConverterTypeConnection : FfiConverter<Connection, Long> {
 // [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
 //
 
+
 /**
  * An iroh endpoint.
  *
@@ -5527,6 +4814,7 @@ public object FfiConverterTypeConnection : FfiConverter<Connection, Long> {
  * [`EndpointOptions::protocols`] to dispatch incoming connections.
  */
 public interface EndpointInterface {
+    
     /**
      * Pull the next incoming connection attempt from the accept queue.
      *
@@ -5535,36 +4823,33 @@ public interface EndpointInterface {
      * [`EndpointOptions::protocols`].
      */
     suspend fun `acceptNext`(): Incoming?
-
+    
     /**
      * Add an external (manually-known) socket address that this endpoint is
      * reachable on. Useful when running behind a static NAT / load balancer.
      */
     suspend fun `addExternalAddr`(`addr`: kotlin.String)
-
+    
     /**
      * The [`EndpointAddr`] for this endpoint (id + currently known addresses).
      */
     fun `addr`(): EndpointAddr
-
+    
     /**
      * The local socket addresses this endpoint is bound to.
      */
     fun `boundSockets`(): List<kotlin.String>
-
+    
     /**
      * Shut down the endpoint (and, if present, the protocol router).
      */
     suspend fun `shutdown`()
-
+    
     /**
      * Connect to a remote endpoint via the given ALPN.
      */
-    suspend fun `connect`(
-        `addr`: EndpointAddr,
-        `alpn`: kotlin.ByteArray,
-    ): Connection
-
+    suspend fun `connect`(`addr`: EndpointAddr, `alpn`: kotlin.ByteArray): Connection
+    
     /**
      * Begin a connection attempt to `addr` for `alpn`, returning the
      * in-progress [`Connecting`] state.
@@ -5573,65 +4858,62 @@ public interface EndpointInterface {
      * this exposes the pre-handshake handle so the caller can inspect ALPN or
      * drop the attempt explicitly.
      */
-    suspend fun `connectPending`(
-        `addr`: EndpointAddr,
-        `alpn`: kotlin.ByteArray,
-    ): Connecting
-
+    suspend fun `connectPending`(`addr`: EndpointAddr, `alpn`: kotlin.ByteArray): Connecting
+    
     /**
      * The [`EndpointId`] of this endpoint.
      */
     fun `id`(): EndpointId
-
+    
     /**
      * Insert (or replace) a relay configuration at runtime.
      */
     suspend fun `insertRelay`(`config`: RelayConfig)
-
+    
     /**
      * Returns true if the endpoint has been closed.
      */
     fun `isClosed`(): kotlin.Boolean
-
+    
     /**
      * Resolves once the endpoint has a usable home relay.
      */
     suspend fun `online`()
-
+    
     /**
      * Look up cached information about a remote endpoint, if any.
      */
     suspend fun `remoteAddr`(`id`: EndpointId): EndpointAddr?
-
+    
     /**
      * Remove a previously-added external address. Returns true if an entry was
      * removed.
      */
     suspend fun `removeExternalAddr`(`addr`: kotlin.String): kotlin.Boolean
-
+    
     /**
      * Remove a relay configuration at runtime. Returns true if a relay was
      * removed.
      */
     suspend fun `removeRelay`(`url`: kotlin.String): kotlin.Boolean
-
+    
     /**
      * The [`SecretKey`] backing this endpoint's identity.
      */
     fun `secretKey`(): SecretKey
-
+    
     /**
      * Replace the set of ALPNs advertised by this endpoint.
      */
     fun `setAlpns`(`alpns`: List<kotlin.ByteArray>)
-
+    
     /**
      * Get current statistics for this endpoint.
      *
      * Keys are `"<group>:<metric>"`. Counter / gauge values are saturating-cast to `u32`.
      */
     fun `stats`(): Map<kotlin.String, CounterStats>
-
+    
     /**
      * Register a callback that fires whenever the endpoint's [`EndpointAddr`]
      * changes (relay home rotates, IP discovered, etc.). The returned
@@ -5639,19 +4921,19 @@ public interface EndpointInterface {
      * method is called.
      */
     fun `watchAddr`(`callback`: AddrChangeCallback): WatchHandle
-
+    
     /**
      * Register a callback that fires whenever the list of relays this endpoint
      * is currently connected to changes.
      */
     fun `watchHomeRelay`(`callback`: HomeRelayCallback): WatchHandle
-
+    
     /**
      * Register a callback that fires every time the underlying network stack
      * reports a change (interface up/down, NAT change, roaming, etc.).
      */
     fun `watchNetworkChange`(`callback`: NetworkChangeCallback): WatchHandle
-
+    
     companion object
 }
 
@@ -5661,14 +4943,13 @@ public interface EndpointInterface {
  * Bind one with [`Endpoint::bind`]. Provide protocol handlers via
  * [`EndpointOptions::protocols`] to dispatch incoming connections.
  */
-open class Endpoint :
-    Disposable,
-    AutoCloseable,
-    EndpointInterface {
+open class Endpoint: Disposable, AutoCloseable, EndpointInterface
+{
+
+    @Suppress("UNUSED_PARAMETER")
     /**
      * @suppress
      */
-    @Suppress("UNUSED_PARAMETER")
     constructor(withHandle: UniffiWithHandle, handle: Long) {
         this.handle = handle
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
@@ -5720,7 +5001,7 @@ open class Endpoint :
             if (c == Long.MAX_VALUE) {
                 throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
             }
-        } while (!this.callCounter.compareAndSet(c, c + 1L))
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
         // Now we can safely do the method call without the handle being freed concurrently.
         try {
             return block(this.uniffiCloneHandle())
@@ -5734,13 +5015,11 @@ open class Endpoint :
 
     // Use a static inner class instead of a closure so as not to accidentally
     // capture `this` as part of the cleanable's action.
-    private class UniffiCleanAction(
-        private val handle: Long,
-    ) : Runnable {
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
         override fun run() {
             if (handle == 0.toLong()) {
                 // Fake object created with `NoHandle`, don't try to free.
-                return
+                return;
             }
             uniffiRustCall { status ->
                 UniffiLib.uniffi_iroh_ffi_fn_free_endpoint(handle, status)
@@ -5753,13 +5032,14 @@ open class Endpoint :
      */
     fun uniffiCloneHandle(): Long {
         if (handle == 0.toLong()) {
-            throw InternalException("uniffiCloneHandle() called on NoHandle object")
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
-        return uniffiRustCall { status ->
+        return uniffiRustCall() { status ->
             UniffiLib.uniffi_iroh_ffi_fn_clone_endpoint(handle, status)
         }
     }
 
+    
     /**
      * Pull the next incoming connection attempt from the accept queue.
      *
@@ -5768,122 +5048,132 @@ open class Endpoint :
      * [`EndpointOptions::protocols`].
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `acceptNext`(): Incoming? =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_accept_next(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
-            // lift function
-            { FfiConverterOptionalTypeIncoming.lift(it) },
-            // Error FFI converter
-            UniffiNullRustCallStatusErrorHandler,
-        )
+    override suspend fun `acceptNext`() : Incoming? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_accept_next(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalTypeIncoming.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
 
+    
     /**
      * Add an external (manually-known) socket address that this endpoint is
      * reachable on. Useful when running behind a static NAT / load balancer.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `addExternalAddr`(`addr`: kotlin.String) =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_add_external_addr(
-                    uniffiHandle,
-                    FfiConverterString.lower(`addr`),
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
-            // lift function
-            { Unit },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `addExternalAddr`(`addr`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_add_external_addr(
+                uniffiHandle,
+                FfiConverterString.lower(`addr`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * The [`EndpointAddr`] for this endpoint (id + currently known addresses).
-     */
-    override fun `addr`(): EndpointAddr =
-        FfiConverterTypeEndpointAddr.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_addr(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `addr`(): EndpointAddr {
+            return FfiConverterTypeEndpointAddr.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_addr(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * The local socket addresses this endpoint is bound to.
-     */
-    override fun `boundSockets`(): List<kotlin.String> =
-        FfiConverterSequenceString.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_bound_sockets(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `boundSockets`(): List<kotlin.String> {
+            return FfiConverterSequenceString.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_bound_sockets(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * Shut down the endpoint (and, if present, the protocol router).
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `shutdown`() =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_close(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
-            // lift function
-            { Unit },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `shutdown`() {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_close(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * Connect to a remote endpoint via the given ALPN.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `connect`(
-        `addr`: EndpointAddr,
-        `alpn`: kotlin.ByteArray,
-    ): Connection =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_connect(
-                    uniffiHandle,
-                    FfiConverterTypeEndpointAddr.lower(`addr`),
-                    FfiConverterByteArray.lower(`alpn`),
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
-            // lift function
-            { FfiConverterTypeConnection.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `connect`(`addr`: EndpointAddr, `alpn`: kotlin.ByteArray) : Connection {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_connect(
+                uniffiHandle,
+                FfiConverterTypeEndpointAddr.lower(`addr`),FfiConverterByteArray.lower(`alpn`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
+        // lift function
+        { FfiConverterTypeConnection.lift(it) },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * Begin a connection attempt to `addr` for `alpn`, returning the
      * in-progress [`Connecting`] state.
@@ -5894,304 +5184,335 @@ open class Endpoint :
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `connectPending`(
-        `addr`: EndpointAddr,
-        `alpn`: kotlin.ByteArray,
-    ): Connecting =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_connect_pending(
-                    uniffiHandle,
-                    FfiConverterTypeEndpointAddr.lower(`addr`),
-                    FfiConverterByteArray.lower(`alpn`),
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
-            // lift function
-            { FfiConverterTypeConnecting.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `connectPending`(`addr`: EndpointAddr, `alpn`: kotlin.ByteArray) : Connecting {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_connect_pending(
+                uniffiHandle,
+                FfiConverterTypeEndpointAddr.lower(`addr`),FfiConverterByteArray.lower(`alpn`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
+        // lift function
+        { FfiConverterTypeConnecting.lift(it) },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * The [`EndpointId`] of this endpoint.
-     */
-    override fun `id`(): EndpointId =
-        FfiConverterTypeEndpointId.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_id(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `id`(): EndpointId {
+            return FfiConverterTypeEndpointId.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_id(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * Insert (or replace) a relay configuration at runtime.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `insertRelay`(`config`: RelayConfig) =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_insert_relay(
-                    uniffiHandle,
-                    FfiConverterTypeRelayConfig.lower(`config`),
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
-            // lift function
-            { Unit },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `insertRelay`(`config`: RelayConfig) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_insert_relay(
+                uniffiHandle,
+                FfiConverterTypeRelayConfig.lower(`config`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * Returns true if the endpoint has been closed.
-     */
-    override fun `isClosed`(): kotlin.Boolean =
-        FfiConverterBoolean.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_is_closed(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `isClosed`(): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_is_closed(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * Resolves once the endpoint has a usable home relay.
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `online`() =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_online(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
-            // lift function
-            { Unit },
-            // Error FFI converter
-            UniffiNullRustCallStatusErrorHandler,
-        )
+    override suspend fun `online`() {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_online(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
 
+    
     /**
      * Look up cached information about a remote endpoint, if any.
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `remoteAddr`(`id`: EndpointId): EndpointAddr? =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_remote_addr(
-                    uniffiHandle,
-                    FfiConverterTypeEndpointId.lower(`id`),
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
-            // lift function
-            { FfiConverterOptionalTypeEndpointAddr.lift(it) },
-            // Error FFI converter
-            UniffiNullRustCallStatusErrorHandler,
-        )
+    override suspend fun `remoteAddr`(`id`: EndpointId) : EndpointAddr? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_remote_addr(
+                uniffiHandle,
+                FfiConverterTypeEndpointId.lower(`id`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalTypeEndpointAddr.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
 
+    
     /**
      * Remove a previously-added external address. Returns true if an entry was
      * removed.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `removeExternalAddr`(`addr`: kotlin.String): kotlin.Boolean =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_remove_external_addr(
-                    uniffiHandle,
-                    FfiConverterString.lower(`addr`),
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_i8(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_i8(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_i8(future) },
-            // lift function
-            { FfiConverterBoolean.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `removeExternalAddr`(`addr`: kotlin.String) : kotlin.Boolean {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_remove_external_addr(
+                uniffiHandle,
+                FfiConverterString.lower(`addr`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_i8(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_i8(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_i8(future) },
+        // lift function
+        { FfiConverterBoolean.lift(it) },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * Remove a relay configuration at runtime. Returns true if a relay was
      * removed.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `removeRelay`(`url`: kotlin.String): kotlin.Boolean =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_remove_relay(
-                    uniffiHandle,
-                    FfiConverterString.lower(`url`),
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_i8(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_i8(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_i8(future) },
-            // lift function
-            { FfiConverterBoolean.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `removeRelay`(`url`: kotlin.String) : kotlin.Boolean {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_remove_relay(
+                uniffiHandle,
+                FfiConverterString.lower(`url`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_i8(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_i8(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_i8(future) },
+        // lift function
+        { FfiConverterBoolean.lift(it) },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * The [`SecretKey`] backing this endpoint's identity.
-     */
-    override fun `secretKey`(): SecretKey =
-        FfiConverterTypeSecretKey.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_secret_key(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `secretKey`(): SecretKey {
+            return FfiConverterTypeSecretKey.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_secret_key(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * Replace the set of ALPNs advertised by this endpoint.
-     */
-    override fun `setAlpns`(`alpns`: List<kotlin.ByteArray>) =
-        callWithHandle {
-            uniffiRustCall { _status ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_set_alpns(
-                    it,
-                    FfiConverterSequenceByteArray.lower(`alpns`),
-                    _status,
-                )
-            }
-        }
+     */override fun `setAlpns`(`alpns`: List<kotlin.ByteArray>)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_set_alpns(
+        it,
+        FfiConverterSequenceByteArray.lower(`alpns`),_status)
+}
+    }
+    
+    
 
+    
     /**
      * Get current statistics for this endpoint.
      *
      * Keys are `"<group>:<metric>"`. Counter / gauge values are saturating-cast to `u32`.
-     */
-    override fun `stats`(): Map<kotlin.String, CounterStats> =
-        FfiConverterMapStringTypeCounterStats.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_stats(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `stats`(): Map<kotlin.String, CounterStats> {
+            return FfiConverterMapStringTypeCounterStats.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_stats(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * Register a callback that fires whenever the endpoint's [`EndpointAddr`]
      * changes (relay home rotates, IP discovered, etc.). The returned
      * [`WatchHandle`] cancels the watcher when dropped or when its `stop()`
      * method is called.
-     */
-    override fun `watchAddr`(`callback`: AddrChangeCallback): WatchHandle =
-        FfiConverterTypeWatchHandle.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_watch_addr(
-                        it,
-                        FfiConverterTypeAddrChangeCallback.lower(`callback`),
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `watchAddr`(`callback`: AddrChangeCallback): WatchHandle {
+            return FfiConverterTypeWatchHandle.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_watch_addr(
+        it,
+        FfiConverterTypeAddrChangeCallback.lower(`callback`),_status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * Register a callback that fires whenever the list of relays this endpoint
      * is currently connected to changes.
-     */
-    override fun `watchHomeRelay`(`callback`: HomeRelayCallback): WatchHandle =
-        FfiConverterTypeWatchHandle.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_watch_home_relay(
-                        it,
-                        FfiConverterTypeHomeRelayCallback.lower(`callback`),
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `watchHomeRelay`(`callback`: HomeRelayCallback): WatchHandle {
+            return FfiConverterTypeWatchHandle.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_watch_home_relay(
+        it,
+        FfiConverterTypeHomeRelayCallback.lower(`callback`),_status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * Register a callback that fires every time the underlying network stack
      * reports a change (interface up/down, NAT change, roaming, etc.).
-     */
-    override fun `watchNetworkChange`(`callback`: NetworkChangeCallback): WatchHandle =
-        FfiConverterTypeWatchHandle.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_watch_network_change(
-                        it,
-                        FfiConverterTypeNetworkChangeCallback.lower(`callback`),
-                        _status,
-                    )
-                }
-            },
-        )
-
-    companion object {
-        /**
-         * Bind a new endpoint with the given options.
-         */
-        @Throws(IrohException::class)
-        @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-        suspend fun `bind`(`options`: EndpointOptions): Endpoint =
-            uniffiRustCallAsync(
-                UniffiLib.uniffi_iroh_ffi_fn_constructor_endpoint_bind(FfiConverterTypeEndpointOptions.lower(`options`)),
-                { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
-                { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
-                { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
-                // lift function
-                { FfiConverterTypeEndpoint.lift(it) },
-                // Error FFI converter
-                IrohException.ErrorHandler,
-            )
-    }
+     */override fun `watchNetworkChange`(`callback`: NetworkChangeCallback): WatchHandle {
+            return FfiConverterTypeWatchHandle.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_endpoint_watch_network_change(
+        it,
+        FfiConverterTypeNetworkChangeCallback.lower(`callback`),_status)
 }
+    }
+    )
+    }
+    
+
+    
+
+    
+
+
+    
+    companion object {
+        
+    /**
+     * Bind a new endpoint with the given options.
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+     suspend fun `bind`(`options`: EndpointOptions) : Endpoint {
+        return uniffiRustCallAsync(
+        UniffiLib.uniffi_iroh_ffi_fn_constructor_endpoint_bind(FfiConverterTypeEndpointOptions.lower(`options`),),
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
+        // lift function
+        { FfiConverterTypeEndpoint.lift(it) },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
+
+        
+    }
+    
+}
+
 
 /**
  * @suppress
  */
-public object FfiConverterTypeEndpoint : FfiConverter<Endpoint, Long> {
-    override fun lower(value: Endpoint): Long = value.uniffiCloneHandle()
+public object FfiConverterTypeEndpoint: FfiConverter<Endpoint, Long> {
+    override fun lower(value: Endpoint): Long {
+        return value.uniffiCloneHandle()
+    }
 
-    override fun lift(value: Long): Endpoint = Endpoint(UniffiWithHandle, value)
+    override fun lift(value: Long): Endpoint {
+        return Endpoint(UniffiWithHandle, value)
+    }
 
-    override fun read(buf: ByteBuffer): Endpoint = lift(buf.getLong())
+    override fun read(buf: ByteBuffer): Endpoint {
+        return lift(buf.getLong())
+    }
 
     override fun allocationSize(value: Endpoint) = 8UL
 
-    override fun write(
-        value: Endpoint,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: Endpoint, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
+
 
 // This template implements a class for working with a Rust struct via a handle
 // to the live Rust struct on the other side of the FFI.
@@ -6287,6 +5608,7 @@ public object FfiConverterTypeEndpoint : FfiConverter<Endpoint, Long> {
 // [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
 //
 
+
 /**
  * An endpoint's id together with the network-level addresses where it can be reached.
  *
@@ -6294,21 +5616,22 @@ public object FfiConverterTypeEndpoint : FfiConverter<Endpoint, Long> {
  * `TransportAddr`s (one relay URL plus a list of IP/port pairs).
  */
 public interface EndpointAddrInterface {
+    
     /**
      * The direct (IP/port) addresses of this peer.
      */
     fun `directAddresses`(): List<kotlin.String>
-
+    
     /**
      * The endpoint id.
      */
     fun `id`(): EndpointId
-
+    
     /**
      * The home relay URL for this peer, if known.
      */
     fun `relayUrl`(): kotlin.String?
-
+    
     companion object
 }
 
@@ -6318,14 +5641,13 @@ public interface EndpointAddrInterface {
  * Mirrors `iroh::EndpointAddr` — exposes a flat view over the underlying set of
  * `TransportAddr`s (one relay URL plus a list of IP/port pairs).
  */
-open class EndpointAddr :
-    Disposable,
-    AutoCloseable,
-    EndpointAddrInterface {
+open class EndpointAddr: Disposable, AutoCloseable, EndpointAddrInterface
+{
+
+    @Suppress("UNUSED_PARAMETER")
     /**
      * @suppress
      */
-    @Suppress("UNUSED_PARAMETER")
     constructor(withHandle: UniffiWithHandle, handle: Long) {
         this.handle = handle
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
@@ -6343,22 +5665,17 @@ open class EndpointAddr :
         this.handle = 0
         this.cleanable = null
     }
-
     /**
      * Create a new [`EndpointAddr`].
      */
     constructor(`id`: EndpointId, `relayUrl`: kotlin.String?, `addresses`: List<kotlin.String>) :
-        this(
-            UniffiWithHandle,
-            uniffiRustCall { _status ->
-                UniffiLib.uniffi_iroh_ffi_fn_constructor_endpointaddr_new(
-                    FfiConverterTypeEndpointId.lower(`id`),
-                    FfiConverterOptionalString.lower(`relayUrl`),
-                    FfiConverterSequenceString.lower(`addresses`),
-                    _status,
-                )
-            },
-        )
+        this(UniffiWithHandle, 
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_constructor_endpointaddr_new(
+    
+        FfiConverterTypeEndpointId.lower(`id`),FfiConverterOptionalString.lower(`relayUrl`),FfiConverterSequenceString.lower(`addresses`),_status)
+}
+    )
 
     protected val handle: Long
     protected val cleanable: UniffiCleaner.Cleanable?
@@ -6393,7 +5710,7 @@ open class EndpointAddr :
             if (c == Long.MAX_VALUE) {
                 throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
             }
-        } while (!this.callCounter.compareAndSet(c, c + 1L))
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
         // Now we can safely do the method call without the handle being freed concurrently.
         try {
             return block(this.uniffiCloneHandle())
@@ -6407,13 +5724,11 @@ open class EndpointAddr :
 
     // Use a static inner class instead of a closure so as not to accidentally
     // capture `this` as part of the cleanable's action.
-    private class UniffiCleanAction(
-        private val handle: Long,
-    ) : Runnable {
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
         override fun run() {
             if (handle == 0.toLong()) {
                 // Fake object created with `NoHandle`, don't try to free.
-                return
+                return;
             }
             uniffiRustCall { status ->
                 UniffiLib.uniffi_iroh_ffi_fn_free_endpointaddr(handle, status)
@@ -6426,126 +5741,136 @@ open class EndpointAddr :
      */
     fun uniffiCloneHandle(): Long {
         if (handle == 0.toLong()) {
-            throw InternalException("uniffiCloneHandle() called on NoHandle object")
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
-        return uniffiRustCall { status ->
+        return uniffiRustCall() { status ->
             UniffiLib.uniffi_iroh_ffi_fn_clone_endpointaddr(handle, status)
         }
     }
 
+    
     /**
      * The direct (IP/port) addresses of this peer.
-     */
-    override fun `directAddresses`(): List<kotlin.String> =
-        FfiConverterSequenceString.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_endpointaddr_direct_addresses(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `directAddresses`(): List<kotlin.String> {
+            return FfiConverterSequenceString.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_endpointaddr_direct_addresses(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * The endpoint id.
-     */
-    override fun `id`(): EndpointId =
-        FfiConverterTypeEndpointId.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_endpointaddr_id(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `id`(): EndpointId {
+            return FfiConverterTypeEndpointId.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_endpointaddr_id(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * The home relay URL for this peer, if known.
-     */
-    override fun `relayUrl`(): kotlin.String? =
-        FfiConverterOptionalString.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_endpointaddr_relay_url(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `relayUrl`(): kotlin.String? {
+            return FfiConverterOptionalString.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_endpointaddr_relay_url(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+
+    
 
     // The local Rust `Display`/`Debug` implementation.
-    override fun toString(): String =
-        FfiConverterString.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_endpointaddr_uniffi_trait_display(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
-
+    override fun toString(): String {
+        return FfiConverterString.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_endpointaddr_uniffi_trait_display(
+        it,
+        _status)
+}
+    }
+    )
+    }
     // The local Rust `Eq` implementation - only `eq` is used.
     override fun equals(other: Any?): Boolean {
         if (other !is EndpointAddr) return false
         return FfiConverterBoolean.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_endpointaddr_uniffi_trait_eq_eq(
-                        it,
-                        FfiConverterTypeEndpointAddr.lower(`other`),
-                        _status,
-                    )
-                }
-            },
-        )
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_endpointaddr_uniffi_trait_eq_eq(
+        it,
+        FfiConverterTypeEndpointAddr.lower(`other`),_status)
+}
+    }
+    )
+    }
+    // The local Rust `Hash` implementation
+    override fun hashCode(): Int {
+        return FfiConverterULong.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_endpointaddr_uniffi_trait_hash(
+        it,
+        _status)
+}
+    }
+    ).toInt()
     }
 
-    // The local Rust `Hash` implementation
-    override fun hashCode(): Int =
-        FfiConverterULong
-            .lift(
-                callWithHandle {
-                    uniffiRustCall { _status ->
-                        UniffiLib.uniffi_iroh_ffi_fn_method_endpointaddr_uniffi_trait_hash(
-                            it,
-                            _status,
-                        )
-                    }
-                },
-            ).toInt()
-
+    
+    
     /**
      * @suppress
      */
     companion object
+    
 }
+
 
 /**
  * @suppress
  */
-public object FfiConverterTypeEndpointAddr : FfiConverter<EndpointAddr, Long> {
-    override fun lower(value: EndpointAddr): Long = value.uniffiCloneHandle()
+public object FfiConverterTypeEndpointAddr: FfiConverter<EndpointAddr, Long> {
+    override fun lower(value: EndpointAddr): Long {
+        return value.uniffiCloneHandle()
+    }
 
-    override fun lift(value: Long): EndpointAddr = EndpointAddr(UniffiWithHandle, value)
+    override fun lift(value: Long): EndpointAddr {
+        return EndpointAddr(UniffiWithHandle, value)
+    }
 
-    override fun read(buf: ByteBuffer): EndpointAddr = lift(buf.getLong())
+    override fun read(buf: ByteBuffer): EndpointAddr {
+        return lift(buf.getLong())
+    }
 
     override fun allocationSize(value: EndpointAddr) = 8UL
 
-    override fun write(
-        value: EndpointAddr,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: EndpointAddr, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
+
 
 // This template implements a class for working with a Rust struct via a handle
 // to the live Rust struct on the other side of the FFI.
@@ -6641,6 +5966,7 @@ public object FfiConverterTypeEndpointAddr : FfiConverter<EndpointAddr, Long> {
 // [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
 //
 
+
 /**
  * A mutable handle to an endpoint builder, handed to [`Preset::apply`].
  *
@@ -6651,26 +5977,27 @@ public object FfiConverterTypeEndpointAddr : FfiConverter<EndpointAddr, Long> {
  * baseline before layering its own configuration.
  */
 public interface EndpointBuilderInterface {
+    
     /**
      * Set the advertised ALPNs.
      */
     fun `alpns`(`alpns`: List<kotlin.ByteArray>)
-
+    
     /**
      * Replay the minimal preset (crypto provider only, no external deps).
      */
     fun `applyMinimal`()
-
+    
     /**
      * Replay the n0 production preset (relays + discovery + crypto provider).
      */
     fun `applyN0`()
-
+    
     /**
      * Replay the n0 preset with relays disabled.
      */
     fun `applyN0DisableRelay`()
-
+    
     /**
      * Consume the builder and bind a new [`Endpoint`].
      *
@@ -6680,17 +6007,17 @@ public interface EndpointBuilderInterface {
      * `EndpointBuilder already consumed`.
      */
     suspend fun `bind`(): Endpoint
-
+    
     /**
      * Set the address the endpoint binds to (`host:port`).
      */
     fun `bindAddr`(`addr`: kotlin.String)
-
+    
     /**
      * Set the relay mode.
      */
     fun `relayMode`(`mode`: RelayMode)
-
+    
     /**
      * Set the endpoint secret key (32 bytes).
      *
@@ -6698,7 +6025,7 @@ public interface EndpointBuilderInterface {
      * scoped to it — see `preset_iroh_services`.
      */
     fun `secretKey`(`bytes`: kotlin.ByteArray)
-
+    
     companion object
 }
 
@@ -6711,14 +6038,13 @@ public interface EndpointBuilderInterface {
  * provider) — a custom preset will almost always call one of them as a
  * baseline before layering its own configuration.
  */
-open class EndpointBuilder :
-    Disposable,
-    AutoCloseable,
-    EndpointBuilderInterface {
+open class EndpointBuilder: Disposable, AutoCloseable, EndpointBuilderInterface
+{
+
+    @Suppress("UNUSED_PARAMETER")
     /**
      * @suppress
      */
-    @Suppress("UNUSED_PARAMETER")
     constructor(withHandle: UniffiWithHandle, handle: Long) {
         this.handle = handle
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
@@ -6736,19 +6062,19 @@ open class EndpointBuilder :
         this.handle = 0
         this.cleanable = null
     }
-
     /**
      * Create a fresh empty endpoint builder. Apply a preset (`apply_n0`,
      * `apply_minimal`, `apply_n0_disable_relay`) before [`bind`](Self::bind);
      * the preset installs the crypto provider, without one `bind` will error.
      */
     constructor() :
-        this(
-            UniffiWithHandle,
-            uniffiRustCall { _status ->
-                UniffiLib.uniffi_iroh_ffi_fn_constructor_endpointbuilder_new(_status)
-            },
-        )
+        this(UniffiWithHandle, 
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_constructor_endpointbuilder_new(
+    
+        _status)
+}
+    )
 
     protected val handle: Long
     protected val cleanable: UniffiCleaner.Cleanable?
@@ -6783,7 +6109,7 @@ open class EndpointBuilder :
             if (c == Long.MAX_VALUE) {
                 throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
             }
-        } while (!this.callCounter.compareAndSet(c, c + 1L))
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
         // Now we can safely do the method call without the handle being freed concurrently.
         try {
             return block(this.uniffiCloneHandle())
@@ -6797,13 +6123,11 @@ open class EndpointBuilder :
 
     // Use a static inner class instead of a closure so as not to accidentally
     // capture `this` as part of the cleanable's action.
-    private class UniffiCleanAction(
-        private val handle: Long,
-    ) : Runnable {
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
         override fun run() {
             if (handle == 0.toLong()) {
                 // Fake object created with `NoHandle`, don't try to free.
-                return
+                return;
             }
             uniffiRustCall { status ->
                 UniffiLib.uniffi_iroh_ffi_fn_free_endpointbuilder(handle, status)
@@ -6816,66 +6140,74 @@ open class EndpointBuilder :
      */
     fun uniffiCloneHandle(): Long {
         if (handle == 0.toLong()) {
-            throw InternalException("uniffiCloneHandle() called on NoHandle object")
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
-        return uniffiRustCall { status ->
+        return uniffiRustCall() { status ->
             UniffiLib.uniffi_iroh_ffi_fn_clone_endpointbuilder(handle, status)
         }
     }
 
+    
     /**
      * Set the advertised ALPNs.
-     */
-    override fun `alpns`(`alpns`: List<kotlin.ByteArray>) =
-        callWithHandle {
-            uniffiRustCall { _status ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_endpointbuilder_alpns(
-                    it,
-                    FfiConverterSequenceByteArray.lower(`alpns`),
-                    _status,
-                )
-            }
-        }
+     */override fun `alpns`(`alpns`: List<kotlin.ByteArray>)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_endpointbuilder_alpns(
+        it,
+        FfiConverterSequenceByteArray.lower(`alpns`),_status)
+}
+    }
+    
+    
 
+    
     /**
      * Replay the minimal preset (crypto provider only, no external deps).
-     */
-    override fun `applyMinimal`() =
-        callWithHandle {
-            uniffiRustCall { _status ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_endpointbuilder_apply_minimal(
-                    it,
-                    _status,
-                )
-            }
-        }
+     */override fun `applyMinimal`()
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_endpointbuilder_apply_minimal(
+        it,
+        _status)
+}
+    }
+    
+    
 
+    
     /**
      * Replay the n0 production preset (relays + discovery + crypto provider).
-     */
-    override fun `applyN0`() =
-        callWithHandle {
-            uniffiRustCall { _status ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_endpointbuilder_apply_n0(
-                    it,
-                    _status,
-                )
-            }
-        }
+     */override fun `applyN0`()
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_endpointbuilder_apply_n0(
+        it,
+        _status)
+}
+    }
+    
+    
 
+    
     /**
      * Replay the n0 preset with relays disabled.
-     */
-    override fun `applyN0DisableRelay`() =
-        callWithHandle {
-            uniffiRustCall { _status ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_endpointbuilder_apply_n0_disable_relay(
-                    it,
-                    _status,
-                )
-            }
-        }
+     */override fun `applyN0DisableRelay`()
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_endpointbuilder_apply_n0_disable_relay(
+        it,
+        _status)
+}
+    }
+    
+    
 
+    
     /**
      * Consume the builder and bind a new [`Endpoint`].
      *
@@ -6886,94 +6218,112 @@ open class EndpointBuilder :
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `bind`(): Endpoint =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_endpointbuilder_bind(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
-            // lift function
-            { FfiConverterTypeEndpoint.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `bind`() : Endpoint {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_endpointbuilder_bind(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
+        // lift function
+        { FfiConverterTypeEndpoint.lift(it) },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * Set the address the endpoint binds to (`host:port`).
      */
-    @Throws(IrohException::class)
-    override fun `bindAddr`(`addr`: kotlin.String) =
-        callWithHandle {
-            uniffiRustCallWithError(IrohException) { _status ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_endpointbuilder_bind_addr(
-                    it,
-                    FfiConverterString.lower(`addr`),
-                    _status,
-                )
-            }
-        }
+    @Throws(IrohException::class)override fun `bindAddr`(`addr`: kotlin.String)
+        = 
+    callWithHandle {
+    uniffiRustCallWithError(IrohException) { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_endpointbuilder_bind_addr(
+        it,
+        FfiConverterString.lower(`addr`),_status)
+}
+    }
+    
+    
 
+    
     /**
      * Set the relay mode.
-     */
-    override fun `relayMode`(`mode`: RelayMode) =
-        callWithHandle {
-            uniffiRustCall { _status ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_endpointbuilder_relay_mode(
-                    it,
-                    FfiConverterTypeRelayMode.lower(`mode`),
-                    _status,
-                )
-            }
-        }
+     */override fun `relayMode`(`mode`: RelayMode)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_endpointbuilder_relay_mode(
+        it,
+        FfiConverterTypeRelayMode.lower(`mode`),_status)
+}
+    }
+    
+    
 
+    
     /**
      * Set the endpoint secret key (32 bytes).
      *
      * Errors if a preset already pinned the key because it minted a credential
      * scoped to it — see `preset_iroh_services`.
      */
-    @Throws(IrohException::class)
-    override fun `secretKey`(`bytes`: kotlin.ByteArray) =
-        callWithHandle {
-            uniffiRustCallWithError(IrohException) { _status ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_endpointbuilder_secret_key(
-                    it,
-                    FfiConverterByteArray.lower(`bytes`),
-                    _status,
-                )
-            }
-        }
+    @Throws(IrohException::class)override fun `secretKey`(`bytes`: kotlin.ByteArray)
+        = 
+    callWithHandle {
+    uniffiRustCallWithError(IrohException) { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_endpointbuilder_secret_key(
+        it,
+        FfiConverterByteArray.lower(`bytes`),_status)
+}
+    }
+    
+    
 
+    
+
+    
+
+
+    
+    
     /**
      * @suppress
      */
     companion object
+    
 }
+
 
 /**
  * @suppress
  */
-public object FfiConverterTypeEndpointBuilder : FfiConverter<EndpointBuilder, Long> {
-    override fun lower(value: EndpointBuilder): Long = value.uniffiCloneHandle()
+public object FfiConverterTypeEndpointBuilder: FfiConverter<EndpointBuilder, Long> {
+    override fun lower(value: EndpointBuilder): Long {
+        return value.uniffiCloneHandle()
+    }
 
-    override fun lift(value: Long): EndpointBuilder = EndpointBuilder(UniffiWithHandle, value)
+    override fun lift(value: Long): EndpointBuilder {
+        return EndpointBuilder(UniffiWithHandle, value)
+    }
 
-    override fun read(buf: ByteBuffer): EndpointBuilder = lift(buf.getLong())
+    override fun read(buf: ByteBuffer): EndpointBuilder {
+        return lift(buf.getLong())
+    }
 
     override fun allocationSize(value: EndpointBuilder) = 8UL
 
-    override fun write(
-        value: EndpointBuilder,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: EndpointBuilder, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
+
 
 // This template implements a class for working with a Rust struct via a handle
 // to the live Rust struct on the other side of the FFI.
@@ -7069,6 +6419,7 @@ public object FfiConverterTypeEndpointBuilder : FfiConverter<EndpointBuilder, Lo
 // [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
 //
 
+
 /**
  * An endpoint's identifier, a 32-byte ed25519 public key.
  *
@@ -7076,24 +6427,22 @@ public object FfiConverterTypeEndpointBuilder : FfiConverter<EndpointBuilder, Lo
  * and uniquely identifies an [`Endpoint`](crate::Endpoint).
  */
 public interface EndpointIdInterface {
+    
     /**
      * Short, base32 prefix of the [`EndpointId`].
      */
     fun `fmtShort`(): kotlin.String
-
+    
     /**
      * Get the underlying 32 bytes.
      */
     fun `toBytes`(): kotlin.ByteArray
-
+    
     /**
      * Verify a signature on `message` against this endpoint's key.
      */
-    fun `verify`(
-        `message`: kotlin.ByteArray,
-        `signature`: Signature,
-    )
-
+    fun `verify`(`message`: kotlin.ByteArray, `signature`: Signature)
+    
     companion object
 }
 
@@ -7103,14 +6452,13 @@ public interface EndpointIdInterface {
  * In iroh 1.0 this is an alias for the underlying `PublicKey` cryptographic type
  * and uniquely identifies an [`Endpoint`](crate::Endpoint).
  */
-open class EndpointId :
-    Disposable,
-    AutoCloseable,
-    EndpointIdInterface {
+open class EndpointId: Disposable, AutoCloseable, EndpointIdInterface
+{
+
+    @Suppress("UNUSED_PARAMETER")
     /**
      * @suppress
      */
-    @Suppress("UNUSED_PARAMETER")
     constructor(withHandle: UniffiWithHandle, handle: Long) {
         this.handle = handle
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
@@ -7162,7 +6510,7 @@ open class EndpointId :
             if (c == Long.MAX_VALUE) {
                 throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
             }
-        } while (!this.callCounter.compareAndSet(c, c + 1L))
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
         // Now we can safely do the method call without the handle being freed concurrently.
         try {
             return block(this.uniffiCloneHandle())
@@ -7176,13 +6524,11 @@ open class EndpointId :
 
     // Use a static inner class instead of a closure so as not to accidentally
     // capture `this` as part of the cleanable's action.
-    private class UniffiCleanAction(
-        private val handle: Long,
-    ) : Runnable {
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
         override fun run() {
             if (handle == 0.toLong()) {
                 // Fake object created with `NoHandle`, don't try to free.
-                return
+                return;
             }
             uniffiRustCall { status ->
                 UniffiLib.uniffi_iroh_ffi_fn_free_endpointid(handle, status)
@@ -7195,148 +6541,164 @@ open class EndpointId :
      */
     fun uniffiCloneHandle(): Long {
         if (handle == 0.toLong()) {
-            throw InternalException("uniffiCloneHandle() called on NoHandle object")
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
-        return uniffiRustCall { status ->
+        return uniffiRustCall() { status ->
             UniffiLib.uniffi_iroh_ffi_fn_clone_endpointid(handle, status)
         }
     }
 
+    
     /**
      * Short, base32 prefix of the [`EndpointId`].
-     */
-    override fun `fmtShort`(): kotlin.String =
-        FfiConverterString.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_endpointid_fmt_short(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `fmtShort`(): kotlin.String {
+            return FfiConverterString.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_endpointid_fmt_short(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * Get the underlying 32 bytes.
-     */
-    override fun `toBytes`(): kotlin.ByteArray =
-        FfiConverterByteArray.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_endpointid_to_bytes(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `toBytes`(): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_endpointid_to_bytes(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * Verify a signature on `message` against this endpoint's key.
      */
-    @Throws(IrohException::class)
-    override fun `verify`(
-        `message`: kotlin.ByteArray,
-        `signature`: Signature,
-    ) = callWithHandle {
-        uniffiRustCallWithError(IrohException) { _status ->
-            UniffiLib.uniffi_iroh_ffi_fn_method_endpointid_verify(
-                it,
-                FfiConverterByteArray.lower(`message`),
-                FfiConverterTypeSignature.lower(`signature`),
-                _status,
-            )
-        }
+    @Throws(IrohException::class)override fun `verify`(`message`: kotlin.ByteArray, `signature`: Signature)
+        = 
+    callWithHandle {
+    uniffiRustCallWithError(IrohException) { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_endpointid_verify(
+        it,
+        FfiConverterByteArray.lower(`message`),FfiConverterTypeSignature.lower(`signature`),_status)
+}
     }
+    
+    
+
+    
+
+    
 
     // The local Rust `Display`/`Debug` implementation.
-    override fun toString(): String =
-        FfiConverterString.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_endpointid_uniffi_trait_display(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
-
+    override fun toString(): String {
+        return FfiConverterString.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_endpointid_uniffi_trait_display(
+        it,
+        _status)
+}
+    }
+    )
+    }
     // The local Rust `Eq` implementation - only `eq` is used.
     override fun equals(other: Any?): Boolean {
         if (other !is EndpointId) return false
         return FfiConverterBoolean.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_endpointid_uniffi_trait_eq_eq(
-                        it,
-                        FfiConverterTypeEndpointId.lower(`other`),
-                        _status,
-                    )
-                }
-            },
-        )
-    }
-
-    // The local Rust `Hash` implementation
-    override fun hashCode(): Int =
-        FfiConverterULong
-            .lift(
-                callWithHandle {
-                    uniffiRustCall { _status ->
-                        UniffiLib.uniffi_iroh_ffi_fn_method_endpointid_uniffi_trait_hash(
-                            it,
-                            _status,
-                        )
-                    }
-                },
-            ).toInt()
-
-    companion object {
-        /**
-         * Construct an [`EndpointId`] from raw bytes.
-         */
-        @Throws(IrohException::class)
-        fun `fromBytes`(`bytes`: kotlin.ByteArray): EndpointId =
-            FfiConverterTypeEndpointId.lift(
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_constructor_endpointid_from_bytes(FfiConverterByteArray.lower(`bytes`), _status)
-                },
-            )
-
-        /**
-         * Parse an [`EndpointId`] from its base32 representation.
-         */
-        @Throws(IrohException::class)
-        fun `fromString`(`s`: kotlin.String): EndpointId =
-            FfiConverterTypeEndpointId.lift(
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_constructor_endpointid_from_string(FfiConverterString.lower(`s`), _status)
-                },
-            )
-    }
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_endpointid_uniffi_trait_eq_eq(
+        it,
+        FfiConverterTypeEndpointId.lower(`other`),_status)
 }
+    }
+    )
+    }
+    // The local Rust `Hash` implementation
+    override fun hashCode(): Int {
+        return FfiConverterULong.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_endpointid_uniffi_trait_hash(
+        it,
+        _status)
+}
+    }
+    ).toInt()
+    }
+
+    
+    companion object {
+        
+    /**
+     * Construct an [`EndpointId`] from raw bytes.
+     */
+    @Throws(IrohException::class) fun `fromBytes`(`bytes`: kotlin.ByteArray): EndpointId {
+            return FfiConverterTypeEndpointId.lift(
+    uniffiRustCallWithError(IrohException) { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_constructor_endpointid_from_bytes(
+    
+        FfiConverterByteArray.lower(`bytes`),_status)
+}
+    )
+    }
+    
+
+        
+    /**
+     * Parse an [`EndpointId`] from its base32 representation.
+     */
+    @Throws(IrohException::class) fun `fromString`(`s`: kotlin.String): EndpointId {
+            return FfiConverterTypeEndpointId.lift(
+    uniffiRustCallWithError(IrohException) { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_constructor_endpointid_from_string(
+    
+        FfiConverterString.lower(`s`),_status)
+}
+    )
+    }
+    
+
+        
+    }
+    
+}
+
 
 /**
  * @suppress
  */
-public object FfiConverterTypeEndpointId : FfiConverter<EndpointId, Long> {
-    override fun lower(value: EndpointId): Long = value.uniffiCloneHandle()
+public object FfiConverterTypeEndpointId: FfiConverter<EndpointId, Long> {
+    override fun lower(value: EndpointId): Long {
+        return value.uniffiCloneHandle()
+    }
 
-    override fun lift(value: Long): EndpointId = EndpointId(UniffiWithHandle, value)
+    override fun lift(value: Long): EndpointId {
+        return EndpointId(UniffiWithHandle, value)
+    }
 
-    override fun read(buf: ByteBuffer): EndpointId = lift(buf.getLong())
+    override fun read(buf: ByteBuffer): EndpointId {
+        return lift(buf.getLong())
+    }
 
     override fun allocationSize(value: EndpointId) = 8UL
 
-    override fun write(
-        value: EndpointId,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: EndpointId, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
+
 
 // This template implements a class for working with a Rust struct via a handle
 // to the live Rust struct on the other side of the FFI.
@@ -7432,6 +6794,7 @@ public object FfiConverterTypeEndpointId : FfiConverter<EndpointId, Long> {
 // [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
 //
 
+
 /**
  * A token containing information for establishing a connection to an endpoint.
  *
@@ -7440,11 +6803,12 @@ public object FfiConverterTypeEndpointId : FfiConverter<EndpointId, Long> {
  * deserialized to/from a base32 string.
  */
 public interface EndpointTicketInterface {
+    
     /**
      * The [`EndpointAddr`] embedded in this ticket.
      */
     fun `endpointAddr`(): EndpointAddr
-
+    
     companion object
 }
 
@@ -7455,14 +6819,13 @@ public interface EndpointTicketInterface {
  * it is possible to do so. It is a single item that can be easily serialized and
  * deserialized to/from a base32 string.
  */
-open class EndpointTicket :
-    Disposable,
-    AutoCloseable,
-    EndpointTicketInterface {
+open class EndpointTicket: Disposable, AutoCloseable, EndpointTicketInterface
+{
+
+    @Suppress("UNUSED_PARAMETER")
     /**
      * @suppress
      */
-    @Suppress("UNUSED_PARAMETER")
     constructor(withHandle: UniffiWithHandle, handle: Long) {
         this.handle = handle
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
@@ -7514,7 +6877,7 @@ open class EndpointTicket :
             if (c == Long.MAX_VALUE) {
                 throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
             }
-        } while (!this.callCounter.compareAndSet(c, c + 1L))
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
         // Now we can safely do the method call without the handle being freed concurrently.
         try {
             return block(this.uniffiCloneHandle())
@@ -7528,13 +6891,11 @@ open class EndpointTicket :
 
     // Use a static inner class instead of a closure so as not to accidentally
     // capture `this` as part of the cleanable's action.
-    private class UniffiCleanAction(
-        private val handle: Long,
-    ) : Runnable {
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
         override fun run() {
             if (handle == 0.toLong()) {
                 // Fake object created with `NoHandle`, don't try to free.
-                return
+                return;
             }
             uniffiRustCall { status ->
                 UniffiLib.uniffi_iroh_ffi_fn_free_endpointticket(handle, status)
@@ -7547,88 +6908,110 @@ open class EndpointTicket :
      */
     fun uniffiCloneHandle(): Long {
         if (handle == 0.toLong()) {
-            throw InternalException("uniffiCloneHandle() called on NoHandle object")
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
-        return uniffiRustCall { status ->
+        return uniffiRustCall() { status ->
             UniffiLib.uniffi_iroh_ffi_fn_clone_endpointticket(handle, status)
         }
     }
 
+    
     /**
      * The [`EndpointAddr`] embedded in this ticket.
-     */
-    override fun `endpointAddr`(): EndpointAddr =
-        FfiConverterTypeEndpointAddr.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_endpointticket_endpoint_addr(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `endpointAddr`(): EndpointAddr {
+            return FfiConverterTypeEndpointAddr.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_endpointticket_endpoint_addr(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+
+    
 
     // The local Rust `Display`/`Debug` implementation.
-    override fun toString(): String =
-        FfiConverterString.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_endpointticket_uniffi_trait_display(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
-
-    companion object {
-        /**
-         * Wrap the given [`EndpointAddr`] as an [`EndpointTicket`].
-         *
-         * The returned ticket can be serialized via [`Self::to_string`] and parsed back
-         * using [`Self::from_string`].
-         */
-        @Throws(IrohException::class)
-        fun `fromAddr`(`addr`: EndpointAddr): EndpointTicket =
-            FfiConverterTypeEndpointTicket.lift(
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_constructor_endpointticket_from_addr(FfiConverterTypeEndpointAddr.lower(`addr`), _status)
-                },
-            )
-
-        /**
-         * Parse an [`EndpointTicket`] from its string presentation.
-         */
-        @Throws(IrohException::class)
-        fun `fromString`(`str`: kotlin.String): EndpointTicket =
-            FfiConverterTypeEndpointTicket.lift(
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_constructor_endpointticket_from_string(FfiConverterString.lower(`str`), _status)
-                },
-            )
-    }
+    override fun toString(): String {
+        return FfiConverterString.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_endpointticket_uniffi_trait_display(
+        it,
+        _status)
 }
+    }
+    )
+    }
+
+    
+    companion object {
+        
+    /**
+     * Wrap the given [`EndpointAddr`] as an [`EndpointTicket`].
+     *
+     * The returned ticket can be serialized via [`Self::to_string`] and parsed back
+     * using [`Self::from_string`].
+     */
+    @Throws(IrohException::class) fun `fromAddr`(`addr`: EndpointAddr): EndpointTicket {
+            return FfiConverterTypeEndpointTicket.lift(
+    uniffiRustCallWithError(IrohException) { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_constructor_endpointticket_from_addr(
+    
+        FfiConverterTypeEndpointAddr.lower(`addr`),_status)
+}
+    )
+    }
+    
+
+        
+    /**
+     * Parse an [`EndpointTicket`] from its string presentation.
+     */
+    @Throws(IrohException::class) fun `fromString`(`str`: kotlin.String): EndpointTicket {
+            return FfiConverterTypeEndpointTicket.lift(
+    uniffiRustCallWithError(IrohException) { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_constructor_endpointticket_from_string(
+    
+        FfiConverterString.lower(`str`),_status)
+}
+    )
+    }
+    
+
+        
+    }
+    
+}
+
 
 /**
  * @suppress
  */
-public object FfiConverterTypeEndpointTicket : FfiConverter<EndpointTicket, Long> {
-    override fun lower(value: EndpointTicket): Long = value.uniffiCloneHandle()
+public object FfiConverterTypeEndpointTicket: FfiConverter<EndpointTicket, Long> {
+    override fun lower(value: EndpointTicket): Long {
+        return value.uniffiCloneHandle()
+    }
 
-    override fun lift(value: Long): EndpointTicket = EndpointTicket(UniffiWithHandle, value)
+    override fun lift(value: Long): EndpointTicket {
+        return EndpointTicket(UniffiWithHandle, value)
+    }
 
-    override fun read(buf: ByteBuffer): EndpointTicket = lift(buf.getLong())
+    override fun read(buf: ByteBuffer): EndpointTicket {
+        return lift(buf.getLong())
+    }
 
     override fun allocationSize(value: EndpointTicket) = 8UL
 
-    override fun write(
-        value: EndpointTicket,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: EndpointTicket, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
+
 
 // This template implements a class for working with a Rust struct via a handle
 // to the live Rust struct on the other side of the FFI.
@@ -7724,26 +7107,27 @@ public object FfiConverterTypeEndpointTicket : FfiConverter<EndpointTicket, Long
 // [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
 //
 
+
 /**
  * Callback invoked whenever the home-relay connection status list changes.
  */
 public interface HomeRelayCallback {
+    
     suspend fun `onChange`(`relayUrls`: List<kotlin.String>)
-
+    
     companion object
 }
 
 /**
  * Callback invoked whenever the home-relay connection status list changes.
  */
-open class HomeRelayCallbackImpl :
-    Disposable,
-    AutoCloseable,
-    HomeRelayCallback {
+open class HomeRelayCallbackImpl: Disposable, AutoCloseable, HomeRelayCallback
+{
+
+    @Suppress("UNUSED_PARAMETER")
     /**
      * @suppress
      */
-    @Suppress("UNUSED_PARAMETER")
     constructor(withHandle: UniffiWithHandle, handle: Long) {
         this.handle = handle
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
@@ -7795,7 +7179,7 @@ open class HomeRelayCallbackImpl :
             if (c == Long.MAX_VALUE) {
                 throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
             }
-        } while (!this.callCounter.compareAndSet(c, c + 1L))
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
         // Now we can safely do the method call without the handle being freed concurrently.
         try {
             return block(this.uniffiCloneHandle())
@@ -7809,13 +7193,11 @@ open class HomeRelayCallbackImpl :
 
     // Use a static inner class instead of a closure so as not to accidentally
     // capture `this` as part of the cleanable's action.
-    private class UniffiCleanAction(
-        private val handle: Long,
-    ) : Runnable {
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
         override fun run() {
             if (handle == 0.toLong()) {
                 // Fake object created with `NoHandle`, don't try to free.
-                return
+                return;
             }
             uniffiRustCall { status ->
                 UniffiLib.uniffi_iroh_ffi_fn_free_homerelaycallback(handle, status)
@@ -7828,59 +7210,65 @@ open class HomeRelayCallbackImpl :
      */
     fun uniffiCloneHandle(): Long {
         if (handle == 0.toLong()) {
-            throw InternalException("uniffiCloneHandle() called on NoHandle object")
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
-        return uniffiRustCall { status ->
+        return uniffiRustCall() { status ->
             UniffiLib.uniffi_iroh_ffi_fn_clone_homerelaycallback(handle, status)
         }
     }
 
+    
     @Throws(CallbackException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `onChange`(`relayUrls`: List<kotlin.String>) =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_homerelaycallback_on_change(
-                    uniffiHandle,
-                    FfiConverterSequenceString.lower(`relayUrls`),
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
-            // lift function
-            { Unit },
-            // Error FFI converter
-            CallbackException.ErrorHandler,
-        )
+    override suspend fun `onChange`(`relayUrls`: List<kotlin.String>) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_homerelaycallback_on_change(
+                uniffiHandle,
+                FfiConverterSequenceString.lower(`relayUrls`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CallbackException.ErrorHandler,
+    )
+    }
 
+    
+
+    
+
+
+    
+    
     /**
      * @suppress
      */
     companion object
+    
 }
+
+
 
 // Put the implementation in an object so we don't pollute the top-level namespace
 internal object uniffiCallbackInterfaceHomeRelayCallback {
-    internal object `onChange` : UniffiCallbackInterfaceHomeRelayCallbackMethod0 {
-        override fun callback(
-            `uniffiHandle`: Long,
-            `relayUrls`: RustBuffer.ByValue,
-            `uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,
-            `uniffiCallbackData`: Long,
-            `uniffiOutDroppedCallback`: UniffiForeignFutureDroppedCallbackStruct,
-        ) {
+    internal object `onChange`: UniffiCallbackInterfaceHomeRelayCallbackMethod0 {
+        override fun callback(`uniffiHandle`: Long,`relayUrls`: RustBuffer.ByValue,`uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,`uniffiCallbackData`: Long,`uniffiOutDroppedCallback`: UniffiForeignFutureDroppedCallbackStruct,) {
             val uniffiObj = FfiConverterTypeHomeRelayCallback.handleMap.get(uniffiHandle)
-            val makeCall =
-                suspend {  uniffiObj.`onChange`(
+            val makeCall = suspend { ->
+                uniffiObj.`onChange`(
                     FfiConverterSequenceString.lift(`relayUrls`),
                 )
-                }
+            }
             val uniffiHandleSuccess = { _: Unit ->
-                val uniffiResult =
-                    UniffiForeignFutureResultVoid.UniffiByValue(
-                        UniffiRustCallStatus.ByValue(),
-                    )
+                val uniffiResult = UniffiForeignFutureResultVoid.UniffiByValue(
+                    UniffiRustCallStatus.ByValue()
+                )
                 uniffiResult.write()
                 uniffiFutureCallback.callback(uniffiCallbackData, uniffiResult)
             }
@@ -7897,27 +7285,28 @@ internal object uniffiCallbackInterfaceHomeRelayCallback {
                 uniffiHandleSuccess,
                 uniffiHandleError,
                 { e: CallbackException -> FfiConverterTypeCallbackError.lower(e) },
-                uniffiOutDroppedCallback,
+                uniffiOutDroppedCallback
             )
         }
     }
 
-    internal object uniffiFree : UniffiCallbackInterfaceFree {
+    internal object uniffiFree: UniffiCallbackInterfaceFree {
         override fun callback(handle: Long) {
             FfiConverterTypeHomeRelayCallback.handleMap.remove(handle)
         }
     }
 
-    internal object uniffiClone : UniffiCallbackInterfaceClone {
-        override fun callback(handle: Long): Long = FfiConverterTypeHomeRelayCallback.handleMap.clone(handle)
+    internal object uniffiClone: UniffiCallbackInterfaceClone {
+        override fun callback(handle: Long): Long {
+            return FfiConverterTypeHomeRelayCallback.handleMap.clone(handle)
+        }
     }
 
-    internal var vtable =
-        UniffiVTableCallbackInterfaceHomeRelayCallback.UniffiByValue(
-            uniffiFree,
-            uniffiClone,
-            `onChange`,
-        )
+    internal var vtable = UniffiVTableCallbackInterfaceHomeRelayCallback.UniffiByValue(
+        uniffiFree,
+        uniffiClone,
+        `onChange`,
+    )
 
     // Registers the foreign callback with the Rust side.
     // This method is generated for each callback interface.
@@ -7929,17 +7318,17 @@ internal object uniffiCallbackInterfaceHomeRelayCallback {
 /**
  * @suppress
  */
-public object FfiConverterTypeHomeRelayCallback : FfiConverter<HomeRelayCallback, Long> {
+public object FfiConverterTypeHomeRelayCallback: FfiConverter<HomeRelayCallback, Long> {
     internal val handleMap = UniffiHandleMap<HomeRelayCallback>()
 
     override fun lower(value: HomeRelayCallback): Long {
         if (value is HomeRelayCallbackImpl) {
-            // Rust-implemented object.  Clone the handle and return it
+             // Rust-implemented object.  Clone the handle and return it
             return value.uniffiCloneHandle()
-        } else {
+         } else {
             // Kotlin object, generate a new vtable handle and return that.
             return handleMap.insert(value)
-        }
+         }
     }
 
     override fun lift(value: Long): HomeRelayCallback {
@@ -7953,17 +7342,17 @@ public object FfiConverterTypeHomeRelayCallback : FfiConverter<HomeRelayCallback
         }
     }
 
-    override fun read(buf: ByteBuffer): HomeRelayCallback = lift(buf.getLong())
+    override fun read(buf: ByteBuffer): HomeRelayCallback {
+        return lift(buf.getLong())
+    }
 
     override fun allocationSize(value: HomeRelayCallback) = 8UL
 
-    override fun write(
-        value: HomeRelayCallback,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: HomeRelayCallback, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
+
 
 // This template implements a class for working with a Rust struct via a handle
 // to the live Rust struct on the other side of the FFI.
@@ -8059,6 +7448,7 @@ public object FfiConverterTypeHomeRelayCallback : FfiConverter<HomeRelayCallback
 // [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
 //
 
+
 /**
  * An incoming connection that has not yet begun its server-side handshake.
  *
@@ -8066,42 +7456,43 @@ public object FfiConverterTypeHomeRelayCallback : FfiConverter<HomeRelayCallback
  * Each `Incoming` can only be consumed once.
  */
 public interface IncomingInterface {
+    
     /**
      * Begin the server-side handshake, producing an [`Accepting`].
      */
     suspend fun `accept`(): Accepting
-
+    
     /**
      * Drop this incoming connection without sending any reply.
      */
     suspend fun `ignore`()
-
+    
     /**
      * The local address that received this incoming connection.
      */
     suspend fun `localAddr`(): IncomingLocalAddr
-
+    
     /**
      * Reject this incoming connection attempt.
      */
     suspend fun `refuse`()
-
+    
     /**
      * The remote address that originated this incoming connection.
      */
     suspend fun `remoteAddr`(): IncomingAddr
-
+    
     /**
      * True if the remote address has been validated by the QUIC retry mechanism.
      */
     suspend fun `remoteAddrValidated`(): kotlin.Boolean
-
+    
     /**
      * Respond with a retry packet, requiring the client to retry with address
      * validation.
      */
     suspend fun `retry`()
-
+    
     companion object
 }
 
@@ -8111,14 +7502,13 @@ public interface IncomingInterface {
  * Consume via [`Self::accept`] / [`Self::refuse`] / [`Self::retry`] / [`Self::ignore`].
  * Each `Incoming` can only be consumed once.
  */
-open class Incoming :
-    Disposable,
-    AutoCloseable,
-    IncomingInterface {
+open class Incoming: Disposable, AutoCloseable, IncomingInterface
+{
+
+    @Suppress("UNUSED_PARAMETER")
     /**
      * @suppress
      */
-    @Suppress("UNUSED_PARAMETER")
     constructor(withHandle: UniffiWithHandle, handle: Long) {
         this.handle = handle
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
@@ -8170,7 +7560,7 @@ open class Incoming :
             if (c == Long.MAX_VALUE) {
                 throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
             }
-        } while (!this.callCounter.compareAndSet(c, c + 1L))
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
         // Now we can safely do the method call without the handle being freed concurrently.
         try {
             return block(this.uniffiCloneHandle())
@@ -8184,13 +7574,11 @@ open class Incoming :
 
     // Use a static inner class instead of a closure so as not to accidentally
     // capture `this` as part of the cleanable's action.
-    private class UniffiCleanAction(
-        private val handle: Long,
-    ) : Runnable {
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
         override fun run() {
             if (handle == 0.toLong()) {
                 // Fake object created with `NoHandle`, don't try to free.
-                return
+                return;
             }
             uniffiRustCall { status ->
                 UniffiLib.uniffi_iroh_ffi_fn_free_incoming(handle, status)
@@ -8203,186 +7591,223 @@ open class Incoming :
      */
     fun uniffiCloneHandle(): Long {
         if (handle == 0.toLong()) {
-            throw InternalException("uniffiCloneHandle() called on NoHandle object")
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
-        return uniffiRustCall { status ->
+        return uniffiRustCall() { status ->
             UniffiLib.uniffi_iroh_ffi_fn_clone_incoming(handle, status)
         }
     }
 
+    
     /**
      * Begin the server-side handshake, producing an [`Accepting`].
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `accept`(): Accepting =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_incoming_accept(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
-            // lift function
-            { FfiConverterTypeAccepting.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `accept`() : Accepting {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_incoming_accept(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
+        // lift function
+        { FfiConverterTypeAccepting.lift(it) },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * Drop this incoming connection without sending any reply.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `ignore`() =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_incoming_ignore(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
-            // lift function
-            { Unit },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `ignore`() {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_incoming_ignore(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * The local address that received this incoming connection.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `localAddr`(): IncomingLocalAddr =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_incoming_local_addr(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
-            // lift function
-            { FfiConverterTypeIncomingLocalAddr.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `localAddr`() : IncomingLocalAddr {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_incoming_local_addr(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeIncomingLocalAddr.lift(it) },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * Reject this incoming connection attempt.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `refuse`() =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_incoming_refuse(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
-            // lift function
-            { Unit },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `refuse`() {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_incoming_refuse(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * The remote address that originated this incoming connection.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `remoteAddr`(): IncomingAddr =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_incoming_remote_addr(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
-            // lift function
-            { FfiConverterTypeIncomingAddr.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `remoteAddr`() : IncomingAddr {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_incoming_remote_addr(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeIncomingAddr.lift(it) },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * True if the remote address has been validated by the QUIC retry mechanism.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `remoteAddrValidated`(): kotlin.Boolean =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_incoming_remote_addr_validated(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_i8(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_i8(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_i8(future) },
-            // lift function
-            { FfiConverterBoolean.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `remoteAddrValidated`() : kotlin.Boolean {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_incoming_remote_addr_validated(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_i8(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_i8(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_i8(future) },
+        // lift function
+        { FfiConverterBoolean.lift(it) },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * Respond with a retry packet, requiring the client to retry with address
      * validation.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `retry`() =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_incoming_retry(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
-            // lift function
-            { Unit },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `retry`() {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_incoming_retry(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
+
+    
+
+
+    
+    
     /**
      * @suppress
      */
     companion object
+    
 }
+
 
 /**
  * @suppress
  */
-public object FfiConverterTypeIncoming : FfiConverter<Incoming, Long> {
-    override fun lower(value: Incoming): Long = value.uniffiCloneHandle()
+public object FfiConverterTypeIncoming: FfiConverter<Incoming, Long> {
+    override fun lower(value: Incoming): Long {
+        return value.uniffiCloneHandle()
+    }
 
-    override fun lift(value: Long): Incoming = Incoming(UniffiWithHandle, value)
+    override fun lift(value: Long): Incoming {
+        return Incoming(UniffiWithHandle, value)
+    }
 
-    override fun read(buf: ByteBuffer): Incoming = lift(buf.getLong())
+    override fun read(buf: ByteBuffer): Incoming {
+        return lift(buf.getLong())
+    }
 
     override fun allocationSize(value: Incoming) = 8UL
 
-    override fun write(
-        value: Incoming,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: Incoming, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
+
 
 // This template implements a class for working with a Rust struct via a handle
 // to the live Rust struct on the other side of the FFI.
@@ -8478,31 +7903,33 @@ public object FfiConverterTypeIncoming : FfiConverter<Incoming, Long> {
 // [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
 //
 
+
 /**
  * An Error.
  */
 public interface IrohExceptionInterface {
+    
     /**
      * Detailed debug representation of the original Rust error.
      */
     fun `debugMessage`(): kotlin.String
-
+    
     /**
      * Convenience helper for bindings that do not expose enum comparison
      * ergonomically.
      */
     fun `isKind`(`kind`: IrohErrorKind): kotlin.Boolean
-
+    
     /**
      * Stable high-level error category.
      */
     fun `kind`(): IrohErrorKind
-
+    
     /**
      * Human-readable error message.
      */
     fun `message`(): kotlin.String
-
+    
     companion object
 }
 
@@ -8510,15 +7937,13 @@ public interface IrohExceptionInterface {
  * An Error.
  */
 
-open class IrohException :
-    kotlin.Exception,
-    Disposable,
-    AutoCloseable,
-    IrohExceptionInterface {
+open class IrohException : kotlin.Exception, Disposable, AutoCloseable, IrohExceptionInterface {
+
+
+    @Suppress("UNUSED_PARAMETER")
     /**
      * @suppress
      */
-    @Suppress("UNUSED_PARAMETER")
     constructor(withHandle: UniffiWithHandle, handle: Long) {
         this.handle = handle
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
@@ -8570,7 +7995,7 @@ open class IrohException :
             if (c == Long.MAX_VALUE) {
                 throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
             }
-        } while (!this.callCounter.compareAndSet(c, c + 1L))
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
         // Now we can safely do the method call without the handle being freed concurrently.
         try {
             return block(this.uniffiCloneHandle())
@@ -8584,13 +8009,11 @@ open class IrohException :
 
     // Use a static inner class instead of a closure so as not to accidentally
     // capture `this` as part of the cleanable's action.
-    private class UniffiCleanAction(
-        private val handle: Long,
-    ) : Runnable {
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
         override fun run() {
             if (handle == 0.toLong()) {
                 // Fake object created with `NoHandle`, don't try to free.
-                return
+                return;
             }
             uniffiRustCall { status ->
                 UniffiLib.uniffi_iroh_ffi_fn_free_iroherror(handle, status)
@@ -8603,88 +8026,97 @@ open class IrohException :
      */
     fun uniffiCloneHandle(): Long {
         if (handle == 0.toLong()) {
-            throw InternalException("uniffiCloneHandle() called on NoHandle object")
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
-        return uniffiRustCall { status ->
+        return uniffiRustCall() { status ->
             UniffiLib.uniffi_iroh_ffi_fn_clone_iroherror(handle, status)
         }
     }
 
+    
     /**
      * Detailed debug representation of the original Rust error.
-     */
-    override fun `debugMessage`(): kotlin.String =
-        FfiConverterString.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_iroherror_debug_message(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `debugMessage`(): kotlin.String {
+            return FfiConverterString.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_iroherror_debug_message(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * Convenience helper for bindings that do not expose enum comparison
      * ergonomically.
-     */
-    override fun `isKind`(`kind`: IrohErrorKind): kotlin.Boolean =
-        FfiConverterBoolean.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_iroherror_is_kind(
-                        it,
-                        FfiConverterTypeIrohErrorKind.lower(`kind`),
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `isKind`(`kind`: IrohErrorKind): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_iroherror_is_kind(
+        it,
+        FfiConverterTypeIrohErrorKind.lower(`kind`),_status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * Stable high-level error category.
-     */
-    override fun `kind`(): IrohErrorKind =
-        FfiConverterTypeIrohErrorKind.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_iroherror_kind(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `kind`(): IrohErrorKind {
+            return FfiConverterTypeIrohErrorKind.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_iroherror_kind(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * Human-readable error message.
-     */
-    override fun `message`(): kotlin.String =
-        FfiConverterString.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_iroherror_message(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `message`(): kotlin.String {
+            return FfiConverterString.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_iroherror_message(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+
+    
 
     // The local Rust `Display`/`Debug` implementation.
-    override fun toString(): String =
-        FfiConverterString.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_iroherror_uniffi_trait_debug(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+    override fun toString(): String {
+        return FfiConverterString.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_iroherror_uniffi_trait_debug(
+        it,
+        _status)
+}
+    }
+    )
+    }
 
+    
+    
     companion object ErrorHandler : UniffiRustCallStatusErrorHandler<IrohException> {
         override fun lift(error_buf: RustBuffer.ByValue): IrohException {
             // Due to some mismatches in the ffi converter mechanisms, errors are a RustBuffer.
@@ -8695,27 +8127,33 @@ open class IrohException :
             return FfiConverterTypeIrohError.read(bb)
         }
     }
+    
 }
+
 
 /**
  * @suppress
  */
-public object FfiConverterTypeIrohError : FfiConverter<IrohException, Long> {
-    override fun lower(value: IrohException): Long = value.uniffiCloneHandle()
+public object FfiConverterTypeIrohError: FfiConverter<IrohException, Long> {
+    override fun lower(value: IrohException): Long {
+        return value.uniffiCloneHandle()
+    }
 
-    override fun lift(value: Long): IrohException = IrohException(UniffiWithHandle, value)
+    override fun lift(value: Long): IrohException {
+        return IrohException(UniffiWithHandle, value)
+    }
 
-    override fun read(buf: ByteBuffer): IrohException = lift(buf.getLong())
+    override fun read(buf: ByteBuffer): IrohException {
+        return lift(buf.getLong())
+    }
 
     override fun allocationSize(value: IrohException) = 8UL
 
-    override fun write(
-        value: IrohException,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: IrohException, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
+
 
 // This template implements a class for working with a Rust struct via a handle
 // to the live Rust struct on the other side of the FFI.
@@ -8811,13 +8249,15 @@ public object FfiConverterTypeIrohError : FfiConverter<IrohException, Long> {
 // [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
 //
 
+
 /**
  * Callback invoked when a network-stack change is detected (interface up/down,
  * roaming, etc.).
  */
 public interface NetworkChangeCallback {
+    
     suspend fun `onChange`()
-
+    
     companion object
 }
 
@@ -8825,14 +8265,13 @@ public interface NetworkChangeCallback {
  * Callback invoked when a network-stack change is detected (interface up/down,
  * roaming, etc.).
  */
-open class NetworkChangeCallbackImpl :
-    Disposable,
-    AutoCloseable,
-    NetworkChangeCallback {
+open class NetworkChangeCallbackImpl: Disposable, AutoCloseable, NetworkChangeCallback
+{
+
+    @Suppress("UNUSED_PARAMETER")
     /**
      * @suppress
      */
-    @Suppress("UNUSED_PARAMETER")
     constructor(withHandle: UniffiWithHandle, handle: Long) {
         this.handle = handle
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
@@ -8884,7 +8323,7 @@ open class NetworkChangeCallbackImpl :
             if (c == Long.MAX_VALUE) {
                 throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
             }
-        } while (!this.callCounter.compareAndSet(c, c + 1L))
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
         // Now we can safely do the method call without the handle being freed concurrently.
         try {
             return block(this.uniffiCloneHandle())
@@ -8898,13 +8337,11 @@ open class NetworkChangeCallbackImpl :
 
     // Use a static inner class instead of a closure so as not to accidentally
     // capture `this` as part of the cleanable's action.
-    private class UniffiCleanAction(
-        private val handle: Long,
-    ) : Runnable {
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
         override fun run() {
             if (handle == 0.toLong()) {
                 // Fake object created with `NoHandle`, don't try to free.
-                return
+                return;
             }
             uniffiRustCall { status ->
                 UniffiLib.uniffi_iroh_ffi_fn_free_networkchangecallback(handle, status)
@@ -8917,54 +8354,64 @@ open class NetworkChangeCallbackImpl :
      */
     fun uniffiCloneHandle(): Long {
         if (handle == 0.toLong()) {
-            throw InternalException("uniffiCloneHandle() called on NoHandle object")
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
-        return uniffiRustCall { status ->
+        return uniffiRustCall() { status ->
             UniffiLib.uniffi_iroh_ffi_fn_clone_networkchangecallback(handle, status)
         }
     }
 
+    
     @Throws(CallbackException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `onChange`() =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_networkchangecallback_on_change(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
-            // lift function
-            { Unit },
-            // Error FFI converter
-            CallbackException.ErrorHandler,
-        )
+    override suspend fun `onChange`() {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_networkchangecallback_on_change(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CallbackException.ErrorHandler,
+    )
+    }
 
+    
+
+    
+
+
+    
+    
     /**
      * @suppress
      */
     companion object
+    
 }
+
+
 
 // Put the implementation in an object so we don't pollute the top-level namespace
 internal object uniffiCallbackInterfaceNetworkChangeCallback {
-    internal object `onChange` : UniffiCallbackInterfaceNetworkChangeCallbackMethod0 {
-        override fun callback(
-            `uniffiHandle`: Long,
-            `uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,
-            `uniffiCallbackData`: Long,
-            `uniffiOutDroppedCallback`: UniffiForeignFutureDroppedCallbackStruct,
-        ) {
+    internal object `onChange`: UniffiCallbackInterfaceNetworkChangeCallbackMethod0 {
+        override fun callback(`uniffiHandle`: Long,`uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,`uniffiCallbackData`: Long,`uniffiOutDroppedCallback`: UniffiForeignFutureDroppedCallbackStruct,) {
             val uniffiObj = FfiConverterTypeNetworkChangeCallback.handleMap.get(uniffiHandle)
-            val makeCall =
-                suspend { uniffiObj.`onChange`() }
+            val makeCall = suspend { ->
+                uniffiObj.`onChange`(
+                )
+            }
             val uniffiHandleSuccess = { _: Unit ->
-                val uniffiResult =
-                    UniffiForeignFutureResultVoid.UniffiByValue(
-                        UniffiRustCallStatus.ByValue(),
-                    )
+                val uniffiResult = UniffiForeignFutureResultVoid.UniffiByValue(
+                    UniffiRustCallStatus.ByValue()
+                )
                 uniffiResult.write()
                 uniffiFutureCallback.callback(uniffiCallbackData, uniffiResult)
             }
@@ -8981,27 +8428,28 @@ internal object uniffiCallbackInterfaceNetworkChangeCallback {
                 uniffiHandleSuccess,
                 uniffiHandleError,
                 { e: CallbackException -> FfiConverterTypeCallbackError.lower(e) },
-                uniffiOutDroppedCallback,
+                uniffiOutDroppedCallback
             )
         }
     }
 
-    internal object uniffiFree : UniffiCallbackInterfaceFree {
+    internal object uniffiFree: UniffiCallbackInterfaceFree {
         override fun callback(handle: Long) {
             FfiConverterTypeNetworkChangeCallback.handleMap.remove(handle)
         }
     }
 
-    internal object uniffiClone : UniffiCallbackInterfaceClone {
-        override fun callback(handle: Long): Long = FfiConverterTypeNetworkChangeCallback.handleMap.clone(handle)
+    internal object uniffiClone: UniffiCallbackInterfaceClone {
+        override fun callback(handle: Long): Long {
+            return FfiConverterTypeNetworkChangeCallback.handleMap.clone(handle)
+        }
     }
 
-    internal var vtable =
-        UniffiVTableCallbackInterfaceNetworkChangeCallback.UniffiByValue(
-            uniffiFree,
-            uniffiClone,
-            `onChange`,
-        )
+    internal var vtable = UniffiVTableCallbackInterfaceNetworkChangeCallback.UniffiByValue(
+        uniffiFree,
+        uniffiClone,
+        `onChange`,
+    )
 
     // Registers the foreign callback with the Rust side.
     // This method is generated for each callback interface.
@@ -9013,17 +8461,17 @@ internal object uniffiCallbackInterfaceNetworkChangeCallback {
 /**
  * @suppress
  */
-public object FfiConverterTypeNetworkChangeCallback : FfiConverter<NetworkChangeCallback, Long> {
+public object FfiConverterTypeNetworkChangeCallback: FfiConverter<NetworkChangeCallback, Long> {
     internal val handleMap = UniffiHandleMap<NetworkChangeCallback>()
 
     override fun lower(value: NetworkChangeCallback): Long {
         if (value is NetworkChangeCallbackImpl) {
-            // Rust-implemented object.  Clone the handle and return it
+             // Rust-implemented object.  Clone the handle and return it
             return value.uniffiCloneHandle()
-        } else {
+         } else {
             // Kotlin object, generate a new vtable handle and return that.
             return handleMap.insert(value)
-        }
+         }
     }
 
     override fun lift(value: Long): NetworkChangeCallback {
@@ -9037,17 +8485,17 @@ public object FfiConverterTypeNetworkChangeCallback : FfiConverter<NetworkChange
         }
     }
 
-    override fun read(buf: ByteBuffer): NetworkChangeCallback = lift(buf.getLong())
+    override fun read(buf: ByteBuffer): NetworkChangeCallback {
+        return lift(buf.getLong())
+    }
 
     override fun allocationSize(value: NetworkChangeCallback) = 8UL
 
-    override fun write(
-        value: NetworkChangeCallback,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: NetworkChangeCallback, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
+
 
 // This template implements a class for working with a Rust struct via a handle
 // to the live Rust struct on the other side of the FFI.
@@ -9143,13 +8591,15 @@ public object FfiConverterTypeNetworkChangeCallback : FfiConverter<NetworkChange
 // [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
 //
 
+
 /**
  * Callback for `Connection::watch_paths` — fires whenever the open-paths
  * snapshot changes (path opens/closes/selection changes).
  */
 public interface PathChangeCallback {
+    
     suspend fun `onChange`(`paths`: List<PathSnapshot>)
-
+    
     companion object
 }
 
@@ -9157,14 +8607,13 @@ public interface PathChangeCallback {
  * Callback for `Connection::watch_paths` — fires whenever the open-paths
  * snapshot changes (path opens/closes/selection changes).
  */
-open class PathChangeCallbackImpl :
-    Disposable,
-    AutoCloseable,
-    PathChangeCallback {
+open class PathChangeCallbackImpl: Disposable, AutoCloseable, PathChangeCallback
+{
+
+    @Suppress("UNUSED_PARAMETER")
     /**
      * @suppress
      */
-    @Suppress("UNUSED_PARAMETER")
     constructor(withHandle: UniffiWithHandle, handle: Long) {
         this.handle = handle
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
@@ -9216,7 +8665,7 @@ open class PathChangeCallbackImpl :
             if (c == Long.MAX_VALUE) {
                 throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
             }
-        } while (!this.callCounter.compareAndSet(c, c + 1L))
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
         // Now we can safely do the method call without the handle being freed concurrently.
         try {
             return block(this.uniffiCloneHandle())
@@ -9230,13 +8679,11 @@ open class PathChangeCallbackImpl :
 
     // Use a static inner class instead of a closure so as not to accidentally
     // capture `this` as part of the cleanable's action.
-    private class UniffiCleanAction(
-        private val handle: Long,
-    ) : Runnable {
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
         override fun run() {
             if (handle == 0.toLong()) {
                 // Fake object created with `NoHandle`, don't try to free.
-                return
+                return;
             }
             uniffiRustCall { status ->
                 UniffiLib.uniffi_iroh_ffi_fn_free_pathchangecallback(handle, status)
@@ -9249,59 +8696,65 @@ open class PathChangeCallbackImpl :
      */
     fun uniffiCloneHandle(): Long {
         if (handle == 0.toLong()) {
-            throw InternalException("uniffiCloneHandle() called on NoHandle object")
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
-        return uniffiRustCall { status ->
+        return uniffiRustCall() { status ->
             UniffiLib.uniffi_iroh_ffi_fn_clone_pathchangecallback(handle, status)
         }
     }
 
+    
     @Throws(CallbackException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `onChange`(`paths`: List<PathSnapshot>) =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_pathchangecallback_on_change(
-                    uniffiHandle,
-                    FfiConverterSequenceTypePathSnapshot.lower(`paths`),
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
-            // lift function
-            { Unit },
-            // Error FFI converter
-            CallbackException.ErrorHandler,
-        )
+    override suspend fun `onChange`(`paths`: List<PathSnapshot>) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_pathchangecallback_on_change(
+                uniffiHandle,
+                FfiConverterSequenceTypePathSnapshot.lower(`paths`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CallbackException.ErrorHandler,
+    )
+    }
 
+    
+
+    
+
+
+    
+    
     /**
      * @suppress
      */
     companion object
+    
 }
+
+
 
 // Put the implementation in an object so we don't pollute the top-level namespace
 internal object uniffiCallbackInterfacePathChangeCallback {
-    internal object `onChange` : UniffiCallbackInterfacePathChangeCallbackMethod0 {
-        override fun callback(
-            `uniffiHandle`: Long,
-            `paths`: RustBuffer.ByValue,
-            `uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,
-            `uniffiCallbackData`: Long,
-            `uniffiOutDroppedCallback`: UniffiForeignFutureDroppedCallbackStruct,
-        ) {
+    internal object `onChange`: UniffiCallbackInterfacePathChangeCallbackMethod0 {
+        override fun callback(`uniffiHandle`: Long,`paths`: RustBuffer.ByValue,`uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,`uniffiCallbackData`: Long,`uniffiOutDroppedCallback`: UniffiForeignFutureDroppedCallbackStruct,) {
             val uniffiObj = FfiConverterTypePathChangeCallback.handleMap.get(uniffiHandle)
-            val makeCall =
-                suspend {  uniffiObj.`onChange`(
+            val makeCall = suspend { ->
+                uniffiObj.`onChange`(
                     FfiConverterSequenceTypePathSnapshot.lift(`paths`),
                 )
-                }
+            }
             val uniffiHandleSuccess = { _: Unit ->
-                val uniffiResult =
-                    UniffiForeignFutureResultVoid.UniffiByValue(
-                        UniffiRustCallStatus.ByValue(),
-                    )
+                val uniffiResult = UniffiForeignFutureResultVoid.UniffiByValue(
+                    UniffiRustCallStatus.ByValue()
+                )
                 uniffiResult.write()
                 uniffiFutureCallback.callback(uniffiCallbackData, uniffiResult)
             }
@@ -9318,27 +8771,28 @@ internal object uniffiCallbackInterfacePathChangeCallback {
                 uniffiHandleSuccess,
                 uniffiHandleError,
                 { e: CallbackException -> FfiConverterTypeCallbackError.lower(e) },
-                uniffiOutDroppedCallback,
+                uniffiOutDroppedCallback
             )
         }
     }
 
-    internal object uniffiFree : UniffiCallbackInterfaceFree {
+    internal object uniffiFree: UniffiCallbackInterfaceFree {
         override fun callback(handle: Long) {
             FfiConverterTypePathChangeCallback.handleMap.remove(handle)
         }
     }
 
-    internal object uniffiClone : UniffiCallbackInterfaceClone {
-        override fun callback(handle: Long): Long = FfiConverterTypePathChangeCallback.handleMap.clone(handle)
+    internal object uniffiClone: UniffiCallbackInterfaceClone {
+        override fun callback(handle: Long): Long {
+            return FfiConverterTypePathChangeCallback.handleMap.clone(handle)
+        }
     }
 
-    internal var vtable =
-        UniffiVTableCallbackInterfacePathChangeCallback.UniffiByValue(
-            uniffiFree,
-            uniffiClone,
-            `onChange`,
-        )
+    internal var vtable = UniffiVTableCallbackInterfacePathChangeCallback.UniffiByValue(
+        uniffiFree,
+        uniffiClone,
+        `onChange`,
+    )
 
     // Registers the foreign callback with the Rust side.
     // This method is generated for each callback interface.
@@ -9350,17 +8804,17 @@ internal object uniffiCallbackInterfacePathChangeCallback {
 /**
  * @suppress
  */
-public object FfiConverterTypePathChangeCallback : FfiConverter<PathChangeCallback, Long> {
+public object FfiConverterTypePathChangeCallback: FfiConverter<PathChangeCallback, Long> {
     internal val handleMap = UniffiHandleMap<PathChangeCallback>()
 
     override fun lower(value: PathChangeCallback): Long {
         if (value is PathChangeCallbackImpl) {
-            // Rust-implemented object.  Clone the handle and return it
+             // Rust-implemented object.  Clone the handle and return it
             return value.uniffiCloneHandle()
-        } else {
+         } else {
             // Kotlin object, generate a new vtable handle and return that.
             return handleMap.insert(value)
-        }
+         }
     }
 
     override fun lift(value: Long): PathChangeCallback {
@@ -9374,17 +8828,17 @@ public object FfiConverterTypePathChangeCallback : FfiConverter<PathChangeCallba
         }
     }
 
-    override fun read(buf: ByteBuffer): PathChangeCallback = lift(buf.getLong())
+    override fun read(buf: ByteBuffer): PathChangeCallback {
+        return lift(buf.getLong())
+    }
 
     override fun allocationSize(value: PathChangeCallback) = 8UL
 
-    override fun write(
-        value: PathChangeCallback,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: PathChangeCallback, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
+
 
 // This template implements a class for working with a Rust struct via a handle
 // to the live Rust struct on the other side of the FFI.
@@ -9480,13 +8934,15 @@ public object FfiConverterTypePathChangeCallback : FfiConverter<PathChangeCallba
 // [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
 //
 
+
 /**
  * Callback for `Connection::watch_path_events` — fires for each individual
  * path event.
  */
 public interface PathEventCallback {
+    
     suspend fun `onEvent`(`event`: PathEvent)
-
+    
     companion object
 }
 
@@ -9494,14 +8950,13 @@ public interface PathEventCallback {
  * Callback for `Connection::watch_path_events` — fires for each individual
  * path event.
  */
-open class PathEventCallbackImpl :
-    Disposable,
-    AutoCloseable,
-    PathEventCallback {
+open class PathEventCallbackImpl: Disposable, AutoCloseable, PathEventCallback
+{
+
+    @Suppress("UNUSED_PARAMETER")
     /**
      * @suppress
      */
-    @Suppress("UNUSED_PARAMETER")
     constructor(withHandle: UniffiWithHandle, handle: Long) {
         this.handle = handle
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
@@ -9553,7 +9008,7 @@ open class PathEventCallbackImpl :
             if (c == Long.MAX_VALUE) {
                 throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
             }
-        } while (!this.callCounter.compareAndSet(c, c + 1L))
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
         // Now we can safely do the method call without the handle being freed concurrently.
         try {
             return block(this.uniffiCloneHandle())
@@ -9567,13 +9022,11 @@ open class PathEventCallbackImpl :
 
     // Use a static inner class instead of a closure so as not to accidentally
     // capture `this` as part of the cleanable's action.
-    private class UniffiCleanAction(
-        private val handle: Long,
-    ) : Runnable {
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
         override fun run() {
             if (handle == 0.toLong()) {
                 // Fake object created with `NoHandle`, don't try to free.
-                return
+                return;
             }
             uniffiRustCall { status ->
                 UniffiLib.uniffi_iroh_ffi_fn_free_patheventcallback(handle, status)
@@ -9586,59 +9039,65 @@ open class PathEventCallbackImpl :
      */
     fun uniffiCloneHandle(): Long {
         if (handle == 0.toLong()) {
-            throw InternalException("uniffiCloneHandle() called on NoHandle object")
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
-        return uniffiRustCall { status ->
+        return uniffiRustCall() { status ->
             UniffiLib.uniffi_iroh_ffi_fn_clone_patheventcallback(handle, status)
         }
     }
 
+    
     @Throws(CallbackException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `onEvent`(`event`: PathEvent) =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_patheventcallback_on_event(
-                    uniffiHandle,
-                    FfiConverterTypePathEvent.lower(`event`),
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
-            // lift function
-            { Unit },
-            // Error FFI converter
-            CallbackException.ErrorHandler,
-        )
+    override suspend fun `onEvent`(`event`: PathEvent) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_patheventcallback_on_event(
+                uniffiHandle,
+                FfiConverterTypePathEvent.lower(`event`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CallbackException.ErrorHandler,
+    )
+    }
 
+    
+
+    
+
+
+    
+    
     /**
      * @suppress
      */
     companion object
+    
 }
+
+
 
 // Put the implementation in an object so we don't pollute the top-level namespace
 internal object uniffiCallbackInterfacePathEventCallback {
-    internal object `onEvent` : UniffiCallbackInterfacePathEventCallbackMethod0 {
-        override fun callback(
-            `uniffiHandle`: Long,
-            `event`: RustBuffer.ByValue,
-            `uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,
-            `uniffiCallbackData`: Long,
-            `uniffiOutDroppedCallback`: UniffiForeignFutureDroppedCallbackStruct,
-        ) {
+    internal object `onEvent`: UniffiCallbackInterfacePathEventCallbackMethod0 {
+        override fun callback(`uniffiHandle`: Long,`event`: RustBuffer.ByValue,`uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,`uniffiCallbackData`: Long,`uniffiOutDroppedCallback`: UniffiForeignFutureDroppedCallbackStruct,) {
             val uniffiObj = FfiConverterTypePathEventCallback.handleMap.get(uniffiHandle)
-            val makeCall =
-                suspend {  uniffiObj.`onEvent`(
+            val makeCall = suspend { ->
+                uniffiObj.`onEvent`(
                     FfiConverterTypePathEvent.lift(`event`),
                 )
-                }
+            }
             val uniffiHandleSuccess = { _: Unit ->
-                val uniffiResult =
-                    UniffiForeignFutureResultVoid.UniffiByValue(
-                        UniffiRustCallStatus.ByValue(),
-                    )
+                val uniffiResult = UniffiForeignFutureResultVoid.UniffiByValue(
+                    UniffiRustCallStatus.ByValue()
+                )
                 uniffiResult.write()
                 uniffiFutureCallback.callback(uniffiCallbackData, uniffiResult)
             }
@@ -9655,27 +9114,28 @@ internal object uniffiCallbackInterfacePathEventCallback {
                 uniffiHandleSuccess,
                 uniffiHandleError,
                 { e: CallbackException -> FfiConverterTypeCallbackError.lower(e) },
-                uniffiOutDroppedCallback,
+                uniffiOutDroppedCallback
             )
         }
     }
 
-    internal object uniffiFree : UniffiCallbackInterfaceFree {
+    internal object uniffiFree: UniffiCallbackInterfaceFree {
         override fun callback(handle: Long) {
             FfiConverterTypePathEventCallback.handleMap.remove(handle)
         }
     }
 
-    internal object uniffiClone : UniffiCallbackInterfaceClone {
-        override fun callback(handle: Long): Long = FfiConverterTypePathEventCallback.handleMap.clone(handle)
+    internal object uniffiClone: UniffiCallbackInterfaceClone {
+        override fun callback(handle: Long): Long {
+            return FfiConverterTypePathEventCallback.handleMap.clone(handle)
+        }
     }
 
-    internal var vtable =
-        UniffiVTableCallbackInterfacePathEventCallback.UniffiByValue(
-            uniffiFree,
-            uniffiClone,
-            `onEvent`,
-        )
+    internal var vtable = UniffiVTableCallbackInterfacePathEventCallback.UniffiByValue(
+        uniffiFree,
+        uniffiClone,
+        `onEvent`,
+    )
 
     // Registers the foreign callback with the Rust side.
     // This method is generated for each callback interface.
@@ -9687,17 +9147,17 @@ internal object uniffiCallbackInterfacePathEventCallback {
 /**
  * @suppress
  */
-public object FfiConverterTypePathEventCallback : FfiConverter<PathEventCallback, Long> {
+public object FfiConverterTypePathEventCallback: FfiConverter<PathEventCallback, Long> {
     internal val handleMap = UniffiHandleMap<PathEventCallback>()
 
     override fun lower(value: PathEventCallback): Long {
         if (value is PathEventCallbackImpl) {
-            // Rust-implemented object.  Clone the handle and return it
+             // Rust-implemented object.  Clone the handle and return it
             return value.uniffiCloneHandle()
-        } else {
+         } else {
             // Kotlin object, generate a new vtable handle and return that.
             return handleMap.insert(value)
-        }
+         }
     }
 
     override fun lift(value: Long): PathEventCallback {
@@ -9711,17 +9171,17 @@ public object FfiConverterTypePathEventCallback : FfiConverter<PathEventCallback
         }
     }
 
-    override fun read(buf: ByteBuffer): PathEventCallback = lift(buf.getLong())
+    override fun read(buf: ByteBuffer): PathEventCallback {
+        return lift(buf.getLong())
+    }
 
     override fun allocationSize(value: PathEventCallback) = 8UL
 
-    override fun write(
-        value: PathEventCallback,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: PathEventCallback, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
+
 
 // This template implements a class for working with a Rust struct via a handle
 // to the live Rust struct on the other side of the FFI.
@@ -9816,6 +9276,7 @@ public object FfiConverterTypePathEventCallback : FfiConverter<PathEventCallback
 //
 // [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
 //
+
 
 /**
  * Configures a freshly created [`EndpointBuilder`].
@@ -9829,8 +9290,9 @@ public object FfiConverterTypePathEventCallback : FfiConverter<PathEventCallback
  * [`preset_n0_disable_relay`].
  */
 public interface Preset {
+    
     fun `apply`(`builder`: EndpointBuilder)
-
+    
     companion object
 }
 
@@ -9845,14 +9307,13 @@ public interface Preset {
  * presets are available as [`preset_n0`], [`preset_minimal`], and
  * [`preset_n0_disable_relay`].
  */
-open class PresetImpl :
-    Disposable,
-    AutoCloseable,
-    Preset {
+open class PresetImpl: Disposable, AutoCloseable, Preset
+{
+
+    @Suppress("UNUSED_PARAMETER")
     /**
      * @suppress
      */
-    @Suppress("UNUSED_PARAMETER")
     constructor(withHandle: UniffiWithHandle, handle: Long) {
         this.handle = handle
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
@@ -9904,7 +9365,7 @@ open class PresetImpl :
             if (c == Long.MAX_VALUE) {
                 throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
             }
-        } while (!this.callCounter.compareAndSet(c, c + 1L))
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
         // Now we can safely do the method call without the handle being freed concurrently.
         try {
             return block(this.uniffiCloneHandle())
@@ -9918,13 +9379,11 @@ open class PresetImpl :
 
     // Use a static inner class instead of a closure so as not to accidentally
     // capture `this` as part of the cleanable's action.
-    private class UniffiCleanAction(
-        private val handle: Long,
-    ) : Runnable {
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
         override fun run() {
             if (handle == 0.toLong()) {
                 // Fake object created with `NoHandle`, don't try to free.
-                return
+                return;
             }
             uniffiRustCall { status ->
                 UniffiLib.uniffi_iroh_ffi_fn_free_preset(handle, status)
@@ -9937,65 +9396,73 @@ open class PresetImpl :
      */
     fun uniffiCloneHandle(): Long {
         if (handle == 0.toLong()) {
-            throw InternalException("uniffiCloneHandle() called on NoHandle object")
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
-        return uniffiRustCall { status ->
+        return uniffiRustCall() { status ->
             UniffiLib.uniffi_iroh_ffi_fn_clone_preset(handle, status)
         }
     }
 
-    override fun `apply`(`builder`: EndpointBuilder) =
-        callWithHandle {
-            uniffiRustCall { _status ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_preset_apply(
-                    it,
-                    FfiConverterTypeEndpointBuilder.lower(`builder`),
-                    _status,
-                )
-            }
-        }
+    override fun `apply`(`builder`: EndpointBuilder)
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_preset_apply(
+        it,
+        FfiConverterTypeEndpointBuilder.lower(`builder`),_status)
+}
+    }
+    
+    
 
+    
+
+    
+
+
+    
+    
     /**
      * @suppress
      */
     companion object
+    
 }
+
+
 
 // Put the implementation in an object so we don't pollute the top-level namespace
 internal object uniffiCallbackInterfacePreset {
-    internal object `apply` : UniffiCallbackInterfacePresetMethod0 {
-        override fun callback(
-            `uniffiHandle`: Long,
-            `builder`: Long,
-            `uniffiOutReturn`: Pointer,
-            uniffiCallStatus: UniffiRustCallStatus,
-        ) {
+    internal object `apply`: UniffiCallbackInterfacePresetMethod0 {
+        override fun callback(`uniffiHandle`: Long,`builder`: Long,`uniffiOutReturn`: Pointer,uniffiCallStatus: UniffiRustCallStatus,) {
             val uniffiObj = FfiConverterTypePreset.handleMap.get(uniffiHandle)
-            val makeCall = {  uniffiObj.`apply`(
-                FfiConverterTypeEndpointBuilder.lift(`builder`),
-            )
+            val makeCall = { ->
+                uniffiObj.`apply`(
+                    FfiConverterTypeEndpointBuilder.lift(`builder`),
+                )
             }
             val writeReturn = { _: Unit -> Unit }
             uniffiTraitInterfaceCall(uniffiCallStatus, makeCall, writeReturn)
         }
     }
 
-    internal object uniffiFree : UniffiCallbackInterfaceFree {
+    internal object uniffiFree: UniffiCallbackInterfaceFree {
         override fun callback(handle: Long) {
             FfiConverterTypePreset.handleMap.remove(handle)
         }
     }
 
-    internal object uniffiClone : UniffiCallbackInterfaceClone {
-        override fun callback(handle: Long): Long = FfiConverterTypePreset.handleMap.clone(handle)
+    internal object uniffiClone: UniffiCallbackInterfaceClone {
+        override fun callback(handle: Long): Long {
+            return FfiConverterTypePreset.handleMap.clone(handle)
+        }
     }
 
-    internal var vtable =
-        UniffiVTableCallbackInterfacePreset.UniffiByValue(
-            uniffiFree,
-            uniffiClone,
-            `apply`,
-        )
+    internal var vtable = UniffiVTableCallbackInterfacePreset.UniffiByValue(
+        uniffiFree,
+        uniffiClone,
+        `apply`,
+    )
 
     // Registers the foreign callback with the Rust side.
     // This method is generated for each callback interface.
@@ -10007,17 +9474,17 @@ internal object uniffiCallbackInterfacePreset {
 /**
  * @suppress
  */
-public object FfiConverterTypePreset : FfiConverter<Preset, Long> {
+public object FfiConverterTypePreset: FfiConverter<Preset, Long> {
     internal val handleMap = UniffiHandleMap<Preset>()
 
     override fun lower(value: Preset): Long {
         if (value is PresetImpl) {
-            // Rust-implemented object.  Clone the handle and return it
+             // Rust-implemented object.  Clone the handle and return it
             return value.uniffiCloneHandle()
-        } else {
+         } else {
             // Kotlin object, generate a new vtable handle and return that.
             return handleMap.insert(value)
-        }
+         }
     }
 
     override fun lift(value: Long): Preset {
@@ -10031,17 +9498,17 @@ public object FfiConverterTypePreset : FfiConverter<Preset, Long> {
         }
     }
 
-    override fun read(buf: ByteBuffer): Preset = lift(buf.getLong())
+    override fun read(buf: ByteBuffer): Preset {
+        return lift(buf.getLong())
+    }
 
     override fun allocationSize(value: Preset) = 8UL
 
-    override fun write(
-        value: Preset,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: Preset, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
+
 
 // This template implements a class for working with a Rust struct via a handle
 // to the live Rust struct on the other side of the FFI.
@@ -10137,20 +9604,21 @@ public object FfiConverterTypePreset : FfiConverter<Preset, Long> {
 // [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
 //
 
-public interface ProtocolCreator {
-    fun `create`(`endpoint`: Endpoint): ProtocolHandler
 
+public interface ProtocolCreator {
+    
+    fun `create`(`endpoint`: Endpoint): ProtocolHandler
+    
     companion object
 }
 
-open class ProtocolCreatorImpl :
-    Disposable,
-    AutoCloseable,
-    ProtocolCreator {
+open class ProtocolCreatorImpl: Disposable, AutoCloseable, ProtocolCreator
+{
+
+    @Suppress("UNUSED_PARAMETER")
     /**
      * @suppress
      */
-    @Suppress("UNUSED_PARAMETER")
     constructor(withHandle: UniffiWithHandle, handle: Long) {
         this.handle = handle
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
@@ -10202,7 +9670,7 @@ open class ProtocolCreatorImpl :
             if (c == Long.MAX_VALUE) {
                 throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
             }
-        } while (!this.callCounter.compareAndSet(c, c + 1L))
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
         // Now we can safely do the method call without the handle being freed concurrently.
         try {
             return block(this.uniffiCloneHandle())
@@ -10216,13 +9684,11 @@ open class ProtocolCreatorImpl :
 
     // Use a static inner class instead of a closure so as not to accidentally
     // capture `this` as part of the cleanable's action.
-    private class UniffiCleanAction(
-        private val handle: Long,
-    ) : Runnable {
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
         override fun run() {
             if (handle == 0.toLong()) {
                 // Fake object created with `NoHandle`, don't try to free.
-                return
+                return;
             }
             uniffiRustCall { status ->
                 UniffiLib.uniffi_iroh_ffi_fn_free_protocolcreator(handle, status)
@@ -10235,67 +9701,74 @@ open class ProtocolCreatorImpl :
      */
     fun uniffiCloneHandle(): Long {
         if (handle == 0.toLong()) {
-            throw InternalException("uniffiCloneHandle() called on NoHandle object")
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
-        return uniffiRustCall { status ->
+        return uniffiRustCall() { status ->
             UniffiLib.uniffi_iroh_ffi_fn_clone_protocolcreator(handle, status)
         }
     }
 
-    override fun `create`(`endpoint`: Endpoint): ProtocolHandler =
-        FfiConverterTypeProtocolHandler.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_protocolcreator_create(
-                        it,
-                        FfiConverterTypeEndpoint.lower(`endpoint`),
-                        _status,
-                    )
-                }
-            },
-        )
+    override fun `create`(`endpoint`: Endpoint): ProtocolHandler {
+            return FfiConverterTypeProtocolHandler.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_protocolcreator_create(
+        it,
+        FfiConverterTypeEndpoint.lower(`endpoint`),_status)
+}
+    }
+    )
+    }
+    
 
+    
+
+    
+
+
+    
+    
     /**
      * @suppress
      */
     companion object
+    
 }
+
+
 
 // Put the implementation in an object so we don't pollute the top-level namespace
 internal object uniffiCallbackInterfaceProtocolCreator {
-    internal object `create` : UniffiCallbackInterfaceProtocolCreatorMethod0 {
-        override fun callback(
-            `uniffiHandle`: Long,
-            `endpoint`: Long,
-            `uniffiOutReturn`: LongByReference,
-            uniffiCallStatus: UniffiRustCallStatus,
-        ) {
+    internal object `create`: UniffiCallbackInterfaceProtocolCreatorMethod0 {
+        override fun callback(`uniffiHandle`: Long,`endpoint`: Long,`uniffiOutReturn`: LongByReference,uniffiCallStatus: UniffiRustCallStatus,) {
             val uniffiObj = FfiConverterTypeProtocolCreator.handleMap.get(uniffiHandle)
-            val makeCall = {  uniffiObj.`create`(
-                FfiConverterTypeEndpoint.lift(`endpoint`),
-            )
+            val makeCall = { ->
+                uniffiObj.`create`(
+                    FfiConverterTypeEndpoint.lift(`endpoint`),
+                )
             }
             val writeReturn = { value: ProtocolHandler -> uniffiOutReturn.setValue(FfiConverterTypeProtocolHandler.lower(value)) }
             uniffiTraitInterfaceCall(uniffiCallStatus, makeCall, writeReturn)
         }
     }
 
-    internal object uniffiFree : UniffiCallbackInterfaceFree {
+    internal object uniffiFree: UniffiCallbackInterfaceFree {
         override fun callback(handle: Long) {
             FfiConverterTypeProtocolCreator.handleMap.remove(handle)
         }
     }
 
-    internal object uniffiClone : UniffiCallbackInterfaceClone {
-        override fun callback(handle: Long): Long = FfiConverterTypeProtocolCreator.handleMap.clone(handle)
+    internal object uniffiClone: UniffiCallbackInterfaceClone {
+        override fun callback(handle: Long): Long {
+            return FfiConverterTypeProtocolCreator.handleMap.clone(handle)
+        }
     }
 
-    internal var vtable =
-        UniffiVTableCallbackInterfaceProtocolCreator.UniffiByValue(
-            uniffiFree,
-            uniffiClone,
-            `create`,
-        )
+    internal var vtable = UniffiVTableCallbackInterfaceProtocolCreator.UniffiByValue(
+        uniffiFree,
+        uniffiClone,
+        `create`,
+    )
 
     // Registers the foreign callback with the Rust side.
     // This method is generated for each callback interface.
@@ -10307,17 +9780,17 @@ internal object uniffiCallbackInterfaceProtocolCreator {
 /**
  * @suppress
  */
-public object FfiConverterTypeProtocolCreator : FfiConverter<ProtocolCreator, Long> {
+public object FfiConverterTypeProtocolCreator: FfiConverter<ProtocolCreator, Long> {
     internal val handleMap = UniffiHandleMap<ProtocolCreator>()
 
     override fun lower(value: ProtocolCreator): Long {
         if (value is ProtocolCreatorImpl) {
-            // Rust-implemented object.  Clone the handle and return it
+             // Rust-implemented object.  Clone the handle and return it
             return value.uniffiCloneHandle()
-        } else {
+         } else {
             // Kotlin object, generate a new vtable handle and return that.
             return handleMap.insert(value)
-        }
+         }
     }
 
     override fun lift(value: Long): ProtocolCreator {
@@ -10331,17 +9804,17 @@ public object FfiConverterTypeProtocolCreator : FfiConverter<ProtocolCreator, Lo
         }
     }
 
-    override fun read(buf: ByteBuffer): ProtocolCreator = lift(buf.getLong())
+    override fun read(buf: ByteBuffer): ProtocolCreator {
+        return lift(buf.getLong())
+    }
 
     override fun allocationSize(value: ProtocolCreator) = 8UL
 
-    override fun write(
-        value: ProtocolCreator,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: ProtocolCreator, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
+
 
 // This template implements a class for working with a Rust struct via a handle
 // to the live Rust struct on the other side of the FFI.
@@ -10437,22 +9910,23 @@ public object FfiConverterTypeProtocolCreator : FfiConverter<ProtocolCreator, Lo
 // [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
 //
 
+
 public interface ProtocolHandler {
+    
     suspend fun `accept`(`conn`: Connection)
-
+    
     suspend fun `shutdown`()
-
+    
     companion object
 }
 
-open class ProtocolHandlerImpl :
-    Disposable,
-    AutoCloseable,
-    ProtocolHandler {
+open class ProtocolHandlerImpl: Disposable, AutoCloseable, ProtocolHandler
+{
+
+    @Suppress("UNUSED_PARAMETER")
     /**
      * @suppress
      */
-    @Suppress("UNUSED_PARAMETER")
     constructor(withHandle: UniffiWithHandle, handle: Long) {
         this.handle = handle
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
@@ -10504,7 +9978,7 @@ open class ProtocolHandlerImpl :
             if (c == Long.MAX_VALUE) {
                 throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
             }
-        } while (!this.callCounter.compareAndSet(c, c + 1L))
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
         // Now we can safely do the method call without the handle being freed concurrently.
         try {
             return block(this.uniffiCloneHandle())
@@ -10518,13 +9992,11 @@ open class ProtocolHandlerImpl :
 
     // Use a static inner class instead of a closure so as not to accidentally
     // capture `this` as part of the cleanable's action.
-    private class UniffiCleanAction(
-        private val handle: Long,
-    ) : Runnable {
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
         override fun run() {
             if (handle == 0.toLong()) {
                 // Fake object created with `NoHandle`, don't try to free.
-                return
+                return;
             }
             uniffiRustCall { status ->
                 UniffiLib.uniffi_iroh_ffi_fn_free_protocolhandler(handle, status)
@@ -10537,76 +10009,86 @@ open class ProtocolHandlerImpl :
      */
     fun uniffiCloneHandle(): Long {
         if (handle == 0.toLong()) {
-            throw InternalException("uniffiCloneHandle() called on NoHandle object")
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
-        return uniffiRustCall { status ->
+        return uniffiRustCall() { status ->
             UniffiLib.uniffi_iroh_ffi_fn_clone_protocolhandler(handle, status)
         }
     }
 
+    
     @Throws(CallbackException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `accept`(`conn`: Connection) =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_protocolhandler_accept(
-                    uniffiHandle,
-                    FfiConverterTypeConnection.lower(`conn`),
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
-            // lift function
-            { Unit },
-            // Error FFI converter
-            CallbackException.ErrorHandler,
-        )
+    override suspend fun `accept`(`conn`: Connection) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_protocolhandler_accept(
+                uniffiHandle,
+                FfiConverterTypeConnection.lower(`conn`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        CallbackException.ErrorHandler,
+    )
+    }
 
+    
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `shutdown`() =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_protocolhandler_shutdown(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
-            // lift function
-            { Unit },
-            // Error FFI converter
-            UniffiNullRustCallStatusErrorHandler,
-        )
+    override suspend fun `shutdown`() {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_protocolhandler_shutdown(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
 
+    
+
+    
+
+
+    
+    
     /**
      * @suppress
      */
     companion object
+    
 }
+
+
 
 // Put the implementation in an object so we don't pollute the top-level namespace
 internal object uniffiCallbackInterfaceProtocolHandler {
-    internal object `accept` : UniffiCallbackInterfaceProtocolHandlerMethod0 {
-        override fun callback(
-            `uniffiHandle`: Long,
-            `conn`: Long,
-            `uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,
-            `uniffiCallbackData`: Long,
-            `uniffiOutDroppedCallback`: UniffiForeignFutureDroppedCallbackStruct,
-        ) {
+    internal object `accept`: UniffiCallbackInterfaceProtocolHandlerMethod0 {
+        override fun callback(`uniffiHandle`: Long,`conn`: Long,`uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,`uniffiCallbackData`: Long,`uniffiOutDroppedCallback`: UniffiForeignFutureDroppedCallbackStruct,) {
             val uniffiObj = FfiConverterTypeProtocolHandler.handleMap.get(uniffiHandle)
-            val makeCall =
-                suspend {  uniffiObj.`accept`(
+            val makeCall = suspend { ->
+                uniffiObj.`accept`(
                     FfiConverterTypeConnection.lift(`conn`),
                 )
-                }
+            }
             val uniffiHandleSuccess = { _: Unit ->
-                val uniffiResult =
-                    UniffiForeignFutureResultVoid.UniffiByValue(
-                        UniffiRustCallStatus.ByValue(),
-                    )
+                val uniffiResult = UniffiForeignFutureResultVoid.UniffiByValue(
+                    UniffiRustCallStatus.ByValue()
+                )
                 uniffiResult.write()
                 uniffiFutureCallback.callback(uniffiCallbackData, uniffiResult)
             }
@@ -10623,26 +10105,21 @@ internal object uniffiCallbackInterfaceProtocolHandler {
                 uniffiHandleSuccess,
                 uniffiHandleError,
                 { e: CallbackException -> FfiConverterTypeCallbackError.lower(e) },
-                uniffiOutDroppedCallback,
+                uniffiOutDroppedCallback
             )
         }
     }
-
-    internal object `shutdown` : UniffiCallbackInterfaceProtocolHandlerMethod1 {
-        override fun callback(
-            `uniffiHandle`: Long,
-            `uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,
-            `uniffiCallbackData`: Long,
-            `uniffiOutDroppedCallback`: UniffiForeignFutureDroppedCallbackStruct,
-        ) {
+    internal object `shutdown`: UniffiCallbackInterfaceProtocolHandlerMethod1 {
+        override fun callback(`uniffiHandle`: Long,`uniffiFutureCallback`: UniffiForeignFutureCompleteVoid,`uniffiCallbackData`: Long,`uniffiOutDroppedCallback`: UniffiForeignFutureDroppedCallbackStruct,) {
             val uniffiObj = FfiConverterTypeProtocolHandler.handleMap.get(uniffiHandle)
-            val makeCall =
-                suspend { uniffiObj.`shutdown`() }
+            val makeCall = suspend { ->
+                uniffiObj.`shutdown`(
+                )
+            }
             val uniffiHandleSuccess = { _: Unit ->
-                val uniffiResult =
-                    UniffiForeignFutureResultVoid.UniffiByValue(
-                        UniffiRustCallStatus.ByValue(),
-                    )
+                val uniffiResult = UniffiForeignFutureResultVoid.UniffiByValue(
+                    UniffiRustCallStatus.ByValue()
+                )
                 uniffiResult.write()
                 uniffiFutureCallback.callback(uniffiCallbackData, uniffiResult)
             }
@@ -10658,28 +10135,29 @@ internal object uniffiCallbackInterfaceProtocolHandler {
                 makeCall,
                 uniffiHandleSuccess,
                 uniffiHandleError,
-                uniffiOutDroppedCallback,
+                uniffiOutDroppedCallback
             )
         }
     }
 
-    internal object uniffiFree : UniffiCallbackInterfaceFree {
+    internal object uniffiFree: UniffiCallbackInterfaceFree {
         override fun callback(handle: Long) {
             FfiConverterTypeProtocolHandler.handleMap.remove(handle)
         }
     }
 
-    internal object uniffiClone : UniffiCallbackInterfaceClone {
-        override fun callback(handle: Long): Long = FfiConverterTypeProtocolHandler.handleMap.clone(handle)
+    internal object uniffiClone: UniffiCallbackInterfaceClone {
+        override fun callback(handle: Long): Long {
+            return FfiConverterTypeProtocolHandler.handleMap.clone(handle)
+        }
     }
 
-    internal var vtable =
-        UniffiVTableCallbackInterfaceProtocolHandler.UniffiByValue(
-            uniffiFree,
-            uniffiClone,
-            `accept`,
-            `shutdown`,
-        )
+    internal var vtable = UniffiVTableCallbackInterfaceProtocolHandler.UniffiByValue(
+        uniffiFree,
+        uniffiClone,
+        `accept`,
+        `shutdown`,
+    )
 
     // Registers the foreign callback with the Rust side.
     // This method is generated for each callback interface.
@@ -10691,17 +10169,17 @@ internal object uniffiCallbackInterfaceProtocolHandler {
 /**
  * @suppress
  */
-public object FfiConverterTypeProtocolHandler : FfiConverter<ProtocolHandler, Long> {
+public object FfiConverterTypeProtocolHandler: FfiConverter<ProtocolHandler, Long> {
     internal val handleMap = UniffiHandleMap<ProtocolHandler>()
 
     override fun lower(value: ProtocolHandler): Long {
         if (value is ProtocolHandlerImpl) {
-            // Rust-implemented object.  Clone the handle and return it
+             // Rust-implemented object.  Clone the handle and return it
             return value.uniffiCloneHandle()
-        } else {
+         } else {
             // Kotlin object, generate a new vtable handle and return that.
             return handleMap.insert(value)
-        }
+         }
     }
 
     override fun lift(value: Long): ProtocolHandler {
@@ -10715,17 +10193,17 @@ public object FfiConverterTypeProtocolHandler : FfiConverter<ProtocolHandler, Lo
         }
     }
 
-    override fun read(buf: ByteBuffer): ProtocolHandler = lift(buf.getLong())
+    override fun read(buf: ByteBuffer): ProtocolHandler {
+        return lift(buf.getLong())
+    }
 
     override fun allocationSize(value: ProtocolHandler) = 8UL
 
-    override fun write(
-        value: ProtocolHandler,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: ProtocolHandler, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
+
 
 // This template implements a class for working with a Rust struct via a handle
 // to the live Rust struct on the other side of the FFI.
@@ -10821,53 +10299,54 @@ public object FfiConverterTypeProtocolHandler : FfiConverter<ProtocolHandler, Lo
 // [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
 //
 
+
 /**
  * The incoming half of a QUIC stream.
  */
 public interface RecvStreamInterface {
+    
     /**
      * Total bytes read from this stream so far.
      */
     suspend fun `bytesRead`(): kotlin.ULong
-
+    
     suspend fun `id`(): kotlin.String
-
+    
     /**
      * Read up to `size_limit` bytes into a fresh buffer.
      */
     suspend fun `read`(`sizeLimit`: kotlin.UInt): kotlin.ByteArray
-
+    
     /**
      * Read exactly `size` bytes, erroring if the stream ends early.
      */
     suspend fun `readExact`(`size`: kotlin.UInt): kotlin.ByteArray
-
+    
     /**
      * Read until end-of-stream, with `size_limit` as a maximum.
      */
     suspend fun `readToEnd`(`sizeLimit`: kotlin.UInt): kotlin.ByteArray
-
+    
     suspend fun `receivedReset`(): kotlin.ULong?
-
+    
     /**
      * Stop the incoming stream with an error code.
      */
     suspend fun `stop`(`errorCode`: kotlin.ULong)
-
+    
     companion object
 }
 
 /**
  * The incoming half of a QUIC stream.
  */
-open class RecvStream :
-    Disposable,
-    AutoCloseable,
-    RecvStreamInterface {
+open class RecvStream: Disposable, AutoCloseable, RecvStreamInterface
+{
+
+    @Suppress("UNUSED_PARAMETER")
     /**
      * @suppress
      */
-    @Suppress("UNUSED_PARAMETER")
     constructor(withHandle: UniffiWithHandle, handle: Long) {
         this.handle = handle
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
@@ -10919,7 +10398,7 @@ open class RecvStream :
             if (c == Long.MAX_VALUE) {
                 throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
             }
-        } while (!this.callCounter.compareAndSet(c, c + 1L))
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
         // Now we can safely do the method call without the handle being freed concurrently.
         try {
             return block(this.uniffiCloneHandle())
@@ -10933,13 +10412,11 @@ open class RecvStream :
 
     // Use a static inner class instead of a closure so as not to accidentally
     // capture `this` as part of the cleanable's action.
-    private class UniffiCleanAction(
-        private val handle: Long,
-    ) : Runnable {
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
         override fun run() {
             if (handle == 0.toLong()) {
                 // Fake object created with `NoHandle`, don't try to free.
-                return
+                return;
             }
             uniffiRustCall { status ->
                 UniffiLib.uniffi_iroh_ffi_fn_free_recvstream(handle, status)
@@ -10952,182 +10429,213 @@ open class RecvStream :
      */
     fun uniffiCloneHandle(): Long {
         if (handle == 0.toLong()) {
-            throw InternalException("uniffiCloneHandle() called on NoHandle object")
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
-        return uniffiRustCall { status ->
+        return uniffiRustCall() { status ->
             UniffiLib.uniffi_iroh_ffi_fn_clone_recvstream(handle, status)
         }
     }
 
+    
     /**
      * Total bytes read from this stream so far.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `bytesRead`(): kotlin.ULong =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_recvstream_bytes_read(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
-            // lift function
-            { FfiConverterULong.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `bytesRead`() : kotlin.ULong {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_recvstream_bytes_read(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
+        // lift function
+        { FfiConverterULong.lift(it) },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `id`(): kotlin.String =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_recvstream_id(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
-            // lift function
-            { FfiConverterString.lift(it) },
-            // Error FFI converter
-            UniffiNullRustCallStatusErrorHandler,
-        )
+    override suspend fun `id`() : kotlin.String {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_recvstream_id(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterString.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
 
+    
     /**
      * Read up to `size_limit` bytes into a fresh buffer.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `read`(`sizeLimit`: kotlin.UInt): kotlin.ByteArray =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_recvstream_read(
-                    uniffiHandle,
-                    FfiConverterUInt.lower(`sizeLimit`),
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
-            // lift function
-            { FfiConverterByteArray.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `read`(`sizeLimit`: kotlin.UInt) : kotlin.ByteArray {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_recvstream_read(
+                uniffiHandle,
+                FfiConverterUInt.lower(`sizeLimit`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterByteArray.lift(it) },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * Read exactly `size` bytes, erroring if the stream ends early.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `readExact`(`size`: kotlin.UInt): kotlin.ByteArray =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_recvstream_read_exact(
-                    uniffiHandle,
-                    FfiConverterUInt.lower(`size`),
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
-            // lift function
-            { FfiConverterByteArray.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `readExact`(`size`: kotlin.UInt) : kotlin.ByteArray {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_recvstream_read_exact(
+                uniffiHandle,
+                FfiConverterUInt.lower(`size`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterByteArray.lift(it) },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * Read until end-of-stream, with `size_limit` as a maximum.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `readToEnd`(`sizeLimit`: kotlin.UInt): kotlin.ByteArray =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_recvstream_read_to_end(
-                    uniffiHandle,
-                    FfiConverterUInt.lower(`sizeLimit`),
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
-            // lift function
-            { FfiConverterByteArray.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `readToEnd`(`sizeLimit`: kotlin.UInt) : kotlin.ByteArray {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_recvstream_read_to_end(
+                uniffiHandle,
+                FfiConverterUInt.lower(`sizeLimit`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterByteArray.lift(it) },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `receivedReset`(): kotlin.ULong? =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_recvstream_received_reset(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
-            // lift function
-            { FfiConverterOptionalULong.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `receivedReset`() : kotlin.ULong? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_recvstream_received_reset(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalULong.lift(it) },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * Stop the incoming stream with an error code.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `stop`(`errorCode`: kotlin.ULong) =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_recvstream_stop(
-                    uniffiHandle,
-                    FfiConverterULong.lower(`errorCode`),
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
-            // lift function
-            { Unit },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `stop`(`errorCode`: kotlin.ULong) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_recvstream_stop(
+                uniffiHandle,
+                FfiConverterULong.lower(`errorCode`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
+
+    
+
+
+    
+    
     /**
      * @suppress
      */
     companion object
+    
 }
+
 
 /**
  * @suppress
  */
-public object FfiConverterTypeRecvStream : FfiConverter<RecvStream, Long> {
-    override fun lower(value: RecvStream): Long = value.uniffiCloneHandle()
+public object FfiConverterTypeRecvStream: FfiConverter<RecvStream, Long> {
+    override fun lower(value: RecvStream): Long {
+        return value.uniffiCloneHandle()
+    }
 
-    override fun lift(value: Long): RecvStream = RecvStream(UniffiWithHandle, value)
+    override fun lift(value: Long): RecvStream {
+        return RecvStream(UniffiWithHandle, value)
+    }
 
-    override fun read(buf: ByteBuffer): RecvStream = lift(buf.getLong())
+    override fun read(buf: ByteBuffer): RecvStream {
+        return lift(buf.getLong())
+    }
 
     override fun allocationSize(value: RecvStream) = 8UL
 
-    override fun write(
-        value: RecvStream,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: RecvStream, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
+
 
 // This template implements a class for working with a Rust struct via a handle
 // to the live Rust struct on the other side of the FFI.
@@ -11223,6 +10731,7 @@ public object FfiConverterTypeRecvStream : FfiConverter<RecvStream, Long> {
 // [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
 //
 
+
 /**
  * A collection of relay servers an endpoint should consider.
  *
@@ -11230,42 +10739,43 @@ public object FfiConverterTypeRecvStream : FfiConverter<RecvStream, Long> {
  * and mutate with [`Self::insert`] / [`Self::remove`].
  */
 public interface RelayMapInterface {
+    
     /**
      * Check whether the given relay URL is in the map.
      */
     fun `contains`(`url`: kotlin.String): kotlin.Boolean
-
+    
     /**
      * Look up the configuration for the given relay URL.
      */
     fun `get`(`url`: kotlin.String): RelayConfig?
-
+    
     /**
      * Insert a relay (replacing any prior entry for the same URL).
      */
     fun `insert`(`config`: RelayConfig)
-
+    
     /**
      * True if the map has no relays.
      */
     fun `isEmpty`(): kotlin.Boolean
-
+    
     /**
      * Number of relays in the map.
      */
     fun `len`(): kotlin.UInt
-
+    
     /**
      * Remove the entry for the given relay URL. Returns true if something was
      * removed.
      */
     fun `remove`(`url`: kotlin.String): kotlin.Boolean
-
+    
     /**
      * All relay URLs currently in the map.
      */
     fun `urls`(): List<kotlin.String>
-
+    
     companion object
 }
 
@@ -11275,14 +10785,13 @@ public interface RelayMapInterface {
  * Mirrors `iroh::RelayMap`. Construct with [`Self::empty`] or [`Self::from_urls`]
  * and mutate with [`Self::insert`] / [`Self::remove`].
  */
-open class RelayMap :
-    Disposable,
-    AutoCloseable,
-    RelayMapInterface {
+open class RelayMap: Disposable, AutoCloseable, RelayMapInterface
+{
+
+    @Suppress("UNUSED_PARAMETER")
     /**
      * @suppress
      */
-    @Suppress("UNUSED_PARAMETER")
     constructor(withHandle: UniffiWithHandle, handle: Long) {
         this.handle = handle
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
@@ -11334,7 +10843,7 @@ open class RelayMap :
             if (c == Long.MAX_VALUE) {
                 throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
             }
-        } while (!this.callCounter.compareAndSet(c, c + 1L))
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
         // Now we can safely do the method call without the handle being freed concurrently.
         try {
             return block(this.uniffiCloneHandle())
@@ -11348,13 +10857,11 @@ open class RelayMap :
 
     // Use a static inner class instead of a closure so as not to accidentally
     // capture `this` as part of the cleanable's action.
-    private class UniffiCleanAction(
-        private val handle: Long,
-    ) : Runnable {
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
         override fun run() {
             if (handle == 0.toLong()) {
                 // Fake object created with `NoHandle`, don't try to free.
-                return
+                return;
             }
             uniffiRustCall { status ->
                 UniffiLib.uniffi_iroh_ffi_fn_free_relaymap(handle, status)
@@ -11367,182 +10874,207 @@ open class RelayMap :
      */
     fun uniffiCloneHandle(): Long {
         if (handle == 0.toLong()) {
-            throw InternalException("uniffiCloneHandle() called on NoHandle object")
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
-        return uniffiRustCall { status ->
+        return uniffiRustCall() { status ->
             UniffiLib.uniffi_iroh_ffi_fn_clone_relaymap(handle, status)
         }
     }
 
+    
     /**
      * Check whether the given relay URL is in the map.
      */
-    @Throws(IrohException::class)
-    override fun `contains`(`url`: kotlin.String): kotlin.Boolean =
-        FfiConverterBoolean.lift(
-            callWithHandle {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_relaymap_contains(
-                        it,
-                        FfiConverterString.lower(`url`),
-                        _status,
-                    )
-                }
-            },
-        )
+    @Throws(IrohException::class)override fun `contains`(`url`: kotlin.String): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(IrohException) { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_relaymap_contains(
+        it,
+        FfiConverterString.lower(`url`),_status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * Look up the configuration for the given relay URL.
      */
-    @Throws(IrohException::class)
-    override fun `get`(`url`: kotlin.String): RelayConfig? =
-        FfiConverterOptionalTypeRelayConfig.lift(
-            callWithHandle {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_relaymap_get(
-                        it,
-                        FfiConverterString.lower(`url`),
-                        _status,
-                    )
-                }
-            },
-        )
+    @Throws(IrohException::class)override fun `get`(`url`: kotlin.String): RelayConfig? {
+            return FfiConverterOptionalTypeRelayConfig.lift(
+    callWithHandle {
+    uniffiRustCallWithError(IrohException) { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_relaymap_get(
+        it,
+        FfiConverterString.lower(`url`),_status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * Insert a relay (replacing any prior entry for the same URL).
      */
-    @Throws(IrohException::class)
-    override fun `insert`(`config`: RelayConfig) =
-        callWithHandle {
-            uniffiRustCallWithError(IrohException) { _status ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_relaymap_insert(
-                    it,
-                    FfiConverterTypeRelayConfig.lower(`config`),
-                    _status,
-                )
-            }
-        }
+    @Throws(IrohException::class)override fun `insert`(`config`: RelayConfig)
+        = 
+    callWithHandle {
+    uniffiRustCallWithError(IrohException) { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_relaymap_insert(
+        it,
+        FfiConverterTypeRelayConfig.lower(`config`),_status)
+}
+    }
+    
+    
 
+    
     /**
      * True if the map has no relays.
-     */
-    override fun `isEmpty`(): kotlin.Boolean =
-        FfiConverterBoolean.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_relaymap_is_empty(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `isEmpty`(): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_relaymap_is_empty(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * Number of relays in the map.
-     */
-    override fun `len`(): kotlin.UInt =
-        FfiConverterUInt.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_relaymap_len(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `len`(): kotlin.UInt {
+            return FfiConverterUInt.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_relaymap_len(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * Remove the entry for the given relay URL. Returns true if something was
      * removed.
      */
-    @Throws(IrohException::class)
-    override fun `remove`(`url`: kotlin.String): kotlin.Boolean =
-        FfiConverterBoolean.lift(
-            callWithHandle {
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_relaymap_remove(
-                        it,
-                        FfiConverterString.lower(`url`),
-                        _status,
-                    )
-                }
-            },
-        )
+    @Throws(IrohException::class)override fun `remove`(`url`: kotlin.String): kotlin.Boolean {
+            return FfiConverterBoolean.lift(
+    callWithHandle {
+    uniffiRustCallWithError(IrohException) { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_relaymap_remove(
+        it,
+        FfiConverterString.lower(`url`),_status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * All relay URLs currently in the map.
-     */
-    override fun `urls`(): List<kotlin.String> =
-        FfiConverterSequenceString.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_relaymap_urls(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `urls`(): List<kotlin.String> {
+            return FfiConverterSequenceString.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_relaymap_urls(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+
+    
 
     // The local Rust `Display`/`Debug` implementation.
-    override fun toString(): String =
-        FfiConverterString.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_relaymap_uniffi_trait_display(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
-
-    companion object {
-        /**
-         * Create an empty relay map.
-         */
-        fun `empty`(): RelayMap =
-            FfiConverterTypeRelayMap.lift(
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_constructor_relaymap_empty(_status)
-                },
-            )
-
-        /**
-         * Build a relay map from a list of relay URLs (each becomes a default
-         * [`RelayConfig`]).
-         */
-        @Throws(IrohException::class)
-        fun `fromUrls`(`urls`: List<kotlin.String>): RelayMap =
-            FfiConverterTypeRelayMap.lift(
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_constructor_relaymap_from_urls(FfiConverterSequenceString.lower(`urls`), _status)
-                },
-            )
-    }
+    override fun toString(): String {
+        return FfiConverterString.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_relaymap_uniffi_trait_display(
+        it,
+        _status)
 }
+    }
+    )
+    }
+
+    
+    companion object {
+        
+    /**
+     * Create an empty relay map.
+     */ fun `empty`(): RelayMap {
+            return FfiConverterTypeRelayMap.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_constructor_relaymap_empty(
+    
+        _status)
+}
+    )
+    }
+    
+
+        
+    /**
+     * Build a relay map from a list of relay URLs (each becomes a default
+     * [`RelayConfig`]).
+     */
+    @Throws(IrohException::class) fun `fromUrls`(`urls`: List<kotlin.String>): RelayMap {
+            return FfiConverterTypeRelayMap.lift(
+    uniffiRustCallWithError(IrohException) { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_constructor_relaymap_from_urls(
+    
+        FfiConverterSequenceString.lower(`urls`),_status)
+}
+    )
+    }
+    
+
+        
+    }
+    
+}
+
 
 /**
  * @suppress
  */
-public object FfiConverterTypeRelayMap : FfiConverter<RelayMap, Long> {
-    override fun lower(value: RelayMap): Long = value.uniffiCloneHandle()
+public object FfiConverterTypeRelayMap: FfiConverter<RelayMap, Long> {
+    override fun lower(value: RelayMap): Long {
+        return value.uniffiCloneHandle()
+    }
 
-    override fun lift(value: Long): RelayMap = RelayMap(UniffiWithHandle, value)
+    override fun lift(value: Long): RelayMap {
+        return RelayMap(UniffiWithHandle, value)
+    }
 
-    override fun read(buf: ByteBuffer): RelayMap = lift(buf.getLong())
+    override fun read(buf: ByteBuffer): RelayMap {
+        return lift(buf.getLong())
+    }
 
     override fun allocationSize(value: RelayMap) = 8UL
 
-    override fun write(
-        value: RelayMap,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: RelayMap, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
+
 
 // This template implements a class for working with a Rust struct via a handle
 // to the live Rust struct on the other side of the FFI.
@@ -11638,17 +11170,19 @@ public object FfiConverterTypeRelayMap : FfiConverter<RelayMap, Long> {
 // [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
 //
 
+
 /**
  * Configuration for which relay servers an endpoint uses.
  *
  * Mirrors `iroh::RelayMode`. Use one of the constructors below.
  */
 public interface RelayModeInterface {
+    
     /**
      * The relay map this mode resolves to.
      */
     fun `relayMap`(): RelayMap
-
+    
     companion object
 }
 
@@ -11657,14 +11191,13 @@ public interface RelayModeInterface {
  *
  * Mirrors `iroh::RelayMode`. Use one of the constructors below.
  */
-open class RelayMode :
-    Disposable,
-    AutoCloseable,
-    RelayModeInterface {
+open class RelayMode: Disposable, AutoCloseable, RelayModeInterface
+{
+
+    @Suppress("UNUSED_PARAMETER")
     /**
      * @suppress
      */
-    @Suppress("UNUSED_PARAMETER")
     constructor(withHandle: UniffiWithHandle, handle: Long) {
         this.handle = handle
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
@@ -11716,7 +11249,7 @@ open class RelayMode :
             if (c == Long.MAX_VALUE) {
                 throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
             }
-        } while (!this.callCounter.compareAndSet(c, c + 1L))
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
         // Now we can safely do the method call without the handle being freed concurrently.
         try {
             return block(this.uniffiCloneHandle())
@@ -11730,13 +11263,11 @@ open class RelayMode :
 
     // Use a static inner class instead of a closure so as not to accidentally
     // capture `this` as part of the cleanable's action.
-    private class UniffiCleanAction(
-        private val handle: Long,
-    ) : Runnable {
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
         override fun run() {
             if (handle == 0.toLong()) {
                 // Fake object created with `NoHandle`, don't try to free.
-                return
+                return;
             }
             uniffiRustCall { status ->
                 UniffiLib.uniffi_iroh_ffi_fn_free_relaymode(handle, status)
@@ -11749,114 +11280,148 @@ open class RelayMode :
      */
     fun uniffiCloneHandle(): Long {
         if (handle == 0.toLong()) {
-            throw InternalException("uniffiCloneHandle() called on NoHandle object")
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
-        return uniffiRustCall { status ->
+        return uniffiRustCall() { status ->
             UniffiLib.uniffi_iroh_ffi_fn_clone_relaymode(handle, status)
         }
     }
 
+    
     /**
      * The relay map this mode resolves to.
-     */
-    override fun `relayMap`(): RelayMap =
-        FfiConverterTypeRelayMap.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_relaymode_relay_map(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `relayMap`(): RelayMap {
+            return FfiConverterTypeRelayMap.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_relaymode_relay_map(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+
+    
 
     // The local Rust `Display`/`Debug` implementation.
-    override fun toString(): String =
-        FfiConverterString.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_relaymode_uniffi_trait_display(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
-
-    companion object {
-        /**
-         * Use a custom relay map.
-         */
-        fun `custom`(`map`: RelayMap): RelayMode =
-            FfiConverterTypeRelayMode.lift(
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_constructor_relaymode_custom(FfiConverterTypeRelayMap.lower(`map`), _status)
-                },
-            )
-
-        /**
-         * Build a custom relay mode directly from a list of relay URLs.
-         */
-        @Throws(IrohException::class)
-        fun `customFromUrls`(`urls`: List<kotlin.String>): RelayMode =
-            FfiConverterTypeRelayMode.lift(
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_constructor_relaymode_custom_from_urls(FfiConverterSequenceString.lower(`urls`), _status)
-                },
-            )
-
-        /**
-         * Use the n0 production relay map.
-         */
-        fun `defaultMode`(): RelayMode =
-            FfiConverterTypeRelayMode.lift(
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_constructor_relaymode_default_mode(_status)
-                },
-            )
-
-        /**
-         * No relays — listening and dialing via relay are both disabled.
-         */
-        fun `disabled`(): RelayMode =
-            FfiConverterTypeRelayMode.lift(
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_constructor_relaymode_disabled(_status)
-                },
-            )
-
-        /**
-         * Use the n0 staging relay map.
-         */
-        fun `staging`(): RelayMode =
-            FfiConverterTypeRelayMode.lift(
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_constructor_relaymode_staging(_status)
-                },
-            )
-    }
+    override fun toString(): String {
+        return FfiConverterString.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_relaymode_uniffi_trait_display(
+        it,
+        _status)
 }
+    }
+    )
+    }
+
+    
+    companion object {
+        
+    /**
+     * Use a custom relay map.
+     */ fun `custom`(`map`: RelayMap): RelayMode {
+            return FfiConverterTypeRelayMode.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_constructor_relaymode_custom(
+    
+        FfiConverterTypeRelayMap.lower(`map`),_status)
+}
+    )
+    }
+    
+
+        
+    /**
+     * Build a custom relay mode directly from a list of relay URLs.
+     */
+    @Throws(IrohException::class) fun `customFromUrls`(`urls`: List<kotlin.String>): RelayMode {
+            return FfiConverterTypeRelayMode.lift(
+    uniffiRustCallWithError(IrohException) { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_constructor_relaymode_custom_from_urls(
+    
+        FfiConverterSequenceString.lower(`urls`),_status)
+}
+    )
+    }
+    
+
+        
+    /**
+     * Use the n0 production relay map.
+     */ fun `defaultMode`(): RelayMode {
+            return FfiConverterTypeRelayMode.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_constructor_relaymode_default_mode(
+    
+        _status)
+}
+    )
+    }
+    
+
+        
+    /**
+     * No relays — listening and dialing via relay are both disabled.
+     */ fun `disabled`(): RelayMode {
+            return FfiConverterTypeRelayMode.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_constructor_relaymode_disabled(
+    
+        _status)
+}
+    )
+    }
+    
+
+        
+    /**
+     * Use the n0 staging relay map.
+     */ fun `staging`(): RelayMode {
+            return FfiConverterTypeRelayMode.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_constructor_relaymode_staging(
+    
+        _status)
+}
+    )
+    }
+    
+
+        
+    }
+    
+}
+
 
 /**
  * @suppress
  */
-public object FfiConverterTypeRelayMode : FfiConverter<RelayMode, Long> {
-    override fun lower(value: RelayMode): Long = value.uniffiCloneHandle()
+public object FfiConverterTypeRelayMode: FfiConverter<RelayMode, Long> {
+    override fun lower(value: RelayMode): Long {
+        return value.uniffiCloneHandle()
+    }
 
-    override fun lift(value: Long): RelayMode = RelayMode(UniffiWithHandle, value)
+    override fun lift(value: Long): RelayMode {
+        return RelayMode(UniffiWithHandle, value)
+    }
 
-    override fun read(buf: ByteBuffer): RelayMode = lift(buf.getLong())
+    override fun read(buf: ByteBuffer): RelayMode {
+        return lift(buf.getLong())
+    }
 
     override fun allocationSize(value: RelayMode) = 8UL
 
-    override fun write(
-        value: RelayMode,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: RelayMode, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
+
 
 // This template implements a class for working with a Rust struct via a handle
 // to the live Rust struct on the other side of the FFI.
@@ -11952,6 +11517,7 @@ public object FfiConverterTypeRelayMode : FfiConverter<RelayMode, Long> {
 // [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
 //
 
+
 /**
  * The secret key half of an endpoint identity.
  *
@@ -11959,21 +11525,22 @@ public object FfiConverterTypeRelayMode : FfiConverter<RelayMode, Long> {
  * produce its TLS certificate and to sign arbitrary messages.
  */
 public interface SecretKeyInterface {
+    
     /**
      * The public [`EndpointId`] derived from this secret key.
      */
     fun `public`(): EndpointId
-
+    
     /**
      * Sign a message, producing an ed25519 signature.
      */
     fun `sign`(`message`: kotlin.ByteArray): Signature
-
+    
     /**
      * Get the underlying 32 bytes of the secret key.
      */
     fun `toBytes`(): kotlin.ByteArray
-
+    
     companion object
 }
 
@@ -11983,14 +11550,13 @@ public interface SecretKeyInterface {
  * Mirrors `iroh::SecretKey`. Used internally by [`Endpoint`](crate::Endpoint) to
  * produce its TLS certificate and to sign arbitrary messages.
  */
-open class SecretKey :
-    Disposable,
-    AutoCloseable,
-    SecretKeyInterface {
+open class SecretKey: Disposable, AutoCloseable, SecretKeyInterface
+{
+
+    @Suppress("UNUSED_PARAMETER")
     /**
      * @suppress
      */
-    @Suppress("UNUSED_PARAMETER")
     constructor(withHandle: UniffiWithHandle, handle: Long) {
         this.handle = handle
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
@@ -12042,7 +11608,7 @@ open class SecretKey :
             if (c == Long.MAX_VALUE) {
                 throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
             }
-        } while (!this.callCounter.compareAndSet(c, c + 1L))
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
         // Now we can safely do the method call without the handle being freed concurrently.
         try {
             return block(this.uniffiCloneHandle())
@@ -12056,13 +11622,11 @@ open class SecretKey :
 
     // Use a static inner class instead of a closure so as not to accidentally
     // capture `this` as part of the cleanable's action.
-    private class UniffiCleanAction(
-        private val handle: Long,
-    ) : Runnable {
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
         override fun run() {
             if (handle == 0.toLong()) {
                 // Fake object created with `NoHandle`, don't try to free.
-                return
+                return;
             }
             uniffiRustCall { status ->
                 UniffiLib.uniffi_iroh_ffi_fn_free_secretkey(handle, status)
@@ -12075,102 +11639,126 @@ open class SecretKey :
      */
     fun uniffiCloneHandle(): Long {
         if (handle == 0.toLong()) {
-            throw InternalException("uniffiCloneHandle() called on NoHandle object")
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
-        return uniffiRustCall { status ->
+        return uniffiRustCall() { status ->
             UniffiLib.uniffi_iroh_ffi_fn_clone_secretkey(handle, status)
         }
     }
 
+    
     /**
      * The public [`EndpointId`] derived from this secret key.
-     */
-    override fun `public`(): EndpointId =
-        FfiConverterTypeEndpointId.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_secretkey_public(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `public`(): EndpointId {
+            return FfiConverterTypeEndpointId.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_secretkey_public(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * Sign a message, producing an ed25519 signature.
-     */
-    override fun `sign`(`message`: kotlin.ByteArray): Signature =
-        FfiConverterTypeSignature.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_secretkey_sign(
-                        it,
-                        FfiConverterByteArray.lower(`message`),
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `sign`(`message`: kotlin.ByteArray): Signature {
+            return FfiConverterTypeSignature.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_secretkey_sign(
+        it,
+        FfiConverterByteArray.lower(`message`),_status)
+}
+    }
+    )
+    }
+    
 
+    
     /**
      * Get the underlying 32 bytes of the secret key.
-     */
-    override fun `toBytes`(): kotlin.ByteArray =
-        FfiConverterByteArray.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_secretkey_to_bytes(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
-
-    companion object {
-        /**
-         * Construct a [`SecretKey`] from raw bytes.
-         */
-        @Throws(IrohException::class)
-        fun `fromBytes`(`bytes`: kotlin.ByteArray): SecretKey =
-            FfiConverterTypeSecretKey.lift(
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_constructor_secretkey_from_bytes(FfiConverterByteArray.lower(`bytes`), _status)
-                },
-            )
-
-        /**
-         * Generate a new random secret key.
-         */
-        fun `generate`(): SecretKey =
-            FfiConverterTypeSecretKey.lift(
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_constructor_secretkey_generate(_status)
-                },
-            )
-    }
+     */override fun `toBytes`(): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_secretkey_to_bytes(
+        it,
+        _status)
 }
+    }
+    )
+    }
+    
+
+    
+
+    
+
+
+    
+    companion object {
+        
+    /**
+     * Construct a [`SecretKey`] from raw bytes.
+     */
+    @Throws(IrohException::class) fun `fromBytes`(`bytes`: kotlin.ByteArray): SecretKey {
+            return FfiConverterTypeSecretKey.lift(
+    uniffiRustCallWithError(IrohException) { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_constructor_secretkey_from_bytes(
+    
+        FfiConverterByteArray.lower(`bytes`),_status)
+}
+    )
+    }
+    
+
+        
+    /**
+     * Generate a new random secret key.
+     */ fun `generate`(): SecretKey {
+            return FfiConverterTypeSecretKey.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_constructor_secretkey_generate(
+    
+        _status)
+}
+    )
+    }
+    
+
+        
+    }
+    
+}
+
 
 /**
  * @suppress
  */
-public object FfiConverterTypeSecretKey : FfiConverter<SecretKey, Long> {
-    override fun lower(value: SecretKey): Long = value.uniffiCloneHandle()
+public object FfiConverterTypeSecretKey: FfiConverter<SecretKey, Long> {
+    override fun lower(value: SecretKey): Long {
+        return value.uniffiCloneHandle()
+    }
 
-    override fun lift(value: Long): SecretKey = SecretKey(UniffiWithHandle, value)
+    override fun lift(value: Long): SecretKey {
+        return SecretKey(UniffiWithHandle, value)
+    }
 
-    override fun read(buf: ByteBuffer): SecretKey = lift(buf.getLong())
+    override fun read(buf: ByteBuffer): SecretKey {
+        return lift(buf.getLong())
+    }
 
     override fun allocationSize(value: SecretKey) = 8UL
 
-    override fun write(
-        value: SecretKey,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: SecretKey, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
+
 
 // This template implements a class for working with a Rust struct via a handle
 // to the live Rust struct on the other side of the FFI.
@@ -12266,52 +11854,53 @@ public object FfiConverterTypeSecretKey : FfiConverter<SecretKey, Long> {
 // [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
 //
 
+
 /**
  * The outgoing half of a QUIC stream.
  */
 public interface SendStreamInterface {
+    
     /**
      * Signal that no more data will be sent on this stream.
      */
     suspend fun `finish`()
-
+    
     suspend fun `id`(): kotlin.String
-
+    
     suspend fun `priority`(): kotlin.Int
-
+    
     /**
      * Abort the stream with the given error code.
      */
     suspend fun `reset`(`errorCode`: kotlin.ULong)
-
+    
     suspend fun `setPriority`(`p`: kotlin.Int)
-
+    
     suspend fun `stopped`(): kotlin.ULong?
-
+    
     /**
      * Write some bytes, returning the number actually written.
      */
     suspend fun `write`(`buf`: kotlin.ByteArray): kotlin.ULong
-
+    
     /**
      * Write all bytes, looping as needed.
      */
     suspend fun `writeAll`(`buf`: kotlin.ByteArray)
-
+    
     companion object
 }
 
 /**
  * The outgoing half of a QUIC stream.
  */
-open class SendStream :
-    Disposable,
-    AutoCloseable,
-    SendStreamInterface {
+open class SendStream: Disposable, AutoCloseable, SendStreamInterface
+{
+
+    @Suppress("UNUSED_PARAMETER")
     /**
      * @suppress
      */
-    @Suppress("UNUSED_PARAMETER")
     constructor(withHandle: UniffiWithHandle, handle: Long) {
         this.handle = handle
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
@@ -12363,7 +11952,7 @@ open class SendStream :
             if (c == Long.MAX_VALUE) {
                 throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
             }
-        } while (!this.callCounter.compareAndSet(c, c + 1L))
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
         // Now we can safely do the method call without the handle being freed concurrently.
         try {
             return block(this.uniffiCloneHandle())
@@ -12377,13 +11966,11 @@ open class SendStream :
 
     // Use a static inner class instead of a closure so as not to accidentally
     // capture `this` as part of the cleanable's action.
-    private class UniffiCleanAction(
-        private val handle: Long,
-    ) : Runnable {
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
         override fun run() {
             if (handle == 0.toLong()) {
                 // Fake object created with `NoHandle`, don't try to free.
-                return
+                return;
             }
             uniffiRustCall { status ->
                 UniffiLib.uniffi_iroh_ffi_fn_free_sendstream(handle, status)
@@ -12396,197 +11983,234 @@ open class SendStream :
      */
     fun uniffiCloneHandle(): Long {
         if (handle == 0.toLong()) {
-            throw InternalException("uniffiCloneHandle() called on NoHandle object")
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
-        return uniffiRustCall { status ->
+        return uniffiRustCall() { status ->
             UniffiLib.uniffi_iroh_ffi_fn_clone_sendstream(handle, status)
         }
     }
 
+    
     /**
      * Signal that no more data will be sent on this stream.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `finish`() =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_sendstream_finish(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
-            // lift function
-            { Unit },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `finish`() {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_sendstream_finish(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `id`(): kotlin.String =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_sendstream_id(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
-            // lift function
-            { FfiConverterString.lift(it) },
-            // Error FFI converter
-            UniffiNullRustCallStatusErrorHandler,
-        )
+    override suspend fun `id`() : kotlin.String {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_sendstream_id(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterString.lift(it) },
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
 
+    
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `priority`(): kotlin.Int =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_sendstream_priority(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_i32(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_i32(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_i32(future) },
-            // lift function
-            { FfiConverterInt.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `priority`() : kotlin.Int {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_sendstream_priority(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_i32(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_i32(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_i32(future) },
+        // lift function
+        { FfiConverterInt.lift(it) },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * Abort the stream with the given error code.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `reset`(`errorCode`: kotlin.ULong) =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_sendstream_reset(
-                    uniffiHandle,
-                    FfiConverterULong.lower(`errorCode`),
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
-            // lift function
-            { Unit },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `reset`(`errorCode`: kotlin.ULong) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_sendstream_reset(
+                uniffiHandle,
+                FfiConverterULong.lower(`errorCode`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `setPriority`(`p`: kotlin.Int) =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_sendstream_set_priority(
-                    uniffiHandle,
-                    FfiConverterInt.lower(`p`),
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
-            // lift function
-            { Unit },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `setPriority`(`p`: kotlin.Int) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_sendstream_set_priority(
+                uniffiHandle,
+                FfiConverterInt.lower(`p`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `stopped`(): kotlin.ULong? =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_sendstream_stopped(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
-            // lift function
-            { FfiConverterOptionalULong.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `stopped`() : kotlin.ULong? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_sendstream_stopped(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalULong.lift(it) },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * Write some bytes, returning the number actually written.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `write`(`buf`: kotlin.ByteArray): kotlin.ULong =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_sendstream_write(
-                    uniffiHandle,
-                    FfiConverterByteArray.lower(`buf`),
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
-            // lift function
-            { FfiConverterULong.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `write`(`buf`: kotlin.ByteArray) : kotlin.ULong {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_sendstream_write(
+                uniffiHandle,
+                FfiConverterByteArray.lower(`buf`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
+        // lift function
+        { FfiConverterULong.lift(it) },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * Write all bytes, looping as needed.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `writeAll`(`buf`: kotlin.ByteArray) =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_sendstream_write_all(
-                    uniffiHandle,
-                    FfiConverterByteArray.lower(`buf`),
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
-            // lift function
-            { Unit },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `writeAll`(`buf`: kotlin.ByteArray) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_sendstream_write_all(
+                uniffiHandle,
+                FfiConverterByteArray.lower(`buf`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
+
+    
+
+
+    
+    
     /**
      * @suppress
      */
     companion object
+    
 }
+
 
 /**
  * @suppress
  */
-public object FfiConverterTypeSendStream : FfiConverter<SendStream, Long> {
-    override fun lower(value: SendStream): Long = value.uniffiCloneHandle()
+public object FfiConverterTypeSendStream: FfiConverter<SendStream, Long> {
+    override fun lower(value: SendStream): Long {
+        return value.uniffiCloneHandle()
+    }
 
-    override fun lift(value: Long): SendStream = SendStream(UniffiWithHandle, value)
+    override fun lift(value: Long): SendStream {
+        return SendStream(UniffiWithHandle, value)
+    }
 
-    override fun read(buf: ByteBuffer): SendStream = lift(buf.getLong())
+    override fun read(buf: ByteBuffer): SendStream {
+        return lift(buf.getLong())
+    }
 
     override fun allocationSize(value: SendStream) = 8UL
 
-    override fun write(
-        value: SendStream,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: SendStream, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
+
 
 // This template implements a class for working with a Rust struct via a handle
 // to the live Rust struct on the other side of the FFI.
@@ -12682,6 +12306,7 @@ public object FfiConverterTypeSendStream : FfiConverter<SendStream, Long> {
 // [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
 //
 
+
 /**
  * Client for services.iroh.computer.
  *
@@ -12689,33 +12314,34 @@ public object FfiConverterTypeSendStream : FfiConverter<SendStream, Long> {
  * client is alive. Drop the client (or let it go out of scope) to stop.
  */
 public interface ServicesClientInterface {
+    
     /**
      * Read the current endpoint name from the local client.
      */
     suspend fun `name`(): kotlin.String?
-
+    
     /**
      * Ping the remote service to confirm connectivity.
      */
     suspend fun `ping`()
-
+    
     /**
      * Push the current metrics snapshot now. (Metrics are also pushed on the
      * interval configured at build time; this lets you force a flush.)
      */
     suspend fun `pushMetrics`()
-
+    
     /**
      * Set the endpoint name cloud-side. Must be 2–128 UTF-8 bytes.
      */
     suspend fun `setName`(`name`: kotlin.String)
-
+    
     /**
      * Run a local network-diagnostics report. When `send` is true the report
      * is also submitted to iroh-services for storage.
      */
     suspend fun `submitNetworkDiagnostics`(`send`: kotlin.Boolean): DiagnosticsSummary
-
+    
     companion object
 }
 
@@ -12725,14 +12351,13 @@ public interface ServicesClientInterface {
  * Construct with [`Self::create`]; metrics are pushed automatically while the
  * client is alive. Drop the client (or let it go out of scope) to stop.
  */
-open class ServicesClient :
-    Disposable,
-    AutoCloseable,
-    ServicesClientInterface {
+open class ServicesClient: Disposable, AutoCloseable, ServicesClientInterface
+{
+
+    @Suppress("UNUSED_PARAMETER")
     /**
      * @suppress
      */
-    @Suppress("UNUSED_PARAMETER")
     constructor(withHandle: UniffiWithHandle, handle: Long) {
         this.handle = handle
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
@@ -12784,7 +12409,7 @@ open class ServicesClient :
             if (c == Long.MAX_VALUE) {
                 throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
             }
-        } while (!this.callCounter.compareAndSet(c, c + 1L))
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
         // Now we can safely do the method call without the handle being freed concurrently.
         try {
             return block(this.uniffiCloneHandle())
@@ -12798,13 +12423,11 @@ open class ServicesClient :
 
     // Use a static inner class instead of a closure so as not to accidentally
     // capture `this` as part of the cleanable's action.
-    private class UniffiCleanAction(
-        private val handle: Long,
-    ) : Runnable {
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
         override fun run() {
             if (handle == 0.toLong()) {
                 // Fake object created with `NoHandle`, don't try to free.
-                return
+                return;
             }
             uniffiRustCall { status ->
                 UniffiLib.uniffi_iroh_ffi_fn_free_servicesclient(handle, status)
@@ -12817,167 +12440,193 @@ open class ServicesClient :
      */
     fun uniffiCloneHandle(): Long {
         if (handle == 0.toLong()) {
-            throw InternalException("uniffiCloneHandle() called on NoHandle object")
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
-        return uniffiRustCall { status ->
+        return uniffiRustCall() { status ->
             UniffiLib.uniffi_iroh_ffi_fn_clone_servicesclient(handle, status)
         }
     }
 
+    
     /**
      * Read the current endpoint name from the local client.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `name`(): kotlin.String? =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_servicesclient_name(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
-            // lift function
-            { FfiConverterOptionalString.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `name`() : kotlin.String? {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_servicesclient_name(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterOptionalString.lift(it) },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * Ping the remote service to confirm connectivity.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `ping`() =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_servicesclient_ping(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
-            // lift function
-            { Unit },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `ping`() {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_servicesclient_ping(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * Push the current metrics snapshot now. (Metrics are also pushed on the
      * interval configured at build time; this lets you force a flush.)
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `pushMetrics`() =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_servicesclient_push_metrics(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
-            // lift function
-            { Unit },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `pushMetrics`() {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_servicesclient_push_metrics(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * Set the endpoint name cloud-side. Must be 2–128 UTF-8 bytes.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `setName`(`name`: kotlin.String) =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_servicesclient_set_name(
-                    uniffiHandle,
-                    FfiConverterString.lower(`name`),
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
-            // lift function
-            { Unit },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
+    override suspend fun `setName`(`name`: kotlin.String) {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_servicesclient_set_name(
+                uniffiHandle,
+                FfiConverterString.lower(`name`),
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
 
+    
     /**
      * Run a local network-diagnostics report. When `send` is true the report
      * is also submitted to iroh-services for storage.
      */
     @Throws(IrohException::class)
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `submitNetworkDiagnostics`(`send`: kotlin.Boolean): DiagnosticsSummary =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_servicesclient_submit_network_diagnostics(
-                    uniffiHandle,
-                    FfiConverterBoolean.lower(`send`),
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
-            // lift function
-            { FfiConverterTypeDiagnosticsSummary.lift(it) },
-            // Error FFI converter
-            IrohException.ErrorHandler,
-        )
-
-    companion object {
-        /**
-         * Build a new client bound to the given endpoint.
-         */
-        @Throws(IrohException::class)
-        @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-        suspend fun `create`(
-            `endpoint`: Endpoint,
-            `options`: ServicesOptions,
-        ): ServicesClient =
-            uniffiRustCallAsync(
-                UniffiLib.uniffi_iroh_ffi_fn_constructor_servicesclient_create(
-                    FfiConverterTypeEndpoint.lower(`endpoint`),
-                    FfiConverterTypeServicesOptions.lower(`options`),
-                ),
-                { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
-                { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
-                { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
-                // lift function
-                { FfiConverterTypeServicesClient.lift(it) },
-                // Error FFI converter
-                IrohException.ErrorHandler,
+    override suspend fun `submitNetworkDiagnostics`(`send`: kotlin.Boolean) : DiagnosticsSummary {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_servicesclient_submit_network_diagnostics(
+                uniffiHandle,
+                FfiConverterBoolean.lower(`send`),
             )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_rust_buffer(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_rust_buffer(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_rust_buffer(future) },
+        // lift function
+        { FfiConverterTypeDiagnosticsSummary.lift(it) },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
     }
+
+    
+
+    
+
+
+    
+    companion object {
+        
+    /**
+     * Build a new client bound to the given endpoint.
+     */
+    @Throws(IrohException::class)
+    @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
+     suspend fun `create`(`endpoint`: Endpoint, `options`: ServicesOptions) : ServicesClient {
+        return uniffiRustCallAsync(
+        UniffiLib.uniffi_iroh_ffi_fn_constructor_servicesclient_create(FfiConverterTypeEndpoint.lower(`endpoint`),FfiConverterTypeServicesOptions.lower(`options`),),
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_u64(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_u64(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_u64(future) },
+        // lift function
+        { FfiConverterTypeServicesClient.lift(it) },
+        // Error FFI converter
+        IrohException.ErrorHandler,
+    )
+    }
+
+        
+    }
+    
 }
+
 
 /**
  * @suppress
  */
-public object FfiConverterTypeServicesClient : FfiConverter<ServicesClient, Long> {
-    override fun lower(value: ServicesClient): Long = value.uniffiCloneHandle()
+public object FfiConverterTypeServicesClient: FfiConverter<ServicesClient, Long> {
+    override fun lower(value: ServicesClient): Long {
+        return value.uniffiCloneHandle()
+    }
 
-    override fun lift(value: Long): ServicesClient = ServicesClient(UniffiWithHandle, value)
+    override fun lift(value: Long): ServicesClient {
+        return ServicesClient(UniffiWithHandle, value)
+    }
 
-    override fun read(buf: ByteBuffer): ServicesClient = lift(buf.getLong())
+    override fun read(buf: ByteBuffer): ServicesClient {
+        return lift(buf.getLong())
+    }
 
     override fun allocationSize(value: ServicesClient) = 8UL
 
-    override fun write(
-        value: ServicesClient,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: ServicesClient, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
+
 
 // This template implements a class for working with a Rust struct via a handle
 // to the live Rust struct on the other side of the FFI.
@@ -13073,29 +12722,30 @@ public object FfiConverterTypeServicesClient : FfiConverter<ServicesClient, Long
 // [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
 //
 
+
 /**
  * An ed25519 signature over a message.
  */
 public interface SignatureInterface {
+    
     /**
      * Get the underlying 64 bytes.
      */
     fun `toBytes`(): kotlin.ByteArray
-
+    
     companion object
 }
 
 /**
  * An ed25519 signature over a message.
  */
-open class Signature :
-    Disposable,
-    AutoCloseable,
-    SignatureInterface {
+open class Signature: Disposable, AutoCloseable, SignatureInterface
+{
+
+    @Suppress("UNUSED_PARAMETER")
     /**
      * @suppress
      */
-    @Suppress("UNUSED_PARAMETER")
     constructor(withHandle: UniffiWithHandle, handle: Long) {
         this.handle = handle
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
@@ -13147,7 +12797,7 @@ open class Signature :
             if (c == Long.MAX_VALUE) {
                 throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
             }
-        } while (!this.callCounter.compareAndSet(c, c + 1L))
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
         // Now we can safely do the method call without the handle being freed concurrently.
         try {
             return block(this.uniffiCloneHandle())
@@ -13161,13 +12811,11 @@ open class Signature :
 
     // Use a static inner class instead of a closure so as not to accidentally
     // capture `this` as part of the cleanable's action.
-    private class UniffiCleanAction(
-        private val handle: Long,
-    ) : Runnable {
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
         override fun run() {
             if (handle == 0.toLong()) {
                 // Fake object created with `NoHandle`, don't try to free.
-                return
+                return;
             }
             uniffiRustCall { status ->
                 UniffiLib.uniffi_iroh_ffi_fn_free_signature(handle, status)
@@ -13180,104 +12828,117 @@ open class Signature :
      */
     fun uniffiCloneHandle(): Long {
         if (handle == 0.toLong()) {
-            throw InternalException("uniffiCloneHandle() called on NoHandle object")
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
-        return uniffiRustCall { status ->
+        return uniffiRustCall() { status ->
             UniffiLib.uniffi_iroh_ffi_fn_clone_signature(handle, status)
         }
     }
 
+    
     /**
      * Get the underlying 64 bytes.
-     */
-    override fun `toBytes`(): kotlin.ByteArray =
-        FfiConverterByteArray.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_signature_to_bytes(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
+     */override fun `toBytes`(): kotlin.ByteArray {
+            return FfiConverterByteArray.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_signature_to_bytes(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+
+    
 
     // The local Rust `Display`/`Debug` implementation.
-    override fun toString(): String =
-        FfiConverterString.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_signature_uniffi_trait_display(
-                        it,
-                        _status,
-                    )
-                }
-            },
-        )
-
+    override fun toString(): String {
+        return FfiConverterString.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_signature_uniffi_trait_display(
+        it,
+        _status)
+}
+    }
+    )
+    }
     // The local Rust `Eq` implementation - only `eq` is used.
     override fun equals(other: Any?): Boolean {
         if (other !is Signature) return false
         return FfiConverterBoolean.lift(
-            callWithHandle {
-                uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_method_signature_uniffi_trait_eq_eq(
-                        it,
-                        FfiConverterTypeSignature.lower(`other`),
-                        _status,
-                    )
-                }
-            },
-        )
-    }
-
-    // The local Rust `Hash` implementation
-    override fun hashCode(): Int =
-        FfiConverterULong
-            .lift(
-                callWithHandle {
-                    uniffiRustCall { _status ->
-                        UniffiLib.uniffi_iroh_ffi_fn_method_signature_uniffi_trait_hash(
-                            it,
-                            _status,
-                        )
-                    }
-                },
-            ).toInt()
-
-    companion object {
-        /**
-         * Construct a [`Signature`] from raw bytes (64 bytes).
-         */
-        @Throws(IrohException::class)
-        fun `fromBytes`(`bytes`: kotlin.ByteArray): Signature =
-            FfiConverterTypeSignature.lift(
-                uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_constructor_signature_from_bytes(FfiConverterByteArray.lower(`bytes`), _status)
-                },
-            )
-    }
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_signature_uniffi_trait_eq_eq(
+        it,
+        FfiConverterTypeSignature.lower(`other`),_status)
 }
+    }
+    )
+    }
+    // The local Rust `Hash` implementation
+    override fun hashCode(): Int {
+        return FfiConverterULong.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_method_signature_uniffi_trait_hash(
+        it,
+        _status)
+}
+    }
+    ).toInt()
+    }
+
+    
+    companion object {
+        
+    /**
+     * Construct a [`Signature`] from raw bytes (64 bytes).
+     */
+    @Throws(IrohException::class) fun `fromBytes`(`bytes`: kotlin.ByteArray): Signature {
+            return FfiConverterTypeSignature.lift(
+    uniffiRustCallWithError(IrohException) { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_constructor_signature_from_bytes(
+    
+        FfiConverterByteArray.lower(`bytes`),_status)
+}
+    )
+    }
+    
+
+        
+    }
+    
+}
+
 
 /**
  * @suppress
  */
-public object FfiConverterTypeSignature : FfiConverter<Signature, Long> {
-    override fun lower(value: Signature): Long = value.uniffiCloneHandle()
+public object FfiConverterTypeSignature: FfiConverter<Signature, Long> {
+    override fun lower(value: Signature): Long {
+        return value.uniffiCloneHandle()
+    }
 
-    override fun lift(value: Long): Signature = Signature(UniffiWithHandle, value)
+    override fun lift(value: Long): Signature {
+        return Signature(UniffiWithHandle, value)
+    }
 
-    override fun read(buf: ByteBuffer): Signature = lift(buf.getLong())
+    override fun read(buf: ByteBuffer): Signature {
+        return lift(buf.getLong())
+    }
 
     override fun allocationSize(value: Signature) = 8UL
 
-    override fun write(
-        value: Signature,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: Signature, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
+
 
 // This template implements a class for working with a Rust struct via a handle
 // to the live Rust struct on the other side of the FFI.
@@ -13373,16 +13034,18 @@ public object FfiConverterTypeSignature : FfiConverter<Signature, Long> {
 // [1] https://stackoverflow.com/questions/24376768/can-java-finalize-an-object-when-it-is-still-in-scope/24380219
 //
 
+
 /**
  * Handle to a running watcher task. Drop it (or call [`Self::stop`]) to
  * unregister the callback.
  */
 public interface WatchHandleInterface {
+    
     /**
      * Stop the watcher, aborting the background task.
      */
     suspend fun `stop`()
-
+    
     companion object
 }
 
@@ -13390,14 +13053,13 @@ public interface WatchHandleInterface {
  * Handle to a running watcher task. Drop it (or call [`Self::stop`]) to
  * unregister the callback.
  */
-open class WatchHandle :
-    Disposable,
-    AutoCloseable,
-    WatchHandleInterface {
+open class WatchHandle: Disposable, AutoCloseable, WatchHandleInterface
+{
+
+    @Suppress("UNUSED_PARAMETER")
     /**
      * @suppress
      */
-    @Suppress("UNUSED_PARAMETER")
     constructor(withHandle: UniffiWithHandle, handle: Long) {
         this.handle = handle
         this.cleanable = UniffiLib.CLEANER.register(this, UniffiCleanAction(handle))
@@ -13449,7 +13111,7 @@ open class WatchHandle :
             if (c == Long.MAX_VALUE) {
                 throw IllegalStateException("${this.javaClass.simpleName} call counter would overflow")
             }
-        } while (!this.callCounter.compareAndSet(c, c + 1L))
+        } while (! this.callCounter.compareAndSet(c, c + 1L))
         // Now we can safely do the method call without the handle being freed concurrently.
         try {
             return block(this.uniffiCloneHandle())
@@ -13463,13 +13125,11 @@ open class WatchHandle :
 
     // Use a static inner class instead of a closure so as not to accidentally
     // capture `this` as part of the cleanable's action.
-    private class UniffiCleanAction(
-        private val handle: Long,
-    ) : Runnable {
+    private class UniffiCleanAction(private val handle: Long) : Runnable {
         override fun run() {
             if (handle == 0.toLong()) {
                 // Fake object created with `NoHandle`, don't try to free.
-                return
+                return;
             }
             uniffiRustCall { status ->
                 UniffiLib.uniffi_iroh_ffi_fn_free_watchhandle(handle, status)
@@ -13482,99 +13142,128 @@ open class WatchHandle :
      */
     fun uniffiCloneHandle(): Long {
         if (handle == 0.toLong()) {
-            throw InternalException("uniffiCloneHandle() called on NoHandle object")
+            throw InternalException("uniffiCloneHandle() called on NoHandle object");
         }
-        return uniffiRustCall { status ->
+        return uniffiRustCall() { status ->
             UniffiLib.uniffi_iroh_ffi_fn_clone_watchhandle(handle, status)
         }
     }
 
+    
     /**
      * Stop the watcher, aborting the background task.
      */
     @Suppress("ASSIGNED_BUT_NEVER_ACCESSED_VARIABLE")
-    override suspend fun `stop`() =
-        uniffiRustCallAsync(
-            callWithHandle { uniffiHandle ->
-                UniffiLib.uniffi_iroh_ffi_fn_method_watchhandle_stop(
-                    uniffiHandle,
-                )
-            },
-            { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
-            { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
-            { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
-            // lift function
-            { Unit },
-            // Error FFI converter
-            UniffiNullRustCallStatusErrorHandler,
-        )
+    override suspend fun `stop`() {
+        return uniffiRustCallAsync(
+        callWithHandle { uniffiHandle ->
+            UniffiLib.uniffi_iroh_ffi_fn_method_watchhandle_stop(
+                uniffiHandle,
+                
+            )
+        },
+        { future, callback, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_poll_void(future, callback, continuation) },
+        { future, continuation -> UniffiLib.ffi_iroh_ffi_rust_future_complete_void(future, continuation) },
+        { future -> UniffiLib.ffi_iroh_ffi_rust_future_free_void(future) },
+        // lift function
+        { Unit },
+        
+        // Error FFI converter
+        UniffiNullRustCallStatusErrorHandler,
+    )
+    }
 
+    
+
+    
+
+
+    
+    
     /**
      * @suppress
      */
     companion object
+    
 }
+
 
 /**
  * @suppress
  */
-public object FfiConverterTypeWatchHandle : FfiConverter<WatchHandle, Long> {
-    override fun lower(value: WatchHandle): Long = value.uniffiCloneHandle()
+public object FfiConverterTypeWatchHandle: FfiConverter<WatchHandle, Long> {
+    override fun lower(value: WatchHandle): Long {
+        return value.uniffiCloneHandle()
+    }
 
-    override fun lift(value: Long): WatchHandle = WatchHandle(UniffiWithHandle, value)
+    override fun lift(value: Long): WatchHandle {
+        return WatchHandle(UniffiWithHandle, value)
+    }
 
-    override fun read(buf: ByteBuffer): WatchHandle = lift(buf.getLong())
+    override fun read(buf: ByteBuffer): WatchHandle {
+        return lift(buf.getLong())
+    }
 
     override fun allocationSize(value: WatchHandle) = 8UL
 
-    override fun write(
-        value: WatchHandle,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: WatchHandle, buf: ByteBuffer) {
         buf.putLong(lower(value))
     }
 }
+
+
 
 /**
  * Flat snapshot of the headline numbers from `noq::ConnectionStats`.
  *
  * Counters are `i64` (not `u64`) so Kotlin sees `Long`, not `ULong`.
  */
-data class ConnectionStats(
+data class ConnectionStats (
     /**
      * Total UDP datagrams transmitted.
      */
-    var `udpTxDatagrams`: kotlin.Long,
+    var `udpTxDatagrams`: kotlin.Long
+    , 
     /**
      * Total UDP bytes transmitted.
      */
-    var `udpTxBytes`: kotlin.Long,
+    var `udpTxBytes`: kotlin.Long
+    , 
     /**
      * Total UDP datagrams received.
      */
-    var `udpRxDatagrams`: kotlin.Long,
+    var `udpRxDatagrams`: kotlin.Long
+    , 
     /**
      * Total UDP bytes received.
      */
-    var `udpRxBytes`: kotlin.Long,
+    var `udpRxBytes`: kotlin.Long
+    , 
     /**
      * Total packets considered lost.
      */
-    var `lostPackets`: kotlin.Long,
+    var `lostPackets`: kotlin.Long
+    , 
     /**
      * Total bytes considered lost.
      */
-    var `lostBytes`: kotlin.Long,
-) {
+    var `lostBytes`: kotlin.Long
+    
+){
+    
+
+    
+
+    
     companion object
 }
 
 /**
  * @suppress
  */
-public object FfiConverterTypeConnectionStats : FfiConverterRustBuffer<ConnectionStats> {
-    override fun read(buf: ByteBuffer): ConnectionStats =
-        ConnectionStats(
+public object FfiConverterTypeConnectionStats: FfiConverterRustBuffer<ConnectionStats> {
+    override fun read(buf: ByteBuffer): ConnectionStats {
+        return ConnectionStats(
             FfiConverterLong.read(buf),
             FfiConverterLong.read(buf),
             FfiConverterLong.read(buf),
@@ -13582,70 +13271,75 @@ public object FfiConverterTypeConnectionStats : FfiConverterRustBuffer<Connectio
             FfiConverterLong.read(buf),
             FfiConverterLong.read(buf),
         )
+    }
 
-    override fun allocationSize(value: ConnectionStats) =
-        (
+    override fun allocationSize(value: ConnectionStats) = (
             FfiConverterLong.allocationSize(value.`udpTxDatagrams`) +
-                FfiConverterLong.allocationSize(value.`udpTxBytes`) +
-                FfiConverterLong.allocationSize(value.`udpRxDatagrams`) +
-                FfiConverterLong.allocationSize(value.`udpRxBytes`) +
-                FfiConverterLong.allocationSize(value.`lostPackets`) +
-                FfiConverterLong.allocationSize(value.`lostBytes`)
-        )
+            FfiConverterLong.allocationSize(value.`udpTxBytes`) +
+            FfiConverterLong.allocationSize(value.`udpRxDatagrams`) +
+            FfiConverterLong.allocationSize(value.`udpRxBytes`) +
+            FfiConverterLong.allocationSize(value.`lostPackets`) +
+            FfiConverterLong.allocationSize(value.`lostBytes`)
+    )
 
-    override fun write(
-        value: ConnectionStats,
-        buf: ByteBuffer,
-    ) {
-        FfiConverterLong.write(value.`udpTxDatagrams`, buf)
-        FfiConverterLong.write(value.`udpTxBytes`, buf)
-        FfiConverterLong.write(value.`udpRxDatagrams`, buf)
-        FfiConverterLong.write(value.`udpRxBytes`, buf)
-        FfiConverterLong.write(value.`lostPackets`, buf)
-        FfiConverterLong.write(value.`lostBytes`, buf)
+    override fun write(value: ConnectionStats, buf: ByteBuffer) {
+            FfiConverterLong.write(value.`udpTxDatagrams`, buf)
+            FfiConverterLong.write(value.`udpTxBytes`, buf)
+            FfiConverterLong.write(value.`udpRxDatagrams`, buf)
+            FfiConverterLong.write(value.`udpRxBytes`, buf)
+            FfiConverterLong.write(value.`lostPackets`, buf)
+            FfiConverterLong.write(value.`lostBytes`, buf)
     }
 }
+
+
 
 /**
  * A snapshot value for a single endpoint metric.
  */
-data class CounterStats(
+data class CounterStats (
     /**
      * The counter / gauge value.
      */
-    var `value`: kotlin.UInt,
+    var `value`: kotlin.UInt
+    , 
     /**
      * The metric description.
      */
-    var `description`: kotlin.String,
-) {
+    var `description`: kotlin.String
+    
+){
+    
+
+    
+
+    
     companion object
 }
 
 /**
  * @suppress
  */
-public object FfiConverterTypeCounterStats : FfiConverterRustBuffer<CounterStats> {
-    override fun read(buf: ByteBuffer): CounterStats =
-        CounterStats(
+public object FfiConverterTypeCounterStats: FfiConverterRustBuffer<CounterStats> {
+    override fun read(buf: ByteBuffer): CounterStats {
+        return CounterStats(
             FfiConverterUInt.read(buf),
             FfiConverterString.read(buf),
         )
+    }
 
-    override fun allocationSize(value: CounterStats) =
-        (
+    override fun allocationSize(value: CounterStats) = (
             FfiConverterUInt.allocationSize(value.`value`) +
-                FfiConverterString.allocationSize(value.`description`)
-        )
+            FfiConverterString.allocationSize(value.`description`)
+    )
 
-    override fun write(
-        value: CounterStats,
-        buf: ByteBuffer,
-    ) {
-        FfiConverterUInt.write(value.`value`, buf)
-        FfiConverterString.write(value.`description`, buf)
+    override fun write(value: CounterStats, buf: ByteBuffer) {
+            FfiConverterUInt.write(value.`value`, buf)
+            FfiConverterString.write(value.`description`, buf)
     }
 }
+
+
 
 /**
  * Flattened summary of an `iroh_services::net_diagnostics::DiagnosticsReport`.
@@ -13654,49 +13348,62 @@ public object FfiConverterTypeCounterStats : FfiConverterRustBuffer<CounterStats
  * deep, non-uniffi-friendly shapes); use the iroh-services dashboard to read
  * the full report after `submit_network_diagnostics(send=true)`.
  */
-data class DiagnosticsSummary(
+data class DiagnosticsSummary (
     /**
      * Endpoint id of the local endpoint.
      */
-    var `endpointId`: kotlin.String,
+    var `endpointId`: kotlin.String
+    , 
     /**
      * Direct addresses (ip:port) that the endpoint reports.
      */
-    var `directAddrs`: List<kotlin.String>,
+    var `directAddrs`: List<kotlin.String>
+    , 
     /**
      * iroh crate version this report was produced with.
      */
-    var `irohVersion`: kotlin.String,
+    var `irohVersion`: kotlin.String
+    , 
     /**
      * iroh-services crate version this report was produced with.
      */
-    var `irohServicesVersion`: kotlin.String,
+    var `irohServicesVersion`: kotlin.String
+    , 
     /**
      * True if the local net-report probe returned a result.
      */
-    var `hasNetReport`: kotlin.Boolean,
+    var `hasNetReport`: kotlin.Boolean
+    , 
     /**
      * UPnP availability, if a portmap probe was run.
      */
-    var `upnp`: kotlin.Boolean?,
+    var `upnp`: kotlin.Boolean?
+    , 
     /**
      * PCP availability, if a portmap probe was run.
      */
-    var `pcp`: kotlin.Boolean?,
+    var `pcp`: kotlin.Boolean?
+    , 
     /**
      * NAT-PMP availability, if a portmap probe was run.
      */
-    var `natPmp`: kotlin.Boolean?,
-) {
+    var `natPmp`: kotlin.Boolean?
+    
+){
+    
+
+    
+
+    
     companion object
 }
 
 /**
  * @suppress
  */
-public object FfiConverterTypeDiagnosticsSummary : FfiConverterRustBuffer<DiagnosticsSummary> {
-    override fun read(buf: ByteBuffer): DiagnosticsSummary =
-        DiagnosticsSummary(
+public object FfiConverterTypeDiagnosticsSummary: FfiConverterRustBuffer<DiagnosticsSummary> {
+    override fun read(buf: ByteBuffer): DiagnosticsSummary {
+        return DiagnosticsSummary(
             FfiConverterString.read(buf),
             FfiConverterSequenceString.read(buf),
             FfiConverterString.read(buf),
@@ -13706,91 +13413,102 @@ public object FfiConverterTypeDiagnosticsSummary : FfiConverterRustBuffer<Diagno
             FfiConverterOptionalBoolean.read(buf),
             FfiConverterOptionalBoolean.read(buf),
         )
+    }
 
-    override fun allocationSize(value: DiagnosticsSummary) =
-        (
+    override fun allocationSize(value: DiagnosticsSummary) = (
             FfiConverterString.allocationSize(value.`endpointId`) +
-                FfiConverterSequenceString.allocationSize(value.`directAddrs`) +
-                FfiConverterString.allocationSize(value.`irohVersion`) +
-                FfiConverterString.allocationSize(value.`irohServicesVersion`) +
-                FfiConverterBoolean.allocationSize(value.`hasNetReport`) +
-                FfiConverterOptionalBoolean.allocationSize(value.`upnp`) +
-                FfiConverterOptionalBoolean.allocationSize(value.`pcp`) +
-                FfiConverterOptionalBoolean.allocationSize(value.`natPmp`)
-        )
+            FfiConverterSequenceString.allocationSize(value.`directAddrs`) +
+            FfiConverterString.allocationSize(value.`irohVersion`) +
+            FfiConverterString.allocationSize(value.`irohServicesVersion`) +
+            FfiConverterBoolean.allocationSize(value.`hasNetReport`) +
+            FfiConverterOptionalBoolean.allocationSize(value.`upnp`) +
+            FfiConverterOptionalBoolean.allocationSize(value.`pcp`) +
+            FfiConverterOptionalBoolean.allocationSize(value.`natPmp`)
+    )
 
-    override fun write(
-        value: DiagnosticsSummary,
-        buf: ByteBuffer,
-    ) {
-        FfiConverterString.write(value.`endpointId`, buf)
-        FfiConverterSequenceString.write(value.`directAddrs`, buf)
-        FfiConverterString.write(value.`irohVersion`, buf)
-        FfiConverterString.write(value.`irohServicesVersion`, buf)
-        FfiConverterBoolean.write(value.`hasNetReport`, buf)
-        FfiConverterOptionalBoolean.write(value.`upnp`, buf)
-        FfiConverterOptionalBoolean.write(value.`pcp`, buf)
-        FfiConverterOptionalBoolean.write(value.`natPmp`, buf)
+    override fun write(value: DiagnosticsSummary, buf: ByteBuffer) {
+            FfiConverterString.write(value.`endpointId`, buf)
+            FfiConverterSequenceString.write(value.`directAddrs`, buf)
+            FfiConverterString.write(value.`irohVersion`, buf)
+            FfiConverterString.write(value.`irohServicesVersion`, buf)
+            FfiConverterBoolean.write(value.`hasNetReport`, buf)
+            FfiConverterOptionalBoolean.write(value.`upnp`, buf)
+            FfiConverterOptionalBoolean.write(value.`pcp`, buf)
+            FfiConverterOptionalBoolean.write(value.`natPmp`, buf)
     }
 }
+
+
 
 /**
  * Options passed to [`Endpoint::bind`].
  */
-data class EndpointOptions(
+data class EndpointOptions (
     /**
      * Preset that configures the endpoint builder. Defaults to [`preset_n0`].
      * Implement the [`Preset`] trait in your language for full control.
      */
-    var `preset`: Preset? = null,
+    var `preset`: Preset? = null 
+    , 
     /**
      * Override the address the endpoint binds to. Accepts any standard
      * `host:port` form (IPv4 or IPv6).
      */
-    var `bindAddr`: kotlin.String? = null,
+    var `bindAddr`: kotlin.String? = null 
+    , 
     /**
      * Provide a specific secret key, identifying this endpoint. Must be 32 bytes long.
      */
-    var `secretKey`: kotlin.ByteArray? = null,
+    var `secretKey`: kotlin.ByteArray? = null 
+    , 
     /**
      * ALPN protocols advertised on the underlying TLS handshake. Independent of
      * the per-protocol handlers in `protocols`; useful for client-only setups
      * or for declaring extra ALPNs.
      */
-    var `alpns`: List<kotlin.ByteArray>? = null,
+    var `alpns`: List<kotlin.ByteArray>? = null 
+    , 
     /**
      * Override which relays the endpoint uses. Defaults to whatever the
      * chosen [`Preset`] configures.
      */
-    var `relayMode`: RelayMode? = null,
+    var `relayMode`: RelayMode? = null 
+    , 
     /**
      * Custom protocols to accept on this endpoint, keyed by ALPN. If provided,
      * an internal router is spawned to dispatch incoming connections to the
      * supplied handlers.
      */
-    var `protocols`: Map<kotlin.ByteArray, ProtocolCreator>? = null,
-) : Disposable {
+    var `protocols`: Map<kotlin.ByteArray, ProtocolCreator>? = null 
+    
+): Disposable{
+    
+
+    
+
+    
     @Suppress("UNNECESSARY_SAFE_CALL") // codegen is much simpler if we unconditionally emit safe calls here
     override fun destroy() {
-        Disposable.destroy(
-            this.`preset`,
-            this.`bindAddr`,
-            this.`secretKey`,
-            this.`alpns`,
-            this.`relayMode`,
-            this.`protocols`,
-        )
+        
+    Disposable.destroy(
+        this.`preset`,
+        this.`bindAddr`,
+        this.`secretKey`,
+        this.`alpns`,
+        this.`relayMode`,
+        this.`protocols`
+    )
     }
-
+    
     companion object
 }
 
 /**
  * @suppress
  */
-public object FfiConverterTypeEndpointOptions : FfiConverterRustBuffer<EndpointOptions> {
-    override fun read(buf: ByteBuffer): EndpointOptions =
-        EndpointOptions(
+public object FfiConverterTypeEndpointOptions: FfiConverterRustBuffer<EndpointOptions> {
+    override fun read(buf: ByteBuffer): EndpointOptions {
+        return EndpointOptions(
             FfiConverterOptionalTypePreset.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalByteArray.read(buf),
@@ -13798,74 +13516,85 @@ public object FfiConverterTypeEndpointOptions : FfiConverterRustBuffer<EndpointO
             FfiConverterOptionalTypeRelayMode.read(buf),
             FfiConverterOptionalMapByteArrayTypeProtocolCreator.read(buf),
         )
+    }
 
-    override fun allocationSize(value: EndpointOptions) =
-        (
+    override fun allocationSize(value: EndpointOptions) = (
             FfiConverterOptionalTypePreset.allocationSize(value.`preset`) +
-                FfiConverterOptionalString.allocationSize(value.`bindAddr`) +
-                FfiConverterOptionalByteArray.allocationSize(value.`secretKey`) +
-                FfiConverterOptionalSequenceByteArray.allocationSize(value.`alpns`) +
-                FfiConverterOptionalTypeRelayMode.allocationSize(value.`relayMode`) +
-                FfiConverterOptionalMapByteArrayTypeProtocolCreator.allocationSize(value.`protocols`)
-        )
+            FfiConverterOptionalString.allocationSize(value.`bindAddr`) +
+            FfiConverterOptionalByteArray.allocationSize(value.`secretKey`) +
+            FfiConverterOptionalSequenceByteArray.allocationSize(value.`alpns`) +
+            FfiConverterOptionalTypeRelayMode.allocationSize(value.`relayMode`) +
+            FfiConverterOptionalMapByteArrayTypeProtocolCreator.allocationSize(value.`protocols`)
+    )
 
-    override fun write(
-        value: EndpointOptions,
-        buf: ByteBuffer,
-    ) {
-        FfiConverterOptionalTypePreset.write(value.`preset`, buf)
-        FfiConverterOptionalString.write(value.`bindAddr`, buf)
-        FfiConverterOptionalByteArray.write(value.`secretKey`, buf)
-        FfiConverterOptionalSequenceByteArray.write(value.`alpns`, buf)
-        FfiConverterOptionalTypeRelayMode.write(value.`relayMode`, buf)
-        FfiConverterOptionalMapByteArrayTypeProtocolCreator.write(value.`protocols`, buf)
+    override fun write(value: EndpointOptions, buf: ByteBuffer) {
+            FfiConverterOptionalTypePreset.write(value.`preset`, buf)
+            FfiConverterOptionalString.write(value.`bindAddr`, buf)
+            FfiConverterOptionalByteArray.write(value.`secretKey`, buf)
+            FfiConverterOptionalSequenceByteArray.write(value.`alpns`, buf)
+            FfiConverterOptionalTypeRelayMode.write(value.`relayMode`, buf)
+            FfiConverterOptionalMapByteArrayTypeProtocolCreator.write(value.`protocols`, buf)
     }
 }
+
+
 
 /**
  * A flat snapshot of an open path's state.
  */
-data class PathSnapshot(
+data class PathSnapshot (
     /**
      * Opaque path identifier rendered as a string (upstream `PathId` is a u32
      * wrapper but exposes no public accessor).
      */
-    var `id`: kotlin.String,
+    var `id`: kotlin.String
+    , 
     /**
      * True if this path is currently selected for application data.
      */
-    var `isSelected`: kotlin.Boolean,
+    var `isSelected`: kotlin.Boolean
+    , 
     /**
      * The remote transport address as a string. For IP paths this is
      * `ip:port`; for relay paths this is the relay URL.
      */
-    var `remoteAddr`: kotlin.String,
+    var `remoteAddr`: kotlin.String
+    , 
     /**
      * True if this is a direct IP path.
      */
-    var `isIp`: kotlin.Boolean,
+    var `isIp`: kotlin.Boolean
+    , 
     /**
      * True if this is a relay path.
      */
-    var `isRelay`: kotlin.Boolean,
+    var `isRelay`: kotlin.Boolean
+    , 
     /**
      * RTT estimate in milliseconds (sampled from the live QUIC state).
      */
-    var `rttMs`: kotlin.ULong,
+    var `rttMs`: kotlin.ULong
+    , 
     /**
      * Flat headline statistics for this path.
      */
-    var `stats`: PathStatsRecord,
-) {
+    var `stats`: PathStatsRecord
+    
+){
+    
+
+    
+
+    
     companion object
 }
 
 /**
  * @suppress
  */
-public object FfiConverterTypePathSnapshot : FfiConverterRustBuffer<PathSnapshot> {
-    override fun read(buf: ByteBuffer): PathSnapshot =
-        PathSnapshot(
+public object FfiConverterTypePathSnapshot: FfiConverterRustBuffer<PathSnapshot> {
+    override fun read(buf: ByteBuffer): PathSnapshot {
+        return PathSnapshot(
             FfiConverterString.read(buf),
             FfiConverterBoolean.read(buf),
             FfiConverterString.read(buf),
@@ -13874,86 +13603,100 @@ public object FfiConverterTypePathSnapshot : FfiConverterRustBuffer<PathSnapshot
             FfiConverterULong.read(buf),
             FfiConverterTypePathStatsRecord.read(buf),
         )
+    }
 
-    override fun allocationSize(value: PathSnapshot) =
-        (
+    override fun allocationSize(value: PathSnapshot) = (
             FfiConverterString.allocationSize(value.`id`) +
-                FfiConverterBoolean.allocationSize(value.`isSelected`) +
-                FfiConverterString.allocationSize(value.`remoteAddr`) +
-                FfiConverterBoolean.allocationSize(value.`isIp`) +
-                FfiConverterBoolean.allocationSize(value.`isRelay`) +
-                FfiConverterULong.allocationSize(value.`rttMs`) +
-                FfiConverterTypePathStatsRecord.allocationSize(value.`stats`)
-        )
+            FfiConverterBoolean.allocationSize(value.`isSelected`) +
+            FfiConverterString.allocationSize(value.`remoteAddr`) +
+            FfiConverterBoolean.allocationSize(value.`isIp`) +
+            FfiConverterBoolean.allocationSize(value.`isRelay`) +
+            FfiConverterULong.allocationSize(value.`rttMs`) +
+            FfiConverterTypePathStatsRecord.allocationSize(value.`stats`)
+    )
 
-    override fun write(
-        value: PathSnapshot,
-        buf: ByteBuffer,
-    ) {
-        FfiConverterString.write(value.`id`, buf)
-        FfiConverterBoolean.write(value.`isSelected`, buf)
-        FfiConverterString.write(value.`remoteAddr`, buf)
-        FfiConverterBoolean.write(value.`isIp`, buf)
-        FfiConverterBoolean.write(value.`isRelay`, buf)
-        FfiConverterULong.write(value.`rttMs`, buf)
-        FfiConverterTypePathStatsRecord.write(value.`stats`, buf)
+    override fun write(value: PathSnapshot, buf: ByteBuffer) {
+            FfiConverterString.write(value.`id`, buf)
+            FfiConverterBoolean.write(value.`isSelected`, buf)
+            FfiConverterString.write(value.`remoteAddr`, buf)
+            FfiConverterBoolean.write(value.`isIp`, buf)
+            FfiConverterBoolean.write(value.`isRelay`, buf)
+            FfiConverterULong.write(value.`rttMs`, buf)
+            FfiConverterTypePathStatsRecord.write(value.`stats`, buf)
     }
 }
+
+
 
 /**
  * Flattened headline numbers from `noq::PathStats`.
  */
-data class PathStatsRecord(
+data class PathStatsRecord (
     /**
      * RTT estimate (ms).
      */
-    var `rttMs`: kotlin.ULong,
+    var `rttMs`: kotlin.ULong
+    , 
     /**
      * UDP datagrams sent on this path.
      */
-    var `udpTxDatagrams`: kotlin.ULong,
+    var `udpTxDatagrams`: kotlin.ULong
+    , 
     /**
      * UDP bytes sent on this path.
      */
-    var `udpTxBytes`: kotlin.ULong,
+    var `udpTxBytes`: kotlin.ULong
+    , 
     /**
      * UDP datagrams received on this path.
      */
-    var `udpRxDatagrams`: kotlin.ULong,
+    var `udpRxDatagrams`: kotlin.ULong
+    , 
     /**
      * UDP bytes received on this path.
      */
-    var `udpRxBytes`: kotlin.ULong,
+    var `udpRxBytes`: kotlin.ULong
+    , 
     /**
      * Current congestion window.
      */
-    var `cwnd`: kotlin.ULong,
+    var `cwnd`: kotlin.ULong
+    , 
     /**
      * Congestion events on this path.
      */
-    var `congestionEvents`: kotlin.ULong,
+    var `congestionEvents`: kotlin.ULong
+    , 
     /**
      * Packets considered lost on this path.
      */
-    var `lostPackets`: kotlin.ULong,
+    var `lostPackets`: kotlin.ULong
+    , 
     /**
      * Bytes considered lost on this path.
      */
-    var `lostBytes`: kotlin.ULong,
+    var `lostBytes`: kotlin.ULong
+    , 
     /**
      * Largest UDP payload this path currently supports.
      */
-    var `currentMtu`: kotlin.UInt,
-) {
+    var `currentMtu`: kotlin.UInt
+    
+){
+    
+
+    
+
+    
     companion object
 }
 
 /**
  * @suppress
  */
-public object FfiConverterTypePathStatsRecord : FfiConverterRustBuffer<PathStatsRecord> {
-    override fun read(buf: ByteBuffer): PathStatsRecord =
-        PathStatsRecord(
+public object FfiConverterTypePathStatsRecord: FfiConverterRustBuffer<PathStatsRecord> {
+    override fun read(buf: ByteBuffer): PathStatsRecord {
+        return PathStatsRecord(
             FfiConverterULong.read(buf),
             FfiConverterULong.read(buf),
             FfiConverterULong.read(buf),
@@ -13965,37 +13708,36 @@ public object FfiConverterTypePathStatsRecord : FfiConverterRustBuffer<PathStats
             FfiConverterULong.read(buf),
             FfiConverterUInt.read(buf),
         )
+    }
 
-    override fun allocationSize(value: PathStatsRecord) =
-        (
+    override fun allocationSize(value: PathStatsRecord) = (
             FfiConverterULong.allocationSize(value.`rttMs`) +
-                FfiConverterULong.allocationSize(value.`udpTxDatagrams`) +
-                FfiConverterULong.allocationSize(value.`udpTxBytes`) +
-                FfiConverterULong.allocationSize(value.`udpRxDatagrams`) +
-                FfiConverterULong.allocationSize(value.`udpRxBytes`) +
-                FfiConverterULong.allocationSize(value.`cwnd`) +
-                FfiConverterULong.allocationSize(value.`congestionEvents`) +
-                FfiConverterULong.allocationSize(value.`lostPackets`) +
-                FfiConverterULong.allocationSize(value.`lostBytes`) +
-                FfiConverterUInt.allocationSize(value.`currentMtu`)
-        )
+            FfiConverterULong.allocationSize(value.`udpTxDatagrams`) +
+            FfiConverterULong.allocationSize(value.`udpTxBytes`) +
+            FfiConverterULong.allocationSize(value.`udpRxDatagrams`) +
+            FfiConverterULong.allocationSize(value.`udpRxBytes`) +
+            FfiConverterULong.allocationSize(value.`cwnd`) +
+            FfiConverterULong.allocationSize(value.`congestionEvents`) +
+            FfiConverterULong.allocationSize(value.`lostPackets`) +
+            FfiConverterULong.allocationSize(value.`lostBytes`) +
+            FfiConverterUInt.allocationSize(value.`currentMtu`)
+    )
 
-    override fun write(
-        value: PathStatsRecord,
-        buf: ByteBuffer,
-    ) {
-        FfiConverterULong.write(value.`rttMs`, buf)
-        FfiConverterULong.write(value.`udpTxDatagrams`, buf)
-        FfiConverterULong.write(value.`udpTxBytes`, buf)
-        FfiConverterULong.write(value.`udpRxDatagrams`, buf)
-        FfiConverterULong.write(value.`udpRxBytes`, buf)
-        FfiConverterULong.write(value.`cwnd`, buf)
-        FfiConverterULong.write(value.`congestionEvents`, buf)
-        FfiConverterULong.write(value.`lostPackets`, buf)
-        FfiConverterULong.write(value.`lostBytes`, buf)
-        FfiConverterUInt.write(value.`currentMtu`, buf)
+    override fun write(value: PathStatsRecord, buf: ByteBuffer) {
+            FfiConverterULong.write(value.`rttMs`, buf)
+            FfiConverterULong.write(value.`udpTxDatagrams`, buf)
+            FfiConverterULong.write(value.`udpTxBytes`, buf)
+            FfiConverterULong.write(value.`udpRxDatagrams`, buf)
+            FfiConverterULong.write(value.`udpRxBytes`, buf)
+            FfiConverterULong.write(value.`cwnd`, buf)
+            FfiConverterULong.write(value.`congestionEvents`, buf)
+            FfiConverterULong.write(value.`lostPackets`, buf)
+            FfiConverterULong.write(value.`lostBytes`, buf)
+            FfiConverterUInt.write(value.`currentMtu`, buf)
     }
 }
+
+
 
 /**
  * Config for a single relay server.
@@ -14004,41 +13746,48 @@ public object FfiConverterTypePathStatsRecord : FfiConverterRustBuffer<PathStats
  * address discovery when set; leaving it `None` disables it. `auth_token`
  * becomes an `Authorization: Bearer ...` header on the upgrade request.
  */
-data class RelayConfig(
-    var `url`: kotlin.String,
-    var `quicPort`: kotlin.UShort? = null,
-    var `authToken`: kotlin.String? = null,
-) {
+data class RelayConfig (
+    var `url`: kotlin.String
+    , 
+    var `quicPort`: kotlin.UShort? = null 
+    , 
+    var `authToken`: kotlin.String? = null 
+    
+){
+    
+
+    
+
+    
     companion object
 }
 
 /**
  * @suppress
  */
-public object FfiConverterTypeRelayConfig : FfiConverterRustBuffer<RelayConfig> {
-    override fun read(buf: ByteBuffer): RelayConfig =
-        RelayConfig(
+public object FfiConverterTypeRelayConfig: FfiConverterRustBuffer<RelayConfig> {
+    override fun read(buf: ByteBuffer): RelayConfig {
+        return RelayConfig(
             FfiConverterString.read(buf),
             FfiConverterOptionalUShort.read(buf),
             FfiConverterOptionalString.read(buf),
         )
+    }
 
-    override fun allocationSize(value: RelayConfig) =
-        (
+    override fun allocationSize(value: RelayConfig) = (
             FfiConverterString.allocationSize(value.`url`) +
-                FfiConverterOptionalUShort.allocationSize(value.`quicPort`) +
-                FfiConverterOptionalString.allocationSize(value.`authToken`)
-        )
+            FfiConverterOptionalUShort.allocationSize(value.`quicPort`) +
+            FfiConverterOptionalString.allocationSize(value.`authToken`)
+    )
 
-    override fun write(
-        value: RelayConfig,
-        buf: ByteBuffer,
-    ) {
-        FfiConverterString.write(value.`url`, buf)
-        FfiConverterOptionalUShort.write(value.`quicPort`, buf)
-        FfiConverterOptionalString.write(value.`authToken`, buf)
+    override fun write(value: RelayConfig, buf: ByteBuffer) {
+            FfiConverterString.write(value.`url`, buf)
+            FfiConverterOptionalUShort.write(value.`quicPort`, buf)
+            FfiConverterOptionalString.write(value.`authToken`, buf)
     }
 }
+
+
 
 /**
  * Build options for [`ServicesClient`].
@@ -14048,90 +13797,102 @@ public object FfiConverterTypeRelayConfig : FfiConverterRustBuffer<RelayConfig> 
  * the `IROH_SERVICES_API_SECRET` environment variable. If a name is provided
  * it is registered with the service; the name must be 2–128 UTF-8 bytes.
  */
-data class ServicesOptions(
+data class ServicesOptions (
     /**
      * Encoded API secret string (`services1...`). Sets both the remote endpoint
      * to dial and the per-client capability.
      */
-    var `apiSecret`: kotlin.String? = null,
+    var `apiSecret`: kotlin.String? = null 
+    , 
     /**
      * If true, read the API secret from `IROH_SERVICES_API_SECRET`.
      */
-    var `apiSecretFromEnv`: kotlin.Boolean? = null,
+    var `apiSecretFromEnv`: kotlin.Boolean? = null 
+    , 
     /**
      * Unencrypted PEM-encoded OpenSSH ed25519 private key. Grants full
      * capabilities; used by node operators / project owners.
      */
-    var `sshKeyPem`: kotlin.String? = null,
+    var `sshKeyPem`: kotlin.String? = null 
+    , 
     /**
      * Optional endpoint name to register cloud-side.
      */
-    var `name`: kotlin.String? = null,
+    var `name`: kotlin.String? = null 
+    , 
     /**
      * How often (in milliseconds) to push metrics to the service. `0` disables
      * automatic interval pushes; if omitted the upstream default applies.
      */
-    var `metricsIntervalMs`: kotlin.ULong? = null,
-) {
+    var `metricsIntervalMs`: kotlin.ULong? = null 
+    
+){
+    
+
+    
+
+    
     companion object
 }
 
 /**
  * @suppress
  */
-public object FfiConverterTypeServicesOptions : FfiConverterRustBuffer<ServicesOptions> {
-    override fun read(buf: ByteBuffer): ServicesOptions =
-        ServicesOptions(
+public object FfiConverterTypeServicesOptions: FfiConverterRustBuffer<ServicesOptions> {
+    override fun read(buf: ByteBuffer): ServicesOptions {
+        return ServicesOptions(
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalBoolean.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalULong.read(buf),
         )
+    }
 
-    override fun allocationSize(value: ServicesOptions) =
-        (
+    override fun allocationSize(value: ServicesOptions) = (
             FfiConverterOptionalString.allocationSize(value.`apiSecret`) +
-                FfiConverterOptionalBoolean.allocationSize(value.`apiSecretFromEnv`) +
-                FfiConverterOptionalString.allocationSize(value.`sshKeyPem`) +
-                FfiConverterOptionalString.allocationSize(value.`name`) +
-                FfiConverterOptionalULong.allocationSize(value.`metricsIntervalMs`)
-        )
+            FfiConverterOptionalBoolean.allocationSize(value.`apiSecretFromEnv`) +
+            FfiConverterOptionalString.allocationSize(value.`sshKeyPem`) +
+            FfiConverterOptionalString.allocationSize(value.`name`) +
+            FfiConverterOptionalULong.allocationSize(value.`metricsIntervalMs`)
+    )
 
-    override fun write(
-        value: ServicesOptions,
-        buf: ByteBuffer,
-    ) {
-        FfiConverterOptionalString.write(value.`apiSecret`, buf)
-        FfiConverterOptionalBoolean.write(value.`apiSecretFromEnv`, buf)
-        FfiConverterOptionalString.write(value.`sshKeyPem`, buf)
-        FfiConverterOptionalString.write(value.`name`, buf)
-        FfiConverterOptionalULong.write(value.`metricsIntervalMs`, buf)
+    override fun write(value: ServicesOptions, buf: ByteBuffer) {
+            FfiConverterOptionalString.write(value.`apiSecret`, buf)
+            FfiConverterOptionalBoolean.write(value.`apiSecretFromEnv`, buf)
+            FfiConverterOptionalString.write(value.`sshKeyPem`, buf)
+            FfiConverterOptionalString.write(value.`name`, buf)
+            FfiConverterOptionalULong.write(value.`metricsIntervalMs`, buf)
     }
 }
+
+
 
 /**
  * Options for [`preset_iroh_services`].
  *
  * Supply *exactly one* of `api_secret` or `api_secret_from_env`.
  */
-data class ServicesPresetOptions(
+data class ServicesPresetOptions (
     /**
      * Your project's relay URLs. Defaults to the n0 public relays when
      * omitted, matching `iroh_services::preset()`. Passing an empty list is an
      * error rather than a silent fallback — that is nearly always a filtered
      * list that came back empty.
      */
-    var `relays`: List<kotlin.String>? = null,
+    var `relays`: List<kotlin.String>? = null 
+    , 
     /**
      * Encoded API secret string (`services1...`). The relay access token is
      * minted from this.
      */
-    var `apiSecret`: kotlin.String? = null,
+    var `apiSecret`: kotlin.String? = null 
+    , 
     /**
      * If true, read the API secret from `IROH_SERVICES_API_SECRET`.
      */
-    var `apiSecretFromEnv`: kotlin.Boolean? = null,
+    var `apiSecretFromEnv`: kotlin.Boolean? = null 
+    , 
     /**
      * The endpoint's own identity key (32 bytes) — not your API secret. The
      * access token is scoped to it, so pass the same key you persist for your
@@ -14142,139 +13903,179 @@ data class ServicesPresetOptions(
      * would replace the one the token is scoped to. Doing that is an error,
      * not a silent auth failure — this preset pins the key.
      */
-    var `endpointSecretKey`: kotlin.ByteArray? = null,
-) {
+    var `endpointSecretKey`: kotlin.ByteArray? = null 
+    
+){
+    
+
+    
+
+    
     companion object
 }
 
 /**
  * @suppress
  */
-public object FfiConverterTypeServicesPresetOptions : FfiConverterRustBuffer<ServicesPresetOptions> {
-    override fun read(buf: ByteBuffer): ServicesPresetOptions =
-        ServicesPresetOptions(
+public object FfiConverterTypeServicesPresetOptions: FfiConverterRustBuffer<ServicesPresetOptions> {
+    override fun read(buf: ByteBuffer): ServicesPresetOptions {
+        return ServicesPresetOptions(
             FfiConverterOptionalSequenceString.read(buf),
             FfiConverterOptionalString.read(buf),
             FfiConverterOptionalBoolean.read(buf),
             FfiConverterOptionalByteArray.read(buf),
         )
+    }
 
-    override fun allocationSize(value: ServicesPresetOptions) =
-        (
+    override fun allocationSize(value: ServicesPresetOptions) = (
             FfiConverterOptionalSequenceString.allocationSize(value.`relays`) +
-                FfiConverterOptionalString.allocationSize(value.`apiSecret`) +
-                FfiConverterOptionalBoolean.allocationSize(value.`apiSecretFromEnv`) +
-                FfiConverterOptionalByteArray.allocationSize(value.`endpointSecretKey`)
-        )
+            FfiConverterOptionalString.allocationSize(value.`apiSecret`) +
+            FfiConverterOptionalBoolean.allocationSize(value.`apiSecretFromEnv`) +
+            FfiConverterOptionalByteArray.allocationSize(value.`endpointSecretKey`)
+    )
 
-    override fun write(
-        value: ServicesPresetOptions,
-        buf: ByteBuffer,
-    ) {
-        FfiConverterOptionalSequenceString.write(value.`relays`, buf)
-        FfiConverterOptionalString.write(value.`apiSecret`, buf)
-        FfiConverterOptionalBoolean.write(value.`apiSecretFromEnv`, buf)
-        FfiConverterOptionalByteArray.write(value.`endpointSecretKey`, buf)
+    override fun write(value: ServicesPresetOptions, buf: ByteBuffer) {
+            FfiConverterOptionalSequenceString.write(value.`relays`, buf)
+            FfiConverterOptionalString.write(value.`apiSecret`, buf)
+            FfiConverterOptionalBoolean.write(value.`apiSecretFromEnv`, buf)
+            FfiConverterOptionalByteArray.write(value.`endpointSecretKey`, buf)
     }
 }
 
-sealed class CallbackException : kotlin.Exception() {
-    class Exception : CallbackException() {
+
+
+
+
+sealed class CallbackException: kotlin.Exception() {
+    
+    class Exception(
+        ) : CallbackException() {
         override val message
             get() = ""
     }
+    
+
+    
+
 
     companion object ErrorHandler : UniffiRustCallStatusErrorHandler<CallbackException> {
         override fun lift(error_buf: RustBuffer.ByValue): CallbackException = FfiConverterTypeCallbackError.lift(error_buf)
     }
+
+    
 }
 
 /**
  * @suppress
  */
 public object FfiConverterTypeCallbackError : FfiConverterRustBuffer<CallbackException> {
-    override fun read(buf: ByteBuffer): CallbackException =
-        when (buf.getInt()) {
+    override fun read(buf: ByteBuffer): CallbackException {
+        
+
+        return when(buf.getInt()) {
             1 -> CallbackException.Exception()
             else -> throw RuntimeException("invalid error enum value, something is very wrong!!")
         }
+    }
 
-    override fun allocationSize(value: CallbackException): ULong =
-        when (value) {
+    override fun allocationSize(value: CallbackException): ULong {
+        return when(value) {
             is CallbackException.Exception -> (
                 // Add the size for the Int that specifies the variant plus the size needed for all fields
                 4UL
             )
         }
+    }
 
-    override fun write(
-        value: CallbackException,
-        buf: ByteBuffer,
-    ) {
-        when (value) {
+    override fun write(value: CallbackException, buf: ByteBuffer) {
+        when(value) {
             is CallbackException.Exception -> {
                 buf.putInt(1)
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
     }
+
 }
+
+
 
 /**
  * Where an incoming connection came from.
  */
-sealed class IncomingAddr : Disposable {
+sealed class IncomingAddr: Disposable  {
+    
     /**
      * A direct connection from an IP address (`ip:port` string).
      */
     data class Ip(
-        val `addr`: kotlin.String,
-    ) : IncomingAddr() {
+        val `addr`: kotlin.String) : IncomingAddr()
+        
+    {
+        
+
         companion object
     }
-
+    
     /**
      * A connection via a relay.
      */
     data class Relay(
-        val `url`: kotlin.String,
-        val `endpointId`: computer.iroh.EndpointId,
-    ) : IncomingAddr() {
+        val `url`: kotlin.String, 
+        val `endpointId`: computer.iroh.EndpointId) : IncomingAddr()
+        
+    {
+        
+
         companion object
     }
-
+    
     /**
      * A custom-transport connection (rendered as its debug form).
      */
     data class Custom(
-        val `description`: kotlin.String,
-    ) : IncomingAddr() {
+        val `description`: kotlin.String) : IncomingAddr()
+        
+    {
+        
+
         companion object
     }
+    
 
+    
     @Suppress("UNNECESSARY_SAFE_CALL") // codegen is much simpler if we unconditionally emit safe calls here
     override fun destroy() {
-        when (this) {
+        when(this) {
             is IncomingAddr.Ip -> {
-                Disposable.destroy(
-                    this.`addr`,
-                )
+                
+    Disposable.destroy(
+        this.`addr`
+    )
+                
             }
-
             is IncomingAddr.Relay -> {
-                Disposable.destroy(
-                    this.`url`,
-                    this.`endpointId`,
-                )
+                
+    Disposable.destroy(
+        this.`url`,
+        this.`endpointId`
+    )
+                
             }
-
             is IncomingAddr.Custom -> {
-                Disposable.destroy(
-                    this.`description`,
-                )
+                
+    Disposable.destroy(
+        this.`description`
+    )
+                
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
     }
+    
+
+    
+    
+
 
     companion object
 }
@@ -14282,79 +14083,61 @@ sealed class IncomingAddr : Disposable {
 /**
  * @suppress
  */
-public object FfiConverterTypeIncomingAddr : FfiConverterRustBuffer<IncomingAddr> {
-    override fun read(buf: ByteBuffer): IncomingAddr =
-        when (buf.getInt()) {
-            1 -> {
-                IncomingAddr.Ip(
-                    FfiConverterString.read(buf),
+public object FfiConverterTypeIncomingAddr : FfiConverterRustBuffer<IncomingAddr>{
+    override fun read(buf: ByteBuffer): IncomingAddr {
+        return when(buf.getInt()) {
+            1 -> IncomingAddr.Ip(
+                FfiConverterString.read(buf),
                 )
-            }
-
-            2 -> {
-                IncomingAddr.Relay(
-                    FfiConverterString.read(buf),
-                    FfiConverterTypeEndpointId.read(buf),
+            2 -> IncomingAddr.Relay(
+                FfiConverterString.read(buf),
+                FfiConverterTypeEndpointId.read(buf),
                 )
-            }
-
-            3 -> {
-                IncomingAddr.Custom(
-                    FfiConverterString.read(buf),
+            3 -> IncomingAddr.Custom(
+                FfiConverterString.read(buf),
                 )
-            }
-
-            else -> {
-                throw RuntimeException("invalid enum value, something is very wrong!!")
-            }
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
         }
+    }
 
-    override fun allocationSize(value: IncomingAddr) =
-        when (value) {
-            is IncomingAddr.Ip -> {
-                // Add the size for the Int that specifies the variant plus the size needed for all fields
-                (
-                    4UL +
-                        FfiConverterString.allocationSize(value.`addr`)
-                )
-            }
-
-            is IncomingAddr.Relay -> {
-                // Add the size for the Int that specifies the variant plus the size needed for all fields
-                (
-                    4UL +
-                        FfiConverterString.allocationSize(value.`url`) +
-                        FfiConverterTypeEndpointId.allocationSize(value.`endpointId`)
-                )
-            }
-
-            is IncomingAddr.Custom -> {
-                // Add the size for the Int that specifies the variant plus the size needed for all fields
-                (
-                    4UL +
-                        FfiConverterString.allocationSize(value.`description`)
-                )
-            }
+    override fun allocationSize(value: IncomingAddr) = when(value) {
+        is IncomingAddr.Ip -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`addr`)
+            )
         }
+        is IncomingAddr.Relay -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`url`)
+                + FfiConverterTypeEndpointId.allocationSize(value.`endpointId`)
+            )
+        }
+        is IncomingAddr.Custom -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`description`)
+            )
+        }
+    }
 
-    override fun write(
-        value: IncomingAddr,
-        buf: ByteBuffer,
-    ) {
-        when (value) {
+    override fun write(value: IncomingAddr, buf: ByteBuffer) {
+        when(value) {
             is IncomingAddr.Ip -> {
                 buf.putInt(1)
                 FfiConverterString.write(value.`addr`, buf)
                 Unit
             }
-
             is IncomingAddr.Relay -> {
                 buf.putInt(2)
                 FfiConverterString.write(value.`url`, buf)
                 FfiConverterTypeEndpointId.write(value.`endpointId`, buf)
                 Unit
             }
-
             is IncomingAddr.Custom -> {
                 buf.putInt(3)
                 FfiConverterString.write(value.`description`, buf)
@@ -14364,36 +14147,57 @@ public object FfiConverterTypeIncomingAddr : FfiConverterRustBuffer<IncomingAddr
     }
 }
 
+
+
+
+
 /**
  * The local address that received an incoming connection.
  */
 sealed class IncomingLocalAddr {
+    
     /**
      * Direct IP (`ip` string if available).
      */
     data class Ip(
-        val `addr`: kotlin.String?,
-    ) : IncomingLocalAddr() {
+        val `addr`: kotlin.String?) : IncomingLocalAddr()
+        
+    {
+        
+
         companion object
     }
-
+    
     /**
      * Relay path.
      */
     data class Relay(
-        val `url`: kotlin.String,
-    ) : IncomingLocalAddr() {
+        val `url`: kotlin.String) : IncomingLocalAddr()
+        
+    {
+        
+
         companion object
     }
-
+    
     /**
      * Custom transport.
      */
     data class Custom(
-        val `description`: kotlin.String?,
-    ) : IncomingLocalAddr() {
+        val `description`: kotlin.String?) : IncomingLocalAddr()
+        
+    {
+        
+
         companion object
     }
+    
+
+    
+
+    
+    
+
 
     companion object
 }
@@ -14401,76 +14205,58 @@ sealed class IncomingLocalAddr {
 /**
  * @suppress
  */
-public object FfiConverterTypeIncomingLocalAddr : FfiConverterRustBuffer<IncomingLocalAddr> {
-    override fun read(buf: ByteBuffer): IncomingLocalAddr =
-        when (buf.getInt()) {
-            1 -> {
-                IncomingLocalAddr.Ip(
-                    FfiConverterOptionalString.read(buf),
+public object FfiConverterTypeIncomingLocalAddr : FfiConverterRustBuffer<IncomingLocalAddr>{
+    override fun read(buf: ByteBuffer): IncomingLocalAddr {
+        return when(buf.getInt()) {
+            1 -> IncomingLocalAddr.Ip(
+                FfiConverterOptionalString.read(buf),
                 )
-            }
-
-            2 -> {
-                IncomingLocalAddr.Relay(
-                    FfiConverterString.read(buf),
+            2 -> IncomingLocalAddr.Relay(
+                FfiConverterString.read(buf),
                 )
-            }
-
-            3 -> {
-                IncomingLocalAddr.Custom(
-                    FfiConverterOptionalString.read(buf),
+            3 -> IncomingLocalAddr.Custom(
+                FfiConverterOptionalString.read(buf),
                 )
-            }
-
-            else -> {
-                throw RuntimeException("invalid enum value, something is very wrong!!")
-            }
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
         }
+    }
 
-    override fun allocationSize(value: IncomingLocalAddr) =
-        when (value) {
-            is IncomingLocalAddr.Ip -> {
-                // Add the size for the Int that specifies the variant plus the size needed for all fields
-                (
-                    4UL +
-                        FfiConverterOptionalString.allocationSize(value.`addr`)
-                )
-            }
-
-            is IncomingLocalAddr.Relay -> {
-                // Add the size for the Int that specifies the variant plus the size needed for all fields
-                (
-                    4UL +
-                        FfiConverterString.allocationSize(value.`url`)
-                )
-            }
-
-            is IncomingLocalAddr.Custom -> {
-                // Add the size for the Int that specifies the variant plus the size needed for all fields
-                (
-                    4UL +
-                        FfiConverterOptionalString.allocationSize(value.`description`)
-                )
-            }
+    override fun allocationSize(value: IncomingLocalAddr) = when(value) {
+        is IncomingLocalAddr.Ip -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterOptionalString.allocationSize(value.`addr`)
+            )
         }
+        is IncomingLocalAddr.Relay -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`url`)
+            )
+        }
+        is IncomingLocalAddr.Custom -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterOptionalString.allocationSize(value.`description`)
+            )
+        }
+    }
 
-    override fun write(
-        value: IncomingLocalAddr,
-        buf: ByteBuffer,
-    ) {
-        when (value) {
+    override fun write(value: IncomingLocalAddr, buf: ByteBuffer) {
+        when(value) {
             is IncomingLocalAddr.Ip -> {
                 buf.putInt(1)
                 FfiConverterOptionalString.write(value.`addr`, buf)
                 Unit
             }
-
             is IncomingLocalAddr.Relay -> {
                 buf.putInt(2)
                 FfiConverterString.write(value.`url`, buf)
                 Unit
             }
-
             is IncomingLocalAddr.Custom -> {
                 buf.putInt(3)
                 FfiConverterOptionalString.write(value.`description`, buf)
@@ -14479,6 +14265,10 @@ public object FfiConverterTypeIncomingLocalAddr : FfiConverterRustBuffer<Incomin
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
     }
 }
+
+
+
+
 
 /**
  * Stable high-level error categories exposed across the FFI boundary.
@@ -14489,185 +14279,199 @@ public object FfiConverterTypeIncomingLocalAddr : FfiConverterRustBuffer<Incomin
  */
 
 enum class IrohErrorKind {
+    
     /**
      * Invalid input supplied by the caller.
      */
     INVALID_INPUT,
-
     /**
      * Failure while binding an endpoint.
      */
     BIND,
-
     /**
      * Failure while initiating or completing an outgoing connection.
      */
     CONNECT,
-
     /**
      * An established connection failed or closed unexpectedly.
      */
     CONNECTION,
-
     /**
      * ALPN negotiation or lookup failed.
      */
     ALPN,
-
     /**
      * Endpoint id / public key parsing failed.
      */
     KEY_PARSING,
-
     /**
      * Ticket parsing failed.
      */
     TICKET_PARSING,
-
     /**
      * Relay configuration or relay operation failed.
      */
     RELAY,
-
     /**
      * Stream read/write/control operation failed.
      */
     STREAM,
-
     /**
      * Datagram send/receive operation failed.
      */
     DATAGRAM,
-
     /**
      * Foreign callback failed.
      */
     CALLBACK,
-
     /**
      * Operation was attempted on a closed stream/connection/resource.
      */
     CLOSED,
-
     /**
      * Operation timed out.
      */
     TIMEOUT,
-
     /**
      * Unclassified internal error.
      */
-    INTERNAL,
+    INTERNAL;
 
-    ;
+    
+
 
     companion object
 }
 
+
 /**
  * @suppress
  */
-public object FfiConverterTypeIrohErrorKind : FfiConverterRustBuffer<IrohErrorKind> {
-    override fun read(buf: ByteBuffer) =
-        try {
-            IrohErrorKind.values()[buf.getInt() - 1]
-        } catch (e: IndexOutOfBoundsException) {
-            throw RuntimeException("invalid enum value, something is very wrong!!", e)
-        }
+public object FfiConverterTypeIrohErrorKind: FfiConverterRustBuffer<IrohErrorKind> {
+    override fun read(buf: ByteBuffer) = try {
+        IrohErrorKind.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
 
     override fun allocationSize(value: IrohErrorKind) = 4UL
 
-    override fun write(
-        value: IrohErrorKind,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: IrohErrorKind, buf: ByteBuffer) {
         buf.putInt(value.ordinal + 1)
     }
 }
+
+
+
+
 
 /**
  * The logging level. See the rust (log crate)[https://docs.rs/log] for more information.
  */
 
 enum class LogLevel {
+    
     TRACE,
     DEBUG,
     INFO,
     WARN,
     ERROR,
-    OFF,
-    ;
+    OFF;
+
+    
+
 
     companion object
 }
 
+
 /**
  * @suppress
  */
-public object FfiConverterTypeLogLevel : FfiConverterRustBuffer<LogLevel> {
-    override fun read(buf: ByteBuffer) =
-        try {
-            LogLevel.values()[buf.getInt() - 1]
-        } catch (e: IndexOutOfBoundsException) {
-            throw RuntimeException("invalid enum value, something is very wrong!!", e)
-        }
+public object FfiConverterTypeLogLevel: FfiConverterRustBuffer<LogLevel> {
+    override fun read(buf: ByteBuffer) = try {
+        LogLevel.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
 
     override fun allocationSize(value: LogLevel) = 4UL
 
-    override fun write(
-        value: LogLevel,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: LogLevel, buf: ByteBuffer) {
         buf.putInt(value.ordinal + 1)
     }
 }
+
+
+
+
 
 /**
  * An event from `Connection::path_events`.
  */
 sealed class PathEvent {
+    
     /**
      * A new network path was opened.
      */
     data class Opened(
-        val `id`: kotlin.String,
-        val `remoteAddr`: kotlin.String,
-        val `localAddr`: kotlin.String,
-    ) : PathEvent() {
+        val `id`: kotlin.String, 
+        val `remoteAddr`: kotlin.String, 
+        val `localAddr`: kotlin.String) : PathEvent()
+        
+    {
+        
+
         companion object
     }
-
+    
     /**
      * A network path was closed.
      */
     data class Closed(
-        val `id`: kotlin.String,
-        val `remoteAddr`: kotlin.String,
-        val `localAddr`: kotlin.String,
-        val `lastStats`: computer.iroh.PathStatsRecord,
-    ) : PathEvent() {
+        val `id`: kotlin.String, 
+        val `remoteAddr`: kotlin.String, 
+        val `localAddr`: kotlin.String, 
+        val `lastStats`: computer.iroh.PathStatsRecord) : PathEvent()
+        
+    {
+        
+
         companion object
     }
-
+    
     /**
      * This path was selected for transmission of application data.
      */
     data class Selected(
-        val `id`: kotlin.String,
-        val `remoteAddr`: kotlin.String,
-        val `localAddr`: kotlin.String,
-    ) : PathEvent() {
+        val `id`: kotlin.String, 
+        val `remoteAddr`: kotlin.String, 
+        val `localAddr`: kotlin.String) : PathEvent()
+        
+    {
+        
+
         companion object
     }
-
+    
     /**
      * Events were dropped before the subscriber received them.
      */
     data class Lagged(
-        val `missed`: kotlin.ULong,
-    ) : PathEvent() {
+        val `missed`: kotlin.ULong) : PathEvent()
+        
+    {
+        
+
         companion object
     }
+    
+
+    
+
+    
+    
+
 
     companion object
 }
@@ -14675,92 +14479,72 @@ sealed class PathEvent {
 /**
  * @suppress
  */
-public object FfiConverterTypePathEvent : FfiConverterRustBuffer<PathEvent> {
-    override fun read(buf: ByteBuffer): PathEvent =
-        when (buf.getInt()) {
-            1 -> {
-                PathEvent.Opened(
-                    FfiConverterString.read(buf),
-                    FfiConverterString.read(buf),
-                    FfiConverterString.read(buf),
+public object FfiConverterTypePathEvent : FfiConverterRustBuffer<PathEvent>{
+    override fun read(buf: ByteBuffer): PathEvent {
+        return when(buf.getInt()) {
+            1 -> PathEvent.Opened(
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
                 )
-            }
-
-            2 -> {
-                PathEvent.Closed(
-                    FfiConverterString.read(buf),
-                    FfiConverterString.read(buf),
-                    FfiConverterString.read(buf),
-                    FfiConverterTypePathStatsRecord.read(buf),
+            2 -> PathEvent.Closed(
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
+                FfiConverterTypePathStatsRecord.read(buf),
                 )
-            }
-
-            3 -> {
-                PathEvent.Selected(
-                    FfiConverterString.read(buf),
-                    FfiConverterString.read(buf),
-                    FfiConverterString.read(buf),
+            3 -> PathEvent.Selected(
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
+                FfiConverterString.read(buf),
                 )
-            }
-
-            4 -> {
-                PathEvent.Lagged(
-                    FfiConverterULong.read(buf),
+            4 -> PathEvent.Lagged(
+                FfiConverterULong.read(buf),
                 )
-            }
-
-            else -> {
-                throw RuntimeException("invalid enum value, something is very wrong!!")
-            }
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
         }
+    }
 
-    override fun allocationSize(value: PathEvent) =
-        when (value) {
-            is PathEvent.Opened -> {
-                // Add the size for the Int that specifies the variant plus the size needed for all fields
-                (
-                    4UL +
-                        FfiConverterString.allocationSize(value.`id`) +
-                        FfiConverterString.allocationSize(value.`remoteAddr`) +
-                        FfiConverterString.allocationSize(value.`localAddr`)
-                )
-            }
-
-            is PathEvent.Closed -> {
-                // Add the size for the Int that specifies the variant plus the size needed for all fields
-                (
-                    4UL +
-                        FfiConverterString.allocationSize(value.`id`) +
-                        FfiConverterString.allocationSize(value.`remoteAddr`) +
-                        FfiConverterString.allocationSize(value.`localAddr`) +
-                        FfiConverterTypePathStatsRecord.allocationSize(value.`lastStats`)
-                )
-            }
-
-            is PathEvent.Selected -> {
-                // Add the size for the Int that specifies the variant plus the size needed for all fields
-                (
-                    4UL +
-                        FfiConverterString.allocationSize(value.`id`) +
-                        FfiConverterString.allocationSize(value.`remoteAddr`) +
-                        FfiConverterString.allocationSize(value.`localAddr`)
-                )
-            }
-
-            is PathEvent.Lagged -> {
-                // Add the size for the Int that specifies the variant plus the size needed for all fields
-                (
-                    4UL +
-                        FfiConverterULong.allocationSize(value.`missed`)
-                )
-            }
+    override fun allocationSize(value: PathEvent) = when(value) {
+        is PathEvent.Opened -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`id`)
+                + FfiConverterString.allocationSize(value.`remoteAddr`)
+                + FfiConverterString.allocationSize(value.`localAddr`)
+            )
         }
+        is PathEvent.Closed -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`id`)
+                + FfiConverterString.allocationSize(value.`remoteAddr`)
+                + FfiConverterString.allocationSize(value.`localAddr`)
+                + FfiConverterTypePathStatsRecord.allocationSize(value.`lastStats`)
+            )
+        }
+        is PathEvent.Selected -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterString.allocationSize(value.`id`)
+                + FfiConverterString.allocationSize(value.`remoteAddr`)
+                + FfiConverterString.allocationSize(value.`localAddr`)
+            )
+        }
+        is PathEvent.Lagged -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterULong.allocationSize(value.`missed`)
+            )
+        }
+    }
 
-    override fun write(
-        value: PathEvent,
-        buf: ByteBuffer,
-    ) {
-        when (value) {
+    override fun write(value: PathEvent, buf: ByteBuffer) {
+        when(value) {
             is PathEvent.Opened -> {
                 buf.putInt(1)
                 FfiConverterString.write(value.`id`, buf)
@@ -14768,7 +14552,6 @@ public object FfiConverterTypePathEvent : FfiConverterRustBuffer<PathEvent> {
                 FfiConverterString.write(value.`localAddr`, buf)
                 Unit
             }
-
             is PathEvent.Closed -> {
                 buf.putInt(2)
                 FfiConverterString.write(value.`id`, buf)
@@ -14777,7 +14560,6 @@ public object FfiConverterTypePathEvent : FfiConverterRustBuffer<PathEvent> {
                 FfiConverterTypePathStatsRecord.write(value.`lastStats`, buf)
                 Unit
             }
-
             is PathEvent.Selected -> {
                 buf.putInt(3)
                 FfiConverterString.write(value.`id`, buf)
@@ -14785,7 +14567,6 @@ public object FfiConverterTypePathEvent : FfiConverterRustBuffer<PathEvent> {
                 FfiConverterString.write(value.`localAddr`, buf)
                 Unit
             }
-
             is PathEvent.Lagged -> {
                 buf.putInt(4)
                 FfiConverterULong.write(value.`missed`, buf)
@@ -14795,51 +14576,58 @@ public object FfiConverterTypePathEvent : FfiConverterRustBuffer<PathEvent> {
     }
 }
 
+
+
+
+
 /**
  * Which side of a connection we are.
  */
 
 enum class Side {
+    
     /**
      * We initiated this connection.
      */
     CLIENT,
-
     /**
      * We accepted this connection.
      */
-    SERVER,
+    SERVER;
 
-    ;
+    
+
 
     companion object
 }
 
+
 /**
  * @suppress
  */
-public object FfiConverterTypeSide : FfiConverterRustBuffer<Side> {
-    override fun read(buf: ByteBuffer) =
-        try {
-            Side.values()[buf.getInt() - 1]
-        } catch (e: IndexOutOfBoundsException) {
-            throw RuntimeException("invalid enum value, something is very wrong!!", e)
-        }
+public object FfiConverterTypeSide: FfiConverterRustBuffer<Side> {
+    override fun read(buf: ByteBuffer) = try {
+        Side.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
 
     override fun allocationSize(value: Side) = 4UL
 
-    override fun write(
-        value: Side,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: Side, buf: ByteBuffer) {
         buf.putInt(value.ordinal + 1)
     }
 }
 
+
+
+
+
+
 /**
  * @suppress
  */
-public object FfiConverterOptionalUShort : FfiConverterRustBuffer<kotlin.UShort?> {
+public object FfiConverterOptionalUShort: FfiConverterRustBuffer<kotlin.UShort?> {
     override fun read(buf: ByteBuffer): kotlin.UShort? {
         if (buf.get().toInt() == 0) {
             return null
@@ -14855,10 +14643,7 @@ public object FfiConverterOptionalUShort : FfiConverterRustBuffer<kotlin.UShort?
         }
     }
 
-    override fun write(
-        value: kotlin.UShort?,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: kotlin.UShort?, buf: ByteBuffer) {
         if (value == null) {
             buf.put(0)
         } else {
@@ -14868,10 +14653,13 @@ public object FfiConverterOptionalUShort : FfiConverterRustBuffer<kotlin.UShort?
     }
 }
 
+
+
+
 /**
  * @suppress
  */
-public object FfiConverterOptionalULong : FfiConverterRustBuffer<kotlin.ULong?> {
+public object FfiConverterOptionalULong: FfiConverterRustBuffer<kotlin.ULong?> {
     override fun read(buf: ByteBuffer): kotlin.ULong? {
         if (buf.get().toInt() == 0) {
             return null
@@ -14887,10 +14675,7 @@ public object FfiConverterOptionalULong : FfiConverterRustBuffer<kotlin.ULong?> 
         }
     }
 
-    override fun write(
-        value: kotlin.ULong?,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: kotlin.ULong?, buf: ByteBuffer) {
         if (value == null) {
             buf.put(0)
         } else {
@@ -14900,10 +14685,13 @@ public object FfiConverterOptionalULong : FfiConverterRustBuffer<kotlin.ULong?> 
     }
 }
 
+
+
+
 /**
  * @suppress
  */
-public object FfiConverterOptionalBoolean : FfiConverterRustBuffer<kotlin.Boolean?> {
+public object FfiConverterOptionalBoolean: FfiConverterRustBuffer<kotlin.Boolean?> {
     override fun read(buf: ByteBuffer): kotlin.Boolean? {
         if (buf.get().toInt() == 0) {
             return null
@@ -14919,10 +14707,7 @@ public object FfiConverterOptionalBoolean : FfiConverterRustBuffer<kotlin.Boolea
         }
     }
 
-    override fun write(
-        value: kotlin.Boolean?,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: kotlin.Boolean?, buf: ByteBuffer) {
         if (value == null) {
             buf.put(0)
         } else {
@@ -14932,10 +14717,13 @@ public object FfiConverterOptionalBoolean : FfiConverterRustBuffer<kotlin.Boolea
     }
 }
 
+
+
+
 /**
  * @suppress
  */
-public object FfiConverterOptionalString : FfiConverterRustBuffer<kotlin.String?> {
+public object FfiConverterOptionalString: FfiConverterRustBuffer<kotlin.String?> {
     override fun read(buf: ByteBuffer): kotlin.String? {
         if (buf.get().toInt() == 0) {
             return null
@@ -14951,10 +14739,7 @@ public object FfiConverterOptionalString : FfiConverterRustBuffer<kotlin.String?
         }
     }
 
-    override fun write(
-        value: kotlin.String?,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: kotlin.String?, buf: ByteBuffer) {
         if (value == null) {
             buf.put(0)
         } else {
@@ -14964,10 +14749,13 @@ public object FfiConverterOptionalString : FfiConverterRustBuffer<kotlin.String?
     }
 }
 
+
+
+
 /**
  * @suppress
  */
-public object FfiConverterOptionalByteArray : FfiConverterRustBuffer<kotlin.ByteArray?> {
+public object FfiConverterOptionalByteArray: FfiConverterRustBuffer<kotlin.ByteArray?> {
     override fun read(buf: ByteBuffer): kotlin.ByteArray? {
         if (buf.get().toInt() == 0) {
             return null
@@ -14983,10 +14771,7 @@ public object FfiConverterOptionalByteArray : FfiConverterRustBuffer<kotlin.Byte
         }
     }
 
-    override fun write(
-        value: kotlin.ByteArray?,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: kotlin.ByteArray?, buf: ByteBuffer) {
         if (value == null) {
             buf.put(0)
         } else {
@@ -14996,10 +14781,13 @@ public object FfiConverterOptionalByteArray : FfiConverterRustBuffer<kotlin.Byte
     }
 }
 
+
+
+
 /**
  * @suppress
  */
-public object FfiConverterOptionalTypeEndpointAddr : FfiConverterRustBuffer<EndpointAddr?> {
+public object FfiConverterOptionalTypeEndpointAddr: FfiConverterRustBuffer<EndpointAddr?> {
     override fun read(buf: ByteBuffer): EndpointAddr? {
         if (buf.get().toInt() == 0) {
             return null
@@ -15015,10 +14803,7 @@ public object FfiConverterOptionalTypeEndpointAddr : FfiConverterRustBuffer<Endp
         }
     }
 
-    override fun write(
-        value: EndpointAddr?,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: EndpointAddr?, buf: ByteBuffer) {
         if (value == null) {
             buf.put(0)
         } else {
@@ -15028,10 +14813,13 @@ public object FfiConverterOptionalTypeEndpointAddr : FfiConverterRustBuffer<Endp
     }
 }
 
+
+
+
 /**
  * @suppress
  */
-public object FfiConverterOptionalTypeIncoming : FfiConverterRustBuffer<Incoming?> {
+public object FfiConverterOptionalTypeIncoming: FfiConverterRustBuffer<Incoming?> {
     override fun read(buf: ByteBuffer): Incoming? {
         if (buf.get().toInt() == 0) {
             return null
@@ -15047,10 +14835,7 @@ public object FfiConverterOptionalTypeIncoming : FfiConverterRustBuffer<Incoming
         }
     }
 
-    override fun write(
-        value: Incoming?,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: Incoming?, buf: ByteBuffer) {
         if (value == null) {
             buf.put(0)
         } else {
@@ -15060,10 +14845,13 @@ public object FfiConverterOptionalTypeIncoming : FfiConverterRustBuffer<Incoming
     }
 }
 
+
+
+
 /**
  * @suppress
  */
-public object FfiConverterOptionalTypePreset : FfiConverterRustBuffer<Preset?> {
+public object FfiConverterOptionalTypePreset: FfiConverterRustBuffer<Preset?> {
     override fun read(buf: ByteBuffer): Preset? {
         if (buf.get().toInt() == 0) {
             return null
@@ -15079,10 +14867,7 @@ public object FfiConverterOptionalTypePreset : FfiConverterRustBuffer<Preset?> {
         }
     }
 
-    override fun write(
-        value: Preset?,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: Preset?, buf: ByteBuffer) {
         if (value == null) {
             buf.put(0)
         } else {
@@ -15092,10 +14877,13 @@ public object FfiConverterOptionalTypePreset : FfiConverterRustBuffer<Preset?> {
     }
 }
 
+
+
+
 /**
  * @suppress
  */
-public object FfiConverterOptionalTypeRelayMode : FfiConverterRustBuffer<RelayMode?> {
+public object FfiConverterOptionalTypeRelayMode: FfiConverterRustBuffer<RelayMode?> {
     override fun read(buf: ByteBuffer): RelayMode? {
         if (buf.get().toInt() == 0) {
             return null
@@ -15111,10 +14899,7 @@ public object FfiConverterOptionalTypeRelayMode : FfiConverterRustBuffer<RelayMo
         }
     }
 
-    override fun write(
-        value: RelayMode?,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: RelayMode?, buf: ByteBuffer) {
         if (value == null) {
             buf.put(0)
         } else {
@@ -15124,10 +14909,13 @@ public object FfiConverterOptionalTypeRelayMode : FfiConverterRustBuffer<RelayMo
     }
 }
 
+
+
+
 /**
  * @suppress
  */
-public object FfiConverterOptionalTypeRelayConfig : FfiConverterRustBuffer<RelayConfig?> {
+public object FfiConverterOptionalTypeRelayConfig: FfiConverterRustBuffer<RelayConfig?> {
     override fun read(buf: ByteBuffer): RelayConfig? {
         if (buf.get().toInt() == 0) {
             return null
@@ -15143,10 +14931,7 @@ public object FfiConverterOptionalTypeRelayConfig : FfiConverterRustBuffer<Relay
         }
     }
 
-    override fun write(
-        value: RelayConfig?,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: RelayConfig?, buf: ByteBuffer) {
         if (value == null) {
             buf.put(0)
         } else {
@@ -15156,10 +14941,13 @@ public object FfiConverterOptionalTypeRelayConfig : FfiConverterRustBuffer<Relay
     }
 }
 
+
+
+
 /**
  * @suppress
  */
-public object FfiConverterOptionalSequenceString : FfiConverterRustBuffer<List<kotlin.String>?> {
+public object FfiConverterOptionalSequenceString: FfiConverterRustBuffer<List<kotlin.String>?> {
     override fun read(buf: ByteBuffer): List<kotlin.String>? {
         if (buf.get().toInt() == 0) {
             return null
@@ -15175,10 +14963,7 @@ public object FfiConverterOptionalSequenceString : FfiConverterRustBuffer<List<k
         }
     }
 
-    override fun write(
-        value: List<kotlin.String>?,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: List<kotlin.String>?, buf: ByteBuffer) {
         if (value == null) {
             buf.put(0)
         } else {
@@ -15188,10 +14973,13 @@ public object FfiConverterOptionalSequenceString : FfiConverterRustBuffer<List<k
     }
 }
 
+
+
+
 /**
  * @suppress
  */
-public object FfiConverterOptionalSequenceByteArray : FfiConverterRustBuffer<List<kotlin.ByteArray>?> {
+public object FfiConverterOptionalSequenceByteArray: FfiConverterRustBuffer<List<kotlin.ByteArray>?> {
     override fun read(buf: ByteBuffer): List<kotlin.ByteArray>? {
         if (buf.get().toInt() == 0) {
             return null
@@ -15207,10 +14995,7 @@ public object FfiConverterOptionalSequenceByteArray : FfiConverterRustBuffer<Lis
         }
     }
 
-    override fun write(
-        value: List<kotlin.ByteArray>?,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: List<kotlin.ByteArray>?, buf: ByteBuffer) {
         if (value == null) {
             buf.put(0)
         } else {
@@ -15220,10 +15005,13 @@ public object FfiConverterOptionalSequenceByteArray : FfiConverterRustBuffer<Lis
     }
 }
 
+
+
+
 /**
  * @suppress
  */
-public object FfiConverterOptionalMapByteArrayTypeProtocolCreator : FfiConverterRustBuffer<Map<kotlin.ByteArray, ProtocolCreator>?> {
+public object FfiConverterOptionalMapByteArrayTypeProtocolCreator: FfiConverterRustBuffer<Map<kotlin.ByteArray, ProtocolCreator>?> {
     override fun read(buf: ByteBuffer): Map<kotlin.ByteArray, ProtocolCreator>? {
         if (buf.get().toInt() == 0) {
             return null
@@ -15239,10 +15027,7 @@ public object FfiConverterOptionalMapByteArrayTypeProtocolCreator : FfiConverter
         }
     }
 
-    override fun write(
-        value: Map<kotlin.ByteArray, ProtocolCreator>?,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: Map<kotlin.ByteArray, ProtocolCreator>?, buf: ByteBuffer) {
         if (value == null) {
             buf.put(0)
         } else {
@@ -15252,10 +15037,13 @@ public object FfiConverterOptionalMapByteArrayTypeProtocolCreator : FfiConverter
     }
 }
 
+
+
+
 /**
  * @suppress
  */
-public object FfiConverterSequenceString : FfiConverterRustBuffer<List<kotlin.String>> {
+public object FfiConverterSequenceString: FfiConverterRustBuffer<List<kotlin.String>> {
     override fun read(buf: ByteBuffer): List<kotlin.String> {
         val len = buf.getInt()
         return List<kotlin.String>(len) {
@@ -15269,10 +15057,7 @@ public object FfiConverterSequenceString : FfiConverterRustBuffer<List<kotlin.St
         return sizeForLength + sizeForItems
     }
 
-    override fun write(
-        value: List<kotlin.String>,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: List<kotlin.String>, buf: ByteBuffer) {
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterString.write(it, buf)
@@ -15280,10 +15065,13 @@ public object FfiConverterSequenceString : FfiConverterRustBuffer<List<kotlin.St
     }
 }
 
+
+
+
 /**
  * @suppress
  */
-public object FfiConverterSequenceByteArray : FfiConverterRustBuffer<List<kotlin.ByteArray>> {
+public object FfiConverterSequenceByteArray: FfiConverterRustBuffer<List<kotlin.ByteArray>> {
     override fun read(buf: ByteBuffer): List<kotlin.ByteArray> {
         val len = buf.getInt()
         return List<kotlin.ByteArray>(len) {
@@ -15297,10 +15085,7 @@ public object FfiConverterSequenceByteArray : FfiConverterRustBuffer<List<kotlin
         return sizeForLength + sizeForItems
     }
 
-    override fun write(
-        value: List<kotlin.ByteArray>,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: List<kotlin.ByteArray>, buf: ByteBuffer) {
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterByteArray.write(it, buf)
@@ -15308,10 +15093,13 @@ public object FfiConverterSequenceByteArray : FfiConverterRustBuffer<List<kotlin
     }
 }
 
+
+
+
 /**
  * @suppress
  */
-public object FfiConverterSequenceTypePathSnapshot : FfiConverterRustBuffer<List<PathSnapshot>> {
+public object FfiConverterSequenceTypePathSnapshot: FfiConverterRustBuffer<List<PathSnapshot>> {
     override fun read(buf: ByteBuffer): List<PathSnapshot> {
         val len = buf.getInt()
         return List<PathSnapshot>(len) {
@@ -15325,10 +15113,7 @@ public object FfiConverterSequenceTypePathSnapshot : FfiConverterRustBuffer<List
         return sizeForLength + sizeForItems
     }
 
-    override fun write(
-        value: List<PathSnapshot>,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: List<PathSnapshot>, buf: ByteBuffer) {
         buf.putInt(value.size)
         value.iterator().forEach {
             FfiConverterTypePathSnapshot.write(it, buf)
@@ -15336,10 +15121,13 @@ public object FfiConverterSequenceTypePathSnapshot : FfiConverterRustBuffer<List
     }
 }
 
+
+
+
 /**
  * @suppress
  */
-public object FfiConverterMapStringTypeCounterStats : FfiConverterRustBuffer<Map<kotlin.String, CounterStats>> {
+public object FfiConverterMapStringTypeCounterStats: FfiConverterRustBuffer<Map<kotlin.String, CounterStats>> {
     override fun read(buf: ByteBuffer): Map<kotlin.String, CounterStats> {
         val len = buf.getInt()
         return buildMap<kotlin.String, CounterStats>(len) {
@@ -15353,19 +15141,14 @@ public object FfiConverterMapStringTypeCounterStats : FfiConverterRustBuffer<Map
 
     override fun allocationSize(value: Map<kotlin.String, CounterStats>): ULong {
         val spaceForMapSize = 4UL
-        val spaceForChildren =
-            value
-                .map { (k, v) ->
-                    FfiConverterString.allocationSize(k) +
-                        FfiConverterTypeCounterStats.allocationSize(v)
-                }.sum()
+        val spaceForChildren = value.map { (k, v) ->
+            FfiConverterString.allocationSize(k) +
+            FfiConverterTypeCounterStats.allocationSize(v)
+        }.sum()
         return spaceForMapSize + spaceForChildren
     }
 
-    override fun write(
-        value: Map<kotlin.String, CounterStats>,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: Map<kotlin.String, CounterStats>, buf: ByteBuffer) {
         buf.putInt(value.size)
         // The parens on `(k, v)` here ensure we're calling the right method,
         // which is important for compatibility with older android devices.
@@ -15377,10 +15160,13 @@ public object FfiConverterMapStringTypeCounterStats : FfiConverterRustBuffer<Map
     }
 }
 
+
+
+
 /**
  * @suppress
  */
-public object FfiConverterMapByteArrayTypeProtocolCreator : FfiConverterRustBuffer<Map<kotlin.ByteArray, ProtocolCreator>> {
+public object FfiConverterMapByteArrayTypeProtocolCreator: FfiConverterRustBuffer<Map<kotlin.ByteArray, ProtocolCreator>> {
     override fun read(buf: ByteBuffer): Map<kotlin.ByteArray, ProtocolCreator> {
         val len = buf.getInt()
         return buildMap<kotlin.ByteArray, ProtocolCreator>(len) {
@@ -15394,19 +15180,14 @@ public object FfiConverterMapByteArrayTypeProtocolCreator : FfiConverterRustBuff
 
     override fun allocationSize(value: Map<kotlin.ByteArray, ProtocolCreator>): ULong {
         val spaceForMapSize = 4UL
-        val spaceForChildren =
-            value
-                .map { (k, v) ->
-                    FfiConverterByteArray.allocationSize(k) +
-                        FfiConverterTypeProtocolCreator.allocationSize(v)
-                }.sum()
+        val spaceForChildren = value.map { (k, v) ->
+            FfiConverterByteArray.allocationSize(k) +
+            FfiConverterTypeProtocolCreator.allocationSize(v)
+        }.sum()
         return spaceForMapSize + spaceForChildren
     }
 
-    override fun write(
-        value: Map<kotlin.ByteArray, ProtocolCreator>,
-        buf: ByteBuffer,
-    ) {
+    override fun write(value: Map<kotlin.ByteArray, ProtocolCreator>, buf: ByteBuffer) {
         buf.putInt(value.size)
         // The parens on `(k, v)` here ensure we're calling the right method,
         // which is important for compatibility with older android devices.
@@ -15418,58 +15199,83 @@ public object FfiConverterMapByteArrayTypeProtocolCreator : FfiConverterRustBuff
     }
 }
 
-/**
- * Set the logging level.
- */
-fun `setLogLevel`(`level`: LogLevel) =
-    uniffiRustCall { _status ->
-        UniffiLib.uniffi_iroh_ffi_fn_func_set_log_level(FfiConverterTypeLogLevel.lower(`level`), _status)
+
+
+
+
+
+
+
+        /**
+         * Set the logging level.
+         */ fun `setLogLevel`(`level`: LogLevel)
+        = 
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_func_set_log_level(
+    
+        FfiConverterTypeLogLevel.lower(`level`),_status)
+}
+    
+    
+
+        /**
+         * The minimal preset (no external dependencies; good for tests / offline).
+         */ fun `presetMinimal`(): Preset {
+            return FfiConverterTypePreset.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_func_preset_minimal(
+    
+        _status)
+}
+    )
     }
+    
 
-/**
- * The minimal preset (no external dependencies; good for tests / offline).
- */
-fun `presetMinimal`(): Preset =
-    FfiConverterTypePreset.lift(
-        uniffiRustCall { _status ->
-            UniffiLib.uniffi_iroh_ffi_fn_func_preset_minimal(_status)
-        },
+        /**
+         * The n0 production preset (relays + discovery).
+         */ fun `presetN0`(): Preset {
+            return FfiConverterTypePreset.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_func_preset_n0(
+    
+        _status)
+}
     )
+    }
+    
 
-/**
- * The n0 production preset (relays + discovery).
- */
-fun `presetN0`(): Preset =
-    FfiConverterTypePreset.lift(
-        uniffiRustCall { _status ->
-            UniffiLib.uniffi_iroh_ffi_fn_func_preset_n0(_status)
-        },
+        /**
+         * The n0 preset with relays disabled.
+         */ fun `presetN0DisableRelay`(): Preset {
+            return FfiConverterTypePreset.lift(
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_func_preset_n0_disable_relay(
+    
+        _status)
+}
     )
+    }
+    
 
-/**
- * The n0 preset with relays disabled.
- */
-fun `presetN0DisableRelay`(): Preset =
-    FfiConverterTypePreset.lift(
-        uniffiRustCall { _status ->
-            UniffiLib.uniffi_iroh_ffi_fn_func_preset_n0_disable_relay(_status)
-        },
+        /**
+         * Build an endpoint preset for your project's dedicated relays.
+         *
+         * Mirrors `iroh_services::preset()`: mints a short-lived access token scoped to
+         * the endpoint's key and to relay use only, then configures the endpoint to use
+         * your relays with that token. Pass the result as `EndpointOptions::preset`.
+         *
+         * The token is minted here, at preset-build time, so build the preset shortly
+         * before binding the endpoint.
+         */
+    @Throws(IrohException::class) fun `presetIrohServices`(`options`: ServicesPresetOptions): Preset {
+            return FfiConverterTypePreset.lift(
+    uniffiRustCallWithError(IrohException) { _status ->
+    UniffiLib.uniffi_iroh_ffi_fn_func_preset_iroh_services(
+    
+        FfiConverterTypeServicesPresetOptions.lower(`options`),_status)
+}
     )
+    }
+    
 
-/**
- * Build an endpoint preset for your project's dedicated relays.
- *
- * Mirrors `iroh_services::preset()`: mints a short-lived access token scoped to
- * the endpoint's key and to relay use only, then configures the endpoint to use
- * your relays with that token. Pass the result as `EndpointOptions::preset`.
- *
- * The token is minted here, at preset-build time, so build the preset shortly
- * before binding the endpoint.
- */
-@Throws(IrohException::class)
-fun `presetIrohServices`(`options`: ServicesPresetOptions): Preset =
-    FfiConverterTypePreset.lift(
-        uniffiRustCallWithError(IrohException) { _status ->
-            UniffiLib.uniffi_iroh_ffi_fn_func_preset_iroh_services(FfiConverterTypeServicesPresetOptions.lower(`options`), _status)
-        },
-    )
+
