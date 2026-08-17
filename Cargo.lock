@@ -2107,6 +2107,71 @@ dependencies = [
 ]
 
 [[package]]
+name = "js-a"
+version = "0.1.0"
+dependencies = [
+ "js-shared",
+ "napi",
+ "napi-build",
+ "napi-derive",
+]
+
+[[package]]
+name = "js-b"
+version = "0.1.0"
+dependencies = [
+ "js-shared",
+ "napi",
+ "napi-build",
+ "napi-derive",
+]
+
+[[package]]
+name = "js-iroh"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "iroh",
+ "iroh-ffi",
+ "napi",
+ "napi-derive",
+ "tokio",
+]
+
+[[package]]
+name = "js-iroh-core"
+version = "0.1.0"
+dependencies = [
+ "js-iroh",
+ "napi",
+ "napi-build",
+ "napi-derive",
+]
+
+[[package]]
+name = "js-iroh-ping"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "iroh",
+ "iroh-ffi",
+ "iroh-ping",
+ "js-iroh",
+ "napi",
+ "napi-build",
+ "napi-derive",
+ "tokio",
+]
+
+[[package]]
+name = "js-shared"
+version = "0.1.0"
+dependencies = [
+ "napi",
+ "napi-derive",
+]
+
+[[package]]
 name = "js-sys"
 version = "0.3.103"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -1,0 +1,15 @@
+[package]
+name = "js-shared"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# SPIKE: Rust `dylib` holding napi types that MULTIPLE .node addons should share.
+# Testing whether #[napi] registrations defined here reach an addon that links this.
+[lib]
+name = "js_shared"
+crate-type = ["dylib"]
+
+[dependencies]
+napi = { version = "3", default-features = false, features = ["napi8"] }
+napi-derive = "3"

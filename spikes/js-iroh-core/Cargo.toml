@@ -1,0 +1,19 @@
+[package]
+name = "js-iroh-core"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# SPIKE: the core addon a `@number0/iroh` package would ship. Thin — the types live in the
+# js-iroh dylib; this exists to be the .node Node loads.
+[lib]
+name = "js_iroh_core"
+crate-type = ["cdylib"]
+
+[dependencies]
+js-iroh = { path = "../js-iroh" }
+napi = { version = "3", default-features = false, features = ["napi8", "async", "error_anyhow"] }
+napi-derive = "3"
+
+[build-dependencies]
+napi-build = "2.2"

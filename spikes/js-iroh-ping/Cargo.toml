@@ -1,0 +1,24 @@
+[package]
+name = "js-iroh-ping"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# SPIKE: an independently published napi plugin addon. Links js-iroh as a dylib, so it
+# carries no copy of iroh and shares the Endpoint type.
+[lib]
+name = "js_iroh_ping"
+crate-type = ["cdylib"]
+
+[dependencies]
+js-iroh = { path = "../js-iroh" }
+iroh-ffi = { path = "../.." }
+iroh-ping = "1.0.0"
+iroh = "1.0.0"
+napi = { version = "3", default-features = false, features = ["napi8", "async", "error_anyhow"] }
+napi-derive = "3"
+tokio = "1.25.0"
+anyhow = "1"
+
+[build-dependencies]
+napi-build = "2.2"

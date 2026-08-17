@@ -1,9 +1,11 @@
 # Spike findings: `dylib` plugin linkage for iroh protocol FFI
 
-**All four spikes PASS.** A separately-built, separately-published plugin library can share one
-copy of `iroh` with the core library, and uniffi external types work across that boundary in
-Python, Kotlin/JVM, and Swift. **Swift is proven on macOS only** — iOS still needs the
-static→dynamic framework migration (finding 15).
+**All five spikes PASS.** A separately-built, separately-published plugin library can share one
+copy of `iroh` with the core library — in **Python, Kotlin/JVM, Swift, and JS** — and the shared
+types cross the boundary soundly in each.
+
+Two caveats: **Swift is proven on macOS only** (iOS needs the static→dynamic framework
+migration, finding 15), and **JS requires restructuring `iroh-js`** first (finding 16).
 
 Environment: macOS arm64 (Darwin 25.6.0), `rustc 1.97.1 (8bab26f4f 2026-07-14)`, JDK 17 launcher,
 uniffi 0.31.2, iroh 1.0.x, iroh-ping 1.0.0.
@@ -23,6 +25,10 @@ cd kotlin && ./gradlew :lib:test :ping:test :ping:testExtracted
 # Swift (macOS)
 bash spikes/stage_swift.sh
 IROH_FORCE_STAGING_RELAYS=1 target/swift-spike/.build/debug/SpikeMain
+
+# JS
+bash spikes/stage_js.sh
+IROH_FORCE_STAGING_RELAYS=1 node target/js-spike/js_round_trip.mjs
 ```
 
 ---
@@ -398,6 +404,100 @@ Reproduce: `bash spikes/stage_swift.sh` then run the printed binary.
 
     **iOS itself remains untested.** This spike is macOS + dylibs, which proves the language
     and linkage story but not the framework packaging, embedding, or signing.
+
+---
+
+## Spike E — JS / napi, two addons, one shared native library: **PASS**
+
+```
+target/js-spike/
+  iroh/       js_iroh_core.node  74 KB   libjs_iroh.dylib 3.0 MB
+              libiroh_ffi.dylib  162 MB  libstd-<hash>.dylib 1.4 MB
+  iroh_ping/  js_iroh_ping.node  920 KB
+```
+
+```
+core addon exports: Endpoint, EndpointAddr, version
+ping addon exports: Endpoint, EndpointAddr, Ping, alpn, version
+server bound: ab0f331e... addrs=[192.168.0.171:56484, ...]
+accepted connection from daf19e30...
+PING -> PONG round trip: 1 ms
+OK: Endpoint crossed the addon boundary
+```
+
+Reproduce: `bash spikes/stage_js.sh` then run the printed node command.
+
+**One copy of iroh, measured:** 17,328 defined `iroh` symbols in `libiroh_ffi.dylib`, **0** in
+`libjs_iroh.dylib`, **0** in `js_iroh_ping.node`. The chain is
+`js_iroh_ping.node` → `libjs_iroh.dylib` → `libiroh_ffi.dylib` — i.e. the JS stack shares the
+**same** core library as Python, Kotlin, and Swift.
+
+The design that makes this work: the napi wrapper types (`Endpoint`, `EndpointAddr`) live in a
+Rust **`dylib`**, not in either addon. `spikes/js-shared` + `js-a` + `js-b` are a minimal
+isolated repro of the mechanics below.
+
+### Findings that change the plan
+
+16. **`iroh-js` must be restructured — this is a precondition, not a nicety.** Today it is a
+    hand-maintained parallel napi port sharing zero Rust code with `iroh-ffi` (3279 vs 3305
+    lines). Cross-addon type sharing requires the wrapper types to live in a shared `dylib`,
+    so the current shape cannot participate at all. The spike's `spikes/js-iroh/` shows the
+    target shape: thin napi wrappers over `iroh_ffi::Endpoint`, in a dylib.
+
+17. **A Rust `dylib` containing `#[napi]` code will not link** without help:
+    ```
+    Undefined symbols: "_napi_unwrap", "_napi_wrap", "_napi_create_reference", ...
+    ld: symbol(s) not found for architecture arm64
+    ```
+    napi's `napi_*` symbols come from the **Node host at runtime**. `napi_build::setup()`
+    emits `cargo:rustc-cdylib-link-arg`, which applies only to *cdylibs*; a `dylib` needs
+    ```rust
+    println!("cargo:rustc-link-arg=-Wl,-undefined,dynamic_lookup");
+    ```
+
+18. **The linker silently drops an unreferenced dylib, and with it every registration.** An
+    addon that merely *depends* on the shared dylib in `Cargo.toml` but references nothing
+    from it links against `libSystem` only — `otool -L` shows no dependency, and the shared
+    classes are simply absent from `Object.keys()` with no error. Each addon needs a real
+    reference (`spikes/js-iroh-core` uses a one-line `version()` that mentions
+    `js_iroh::Endpoint`).
+
+19. **With the dylib genuinely linked, napi ends up as exactly one copy — which is what makes
+    cross-addon sharing sound.** Measured: 268 `napi::bindgen_runtime::module_register`
+    symbols in `libjs_iroh.dylib` vs 1 and 9 in the two addons, and
+    `napi_register_module_v1` is exported **only** from the dylib (Node still loads both
+    addons — `dlsym` on an addon handle searches its dependency chain). Because napi is one
+    copy, `napi_unwrap` — which has **no type-tag check** (`js_values/class.rs:199`) —
+    resolves against the same monomorphization. Verified end to end: an `Endpoint` built by
+    the core addon is used by the ping addon.
+
+    This also means the `TypeId`-based `External<T>` hazard and the per-dylib
+    `thread_local REGISTERED_CLASSES` concern both **dissolve** in this design — there is
+    only one registry, because there is only one napi.
+
+20. **Exports leak between addons and are require-order dependent.** Because napi's module
+    registry is process-global here, each addon registers everything accumulated so far:
+    ```
+    // core required first:  ping addon exports Endpoint, EndpointAddr, Ping, alpn, version
+    // ping required first:  ping addon exports Ping, alpn, ... but NOT the other addon's
+    ```
+    Functionality is unaffected (cross-addon calls work either way), but `Object.keys()` on an
+    addon is not a stable contract. The JS packages should re-export an explicit named surface
+    rather than spreading the addon object — `iroh-js/index.js` already does exactly that, so
+    this is a constraint to preserve, not new work.
+
+21. **Sync `#[napi]` methods have no tokio context.** `Router::spawn()` from a sync method
+    panics:
+    ```
+    thread '<unnamed>' panicked at iroh-1.0.2/src/protocol.rs:614:
+      there is no reactor running, must be called from the context of a Tokio 1.x runtime
+    fatal runtime error: failed to initiate panic, error 5, aborting
+    ```
+    Making the method `async` fixes it (napi then runs it on its runtime). This is the same
+    trap the repo already hit and fixed for uniffi in `cf04296` ("inject tokio runtime handle
+    into sync watch* spawn"), where `Endpoint`/`Connection` capture a
+    `tokio::runtime::Handle` at construction. Plugin authors need the same guidance — and note
+    it aborts the process rather than throwing.
 
 ---
 

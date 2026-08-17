@@ -1,0 +1,20 @@
+[package]
+name = "js-iroh"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# SPIKE: stands in for a restructured `iroh-js` core — napi wrappers over the SAME
+# `iroh-ffi` dylib that Python/Kotlin/Swift use, so there is one copy of iroh across all
+# four languages. Must be a Rust `dylib` so plugin addons can share these types.
+[lib]
+name = "js_iroh"
+crate-type = ["dylib"]
+
+[dependencies]
+iroh-ffi = { path = "../.." }
+iroh = "1.0.0"
+napi = { version = "3", default-features = false, features = ["napi8", "async", "error_anyhow"] }
+napi-derive = "3"
+tokio = "1.25.0"
+anyhow = "1"

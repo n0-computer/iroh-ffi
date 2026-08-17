@@ -1,0 +1,17 @@
+[package]
+name = "js-b"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+name = "js_b"
+crate-type = ["cdylib"]
+
+[dependencies]
+js-shared = { path = "../js-shared" }
+napi = { version = "3", default-features = false, features = ["napi8"] }
+napi-derive = "3"
+
+[build-dependencies]
+napi-build = "2.2"
