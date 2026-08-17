@@ -1,7 +1,9 @@
 # Spike findings: `dylib` plugin linkage for iroh protocol FFI
 
-**All three spikes PASS.** A separately-built, separately-published plugin library can share one
-copy of `iroh` with the core library, and uniffi external types work across that boundary.
+**All four spikes PASS.** A separately-built, separately-published plugin library can share one
+copy of `iroh` with the core library, and uniffi external types work across that boundary in
+Python, Kotlin/JVM, and Swift. **Swift is proven on macOS only** — iOS still needs the
+static→dynamic framework migration (finding 15).
 
 Environment: macOS arm64 (Darwin 25.6.0), `rustc 1.97.1 (8bab26f4f 2026-07-14)`, JDK 17 launcher,
 uniffi 0.31.2, iroh 1.0.x, iroh-ping 1.0.0.
@@ -17,6 +19,10 @@ cd target/spike-stage && python3 round_trip.py
 # Kotlin (JDK 17 launcher — see the environment note at the end)
 bash spikes/stage_kotlin.sh
 cd kotlin && ./gradlew :lib:test :ping:test :ping:testExtracted
+
+# Swift (macOS)
+bash spikes/stage_swift.sh
+IROH_FORCE_STAGING_RELAYS=1 target/swift-spike/.build/debug/SpikeMain
 ```
 
 ---
@@ -325,6 +331,76 @@ JDK 21 for compilation.
 
 ---
 
+## Spike D — Swift, two modules over two native libraries: **PASS on macOS, blocked on iOS packaging**
+
+Two separate Swift modules, two separate C modules, two separately-built native libraries:
+
+```
+IrohLib  (module) + iroh_ffiFFI      (C module) -> libiroh_ffi.dylib      163 MB
+IrohPing (module) + iroh_ffi_pingFFI (C module) -> libiroh_ffi_ping.dylib 362 KB
+```
+
+```
+alpn = iroh/ping/0
+server bound: c5082402... addrs=[192.168.0.171:53165, ...]
+PING -> PONG round trip: 1 ms
+OK: Endpoint crossed the Swift module + library boundary
+```
+
+Reproduce: `bash spikes/stage_swift.sh` then run the printed binary.
+
+### Findings that change the plan
+
+13. **The "single module" caveat is NOT binding — one injected import is enough.** uniffi
+    documents: *"you must compile all generated `.swift` files together in a single module
+    since the generated code expects that it can access external types without importing
+    them."* Literally true — the plugin's generated Swift emits only
+    `import Foundation` + `import iroh_ffi_pingFFI` and then references `Endpoint`,
+    `EndpointAddr`, `ProtocolHandler`, `FfiConverterTypeEndpoint_lower`,
+    `FfiConverterTypeProtocolHandler_lift` with no import and no declaration.
+
+    But everything it needs is **`public`** in core's generated Swift
+    (`public func FfiConverterTypeEndpoint_lower`, `open class Endpoint`,
+    `public protocol EndpointProtocol`, …), so prepending a single line fixes it:
+    ```swift
+    import IrohLib
+    ```
+    Verified: `IrohPing` compiles as its own module and runs. This is the same class of
+    one-line post-processing that `make_swift.sh` already does (it `sed`s `iroh_ffiFFI` → `Iroh`).
+
+    Two C modules each declaring their own `RustBuffer` coexisted without complaint here.
+    **Untested:** a plugin taking a *record* across the boundary, where `RustBuffer` itself
+    would have to cross — that is the shape [uniffi#2802](https://github.com/mozilla/uniffi-rs/issues/2802)
+    is about. This spike only passes objects.
+
+14. **Swift has no `external_packages` config.** Its `Config`
+    (`bindings/swift/gen_swift/mod.rs:167`) carries only `module_name`, `ffi_module_name`, and
+    `rename` — there is no equivalent of the Python/Kotlin mechanism. The injected import is
+    the whole answer, and it must be applied by the build, not by hand.
+
+15. **The current static xcframework model cannot support plugins. Measured, not inferred.**
+    Building the plugin as a `staticlib` produces **688 MB** against core's 686 MB — a Rust
+    `staticlib` is self-contained by definition and re-embeds all of `iroh`, and
+    `-C prefer-dynamic` does not change that. Both archives then export the **same 83
+    `_ring_core_0_17_14__*` symbols**:
+    ```
+    _ring_core_0_17_14__aes_gcm_dec_kernel
+    _ring_core_0_17_14__aes_gcm_enc_kernel
+    _ring_core_0_17_14__aes_hw_ctr32_encrypt_blocks
+    ...
+    ```
+    Linking both into one app is 83 duplicate-symbol errors, on top of shipping iroh twice.
+
+    So Apple **must** move to dynamic frameworks (App-Store-legal when embedded and signed).
+    `make_swift.sh` builds static `.a` slices and `[tasks.verify-swift-xcframework]` actively
+    *fails* if a `.framework` directory appears — both need rewriting, and the
+    `release_swift.yml` checksum flow along with them.
+
+    **iOS itself remains untested.** This spike is macOS + dylibs, which proves the language
+    and linkage story but not the framework packaging, embedding, or signing.
+
+---
+
 ## Upstream tracking
 
 ### maturin — the `external_packages` wheel problem is **already fixed**
@@ -387,6 +463,9 @@ The architecture works. Proceed, with these adjustments to the plan:
   (finding 11).
 - The compatibility gate stays in the plan, downgraded from "non-optional safety mechanism"
   to "clear diagnostics on top of an already-safe default failure".
+- **Apple must move from the static xcframework to dynamic frameworks** (finding 15) — the
+  static model is measurably impossible, not merely awkward. Swift also needs an `import`
+  injected into the plugin's generated bindings (finding 13).
 - **Residual strategic risk:** multi-library remains explicitly unsupported upstream
   (finding 5). Finding 9 removes our dependency on incidentally-public bindgen API, but not
   the risk that uniffi changes something that breaks the split. Worth an upstream

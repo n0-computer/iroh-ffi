@@ -1,0 +1,42 @@
+// swift-tools-version:5.9
+//
+// SPIKE: two SEPARATE Swift modules (IrohLib, IrohPing) over two separately-built native
+// libraries sharing one copy of iroh. Tests whether uniffi's documented "all generated
+// .swift must be in a single module" caveat is actually binding.
+import PackageDescription
+
+let nativeDir = "@NATIVE_DIR@"
+let stdDir = "@STD_DIR@"
+
+let package = Package(
+    name: "SwiftSpike",
+    platforms: [.macOS("14.5")],
+    targets: [
+        // C modules from uniffi's generated headers.
+        .systemLibrary(name: "iroh_ffiFFI"),
+        .systemLibrary(name: "iroh_ffi_pingFFI"),
+
+        // Core Swift module — generated bindings, unmodified.
+        .target(name: "IrohLib", dependencies: ["iroh_ffiFFI"]),
+
+        // Plugin Swift module. Its generated bindings reference Endpoint / EndpointAddr /
+        // ProtocolHandler / FfiConverterType*_lower with no import — all of which are
+        // `public` in IrohLib, so a single injected `import IrohLib` should suffice.
+        .target(name: "IrohPing", dependencies: ["iroh_ffi_pingFFI", "IrohLib"]),
+
+        .executableTarget(
+            name: "SpikeMain",
+            dependencies: ["IrohLib", "IrohPing"],
+            linkerSettings: [
+                .unsafeFlags([
+                    "-L\(nativeDir)", "-liroh_ffi", "-liroh_ffi_ping",
+                    "-Xlinker", "-rpath", "-Xlinker", nativeDir,
+                    "-Xlinker", "-rpath", "-Xlinker", stdDir,
+                    "-framework", "SystemConfiguration",
+                    "-framework", "Network",
+                    "-framework", "CoreWLAN",
+                ]),
+            ]
+        ),
+    ]
+)
