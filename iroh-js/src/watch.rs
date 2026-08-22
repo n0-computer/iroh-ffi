@@ -54,7 +54,11 @@ pub(crate) fn spawn_home_relay_watch(
         use iroh::Watcher;
         let mut stream = endpoint.home_relay_status().stream();
         while let Some(statuses) = stream.next().await {
-            let urls: Vec<String> = statuses.into_iter().map(|s| s.url().to_string()).collect();
+            let urls: Vec<String> = statuses
+                .into_iter()
+                .filter(|status| status.is_connected())
+                .map(|status| status.url().to_string())
+                .collect();
             cb.call(Ok(urls), ThreadsafeFunctionCallMode::NonBlocking);
         }
     });
