@@ -4,6 +4,8 @@ use iroh::{
     endpoint::{self, presets, presets::Preset as _},
     protocol::AcceptError,
 };
+use iroh_relay::tls::CaTlsConfig;
+use rustls::pki_types::CertificateDer;
 use tokio::sync::Mutex;
 
 use crate::{
@@ -70,6 +72,17 @@ impl EndpointBuilder {
     }
 }
 
+/// Trust-root choice for [`EndpointBuilder::apply_n0_with_relay_tls`].
+#[derive(Debug, uniffi::Enum)]
+pub enum RelayTlsRoots {
+    /// The operating system's certificate facilities (`CaTlsConfig::system`).
+    System,
+    /// A compiled-in copy of the roots trusted by Mozilla (`CaTlsConfig::embedded`).
+    Embedded,
+    /// Only the given DER-encoded root certificates (`CaTlsConfig::custom_roots`).
+    Custom { certs: Vec<Vec<u8>> },
+}
+
 #[uniffi::export]
 impl EndpointBuilder {
     /// Create a fresh empty endpoint builder. Apply a preset (`apply_n0`,
@@ -93,6 +106,24 @@ impl EndpointBuilder {
     /// Replay the n0 preset with relays disabled.
     pub fn apply_n0_disable_relay(&self) {
         self.map(|b| presets::N0DisableRelay.apply(b));
+    }
+
+    /// Replay the n0 preset, then override the relay-TLS trust roots.
+    ///
+    /// `iroh::endpoint::Builder::ca_tls_config` is public Rust API but is not
+    /// reachable from the FFI surface; this closes that gap for managed-language
+    /// consumers without requiring a callback across the boundary.
+    pub fn apply_n0_with_relay_tls(&self, roots: RelayTlsRoots) {
+        self.map(|b| {
+            let ca = match &roots {
+                RelayTlsRoots::System => CaTlsConfig::system(),
+                RelayTlsRoots::Embedded => CaTlsConfig::embedded(),
+                RelayTlsRoots::Custom { certs } => {
+                    CaTlsConfig::custom_roots(certs.iter().map(|c| CertificateDer::from(c.clone())))
+                }
+            };
+            presets::N0.apply(b).ca_tls_config(ca)
+        });
     }
 
     /// Set the endpoint secret key (32 bytes).
