@@ -1811,7 +1811,7 @@ dependencies = [
  "iroh-base",
  "iroh-metrics",
  "iroh-relay",
- "iroh-services",
+ "iroh-services 1.0.0 (git+https://github.com/n0-computer/iroh-services?rev=d6f0d85c6f046459c9af5028c37012966ad04945)",
  "iroh-tickets",
  "jni 0.22.4",
  "n0-error",
@@ -1933,6 +1933,60 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
+name = "iroh-services"
+version = "1.0.0"
+source = "git+https://github.com/n0-computer/iroh-services?rev=d6f0d85c6f046459c9af5028c37012966ad04945#d6f0d85c6f046459c9af5028c37012966ad04945"
+dependencies = [
+ "anyhow",
+ "base64",
+ "built",
+ "bytes",
+ "cfg_aliases",
+ "data-encoding",
+ "ed25519-dalek",
+ "futures-buffered",
+ "getrandom 0.4.3",
+ "iroh",
+ "iroh-metrics",
+ "iroh-services-proto",
+ "iroh-tickets",
+ "irpc",
+ "irpc-iroh",
+ "n0-error",
+ "n0-future",
+ "portmapper",
+ "postcard",
+ "rand",
+ "rcan",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
+name = "iroh-services-proto"
+version = "0.1.0"
+source = "git+https://github.com/n0-computer/iroh-services?rev=d6f0d85c6f046459c9af5028c37012966ad04945#d6f0d85c6f046459c9af5028c37012966ad04945"
+dependencies = [
+ "anyhow",
+ "derive_more",
+ "iroh",
+ "iroh-metrics",
+ "irpc",
+ "rcan",
+ "serde",
+ "strum",
+ "thiserror 2.0.18",
+ "tracing",
  "uuid",
 ]
 
@@ -2615,7 +2669,7 @@ dependencies = [
  "iroh-base",
  "iroh-metrics",
  "iroh-relay",
- "iroh-services",
+ "iroh-services 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "iroh-tickets",
  "n0-future",
  "napi",
