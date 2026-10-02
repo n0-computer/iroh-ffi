@@ -7,7 +7,7 @@
 //! preset that points at your project's dedicated relays and authenticates to
 //! them with a token minted from your API key.
 
-use std::{sync::Arc, time::Duration};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use iroh_services::{Client, ClientBuilder};
 
@@ -35,6 +35,13 @@ pub struct ServicesOptions {
     /// Optional endpoint name to register cloud-side.
     #[uniffi(default = None)]
     pub name: Option<String>,
+    /// Optional group for this endpoint (2–128 UTF-8 bytes).
+    #[uniffi(default = None)]
+    pub group: Option<String>,
+    /// Initial attributes. Keys must be 2–128 UTF-8 bytes, values at most
+    /// 128 bytes; at most 128 entries are allowed.
+    #[uniffi(default = None)]
+    pub attributes: Option<HashMap<String, String>>,
     /// How often (in milliseconds) to push metrics to the service. `0` disables
     /// automatic interval pushes; if omitted the upstream default applies.
     #[uniffi(default = None)]
@@ -245,6 +252,16 @@ impl ServicesClient {
                 .name(name)
                 .map_err(|e| anyhow::anyhow!("invalid name: {e:?}"))?;
         }
+        if let Some(group) = options.group {
+            builder = builder
+                .group(group)
+                .map_err(|e| anyhow::anyhow!("invalid group: {e:?}"))?;
+        }
+        if let Some(attributes) = options.attributes {
+            builder = builder
+                .attributes(attributes)
+                .map_err(|e| anyhow::anyhow!("invalid attributes: {e:?}"))?;
+        }
         if let Some(ms) = options.metrics_interval_ms {
             if ms == 0 {
                 builder = builder.disable_metrics_interval();
@@ -274,6 +291,45 @@ impl ServicesClient {
     pub async fn set_name(&self, name: String) -> Result<(), IrohError> {
         self.inner
             .set_name(name)
+            .await
+            .map_err(|e| anyhow::anyhow!("{e:?}").into())
+    }
+
+    /// Read the current endpoint group from the local client.
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn group(&self) -> Result<Option<String>, IrohError> {
+        self.inner
+            .group()
+            .await
+            .map_err(|e| anyhow::anyhow!("{e:?}").into())
+    }
+
+    /// Set the endpoint group cloud-side. Must be 2–128 UTF-8 bytes.
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn set_group(&self, group: String) -> Result<(), IrohError> {
+        self.inner
+            .set_group(group)
+            .await
+            .map_err(|e| anyhow::anyhow!("{e:?}").into())
+    }
+
+    /// Replace all endpoint attributes cloud-side. An empty map clears them.
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn set_attributes(
+        &self,
+        attributes: HashMap<String, String>,
+    ) -> Result<(), IrohError> {
+        self.inner
+            .set_attributes(attributes)
+            .await
+            .map_err(|e| anyhow::anyhow!("{e:?}").into())
+    }
+
+    /// Set or replace one endpoint attribute cloud-side.
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn set_attribute(&self, key: String, value: String) -> Result<(), IrohError> {
+        self.inner
+            .set_attribute(key, value)
             .await
             .map_err(|e| anyhow::anyhow!("{e:?}").into())
     }
@@ -372,6 +428,47 @@ mod tests {
         )
         .await;
         assert!(res.is_err(), "must reject when >1 credentials supplied");
+        ep.close().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_services_group_and_attributes() {
+        let ep = minimal_endpoint().await;
+        let client = ServicesClient::create(
+            &ep,
+            ServicesOptions {
+                api_secret: Some(FAKE_API_SECRET.to_string()),
+                group: Some("staging".to_string()),
+                attributes: Some(HashMap::from([("env".to_string(), "test".to_string())])),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+        assert_eq!(client.group().await.unwrap().as_deref(), Some("staging"));
+        assert!(client.set_group("a".to_string()).await.is_err());
+        assert!(
+            client
+                .set_attributes(HashMap::from([("a".to_string(), "value".to_string())]))
+                .await
+                .is_err()
+        );
+
+        for options in [
+            ServicesOptions {
+                api_secret: Some(FAKE_API_SECRET.to_string()),
+                group: Some("a".to_string()),
+                ..Default::default()
+            },
+            ServicesOptions {
+                api_secret: Some(FAKE_API_SECRET.to_string()),
+                attributes: Some(HashMap::from([("a".to_string(), "value".to_string())])),
+                ..Default::default()
+            },
+        ] {
+            assert!(ServicesClient::create(&ep, options).await.is_err());
+        }
+        drop(client);
         ep.close().await.unwrap();
     }
 
