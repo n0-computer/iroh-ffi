@@ -4,7 +4,109 @@ use iroh_services::{Client, ClientBuilder};
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
 
-use crate::Endpoint;
+use crate::{Endpoint, EndpointBuilder};
+
+/// Options for [`preset_iroh_services`].
+///
+/// Supply *exactly one* of `api_secret` or `api_secret_from_env`.
+#[derive(Debug, Default)]
+#[napi(object)]
+pub struct ServicesPresetOptions {
+    /// Your project's relay URLs. Defaults to the n0 public relays when
+    /// omitted, matching `iroh_services::preset()`. Passing an empty list is an
+    /// error rather than a silent fallback — that is nearly always a filtered
+    /// list that came back empty.
+    pub relays: Option<Vec<String>>,
+    /// Encoded API secret string (`services1...`). The relay access token is
+    /// minted from this.
+    pub api_secret: Option<String>,
+    /// If true, read the API secret from `IROH_SERVICES_API_SECRET`.
+    pub api_secret_from_env: Option<bool>,
+    /// The endpoint's own identity key (32 bytes) — not your API secret. The
+    /// access token is scoped to it, so pass the same key you persist for your
+    /// endpoint's identity. A fresh key is generated when omitted.
+    ///
+    /// Set the key *here*, not via `EndpointBuilder.secretKey`: a key applied
+    /// after this preset would replace the one the token is scoped to. Doing
+    /// that throws — even for bit-identical bytes — rather than silently
+    /// failing auth: this preset pins the key.
+    pub endpoint_secret_key: Option<Vec<u8>>,
+}
+
+/// Point an endpoint at your project's dedicated relays.
+///
+/// Mirrors `iroh_services::preset()`: mints a short-lived access token scoped to
+/// the endpoint's key and to relay use only, then configures the builder to use
+/// your relays with that token. Installs the crypto provider, like the other
+/// preset helpers, so it needs no baseline preset before it.
+///
+/// ```js
+/// const b = Endpoint.builder()
+/// presetIrohServices(b, { relays: [relayUrl], apiSecret: apiKey })
+/// const ep = await b.bind()
+/// await ep.online()
+/// ```
+#[napi]
+pub fn preset_iroh_services(
+    builder: &EndpointBuilder,
+    options: ServicesPresetOptions,
+) -> Result<()> {
+    let mut preset = iroh_services::preset();
+
+    preset = match (
+        options.api_secret,
+        options.api_secret_from_env.unwrap_or(false),
+    ) {
+        (Some(_), true) => {
+            return Err(anyhow::anyhow!(
+                "ServicesPresetOptions: supply only one of api_secret / api_secret_from_env"
+            )
+            .into());
+        }
+        (None, false) => {
+            return Err(anyhow::anyhow!(
+                "ServicesPresetOptions requires one of api_secret or api_secret_from_env=true"
+            )
+            .into());
+        }
+        (Some(secret), false) => preset
+            .api_secret_from_str(&secret)
+            .map_err(|e| anyhow::anyhow!("invalid api secret: {e:?}"))?,
+        (None, true) => preset
+            .api_secret_from_env()
+            .map_err(|e| anyhow::anyhow!("api secret env var: {e:?}"))?,
+    };
+
+    // Omitted relays keep the builder's n0 default; an empty list does not.
+    if let Some(relays) = options.relays {
+        if relays.is_empty() {
+            return Err(anyhow::anyhow!(
+                "ServicesPresetOptions: relays is empty; omit it to use the n0 relays"
+            )
+            .into());
+        }
+        preset = preset
+            .relays(relays)
+            .map_err(|e| anyhow::anyhow!("invalid relay url: {e:?}"))?;
+    }
+
+    if let Some(bytes) = options.endpoint_secret_key {
+        let key: [u8; 32] = bytes
+            .as_slice()
+            .try_into()
+            .map_err(|e| anyhow::anyhow!("invalid endpoint secret key length: {e:?}"))?;
+        preset = preset.secret_key(iroh::SecretKey::from_bytes(&key));
+    }
+
+    let preset = preset
+        .build()
+        .map_err(|e| anyhow::anyhow!("services preset build failed: {e:?}"))?;
+    builder.apply_iroh_preset(preset);
+    // The access token is scoped to the key the preset just set, so a later
+    // `secretKey` call must throw rather than silently break relay auth.
+    builder.pin_secret_key();
+    Ok(())
+}
 
 /// Build options for [`ServicesClient`].
 #[derive(Debug, Default)]

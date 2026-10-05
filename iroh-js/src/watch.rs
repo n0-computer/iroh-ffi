@@ -1,5 +1,8 @@
 use n0_future::{StreamExt, task::AbortOnDropHandle};
-use napi::threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode};
+use napi::{
+    bindgen_prelude::spawn,
+    threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode},
+};
 use napi_derive::napi;
 use tokio::sync::Mutex;
 
@@ -32,7 +35,7 @@ pub(crate) fn spawn_watch_addr(
     endpoint: iroh::Endpoint,
     cb: ThreadsafeFunction<EndpointAddr>,
 ) -> WatchHandle {
-    let task = n0_future::task::spawn(async move {
+    let task = spawn(async move {
         use iroh::Watcher;
         let mut stream = endpoint.watch_addr().stream();
         while let Some(addr) = stream.next().await {
@@ -47,7 +50,7 @@ pub(crate) fn spawn_home_relay_watch(
     endpoint: iroh::Endpoint,
     cb: ThreadsafeFunction<Vec<String>>,
 ) -> WatchHandle {
-    let task = n0_future::task::spawn(async move {
+    let task = spawn(async move {
         use iroh::Watcher;
         let mut stream = endpoint.home_relay_status().stream();
         while let Some(statuses) = stream.next().await {
@@ -62,7 +65,7 @@ pub(crate) fn spawn_network_change_watch(
     endpoint: iroh::Endpoint,
     cb: ThreadsafeFunction<()>,
 ) -> WatchHandle {
-    let task = n0_future::task::spawn(async move {
+    let task = spawn(async move {
         loop {
             endpoint.network_change().await;
             cb.call(Ok(()), ThreadsafeFunctionCallMode::NonBlocking);
@@ -75,7 +78,7 @@ pub(crate) fn spawn_paths_watch(
     conn: iroh::endpoint::Connection,
     cb: ThreadsafeFunction<Vec<PathSnapshot>>,
 ) -> WatchHandle {
-    let task = n0_future::task::spawn(async move {
+    let task = spawn(async move {
         let mut stream = conn.paths_stream();
         while let Some(snapshot) = stream.next().await {
             let mapped: Vec<PathSnapshot> = snapshot
@@ -100,7 +103,7 @@ pub(crate) fn spawn_path_events_watch(
     conn: iroh::endpoint::Connection,
     cb: ThreadsafeFunction<PathEvent>,
 ) -> WatchHandle {
-    let task = n0_future::task::spawn(async move {
+    let task = spawn(async move {
         let mut stream = conn.path_events();
         while let Some(event) = stream.next().await {
             let mapped: PathEvent = event.into();

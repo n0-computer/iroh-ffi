@@ -14,6 +14,8 @@ set -eu
 JNI_SOURCE="${JNI_SOURCE:-./android-jniLibs}"
 [ -d "$JNI_SOURCE" ] || { echo "ERROR: $JNI_SOURCE not found — cross-build or download the artifact first" >&2; exit 1; }
 
+bash "$(dirname "$0")/verify_android_page_size.sh" "$JNI_SOURCE"
+
 JNI_DEST=kotlin/android/src/main/jniLibs
 for abi in armeabi-v7a arm64-v8a x86 x86_64; do
   install -D -m644 "$JNI_SOURCE/$abi/libiroh_ffi.so" "$JNI_DEST/$abi/libiroh_ffi.so"
