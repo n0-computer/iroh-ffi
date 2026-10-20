@@ -648,7 +648,7 @@ export JAVA_HOME="$JH17"
 # signAllPublications() makes the .asc signatures part of the publication, so
 # publishToMavenLocal needs the key — same armored private key as the
 # SIGNING_KEY CI secret. Export its file contents:
-#   export ORG_GRADLE_PROJECT_signingInMemoryKey="$(cat ~/.keys/maven_key.sec.asc)"
+#   export ORG_GRADLE_PROJECT_signingInMemoryKey="$(cat ~/.keys/maven_key.priv.asc)"
 if [ -z "${ORG_GRADLE_PROJECT_signingInMemoryKey:-}" ]; then
   echo "ERROR: export ORG_GRADLE_PROJECT_signingInMemoryKey (armored private key) to validate signing" >&2
   exit 1
