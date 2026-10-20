@@ -131,6 +131,7 @@ from_iroh_err! {
     iroh::endpoint::ReadToEndError => IrohErrorKind::Stream,
     iroh::endpoint::StoppedError => IrohErrorKind::Stream,
     iroh::endpoint::SendDatagramError => IrohErrorKind::Datagram,
+    iroh::endpoint::ExportKeyingMaterialError => IrohErrorKind::Connection,
     iroh::endpoint::ResetError => IrohErrorKind::Stream,
     iroh_base::KeyParsingError => IrohErrorKind::KeyParsing,
     iroh_tickets::ParseError => IrohErrorKind::TicketParsing,

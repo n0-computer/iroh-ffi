@@ -681,6 +681,23 @@ impl Connection {
         self.inner.stable_id() as _
     }
 
+    /// Derives `length` bytes of keying material from this connection's TLS session (RFC 5705).
+    ///
+    /// Both peers calling this with the same `label` and `context` get the same bytes, which are
+    /// unique to this connection: a signature over them proves the signer is on this connection
+    /// and cannot be relayed into another one.
+    pub fn export_keying_material(
+        &self,
+        length: u32,
+        label: Vec<u8>,
+        context: Vec<u8>,
+    ) -> Result<Vec<u8>, IrohError> {
+        let mut output = vec![0u8; length as usize];
+        self.inner
+            .export_keying_material(&mut output, &label, &context)?;
+        Ok(output)
+    }
+
     /// Current best estimate of this connection's RTT on the selected path,
     /// in milliseconds. `None` if no path is currently selected.
     pub fn rtt(&self) -> Option<u64> {
