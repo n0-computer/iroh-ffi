@@ -15,6 +15,8 @@ This repo defines Python, Swift, Kotlin and Node.js bindings for [iroh](https://
 - [Kotlin / JVM: Maven Central](https://central.sonatype.com/artifact/computer.iroh/iroh) — `computer.iroh:iroh`
 - [JavaScript: npm](https://www.npmjs.com/package/@number0/iroh) — `@number0/iroh`
 - [Go](https://git.coopcloud.tech/decentral1se/iroh-go) (*Community maintained*)
+- [Dart](https://pub.dev/packages/iroh_quic) (*Community maintained*)
+- [Flutter](https://pub.dev/packages/iroh_flutter) (*Community maintained*)
 
 ## Documentation
 
@@ -43,6 +45,8 @@ See the per-language READMEs below and [DEVELOPERS.md](DEVELOPERS.md) for detail
 * [**Kotlin readme**](README.kotlin.md)
 * [**Node.js readme**](iroh-js/README.md)
 * [**Go readme**](https://git.coopcloud.tech/decentral1se/iroh-go#iroh-go)
+* [**Dart readme**](https://github.com/snowpinelabs/iroh_dart/tree/main/packages/iroh_quic)
+* [**Flutter readme**](https://github.com/snowpinelabs/iroh_dart/blob/main/packages/iroh_flutter/README.md)
 
 ## Developers
 Check our [DEVELOPERS.md](DEVELOPERS.md) for guides on how to translate from the iroh rust API to the iroh FFI API, as well as how to set up testing for Golang and Python.
