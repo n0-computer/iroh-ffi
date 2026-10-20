@@ -53,20 +53,20 @@ and JDK 17 (`brew install --cask temurin@17`):
 ```sh
 rustup target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios \
   aarch64-apple-darwin aarch64-apple-ios-macabi
-# armored private key, same as the SIGNING_KEY secret
+# optional: armored private key, same as the SIGNING_KEY secret
 export ORG_GRADLE_PROJECT_signingInMemoryKey="$(cat ~/.keys/maven_key.priv.asc)"
 cargo make pre-release-check
 ```
 
 This builds and checks the Swift xcframework, the Python wheel, the npm package
-(`npm publish --dry-run`) and the signed Maven publication
-(`publishToMavenLocal`). The Swift zip built here is only a check; the
-published zip comes from CI (step 3).
+(`npm publish --dry-run`) and the Maven publication (`publishToMavenLocal`).
+The Swift zip built here is only a check; the published zip comes from CI
+(step 3).
 
-The key is needed because both Kotlin modules sign every publication, local
-ones included. This makes the local dry run the only check of Maven signing
-before the tag, since the CI dry run skips the Maven Central publish. It checks
-your local copy of the key, not the `SIGNING_KEY` secret.
+The signing key is optional. Without it, the Maven publication is built
+unsigned. With it, the dry run also checks Maven signing, which nothing else
+checks before the tag, since the CI dry run skips the Maven Central publish.
+It checks your local copy of the key, not the `SIGNING_KEY` secret.
 
 ## 2. Open the release PR
 

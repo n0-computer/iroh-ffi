@@ -47,7 +47,12 @@ dependencies {
 // shape as the JVM publication in :lib, just an AAR instead of a JAR.
 mavenPublishing {
     publishToMavenCentral(automaticRelease = true)
-    signAllPublications()
+    // Local publishes may skip signing; Maven Central uploads must be signed.
+    if (providers.gradleProperty("signingInMemoryKey").isPresent ||
+        gradle.startParameter.taskNames.any { "MavenCentral" in it }
+    ) {
+        signAllPublications()
+    }
     configure(
         com.vanniktech.maven.publish.AndroidSingleVariantLibrary(
             variant = "release",
