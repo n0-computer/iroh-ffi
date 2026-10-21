@@ -60,7 +60,7 @@ mavenPublishing {
             publishJavadocJar = true,
         ),
     )
-    coordinates("computer.iroh", "iroh-android", "1.1.0")
+    coordinates("computer.iroh", "iroh-android", "1.2.0")
     pom {
         name = "iroh-android"
         description = "Android bindings for iroh: distributed systems made simple. AAR variant of computer.iroh:iroh — includes libiroh_ffi.so per ABI + IrohAndroid for JNI initialization."

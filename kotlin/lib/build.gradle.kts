@@ -77,7 +77,7 @@ mavenPublishing {
     ) {
         signAllPublications()
     }
-    coordinates("computer.iroh", "iroh", "1.1.0")
+    coordinates("computer.iroh", "iroh", "1.2.0")
     pom {
         name = "iroh"
         description = "Kotlin bindings for iroh: distributed systems made simple."
