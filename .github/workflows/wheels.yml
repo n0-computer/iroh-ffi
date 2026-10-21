@@ -56,6 +56,28 @@ jobs:
           # to re-run a failed publish without holding ~3GB for 90 days.
           retention-days: 3
 
+  musllinux:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - release-arch: x86_64
+            container-image: quay.io/pypa/musllinux_1_2_x86_64
+            runner: [self-hosted, linux, X64]
+          - release-arch: aarch64
+            container-image: quay.io/pypa/musllinux_1_2_aarch64
+            runner: [self-hosted, linux, ARM64]
+    steps:
+      - uses: actions/checkout@v5
+      # Run the script in docker since the host is glibc
+      - name: Build musllinux wheel
+        run: docker run --rm -v "$PWD:/build" -w /build ${{ matrix.container-image }} /build/build_wheel.sh musllinux
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-musllinux_1_2-${{ matrix.release-arch }}
+          path: target/wheels/*.whl
+          retention-days: 3
+
   osx:
     # arm64-only: the org has no GitHub-hosted macOS and x86_64 mac wheels
     # were dropped.
@@ -95,9 +117,35 @@ jobs:
           path: target/wheels/*.whl
           retention-days: 3
 
+  verify-musl-wheel:
+    name: Smoke-test musllinux wheel (${{ matrix.release-arch }})
+    needs: musllinux
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - release-arch: x86_64
+            runner: [self-hosted, linux, X64]
+            platform: linux/amd64
+          - release-arch: aarch64
+            runner: [self-hosted, linux, ARM64]
+            platform: linux/arm64
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: wheels-musllinux_1_2-${{ matrix.release-arch }}
+          path: dist/
+      - name: Install wheel + exercise native API in Alpine Linux
+        run: |
+          docker run --rm --platform ${{ matrix.platform }} -v "$PWD/dist:/dist" -w /dist python:3.11-alpine sh -ec '
+            pip install --quiet ./iroh-*-musllinux_1_2_*.whl
+            python -c "import iroh; s = iroh.SecretKey.generate(); assert len(s.public().to_bytes()) == 32; print(\"musllinux wheel smoke: OK\", s.public().fmt_short())"
+          '
+
   publish:
     name: Publish wheels to PyPI
-    needs: [manylinux, osx, windows]
+    needs: [manylinux, osx, windows, musllinux, verify-musl-wheel]
     if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
     runs-on: [self-hosted, linux, X64]
     # Trusted Publishing (OIDC) — no long-lived PyPI token needed. Requires

@@ -108,6 +108,11 @@ description = "Build a manylinux_2_28 release wheel (run inside the manylinux co
 command = "maturin"
 args = ["build", "--release", "--manylinux", "2_28"]
 
+[tasks.python-wheel-musllinux]
+description = "Build a musllinux_1_2 release wheel (run inside the musllinux container)."
+command = "maturin"
+args = ["build", "--release", "--compatibility", "musllinux_1_2"]
+
 # ---------------------------------------------------------------------------
 # JavaScript (napi-rs)
 # ---------------------------------------------------------------------------
