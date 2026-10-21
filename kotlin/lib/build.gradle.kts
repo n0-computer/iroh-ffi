@@ -71,7 +71,12 @@ tasks.named<Test>("test") {
 mavenPublishing {
     // Vanniktech 0.34: Central Portal is the default; no SonatypeHost arg.
     publishToMavenCentral(automaticRelease = true)
-    signAllPublications()
+    // Local publishes may skip signing; Maven Central uploads must be signed.
+    if (providers.gradleProperty("signingInMemoryKey").isPresent ||
+        gradle.startParameter.taskNames.any { "MavenCentral" in it }
+    ) {
+        signAllPublications()
+    }
     coordinates("computer.iroh", "iroh", "1.1.0")
     pom {
         name = "iroh"

@@ -1,155 +1,202 @@
 # Releasing iroh-ffi
 
-A release ships a new version of the iroh-ffi crate's surface to every binding
-host (npm, PyPI, Maven Central, GitHub Releases for Swift) plus refreshed docs
-on GitHub Pages. The tag is the trigger — pushing `v<VERSION>` fans out to all
-publish workflows independently.
+Pushing a `v<VERSION>` tag publishes every binding:
 
-The repo manifest stays self-consistent at every commit. Version literals in
-`Cargo.toml`, `iroh-js/package.json`, etc. are written by a local script
-before the release PR is opened; the Swift xcframework SHA-256 in
-`Package.swift` is written by PR CI (one bot commit on the release branch).
-CI never writes to `main`.
+| Binding | Published as | Workflow |
+|---|---|---|
+| JavaScript | `@number0/iroh` on npm | `ci_js.yml` (`publish` job) |
+| Python | `iroh` on PyPI | `wheels.yml` (`publish` job) |
+| Kotlin | `computer.iroh:iroh` and `computer.iroh:iroh-android` on Maven Central | `release.yml` |
+| Swift | `IrohLib.xcframework.zip` on the GitHub release, referenced by `Package.swift` | built by `release_swift.yml`, published by `release.yml` |
+| C | `libiroh-<target>` static library archives on the GitHub release | `release.yml` |
+| Docs | API docs for all bindings on GitHub Pages | `docs.yml` |
+
+Version literals are written locally by `cargo make prepare-release`. The Swift
+checksum in `Package.swift` is written by CI on the release branch. CI never
+writes to `main`.
+
+## Choosing the version
+
+Use semver: patch for fixes only, minor for new API, major for breaking
+changes. A pre-release version such as `1.2.0-rc.1` publishes to npm under the
+`next` dist-tag instead of `latest`.
 
 ## Prerequisites
 
-- Local shell with `cargo`, `yarn`, and Python 3 (no Xcode needed —
-  prepare-release no longer builds the xcframework).
-- Push rights on the repo + the relevant publisher accounts (npm
-  `@number0/iroh`; PyPI trusted publisher for `iroh`; Sonatype Central for
-  `computer.iroh`).
-- `main` is green at the commit you want to release from.
+- `cargo`, `yarn` and Python 3.
+- A Mac with Xcode, an iOS Simulator runtime and JDK 17
+  (`brew install --cask temurin@17`), for the local dry run.
+- Push access to the repository.
+- `main` is green at the commit you release.
+- The self-hosted runners are online, including the macOS runner labelled
+  `xcode16`.
 
-## Steps
+## 1. Dry run
 
-0. **Local dry-run** (recommended, macOS only — needs Xcode for the swift slot).
-   Validates every artifact builds without touching any registry:
+**On CI.** Builds the C libraries and the Kotlin native libraries, and runs the
+Android emulator test. Publish steps in `release.yml` only run on tag refs, so
+nothing is published:
 
-   ```sh
-   # the armored private key (same contents as the SIGNING_KEY CI secret)
-   export ORG_GRADLE_PROJECT_signingInMemoryKey="$(cat ~/.keys/maven_key.sec.asc)"
+```sh
+gh workflow run release.yml --ref main
+```
 
-   cargo make pre-release-check
-   ```
+In the log of the "Smoke Kotlin Android consumer (emulator)" job, check for
+four `OK: … (16 KB LOAD alignment)` lines, one per Android ABI.
 
-   Builds the Swift xcframework (sanity check only — the published zip
-   comes from PR CI, not here), the Python wheel + import smoke, the napi
-   addon + `npm publish --dry-run`, and `gradle publishToMavenLocal` +
-   JNA-from-per-platform-staged smoke. Catches config typos, signing
-   failures, manifest errors before the real publish.
+> [!WARNING]
+> Do not start `ci_js.yml`, `wheels.yml` or `docs.yml` manually as a dry run.
+> A manual run of `ci_js.yml` or `wheels.yml` publishes the branch's version
+> to npm or PyPI. A manual run of `docs.yml` deploys the docs site.
 
-1. **Bump versions on a release branch.**
+**Locally (required, macOS only).** Run this on `main` and keep the changes it
+makes to the working tree:
 
-   ```sh
-   git checkout main && git pull
-   cargo make prepare-release 1.0.0-rc.1     # no leading v
-   git checkout -b release/v1.0.0-rc.1
-   git commit -am "chore(release): v1.0.0-rc.1"
-   git push -u origin release/v1.0.0-rc.1
-   gh pr create --base main --fill --title "chore(release): v1.0.0-rc.1"
-   ```
+```sh
+rustup target add aarch64-apple-ios aarch64-apple-ios-sim x86_64-apple-ios \
+  aarch64-apple-darwin aarch64-apple-ios-macabi
+# optional: armored private key, same as the SIGNING_KEY secret
+export ORG_GRADLE_PROJECT_signingInMemoryKey="$(cat ~/.keys/maven_key.priv.asc)"
+cargo make pre-release-check
+```
 
-   `prepare-release` only rewrites version literals + lockfiles. Inspect
-   the diff (`git diff`) — expected files only: `Cargo.toml`, `Cargo.lock`,
-   `iroh-js/package.json` + `iroh-js/Cargo.toml`, `iroh-js/yarn.lock`,
-   `pyproject.toml`, `kotlin/lib/build.gradle.kts`, `Package.swift`
-   (releaseTag only — the checksum is filled in by CI in step 2).
+This builds and checks the Swift xcframework, the Python wheel, the npm package
+(`npm publish --dry-run`) and the Maven publication (`publishToMavenLocal`).
+The Swift zip built here is only a check; the published zip comes from CI
+(step 3).
 
-2. **Wait for PR CI to bake the Swift xcframework SHA.**
+This step is required because it also regenerates the Swift bindings,
+`IrohLib/Sources/IrohLib/IrohLib.swift`. SwiftPM users get that file straight
+from the release tag, and no other step regenerates it. If it is stale, apps
+crash on their first iroh call with a UniFFI API checksum mismatch. The
+`git commit -am` in step 2 adds the regenerated file to the release PR.
 
-   `release_swift.yml` fires on push to `release/v*` branches. It builds
-   the xcframework on a self-hosted macOS runner, runs the verify gates
-   (layout + iOS sim test), zips deterministically, and:
-   - commits `chore(release): bake Swift xcframework SHA <hex>
-     [skip swift-release]` to the release branch (overwrites the
-     placeholder checksum in `Package.swift`);
-   - uploads `IrohLib.xcframework.zip` to a draft GitHub release named
-     `v1.0.0-rc.1`.
+The signing key is optional. Without it, the Maven publication is built
+unsigned. With it, the dry run also checks Maven signing, which nothing else
+checks before the tag, since the CI dry run skips the Maven Central publish.
+It checks your local copy of the key, not the `SIGNING_KEY` secret.
 
-   Review the bot's commit + the draft release asset (downloadable from
-   the GitHub Releases page) before merging. The SHA in `Package.swift`
-   is exactly the SHA of the zip on the draft release — no cross-host
-   determinism game.
+## 2. Open the release PR
 
-3. **Merge to `main`.** Squash or merge-commit; both keep `Package.swift`
-   consistent with the draft release.
+```sh
+git checkout main && git pull
+cargo make prepare-release 1.2.0     # no leading v
+git checkout -b release/v1.2.0
+git commit -am "chore(release): v1.2.0"
+git push -u origin release/v1.2.0
+```
 
-4. **Tag the merge commit and push.**
+Open a PR against `main`. Expect changes in these files:
 
-   ```sh
-   git checkout main && git pull
-   git tag v1.0.0-rc.1
-   git push origin v1.0.0-rc.1
-   ```
+- `Cargo.toml`, `Cargo.lock`
+- `iroh-js/Cargo.toml`, `iroh-js/package.json`, `iroh-js/npm/*/package.json`,
+  `iroh-js/yarn.lock`, `iroh-js/index.js`
+- `pyproject.toml`
+- `kotlin/lib/build.gradle.kts`, `kotlin/android/build.gradle.kts`
+- `Package.swift` (`releaseTag` only)
+- `IrohLib/Sources/IrohLib/IrohLib.swift`, if the API changed since the last
+  release (regenerated by the local dry run)
 
-5. **Watch the fan-out.** The tag triggers:
+## 3. Let CI build the Swift artifact
 
-   | Workflow | Publishes |
-   |---|---|
-   | `release.yml` | promotes the draft GH release v<version> to published; uploads per-OS C lib archives |
-   | `ci_js.yml` `publish` | `@number0/iroh` to npm (`--provenance`, OIDC) |
-   | `wheels.yml` `publish` | `iroh` wheels to PyPI (OIDC) |
-   | `release.yml` `build-and-publish-kotlin` | `computer.iroh:iroh` (JVM JAR) + `computer.iroh:iroh-android` (AAR) to Maven Central — one `./gradlew publishAndReleaseToMavenCentral` invocation, both subprojects published in the same Sonatype staging |
-   | `docs.yml` | GitHub Pages site refresh |
+Every push to a `release/v*` branch runs `release_swift.yml`. It:
 
-   The Swift xcframework zip is **not** rebuilt at tag time — `release.yml`
-   `create-release` just promotes the PR-CI-built draft.
+1. builds the xcframework and runs the layout and iOS Simulator checks;
+2. commits `chore(release): bake Swift xcframework SHA <hex> [skip swift-release]`
+   to the branch, writing the zip's checksum into `Package.swift`;
+3. uploads `IrohLib.xcframework.zip` to a draft GitHub release `v<VERSION>`.
 
-   If any publish fails, fix and re-tag with the next patch version (do
-   not re-use a tag).
+Each later push rebuilds the zip and adds a new bot commit, so run `git pull`
+before pushing to the branch again.
 
-## Kotlin: two artifacts, one publish
+Before merging, check that `release_swift.yml` succeeded for your last push
+and that the draft release has the zip attached.
 
-The release publishes both `computer.iroh:iroh` (JVM JAR, for desktop
-Java/Kotlin consumers — JNA-loaded desktop natives only) and
-`computer.iroh:iroh-android` (AAR, for Android consumers — bundles
-`libiroh_ffi.so` per ABI at `jni/<abi>/` plus the `IrohAndroid` initializer
-class). The AAR `api`-depends on the JAR, so an Android consumer that pulls
-in `iroh-android` transitively gets the full Kotlin API surface.
+## 4. Merge and tag
 
-**Migrating an Android consumer from `iroh` → `iroh-android`:** one-line
-dependency swap. `IrohAndroid` moved from `computer.iroh` (in the JAR) to
-`computer.iroh.android` … actually still `computer.iroh` (the package
-didn't change, only which artifact ships the class). Imports stay
-unchanged; only the Gradle coordinate moves:
+Merge the PR, then tag the merge commit:
+
+```sh
+git checkout main && git pull
+git tag v1.2.0 <merge-commit-sha>
+git push origin v1.2.0
+```
+
+## 5. Watch the publish runs
+
+| Workflow | Does |
+|---|---|
+| `release.yml` | Publishes the draft GitHub release, attaches the C library archives, runs the Android emulator test, publishes both Kotlin artifacts to Maven Central |
+| `ci_js.yml` | Runs the JS test matrix, then publishes to npm with provenance (Trusted Publishing) |
+| `wheels.yml` | Builds the wheels and publishes them to PyPI (Trusted Publishing) |
+| `docs.yml` | Rebuilds the API docs and deploys GitHub Pages |
+
+`release.yml` does not rebuild the Swift zip. It publishes the draft from step
+3, so the checksum in `Package.swift` matches the published zip.
+
+## 6. Check the published packages
+
+Install each package from its registry, not from a local build:
+
+```sh
+V=1.2.0
+gh release view "v$V"    # not a draft; IrohLib.xcframework.zip and four libiroh-* archives
+
+cd "$(mktemp -d)" && npm init -y >/dev/null && npm install "@number0/iroh@$V"
+node --throw-deprecation -e "require('@number0/iroh')"
+
+cd "$(mktemp -d)" && python3 -m venv venv && venv/bin/pip install "iroh==$V"
+venv/bin/python -c "import iroh"
+
+curl -s https://repo1.maven.org/maven2/computer/iroh/iroh-android/maven-metadata.xml | grep "$V"
+```
+
+For Swift, depend on
+`.package(url: "https://github.com/n0-computer/iroh-ffi", exact: "<VERSION>")`
+in a scratch package and run `swift package resolve`. SwiftPM downloads the zip
+and verifies its checksum.
+
+Maven Central can take some time before a new version is visible.
+
+## If a publish fails
+
+- **Temporary failure** (runner offline, network error): re-run the failed jobs
+  in the tag's workflow run.
+- **Failure that needs a code or workflow change:** fix it on `main` and
+  release the next patch version. Do not move or re-push an existing tag.
+  Registries refuse to publish a version twice, and SwiftPM records the commit
+  of each version it resolves and rejects that version once its tag points
+  elsewhere.
+
+## Kotlin artifacts
+
+- `computer.iroh:iroh` is the JVM JAR. It bundles the desktop native libraries
+  (Linux x86_64 and aarch64, macOS aarch64, Windows x86_64), loaded by JNA.
+- `computer.iroh:iroh-android` is the AAR. It bundles `libiroh_ffi.so` for each
+  Android ABI and the `IrohAndroid` initializer, and depends on
+  `computer.iroh:iroh` for the Kotlin API.
+
+Android apps depend only on the AAR:
 
 ```kotlin
-// before
-implementation("computer.iroh:iroh:<VERSION>")
-
-// after (Android consumers — apps + library modules with
-// com.android.application / com.android.library)
 implementation("computer.iroh:iroh-android:<VERSION>")
 ```
 
-JVM consumers stay on `computer.iroh:iroh` and see a smaller JAR (no
-Android natives bundled in).
+## Why CI builds the Swift zip on the release branch
 
-## Why PR-CI builds the Swift xcframework (not local, not tag-CI)
+SwiftPM requires the checksum in `Package.swift` to match the downloaded zip
+byte for byte. Building the zip locally and again on tag CI required both
+builds to be identical across machines, which kept failing in practice.
+Building once on the release branch and publishing that exact draft at tag
+time removes the problem.
 
-Binary SwiftPM packages need the manifest checksum to match the uploaded
-zip byte-for-byte. The previous flow built the xcframework locally during
-`prepare-release`, baked the SHA into `Package.swift`, then rebuilt on
-tag-CI and expected the SHA to still match — which required cross-host
-build determinism (matching Xcode patch version, macOS SDK, rustc, cargo
-deps, etc.). That kept failing in practice.
+## One-time setup
 
-Single source of truth: PR CI builds the zip once, bakes its SHA into the
-PR, uploads to a draft release. Tag CI just promotes the draft. The SHA
-in `Package.swift` is the SHA of the bytes on the release — they were
-literally the same zip. No build-environment skew can break consumers.
-
-The trade-off is that the release branch picks up one bot commit
-(`bake Swift xcframework SHA <hex>`), which is reviewable in the PR diff.
-`[skip swift-release]` in the commit message prevents the workflow from
-re-firing on its own output.
-
-## One-time publisher setup (per host)
-
-- **npm** — Trusted Publishing configured at npmjs.com (no token).
-- **PyPI** — register a trusted publisher at
-  <https://pypi.org/manage/account/publishing/>: project `iroh`, owner
-  `n0-computer`, repository `iroh-ffi`, workflow `wheels.yml`.
-- **Maven Central** — `computer.iroh` namespace claimed via DNS TXT on
-  `iroh.computer`; armored PGP key in `SIGNING_KEY` secret; Sonatype
-  Central API creds.
+- **npm:** Trusted Publishing configured at npmjs.com. No token.
+- **PyPI:** a trusted publisher at <https://pypi.org/manage/account/publishing/>
+  with project `iroh`, owner `n0-computer`, repository `iroh-ffi`, workflow
+  `wheels.yml`.
+- **Maven Central:** the `computer.iroh` namespace, verified by a DNS TXT record
+  on `iroh.computer`. Repository secrets `SONATYPE_USERNAME` and
+  `SONATYPE_PASSWORD` (Sonatype Central credentials) and `SIGNING_KEY`
+  (armored private PGP key).
