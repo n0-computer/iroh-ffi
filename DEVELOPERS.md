@@ -99,6 +99,8 @@ cargo make test-python
 `cargo make python-develop` builds + installs into the active venv;
 `cargo make python-wheel` builds a release wheel. For a portable manylinux
 wheel: `docker run --rm -v $(pwd):/mnt -w /mnt quay.io/pypa/manylinux_2_28_x86_64 /mnt/build_wheel.sh`.
+For a musllinux wheel, pass `musllinux` and use the musllinux image:
+`docker run --rm -v $(pwd):/mnt -w /mnt quay.io/pypa/musllinux_1_2_x86_64 /mnt/build_wheel.sh musllinux`.
 
 ### JavaScript
 
