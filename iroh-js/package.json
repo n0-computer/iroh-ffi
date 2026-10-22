@@ -12,7 +12,7 @@
     "network",
     "protocol"
   ],
-  "version": "1.1.0",
+  "version": "1.2.0",
   "type": "commonjs",
   "main": "index.js",
   "types": "index.d.ts",
@@ -56,16 +56,16 @@
   },
   "packageManager": "yarn@1.22.22",
   "optionalDependencies": {
-    "@number0/iroh-android-arm-eabi": "1.0.0",
-    "@number0/iroh-android-arm64": "1.0.0",
-    "@number0/iroh-darwin-arm64": "1.0.0",
-    "@number0/iroh-linux-arm-gnueabihf": "1.0.0",
-    "@number0/iroh-linux-arm-musleabihf": "1.0.0",
-    "@number0/iroh-linux-arm64-gnu": "1.0.0",
-    "@number0/iroh-linux-arm64-musl": "1.0.0",
-    "@number0/iroh-linux-x64-gnu": "1.0.0",
-    "@number0/iroh-linux-x64-musl": "1.0.0",
-    "@number0/iroh-win32-arm64-msvc": "1.0.0",
-    "@number0/iroh-win32-x64-msvc": "1.0.0"
+    "@number0/iroh-android-arm-eabi": "1.1.0",
+    "@number0/iroh-android-arm64": "1.1.0",
+    "@number0/iroh-darwin-arm64": "1.1.0",
+    "@number0/iroh-linux-arm-gnueabihf": "1.1.0",
+    "@number0/iroh-linux-arm-musleabihf": "1.1.0",
+    "@number0/iroh-linux-arm64-gnu": "1.1.0",
+    "@number0/iroh-linux-arm64-musl": "1.1.0",
+    "@number0/iroh-linux-x64-gnu": "1.1.0",
+    "@number0/iroh-linux-x64-musl": "1.1.0",
+    "@number0/iroh-win32-arm64-msvc": "1.1.0",
+    "@number0/iroh-win32-x64-msvc": "1.1.0"
   }
 }

@@ -2736,6 +2736,9 @@ public protocol EndpointBuilderProtocol: AnyObject, Sendable {
     
     /**
      * Set the endpoint secret key (32 bytes).
+     *
+     * Errors if a preset already pinned the key because it minted a credential
+     * scoped to it — see `preset_iroh_services`.
      */
     func secretKey(bytes: Data) throws 
     
@@ -2904,6 +2907,9 @@ open func relayMode(mode: RelayMode)  {try! rustCall() {
     
     /**
      * Set the endpoint secret key (32 bytes).
+     *
+     * Errors if a preset already pinned the key because it minted a credential
+     * scoped to it — see `preset_iroh_services`.
      */
 open func secretKey(bytes: Data)throws   {try rustCallWithError(FfiConverterTypeIrohError__as_error_lift) {
     uniffi_iroh_ffi_fn_method_endpointbuilder_secret_key(
@@ -8172,6 +8178,119 @@ public func FfiConverterTypeServicesOptions_lower(_ value: ServicesOptions) -> R
 }
 
 
+/**
+ * Options for [`preset_iroh_services`].
+ *
+ * Supply *exactly one* of `api_secret` or `api_secret_from_env`.
+ */
+public struct ServicesPresetOptions: Equatable, Hashable {
+    /**
+     * Your project's relay URLs. Defaults to the n0 public relays when
+     * omitted, matching `iroh_services::preset()`. Passing an empty list is an
+     * error rather than a silent fallback — that is nearly always a filtered
+     * list that came back empty.
+     */
+    public var relays: [String]?
+    /**
+     * Encoded API secret string (`services1...`). The relay access token is
+     * minted from this.
+     */
+    public var apiSecret: String?
+    /**
+     * If true, read the API secret from `IROH_SERVICES_API_SECRET`.
+     */
+    public var apiSecretFromEnv: Bool?
+    /**
+     * The endpoint's own identity key (32 bytes) — not your API secret. The
+     * access token is scoped to it, so pass the same key you persist for your
+     * endpoint's identity. A fresh key is generated when omitted.
+     *
+     * Set the key *here*, not via `EndpointOptions::secret_key` or
+     * `EndpointBuilder::secret_key`: both are layered on top of the preset and
+     * would replace the one the token is scoped to. Doing that is an error,
+     * not a silent auth failure — this preset pins the key.
+     */
+    public var endpointSecretKey: Data?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * Your project's relay URLs. Defaults to the n0 public relays when
+         * omitted, matching `iroh_services::preset()`. Passing an empty list is an
+         * error rather than a silent fallback — that is nearly always a filtered
+         * list that came back empty.
+         */relays: [String]? = nil, 
+        /**
+         * Encoded API secret string (`services1...`). The relay access token is
+         * minted from this.
+         */apiSecret: String? = nil, 
+        /**
+         * If true, read the API secret from `IROH_SERVICES_API_SECRET`.
+         */apiSecretFromEnv: Bool? = nil, 
+        /**
+         * The endpoint's own identity key (32 bytes) — not your API secret. The
+         * access token is scoped to it, so pass the same key you persist for your
+         * endpoint's identity. A fresh key is generated when omitted.
+         *
+         * Set the key *here*, not via `EndpointOptions::secret_key` or
+         * `EndpointBuilder::secret_key`: both are layered on top of the preset and
+         * would replace the one the token is scoped to. Doing that is an error,
+         * not a silent auth failure — this preset pins the key.
+         */endpointSecretKey: Data? = nil) {
+        self.relays = relays
+        self.apiSecret = apiSecret
+        self.apiSecretFromEnv = apiSecretFromEnv
+        self.endpointSecretKey = endpointSecretKey
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension ServicesPresetOptions: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeServicesPresetOptions: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ServicesPresetOptions {
+        return
+            try ServicesPresetOptions(
+                relays: FfiConverterOptionSequenceString.read(from: &buf), 
+                apiSecret: FfiConverterOptionString.read(from: &buf), 
+                apiSecretFromEnv: FfiConverterOptionBool.read(from: &buf), 
+                endpointSecretKey: FfiConverterOptionData.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: ServicesPresetOptions, into buf: inout [UInt8]) {
+        FfiConverterOptionSequenceString.write(value.relays, into: &buf)
+        FfiConverterOptionString.write(value.apiSecret, into: &buf)
+        FfiConverterOptionBool.write(value.apiSecretFromEnv, into: &buf)
+        FfiConverterOptionData.write(value.endpointSecretKey, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeServicesPresetOptions_lift(_ buf: RustBuffer) throws -> ServicesPresetOptions {
+    return try FfiConverterTypeServicesPresetOptions.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeServicesPresetOptions_lower(_ value: ServicesPresetOptions) -> RustBuffer {
+    return FfiConverterTypeServicesPresetOptions.lower(value)
+}
+
+
 public enum CallbackError: Swift.Error, Equatable, Hashable, Foundation.LocalizedError {
 
     
@@ -9164,6 +9283,30 @@ fileprivate struct FfiConverterOptionTypeRelayConfig: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionSequenceString: FfiConverterRustBuffer {
+    typealias SwiftType = [String]?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterSequenceString.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterSequenceString.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionSequenceData: FfiConverterRustBuffer {
     typealias SwiftType = [Data]?
 
@@ -9509,6 +9652,23 @@ public func presetN0DisableRelay() -> Preset  {
     )
 })
 }
+/**
+ * Build an endpoint preset for your project's dedicated relays.
+ *
+ * Mirrors `iroh_services::preset()`: mints a short-lived access token scoped to
+ * the endpoint's key and to relay use only, then configures the endpoint to use
+ * your relays with that token. Pass the result as `EndpointOptions::preset`.
+ *
+ * The token is minted here, at preset-build time, so build the preset shortly
+ * before binding the endpoint.
+ */
+public func presetIrohServices(options: ServicesPresetOptions)throws  -> Preset  {
+    return try  FfiConverterTypePreset_lift(try rustCallWithError(FfiConverterTypeIrohError__as_error_lift) {
+    uniffi_iroh_ffi_fn_func_preset_iroh_services(
+        FfiConverterTypeServicesPresetOptions_lower(options),$0
+    )
+})
+}
 
 private enum InitializationResult {
     case ok
@@ -9535,6 +9695,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_iroh_ffi_checksum_func_preset_n0_disable_relay() != 45395) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_iroh_ffi_checksum_func_preset_iroh_services() != 59955) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_iroh_ffi_checksum_method_accepting_alpn() != 1935) {
@@ -9732,7 +9895,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_iroh_ffi_checksum_method_endpointbuilder_relay_mode() != 17405) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_iroh_ffi_checksum_method_endpointbuilder_secret_key() != 35604) {
+    if (uniffi_iroh_ffi_checksum_method_endpointbuilder_secret_key() != 1964) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_iroh_ffi_checksum_method_preset_apply() != 64281) {

@@ -18,8 +18,6 @@ package computer.iroh
 // helpers directly inline like we're doing here.
 
 import com.sun.jna.Callback
-import com.sun.jna.IntegerType
-import com.sun.jna.Library
 import com.sun.jna.Native
 import com.sun.jna.Pointer
 import com.sun.jna.Structure
@@ -3091,10 +3089,7 @@ interface Disposable {
         fun destroy(vararg args: Any?) {
             for (arg in args) {
                 when (arg) {
-                    is Disposable -> {
-                        arg.destroy()
-                    }
-
+                    is Disposable -> arg.destroy()
                     is ArrayList<*> -> {
                         for (idx in arg.indices) {
                             val element = arg[idx]
@@ -3103,7 +3098,6 @@ interface Disposable {
                             }
                         }
                     }
-
                     is Map<*, *> -> {
                         for (element in arg.values) {
                             if (element is Disposable) {
@@ -3111,7 +3105,6 @@ interface Disposable {
                             }
                         }
                     }
-
                     is Iterable<*> -> {
                         for (element in arg) {
                             if (element is Disposable) {
@@ -6746,7 +6739,9 @@ open class EndpointBuilder :
         this(
             UniffiWithHandle,
             uniffiRustCall { _status ->
-                UniffiLib.uniffi_iroh_ffi_fn_constructor_endpointbuilder_new(_status)
+                UniffiLib.uniffi_iroh_ffi_fn_constructor_endpointbuilder_new(
+                    _status,
+                )
             },
         )
 
@@ -7301,7 +7296,10 @@ open class EndpointId :
         fun `fromBytes`(`bytes`: kotlin.ByteArray): EndpointId =
             FfiConverterTypeEndpointId.lift(
                 uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_constructor_endpointid_from_bytes(FfiConverterByteArray.lower(`bytes`), _status)
+                    UniffiLib.uniffi_iroh_ffi_fn_constructor_endpointid_from_bytes(
+                        FfiConverterByteArray.lower(`bytes`),
+                        _status,
+                    )
                 },
             )
 
@@ -7312,7 +7310,10 @@ open class EndpointId :
         fun `fromString`(`s`: kotlin.String): EndpointId =
             FfiConverterTypeEndpointId.lift(
                 uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_constructor_endpointid_from_string(FfiConverterString.lower(`s`), _status)
+                    UniffiLib.uniffi_iroh_ffi_fn_constructor_endpointid_from_string(
+                        FfiConverterString.lower(`s`),
+                        _status,
+                    )
                 },
             )
     }
@@ -7593,7 +7594,10 @@ open class EndpointTicket :
         fun `fromAddr`(`addr`: EndpointAddr): EndpointTicket =
             FfiConverterTypeEndpointTicket.lift(
                 uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_constructor_endpointticket_from_addr(FfiConverterTypeEndpointAddr.lower(`addr`), _status)
+                    UniffiLib.uniffi_iroh_ffi_fn_constructor_endpointticket_from_addr(
+                        FfiConverterTypeEndpointAddr.lower(`addr`),
+                        _status,
+                    )
                 },
             )
 
@@ -7604,7 +7608,10 @@ open class EndpointTicket :
         fun `fromString`(`str`: kotlin.String): EndpointTicket =
             FfiConverterTypeEndpointTicket.lift(
                 uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_constructor_endpointticket_from_string(FfiConverterString.lower(`str`), _status)
+                    UniffiLib.uniffi_iroh_ffi_fn_constructor_endpointticket_from_string(
+                        FfiConverterString.lower(`str`),
+                        _status,
+                    )
                 },
             )
     }
@@ -11506,7 +11513,9 @@ open class RelayMap :
         fun `empty`(): RelayMap =
             FfiConverterTypeRelayMap.lift(
                 uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_constructor_relaymap_empty(_status)
+                    UniffiLib.uniffi_iroh_ffi_fn_constructor_relaymap_empty(
+                        _status,
+                    )
                 },
             )
 
@@ -11518,7 +11527,10 @@ open class RelayMap :
         fun `fromUrls`(`urls`: List<kotlin.String>): RelayMap =
             FfiConverterTypeRelayMap.lift(
                 uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_constructor_relaymap_from_urls(FfiConverterSequenceString.lower(`urls`), _status)
+                    UniffiLib.uniffi_iroh_ffi_fn_constructor_relaymap_from_urls(
+                        FfiConverterSequenceString.lower(`urls`),
+                        _status,
+                    )
                 },
             )
     }
@@ -11791,7 +11803,10 @@ open class RelayMode :
         fun `custom`(`map`: RelayMap): RelayMode =
             FfiConverterTypeRelayMode.lift(
                 uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_constructor_relaymode_custom(FfiConverterTypeRelayMap.lower(`map`), _status)
+                    UniffiLib.uniffi_iroh_ffi_fn_constructor_relaymode_custom(
+                        FfiConverterTypeRelayMap.lower(`map`),
+                        _status,
+                    )
                 },
             )
 
@@ -11802,7 +11817,10 @@ open class RelayMode :
         fun `customFromUrls`(`urls`: List<kotlin.String>): RelayMode =
             FfiConverterTypeRelayMode.lift(
                 uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_constructor_relaymode_custom_from_urls(FfiConverterSequenceString.lower(`urls`), _status)
+                    UniffiLib.uniffi_iroh_ffi_fn_constructor_relaymode_custom_from_urls(
+                        FfiConverterSequenceString.lower(`urls`),
+                        _status,
+                    )
                 },
             )
 
@@ -11812,7 +11830,9 @@ open class RelayMode :
         fun `defaultMode`(): RelayMode =
             FfiConverterTypeRelayMode.lift(
                 uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_constructor_relaymode_default_mode(_status)
+                    UniffiLib.uniffi_iroh_ffi_fn_constructor_relaymode_default_mode(
+                        _status,
+                    )
                 },
             )
 
@@ -11822,7 +11842,9 @@ open class RelayMode :
         fun `disabled`(): RelayMode =
             FfiConverterTypeRelayMode.lift(
                 uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_constructor_relaymode_disabled(_status)
+                    UniffiLib.uniffi_iroh_ffi_fn_constructor_relaymode_disabled(
+                        _status,
+                    )
                 },
             )
 
@@ -11832,7 +11854,9 @@ open class RelayMode :
         fun `staging`(): RelayMode =
             FfiConverterTypeRelayMode.lift(
                 uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_constructor_relaymode_staging(_status)
+                    UniffiLib.uniffi_iroh_ffi_fn_constructor_relaymode_staging(
+                        _status,
+                    )
                 },
             )
     }
@@ -12136,7 +12160,10 @@ open class SecretKey :
         fun `fromBytes`(`bytes`: kotlin.ByteArray): SecretKey =
             FfiConverterTypeSecretKey.lift(
                 uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_constructor_secretkey_from_bytes(FfiConverterByteArray.lower(`bytes`), _status)
+                    UniffiLib.uniffi_iroh_ffi_fn_constructor_secretkey_from_bytes(
+                        FfiConverterByteArray.lower(`bytes`),
+                        _status,
+                    )
                 },
             )
 
@@ -12146,7 +12173,9 @@ open class SecretKey :
         fun `generate`(): SecretKey =
             FfiConverterTypeSecretKey.lift(
                 uniffiRustCall { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_constructor_secretkey_generate(_status)
+                    UniffiLib.uniffi_iroh_ffi_fn_constructor_secretkey_generate(
+                        _status,
+                    )
                 },
             )
     }
@@ -13253,7 +13282,10 @@ open class Signature :
         fun `fromBytes`(`bytes`: kotlin.ByteArray): Signature =
             FfiConverterTypeSignature.lift(
                 uniffiRustCallWithError(IrohException) { _status ->
-                    UniffiLib.uniffi_iroh_ffi_fn_constructor_signature_from_bytes(FfiConverterByteArray.lower(`bytes`), _status)
+                    UniffiLib.uniffi_iroh_ffi_fn_constructor_signature_from_bytes(
+                        FfiConverterByteArray.lower(`bytes`),
+                        _status,
+                    )
                 },
             )
     }
@@ -14260,14 +14292,12 @@ sealed class IncomingAddr : Disposable {
                     this.`addr`,
                 )
             }
-
             is IncomingAddr.Relay -> {
                 Disposable.destroy(
                     this.`url`,
                     this.`endpointId`,
                 )
             }
-
             is IncomingAddr.Custom -> {
                 Disposable.destroy(
                     this.`description`,
@@ -14285,28 +14315,20 @@ sealed class IncomingAddr : Disposable {
 public object FfiConverterTypeIncomingAddr : FfiConverterRustBuffer<IncomingAddr> {
     override fun read(buf: ByteBuffer): IncomingAddr =
         when (buf.getInt()) {
-            1 -> {
+            1 ->
                 IncomingAddr.Ip(
                     FfiConverterString.read(buf),
                 )
-            }
-
-            2 -> {
+            2 ->
                 IncomingAddr.Relay(
                     FfiConverterString.read(buf),
                     FfiConverterTypeEndpointId.read(buf),
                 )
-            }
-
-            3 -> {
+            3 ->
                 IncomingAddr.Custom(
                     FfiConverterString.read(buf),
                 )
-            }
-
-            else -> {
-                throw RuntimeException("invalid enum value, something is very wrong!!")
-            }
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
         }
 
     override fun allocationSize(value: IncomingAddr) =
@@ -14318,7 +14340,6 @@ public object FfiConverterTypeIncomingAddr : FfiConverterRustBuffer<IncomingAddr
                         FfiConverterString.allocationSize(value.`addr`)
                 )
             }
-
             is IncomingAddr.Relay -> {
                 // Add the size for the Int that specifies the variant plus the size needed for all fields
                 (
@@ -14327,7 +14348,6 @@ public object FfiConverterTypeIncomingAddr : FfiConverterRustBuffer<IncomingAddr
                         FfiConverterTypeEndpointId.allocationSize(value.`endpointId`)
                 )
             }
-
             is IncomingAddr.Custom -> {
                 // Add the size for the Int that specifies the variant plus the size needed for all fields
                 (
@@ -14347,14 +14367,12 @@ public object FfiConverterTypeIncomingAddr : FfiConverterRustBuffer<IncomingAddr
                 FfiConverterString.write(value.`addr`, buf)
                 Unit
             }
-
             is IncomingAddr.Relay -> {
                 buf.putInt(2)
                 FfiConverterString.write(value.`url`, buf)
                 FfiConverterTypeEndpointId.write(value.`endpointId`, buf)
                 Unit
             }
-
             is IncomingAddr.Custom -> {
                 buf.putInt(3)
                 FfiConverterString.write(value.`description`, buf)
@@ -14404,27 +14422,19 @@ sealed class IncomingLocalAddr {
 public object FfiConverterTypeIncomingLocalAddr : FfiConverterRustBuffer<IncomingLocalAddr> {
     override fun read(buf: ByteBuffer): IncomingLocalAddr =
         when (buf.getInt()) {
-            1 -> {
+            1 ->
                 IncomingLocalAddr.Ip(
                     FfiConverterOptionalString.read(buf),
                 )
-            }
-
-            2 -> {
+            2 ->
                 IncomingLocalAddr.Relay(
                     FfiConverterString.read(buf),
                 )
-            }
-
-            3 -> {
+            3 ->
                 IncomingLocalAddr.Custom(
                     FfiConverterOptionalString.read(buf),
                 )
-            }
-
-            else -> {
-                throw RuntimeException("invalid enum value, something is very wrong!!")
-            }
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
         }
 
     override fun allocationSize(value: IncomingLocalAddr) =
@@ -14436,7 +14446,6 @@ public object FfiConverterTypeIncomingLocalAddr : FfiConverterRustBuffer<Incomin
                         FfiConverterOptionalString.allocationSize(value.`addr`)
                 )
             }
-
             is IncomingLocalAddr.Relay -> {
                 // Add the size for the Int that specifies the variant plus the size needed for all fields
                 (
@@ -14444,7 +14453,6 @@ public object FfiConverterTypeIncomingLocalAddr : FfiConverterRustBuffer<Incomin
                         FfiConverterString.allocationSize(value.`url`)
                 )
             }
-
             is IncomingLocalAddr.Custom -> {
                 // Add the size for the Int that specifies the variant plus the size needed for all fields
                 (
@@ -14464,13 +14472,11 @@ public object FfiConverterTypeIncomingLocalAddr : FfiConverterRustBuffer<Incomin
                 FfiConverterOptionalString.write(value.`addr`, buf)
                 Unit
             }
-
             is IncomingLocalAddr.Relay -> {
                 buf.putInt(2)
                 FfiConverterString.write(value.`url`, buf)
                 Unit
             }
-
             is IncomingLocalAddr.Custom -> {
                 buf.putInt(3)
                 FfiConverterOptionalString.write(value.`description`, buf)
@@ -14678,40 +14684,30 @@ sealed class PathEvent {
 public object FfiConverterTypePathEvent : FfiConverterRustBuffer<PathEvent> {
     override fun read(buf: ByteBuffer): PathEvent =
         when (buf.getInt()) {
-            1 -> {
+            1 ->
                 PathEvent.Opened(
                     FfiConverterString.read(buf),
                     FfiConverterString.read(buf),
                     FfiConverterString.read(buf),
                 )
-            }
-
-            2 -> {
+            2 ->
                 PathEvent.Closed(
                     FfiConverterString.read(buf),
                     FfiConverterString.read(buf),
                     FfiConverterString.read(buf),
                     FfiConverterTypePathStatsRecord.read(buf),
                 )
-            }
-
-            3 -> {
+            3 ->
                 PathEvent.Selected(
                     FfiConverterString.read(buf),
                     FfiConverterString.read(buf),
                     FfiConverterString.read(buf),
                 )
-            }
-
-            4 -> {
+            4 ->
                 PathEvent.Lagged(
                     FfiConverterULong.read(buf),
                 )
-            }
-
-            else -> {
-                throw RuntimeException("invalid enum value, something is very wrong!!")
-            }
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
         }
 
     override fun allocationSize(value: PathEvent) =
@@ -14725,7 +14721,6 @@ public object FfiConverterTypePathEvent : FfiConverterRustBuffer<PathEvent> {
                         FfiConverterString.allocationSize(value.`localAddr`)
                 )
             }
-
             is PathEvent.Closed -> {
                 // Add the size for the Int that specifies the variant plus the size needed for all fields
                 (
@@ -14736,7 +14731,6 @@ public object FfiConverterTypePathEvent : FfiConverterRustBuffer<PathEvent> {
                         FfiConverterTypePathStatsRecord.allocationSize(value.`lastStats`)
                 )
             }
-
             is PathEvent.Selected -> {
                 // Add the size for the Int that specifies the variant plus the size needed for all fields
                 (
@@ -14746,7 +14740,6 @@ public object FfiConverterTypePathEvent : FfiConverterRustBuffer<PathEvent> {
                         FfiConverterString.allocationSize(value.`localAddr`)
                 )
             }
-
             is PathEvent.Lagged -> {
                 // Add the size for the Int that specifies the variant plus the size needed for all fields
                 (
@@ -14768,7 +14761,6 @@ public object FfiConverterTypePathEvent : FfiConverterRustBuffer<PathEvent> {
                 FfiConverterString.write(value.`localAddr`, buf)
                 Unit
             }
-
             is PathEvent.Closed -> {
                 buf.putInt(2)
                 FfiConverterString.write(value.`id`, buf)
@@ -14777,7 +14769,6 @@ public object FfiConverterTypePathEvent : FfiConverterRustBuffer<PathEvent> {
                 FfiConverterTypePathStatsRecord.write(value.`lastStats`, buf)
                 Unit
             }
-
             is PathEvent.Selected -> {
                 buf.putInt(3)
                 FfiConverterString.write(value.`id`, buf)
@@ -14785,7 +14776,6 @@ public object FfiConverterTypePathEvent : FfiConverterRustBuffer<PathEvent> {
                 FfiConverterString.write(value.`localAddr`, buf)
                 Unit
             }
-
             is PathEvent.Lagged -> {
                 buf.putInt(4)
                 FfiConverterULong.write(value.`missed`, buf)
@@ -15423,7 +15413,10 @@ public object FfiConverterMapByteArrayTypeProtocolCreator : FfiConverterRustBuff
  */
 fun `setLogLevel`(`level`: LogLevel) =
     uniffiRustCall { _status ->
-        UniffiLib.uniffi_iroh_ffi_fn_func_set_log_level(FfiConverterTypeLogLevel.lower(`level`), _status)
+        UniffiLib.uniffi_iroh_ffi_fn_func_set_log_level(
+            FfiConverterTypeLogLevel.lower(`level`),
+            _status,
+        )
     }
 
 /**
@@ -15432,7 +15425,9 @@ fun `setLogLevel`(`level`: LogLevel) =
 fun `presetMinimal`(): Preset =
     FfiConverterTypePreset.lift(
         uniffiRustCall { _status ->
-            UniffiLib.uniffi_iroh_ffi_fn_func_preset_minimal(_status)
+            UniffiLib.uniffi_iroh_ffi_fn_func_preset_minimal(
+                _status,
+            )
         },
     )
 
@@ -15442,7 +15437,9 @@ fun `presetMinimal`(): Preset =
 fun `presetN0`(): Preset =
     FfiConverterTypePreset.lift(
         uniffiRustCall { _status ->
-            UniffiLib.uniffi_iroh_ffi_fn_func_preset_n0(_status)
+            UniffiLib.uniffi_iroh_ffi_fn_func_preset_n0(
+                _status,
+            )
         },
     )
 
@@ -15452,7 +15449,9 @@ fun `presetN0`(): Preset =
 fun `presetN0DisableRelay`(): Preset =
     FfiConverterTypePreset.lift(
         uniffiRustCall { _status ->
-            UniffiLib.uniffi_iroh_ffi_fn_func_preset_n0_disable_relay(_status)
+            UniffiLib.uniffi_iroh_ffi_fn_func_preset_n0_disable_relay(
+                _status,
+            )
         },
     )
 
@@ -15470,6 +15469,9 @@ fun `presetN0DisableRelay`(): Preset =
 fun `presetIrohServices`(`options`: ServicesPresetOptions): Preset =
     FfiConverterTypePreset.lift(
         uniffiRustCallWithError(IrohException) { _status ->
-            UniffiLib.uniffi_iroh_ffi_fn_func_preset_iroh_services(FfiConverterTypeServicesPresetOptions.lower(`options`), _status)
+            UniffiLib.uniffi_iroh_ffi_fn_func_preset_iroh_services(
+                FfiConverterTypeServicesPresetOptions.lower(`options`),
+                _status,
+            )
         },
     )
