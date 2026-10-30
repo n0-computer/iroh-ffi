@@ -162,13 +162,13 @@ export declare class EndpointId {
   equals(other: EndpointId): boolean
   /** Get the underlying 32 bytes. */
   toBytes(): Array<number>
-  /** Parse an [`EndpointId`] from its base32 representation. */
+  /** Parse an [`EndpointId`] from a hexadecimal or base32 representation. */
   static fromString(s: string): EndpointId
   /** Construct an [`EndpointId`] from raw bytes (32 bytes). */
   static fromBytes(bytes: Array<number>): EndpointId
-  /** Short base32 prefix. */
+  /** Short lowercase hexadecimal prefix. */
   fmtShort(): string
-  /** Base32 string form. */
+  /** Lowercase hexadecimal string form. */
   toString(): string
   /** Verify a signature on `message` against this endpoint's key. */
   verify(message: Array<number>, signature: Signature): void
