@@ -39,7 +39,7 @@ impl EndpointId {
         self.key.to_vec()
     }
 
-    /// Parse an [`EndpointId`] from its base32 representation.
+    /// Parse an [`EndpointId`] from a hexadecimal or base32 representation.
     #[uniffi::constructor]
     pub fn from_string(s: String) -> Result<Self, IrohError> {
         let key = iroh::EndpointId::from_str(&s)?;
@@ -59,7 +59,7 @@ impl EndpointId {
         Ok(key.into())
     }
 
-    /// Short, base32 prefix of the [`EndpointId`].
+    /// Short lowercase hexadecimal prefix.
     pub fn fmt_short(&self) -> String {
         iroh::EndpointId::from(self).fmt_short().to_string()
     }

@@ -7072,7 +7072,7 @@ public object FfiConverterTypeEndpointBuilder : FfiConverter<EndpointBuilder, Lo
  */
 public interface EndpointIdInterface {
     /**
-     * Short, base32 prefix of the [`EndpointId`].
+     * Short lowercase hexadecimal prefix.
      */
     fun `fmtShort`(): kotlin.String
 
@@ -7198,7 +7198,7 @@ open class EndpointId :
     }
 
     /**
-     * Short, base32 prefix of the [`EndpointId`].
+     * Short lowercase hexadecimal prefix.
      */
     override fun `fmtShort`(): kotlin.String =
         FfiConverterString.lift(
@@ -7304,7 +7304,7 @@ open class EndpointId :
             )
 
         /**
-         * Parse an [`EndpointId`] from its base32 representation.
+         * Parse an [`EndpointId`] from a hexadecimal or base32 representation.
          */
         @Throws(IrohException::class)
         fun `fromString`(`s`: kotlin.String): EndpointId =
