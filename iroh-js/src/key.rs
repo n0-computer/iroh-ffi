@@ -48,7 +48,7 @@ impl EndpointId {
         self.key.to_vec()
     }
 
-    /// Parse an [`EndpointId`] from its base32 representation.
+    /// Parse an [`EndpointId`] from a hexadecimal or base32 representation.
     #[napi(factory)]
     pub fn from_string(s: String) -> Result<Self> {
         let key = iroh::EndpointId::from_str(&s).map_err(anyhow::Error::from)?;
@@ -65,13 +65,13 @@ impl EndpointId {
         Ok(key.into())
     }
 
-    /// Short base32 prefix.
+    /// Short lowercase hexadecimal prefix.
     #[napi]
     pub fn fmt_short(&self) -> String {
         iroh::EndpointId::from(self).fmt_short().to_string()
     }
 
-    /// Base32 string form.
+    /// Lowercase hexadecimal string form.
     #[napi]
     pub fn to_string(&self) -> String {
         iroh::EndpointId::from(self).to_string()

@@ -2978,7 +2978,7 @@ public func FfiConverterTypeEndpointBuilder_lower(_ value: EndpointBuilder) -> U
 public protocol EndpointIdProtocol: AnyObject, Sendable {
     
     /**
-     * Short, base32 prefix of the [`EndpointId`].
+     * Short lowercase hexadecimal prefix.
      */
     func fmtShort()  -> String
     
@@ -3062,7 +3062,7 @@ public static func fromBytes(bytes: Data)throws  -> EndpointId  {
 }
     
     /**
-     * Parse an [`EndpointId`] from its base32 representation.
+     * Parse an [`EndpointId`] from a hexadecimal or base32 representation.
      */
 public static func fromString(s: String)throws  -> EndpointId  {
     return try  FfiConverterTypeEndpointId_lift(try rustCallWithError(FfiConverterTypeIrohError__as_error_lift) {
@@ -3075,7 +3075,7 @@ public static func fromString(s: String)throws  -> EndpointId  {
 
     
     /**
-     * Short, base32 prefix of the [`EndpointId`].
+     * Short lowercase hexadecimal prefix.
      */
 open func fmtShort() -> String  {
     return try!  FfiConverterString.lift(try! rustCall() {
