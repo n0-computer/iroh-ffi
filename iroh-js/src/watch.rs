@@ -1,3 +1,4 @@
+use iroh::Watcher;
 use n0_future::{StreamExt, task::AbortOnDropHandle};
 use napi::{
     bindgen_prelude::spawn,
@@ -66,9 +67,29 @@ pub(crate) fn spawn_network_change_watch(
     cb: ThreadsafeFunction<()>,
 ) -> WatchHandle {
     let task = spawn(async move {
+        // network_change() requests a recheck; it is not an observation future.
+        let monitor = match netwatch::netmon::Monitor::new().await {
+            Ok(monitor) => monitor,
+            Err(err) => {
+                cb.call(
+                    Err(napi::Error::from_reason(format!(
+                        "network change monitor failed: {err:?}"
+                    ))),
+                    ThreadsafeFunctionCallMode::NonBlocking,
+                );
+                return;
+            }
+        };
+        // The first item is the initial snapshot, not a network change.
+        let mut changes = monitor.interface_state().stream().skip(1);
         loop {
-            endpoint.network_change().await;
-            cb.call(Ok(()), ThreadsafeFunctionCallMode::NonBlocking);
+            tokio::select! {
+                _ = endpoint.closed() => break,
+                state = changes.next() => {
+                    if state.is_none() { break; }
+                    cb.call(Ok(()), ThreadsafeFunctionCallMode::NonBlocking);
+                }
+            }
         }
     });
     WatchHandle::new(AbortOnDropHandle::new(task))

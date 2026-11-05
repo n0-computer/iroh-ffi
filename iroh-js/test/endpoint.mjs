@@ -173,6 +173,20 @@ suite('endpoint', () => {
     await ep.close()
   })
 
+  test('network watcher does not generate changes while idle', async () => {
+    const ep = await bindMinimal()
+    let callbacks = 0
+    const watcher = ep.watchNetworkChange(() => { callbacks++ })
+    try {
+      // Observation window only: there is no timer in the implementation.
+      await new Promise(resolve => setTimeout(resolve, 200))
+      assert.equal(callbacks, 0, 'subscribing must not generate network changes')
+    } finally {
+      await watcher.stop()
+      await ep.close()
+    }
+  })
+
   test('connection watch* registers and stops without panic', async () => {
     const server = await bindServer()
     const serverAddr = server.addr()

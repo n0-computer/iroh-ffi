@@ -91,7 +91,7 @@ export declare class Endpoint {
   /** Watch for changes to the connected relays. */
   watchHomeRelay(callback: (relayUrls: Array<string>) => void): WatchHandle
   /** Watch for network-stack changes. */
-  watchNetworkChange(callback: () => void): WatchHandle
+  watchNetworkChange(callback: (error: Error | null) => void): WatchHandle
   /** Close the endpoint. */
   close(): Promise<void>
   /** True if the endpoint is closed. */

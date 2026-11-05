@@ -491,8 +491,8 @@ impl Endpoint {
         watch::spawn_home_relay_watch(self.inner.clone(), callback)
     }
 
-    /// Watch for network-stack changes.
-    #[napi(ts_args_type = "callback: () => void")]
+    /// Watch for network-stack changes. The callback receives a startup error if monitoring fails.
+    #[napi(ts_args_type = "callback: (error: Error | null) => void")]
     pub fn watch_network_change(&self, callback: ThreadsafeFunction<()>) -> WatchHandle {
         watch::spawn_network_change_watch(self.inner.clone(), callback)
     }
