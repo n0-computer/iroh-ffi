@@ -11,6 +11,7 @@ rust-version = "1.91"
 crate-type = ["cdylib"]
 
 [dependencies]
+netwatch = "0.19.3"
 napi = { version = "3", default-features = false, features = ["napi8", "error_anyhow", "async"] }
 napi-derive = "3"
 anyhow = "1.0.69"
