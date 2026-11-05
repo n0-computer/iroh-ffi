@@ -71,7 +71,12 @@ pub(crate) fn spawn_network_change_watch(
         let monitor = match netwatch::netmon::Monitor::new().await {
             Ok(monitor) => monitor,
             Err(err) => {
-                tracing::warn!("network change monitor failed: {err:?}");
+                cb.call(
+                    Err(napi::Error::from_reason(format!(
+                        "network change monitor failed: {err:?}"
+                    ))),
+                    ThreadsafeFunctionCallMode::NonBlocking,
+                );
                 return;
             }
         };
