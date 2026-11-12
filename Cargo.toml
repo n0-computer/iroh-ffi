@@ -37,7 +37,9 @@ async-trait = "0.1.80"
 iroh = { version = "1.0.0" }
 iroh-base = { version = "1.0.0" }
 iroh-metrics = { version = "1.0.0" }
-iroh-relay = { version = "1.0.0", default-features = false }
+iroh-relay = { version = "1.0.0", default-features = false, features = [
+    "platform-verifier",
+] }
 iroh-services = { version = "1.0.0", default-features = false }
 iroh-tickets = { version = "1.0.0" }
 n0-error = { version = "1.0.0" }
@@ -50,6 +52,7 @@ tracing-subscriber = { version = "0.3.17" }
 serde = { version = "1.0.196", features = ["derive"] }
 derive_more = { version = "2.0", features = ["debug"] }
 n0-future = "0.3"
+rustls = { version = "0.23.33", default-features = false }
 
 
 [dev-dependencies]
