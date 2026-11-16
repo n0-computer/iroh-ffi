@@ -1,3 +1,9 @@
+# Unreleased
+
+### Fixes
+
+* Use JNA 5.17.0 in the Android AAR to support devices with 16-KiB memory pages.
+
 
 # v0.0.6 (2023-08-28)
 
