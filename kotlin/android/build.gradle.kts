@@ -37,7 +37,7 @@ dependencies {
     api(project(":lib")) {
         exclude(group = "net.java.dev.jna", module = "jna")
     }
-    api("net.java.dev.jna:jna:5.15.0@aar")
+    api("net.java.dev.jna:jna:5.17.0@aar")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
 }
