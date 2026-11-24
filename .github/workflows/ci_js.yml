@@ -475,6 +475,37 @@ jobs:
             set -e
             yarn test
             ls -la
+  freebsd:
+    name: FreeBSD - ${{ matrix.settings.target }} - node@24
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - target: x86_64-unknown-freebsd
+            arch: x64
+    steps:
+      - uses: actions/checkout@v5
+      - uses: vmactions/freebsd-vm@v1
+        with:
+          usesh: true
+          prepare: |
+            pkg install -y node24 npm rust
+            npm install -g corepack --force
+            corepack enable
+          run: |
+            cd iroh-js
+            yarn install --frozen-lockfile
+            yarn build
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bindings-${{ matrix.settings.target }}
+          path: iroh-js/${{ env.APP_NAME }}.*.node
+          if-no-files-found: error
+          retention-days: 1
+
   publish:
     name: Publish
     runs-on: ubuntu-latest
