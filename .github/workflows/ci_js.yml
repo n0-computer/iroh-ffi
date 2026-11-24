@@ -475,6 +475,80 @@ jobs:
             set -e
             yarn test
             ls -la
+  freebsd:
+    name: FreeBSD - ${{ matrix.settings.target }} - node@24
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - target: x86_64-unknown-freebsd
+            cross: false
+          - target: aarch64-unknown-freebsd
+            cross: true
+    steps:
+      - uses: actions/checkout@v5
+      - uses: vmactions/freebsd-vm@v1
+        with:
+          usesh: true
+          version: 15.1
+          prepare: |
+            pkg install -y node24 npm rustup-init zig
+            npm install -g corepack --force
+            corepack enable
+          run: |
+            export PATH="$HOME/.cargo/bin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            rustup-init --profile minimal --default-toolchain stable -y
+            rustup target add aarch64-unknown-freebsd
+            # aarch64-freebsd base libraries for the cross link (devstat, kvm,
+            # memstat, procstat) are not bundled by zig; use the release sysroot.
+            curl -sSL -o /tmp/base-arm64.txz \
+              https://download.freebsd.org/releases/arm64/aarch64/15.1-RELEASE/base.txz
+            mkdir -p /tmp/freebsd-arm64
+            tar xf /tmp/base-arm64.txz -C /tmp/freebsd-arm64
+            mkdir -p "$HOME/zigshim"
+            cat > "$HOME/zigshim/zcc" <<'ZCC'
+            #!/bin/sh
+            A=
+            for x in "$@"; do
+              case "$x" in
+                --target=*) ;;
+                *) A="$A $x" ;;
+              esac
+            done
+            exec zig cc -target aarch64-freebsd -L/tmp/freebsd-arm64/usr/lib -L/tmp/freebsd-arm64/lib $A
+            ZCC
+            cat > "$HOME/zigshim/zcxx" <<'ZCXX'
+            #!/bin/sh
+            A=
+            for x in "$@"; do
+              case "$x" in
+                --target=*) ;;
+                *) A="$A $x" ;;
+              esac
+            done
+            exec zig c++ -target aarch64-freebsd -L/tmp/freebsd-arm64/usr/lib -L/tmp/freebsd-arm64/lib $A
+            ZCXX
+            chmod +x "$HOME/zigshim/zcc" "$HOME/zigshim/zcxx"
+            cd iroh-js
+            yarn install --frozen-lockfile
+            if [ "${{ matrix.settings.cross }}" = "true" ]; then
+              export CC_aarch64_unknown_freebsd="$HOME/zigshim/zcc"
+              export CXX_aarch64_unknown_freebsd="$HOME/zigshim/zcxx"
+              export CARGO_TARGET_AARCH64_UNKNOWN_FREEBSD_LINKER="$HOME/zigshim/zcc"
+              yarn build --target aarch64-unknown-freebsd
+            else
+              yarn build
+            fi
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bindings-${{ matrix.settings.target }}
+          path: iroh-js/${{ env.APP_NAME }}.*.node
+          if-no-files-found: error
+          retention-days: 1
+
   publish:
     name: Publish
     runs-on: ubuntu-latest
